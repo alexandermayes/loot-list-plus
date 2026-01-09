@@ -88,7 +88,7 @@ export default function LootList() {
 
       setRaidTierId(tierData.id)
 
-      // Get loot items for this tier
+      // Get loot items for this tier (ordered by id to maintain boss encounter order)
       const { data: itemsData } = await supabase
         .from('loot_items')
         .select(`
@@ -105,7 +105,7 @@ export default function LootList() {
         `)
         .eq('raid_tier_id', tierData.id)
         .eq('is_available', true)
-        .order('boss_name')
+        .order('id')
 
       if (itemsData) {
         const filteredItems = itemsData.filter(item => {
