@@ -14,6 +14,7 @@ interface Item {
   id: string
   name: string
   wowhead_id: number
+  boss_name: string
   classification?: string
 }
 
@@ -47,6 +48,18 @@ export default function SearchableItemSelect({
   const filteredItems = items.filter(item =>
     item.name.toLowerCase().includes(search.toLowerCase())
   )
+
+  // Group items by boss
+  const itemsByBoss: Record<string, Item[]> = {}
+  filteredItems.forEach(item => {
+    const boss = item.boss_name || 'Unknown'
+    if (!itemsByBoss[boss]) {
+      itemsByBoss[boss] = []
+    }
+    itemsByBoss[boss].push(item)
+  })
+
+  const bossNames = Object.keys(itemsByBoss).sort()
 
   // Close dropdown when clicking outside or scrolling outside
   useEffect(() => {
@@ -180,26 +193,37 @@ export default function SearchableItemSelect({
                 No items found
               </div>
             ) : (
-              filteredItems.map(item => {
-                const isDisabled = disabled.has(item.id) && currentValue !== item.id
-                return (
-                  <button
-                    key={item.id}
-                    onClick={() => !isDisabled && handleSelect(item.id)}
-                    disabled={isDisabled}
-                    className={`w-full px-3 py-2 text-left hover:bg-accent flex items-center gap-2 ${
-                      isDisabled ? 'opacity-50 cursor-not-allowed' : ''
-                    } ${value === item.id ? 'bg-accent' : ''}`}
-                  >
-                    <ItemLink name={item.name} wowheadId={item.wowhead_id} />
-                    {item.classification && item.classification !== 'Unlimited' && (
-                      <span className="text-xs text-muted-foreground ml-auto">
-                        [{item.classification}]
-                      </span>
-                    )}
-                  </button>
-                )
-              })
+              bossNames.map(boss => (
+                <div key={boss}>
+                  {/* Boss Header */}
+                  <div className="px-3 py-2 bg-accent/50 border-b border-border sticky top-0">
+                    <p className="text-xs font-semibold text-foreground uppercase tracking-wide">
+                      {boss}
+                    </p>
+                  </div>
+                  {/* Boss Items */}
+                  {itemsByBoss[boss].map(item => {
+                    const isDisabled = disabled.has(item.id) && currentValue !== item.id
+                    return (
+                      <button
+                        key={item.id}
+                        onClick={() => !isDisabled && handleSelect(item.id)}
+                        disabled={isDisabled}
+                        className={`w-full px-3 py-2 text-left hover:bg-accent flex items-center gap-2 ${
+                          isDisabled ? 'opacity-50 cursor-not-allowed' : ''
+                        } ${value === item.id ? 'bg-accent' : ''}`}
+                      >
+                        <ItemLink name={item.name} wowheadId={item.wowhead_id} />
+                        {item.classification && item.classification !== 'Unlimited' && (
+                          <span className="text-xs text-muted-foreground ml-auto">
+                            [{item.classification}]
+                          </span>
+                        )}
+                      </button>
+                    )
+                  })}
+                </div>
+              ))
             )}
           </div>
         </div>
