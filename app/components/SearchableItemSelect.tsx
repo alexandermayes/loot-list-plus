@@ -120,6 +120,15 @@ export default function SearchableItemSelect({
     }
   }, [isOpen, filteredItems])
 
+  // Refresh Wowhead tooltips when selection changes
+  useEffect(() => {
+    if (value && typeof window !== 'undefined' && (window as any).$WowheadPower) {
+      setTimeout(() => {
+        (window as any).$WowheadPower.refreshLinks()
+      }, 50)
+    }
+  }, [value])
+
   const handleSelect = (itemId: string) => {
     onChange(itemId)
     setIsOpen(false)
@@ -141,10 +150,16 @@ export default function SearchableItemSelect({
         onClick={() => setIsOpen(!isOpen)}
         className="w-full px-3 py-2 bg-secondary border border-border rounded-lg text-foreground text-left focus:outline-none focus:ring-2 focus:ring-purple-500 flex items-center justify-between"
       >
-        <span className="truncate">
-          {selectedItem ? selectedItem.name : placeholder}
-          {selectedItem?.classification && selectedItem.classification !== 'Unlimited' && (
-            <span className="ml-2 text-xs text-muted-foreground">[{selectedItem.classification}]</span>
+        <span className="truncate flex items-center gap-2">
+          {selectedItem ? (
+            <>
+              <ItemLink name={selectedItem.name} wowheadId={selectedItem.wowhead_id} clickable={false} />
+              {selectedItem.classification && selectedItem.classification !== 'Unlimited' && (
+                <span className="text-xs text-muted-foreground">[{selectedItem.classification}]</span>
+              )}
+            </>
+          ) : (
+            placeholder
           )}
         </span>
         <svg
