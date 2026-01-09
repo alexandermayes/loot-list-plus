@@ -258,11 +258,11 @@ export default function LootList() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'approved': return 'bg-green-900/50 border-green-500 text-green-300'
-      case 'pending': return 'bg-yellow-900/50 border-yellow-500 text-yellow-300'
-      case 'needs_revision': return 'bg-orange-900/50 border-orange-500 text-orange-300'
-      case 'rejected': return 'bg-red-900/50 border-red-500 text-red-300'
-      default: return 'bg-secondary border-border text-gray-300'
+      case 'approved': return 'bg-success/20 border-success text-success-foreground'
+      case 'pending': return 'bg-warning/20 border-warning text-warning-foreground'
+      case 'needs_revision': return 'bg-warning/30 border-warning/70 text-warning-foreground'
+      case 'rejected': return 'bg-error/20 border-error text-error-foreground'
+      default: return 'bg-secondary border-border text-muted-foreground'
     }
   }
 
@@ -413,9 +413,9 @@ export default function LootList() {
     const getClassificationBadge = (classification?: string) => {
       if (!classification) return null
       const colors = {
-        Reserved: 'bg-red-600 text-foreground',
-        Limited: 'bg-yellow-600 text-foreground',
-        Unlimited: 'bg-green-600 text-foreground'
+        Reserved: 'bg-error text-error-foreground',
+        Limited: 'bg-warning text-warning-foreground',
+        Unlimited: 'bg-success text-success-foreground'
       }
       return (
         <span className={`text-xs px-2 py-0.5 rounded ${colors[classification as keyof typeof colors] || 'bg-gray-600'}`}>

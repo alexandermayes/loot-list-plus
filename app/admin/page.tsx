@@ -302,9 +302,9 @@ export default function AdminPage() {
       <main className="max-w-6xl mx-auto p-6 space-y-6">
         {message && (
           <div className={`p-4 rounded-lg ${
-            message.type === 'success' 
-              ? 'bg-green-900/50 border border-green-700 text-green-200' 
-              : 'bg-red-900/50 border border-red-700 text-red-200'
+            message.type === 'success'
+              ? 'bg-success/20 border border-success text-success-foreground'
+              : 'bg-error/20 border border-error text-error-foreground'
           }`}>
             {message.text}
           </div>
@@ -426,9 +426,9 @@ export default function AdminPage() {
                     </div>
                     <div className="text-right">
                       <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                        sub.status === 'approved' ? 'bg-green-900 text-green-200' :
-                        sub.status === 'rejected' ? 'bg-red-900 text-red-200' :
-                        'bg-yellow-900 text-yellow-200'
+                        sub.status === 'approved' ? 'bg-success text-success-foreground' :
+                        sub.status === 'rejected' ? 'bg-error text-error-foreground' :
+                        'bg-warning text-warning-foreground'
                       }`}>
                         {sub.status}
                       </span>
