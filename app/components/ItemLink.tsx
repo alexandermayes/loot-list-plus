@@ -18,24 +18,20 @@ interface ItemLinkProps {
 }
 
 export default function ItemLink({ name, wowheadId, className = '', clickable = true }: ItemLinkProps) {
-  if (!clickable) {
-    return (
-      <span
-        className={className}
-        data-wowhead={`item=${wowheadId}&domain=classic`}
-      >
-        {name}
-      </span>
-    )
+  const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    if (!clickable) {
+      e.preventDefault()
+    }
   }
 
   return (
     <a
-      href={`https://www.wowhead.com/classic/item=${wowheadId}`}
-      target="_blank"
-      rel="noopener noreferrer"
+      href={clickable ? `https://www.wowhead.com/classic/item=${wowheadId}` : '#'}
+      target={clickable ? "_blank" : undefined}
+      rel={clickable ? "noopener noreferrer" : undefined}
       className={className}
       data-wowhead={`item=${wowheadId}&domain=classic`}
+      onClick={handleClick}
     >
       {name}
     </a>
