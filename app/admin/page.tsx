@@ -88,10 +88,12 @@ export default function AdminPage() {
       console.log('Admin page guild_id:', memberData.guild_id)
 
       // Load raid tiers (through expansions)
-      const { data: guildExpansions } = await supabase
+      const { data: guildExpansions, error: expError } = await supabase
         .from('expansions')
         .select('id')
         .eq('guild_id', memberData.guild_id)
+
+      console.log('Guild expansions query:', { guildExpansions, expError })
 
       let tiersData: any[] = []
       if (guildExpansions && guildExpansions.length > 0) {
