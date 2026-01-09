@@ -12,7 +12,8 @@
     "setup:loot": "tsx scripts/setup-loot-database.ts",
     "fix:items": "tsx scripts/ensure-items-available.ts",
     "reseed:bwl": "tsx scripts/reseed-bwl.ts",
-    "reseed:all": "tsx scripts/clean-and-reseed-all-raids.ts"
+    "reseed:all": "tsx scripts/clean-and-reseed-all-raids.ts",
+    "consolidate:items": "tsx scripts/consolidate-multi-boss-items.ts"
   },
   "dependencies": {
     "@radix-ui/react-label": "^2.1.8",
