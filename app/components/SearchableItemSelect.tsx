@@ -118,7 +118,7 @@ export default function SearchableItemSelect({
 
       {/* Dropdown */}
       {isOpen && (
-        <div className="absolute z-50 w-full mt-1 bg-secondary border border-border rounded-lg shadow-lg max-h-96 overflow-hidden">
+        <div className="absolute z-[9999] w-full mt-1 bg-secondary border border-border rounded-lg shadow-lg max-h-96 overflow-hidden">
           {/* Search Input */}
           <div className="p-2 border-b border-border sticky top-0 bg-secondary">
             <input

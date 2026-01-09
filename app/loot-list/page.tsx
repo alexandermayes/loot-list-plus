@@ -541,7 +541,7 @@ export default function LootList() {
         )}
 
         {/* Bracket 1 (50-48) */}
-        <div className="bg-card border border-border rounded-xl overflow-hidden">
+        <div className="bg-card border border-border rounded-xl overflow-visible">
           <div className="bg-gradient-to-r from-red-900 to-red-700 px-6 py-3">
             <div className="flex items-start justify-between">
               <div>
@@ -599,7 +599,7 @@ export default function LootList() {
         </div>
 
         {/* Bracket 2 (47-45) */}
-        <div className="bg-card border border-border rounded-xl overflow-hidden">
+        <div className="bg-card border border-border rounded-xl overflow-visible">
           <div className="bg-gradient-to-r from-orange-900 to-orange-700 px-6 py-3">
             <div className="flex items-start justify-between">
               <div>
@@ -657,7 +657,7 @@ export default function LootList() {
         </div>
 
         {/* Bracket 3 (44-42) */}
-        <div className="bg-card border border-border rounded-xl overflow-hidden">
+        <div className="bg-card border border-border rounded-xl overflow-visible">
           <div className="bg-gradient-to-r from-yellow-900 to-yellow-700 px-6 py-3">
             <div className="flex items-start justify-between">
               <div>
@@ -715,7 +715,7 @@ export default function LootList() {
         </div>
 
         {/* Bracket 4 (41-39) */}
-        <div className="bg-card border border-border rounded-xl overflow-hidden">
+        <div className="bg-card border border-border rounded-xl overflow-visible">
           <div className="bg-gradient-to-r from-amber-900 to-amber-700 px-6 py-3">
             <div className="flex items-start justify-between">
               <div>
@@ -773,7 +773,7 @@ export default function LootList() {
         </div>
 
         {/* No Bracket (38-25) - Main-spec */}
-        <div className="bg-card border border-border rounded-xl overflow-hidden">
+        <div className="bg-card border border-border rounded-xl overflow-visible">
           <div className="bg-gradient-to-r from-green-900 to-green-700 px-6 py-3">
             <h2 className="text-xl font-bold text-foreground">No Bracket (38-25) - Main-spec</h2>
             <p className="text-green-200 text-sm">Still considered main-spec priority</p>
@@ -799,7 +799,7 @@ export default function LootList() {
         </div>
 
         {/* Off-spec (24-1) */}
-        <div className="bg-card border border-border rounded-xl overflow-hidden">
+        <div className="bg-card border border-border rounded-xl overflow-visible">
           <div className="bg-gradient-to-r from-blue-900 to-blue-700 px-6 py-3">
             <h2 className="text-xl font-bold text-foreground">Off-spec (24-1)</h2>
             <p className="text-blue-200 text-sm">Off-spec items to support guild flexibility</p>
