@@ -4,12 +4,14 @@ import { createClient } from '@/utils/supabase/client'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Navigation from '@/app/components/Navigation'
+import ItemLink from '@/app/components/ItemLink'
 
 interface LootItem {
   id: string
   name: string
   boss_name: string
   item_slot: string
+  wowhead_id: number
   classification: string
   item_type: string
   allocation_cost: number
@@ -154,6 +156,7 @@ export default function AdminLootItems() {
         name,
         boss_name,
         item_slot,
+        wowhead_id,
         classification,
         item_type,
         allocation_cost,
@@ -507,7 +510,9 @@ export default function AdminLootItems() {
                         )}
                       </button>
                     </td>
-                    <td className="px-4 py-3 text-foreground">{item.name}</td>
+                    <td className="px-4 py-3 text-foreground">
+                      <ItemLink name={item.name} wowheadId={item.wowhead_id} />
+                    </td>
                     <td className="px-4 py-3 text-muted-foreground">{item.boss_name}</td>
                     <td className="px-4 py-3 text-muted-foreground">{item.item_slot}</td>
                     <td className="px-4 py-3 text-muted-foreground">{(item.raid_tier as any)?.name}</td>

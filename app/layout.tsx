@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
+import Script from "next/script";
 import "./globals.css";
 
 const inter = Inter({
@@ -19,6 +20,23 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="dark">
+      <head>
+        {/* Wowhead Tooltip Configuration */}
+        <Script id="wowhead-config" strategy="beforeInteractive">
+          {`
+            var wowhead_tooltips = {
+              colorlinks: true,
+              iconizelinks: true,
+              renamelinks: true
+            };
+          `}
+        </Script>
+        {/* Wowhead Tooltip Script */}
+        <Script
+          src="https://wow.zamimg.com/widgets/power.js"
+          strategy="afterInteractive"
+        />
+      </head>
       <body
         className={`${inter.variable} antialiased font-sans`}
       >

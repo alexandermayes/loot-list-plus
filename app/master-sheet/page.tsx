@@ -4,6 +4,7 @@ import { createClient } from '@/utils/supabase/client'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Navigation from '@/app/components/Navigation'
+import ItemLink from '@/app/components/ItemLink'
 import { calculateAttendanceScore, getRankModifier, calculateLootScore } from '@/utils/calculations'
 import { Loader2, ExternalLink } from 'lucide-react'
 
@@ -347,15 +348,11 @@ export default function MasterSheet() {
                       {items.map((ir) => (
                         <tr key={ir.item.id} className={ir.rankings.length === 0 ? 'bg-pink-900/20' : 'hover:bg-accent'}>
                           <td className="px-6 py-4">
-                            <a
-                              href={`https://www.wowhead.com/classic/item=${ir.item.wowhead_id}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-primary hover:text-primary/80 font-medium inline-flex items-center gap-2"
-                            >
-                              {ir.item.name}
-                              <ExternalLink className="w-3 h-3" />
-                            </a>
+                            <ItemLink
+                              name={ir.item.name}
+                              wowheadId={ir.item.wowhead_id}
+                              className="text-primary hover:text-primary/80 font-medium"
+                            />
                             <p className="text-muted-foreground text-sm">{ir.item.item_slot}</p>
                           </td>
                           <td className="px-6 py-4">
