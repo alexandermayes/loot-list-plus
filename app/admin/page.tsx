@@ -85,28 +85,22 @@ export default function AdminPage() {
       }
 
       setGuildId(memberData.guild_id)
-      console.log('Admin page guild_id:', memberData.guild_id)
 
       // Load raid tiers (through expansions)
-      const { data: guildExpansions, error: expError } = await supabase
+      const { data: guildExpansions } = await supabase
         .from('expansions')
         .select('id')
         .eq('guild_id', memberData.guild_id)
 
-      console.log('Guild expansions query:', { guildExpansions, expError })
-
       let tiersData: any[] = []
       if (guildExpansions && guildExpansions.length > 0) {
         const expansionIds = guildExpansions.map(e => e.id)
-        console.log('Querying raid tiers with expansion_ids:', expansionIds)
 
-        const { data: tiersResult, error: tiersError } = await supabase
+        const { data: tiersResult } = await supabase
           .from('raid_tiers')
           .select('id, name, is_active, expansion_id')
           .in('expansion_id', expansionIds)
           .order('name', { ascending: true })
-
-        console.log('Raid tiers query result:', { tiersResult, tiersError })
 
         if (tiersResult) {
           // Manually fetch expansion names
@@ -130,12 +124,9 @@ export default function AdminPage() {
         }
       }
 
-      console.log('Final tiersData after processing:', tiersData)
-
       if (tiersData) {
         setRaidTiers(tiersData as any)
         const active = tiersData.find(t => t.is_active) as any
-        console.log('Active tier found:', active)
         if (active) {
           setActiveTier(active)
 
@@ -166,9 +157,7 @@ export default function AdminPage() {
   }, [])
 
   const loadSubmissions = useCallback(async (guildId: string, tierId: string) => {
-    console.log('Loading submissions for:', { guildId, tierId })
-
-    const { data: submissionsData, error } = await supabase
+    const { data: submissionsData } = await supabase
       .from('loot_submissions')
       .select(`
         id,
@@ -179,8 +168,6 @@ export default function AdminPage() {
       `)
       .eq('guild_id', guildId)
       .eq('raid_tier_id', tierId)
-
-    console.log('Submissions query result:', { submissionsData, error })
 
     if (!submissionsData) return
 
