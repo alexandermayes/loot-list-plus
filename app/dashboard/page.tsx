@@ -4,7 +4,7 @@ import { createClient } from '@/utils/supabase/client'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Navigation from '@/app/components/Navigation'
-import { Clock, ClipboardList, FileBarChart, Settings, ClipboardCheck } from 'lucide-react'
+import { ClipboardList, FileBarChart, Settings, ClipboardCheck } from 'lucide-react'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { ActionCard } from '@/components/ui/action-card'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -225,28 +225,33 @@ export default function Dashboard() {
       />
 
       {/* Main Content */}
-      <main className="max-w-6xl mx-auto p-6 space-y-6 pb-32">
-        {/* Current Tier Banner */}
-        {raidTier && (
-          <Card className="bg-primary text-primary-foreground border-primary">
-            <CardHeader>
-              <CardTitle className="text-2xl">{raidTier.name}</CardTitle>
-              <p className="opacity-90">{raidTier.expansion?.name}</p>
-            </CardHeader>
-            {deadline && (
-              <CardContent>
-                <div className="flex items-center gap-2">
-                  <Clock className="w-5 h-5" />
-                  <span>
-                    {daysLeft !== null && daysLeft > 0
-                      ? `${daysLeft} days until submission deadline`
-                      : 'Deadline passed!'}
-                  </span>
-                </div>
-              </CardContent>
-            )}
-          </Card>
-        )}
+      <main className="max-w-6xl mx-auto p-6 space-y-6">
+        {/* Guild Info */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Guild Info</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div>
+                <p className="text-muted-foreground text-sm">Guild</p>
+                <p className="text-foreground font-medium">{guild?.name}</p>
+              </div>
+              <div>
+                <p className="text-muted-foreground text-sm">Realm</p>
+                <p className="text-foreground font-medium">{guild?.realm || 'Not set'}</p>
+              </div>
+              <div>
+                <p className="text-muted-foreground text-sm">Faction</p>
+                <p className="text-foreground font-medium">{guild?.faction}</p>
+              </div>
+              <div>
+                <p className="text-muted-foreground text-sm">Your Role</p>
+                <Badge variant="secondary">{member?.role}</Badge>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Quick Actions */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -284,65 +289,7 @@ export default function Dashboard() {
             </>
           )}
         </div>
-
-        {/* Guild Info */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Guild Info</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div>
-                <p className="text-muted-foreground text-sm">Guild</p>
-                <p className="text-foreground font-medium">{guild?.name}</p>
-              </div>
-              <div>
-                <p className="text-muted-foreground text-sm">Realm</p>
-                <p className="text-foreground font-medium">{guild?.realm || 'Not set'}</p>
-              </div>
-              <div>
-                <p className="text-muted-foreground text-sm">Faction</p>
-                <p className="text-foreground font-medium">{guild?.faction}</p>
-              </div>
-              <div>
-                <p className="text-muted-foreground text-sm">Your Role</p>
-                <Badge variant="secondary">{member?.role}</Badge>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
       </main>
-
-      {/* Raid Tier Tabs - Fixed at Bottom */}
-      {raidTiers.length > 0 && (
-        <div className="fixed bottom-0 left-0 right-0 bg-background border-t border-border shadow-2xl">
-          <div className="max-w-6xl mx-auto">
-            <div className="flex items-center px-4 py-2 overflow-x-auto scrollbar-thin scrollbar-thumb-border scrollbar-track-background">
-              <span className="text-muted-foreground text-sm font-medium mr-4 whitespace-nowrap">Raid Tiers:</span>
-              <div className="flex gap-2">
-                {raidTiers.map((tier: any) => (
-                  <button
-                    key={tier.id}
-                    onClick={() => {
-                      if (tier.id) {
-                        setSelectedTierId(tier.id)
-                      }
-                    }}
-                    className={`px-4 py-2 rounded-lg whitespace-nowrap text-sm font-medium transition-all ${
-                      selectedTierId === tier.id
-                        ? 'bg-primary text-primary-foreground shadow-lg'
-                        : 'bg-card text-muted-foreground hover:bg-accent'
-                    }`}
-                  >
-                    {tier.name}
-                    {tier.is_active && ' ⭐'}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   )
 }
