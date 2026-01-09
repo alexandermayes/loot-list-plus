@@ -221,7 +221,7 @@ export default function Dashboard() {
         className={member?.class?.name}
         classColor={member?.class?.color_hex}
         role={member?.role}
-        title={guild?.name}
+        title={guild?.name ? `LootList+ - ${guild.name}` : 'LootList+'}
       />
 
       {/* Main Content */}
