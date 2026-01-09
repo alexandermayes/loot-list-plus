@@ -74,12 +74,16 @@ export default function LootList() {
         class: memberData.class
       })
 
+      console.log('Loot list page guild_id:', memberData.guild_id)
+
       // Get active raid tier for this guild
       // First get guild's expansions
       const { data: guildExpansions } = await supabase
         .from('expansions')
         .select('id')
         .eq('guild_id', memberData.guild_id)
+
+      console.log('Guild expansions:', guildExpansions)
 
       if (!guildExpansions || guildExpansions.length === 0) {
         setLoading(false)
@@ -89,12 +93,14 @@ export default function LootList() {
       const expansionIds = guildExpansions.map(e => e.id)
 
       // Get active raid tier from guild's expansions
-      const { data: tierData } = await supabase
+      const { data: tierData, error: tierError } = await supabase
         .from('raid_tiers')
         .select('id, name')
         .in('expansion_id', expansionIds)
         .eq('is_active', true)
         .single()
+
+      console.log('Active raid tier:', { tierData, tierError })
 
       if (!tierData) {
         setLoading(false)
@@ -102,6 +108,7 @@ export default function LootList() {
       }
 
       setRaidTierId(tierData.id)
+      console.log('Using raid_tier_id:', tierData.id)
 
       // Get loot items for this tier (ordered by id to maintain boss encounter order)
       const { data: itemsData } = await supabase
@@ -132,13 +139,15 @@ export default function LootList() {
       }
 
       // Get existing submission
-      const { data: subData } = await supabase
+      const { data: subData, error: subError } = await supabase
         .from('loot_submissions')
         .select('id, status, submitted_at, review_notes')
         .eq('user_id', user.id)
         .eq('raid_tier_id', tierData.id)
         .eq('guild_id', memberData.guild_id)
         .single()
+
+      console.log('Existing submission:', { subData, subError })
 
       if (subData) {
         setSubmission(subData)
@@ -192,6 +201,8 @@ export default function LootList() {
   const saveSubmission = async (submit: boolean) => {
     if (!user || !raidTierId || !guildId) return
 
+    console.log('Saving submission with:', { user_id: user.id, guild_id: guildId, raid_tier_id: raidTierId, submit })
+
     setSaving(true)
     setMessage(null)
 
@@ -199,17 +210,22 @@ export default function LootList() {
       let submissionId = submission?.id
 
       if (!submissionId) {
+        const submissionData = {
+          user_id: user.id,
+          guild_id: guildId,
+          raid_tier_id: raidTierId,
+          status: submit ? 'pending' : 'draft',
+          submitted_at: submit ? new Date().toISOString() : null
+        }
+        console.log('Creating new submission:', submissionData)
+
         const { data: newSub, error: subError } = await supabase
           .from('loot_submissions')
-          .insert({
-            user_id: user.id,
-            guild_id: guildId,
-            raid_tier_id: raidTierId,
-            status: submit ? 'pending' : 'draft',
-            submitted_at: submit ? new Date().toISOString() : null
-          })
+          .insert(submissionData)
           .select()
           .single()
+
+        console.log('New submission result:', { newSub, subError })
 
         if (subError) throw subError
         submissionId = newSub.id

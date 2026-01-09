@@ -85,6 +85,7 @@ export default function AdminPage() {
       }
 
       setGuildId(memberData.guild_id)
+      console.log('Admin page guild_id:', memberData.guild_id)
 
       // Load raid tiers (through expansions)
       const { data: guildExpansions } = await supabase
@@ -126,9 +127,10 @@ export default function AdminPage() {
       if (tiersData) {
         setRaidTiers(tiersData as any)
         const active = tiersData.find(t => t.is_active) as any
+        console.log('Active tier found:', active)
         if (active) {
           setActiveTier(active)
-          
+
           // Load deadline
           const { data: deadlineData } = await supabase
             .from('loot_deadlines')
@@ -156,7 +158,9 @@ export default function AdminPage() {
   }, [])
 
   const loadSubmissions = useCallback(async (guildId: string, tierId: string) => {
-    const { data: submissionsData } = await supabase
+    console.log('Loading submissions for:', { guildId, tierId })
+
+    const { data: submissionsData, error } = await supabase
       .from('loot_submissions')
       .select(`
         id,
@@ -167,6 +171,8 @@ export default function AdminPage() {
       `)
       .eq('guild_id', guildId)
       .eq('raid_tier_id', tierId)
+
+    console.log('Submissions query result:', { submissionsData, error })
 
     if (!submissionsData) return
 
