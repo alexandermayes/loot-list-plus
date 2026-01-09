@@ -4,7 +4,7 @@ import { createClient } from '@/utils/supabase/client'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Navigation from '@/app/components/Navigation'
-import ItemLink from '@/app/components/ItemLink'
+import SearchableItemSelect from '@/app/components/SearchableItemSelect'
 import { Loader2 } from 'lucide-react'
 
 interface LootItem {
@@ -430,54 +430,34 @@ export default function LootList() {
           {rank}
         </td>
         <td className="px-4 py-3">
-          <select
+          <SearchableItemSelect
+            items={lootItems}
             value={selectedItemId1 || ''}
-            onChange={(e) => handleItemSelect(rank, 1, e.target.value)}
-            className="w-full px-3 py-2 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-purple-500"
-          >
-            <option value="">-- Select Item --</option>
-            {lootItems.map(item => (
-              <option
-                key={item.id}
-                value={item.id}
-                disabled={selectedItems.has(item.id) && rankings[`${rank}-1`] !== item.id}
-              >
-                {item.name} {item.classification && item.classification !== 'Unlimited' ? `[${item.classification}]` : ''}
-              </option>
-            ))}
-          </select>
+            onChange={(value) => handleItemSelect(rank, 1, value)}
+            disabled={selectedItems}
+            currentValue={rankings[`${rank}-1`]}
+          />
         </td>
         <td className="px-4 py-3">
           {selectedItem1 ? (
             <div className="space-y-1">
-              <ItemLink name={selectedItem1.name} wowheadId={selectedItem1.wowhead_id} />
               <p className="text-muted-foreground text-sm">{selectedItem1.boss_name}</p>
               {selectedItem1.classification && getClassificationBadge(selectedItem1.classification)}
             </div>
           ) : '-'}
         </td>
         <td className="px-4 py-3">
-          <select
+          <SearchableItemSelect
+            items={lootItems}
             value={selectedItemId2 || ''}
-            onChange={(e) => handleItemSelect(rank, 2, e.target.value)}
-            className="w-full px-3 py-2 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-purple-500"
-          >
-            <option value="">-- Select Item --</option>
-            {lootItems.map(item => (
-              <option
-                key={item.id}
-                value={item.id}
-                disabled={selectedItems.has(item.id) && rankings[`${rank}-2`] !== item.id}
-              >
-                {item.name} {item.classification && item.classification !== 'Unlimited' ? `[${item.classification}]` : ''}
-              </option>
-            ))}
-          </select>
+            onChange={(value) => handleItemSelect(rank, 2, value)}
+            disabled={selectedItems}
+            currentValue={rankings[`${rank}-2`]}
+          />
         </td>
         <td className="px-4 py-3">
           {selectedItem2 ? (
             <div className="space-y-1">
-              <ItemLink name={selectedItem2.name} wowheadId={selectedItem2.wowhead_id} />
               <p className="text-muted-foreground text-sm">{selectedItem2.boss_name}</p>
               {selectedItem2.classification && getClassificationBadge(selectedItem2.classification)}
             </div>
