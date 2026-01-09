@@ -14,9 +14,21 @@ interface ItemLinkProps {
   name: string
   wowheadId: number
   className?: string
+  clickable?: boolean
 }
 
-export default function ItemLink({ name, wowheadId, className = '' }: ItemLinkProps) {
+export default function ItemLink({ name, wowheadId, className = '', clickable = true }: ItemLinkProps) {
+  if (!clickable) {
+    return (
+      <span
+        className={className}
+        data-wowhead={`item=${wowheadId}&domain=classic`}
+      >
+        {name}
+      </span>
+    )
+  }
+
   return (
     <a
       href={`https://www.wowhead.com/classic/item=${wowheadId}`}

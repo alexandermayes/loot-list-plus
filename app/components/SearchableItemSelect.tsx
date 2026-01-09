@@ -216,7 +216,7 @@ export default function SearchableItemSelect({
                           isDisabled ? 'opacity-50 cursor-not-allowed' : ''
                         } ${value === item.id ? 'bg-accent' : ''}`}
                       >
-                        <ItemLink name={item.name} wowheadId={item.wowhead_id} />
+                        <ItemLink name={item.name} wowheadId={item.wowhead_id} clickable={false} />
                         {item.classification && item.classification !== 'Unlimited' && (
                           <span className="text-xs text-muted-foreground ml-auto">
                             [{item.classification}]
