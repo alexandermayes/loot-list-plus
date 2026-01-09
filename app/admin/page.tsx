@@ -98,12 +98,16 @@ export default function AdminPage() {
       let tiersData: any[] = []
       if (guildExpansions && guildExpansions.length > 0) {
         const expansionIds = guildExpansions.map(e => e.id)
-        const { data: tiersResult } = await supabase
+        console.log('Querying raid tiers with expansion_ids:', expansionIds)
+
+        const { data: tiersResult, error: tiersError } = await supabase
           .from('raid_tiers')
           .select('id, name, is_active, expansion_id')
           .in('expansion_id', expansionIds)
           .order('created_at', { ascending: false })
-        
+
+        console.log('Raid tiers query result:', { tiersResult, tiersError })
+
         if (tiersResult) {
           // Manually fetch expansion names
           tiersData = await Promise.all(
@@ -125,6 +129,8 @@ export default function AdminPage() {
           )
         }
       }
+
+      console.log('Final tiersData after processing:', tiersData)
 
       if (tiersData) {
         setRaidTiers(tiersData as any)
