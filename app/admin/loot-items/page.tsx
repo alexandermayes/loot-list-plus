@@ -651,7 +651,7 @@ export default function AdminLootItems() {
                     Array.from(primarySpecs).map(specId => (
                       <div
                         key={`primary-badge-${specId}`}
-                        className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-foreground text-sm font-medium border-2 border-green-500 bg-green-900/30"
+                        className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-foreground text-sm font-medium border-2 border-success bg-success/20"
                       >
                         <div
                           className="w-2 h-2 rounded-full"
@@ -682,7 +682,7 @@ export default function AdminLootItems() {
                     Array.from(secondarySpecs).map(specId => (
                       <div
                         key={`secondary-badge-${specId}`}
-                        className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-foreground text-sm font-medium border-2 border-yellow-500 bg-yellow-900/30"
+                        className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-foreground text-sm font-medium border-2 border-warning bg-warning/20"
                       >
                         <div
                           className="w-2 h-2 rounded-full"

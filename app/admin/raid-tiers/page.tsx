@@ -290,9 +290,9 @@ export default function RaidTiersPage() {
       <main className="max-w-4xl mx-auto p-6 space-y-6">
         {message && (
           <div className={`p-4 rounded-lg ${
-            message.type === 'success' 
-              ? 'bg-green-900/50 border border-green-700 text-green-200' 
-              : 'bg-red-900/50 border border-red-700 text-red-200'
+            message.type === 'success'
+              ? 'bg-success/20 border border-success text-success-foreground'
+              : 'bg-error/20 border border-error text-error-foreground'
           }`}>
             {message.text}
           </div>
@@ -332,7 +332,7 @@ export default function RaidTiersPage() {
                     ))}
                   </select>
                 ) : (
-                  <div className="p-3 bg-yellow-900/50 border border-yellow-700 rounded-lg text-yellow-200 text-sm">
+                  <div className="p-3 bg-warning/20 border border-warning rounded-lg text-warning-foreground text-sm">
                     No expansions found. Please create an expansion first.
                   </div>
                 )}
@@ -402,7 +402,7 @@ export default function RaidTiersPage() {
                       <div className="flex items-center gap-2">
                         <h3 className="text-foreground font-semibold">{tier.name}</h3>
                         {tier.is_active && (
-                          <span className="px-2 py-1 bg-green-900/50 text-green-300 text-xs rounded-full">
+                          <span className="px-2 py-1 bg-success/20 text-success-foreground text-xs rounded-full">
                             Active ⭐
                           </span>
                         )}

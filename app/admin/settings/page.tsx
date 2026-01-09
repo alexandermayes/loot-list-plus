@@ -187,9 +187,9 @@ export default function SettingsPage() {
       <main className="max-w-4xl mx-auto p-6 space-y-6">
         {message && (
           <div className={`p-4 rounded-lg ${
-            message.type === 'success' 
-              ? 'bg-green-900/50 border border-green-700 text-green-200' 
-              : 'bg-red-900/50 border border-red-700 text-red-200'
+            message.type === 'success'
+              ? 'bg-success/20 border border-success text-success-foreground'
+              : 'bg-error/20 border border-error text-error-foreground'
           }`}>
             {message.text}
           </div>
