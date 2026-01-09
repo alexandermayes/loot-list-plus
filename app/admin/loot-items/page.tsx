@@ -434,7 +434,7 @@ export default function AdminLootItems() {
         <div className="bg-card border border-border rounded-xl p-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">Search Items</label>
+              <label className="block text-sm font-medium text-foreground mb-2">Search Items</label>
               <input
                 type="text"
                 value={searchTerm}
@@ -444,7 +444,7 @@ export default function AdminLootItems() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">Filter by Raid</label>
+              <label className="block text-sm font-medium text-foreground mb-2">Filter by Raid</label>
               <select
                 value={filterTier}
                 onChange={(e) => setFilterTier(e.target.value)}
@@ -491,13 +491,13 @@ export default function AdminLootItems() {
             <table className="w-full">
               <thead>
                 <tr className="bg-accent border-b border-border">
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-300">Available</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-300">Item Name</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-300">Boss</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-300">Slot</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-300">Raid</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-300">Classification</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-300">Actions</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-muted-foreground">Available</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-muted-foreground">Item Name</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-muted-foreground">Boss</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-muted-foreground">Slot</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-muted-foreground">Raid</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-muted-foreground">Classification</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-muted-foreground">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-700">
@@ -573,7 +573,7 @@ export default function AdminLootItems() {
                 </div>
                 <button
                   onClick={closeClassEditor}
-                  className="text-foreground hover:text-gray-300"
+                  className="text-foreground hover:text-muted-foreground"
                 >
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -709,7 +709,7 @@ export default function AdminLootItems() {
               <button
                 onClick={closeClassEditor}
                 disabled={savingClasses}
-                className="px-4 py-2 bg-secondary hover:bg-gray-600 rounded-lg text-foreground font-medium transition"
+                className="px-4 py-2 bg-secondary hover:bg-secondary/80 rounded-lg text-foreground font-medium transition"
               >
                 Cancel
               </button>

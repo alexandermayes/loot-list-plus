@@ -275,7 +275,7 @@ export default function ImportPage() {
 
           <div className="space-y-4">
             <div>
-              <label className="block text-gray-300 mb-2">Import Type</label>
+              <label className="block text-foreground mb-2">Import Type</label>
               <select
                 value={importType}
                 onChange={(e) => setImportType(e.target.value as any)}
@@ -288,7 +288,7 @@ export default function ImportPage() {
             </div>
 
             <div>
-              <label className="block text-gray-300 mb-2">CSV File</label>
+              <label className="block text-foreground mb-2">CSV File</label>
               <input
                 type="file"
                 accept=".csv"
@@ -300,7 +300,7 @@ export default function ImportPage() {
             <div className="bg-secondary rounded-lg p-4">
               <h3 className="text-foreground font-medium mb-2">Expected CSV Format:</h3>
               {importType === 'attendance' && (
-                <div className="text-gray-300 text-sm space-y-1">
+                <div className="text-muted-foreground text-sm space-y-1">
                   <p><strong>Headers:</strong> date, character_name, signed_up, attended, no_call_no_show</p>
                   <p><strong>Example:</strong></p>
                   <pre className="bg-card p-2 rounded text-xs">
@@ -310,7 +310,7 @@ export default function ImportPage() {
                 </div>
               )}
               {importType === 'loot_items' && (
-                <div className="text-gray-300 text-sm space-y-1">
+                <div className="text-muted-foreground text-sm space-y-1">
                   <p><strong>Headers:</strong> name, boss_name, item_slot, wowhead_id</p>
                   <p><strong>Example:</strong></p>
                   <pre className="bg-card p-2 rounded text-xs">

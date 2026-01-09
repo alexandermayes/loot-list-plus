@@ -395,7 +395,7 @@ export default function AdminPage() {
                   className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
                     filter === f
                       ? 'bg-primary text-foreground'
-                      : 'bg-secondary text-gray-300 hover:bg-gray-600'
+                      : 'bg-secondary text-foreground hover:bg-secondary/80'
                   }`}
                 >
                   {f.charAt(0).toUpperCase() + f.slice(1)}

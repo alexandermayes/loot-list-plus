@@ -201,7 +201,7 @@ export default function SettingsPage() {
           
           <div className="space-y-4">
             <div>
-              <label className="block text-gray-300 mb-2">Attendance Type</label>
+              <label className="block text-foreground mb-2">Attendance Type</label>
               <select
                 value={settings.attendance_type}
                 onChange={(e) => setSettings({ ...settings, attendance_type: e.target.value as 'linear' | 'breakpoint' })}
@@ -213,7 +213,7 @@ export default function SettingsPage() {
             </div>
 
             <div>
-              <label className="block text-gray-300 mb-2">Rolling Attendance Period (weeks)</label>
+              <label className="block text-foreground mb-2">Rolling Attendance Period (weeks)</label>
               <input
                 type="number"
                 min="1"
@@ -231,12 +231,12 @@ export default function SettingsPage() {
                 onChange={(e) => setSettings({ ...settings, use_signups: e.target.checked })}
                 className="w-5 h-5"
               />
-              <label className="text-gray-300">Use raid signups for attendance bonus</label>
+              <label className="text-foreground">Use raid signups for attendance bonus</label>
             </div>
 
             {settings.use_signups && (
               <div>
-                <label className="block text-gray-300 mb-2">Signup Weight (decimal, e.g., 0.25)</label>
+                <label className="block text-foreground mb-2">Signup Weight (decimal, e.g., 0.25)</label>
                 <input
                   type="number"
                   step="0.01"
@@ -255,7 +255,7 @@ export default function SettingsPage() {
                 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-gray-300 mb-1 text-sm">Max Bonus</label>
+                    <label className="block text-foreground mb-1 text-sm">Max Bonus</label>
                     <input
                       type="number"
                       value={settings.max_attendance_bonus}
@@ -264,7 +264,7 @@ export default function SettingsPage() {
                     />
                   </div>
                   <div>
-                    <label className="block text-gray-300 mb-1 text-sm">Threshold (0.0-1.0)</label>
+                    <label className="block text-foreground mb-1 text-sm">Threshold (0.0-1.0)</label>
                     <input
                       type="number"
                       step="0.01"
@@ -279,7 +279,7 @@ export default function SettingsPage() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-gray-300 mb-1 text-sm">Middle Bonus</label>
+                    <label className="block text-foreground mb-1 text-sm">Middle Bonus</label>
                     <input
                       type="number"
                       value={settings.middle_attendance_bonus}
@@ -288,7 +288,7 @@ export default function SettingsPage() {
                     />
                   </div>
                   <div>
-                    <label className="block text-gray-300 mb-1 text-sm">Threshold (0.0-1.0)</label>
+                    <label className="block text-foreground mb-1 text-sm">Threshold (0.0-1.0)</label>
                     <input
                       type="number"
                       step="0.01"
@@ -303,7 +303,7 @@ export default function SettingsPage() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-gray-300 mb-1 text-sm">Bottom Bonus</label>
+                    <label className="block text-foreground mb-1 text-sm">Bottom Bonus</label>
                     <input
                       type="number"
                       value={settings.bottom_attendance_bonus}
@@ -312,7 +312,7 @@ export default function SettingsPage() {
                     />
                   </div>
                   <div>
-                    <label className="block text-gray-300 mb-1 text-sm">Threshold (0.0-1.0)</label>
+                    <label className="block text-foreground mb-1 text-sm">Threshold (0.0-1.0)</label>
                     <input
                       type="number"
                       step="0.01"
@@ -341,11 +341,11 @@ export default function SettingsPage() {
                 onChange={(e) => setSettings({ ...settings, see_item_bonus: e.target.checked })}
                 className="w-5 h-5"
               />
-              <label className="text-gray-300">Permanent bonus for seeing item but not receiving</label>
+              <label className="text-foreground">Permanent bonus for seeing item but not receiving</label>
             </div>
             {settings.see_item_bonus && (
               <div>
-                <label className="block text-gray-300 mb-2">Bonus Value</label>
+                <label className="block text-foreground mb-2">Bonus Value</label>
                 <input
                   type="number"
                   value={settings.see_item_bonus_value}
@@ -362,11 +362,11 @@ export default function SettingsPage() {
                 onChange={(e) => setSettings({ ...settings, pass_item_bonus: e.target.checked })}
                 className="w-5 h-5"
               />
-              <label className="text-gray-300">Bonus for passing an item</label>
+              <label className="text-foreground">Bonus for passing an item</label>
             </div>
             {settings.pass_item_bonus && (
               <div>
-                <label className="block text-gray-300 mb-2">Bonus Value</label>
+                <label className="block text-foreground mb-2">Bonus Value</label>
                 <input
                   type="number"
                   value={settings.pass_item_bonus_value}
@@ -405,7 +405,7 @@ export default function SettingsPage() {
           
           <div className="space-y-4">
             <div>
-              <label className="block text-gray-300 mb-2">First Raid Week Date</label>
+              <label className="block text-foreground mb-2">First Raid Week Date</label>
               <input
                 type="date"
                 value={settings.first_raid_week_date}
@@ -420,7 +420,7 @@ export default function SettingsPage() {
         <div className="flex justify-end gap-4">
           <button
             onClick={() => router.push('/admin')}
-            className="px-6 py-3 bg-secondary hover:bg-gray-600 rounded-lg text-foreground font-semibold transition"
+            className="px-6 py-3 bg-secondary hover:bg-secondary/80 rounded-lg text-foreground font-semibold transition"
           >
             Cancel
           </button>

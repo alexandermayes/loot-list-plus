@@ -582,11 +582,11 @@ export default function LootList() {
             <table className="w-full">
               <thead>
                 <tr className="bg-accent border-b border-border">
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-300 w-20">Rank</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-300">Loot #1</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-300 w-48">Item Details</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-300">Loot #2</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-300 w-48">Item Details</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-muted-foreground w-20">Rank</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-muted-foreground">Loot #1</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-muted-foreground w-48">Item Details</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-muted-foreground">Loot #2</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-muted-foreground w-48">Item Details</th>
                 </tr>
               </thead>
               <tbody>
@@ -640,11 +640,11 @@ export default function LootList() {
             <table className="w-full">
               <thead>
                 <tr className="bg-accent border-b border-border">
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-300 w-20">Rank</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-300">Loot #1</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-300 w-48">Item Details</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-300">Loot #2</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-300 w-48">Item Details</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-muted-foreground w-20">Rank</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-muted-foreground">Loot #1</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-muted-foreground w-48">Item Details</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-muted-foreground">Loot #2</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-muted-foreground w-48">Item Details</th>
                 </tr>
               </thead>
               <tbody>
@@ -698,11 +698,11 @@ export default function LootList() {
             <table className="w-full">
               <thead>
                 <tr className="bg-accent border-b border-border">
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-300 w-20">Rank</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-300">Loot #1</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-300 w-48">Item Details</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-300">Loot #2</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-300 w-48">Item Details</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-muted-foreground w-20">Rank</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-muted-foreground">Loot #1</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-muted-foreground w-48">Item Details</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-muted-foreground">Loot #2</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-muted-foreground w-48">Item Details</th>
                 </tr>
               </thead>
               <tbody>
@@ -756,11 +756,11 @@ export default function LootList() {
             <table className="w-full">
               <thead>
                 <tr className="bg-accent border-b border-border">
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-300 w-20">Rank</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-300">Loot #1</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-300 w-48">Item Details</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-300">Loot #2</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-300 w-48">Item Details</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-muted-foreground w-20">Rank</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-muted-foreground">Loot #1</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-muted-foreground w-48">Item Details</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-muted-foreground">Loot #2</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-muted-foreground w-48">Item Details</th>
                 </tr>
               </thead>
               <tbody>
@@ -782,11 +782,11 @@ export default function LootList() {
             <table className="w-full">
               <thead>
                 <tr className="bg-accent border-b border-border">
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-300 w-20">Rank</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-300">Loot #1</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-300 w-48">Item Details</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-300">Loot #2</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-300 w-48">Item Details</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-muted-foreground w-20">Rank</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-muted-foreground">Loot #1</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-muted-foreground w-48">Item Details</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-muted-foreground">Loot #2</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-muted-foreground w-48">Item Details</th>
                 </tr>
               </thead>
               <tbody>
@@ -808,11 +808,11 @@ export default function LootList() {
             <table className="w-full">
               <thead>
                 <tr className="bg-accent border-b border-border">
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-300 w-20">Rank</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-300">Loot #1</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-300 w-48">Item Details</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-300">Loot #2</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-300 w-48">Item Details</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-muted-foreground w-20">Rank</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-muted-foreground">Loot #1</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-muted-foreground w-48">Item Details</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-muted-foreground">Loot #2</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-muted-foreground w-48">Item Details</th>
                 </tr>
               </thead>
               <tbody>
@@ -829,14 +829,14 @@ export default function LootList() {
           <button
             onClick={() => saveSubmission(false)}
             disabled={saving}
-            className="flex-1 py-3 bg-secondary hover:bg-gray-600 disabled:bg-card disabled:text-gray-500 rounded-xl text-foreground font-semibold transition"
+            className="flex-1 py-3 bg-secondary hover:bg-secondary/80 disabled:bg-card disabled:text-muted-foreground rounded-xl text-foreground font-semibold transition"
           >
             {saving ? 'Saving...' : 'Save Draft'}
           </button>
           <button
             onClick={() => saveSubmission(true)}
             disabled={saving || rankedCount === 0 || duplicateItems.length > 0 || hasValidationErrors}
-            className="flex-1 py-3 bg-primary hover:bg-primary/90 disabled:bg-card disabled:text-gray-500 rounded-xl text-foreground font-semibold transition"
+            className="flex-1 py-3 bg-primary hover:bg-primary/90 disabled:bg-card disabled:text-muted-foreground rounded-xl text-foreground font-semibold transition"
           >
             {saving ? 'Submitting...' : 'Submit for Review'}
           </button>

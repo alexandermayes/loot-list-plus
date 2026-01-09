@@ -306,7 +306,7 @@ export default function RaidTiersPage() {
             </h2>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-gray-300 mb-2">Raid Tier Name</label>
+                <label className="block text-foreground mb-2">Raid Tier Name</label>
                 <input
                   type="text"
                   value={formData.name}
@@ -318,7 +318,7 @@ export default function RaidTiersPage() {
               </div>
 
               <div>
-                <label className="block text-gray-300 mb-2">Expansion</label>
+                <label className="block text-foreground mb-2">Expansion</label>
                 {expansions.length > 0 ? (
                   <select
                     value={formData.expansion_id}
@@ -345,7 +345,7 @@ export default function RaidTiersPage() {
                   onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
                   className="w-5 h-5"
                 />
-                <label className="text-gray-300">Set as active raid tier</label>
+                <label className="text-foreground">Set as active raid tier</label>
               </div>
 
               <div className="flex gap-3">
@@ -363,7 +363,7 @@ export default function RaidTiersPage() {
                     setEditingTier(null)
                     setFormData({ name: '', expansion_id: '', is_active: false })
                   }}
-                  className="px-6 py-2 bg-secondary hover:bg-gray-600 rounded-lg text-foreground font-semibold transition"
+                  className="px-6 py-2 bg-secondary hover:bg-secondary/80 rounded-lg text-foreground font-semibold transition"
                 >
                   Cancel
                 </button>
@@ -450,7 +450,7 @@ export default function RaidTiersPage() {
                   setShowAddForm(true)
                   setEditingTier(null)
                 }}
-                className="px-3 py-2 bg-secondary hover:bg-gray-600 rounded-lg text-foreground text-sm transition"
+                className="px-3 py-2 bg-secondary hover:bg-secondary/80 rounded-lg text-foreground text-sm transition"
               >
                 {raidName}
               </button>
