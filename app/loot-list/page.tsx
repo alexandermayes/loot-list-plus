@@ -74,10 +74,25 @@ export default function LootList() {
         class: memberData.class
       })
 
-      // Get active raid tier
+      // Get active raid tier for this guild
+      // First get guild's expansions
+      const { data: guildExpansions } = await supabase
+        .from('expansions')
+        .select('id')
+        .eq('guild_id', memberData.guild_id)
+
+      if (!guildExpansions || guildExpansions.length === 0) {
+        setLoading(false)
+        return
+      }
+
+      const expansionIds = guildExpansions.map(e => e.id)
+
+      // Get active raid tier from guild's expansions
       const { data: tierData } = await supabase
         .from('raid_tiers')
         .select('id, name')
+        .in('expansion_id', expansionIds)
         .eq('is_active', true)
         .single()
 
