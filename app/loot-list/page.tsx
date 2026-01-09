@@ -259,8 +259,8 @@ export default function LootList() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'approved': return 'bg-success/20 border-success text-success-foreground'
-      case 'pending': return 'bg-warning/20 border-warning text-warning-foreground'
-      case 'needs_revision': return 'bg-warning/30 border-warning/70 text-warning-foreground'
+      case 'pending': return 'bg-warning/20 border-warning text-foreground'
+      case 'needs_revision': return 'bg-warning/30 border-warning/70 text-foreground'
       case 'rejected': return 'bg-error/20 border-error text-error-foreground'
       default: return 'bg-secondary border-border text-muted-foreground'
     }
