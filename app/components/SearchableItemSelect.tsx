@@ -49,17 +49,20 @@ export default function SearchableItemSelect({
     item.name.toLowerCase().includes(search.toLowerCase())
   )
 
-  // Group items by boss
+  // Group items by boss (maintain encounter order)
   const itemsByBoss: Record<string, Item[]> = {}
+  const bossOrder: string[] = []
+
   filteredItems.forEach(item => {
     const boss = item.boss_name || 'Unknown'
     if (!itemsByBoss[boss]) {
       itemsByBoss[boss] = []
+      bossOrder.push(boss) // Track order as we encounter each boss
     }
     itemsByBoss[boss].push(item)
   })
 
-  const bossNames = Object.keys(itemsByBoss).sort()
+  const bossNames = bossOrder
 
   // Close dropdown when clicking outside or scrolling outside
   useEffect(() => {
