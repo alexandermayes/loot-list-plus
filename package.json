@@ -11,7 +11,8 @@
     "migrate:profile": "tsx scripts/run-profile-migrations.ts",
     "setup:loot": "tsx scripts/setup-loot-database.ts",
     "fix:items": "tsx scripts/ensure-items-available.ts",
-    "reseed:bwl": "tsx scripts/reseed-bwl.ts"
+    "reseed:bwl": "tsx scripts/reseed-bwl.ts",
+    "reseed:all": "tsx scripts/clean-and-reseed-all-raids.ts"
   },
   "dependencies": {
     "@radix-ui/react-label": "^2.1.8",
