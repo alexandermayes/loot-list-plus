@@ -352,7 +352,7 @@ export default function RaidTiersPage() {
                 <button
                   type="submit"
                   disabled={saving}
-                  className="px-6 py-2 bg-primary hover:bg-primary/90 disabled:opacity-50 rounded-lg text-foreground font-semibold transition"
+                  className="px-6 py-2 bg-primary hover:bg-primary/90 text-primary-foreground disabled:opacity-50 rounded-lg font-semibold transition"
                 >
                   {saving ? 'Saving...' : editingTier ? 'Update' : 'Create'}
                 </button>
@@ -382,7 +382,7 @@ export default function RaidTiersPage() {
                 setEditingTier(null)
                 setFormData({ name: '', expansion_id: '', is_active: false })
               }}
-              className="px-4 py-2 bg-primary hover:bg-primary/90 rounded-lg text-foreground font-semibold transition"
+              className="px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg font-semibold transition"
             >
               + Add Raid Tier
             </button>

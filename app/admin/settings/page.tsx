@@ -427,7 +427,7 @@ export default function SettingsPage() {
           <button
             onClick={handleSave}
             disabled={saving}
-            className="px-6 py-3 bg-primary hover:bg-primary/90 disabled:opacity-50 rounded-lg text-foreground font-semibold transition"
+            className="px-6 py-3 bg-primary hover:bg-primary/90 disabled:opacity-50 rounded-lg text-primary-foreground font-semibold transition"
           >
             {saving ? 'Saving...' : 'Save Settings'}
           </button>

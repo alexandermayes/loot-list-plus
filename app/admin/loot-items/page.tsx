@@ -539,7 +539,7 @@ export default function AdminLootItems() {
                     <td className="px-4 py-3">
                       <button
                         onClick={() => openClassEditor(item)}
-                        className="px-3 py-1 bg-primary hover:bg-primary/90 rounded text-foreground text-sm font-medium"
+                        className="px-3 py-1 bg-primary hover:bg-primary/90 text-primary-foreground rounded text-foreground text-sm font-medium"
                       >
                         Edit Classes
                       </button>
@@ -716,7 +716,7 @@ export default function AdminLootItems() {
               <button
                 onClick={saveClassRestrictions}
                 disabled={savingClasses}
-                className="px-4 py-2 bg-primary hover:bg-primary/90 disabled:bg-purple-800 rounded-lg text-foreground font-medium transition"
+                className="px-4 py-2 bg-primary hover:bg-primary/90 disabled:bg-purple-800 rounded-lg text-primary-foreground font-medium transition"
               >
                 {savingClasses ? 'Saving...' : 'Save Changes'}
               </button>

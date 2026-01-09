@@ -324,7 +324,7 @@ Thunderfury,Prince,Weapon,19019`}
             <button
               onClick={handleImport}
               disabled={!file || loading}
-              className="w-full py-3 bg-primary hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg text-foreground font-semibold transition"
+              className="w-full py-3 bg-primary hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg text-primary-foreground font-semibold transition"
             >
               {loading ? 'Importing...' : 'Import Data'}
             </button>

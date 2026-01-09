@@ -345,7 +345,7 @@ export default function AdminPage() {
                   </label>
                   <button
                     onClick={handleDeadlineUpdate}
-                    className="mt-2 w-full py-2 bg-primary hover:bg-primary/90 rounded-lg text-foreground font-semibold transition"
+                    className="mt-2 w-full py-2 bg-primary hover:bg-primary/90 rounded-lg text-primary-foreground font-semibold transition"
                   >
                     Update Deadline
                   </button>
@@ -363,7 +363,7 @@ export default function AdminPage() {
               <div className="flex gap-2">
                 <button
                   onClick={() => router.push('/admin/settings')}
-                  className="px-4 py-2 bg-primary hover:bg-primary/90 rounded-lg text-foreground text-sm font-semibold transition"
+                  className="px-4 py-2 bg-primary hover:bg-primary/90 rounded-lg text-primary-foreground text-sm font-semibold transition"
                 >
                   ⚙️ Settings
                 </button>
@@ -394,7 +394,7 @@ export default function AdminPage() {
                   onClick={() => setFilter(f as any)}
                   className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
                     filter === f
-                      ? 'bg-primary text-foreground'
+                      ? 'bg-primary text-primary-foreground'
                       : 'bg-secondary text-foreground hover:bg-secondary/80'
                   }`}
                 >
@@ -521,7 +521,7 @@ export default function AdminPage() {
                           className="bg-secondary rounded-lg p-4 flex items-center justify-between"
                         >
                           <div className="flex items-center gap-4">
-                            <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center text-foreground font-bold">
+                            <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center text-primary-foreground font-bold">
                               {item.rank}
                             </div>
                             <div>

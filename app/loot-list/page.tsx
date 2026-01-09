@@ -836,7 +836,7 @@ export default function LootList() {
           <button
             onClick={() => saveSubmission(true)}
             disabled={saving || rankedCount === 0 || duplicateItems.length > 0 || hasValidationErrors}
-            className="flex-1 py-3 bg-primary hover:bg-primary/90 disabled:bg-card disabled:text-muted-foreground rounded-xl text-foreground font-semibold transition"
+            className="flex-1 py-3 bg-primary hover:bg-primary/90 disabled:bg-card disabled:text-muted-foreground rounded-xl text-primary-foreground font-semibold transition"
           >
             {saving ? 'Submitting...' : 'Submit for Review'}
           </button>

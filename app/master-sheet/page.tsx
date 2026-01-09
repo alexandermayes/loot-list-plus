@@ -413,7 +413,7 @@ export default function MasterSheet() {
                     onClick={() => setSelectedTierId(tier.id)}
                     className={`px-4 py-2 rounded-lg whitespace-nowrap text-sm font-medium transition-all ${
                       selectedTierId === tier.id
-                        ? 'bg-primary text-foreground shadow-lg'
+                        ? 'bg-primary text-primary-foreground shadow-lg'
                         : 'bg-card text-muted-foreground hover:bg-secondary'
                     }`}
                   >
