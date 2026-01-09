@@ -36,7 +36,9 @@ export default function SearchableItemSelect({
 }: SearchableItemSelectProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [search, setSearch] = useState('')
+  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 })
   const dropdownRef = useRef<HTMLDivElement>(null)
+  const buttonRef = useRef<HTMLButtonElement>(null)
   const searchInputRef = useRef<HTMLInputElement>(null)
 
   const selectedItem = items.find(i => i.id === value)
@@ -61,6 +63,18 @@ export default function SearchableItemSelect({
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [isOpen])
+
+  // Calculate dropdown position when opening
+  useEffect(() => {
+    if (isOpen && buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect()
+      setDropdownPosition({
+        top: rect.bottom + window.scrollY,
+        left: rect.left + window.scrollX,
+        width: rect.width
+      })
     }
   }, [isOpen])
 
@@ -96,6 +110,7 @@ export default function SearchableItemSelect({
     <div className="relative" ref={dropdownRef}>
       {/* Trigger Button */}
       <button
+        ref={buttonRef}
         type="button"
         onClick={() => setIsOpen(!isOpen)}
         className="w-full px-3 py-2 bg-secondary border border-border rounded-lg text-foreground text-left focus:outline-none focus:ring-2 focus:ring-purple-500 flex items-center justify-between"
@@ -118,7 +133,14 @@ export default function SearchableItemSelect({
 
       {/* Dropdown */}
       {isOpen && (
-        <div className="absolute z-[9999] w-full mt-1 bg-secondary border border-border rounded-lg shadow-lg max-h-96 overflow-hidden">
+        <div
+          className="fixed z-[9999] bg-secondary border border-border rounded-lg shadow-lg max-h-96 overflow-hidden"
+          style={{
+            top: `${dropdownPosition.top + 4}px`,
+            left: `${dropdownPosition.left}px`,
+            width: `${dropdownPosition.width}px`
+          }}
+        >
           {/* Search Input */}
           <div className="p-2 border-b border-border sticky top-0 bg-secondary">
             <input

@@ -578,7 +578,7 @@ export default function LootList() {
               })()}
             </div>
           </div>
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto overflow-y-visible">
             <table className="w-full">
               <thead>
                 <tr className="bg-accent border-b border-border">
@@ -636,7 +636,7 @@ export default function LootList() {
               })()}
             </div>
           </div>
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto overflow-y-visible">
             <table className="w-full">
               <thead>
                 <tr className="bg-accent border-b border-border">
@@ -694,7 +694,7 @@ export default function LootList() {
               })()}
             </div>
           </div>
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto overflow-y-visible">
             <table className="w-full">
               <thead>
                 <tr className="bg-accent border-b border-border">
@@ -752,7 +752,7 @@ export default function LootList() {
               })()}
             </div>
           </div>
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto overflow-y-visible">
             <table className="w-full">
               <thead>
                 <tr className="bg-accent border-b border-border">
@@ -778,7 +778,7 @@ export default function LootList() {
             <h2 className="text-xl font-bold text-foreground">No Bracket (38-25) - Main-spec</h2>
             <p className="text-green-200 text-sm">Still considered main-spec priority</p>
           </div>
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto overflow-y-visible">
             <table className="w-full">
               <thead>
                 <tr className="bg-accent border-b border-border">
@@ -804,7 +804,7 @@ export default function LootList() {
             <h2 className="text-xl font-bold text-foreground">Off-spec (24-1)</h2>
             <p className="text-blue-200 text-sm">Off-spec items to support guild flexibility</p>
           </div>
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto overflow-y-visible">
             <table className="w-full">
               <thead>
                 <tr className="bg-accent border-b border-border">
