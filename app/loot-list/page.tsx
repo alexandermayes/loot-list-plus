@@ -4,7 +4,8 @@ import { createClient } from '@/utils/supabase/client'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Navigation from '@/app/components/Navigation'
-import { Loader2, ExternalLink } from 'lucide-react'
+import ItemLink from '@/app/components/ItemLink'
+import { Loader2 } from 'lucide-react'
 
 interface LootItem {
   id: string
@@ -152,6 +153,15 @@ export default function LootList() {
 
     loadData()
   }, [])
+
+  // Refresh Wowhead tooltips after items are loaded
+  useEffect(() => {
+    if (lootItems.length > 0 && typeof window !== 'undefined' && (window as any).$WowheadPower) {
+      setTimeout(() => {
+        (window as any).$WowheadPower.refreshLinks()
+      }, 100)
+    }
+  }, [lootItems])
 
   const handleItemSelect = (rank: number, slot: number, itemId: string) => {
     const key = `${rank}-${slot}`
@@ -440,22 +450,11 @@ export default function LootList() {
         <td className="px-4 py-3">
           {selectedItem1 ? (
             <div className="space-y-1">
-              <p className="text-muted-foreground">{selectedItem1.boss_name}</p>
+              <ItemLink name={selectedItem1.name} wowheadId={selectedItem1.wowhead_id} />
+              <p className="text-muted-foreground text-sm">{selectedItem1.boss_name}</p>
               {selectedItem1.classification && getClassificationBadge(selectedItem1.classification)}
             </div>
           ) : '-'}
-        </td>
-        <td className="px-4 py-3 text-muted-foreground text-center">
-          {selectedItem1 && (
-            <a
-              href={`https://www.wowhead.com/classic/item=${selectedItem1.wowhead_id}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-primary hover:text-primary/80 inline-flex items-center gap-1"
-            >
-              View <ExternalLink className="w-3 h-3" />
-            </a>
-          )}
         </td>
         <td className="px-4 py-3">
           <select
@@ -478,22 +477,11 @@ export default function LootList() {
         <td className="px-4 py-3">
           {selectedItem2 ? (
             <div className="space-y-1">
-              <p className="text-muted-foreground">{selectedItem2.boss_name}</p>
+              <ItemLink name={selectedItem2.name} wowheadId={selectedItem2.wowhead_id} />
+              <p className="text-muted-foreground text-sm">{selectedItem2.boss_name}</p>
               {selectedItem2.classification && getClassificationBadge(selectedItem2.classification)}
             </div>
           ) : '-'}
-        </td>
-        <td className="px-4 py-3 text-muted-foreground text-center">
-          {selectedItem2 && (
-            <a
-              href={`https://www.wowhead.com/classic/item=${selectedItem2.wowhead_id}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-primary hover:text-primary/80 inline-flex items-center gap-1"
-            >
-              View <ExternalLink className="w-3 h-3" />
-            </a>
-          )}
         </td>
       </tr>
     )
@@ -616,11 +604,9 @@ export default function LootList() {
                 <tr className="bg-accent border-b border-border">
                   <th className="px-4 py-3 text-left text-sm font-semibold text-gray-300 w-20">Rank</th>
                   <th className="px-4 py-3 text-left text-sm font-semibold text-gray-300">Loot #1</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-300 w-40">Boss / Drop</th>
-                  <th className="px-4 py-3 text-center text-sm font-semibold text-gray-300 w-20">Link</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-300 w-48">Item Details</th>
                   <th className="px-4 py-3 text-left text-sm font-semibold text-gray-300">Loot #2</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-300 w-40">Boss / Drop</th>
-                  <th className="px-4 py-3 text-center text-sm font-semibold text-gray-300 w-20">Link</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-300 w-48">Item Details</th>
                 </tr>
               </thead>
               <tbody>
@@ -676,11 +662,9 @@ export default function LootList() {
                 <tr className="bg-accent border-b border-border">
                   <th className="px-4 py-3 text-left text-sm font-semibold text-gray-300 w-20">Rank</th>
                   <th className="px-4 py-3 text-left text-sm font-semibold text-gray-300">Loot #1</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-300 w-40">Boss / Drop</th>
-                  <th className="px-4 py-3 text-center text-sm font-semibold text-gray-300 w-20">Link</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-300 w-48">Item Details</th>
                   <th className="px-4 py-3 text-left text-sm font-semibold text-gray-300">Loot #2</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-300 w-40">Boss / Drop</th>
-                  <th className="px-4 py-3 text-center text-sm font-semibold text-gray-300 w-20">Link</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-300 w-48">Item Details</th>
                 </tr>
               </thead>
               <tbody>
@@ -736,11 +720,9 @@ export default function LootList() {
                 <tr className="bg-accent border-b border-border">
                   <th className="px-4 py-3 text-left text-sm font-semibold text-gray-300 w-20">Rank</th>
                   <th className="px-4 py-3 text-left text-sm font-semibold text-gray-300">Loot #1</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-300 w-40">Boss / Drop</th>
-                  <th className="px-4 py-3 text-center text-sm font-semibold text-gray-300 w-20">Link</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-300 w-48">Item Details</th>
                   <th className="px-4 py-3 text-left text-sm font-semibold text-gray-300">Loot #2</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-300 w-40">Boss / Drop</th>
-                  <th className="px-4 py-3 text-center text-sm font-semibold text-gray-300 w-20">Link</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-300 w-48">Item Details</th>
                 </tr>
               </thead>
               <tbody>
@@ -796,11 +778,9 @@ export default function LootList() {
                 <tr className="bg-accent border-b border-border">
                   <th className="px-4 py-3 text-left text-sm font-semibold text-gray-300 w-20">Rank</th>
                   <th className="px-4 py-3 text-left text-sm font-semibold text-gray-300">Loot #1</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-300 w-40">Boss / Drop</th>
-                  <th className="px-4 py-3 text-center text-sm font-semibold text-gray-300 w-20">Link</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-300 w-48">Item Details</th>
                   <th className="px-4 py-3 text-left text-sm font-semibold text-gray-300">Loot #2</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-300 w-40">Boss / Drop</th>
-                  <th className="px-4 py-3 text-center text-sm font-semibold text-gray-300 w-20">Link</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-300 w-48">Item Details</th>
                 </tr>
               </thead>
               <tbody>
@@ -824,11 +804,9 @@ export default function LootList() {
                 <tr className="bg-accent border-b border-border">
                   <th className="px-4 py-3 text-left text-sm font-semibold text-gray-300 w-20">Rank</th>
                   <th className="px-4 py-3 text-left text-sm font-semibold text-gray-300">Loot #1</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-300 w-40">Boss / Drop</th>
-                  <th className="px-4 py-3 text-center text-sm font-semibold text-gray-300 w-20">Link</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-300 w-48">Item Details</th>
                   <th className="px-4 py-3 text-left text-sm font-semibold text-gray-300">Loot #2</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-300 w-40">Boss / Drop</th>
-                  <th className="px-4 py-3 text-center text-sm font-semibold text-gray-300 w-20">Link</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-300 w-48">Item Details</th>
                 </tr>
               </thead>
               <tbody>
@@ -852,11 +830,9 @@ export default function LootList() {
                 <tr className="bg-accent border-b border-border">
                   <th className="px-4 py-3 text-left text-sm font-semibold text-gray-300 w-20">Rank</th>
                   <th className="px-4 py-3 text-left text-sm font-semibold text-gray-300">Loot #1</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-300 w-40">Boss / Drop</th>
-                  <th className="px-4 py-3 text-center text-sm font-semibold text-gray-300 w-20">Link</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-300 w-48">Item Details</th>
                   <th className="px-4 py-3 text-left text-sm font-semibold text-gray-300">Loot #2</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-300 w-40">Boss / Drop</th>
-                  <th className="px-4 py-3 text-center text-sm font-semibold text-gray-300 w-20">Link</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-300 w-48">Item Details</th>
                 </tr>
               </thead>
               <tbody>
