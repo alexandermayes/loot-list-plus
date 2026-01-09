@@ -48,7 +48,7 @@ export default function SearchableItemSelect({
     item.name.toLowerCase().includes(search.toLowerCase())
   )
 
-  // Close dropdown when clicking outside
+  // Close dropdown when clicking outside or scrolling
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
@@ -57,12 +57,19 @@ export default function SearchableItemSelect({
       }
     }
 
+    const handleScroll = () => {
+      setIsOpen(false)
+      setSearch('')
+    }
+
     if (isOpen) {
       document.addEventListener('mousedown', handleClickOutside)
+      window.addEventListener('scroll', handleScroll, true)
     }
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside)
+      window.removeEventListener('scroll', handleScroll, true)
     }
   }, [isOpen])
 
