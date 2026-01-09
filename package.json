@@ -8,7 +8,10 @@
     "start": "next start",
     "lint": "eslint",
     "seed:classic": "tsx scripts/seed-classic-raids.ts",
-    "migrate:profile": "tsx scripts/run-profile-migrations.ts"
+    "migrate:profile": "tsx scripts/run-profile-migrations.ts",
+    "setup:loot": "tsx scripts/setup-loot-database.ts",
+    "fix:items": "tsx scripts/ensure-items-available.ts",
+    "reseed:bwl": "tsx scripts/reseed-bwl.ts"
   },
   "dependencies": {
     "@radix-ui/react-label": "^2.1.8",
