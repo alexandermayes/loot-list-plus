@@ -78,8 +78,8 @@ export default function SearchableItemSelect({
     if (isOpen && buttonRef.current) {
       const rect = buttonRef.current.getBoundingClientRect()
       setDropdownPosition({
-        top: rect.bottom + window.scrollY,
-        left: rect.left + window.scrollX,
+        top: rect.bottom,
+        left: rect.left,
         width: rect.width
       })
     }
