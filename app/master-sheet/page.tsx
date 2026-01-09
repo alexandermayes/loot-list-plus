@@ -153,6 +153,7 @@ export default function MasterSheet() {
         if (tiersData && tiersData.length > 0) {
           setRaidTiers(tiersData)
           const activeTier = tiersData.find((t: any) => t.is_active) || tiersData[0]
+          console.log('Master sheet: Selected tier', activeTier)
           setSelectedTierId(activeTier.id)
         }
       }
@@ -167,20 +168,24 @@ export default function MasterSheet() {
   useEffect(() => {
     const loadAllRankings = async () => {
       if (!selectedTierId || !guildId || !guildSettings) {
+        console.log('Master sheet: Missing required data', { selectedTierId, guildId, guildSettings: !!guildSettings })
         setAllItemRankings([])
         return
       }
 
+      console.log('Master sheet: Loading rankings for tier', selectedTierId)
       setLoading(true)
 
       try {
         // Get all loot items for this tier
-        const { data: itemsData } = await supabase
+        const { data: itemsData, error: itemsError } = await supabase
           .from('loot_items')
           .select('id, name, boss_name, item_slot, wowhead_id')
           .eq('raid_tier_id', selectedTierId)
           .order('boss_name')
           .order('name')
+
+        console.log('Master sheet: Loot items', { itemsData, itemsError, count: itemsData?.length })
 
         if (!itemsData || itemsData.length === 0) {
           setAllItemRankings([])
@@ -190,10 +195,12 @@ export default function MasterSheet() {
 
         // Get all ranking submissions for all items at once
         const itemIds = itemsData.map(i => i.id)
-        const { data: allRankingsData } = await supabase
+        const { data: allRankingsData, error: rankingsError } = await supabase
           .from('loot_submission_items')
           .select('rank, submission_id, loot_item_id')
           .in('loot_item_id', itemIds)
+
+        console.log('Master sheet: All rankings data', { allRankingsData, rankingsError, count: allRankingsData?.length })
 
         if (!allRankingsData || allRankingsData.length === 0) {
           setAllItemRankings(itemsData.map(item => ({ item, rankings: [] })))
@@ -203,11 +210,15 @@ export default function MasterSheet() {
 
         // Get all submissions
         const submissionIds = [...new Set(allRankingsData.map(r => r.submission_id))]
-        const { data: subsData } = await supabase
+        console.log('Master sheet: Querying submissions', { submissionIds })
+
+        const { data: subsData, error: subsError } = await supabase
           .from('loot_submissions')
           .select('id, status, user_id')
           .in('id', submissionIds)
           .in('status', ['approved', 'pending'])
+
+        console.log('Master sheet: Submissions result', { subsData, subsError, count: subsData?.length })
 
         if (!subsData || subsData.length === 0) {
           setAllItemRankings(itemsData.map(item => ({ item, rankings: [] })))
