@@ -111,23 +111,22 @@ export default function SearchableItemSelect({
     }
   }, [isOpen])
 
-  // Refresh Wowhead tooltips when dropdown opens
+  // Initial Wowhead refresh on mount
   useEffect(() => {
-    if (isOpen && typeof window !== 'undefined' && (window as any).$WowheadPower) {
-      setTimeout(() => {
-        (window as any).$WowheadPower.refreshLinks()
-      }, 50)
+    if (typeof window !== 'undefined' && (window as any).$WowheadPower) {
+      (window as any).$WowheadPower.refreshLinks()
     }
-  }, [isOpen, filteredItems])
+  }, [])
 
-  // Refresh Wowhead tooltips when selection changes
+  // Refresh Wowhead tooltips when dropdown opens or closes
   useEffect(() => {
-    if (value && typeof window !== 'undefined' && (window as any).$WowheadPower) {
+    if (typeof window !== 'undefined' && (window as any).$WowheadPower) {
+      const delay = isOpen ? 50 : 0
       setTimeout(() => {
         (window as any).$WowheadPower.refreshLinks()
-      }, 50)
+      }, delay)
     }
-  }, [value])
+  }, [isOpen])
 
   const handleSelect = (itemId: string) => {
     onChange(itemId)
