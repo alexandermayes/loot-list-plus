@@ -1,8 +1,13 @@
 /**
  * ItemLink Component
  *
- * Renders an item name as a Wowhead tooltip link
- * The Wowhead power.js script automatically detects these links and adds tooltips
+ * Renders an item name as a Wowhead tooltip link with automatic coloring and icons
+ * The Wowhead power.js script automatically detects these links and:
+ * - Colors them based on item quality (epic = purple, rare = blue, etc.)
+ * - Adds item icons before the name
+ * - Shows tooltips on hover
+ *
+ * Note: Parent components should call $WowheadPower.refreshLinks() after items load
  */
 
 interface ItemLinkProps {
@@ -17,8 +22,8 @@ export default function ItemLink({ name, wowheadId, className = '' }: ItemLinkPr
       href={`https://www.wowhead.com/classic/item=${wowheadId}`}
       target="_blank"
       rel="noopener noreferrer"
-      className={`hover:underline ${className}`}
-      data-wowhead={`item=${wowheadId}`}
+      className={className}
+      data-wowhead={`item=${wowheadId}&domain=classic`}
     >
       {name}
     </a>

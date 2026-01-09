@@ -64,6 +64,15 @@ export default function AdminLootItems() {
     loadData()
   }, [])
 
+  // Refresh Wowhead tooltips after items are loaded
+  useEffect(() => {
+    if (lootItems.length > 0 && typeof window !== 'undefined' && (window as any).$WowheadPower) {
+      setTimeout(() => {
+        (window as any).$WowheadPower.refreshLinks()
+      }, 100)
+    }
+  }, [lootItems])
+
   const loadData = async () => {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) {

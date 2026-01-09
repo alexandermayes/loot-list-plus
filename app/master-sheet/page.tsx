@@ -275,6 +275,15 @@ export default function MasterSheet() {
     loadAllRankings()
   }, [selectedTierId, guildId, guildSettings])
 
+  // Refresh Wowhead tooltips after items are loaded
+  useEffect(() => {
+    if (allItemRankings.length > 0 && typeof window !== 'undefined' && (window as any).$WowheadPower) {
+      setTimeout(() => {
+        (window as any).$WowheadPower.refreshLinks()
+      }, 100)
+    }
+  }, [allItemRankings])
+
   // Group items by boss
   const groupedByBoss: Record<string, ItemRankings[]> = {}
   allItemRankings.forEach(ir => {
