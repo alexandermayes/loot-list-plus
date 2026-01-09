@@ -104,7 +104,7 @@ export default function AdminPage() {
           .from('raid_tiers')
           .select('id, name, is_active, expansion_id')
           .in('expansion_id', expansionIds)
-          .order('created_at', { ascending: false })
+          .order('name', { ascending: true })
 
         console.log('Raid tiers query result:', { tiersResult, tiersError })
 
