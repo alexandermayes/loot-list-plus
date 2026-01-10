@@ -4,11 +4,11 @@ import { createClient } from '@/utils/supabase/server'
 // GET - Validate invite code and get guild info
 export async function GET(
   request: NextRequest,
-  { params }: { params: { code: string } }
+  { params }: { params: Promise<{ code: string }> }
 ) {
   try {
     const supabase = await createClient()
-    const code = params.code
+    const { code } = await params
 
     if (!code) {
       return NextResponse.json(
@@ -89,11 +89,11 @@ export async function GET(
 // POST - Redeem invite code (join guild)
 export async function POST(
   request: NextRequest,
-  { params }: { params: { code: string } }
+  { params }: { params: Promise<{ code: string }> }
 ) {
   try {
     const supabase = await createClient()
-    const code = params.code
+    const { code } = await params
 
     // Check if user is authenticated
     const { data: { user }, error: authError } = await supabase.auth.getUser()
