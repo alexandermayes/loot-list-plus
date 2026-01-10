@@ -134,7 +134,7 @@ export async function seedExpansionForGuild(
           wowhead_id: item.wowheadId,
           boss_name: boss.name,
           is_available: true,
-          classification: 'Unlimited', // Default classification
+          classification: 'Reserved', // Default to Reserved for all items
           allocation_cost: 0 // Default cost
         }))
       )
