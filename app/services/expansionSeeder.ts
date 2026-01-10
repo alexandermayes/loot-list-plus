@@ -1,5 +1,6 @@
 import { SupabaseClient } from '@supabase/supabase-js'
 import { classicRaids, Raid as ClassicRaid } from '@/data/classic-wow-raids'
+import { ITEM_CLASSIFICATIONS } from '@/data/classic-wow-item-classifications'
 
 /**
  * Expansion Seeding Service
@@ -134,7 +135,8 @@ export async function seedExpansionForGuild(
           wowhead_id: item.wowheadId,
           boss_name: boss.name,
           is_available: true,
-          classification: 'Reserved', // Default to Reserved for all items
+          // Look up classification from mapping, default to Unlimited if not found
+          classification: ITEM_CLASSIFICATIONS[item.name] || 'Unlimited',
           allocation_cost: 0 // Default cost
         }))
       )
