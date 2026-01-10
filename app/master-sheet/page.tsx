@@ -7,6 +7,8 @@ import Navigation from '@/app/components/Navigation'
 import ItemLink from '@/app/components/ItemLink'
 import { calculateAttendanceScore, getRankModifier, calculateLootScore } from '@/utils/calculations'
 import { Loader2, ExternalLink } from 'lucide-react'
+import { useGuildContext } from '@/app/contexts/GuildContext'
+import { ExpansionGuard } from '@/app/components/ExpansionGuard'
 
 interface LootItem {
   id: string
@@ -30,6 +32,7 @@ interface ItemRankings {
 }
 
 export default function MasterSheet() {
+  const { activeGuild, loading: guildLoading } = useGuildContext()
   const [allItemRankings, setAllItemRankings] = useState<ItemRankings[]>([])
   const [loading, setLoading] = useState(true)
   const [guildId, setGuildId] = useState<string | null>(null)
@@ -75,6 +78,11 @@ export default function MasterSheet() {
   // Load initial data
   useEffect(() => {
     const loadData = async () => {
+      // Wait for guild context to load
+      if (guildLoading) {
+        return
+      }
+
       const { data: { user } } = await supabase.auth.getUser()
 
       if (!user) {
@@ -83,6 +91,11 @@ export default function MasterSheet() {
       }
 
       setUser(user)
+
+      if (!activeGuild) {
+        setLoading(false)
+        return
+      }
 
       const { data: memberData } = await supabase
         .from('guild_members')
@@ -93,6 +106,7 @@ export default function MasterSheet() {
           class:wow_classes(name, color_hex)
         `)
         .eq('user_id', user.id)
+        .eq('guild_id', activeGuild.id)
         .single()
 
       if (memberData) {
@@ -114,46 +128,27 @@ export default function MasterSheet() {
           setGuildSettings(settingsData)
         }
 
-        // Load raid tiers
-        const { data: guildExpansions } = await supabase
-          .from('expansions')
-          .select('id')
-          .eq('guild_id', memberData.guild_id)
-
-        let tiersData: any[] = []
-        if (guildExpansions && guildExpansions.length > 0) {
-          const expansionIds = guildExpansions.map(e => e.id)
-          const { data: tiersResult } = await supabase
+        // Load raid tiers for active expansion (single join query)
+        if (activeGuild?.active_expansion_id) {
+          const { data: tiersData } = await supabase
             .from('raid_tiers')
-            .select('id, name, is_active, expansion_id')
-            .in('expansion_id', expansionIds)
+            .select(`
+              id,
+              name,
+              is_active,
+              expansion:expansions!inner (
+                id,
+                name
+              )
+            `)
+            .eq('expansion.id', activeGuild.active_expansion_id)
             .order('name', { ascending: true })
 
-          if (tiersResult) {
-            tiersData = await Promise.all(
-              tiersResult.map(async (tier: any) => {
-                if (tier.expansion_id) {
-                  const { data: expData } = await supabase
-                    .from('expansions')
-                    .select('id, name')
-                    .eq('id', tier.expansion_id)
-                    .single()
-
-                  return {
-                    ...tier,
-                    expansion: expData || null
-                  }
-                }
-                return { ...tier, expansion: null }
-              })
-            )
+          if (tiersData && tiersData.length > 0) {
+            setRaidTiers(tiersData)
+            const activeTier = tiersData.find((t: any) => t.is_active) || tiersData[0]
+            setSelectedTierId(activeTier.id)
           }
-        }
-
-        if (tiersData && tiersData.length > 0) {
-          setRaidTiers(tiersData)
-          const activeTier = tiersData.find((t: any) => t.is_active) || tiersData[0]
-          setSelectedTierId(activeTier.id)
         }
       }
 
@@ -161,7 +156,7 @@ export default function MasterSheet() {
     }
 
     loadData()
-  }, [])
+  }, [guildLoading, activeGuild])
 
   // Load all item rankings when tier is selected
   useEffect(() => {
@@ -305,7 +300,8 @@ export default function MasterSheet() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <ExpansionGuard>
+      <div className="min-h-screen bg-background">
       <Navigation
         user={user}
         characterName={member?.character_name}
@@ -427,5 +423,6 @@ export default function MasterSheet() {
         </div>
       )}
     </div>
+    </ExpansionGuard>
   )
 }

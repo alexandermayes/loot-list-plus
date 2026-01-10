@@ -6,6 +6,8 @@ import { useRouter } from 'next/navigation'
 import Navigation from '@/app/components/Navigation'
 import SearchableItemSelect from '@/app/components/SearchableItemSelect'
 import { Loader2 } from 'lucide-react'
+import { useGuildContext } from '@/app/contexts/GuildContext'
+import { ExpansionGuard } from '@/app/components/ExpansionGuard'
 
 interface LootItem {
   id: string
@@ -26,6 +28,7 @@ interface Submission {
 }
 
 export default function LootList() {
+  const { activeGuild, loading: guildLoading } = useGuildContext()
   const [lootItems, setLootItems] = useState<LootItem[]>([])
   const [submission, setSubmission] = useState<Submission | null>(null)
   const [rankings, setRankings] = useState<Record<string, string>>({}) // "rank-slot" -> item_id (e.g., "50-1", "50-2")
@@ -42,12 +45,22 @@ export default function LootList() {
 
   useEffect(() => {
     const loadData = async () => {
+      // Wait for guild context to load
+      if (guildLoading) {
+        return
+      }
+
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) {
         router.push('/')
         return
       }
       setUser(user)
+
+      if (!activeGuild) {
+        setLoading(false)
+        return
+      }
 
       const { data: memberData } = await supabase
         .from('guild_members')
@@ -56,10 +69,10 @@ export default function LootList() {
           class_id,
           character_name,
           role,
-          class:wow_classes(name, color_hex),
-          guild:guilds(id)
+          class:wow_classes(name, color_hex)
         `)
         .eq('user_id', user.id)
+        .eq('guild_id', activeGuild.id)
         .single()
 
       if (!memberData) {
@@ -74,25 +87,16 @@ export default function LootList() {
         class: memberData.class
       })
 
-      // Get active raid tier for this guild
-      // First get guild's expansions
-      const { data: guildExpansions } = await supabase
-        .from('expansions')
-        .select('id')
-        .eq('guild_id', memberData.guild_id)
-
-      if (!guildExpansions || guildExpansions.length === 0) {
+      // Get active raid tier for this guild's active expansion
+      if (!activeGuild.active_expansion_id) {
         setLoading(false)
         return
       }
 
-      const expansionIds = guildExpansions.map(e => e.id)
-
-      // Get active raid tier from guild's expansions
       const { data: tierData } = await supabase
         .from('raid_tiers')
         .select('id, name')
-        .in('expansion_id', expansionIds)
+        .eq('expansion_id', activeGuild.active_expansion_id)
         .eq('is_active', true)
         .single()
 
@@ -167,7 +171,7 @@ export default function LootList() {
     }
 
     loadData()
-  }, [])
+  }, [guildLoading, activeGuild])
 
   // Refresh Wowhead tooltips after items are loaded
   useEffect(() => {
@@ -491,7 +495,8 @@ export default function LootList() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <ExpansionGuard>
+      <div className="min-h-screen bg-background">
       <Navigation
         user={user}
         characterName={member?.character_name}
@@ -858,5 +863,6 @@ export default function LootList() {
         </div>
       </main>
     </div>
+    </ExpansionGuard>
   )
 }

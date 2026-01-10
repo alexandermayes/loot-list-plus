@@ -148,7 +148,8 @@ export default function CreateGuildPage() {
           name: guildName.trim(),
           realm: realm.trim() || null,
           faction,
-          discord_server_id: discordServerId || null
+          discord_server_id: discordServerId || null,
+          expansion
         })
       })
 

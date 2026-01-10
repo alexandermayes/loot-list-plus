@@ -16,6 +16,7 @@ export interface Guild {
   is_active: boolean
   require_discord_verification: boolean
   created_at: string
+  active_expansion_id: string | null
 }
 
 export interface GuildMember {
@@ -107,7 +108,8 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
             created_by,
             is_active,
             require_discord_verification,
-            created_at
+            created_at,
+            active_expansion_id
           ),
           class:wow_classes (
             name,

@@ -87,45 +87,29 @@ export default function AdminPage() {
 
       setGuildId(activeGuild.id)
 
-      // Load raid tiers (through expansions)
-      const { data: guildExpansions } = await supabase
-        .from('expansions')
-        .select('id')
-        .eq('guild_id', activeGuild.id)
-
+      // Load raid tiers for active expansion (single join query)
       let tiersData: any[] = []
-      if (guildExpansions && guildExpansions.length > 0) {
-        const expansionIds = guildExpansions.map(e => e.id)
-
+      if (activeGuild.active_expansion_id) {
         const { data: tiersResult } = await supabase
           .from('raid_tiers')
-          .select('id, name, is_active, expansion_id')
-          .in('expansion_id', expansionIds)
+          .select(`
+            id,
+            name,
+            is_active,
+            expansion:expansions!inner (
+              id,
+              name
+            )
+          `)
+          .eq('expansion.id', activeGuild.active_expansion_id)
           .order('name', { ascending: true })
 
         if (tiersResult) {
-          // Manually fetch expansion names
-          tiersData = await Promise.all(
-            tiersResult.map(async (tier: any) => {
-              if (tier.expansion_id) {
-                const { data: expData } = await supabase
-                  .from('expansions')
-                  .select('id, name')
-                  .eq('id', tier.expansion_id)
-                  .single()
-                
-                return {
-                  ...tier,
-                  expansion: expData || null
-                }
-              }
-              return { ...tier, expansion: null }
-            })
-          )
+          tiersData = tiersResult
         }
       }
 
-      if (tiersData) {
+      if (tiersData && tiersData.length > 0) {
         setRaidTiers(tiersData as any)
         const active = tiersData.find(t => t.is_active) as any
         if (active) {

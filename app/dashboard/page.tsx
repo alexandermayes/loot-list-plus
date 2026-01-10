@@ -32,6 +32,7 @@ export default function Dashboard() {
   const [deadline, setDeadline] = useState<Deadline | null>(null)
   const [loading, setLoading] = useState(true)
   const [user, setUser] = useState<any>(null)
+  const [error, setError] = useState<string | null>(null)
 
   const supabase = createClient()
   const router = useRouter()
@@ -71,84 +72,58 @@ export default function Dashboard() {
         return
       }
 
-      // Use activeGuild from context
-      const guildId = activeGuild.id
+      // Check if guild has active expansion set
+      if (!activeGuild.active_expansion_id) {
+        setRaidTiers([])
+        setError('⚠️ Your guild needs to select an expansion. Ask an officer to go to Guild Settings.')
+        setLoading(false)
+        return
+      }
 
-        // Get all raid tiers for this guild (through expansions)
-        // First get expansions for this guild
-        const { data: guildExpansions, error: expError } = await supabase
-          .from('expansions')
-          .select('id')
-          .eq('guild_id', guildId)
+      // Get raid tiers for active expansion only (single join query)
+      const { data: tiersData, error: tiersError } = await supabase
+        .from('raid_tiers')
+        .select(`
+          id,
+          name,
+          is_active,
+          expansion:expansions!inner (
+            id,
+            name
+          )
+        `)
+        .eq('expansion.id', activeGuild.active_expansion_id)
+        .order('name', { ascending: true })
 
-        if (expError) {
-          console.error('Error loading expansions:', expError)
-          setRaidTiers([])
-        } else if (guildExpansions && guildExpansions.length > 0) {
-          const expansionIds = guildExpansions.map(e => e.id)
-          
-          const { data: simpleTiersData, error: tiersError } = await supabase
-            .from('raid_tiers')
-            .select('id, name, is_active, expansion_id')
-            .in('expansion_id', expansionIds)
-            .order('name', { ascending: true })
+      if (tiersError) {
+        console.error('Error loading raid tiers:', tiersError)
+        setRaidTiers([])
+      } else {
+        setRaidTiers(tiersData || [])
 
-          if (tiersError) {
-            console.error('Error loading raid tiers:', tiersError)
-            setRaidTiers([])
+        // Default to active tier, or first tier if none active
+        const activeTier = tiersData?.find(t => t.is_active) || tiersData?.[0]
+        if (activeTier) {
+          setSelectedTierId(activeTier.id)
+          setRaidTier(activeTier as any)
+
+          // Get deadline for selected tier
+          const { data: deadlineData } = await supabase
+            .from('loot_deadlines')
+            .select('deadline_at, is_locked')
+            .eq('raid_tier_id', activeTier.id)
+            .single()
+
+          if (deadlineData) {
+            setDeadline(deadlineData)
           } else {
-            if (simpleTiersData && simpleTiersData.length > 0) {
-            // Manually fetch expansion names for each tier
-            const tiersWithExpansions = await Promise.all(
-              simpleTiersData.map(async (tier: any) => {
-                let expansion = null
-                if (tier.expansion_id) {
-                  const { data: expData } = await supabase
-                    .from('expansions')
-                    .select('id, name')
-                    .eq('id', tier.expansion_id)
-                    .single()
-                  
-                  expansion = expData || null
-                }
-                
-                return {
-                  ...tier,
-                  expansion: expansion
-                }
-              })
-            )
-            
-            setRaidTiers(tiersWithExpansions as any)
-            
-            // Default to active tier, or first tier if none active
-            const activeTier = tiersWithExpansions.find((t: any) => t.is_active) || tiersWithExpansions[0]
-            if (activeTier && activeTier.id) {
-              setSelectedTierId(activeTier.id)
-              setRaidTier(activeTier as any)
-
-              // Get deadline for selected tier
-              const { data: deadlineData } = await supabase
-                .from('loot_deadlines')
-                .select('deadline_at, is_locked')
-                .eq('raid_tier_id', activeTier.id)
-                .single()
-
-              if (deadlineData) {
-                setDeadline(deadlineData)
-              } else {
-                setDeadline(null)
-              }
-            }
-            } else {
-              setRaidTiers([])
-            }
+            setDeadline(null)
           }
         } else {
-          setRaidTiers([])
           setSelectedTierId(null)
           setRaidTier(null)
         }
+      }
 
       setLoading(false)
     }
@@ -241,6 +216,29 @@ export default function Dashboard() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Error Message (e.g., no expansion set) */}
+        {error && (
+          <Card className="border-yellow-600 bg-yellow-950/20">
+            <CardContent className="p-4">
+              <div className="flex items-start gap-3">
+                <div className="text-yellow-400 mt-0.5">⚠️</div>
+                <div className="flex-1">
+                  <p className="text-yellow-200 font-semibold">Action Required</p>
+                  <p className="text-yellow-300 text-sm mt-1">{error}</p>
+                  {isOfficer && (
+                    <button
+                      onClick={() => router.push('/admin/guild-settings')}
+                      className="mt-2 px-3 py-1 text-sm bg-yellow-600 hover:bg-yellow-700 text-white rounded transition"
+                    >
+                      Go to Guild Settings
+                    </button>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Quick Actions */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">

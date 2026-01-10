@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import Navigation from '@/app/components/Navigation'
 import ItemLink from '@/app/components/ItemLink'
 import { useGuildContext } from '@/app/contexts/GuildContext'
+import { ExpansionGuard } from '@/app/components/ExpansionGuard'
 
 interface LootItem {
   id: string
@@ -118,44 +119,30 @@ export default function AdminLootItems() {
       setClassSpecs(specsData)
     }
 
-    // Load raid tiers for filtering
-    const { data: guildExpansions } = await supabase
-      .from('expansions')
-      .select('id')
-      .eq('guild_id', activeGuild.id)
-
-    if (guildExpansions && guildExpansions.length > 0) {
-      const expansionIds = guildExpansions.map((e: any) => e.id)
+    // Load raid tiers for filtering (only for active expansion)
+    if (activeGuild.active_expansion_id) {
       const { data: tiersData } = await supabase
         .from('raid_tiers')
         .select('id, name')
-        .in('expansion_id', expansionIds)
+        .eq('expansion_id', activeGuild.active_expansion_id)
         .order('name')
 
       if (tiersData) {
         setRaidTiers(tiersData)
       }
-    }
 
-    // Load all loot items
-    await loadLootItems(activeGuild.id)
+      // Load all loot items
+      await loadLootItems(activeGuild.active_expansion_id)
+    }
     setLoading(false)
   }
 
-  const loadLootItems = async (guildId: string) => {
-    // Get guild's raid tiers
-    const { data: guildExpansions } = await supabase
-      .from('expansions')
-      .select('id')
-      .eq('guild_id', guildId)
-
-    if (!guildExpansions || guildExpansions.length === 0) return
-
-    const expansionIds = guildExpansions.map((e: any) => e.id)
+  const loadLootItems = async (expansionId: string) => {
+    // Get raid tiers for active expansion
     const { data: tiersData } = await supabase
       .from('raid_tiers')
       .select('id')
-      .in('expansion_id', expansionIds)
+      .eq('expansion_id', expansionId)
 
     if (!tiersData || tiersData.length === 0) return
 
@@ -413,7 +400,8 @@ export default function AdminLootItems() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <ExpansionGuard>
+      <div className="min-h-screen bg-background">
       <Navigation
         user={user}
         characterName={member?.character_name}
@@ -729,5 +717,6 @@ export default function AdminLootItems() {
         </div>
       )}
     </div>
+    </ExpansionGuard>
   )
 }

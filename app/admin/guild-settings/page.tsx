@@ -23,6 +23,8 @@ export default function GuildSettingsPage() {
   const [realm, setRealm] = useState('')
   const [faction, setFaction] = useState<'Alliance' | 'Horde'>('Alliance')
   const [discordServerId, setDiscordServerId] = useState('')
+  const [activeExpansion, setActiveExpansion] = useState<string | null>(null)
+  const [changingExpansion, setChangingExpansion] = useState(false)
 
   const supabase = createClient()
   const router = useRouter()
@@ -53,6 +55,22 @@ export default function GuildSettingsPage() {
       setRealm(activeGuild.realm || '')
       setFaction(activeGuild.faction as 'Alliance' | 'Horde')
       setDiscordServerId(activeGuild.discord_server_id || '')
+
+      // Load active expansion
+      if (activeGuild.active_expansion_id) {
+        const loadExpansion = async () => {
+          const { data } = await supabase
+            .from('expansions')
+            .select('name')
+            .eq('id', activeGuild.active_expansion_id)
+            .single()
+
+          setActiveExpansion(data?.name || null)
+        }
+        loadExpansion()
+      } else {
+        setActiveExpansion(null)
+      }
 
       setLoading(false)
     }
@@ -89,6 +107,39 @@ export default function GuildSettingsPage() {
       setMessage({ type: 'error', text: error.message || 'Failed to update guild information' })
     } finally {
       setSaving(false)
+    }
+  }
+
+  const handleChangeExpansion = async (newExpansion: string) => {
+    if (!activeGuild) return
+
+    if (!confirm(`⚠️ Changing expansion will replace all raid tiers and loot data. This action cannot be undone. Continue?`)) {
+      return
+    }
+
+    setChangingExpansion(true)
+    setMessage(null)
+
+    try {
+      const response = await fetch('/api/guilds/change-expansion', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          guild_id: activeGuild.id,
+          expansion: newExpansion
+        })
+      })
+
+      if (!response.ok) {
+        const data = await response.json()
+        throw new Error(data.error || 'Failed to change expansion')
+      }
+
+      setMessage({ type: 'success', text: 'Expansion changed successfully! Reloading...' })
+      setTimeout(() => window.location.reload(), 1500)
+    } catch (error: any) {
+      setMessage({ type: 'error', text: error.message || 'Failed to change expansion' })
+      setChangingExpansion(false)
     }
   }
 
@@ -206,6 +257,58 @@ export default function GuildSettingsPage() {
             >
               {saving ? 'Saving...' : 'Update Discord Server'}
             </Button>
+          </CardContent>
+        </Card>
+
+        {/* Guild Expansion */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Guild Expansion</CardTitle>
+            <CardDescription>
+              {activeExpansion
+                ? `Your guild is currently set to ${activeExpansion}`
+                : '⚠️ No expansion set - select one to enable loot features'}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+              {['Classic', 'The Burning Crusade', 'Wrath of the Lich King', 'Cataclysm', 'Mists of Pandaria'].map(exp => (
+                <button
+                  key={exp}
+                  type="button"
+                  onClick={() => handleChangeExpansion(exp)}
+                  disabled={changingExpansion || activeExpansion === exp}
+                  className={`relative aspect-video rounded-lg border-2 transition overflow-hidden ${
+                    activeExpansion === exp
+                      ? 'border-primary ring-2 ring-primary/50'
+                      : 'border-border hover:border-primary/50'
+                  } ${changingExpansion || activeExpansion === exp ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                >
+                  <img
+                    src={`https://beta.softres.it/img/editions/${exp.toLowerCase().replace(/\s+/g, '')}.big.png`}
+                    alt={exp}
+                    className="w-full h-full object-cover"
+                  />
+                  {activeExpansion === exp && (
+                    <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
+                      <span className="text-2xl">✓</span>
+                    </div>
+                  )}
+                </button>
+              ))}
+            </div>
+
+            {!activeExpansion && (
+              <p className="mt-4 text-sm text-yellow-400">
+                ⚠️ You must select an expansion before your guild can use loot lists, rankings, or master sheets.
+              </p>
+            )}
+
+            {changingExpansion && (
+              <p className="mt-4 text-sm text-muted-foreground">
+                Changing expansion... This may take a moment.
+              </p>
+            )}
           </CardContent>
         </Card>
 

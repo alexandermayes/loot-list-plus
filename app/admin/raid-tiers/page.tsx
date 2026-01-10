@@ -29,6 +29,7 @@ export default function RaidTiersPage() {
   const [saving, setSaving] = useState(false)
   const [user, setUser] = useState<User | null>(null)
   const [guildId, setGuildId] = useState<string | null>(null)
+  const [activeExpansionId, setActiveExpansionId] = useState<string | null>(null)
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
   const [showAddForm, setShowAddForm] = useState(false)
   const [editingTier, setEditingTier] = useState<string | null>(null)
@@ -66,19 +67,23 @@ export default function RaidTiersPage() {
 
       setGuildId(activeGuild.id)
 
-      // Load expansions
-      const { data: expansionsData } = await supabase
-        .from('expansions')
-        .select('id, name')
-        .eq('guild_id', activeGuild.id)
-        .order('name', { ascending: true })
+      // Load raid tiers (only for active expansion)
+      if (activeGuild.active_expansion_id) {
+        setActiveExpansionId(activeGuild.active_expansion_id)
 
-      if (expansionsData) {
-        setExpansions(expansionsData)
+        // Load expansion info
+        const { data: expData } = await supabase
+          .from('expansions')
+          .select('id, name')
+          .eq('id', activeGuild.active_expansion_id)
+          .single()
+
+        if (expData) {
+          setExpansions([expData])
+        }
+
+        await loadRaidTiers(activeGuild.active_expansion_id)
       }
-
-      // Load raid tiers
-      await loadRaidTiers(activeGuild.id)
 
       setLoading(false)
     }
@@ -88,33 +93,21 @@ export default function RaidTiersPage() {
     }
   }, [guildLoading, activeGuild, isOfficer])
 
-  const loadRaidTiers = async (guildId: string) => {
+  const loadRaidTiers = async (expansionId: string) => {
     try {
-      // First get all expansions for this guild
-      const { data: guildExpansions, error: expError } = await supabase
-        .from('expansions')
-        .select('id')
-        .eq('guild_id', guildId)
-
-      if (expError) {
-        console.error('Error loading expansions:', expError)
-        setRaidTiers([])
-        return
-      }
-
-      if (!guildExpansions || guildExpansions.length === 0) {
-        console.log('No expansions found for guild')
-        setRaidTiers([])
-        return
-      }
-
-      const expansionIds = guildExpansions.map(e => e.id)
-
-      // Get raid tiers for these expansions
+      // Get raid tiers for the active expansion (single join query)
       const { data: tiersData, error } = await supabase
         .from('raid_tiers')
-        .select('id, name, is_active, expansion_id')
-        .in('expansion_id', expansionIds)
+        .select(`
+          id,
+          name,
+          is_active,
+          expansion:expansions!inner (
+            id,
+            name
+          )
+        `)
+        .eq('expansion.id', expansionId)
         .order('name', { ascending: true })
 
       if (error) {
@@ -123,30 +116,7 @@ export default function RaidTiersPage() {
         return
       }
 
-      if (!tiersData || tiersData.length === 0) {
-        setRaidTiers([])
-        return
-      }
-
-      // Manually fetch expansion names
-      const tiersWithExpansions = await Promise.all(
-        tiersData.map(async (tier: any) => {
-          if (tier.expansion_id) {
-            const { data: expData } = await supabase
-              .from('expansions')
-              .select('id, name')
-              .eq('id', tier.expansion_id)
-              .single()
-            
-            return {
-              ...tier,
-              expansion: expData || null
-            }
-          }
-          return { ...tier, expansion: null }
-        })
-      )
-      setRaidTiers(tiersWithExpansions as any)
+      setRaidTiers(tiersData || [])
     } catch (err) {
       console.error('Unexpected error loading raid tiers:', err)
       setRaidTiers([])
@@ -190,7 +160,7 @@ export default function RaidTiersPage() {
 
       // Reload tiers
       if (guildId) {
-        await loadRaidTiers(guildId)
+        await loadRaidTiers(activeExpansionId!)
       }
 
       // Reset form
@@ -227,7 +197,7 @@ export default function RaidTiersPage() {
 
       setMessage({ type: 'success', text: 'Raid tier deleted successfully!' })
       if (guildId) {
-        await loadRaidTiers(guildId)
+        await loadRaidTiers(activeExpansionId!)
       }
     } catch (error: any) {
       setMessage({ type: 'error', text: error.message || 'Failed to delete raid tier' })
@@ -267,7 +237,7 @@ export default function RaidTiersPage() {
       if (activateError) throw activateError
 
       setMessage({ type: 'success', text: 'Active raid tier updated!' })
-      await loadRaidTiers(guildId)
+      await loadRaidTiers(activeExpansionId!)
     } catch (error: any) {
       setMessage({ type: 'error', text: error.message || 'Failed to update active tier' })
     }

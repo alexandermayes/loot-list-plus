@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/utils/supabase/server'
+import { seedExpansionForGuild } from '@/app/services/expansionSeeder'
 
 // POST - Create a new guild
 export async function POST(request: NextRequest) {
@@ -28,7 +29,7 @@ export async function POST(request: NextRequest) {
 
     // Parse request body
     const body = await request.json()
-    const { name, realm, faction, discord_server_id } = body
+    const { name, realm, faction, discord_server_id, expansion } = body
 
     // Validate required fields
     if (!name || !faction) {
@@ -46,6 +47,14 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Validate expansion
+    if (!expansion || !['Classic', 'The Burning Crusade', 'Wrath of the Lich King', 'Cataclysm', 'Mists of Pandaria'].includes(expansion)) {
+      return NextResponse.json(
+        { error: 'Valid expansion is required' },
+        { status: 400 }
+      )
+    }
+
     // Create guild
     const { data: guild, error: guildError } = await supabase
       .from('guilds')
@@ -56,7 +65,8 @@ export async function POST(request: NextRequest) {
         discord_server_id: discord_server_id || null,
         created_by: user.id,
         is_active: true,
-        require_discord_verification: false
+        require_discord_verification: false,
+        active_expansion_id: null // Will be set after seeding expansion
       })
       .select()
       .single()
@@ -67,6 +77,34 @@ export async function POST(request: NextRequest) {
         { error: 'Failed to create guild' },
         { status: 500 }
       )
+    }
+
+    // Seed expansion and raid tiers
+    const { expansionId, error: seedError } = await seedExpansionForGuild(
+      supabase,
+      guild.id,
+      expansion
+    )
+
+    if (seedError) {
+      console.error('Error seeding expansion:', seedError)
+      // Rollback: delete the guild since expansion seeding failed
+      await supabase.from('guilds').delete().eq('id', guild.id)
+      return NextResponse.json(
+        { error: seedError },
+        { status: 500 }
+      )
+    }
+
+    // Set the active expansion for the guild
+    const { error: updateError } = await supabase
+      .from('guilds')
+      .update({ active_expansion_id: expansionId })
+      .eq('id', guild.id)
+
+    if (updateError) {
+      console.error('Error setting active expansion:', updateError)
+      // Continue anyway - the expansion was created, just not set as active
     }
 
     // Create default guild settings
