@@ -124,7 +124,7 @@ export default function SearchableItemSelect({
     }
   }, [value])
 
-  // Refresh Wowhead tooltips when dropdown opens for dropdown items
+  // Refresh Wowhead tooltips when dropdown opens or search results change
   useEffect(() => {
     if (isOpen && typeof window !== 'undefined' && (window as any).$WowheadPower) {
       const timer = setTimeout(() => {
@@ -133,7 +133,7 @@ export default function SearchableItemSelect({
 
       return () => clearTimeout(timer)
     }
-  }, [isOpen])
+  }, [isOpen, filteredItems.length])
 
   const handleSelect = (itemId: string) => {
     onChange(itemId)
