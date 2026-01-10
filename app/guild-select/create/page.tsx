@@ -160,7 +160,8 @@ export default function CreateGuildPage() {
         return
       }
 
-      router.push('/dashboard')
+      // Force a full page reload to refresh guild context
+      window.location.href = '/dashboard'
     } catch (err) {
       console.error('Error creating guild:', err)
       setError('An error occurred while creating the guild')
