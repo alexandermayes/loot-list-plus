@@ -25,6 +25,7 @@ interface UserPreferences {
   bio: string | null
   discord_verified: boolean
   discord_guild_member: boolean
+  last_verified_at?: string | null
 }
 
 export default function SettingsPage() {
