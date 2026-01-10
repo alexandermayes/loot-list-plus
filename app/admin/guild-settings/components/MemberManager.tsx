@@ -72,12 +72,19 @@ export default function MemberManager() {
     if (!confirm(`Change this member's role to ${newRole}?`)) return
 
     try {
-      const { error } = await supabase
-        .from('guild_members')
-        .update({ role: newRole })
-        .eq('id', memberId)
+      const response = await fetch(`/api/guild-members/${memberId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ role: newRole })
+      })
 
-      if (error) throw error
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to update role')
+      }
 
       setMessage({ type: 'success', text: `Role updated to ${newRole}` })
       await loadMembers()
@@ -87,27 +94,18 @@ export default function MemberManager() {
   }
 
   const handleRemoveMember = async (memberId: string, memberName: string) => {
-    // Check if this is the last officer
-    const officers = members.filter(m => m.role === 'Officer')
-    const memberToRemove = members.find(m => m.id === memberId)
-
-    if (memberToRemove?.role === 'Officer' && officers.length === 1) {
-      setMessage({
-        type: 'error',
-        text: 'Cannot remove the last officer. Promote another member to officer first.'
-      })
-      return
-    }
-
     if (!confirm(`Remove ${memberName} from the guild? They can rejoin with an invite code.`)) return
 
     try {
-      const { error } = await supabase
-        .from('guild_members')
-        .delete()
-        .eq('id', memberId)
+      const response = await fetch(`/api/guild-members/${memberId}`, {
+        method: 'DELETE'
+      })
 
-      if (error) throw error
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to remove member')
+      }
 
       setMessage({ type: 'success', text: `${memberName} has been removed from the guild` })
       await loadMembers()
