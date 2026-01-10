@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Navigation from '@/app/components/Navigation'
 import ItemLink from '@/app/components/ItemLink'
+import { useGuildContext } from '@/app/contexts/GuildContext'
 
 interface LootItem {
   id: string
@@ -59,10 +60,13 @@ export default function AdminLootItems() {
 
   const supabase = createClient()
   const router = useRouter()
+  const { activeGuild, activeMember, loading: guildLoading, isOfficer } = useGuildContext()
 
   useEffect(() => {
-    loadData()
-  }, [])
+    if (!guildLoading) {
+      loadData()
+    }
+  }, [guildLoading, activeGuild, isOfficer])
 
   // Refresh Wowhead tooltips after items are loaded
   useEffect(() => {
@@ -81,18 +85,18 @@ export default function AdminLootItems() {
     }
     setUser(user)
 
-    const { data: memberData } = await supabase
-      .from('guild_members')
-      .select('guild_id, character_name, role, class:wow_classes(name, color_hex)')
-      .eq('user_id', user.id)
-      .single()
-
-    if (!memberData || memberData.role !== 'Officer') {
+    // Check if officer using context
+    if (!isOfficer) {
       router.push('/dashboard')
       return
     }
 
-    setMember(memberData)
+    if (!activeGuild || !activeMember) {
+      setLoading(false)
+      return
+    }
+
+    setMember(activeMember)
 
     // Load all WoW classes
     const { data: classesData } = await supabase
@@ -118,7 +122,7 @@ export default function AdminLootItems() {
     const { data: guildExpansions } = await supabase
       .from('expansions')
       .select('id')
-      .eq('guild_id', memberData.guild_id)
+      .eq('guild_id', activeGuild.id)
 
     if (guildExpansions && guildExpansions.length > 0) {
       const expansionIds = guildExpansions.map((e: any) => e.id)
@@ -134,7 +138,7 @@ export default function AdminLootItems() {
     }
 
     // Load all loot items
-    await loadLootItems(memberData.guild_id)
+    await loadLootItems(activeGuild.id)
     setLoading(false)
   }
 

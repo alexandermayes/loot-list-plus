@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import Script from "next/script";
+import { GuildContextProvider } from "./contexts/GuildContext";
 import "./globals.css";
 
 const inter = Inter({
@@ -40,7 +41,9 @@ export default function RootLayout({
       <body
         className={`${inter.variable} antialiased font-sans`}
       >
-        {children}
+        <GuildContextProvider>
+          {children}
+        </GuildContextProvider>
       </body>
     </html>
   );

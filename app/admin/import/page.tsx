@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import type { User } from '@supabase/supabase-js'
 import Navigation from '@/app/components/Navigation'
+import { useGuildContext } from '@/app/contexts/GuildContext'
 
 export default function ImportPage() {
   const [loading, setLoading] = useState(false)
@@ -16,6 +17,7 @@ export default function ImportPage() {
 
   const supabase = createClient()
   const router = useRouter()
+  const { activeGuild, loading: guildLoading, isOfficer } = useGuildContext()
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -26,22 +28,21 @@ export default function ImportPage() {
       }
       setUser(user)
 
-      const { data: memberData } = await supabase
-        .from('guild_members')
-        .select('role, guild_id')
-        .eq('user_id', user.id)
-        .single()
-
-      if (!memberData || memberData.role !== 'Officer') {
+      // Check if officer using context
+      if (!guildLoading && !isOfficer) {
         router.push('/dashboard')
         return
       }
 
-      setGuildId(memberData.guild_id)
+      if (activeGuild) {
+        setGuildId(activeGuild.id)
+      }
     }
 
-    checkAuth()
-  })
+    if (!guildLoading) {
+      checkAuth()
+    }
+  }, [guildLoading, activeGuild, isOfficer])
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {

@@ -9,23 +9,7 @@ import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { ActionCard } from '@/components/ui/action-card'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-
-interface Guild {
-  id: string
-  name: string
-  realm: string
-  faction: string
-}
-
-interface GuildMember {
-  id: string
-  character_name: string
-  role: string
-  class: {
-    name: string
-    color_hex: string
-  }
-}
+import { useGuildContext } from '@/app/contexts/GuildContext'
 
 interface RaidTier {
   id: string
@@ -41,16 +25,14 @@ interface Deadline {
 }
 
 export default function Dashboard() {
-  const [guild, setGuild] = useState<Guild | null>(null)
-  const [member, setMember] = useState<GuildMember | null>(null)
+  const { activeGuild, activeMember, userGuilds, loading: guildLoading, isOfficer } = useGuildContext()
   const [raidTier, setRaidTier] = useState<RaidTier | null>(null)
   const [raidTiers, setRaidTiers] = useState<RaidTier[]>([])
   const [selectedTierId, setSelectedTierId] = useState<string | null>(null)
   const [deadline, setDeadline] = useState<Deadline | null>(null)
   const [loading, setLoading] = useState(true)
   const [user, setUser] = useState<any>(null)
-  const [guildId, setGuildId] = useState<string | null>(null)
-  
+
   const supabase = createClient()
   const router = useRouter()
 
@@ -64,36 +46,34 @@ export default function Dashboard() {
       }
       setUser(user)
 
-      // Get guild membership
-      const { data: memberData } = await supabase
-        .from('guild_members')
-        .select(`
-          id,
-          character_name,
-          role,
-          class:wow_classes(name, color_hex),
-          guild:guilds(id, name, realm, faction)
-        `)
-        .eq('user_id', user.id)
-        .single()
+      // Wait for guild context to load
+      if (guildLoading) {
+        return
+      }
 
-      if (memberData) {
-        setMember({
-          id: memberData.id,
-          character_name: memberData.character_name,
-          role: memberData.role,
-          class: memberData.class as any
-        })
-        const guildData = memberData.guild as any
-        setGuild(guildData)
-        setGuildId(guildData?.id || null)
+      // If no active guild, redirect to guild select (but only if we have user guilds)
+      if (!activeGuild && userGuilds.length === 0) {
+        router.push('/guild-select')
+        return
+      }
+
+      // If we have guilds but no active guild, something went wrong
+      if (!activeGuild && userGuilds.length > 0) {
+        console.error('Dashboard: Have guilds but no active guild!', userGuilds)
+        // Don't redirect, show error or loading state
+        setLoading(false)
+        return
+      }
+
+      // Use activeGuild from context
+      const guildId = activeGuild.id
 
         // Get all raid tiers for this guild (through expansions)
         // First get expansions for this guild
         const { data: guildExpansions, error: expError } = await supabase
           .from('expansions')
           .select('id')
-          .eq('guild_id', guildData?.id)
+          .eq('guild_id', guildId)
 
         if (expError) {
           console.error('Error loading expansions:', expError)
@@ -163,18 +143,17 @@ export default function Dashboard() {
           setSelectedTierId(null)
           setRaidTier(null)
         }
-      }
 
       setLoading(false)
     }
 
     loadData()
-  }, [])
+  }, [guildLoading, activeGuild])
 
   // Load tier data when selection changes
   useEffect(() => {
     const loadTierData = async () => {
-      if (!selectedTierId || !guildId || raidTiers.length === 0) return
+      if (!selectedTierId || !activeGuild || raidTiers.length === 0) return
 
       const selectedTier = raidTiers.find((t: any) => t.id === selectedTierId)
       if (selectedTier) {
@@ -197,7 +176,7 @@ export default function Dashboard() {
 
     loadTierData()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedTierId, raidTiers, guildId])
+  }, [selectedTierId, raidTiers, activeGuild])
 
   const getDaysUntilDeadline = () => {
     if (!deadline) return null
@@ -207,9 +186,13 @@ export default function Dashboard() {
     return diff
   }
 
-  if (loading) {
+  if (loading || guildLoading) {
     return <LoadingSpinner fullScreen />
   }
+
+  // Get class info from userGuilds
+  const currentMembership = userGuilds.find(g => g.guild.id === activeGuild?.id)
+  const classInfo = currentMembership?.class
 
   const daysLeft = getDaysUntilDeadline()
 
@@ -217,11 +200,11 @@ export default function Dashboard() {
     <div className="min-h-screen bg-background">
       <Navigation
         user={user}
-        characterName={member?.character_name}
-        className={member?.class?.name}
-        classColor={member?.class?.color_hex}
-        role={member?.role}
-        title={guild?.name ? `LootList+ - ${guild.name}` : 'LootList+'}
+        characterName={activeMember?.character_name}
+        className={classInfo?.name}
+        classColor={classInfo?.color_hex}
+        role={activeMember?.role}
+        title={activeGuild?.name ? `LootList+ - ${activeGuild.name}` : 'LootList+'}
       />
 
       {/* Main Content */}
@@ -235,19 +218,19 @@ export default function Dashboard() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div>
                 <p className="text-muted-foreground text-sm">Guild</p>
-                <p className="text-foreground font-medium">{guild?.name}</p>
+                <p className="text-foreground font-medium">{activeGuild?.name}</p>
               </div>
               <div>
                 <p className="text-muted-foreground text-sm">Realm</p>
-                <p className="text-foreground font-medium">{guild?.realm || 'Not set'}</p>
+                <p className="text-foreground font-medium">{activeGuild?.realm || 'Not set'}</p>
               </div>
               <div>
                 <p className="text-muted-foreground text-sm">Faction</p>
-                <p className="text-foreground font-medium">{guild?.faction}</p>
+                <p className="text-foreground font-medium">{activeGuild?.faction}</p>
               </div>
               <div>
                 <p className="text-muted-foreground text-sm">Your Role</p>
-                <Badge variant="secondary">{member?.role}</Badge>
+                <Badge variant="secondary">{activeMember?.role}</Badge>
               </div>
             </div>
           </CardContent>
@@ -270,7 +253,7 @@ export default function Dashboard() {
             onClick={() => router.push('/master-sheet')}
           />
 
-          {member?.role === 'Officer' && (
+          {isOfficer && (
             <>
               <ActionCard
                 title="Officer Admin"
@@ -288,6 +271,23 @@ export default function Dashboard() {
               />
             </>
           )}
+        </div>
+
+        {/* Guild Management (Officer Only) */}
+        {isOfficer && (
+          <div className="mt-6">
+            <h2 className="text-xl font-semibold text-foreground mb-4">Guild Management</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <ActionCard
+                title="Guild Settings"
+                description="Edit guild info & invite codes"
+                icon={Settings}
+                iconColor="bg-purple-600"
+                onClick={() => router.push('/admin/guild-settings')}
+              />
+            </div>
+          </div>
+        )}
         </div>
       </main>
     </div>

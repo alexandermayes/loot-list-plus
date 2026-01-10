@@ -4,64 +4,38 @@ import { createClient } from '@/utils/supabase/server'
 export async function POST(request: Request) {
   const supabase = await createClient()
 
-  // Get the authenticated user and session
-  const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+  // Get the authenticated user
+  const { data: { user }, error: authError } = await supabase.auth.getUser()
 
-  if (sessionError || !session) {
+  if (authError || !user) {
     return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
   }
 
-  const user = session.user
-
   try {
-    // Get the guild from the database to find the Discord server ID
-    const { data: memberData } = await supabase
-      .from('guild_members')
-      .select('guild:guilds(discord_server_id)')
-      .eq('user_id', user.id)
-      .single()
+    // Check if user logged in with Discord
+    const isDiscordUser = user.app_metadata?.provider === 'discord' ||
+                          user.user_metadata?.iss?.includes('discord')
 
-    const guild = memberData?.guild as any
-    if (!guild?.discord_server_id) {
+    if (!isDiscordUser) {
       return NextResponse.json({
-        error: 'No Discord server configured for your guild',
+        error: 'Please log in with Discord to verify',
         verified: false
       }, { status: 400 })
     }
 
-    const guildDiscordId = guild.discord_server_id
+    // Get Discord user ID from user metadata
+    const discordId = user.user_metadata?.provider_id ||
+                      user.user_metadata?.sub ||
+                      user.identities?.[0]?.id
 
-    // Get the provider access token from the session
-    const providerToken = session.provider_token
-
-    console.log('Debug - Session keys:', Object.keys(session))
-    console.log('Debug - Has provider_token:', !!providerToken)
-    console.log('Debug - User metadata keys:', Object.keys(user.user_metadata || {}))
-
-    if (!providerToken) {
+    if (!discordId) {
       return NextResponse.json({
-        error: 'No Discord access token available. Please re-authenticate.',
-        verified: false,
-        debug: {
-          hasSession: !!session,
-          hasProviderToken: !!providerToken,
-          sessionKeys: Object.keys(session)
-        }
-      }, { status: 400 })
-    }
-
-    // Fetch user's Discord guilds
-    const userGuilds = await fetchDiscordGuilds(providerToken)
-
-    if (!userGuilds) {
-      return NextResponse.json({
-        error: 'Failed to fetch Discord guilds. Please try again.',
+        error: 'Could not find Discord ID. Please re-login with Discord.',
         verified: false
       }, { status: 400 })
     }
 
-    // Check if user is a member of the guild's Discord server
-    const isGuildMember = userGuilds.some((guild: any) => guild.id === guildDiscordId)
+    console.log('Discord verification - User ID:', user.id, 'Discord ID:', discordId)
 
     // Update user preferences with verification status
     const { error: updateError } = await supabase
@@ -69,7 +43,7 @@ export async function POST(request: Request) {
       .upsert({
         user_id: user.id,
         discord_verified: true,
-        discord_guild_member: isGuildMember,
+        discord_id: discordId,
         last_verified_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       }, {
@@ -78,18 +52,23 @@ export async function POST(request: Request) {
 
     if (updateError) {
       console.error('Error updating preferences:', updateError)
-      return NextResponse.json({ error: 'Failed to update verification status' }, { status: 500 })
+      return NextResponse.json({
+        error: 'Failed to update verification status',
+        details: updateError.message
+      }, { status: 500 })
     }
 
     return NextResponse.json({
-      verified: isGuildMember,
-      message: isGuildMember
-        ? 'Discord server membership verified!'
-        : 'You are not a member of the guild Discord server'
+      verified: true,
+      message: 'Discord account verified successfully!',
+      discord_id: discordId
     })
   } catch (error) {
     console.error('Verification error:', error)
-    return NextResponse.json({ error: 'Verification failed' }, { status: 500 })
+    return NextResponse.json({
+      error: 'Verification failed',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    }, { status: 500 })
   }
 }
 

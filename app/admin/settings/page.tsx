@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import type { User } from '@supabase/supabase-js'
 import Navigation from '@/app/components/Navigation'
+import { useGuildContext } from '@/app/contexts/GuildContext'
 
 interface GuildSettings {
   id?: string
@@ -57,6 +58,7 @@ export default function SettingsPage() {
 
   const supabase = createClient()
   const router = useRouter()
+  const { activeGuild, loading: guildLoading, isOfficer } = useGuildContext()
 
   useEffect(() => {
     const loadData = async () => {
@@ -67,25 +69,24 @@ export default function SettingsPage() {
       }
       setUser(user)
 
-      // Check if officer
-      const { data: memberData } = await supabase
-        .from('guild_members')
-        .select('role, guild_id')
-        .eq('user_id', user.id)
-        .single()
-
-      if (!memberData || memberData.role !== 'Officer') {
+      // Check if officer using context
+      if (!guildLoading && !isOfficer) {
         router.push('/dashboard')
         return
       }
 
-      setGuildId(memberData.guild_id)
+      if (!activeGuild) {
+        setLoading(false)
+        return
+      }
+
+      setGuildId(activeGuild.id)
 
       // Load settings
       const { data: settingsData } = await supabase
         .from('guild_settings')
         .select('*')
-        .eq('guild_id', memberData.guild_id)
+        .eq('guild_id', activeGuild.id)
         .single()
 
       if (settingsData) {
@@ -96,7 +97,7 @@ export default function SettingsPage() {
       } else {
         // Create default settings
         const defaultSettings: GuildSettings = {
-          guild_id: memberData.guild_id,
+          guild_id: activeGuild.id,
           attendance_type: 'linear',
           rolling_attendance_weeks: 4,
           use_signups: true,
@@ -122,8 +123,10 @@ export default function SettingsPage() {
       setLoading(false)
     }
 
-    loadData()
-  }, [])
+    if (!guildLoading) {
+      loadData()
+    }
+  }, [guildLoading, activeGuild, isOfficer])
 
   const handleSave = async () => {
     if (!guildId || !settings) return

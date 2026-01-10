@@ -5,6 +5,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import type { User } from '@supabase/supabase-js'
 import Navigation from '@/app/components/Navigation'
+import { useGuildContext } from '@/app/contexts/GuildContext'
 
 interface Submission {
   id: string
@@ -62,6 +63,7 @@ export default function AdminPage() {
 
   const supabase = createClient()
   const router = useRouter()
+  const { activeGuild, loading: guildLoading, isOfficer } = useGuildContext()
 
   useEffect(() => {
     const loadData = async () => {
@@ -72,25 +74,24 @@ export default function AdminPage() {
       }
       setUser(user)
 
-      // Check if officer
-      const { data: memberData } = await supabase
-        .from('guild_members')
-        .select('role, guild_id')
-        .eq('user_id', user.id)
-        .single()
-
-      if (!memberData || memberData.role !== 'Officer') {
+      // Check if officer using context
+      if (!guildLoading && !isOfficer) {
         router.push('/dashboard')
         return
       }
 
-      setGuildId(memberData.guild_id)
+      if (!activeGuild) {
+        setLoading(false)
+        return
+      }
+
+      setGuildId(activeGuild.id)
 
       // Load raid tiers (through expansions)
       const { data: guildExpansions } = await supabase
         .from('expansions')
         .select('id')
-        .eq('guild_id', memberData.guild_id)
+        .eq('guild_id', activeGuild.id)
 
       let tiersData: any[] = []
       if (guildExpansions && guildExpansions.length > 0) {
@@ -153,8 +154,10 @@ export default function AdminPage() {
       setLoading(false)
     }
 
-    loadData()
-  }, [])
+    if (!guildLoading) {
+      loadData()
+    }
+  }, [guildLoading, activeGuild, isOfficer])
 
   const loadSubmissions = useCallback(async (guildId: string, tierId: string) => {
     const { data: submissionsData } = await supabase
