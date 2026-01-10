@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import Script from "next/script";
 import { GuildContextProvider } from "./contexts/GuildContext";
+import { NotificationProvider } from "./contexts/NotificationContext";
+import NotificationContainer from "./components/NotificationContainer";
 import "./globals.css";
 
 export const dynamic = 'force-dynamic'
@@ -43,9 +45,12 @@ export default function RootLayout({
       <body
         className={`${inter.variable} antialiased font-sans`}
       >
-        <GuildContextProvider>
-          {children}
-        </GuildContextProvider>
+        <NotificationProvider>
+          <GuildContextProvider>
+            <NotificationContainer />
+            {children}
+          </GuildContextProvider>
+        </NotificationProvider>
       </body>
     </html>
   );

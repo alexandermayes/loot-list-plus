@@ -48,16 +48,11 @@ export default function AdminLootItems() {
   const [loading, setLoading] = useState(true)
   const [user, setUser] = useState<any>(null)
   const [member, setMember] = useState<any>(null)
-  const [editingItem, setEditingItem] = useState<string | null>(null)
-  const [editingItemData, setEditingItemData] = useState<LootItem | null>(null)
-  const [primarySpecs, setPrimarySpecs] = useState<Set<string>>(new Set())
-  const [secondarySpecs, setSecondarySpecs] = useState<Set<string>>(new Set())
-  const [savingClasses, setSavingClasses] = useState(false)
-  const [selectedClass, setSelectedClass] = useState<string>('')
-  const [selectedSpec, setSelectedSpec] = useState<string>('')
   const [searchTerm, setSearchTerm] = useState('')
   const [filterTier, setFilterTier] = useState<string>('all')
   const [raidTiers, setRaidTiers] = useState<any[]>([])
+  // Track specs for each item: { itemId: { primary: Set<specId>, secondary: Set<specId> } }
+  const [itemSpecs, setItemSpecs] = useState<Record<string, { primary: Set<string>, secondary: Set<string> }>>({})
 
   const supabase = createClient()
   const router = useRouter()
@@ -168,6 +163,34 @@ export default function AdminLootItems() {
 
     if (itemsData) {
       setLootItems(itemsData as any)
+
+      // Load all spec relations for all items
+      const itemIds = itemsData.map((item: any) => item.id)
+      const { data: specRelations } = await supabase
+        .from('loot_item_classes')
+        .select('loot_item_id, spec_id, spec_type')
+        .in('loot_item_id', itemIds)
+        .not('spec_id', 'is', null)
+
+      // Organize specs by item
+      const specs: Record<string, { primary: Set<string>, secondary: Set<string> }> = {}
+      itemIds.forEach((id: string) => {
+        specs[id] = { primary: new Set(), secondary: new Set() }
+      })
+
+      if (specRelations) {
+        specRelations.forEach((rel: any) => {
+          if (rel.spec_id) {
+            if (rel.spec_type === 'primary') {
+              specs[rel.loot_item_id].primary.add(rel.spec_id)
+            } else if (rel.spec_type === 'secondary') {
+              specs[rel.loot_item_id].secondary.add(rel.spec_id)
+            }
+          }
+        })
+      }
+
+      setItemSpecs(specs)
     }
   }
 
@@ -202,168 +225,88 @@ export default function AdminLootItems() {
     }
   }
 
-  const openClassEditor = async (item: LootItem) => {
-    setEditingItem(item.id)
-    setEditingItemData(item)
+  // Add a spec to an item (immediately saves to database)
+  const addSpec = async (itemId: string, specId: string, specType: 'primary' | 'secondary') => {
+    const spec = classSpecs.find(s => s.id === specId)
+    if (!spec) return
 
-    // Load existing spec relations
-    const { data: specRelations } = await supabase
+    // Check if spec already exists
+    const currentSpecs = itemSpecs[itemId] || { primary: new Set(), secondary: new Set() }
+    if (currentSpecs[specType].has(specId)) return
+
+    // Remove from opposite type if it exists there
+    const oppositeType = specType === 'primary' ? 'secondary' : 'primary'
+    if (currentSpecs[oppositeType].has(specId)) {
+      await removeSpec(itemId, specId, oppositeType)
+    }
+
+    // Insert into database
+    const { error } = await supabase
       .from('loot_item_classes')
-      .select('spec_id, spec_type')
-      .eq('loot_item_id', item.id)
-      .not('spec_id', 'is', null)
+      .insert({
+        loot_item_id: itemId,
+        class_id: spec.class_id,
+        spec_id: specId,
+        spec_type: specType
+      })
 
-    if (specRelations) {
-      const primary = new Set(specRelations.filter(r => r.spec_type === 'primary' && r.spec_id).map(r => r.spec_id!))
-      const secondary = new Set(specRelations.filter(r => r.spec_type === 'secondary' && r.spec_id).map(r => r.spec_id!))
-      setPrimarySpecs(primary)
-      setSecondarySpecs(secondary)
-    } else {
-      setPrimarySpecs(new Set())
-      setSecondarySpecs(new Set())
-    }
-  }
-
-  const togglePrimarySpec = (specId: string) => {
-    const newPrimary = new Set(primarySpecs)
-    if (newPrimary.has(specId)) {
-      newPrimary.delete(specId)
-    } else {
-      newPrimary.add(specId)
-      // Remove from secondary if it was there
-      const newSecondary = new Set(secondarySpecs)
-      newSecondary.delete(specId)
-      setSecondarySpecs(newSecondary)
-    }
-    setPrimarySpecs(newPrimary)
-  }
-
-  const toggleSecondarySpec = (specId: string) => {
-    const newSecondary = new Set(secondarySpecs)
-    if (newSecondary.has(specId)) {
-      newSecondary.delete(specId)
-    } else {
-      newSecondary.add(specId)
-      // Remove from primary if it was there
-      const newPrimary = new Set(primarySpecs)
-      newPrimary.delete(specId)
-      setPrimarySpecs(newPrimary)
-    }
-    setSecondarySpecs(newSecondary)
-  }
-
-  const saveClassRestrictions = async () => {
-    if (!editingItem) return
-
-    setSavingClasses(true)
-
-    try {
-      // Delete existing relations
-      const { error: deleteError } = await supabase
-        .from('loot_item_classes')
-        .delete()
-        .eq('loot_item_id', editingItem)
-
-      if (deleteError) {
-        console.error('Error deleting existing relations:', deleteError)
-        alert(`Error deleting existing relations: ${deleteError.message}`)
-        setSavingClasses(false)
-        return
-      }
-
-      // Insert new spec relations
-      const relations = [
-        ...Array.from(primarySpecs).map(specId => {
-          const spec = classSpecs.find(s => s.id === specId)
-          return {
-            loot_item_id: editingItem,
-            class_id: spec?.class_id,
-            spec_id: specId,
-            spec_type: 'primary'
-          }
-        }),
-        ...Array.from(secondarySpecs).map(specId => {
-          const spec = classSpecs.find(s => s.id === specId)
-          return {
-            loot_item_id: editingItem,
-            class_id: spec?.class_id,
-            spec_id: specId,
-            spec_type: 'secondary'
-          }
-        })
-      ].filter(r => r.class_id !== undefined) // Filter out invalid relations
-
-      if (relations.length > 0) {
-        const { error: insertError } = await supabase
-          .from('loot_item_classes')
-          .insert(relations)
-
-        if (insertError) {
-          console.error('Error inserting class restrictions:', insertError)
-          alert(`Error saving class restrictions: ${insertError.message || 'Unknown error'}`)
-          setSavingClasses(false)
-          return
+    if (!error) {
+      // Update local state
+      setItemSpecs(prev => ({
+        ...prev,
+        [itemId]: {
+          ...prev[itemId],
+          [specType]: new Set([...prev[itemId][specType], specId])
         }
-      }
-
-      closeClassEditor()
-    } catch (error) {
-      console.error('Unexpected error:', error)
-      alert('Unexpected error saving class restrictions')
-    }
-
-    setSavingClasses(false)
-  }
-
-  const addPrimarySpec = () => {
-    if (selectedSpec) {
-      const newPrimary = new Set(primarySpecs)
-      newPrimary.add(selectedSpec)
-      setPrimarySpecs(newPrimary)
-
-      // Remove from secondary if it was there
-      const newSecondary = new Set(secondarySpecs)
-      newSecondary.delete(selectedSpec)
-      setSecondarySpecs(newSecondary)
-
-      setSelectedSpec('')
+      }))
+    } else {
+      console.error('Error adding spec:', error)
     }
   }
 
-  const addSecondarySpec = () => {
-    if (selectedSpec) {
-      const newSecondary = new Set(secondarySpecs)
-      newSecondary.add(selectedSpec)
-      setSecondarySpecs(newSecondary)
+  // Remove a spec from an item (immediately deletes from database)
+  const removeSpec = async (itemId: string, specId: string, specType: 'primary' | 'secondary') => {
+    // Delete from database
+    const { error } = await supabase
+      .from('loot_item_classes')
+      .delete()
+      .eq('loot_item_id', itemId)
+      .eq('spec_id', specId)
+      .eq('spec_type', specType)
 
-      // Remove from primary if it was there
-      const newPrimary = new Set(primarySpecs)
-      newPrimary.delete(selectedSpec)
-      setPrimarySpecs(newPrimary)
-
-      setSelectedSpec('')
+    if (!error) {
+      // Update local state
+      setItemSpecs(prev => {
+        const newSpecs = new Set(prev[itemId][specType])
+        newSpecs.delete(specId)
+        return {
+          ...prev,
+          [itemId]: {
+            ...prev[itemId],
+            [specType]: newSpecs
+          }
+        }
+      })
+    } else {
+      console.error('Error removing spec:', error)
     }
   }
 
-  const removePrimarySpec = (specId: string) => {
-    const newPrimary = new Set(primarySpecs)
-    newPrimary.delete(specId)
-    setPrimarySpecs(newPrimary)
-  }
-
-  const removeSecondarySpec = (specId: string) => {
-    const newSecondary = new Set(secondarySpecs)
-    newSecondary.delete(specId)
-    setSecondarySpecs(newSecondary)
-  }
-
+  // Get display name for a spec (e.g., "Paladin Holy" or just "Hunter" for single-spec classes)
   const getSpecName = (specId: string) => {
     const spec = classSpecs.find(s => s.id === specId)
     if (!spec) return ''
     const wowClass = classes.find(c => c.id === spec.class_id)
-    return `${wowClass?.name} - ${spec.name}`
+
+    // If class name equals spec name, just show class name (e.g., "Hunter" not "Hunter Hunter")
+    if (wowClass?.name === spec.name) {
+      return wowClass.name
+    }
+
+    return `${wowClass?.name} ${spec.name}`
   }
 
+  // Get color for a spec (from class color)
   const getSpecColor = (specId: string) => {
     const spec = classSpecs.find(s => s.id === specId)
     if (!spec) return '#888888'
@@ -371,18 +314,25 @@ export default function AdminLootItems() {
     return wowClass?.color_hex || '#888888'
   }
 
-  const closeClassEditor = () => {
-    setEditingItem(null)
-    setEditingItemData(null)
-    setPrimarySpecs(new Set())
-    setSecondarySpecs(new Set())
-    setSelectedClass('')
-    setSelectedSpec('')
-  }
+  // Get all available specs as "Class Spec" options for dropdown
+  const getClassSpecOptions = () => {
+    return classSpecs
+      .map(spec => {
+        const wowClass = classes.find(c => c.id === spec.class_id)
 
-  const availableSpecs = selectedClass
-    ? classSpecs.filter(s => s.class_id === selectedClass)
-    : []
+        // If class name equals spec name, just show class name
+        const label = wowClass?.name === spec.name
+          ? wowClass.name
+          : `${wowClass?.name} ${spec.name}`
+
+        return {
+          id: spec.id,
+          label,
+          classColor: wowClass?.color_hex || '#888888'
+        }
+      })
+      .sort((a, b) => a.label.localeCompare(b.label))
+  }
 
   const filteredItems = lootItems.filter(item => {
     const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -489,7 +439,8 @@ export default function AdminLootItems() {
                   <th className="px-4 py-3 text-left text-sm font-semibold text-muted-foreground">Slot</th>
                   <th className="px-4 py-3 text-left text-sm font-semibold text-muted-foreground">Raid</th>
                   <th className="px-4 py-3 text-left text-sm font-semibold text-muted-foreground">Classification</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-muted-foreground">Actions</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-muted-foreground">Primary Specs</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-muted-foreground">Secondary Specs</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-700">
@@ -529,12 +480,100 @@ export default function AdminLootItems() {
                       </select>
                     </td>
                     <td className="px-4 py-3">
-                      <button
-                        onClick={() => openClassEditor(item)}
-                        className="px-3 py-1 bg-primary hover:bg-primary/90 text-primary-foreground rounded text-foreground text-sm font-medium"
-                      >
-                        Edit Classes
-                      </button>
+                      <div className="space-y-2">
+                        <select
+                          value=""
+                          onChange={(e) => {
+                            if (e.target.value) {
+                              addSpec(item.id, e.target.value, 'primary')
+                            }
+                          }}
+                          className="w-full px-2 py-1 bg-secondary border border-border rounded text-foreground text-xs focus:outline-none focus:ring-2 focus:ring-green-500"
+                        >
+                          <option value="">+ Add Primary Spec...</option>
+                          {getClassSpecOptions().map(opt => {
+                            const isAssigned = itemSpecs[item.id]?.primary.has(opt.id) || itemSpecs[item.id]?.secondary.has(opt.id)
+                            return (
+                              <option key={opt.id} value={opt.id} disabled={isAssigned} className={isAssigned ? 'text-gray-500' : ''}>
+                                {opt.label}
+                              </option>
+                            )
+                          })}
+                        </select>
+                        {itemSpecs[item.id]?.primary.size > 0 && (
+                          <div className="flex flex-wrap gap-1">
+                            {Array.from(itemSpecs[item.id].primary).map(specId => (
+                              <div
+                                key={specId}
+                                className="flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium border border-green-600 bg-green-900/30"
+                              >
+                                <div
+                                  className="w-1.5 h-1.5 rounded-full"
+                                  style={{ backgroundColor: getSpecColor(specId) }}
+                                />
+                                <span className="text-foreground">{getSpecName(specId)}</span>
+                                <button
+                                  onClick={() => removeSpec(item.id, specId, 'primary')}
+                                  className="ml-0.5 hover:text-red-400"
+                                  title="Remove"
+                                >
+                                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                  </svg>
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="space-y-2">
+                        <select
+                          value=""
+                          onChange={(e) => {
+                            if (e.target.value) {
+                              addSpec(item.id, e.target.value, 'secondary')
+                            }
+                          }}
+                          className="w-full px-2 py-1 bg-secondary border border-border rounded text-foreground text-xs focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                        >
+                          <option value="">+ Add Secondary Spec...</option>
+                          {getClassSpecOptions().map(opt => {
+                            const isAssigned = itemSpecs[item.id]?.primary.has(opt.id) || itemSpecs[item.id]?.secondary.has(opt.id)
+                            return (
+                              <option key={opt.id} value={opt.id} disabled={isAssigned} className={isAssigned ? 'text-gray-500' : ''}>
+                                {opt.label}
+                              </option>
+                            )
+                          })}
+                        </select>
+                        {itemSpecs[item.id]?.secondary.size > 0 && (
+                          <div className="flex flex-wrap gap-1">
+                            {Array.from(itemSpecs[item.id].secondary).map(specId => (
+                              <div
+                                key={specId}
+                                className="flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium border border-yellow-600 bg-yellow-900/30"
+                              >
+                                <div
+                                  className="w-1.5 h-1.5 rounded-full"
+                                  style={{ backgroundColor: getSpecColor(specId) }}
+                                />
+                                <span className="text-foreground">{getSpecName(specId)}</span>
+                                <button
+                                  onClick={() => removeSpec(item.id, specId, 'secondary')}
+                                  className="ml-0.5 hover:text-red-400"
+                                  title="Remove"
+                                >
+                                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                  </svg>
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -550,172 +589,6 @@ export default function AdminLootItems() {
         )}
       </main>
 
-      {/* Class Editor Modal */}
-      {editingItem && editingItemData && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-card border border-border rounded-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
-            {/* Header */}
-            <div className="bg-gradient-to-r from-purple-900 to-purple-700 px-6 py-4 sticky top-0">
-              <div className="flex items-start justify-between">
-                <div>
-                  <h2 className="text-xl font-bold text-foreground">{editingItemData.name}</h2>
-                  <p className="text-purple-200 text-sm mt-1">
-                    {editingItemData.boss_name} • {editingItemData.item_slot}
-                  </p>
-                </div>
-                <button
-                  onClick={closeClassEditor}
-                  className="text-foreground hover:text-muted-foreground"
-                >
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-            </div>
-
-            {/* Content */}
-            <div className="p-6 space-y-6">
-              {/* Instructions */}
-              <div className="bg-blue-900/20 border border-blue-700 rounded-lg p-4">
-                <p className="text-blue-200 text-sm">
-                  <strong>Primary Specs:</strong> Can select this item as main-spec (counts toward bracket allocation)<br />
-                  <strong>Secondary Specs:</strong> Can select this item as off-spec (no allocation cost)
-                </p>
-              </div>
-
-              {/* Add Spec Selector */}
-              <div className="bg-secondary rounded-lg p-4">
-                <h3 className="text-foreground font-semibold mb-3">Add Spec</h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                  <select
-                    value={selectedClass}
-                    onChange={(e) => {
-                      setSelectedClass(e.target.value)
-                      setSelectedSpec('')
-                    }}
-                    className="px-3 py-2 bg-gray-600 border border-gray-500 rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-purple-500"
-                  >
-                    <option value="">Select Class...</option>
-                    {classes.map(wowClass => (
-                      <option key={wowClass.id} value={wowClass.id}>{wowClass.name}</option>
-                    ))}
-                  </select>
-
-                  <select
-                    value={selectedSpec}
-                    onChange={(e) => setSelectedSpec(e.target.value)}
-                    disabled={!selectedClass}
-                    className="px-3 py-2 bg-gray-600 border border-gray-500 rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50"
-                  >
-                    <option value="">Select Spec...</option>
-                    {availableSpecs.map(spec => (
-                      <option key={spec.id} value={spec.id}>{spec.name}</option>
-                    ))}
-                  </select>
-
-                  <div className="flex gap-2">
-                    <button
-                      onClick={addPrimarySpec}
-                      disabled={!selectedSpec}
-                      className="flex-1 px-3 py-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-600 disabled:opacity-50 rounded-lg text-foreground text-sm font-medium"
-                    >
-                      + Primary
-                    </button>
-                    <button
-                      onClick={addSecondarySpec}
-                      disabled={!selectedSpec}
-                      className="flex-1 px-3 py-2 bg-yellow-600 hover:bg-yellow-700 disabled:bg-gray-600 disabled:opacity-50 rounded-lg text-foreground text-sm font-medium"
-                    >
-                      + Secondary
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              {/* Primary Specs List */}
-              <div>
-                <h3 className="text-foreground font-semibold mb-2">Primary Specs ({primarySpecs.size})</h3>
-                <div className="flex flex-wrap gap-2">
-                  {primarySpecs.size === 0 ? (
-                    <p className="text-muted-foreground text-sm">No primary specs selected</p>
-                  ) : (
-                    Array.from(primarySpecs).map(specId => (
-                      <div
-                        key={`primary-badge-${specId}`}
-                        className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-foreground text-sm font-medium border-2 border-success bg-success/20"
-                      >
-                        <div
-                          className="w-2 h-2 rounded-full"
-                          style={{ backgroundColor: getSpecColor(specId) }}
-                        />
-                        <span>{getSpecName(specId)}</span>
-                        <button
-                          onClick={() => removePrimarySpec(specId)}
-                          className="ml-1 hover:text-red-300"
-                        >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                          </svg>
-                        </button>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
-
-              {/* Secondary Specs List */}
-              <div>
-                <h3 className="text-foreground font-semibold mb-2">Secondary Specs ({secondarySpecs.size})</h3>
-                <div className="flex flex-wrap gap-2">
-                  {secondarySpecs.size === 0 ? (
-                    <p className="text-muted-foreground text-sm">No secondary specs selected</p>
-                  ) : (
-                    Array.from(secondarySpecs).map(specId => (
-                      <div
-                        key={`secondary-badge-${specId}`}
-                        className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-foreground text-sm font-medium border-2 border-warning bg-warning/20"
-                      >
-                        <div
-                          className="w-2 h-2 rounded-full"
-                          style={{ backgroundColor: getSpecColor(specId) }}
-                        />
-                        <span>{getSpecName(specId)}</span>
-                        <button
-                          onClick={() => removeSecondarySpec(specId)}
-                          className="ml-1 hover:text-red-300"
-                        >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                          </svg>
-                        </button>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Footer */}
-            <div className="border-t border-border px-6 py-4 bg-accent flex gap-3 justify-end">
-              <button
-                onClick={closeClassEditor}
-                disabled={savingClasses}
-                className="px-4 py-2 bg-secondary hover:bg-secondary/80 rounded-lg text-foreground font-medium transition"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={saveClassRestrictions}
-                disabled={savingClasses}
-                className="px-4 py-2 bg-primary hover:bg-primary/90 disabled:bg-purple-800 rounded-lg text-primary-foreground font-medium transition"
-              >
-                {savingClasses ? 'Saving...' : 'Save Changes'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
     </ExpansionGuard>
   )

@@ -10,13 +10,13 @@ import { useGuildContext } from '@/app/contexts/GuildContext'
 interface GuildSettings {
   id?: string
   guild_id: string
-  
+
   // Attendance Settings
   attendance_type: 'linear' | 'breakpoint'
   rolling_attendance_weeks: number
   use_signups: boolean
   signup_weight: number
-  
+
   // Attendance Bonuses (Breakpoint)
   max_attendance_bonus: number
   max_attendance_threshold: number
@@ -24,16 +24,19 @@ interface GuildSettings {
   middle_attendance_threshold: number
   bottom_attendance_bonus: number
   bottom_attendance_threshold: number
-  
+
   // Bad Luck Prevention
   see_item_bonus: boolean
   see_item_bonus_value: number
   pass_item_bonus: boolean
   pass_item_bonus_value: number
-  
+
+  // Loot List Restrictions
+  enforce_slot_restrictions: boolean
+
   // Rank Modifiers
   rank_modifiers: Record<string, number>
-  
+
   // Raid Days
   raid_days: string[]
   first_raid_week_date: string
@@ -90,7 +93,12 @@ export default function SettingsPage() {
         .single()
 
       if (settingsData) {
-        setSettings(settingsData as any)
+        // Ensure enforce_slot_restrictions has a default value for existing guilds
+        const loadedSettings = {
+          ...settingsData,
+          enforce_slot_restrictions: settingsData.enforce_slot_restrictions ?? true
+        }
+        setSettings(loadedSettings as any)
         if (settingsData.rank_modifiers) {
           setRankModifiers(settingsData.rank_modifiers)
         }
@@ -112,6 +120,7 @@ export default function SettingsPage() {
           see_item_bonus_value: 1,
           pass_item_bonus: false,
           pass_item_bonus_value: 0,
+          enforce_slot_restrictions: true,
           rank_modifiers: DEFAULT_RANK_MODIFIERS,
           raid_days: ['Sunday', 'Monday'],
           first_raid_week_date: '2025-01-14'
@@ -335,7 +344,7 @@ export default function SettingsPage() {
         {/* Bad Luck Prevention */}
         <div className="bg-card border border-border rounded-xl p-6">
           <h2 className="text-xl font-semibold text-foreground mb-4">Bad Luck Prevention</h2>
-          
+
           <div className="space-y-4">
             <div className="flex items-center gap-3">
               <input
@@ -378,6 +387,30 @@ export default function SettingsPage() {
                 />
               </div>
             )}
+          </div>
+        </div>
+
+        {/* Loot List Restrictions */}
+        <div className="bg-card border border-border rounded-xl p-6">
+          <h2 className="text-xl font-semibold text-foreground mb-4">Loot List Restrictions</h2>
+          <p className="text-muted-foreground text-sm mb-4">Control what items players can select in their loot lists</p>
+
+          <div className="space-y-4">
+            <div className="flex items-start gap-3">
+              <input
+                type="checkbox"
+                checked={settings.enforce_slot_restrictions}
+                onChange={(e) => setSettings({ ...settings, enforce_slot_restrictions: e.target.checked })}
+                className="w-5 h-5 mt-0.5"
+              />
+              <div>
+                <label className="text-foreground font-medium">Enforce Slot Restrictions</label>
+                <p className="text-muted-foreground text-sm mt-1">
+                  When enabled, players can only select one item per slot type (e.g., 1 ring, 1 weapon, 1 trinket) in each loot bracket.
+                  This prevents players from filling brackets with multiple items of the same slot.
+                </p>
+              </div>
+            </div>
           </div>
         </div>
 

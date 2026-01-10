@@ -128,17 +128,23 @@ export async function seedExpansionForGuild(
 
       // 3. Prepare all loot items for this raid tier
       const lootItems = raid.bosses.flatMap(boss =>
-        boss.lootItems.map(item => ({
-          raid_tier_id: tier.id,
-          name: item.name,
-          item_slot: item.slot,
-          wowhead_id: item.wowheadId,
-          boss_name: boss.name,
-          is_available: true,
+        boss.lootItems.map(item => {
           // Look up classification from mapping, default to Unlimited if not found
-          classification: ITEM_CLASSIFICATIONS[item.name] || 'Unlimited',
-          allocation_cost: 0 // Default cost
-        }))
+          const classification = ITEM_CLASSIFICATIONS[item.name] || 'Unlimited'
+          // Reserved and Limited items cost 1 allocation point, Unlimited costs 0
+          const allocation_cost = (classification === 'Reserved' || classification === 'Limited') ? 1 : 0
+
+          return {
+            raid_tier_id: tier.id,
+            name: item.name,
+            item_slot: item.slot,
+            wowhead_id: item.wowheadId,
+            boss_name: boss.name,
+            is_available: true,
+            classification,
+            allocation_cost
+          }
+        })
       )
 
       // 4. Bulk insert all loot items for this raid tier

@@ -87,4 +87,35 @@
     @apply bg-background text-foreground;
     font-feature-settings: "rlig" 1, "calt" 1;
   }
+
+  /* Reserve space for Wowhead icons to prevent layout shift */
+  a[data-wowhead] {
+    display: inline-block !important;
+    padding-left: 24px;
+    position: relative;
+    min-height: 18px;
+    /* Gray placeholder background */
+    background-image: linear-gradient(to bottom, rgba(128, 128, 128, 0.3), rgba(128, 128, 128, 0.3));
+    background-size: 18px 18px;
+    background-position: 0px center;
+    background-repeat: no-repeat;
+  }
+
+  /* Position Wowhead icons on top of the placeholder */
+  a[data-wowhead] .iconsmall,
+  a[data-wowhead] > img {
+    position: absolute !important;
+    left: 0px !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+    width: 18px !important;
+    height: 18px !important;
+    display: inline-block !important;
+  }
+
+  a[data-wowhead] .iconsmall img {
+    width: 18px !important;
+    height: 18px !important;
+    display: inline-block !important;
+  }
 }

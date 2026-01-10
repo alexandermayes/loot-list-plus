@@ -41,6 +41,7 @@ export default function SearchableItemSelect({
   const dropdownRef = useRef<HTMLDivElement>(null)
   const buttonRef = useRef<HTMLButtonElement>(null)
   const searchInputRef = useRef<HTMLInputElement>(null)
+  const dropdownContentRef = useRef<HTMLDivElement>(null)
 
   const selectedItem = items.find(i => i.id === value)
 
@@ -111,20 +112,26 @@ export default function SearchableItemSelect({
     }
   }, [isOpen])
 
-  // Initial Wowhead refresh on mount
+  // Refresh Wowhead tooltips when value changes (after selection)
   useEffect(() => {
-    if (typeof window !== 'undefined' && (window as any).$WowheadPower) {
-      (window as any).$WowheadPower.refreshLinks()
-    }
-  }, [])
-
-  // Refresh Wowhead tooltips when dropdown opens or closes
-  useEffect(() => {
-    if (typeof window !== 'undefined' && (window as any).$WowheadPower) {
-      const delay = isOpen ? 50 : 0
-      setTimeout(() => {
+    if (value && typeof window !== 'undefined' && (window as any).$WowheadPower) {
+      // Very short delay to let the new link render
+      const timer = setTimeout(() => {
         (window as any).$WowheadPower.refreshLinks()
-      }, delay)
+      }, 10)
+
+      return () => clearTimeout(timer)
+    }
+  }, [value])
+
+  // Refresh Wowhead tooltips when dropdown opens for dropdown items
+  useEffect(() => {
+    if (isOpen && typeof window !== 'undefined' && (window as any).$WowheadPower) {
+      const timer = setTimeout(() => {
+        (window as any).$WowheadPower.refreshLinks()
+      }, 100)
+
+      return () => clearTimeout(timer)
     }
   }, [isOpen])
 
@@ -147,22 +154,25 @@ export default function SearchableItemSelect({
         ref={buttonRef}
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full px-3 py-2 bg-secondary border border-border rounded-lg text-foreground text-left focus:outline-none focus:ring-2 focus:ring-purple-500 flex items-center justify-between"
+        className="w-full px-3 py-2 bg-secondary border border-border rounded-lg text-foreground text-left focus:outline-none focus:ring-2 focus:ring-purple-500 flex items-center justify-between gap-2"
       >
-        <span className="truncate flex items-center gap-2">
+        <span className="truncate flex items-center gap-2 min-w-0">
           {selectedItem ? (
             <>
-              <ItemLink name={selectedItem.name} wowheadId={selectedItem.wowhead_id} clickable={false} />
+              <span className="truncate">
+                <ItemLink name={selectedItem.name} wowheadId={selectedItem.wowhead_id} clickable={false} />
+              </span>
               {selectedItem.classification && selectedItem.classification !== 'Unlimited' && (
-                <span className="text-xs text-muted-foreground">[{selectedItem.classification}]</span>
+                <span className="text-xs text-muted-foreground flex-shrink-0">[{selectedItem.classification}]</span>
               )}
             </>
           ) : (
-            placeholder
+            <span className="truncate">{placeholder}</span>
           )}
         </span>
         <svg
-          className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`}
+          className="w-4 h-4 flex-shrink-0 transition-transform"
+          style={{ transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -174,11 +184,13 @@ export default function SearchableItemSelect({
       {/* Dropdown */}
       {isOpen && (
         <div
+          ref={dropdownContentRef}
           className="fixed z-[9999] bg-secondary border border-border rounded-lg shadow-lg max-h-96 overflow-hidden"
           style={{
             top: `${dropdownPosition.top + 4}px`,
             left: `${dropdownPosition.left}px`,
-            width: `${dropdownPosition.width}px`
+            width: `${dropdownPosition.width}px`,
+            minWidth: '250px'
           }}
         >
           {/* Search Input */}
@@ -226,13 +238,15 @@ export default function SearchableItemSelect({
                         key={item.id}
                         onClick={() => !isDisabled && handleSelect(item.id)}
                         disabled={isDisabled}
-                        className={`w-full px-3 py-2 text-left hover:bg-accent flex items-center gap-2 ${
+                        className={`w-full px-3 py-2 text-left hover:bg-accent flex items-center gap-2 min-w-0 ${
                           isDisabled ? 'opacity-50 cursor-not-allowed' : ''
                         } ${value === item.id ? 'bg-accent' : ''}`}
                       >
-                        <ItemLink name={item.name} wowheadId={item.wowhead_id} clickable={false} />
+                        <span className="truncate flex-1 min-w-0">
+                          <ItemLink name={item.name} wowheadId={item.wowhead_id} clickable={false} />
+                        </span>
                         {item.classification && item.classification !== 'Unlimited' && (
-                          <span className="text-xs text-muted-foreground ml-auto">
+                          <span className="text-xs text-muted-foreground flex-shrink-0">
                             [{item.classification}]
                           </span>
                         )}
