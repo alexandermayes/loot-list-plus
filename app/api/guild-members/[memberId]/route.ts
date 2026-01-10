@@ -36,7 +36,16 @@ export async function PATCH(
     }
 
     // Use service role client to bypass RLS for admin operations
-    const adminClient = createServiceRoleClient()
+    let adminClient
+    try {
+      adminClient = createServiceRoleClient()
+    } catch (error: any) {
+      console.error('Failed to create service role client:', error)
+      return NextResponse.json(
+        { error: `Service configuration error: ${error.message}` },
+        { status: 500 }
+      )
+    }
 
     // Get the member being updated to find their guild
     const { data: targetMember, error: targetError } = await adminClient
@@ -117,7 +126,16 @@ export async function DELETE(
     }
 
     // Use service role client to bypass RLS for admin operations
-    const adminClient = createServiceRoleClient()
+    let adminClient
+    try {
+      adminClient = createServiceRoleClient()
+    } catch (error: any) {
+      console.error('Failed to create service role client:', error)
+      return NextResponse.json(
+        { error: `Service configuration error: ${error.message}` },
+        { status: 500 }
+      )
+    }
 
     // Get the member being removed to find their guild
     const { data: targetMember, error: targetError } = await adminClient
