@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/utils/supabase/server'
+import { createServiceRoleClient } from '@/utils/supabase/service-role'
 
 // PATCH - Update guild member (role, etc)
 export async function PATCH(
@@ -34,8 +35,11 @@ export async function PATCH(
       )
     }
 
+    // Use service role client to bypass RLS for admin operations
+    const adminClient = createServiceRoleClient()
+
     // Get the member being updated to find their guild
-    const { data: targetMember, error: targetError } = await supabase
+    const { data: targetMember, error: targetError } = await adminClient
       .from('guild_members')
       .select('guild_id, role')
       .eq('id', memberId)
@@ -49,7 +53,7 @@ export async function PATCH(
     }
 
     // Check if requesting user is an officer of the same guild
-    const { data: requestingMember } = await supabase
+    const { data: requestingMember } = await adminClient
       .from('guild_members')
       .select('role')
       .eq('user_id', user.id)
@@ -64,7 +68,7 @@ export async function PATCH(
     }
 
     // Update the member's role
-    const { error: updateError } = await supabase
+    const { error: updateError } = await adminClient
       .from('guild_members')
       .update({ role })
       .eq('id', memberId)
@@ -112,8 +116,11 @@ export async function DELETE(
       )
     }
 
+    // Use service role client to bypass RLS for admin operations
+    const adminClient = createServiceRoleClient()
+
     // Get the member being removed to find their guild
-    const { data: targetMember, error: targetError } = await supabase
+    const { data: targetMember, error: targetError } = await adminClient
       .from('guild_members')
       .select('guild_id, user_id, role')
       .eq('id', memberId)
@@ -127,7 +134,7 @@ export async function DELETE(
     }
 
     // Check if requesting user is an officer of the same guild
-    const { data: requestingMember } = await supabase
+    const { data: requestingMember } = await adminClient
       .from('guild_members')
       .select('role')
       .eq('user_id', user.id)
@@ -143,7 +150,7 @@ export async function DELETE(
 
     // Check if this is the last officer (prevent removing last officer)
     if (targetMember.role === 'Officer') {
-      const { data: officers } = await supabase
+      const { data: officers } = await adminClient
         .from('guild_members')
         .select('id')
         .eq('guild_id', targetMember.guild_id)
@@ -158,7 +165,7 @@ export async function DELETE(
     }
 
     // Delete the member
-    const { error: deleteError } = await supabase
+    const { error: deleteError } = await adminClient
       .from('guild_members')
       .delete()
       .eq('id', memberId)
@@ -172,7 +179,7 @@ export async function DELETE(
     }
 
     // Clean up their active guild if this was their active guild
-    await supabase
+    await adminClient
       .from('user_active_guilds')
       .delete()
       .eq('user_id', targetMember.user_id)
