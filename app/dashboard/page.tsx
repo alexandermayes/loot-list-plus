@@ -65,6 +65,12 @@ export default function Dashboard() {
         return
       }
 
+      // Ensure we have an active guild before proceeding
+      if (!activeGuild) {
+        setLoading(false)
+        return
+      }
+
       // Use activeGuild from context
       const guildId = activeGuild.id
 
