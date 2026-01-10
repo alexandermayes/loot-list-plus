@@ -21,14 +21,15 @@ export async function POST(request: Request) {
       .eq('user_id', user.id)
       .single()
 
-    if (!memberData?.guild?.discord_server_id) {
+    const guild = memberData?.guild as any
+    if (!guild?.discord_server_id) {
       return NextResponse.json({
         error: 'No Discord server configured for your guild',
         verified: false
       }, { status: 400 })
     }
 
-    const guildDiscordId = memberData.guild.discord_server_id
+    const guildDiscordId = guild.discord_server_id
 
     // Get the provider access token from the session
     const providerToken = session.provider_token
