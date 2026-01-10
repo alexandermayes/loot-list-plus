@@ -46,6 +46,9 @@ export default function Home() {
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-primary">&lt;Big Yikes&gt;</h1>
           <p className="text-muted-foreground mt-2">LootList+</p>
+          {process.env.VERCEL_ENV === 'preview' && (
+            <p className="text-xs text-yellow-500 mt-1">DEV ENVIRONMENT</p>
+          )}
         </div>
 
         <button
