@@ -174,13 +174,19 @@ export default function GuildSelectPage() {
       const response = await fetch('/api/discord-guilds')
       const data = await response.json()
 
+      console.log('Discord guilds API response:', data)
+
       if (!response.ok) {
-        setDiscordError(data.error || 'Failed to load guilds')
+        const errorMessage = response.status === 429
+          ? 'Discord rate limit reached. Please wait a moment and try again.'
+          : data.error || 'Failed to load guilds'
+        setDiscordError(errorMessage)
         setDiscordLoading(false)
         return
       }
 
       setAvailableGuilds(data.available_guilds || [])
+      console.log('Available guilds set:', data.available_guilds)
       setDiscordLoading(false)
     } catch (err) {
       console.error('Error loading guilds:', err)
@@ -428,13 +434,21 @@ export default function GuildSelectPage() {
                 </div>
               ) : availableGuilds.length === 0 ? (
                 <div className="text-center py-12">
-                  <p className="font-poppins font-bold text-[18px] text-white mb-2">No Guilds Found</p>
-                  <p className="font-poppins text-[14px] text-[#a1a1a1]">
+                  <p className="font-poppins font-bold text-[18px] text-white mb-2">No Available Guilds</p>
+                  <p className="font-poppins text-[14px] text-[#a1a1a1] mb-4">
                     We couldn't find any LootList+ guilds that match your Discord servers.
                   </p>
-                  <p className="font-poppins text-[14px] text-[#a1a1a1] mt-4">
-                    Make sure you're a member of a Discord server that has a LootList+ guild set up.
-                  </p>
+                  <div className="bg-[#0d0e11] border border-[rgba(255,255,255,0.1)] rounded-[12px] px-[20px] py-[16px] text-left space-y-2">
+                    <p className="font-poppins text-[14px] text-white font-medium">Possible reasons:</p>
+                    <ul className="font-poppins text-[13px] text-[#a1a1a1] space-y-1 list-disc list-inside">
+                      <li>You're not in any Discord servers with LootList+ integration</li>
+                      <li>You're already a member of all matching guilds</li>
+                      <li>Your guild officer hasn't set up Discord integration yet</li>
+                    </ul>
+                    <p className="font-poppins text-[13px] text-[#a1a1a1] mt-3">
+                      Try using an invite code instead, or ask your guild officer to set up Discord integration.
+                    </p>
+                  </div>
                 </div>
               ) : (
                 <div className="space-y-4">
