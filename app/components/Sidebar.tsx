@@ -116,7 +116,7 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange }
             <div className="relative" ref={dropdownRef}>
             {!activeGuild ? (
               <button
-                onClick={() => router.push('/guild-select')}
+                onClick={() => router.push('/guild-select/create')}
                 className="w-full border-[#ff8000] border-[0.5px] rounded-[12px] px-3.5 py-2 flex items-center gap-3 hover:opacity-90 transition"
                 style={{ background: 'linear-gradient(179.949deg, rgb(255, 128, 0) 0.15%, rgb(153, 77, 0) 113.91%)' }}
               >
