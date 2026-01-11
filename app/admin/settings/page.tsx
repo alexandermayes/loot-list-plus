@@ -444,7 +444,7 @@ export default function SettingsPage() {
               <label className="block text-foreground mb-2">First Raid Week Date</label>
               <input
                 type="date"
-                value={settings.first_raid_week_date}
+                value={settings.first_raid_week_date || ''}
                 onChange={(e) => setSettings({ ...settings, first_raid_week_date: e.target.value })}
                 className="w-full px-3 py-2 bg-secondary border border-border rounded-lg text-foreground"
               />

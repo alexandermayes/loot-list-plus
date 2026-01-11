@@ -34,7 +34,6 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true)
   const [user, setUser] = useState<any>(null)
   const [error, setError] = useState<string | null>(null)
-  const [currentView, setCurrentView] = useState('overview')
 
   const supabase = createClient()
   const router = useRouter()
@@ -179,95 +178,66 @@ export default function Dashboard() {
 
   const daysLeft = getDaysUntilDeadline()
 
-  const renderView = () => {
-    switch (currentView) {
-      case 'overview':
-        return (
-          <div className="p-8 space-y-6">
-            {/* Guild Info */}
-            <Card>
-          <CardHeader>
-            <CardTitle>Guild Info</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div>
-                <p className="text-muted-foreground text-sm">Guild</p>
-                <p className="text-foreground font-medium">{activeGuild?.name}</p>
-              </div>
-              <div>
-                <p className="text-muted-foreground text-sm">Realm</p>
-                <p className="text-foreground font-medium">{activeGuild?.realm || 'Not set'}</p>
-              </div>
-              <div>
-                <p className="text-muted-foreground text-sm">Faction</p>
-                <p className="text-foreground font-medium">{activeGuild?.faction}</p>
-              </div>
-              <div>
-                <p className="text-muted-foreground text-sm">Your Role</p>
-                <Badge variant="secondary">{activeMember?.role}</Badge>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Error Message (e.g., no expansion set) */}
-        {error && (
-          <Card className="border-yellow-600 bg-yellow-950/20">
-            <CardContent className="p-4">
-              <div className="flex items-start gap-3">
-                <div className="text-yellow-400 mt-0.5">⚠️</div>
-                <div className="flex-1">
-                  <p className="text-yellow-200 font-semibold">Action Required</p>
-                  <p className="text-yellow-300 text-sm mt-1">{error}</p>
-                  {isOfficer && (
-                    <button
-                      onClick={() => setCurrentView('guild-settings')}
-                      className="mt-2 px-3 py-1 text-sm bg-yellow-600 hover:bg-yellow-700 text-white rounded transition"
-                    >
-                      Go to Guild Settings
-                    </button>
-                  )}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-          </div>
-        )
-      case 'master-sheet':
-        router.push('/master-sheet')
-        return null
-      case 'loot-list':
-        router.push('/loot-list')
-        return null
-      case 'attendance':
-        router.push('/attendance')
-        return null
-      case 'guild-settings':
-        router.push('/admin/guild-settings')
-        return null
-      case 'master-loot':
-        router.push('/admin')
-        return null
-      case 'raid-tracking':
-        router.push('/admin/raid-tracking')
-        return null
-      default:
-        return null
-    }
-  }
-
   return (
     <div className="min-h-screen bg-[#151515]">
-      <Sidebar user={user} currentView={currentView} onViewChange={setCurrentView} />
+      <Sidebar user={user} currentView="overview" />
 
       {/* Main Content */}
       <main className="ml-[208px] min-h-screen bg-[#0a0a0a] border-l border-[rgba(255,255,255,0.1)]">
         {!activeGuild ? (
           <WelcomeScreen />
         ) : (
-          renderView()
+          <div className="p-8 space-y-6">
+            {/* Guild Info */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Guild Info</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div>
+                    <p className="text-muted-foreground text-sm">Guild</p>
+                    <p className="text-foreground font-medium">{activeGuild?.name}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground text-sm">Realm</p>
+                    <p className="text-foreground font-medium">{activeGuild?.realm || 'Not set'}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground text-sm">Faction</p>
+                    <p className="text-foreground font-medium">{activeGuild?.faction}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground text-sm">Your Role</p>
+                    <Badge variant="secondary">{activeMember?.role}</Badge>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Error Message (e.g., no expansion set) */}
+            {error && (
+              <Card className="border-yellow-600 bg-yellow-950/20">
+                <CardContent className="p-4">
+                  <div className="flex items-start gap-3">
+                    <div className="text-yellow-400 mt-0.5">⚠️</div>
+                    <div className="flex-1">
+                      <p className="text-yellow-200 font-semibold">Action Required</p>
+                      <p className="text-yellow-300 text-sm mt-1">{error}</p>
+                      {isOfficer && (
+                        <button
+                          onClick={() => router.push('/admin/guild-settings')}
+                          className="mt-2 px-3 py-1 text-sm bg-yellow-600 hover:bg-yellow-700 text-white rounded transition"
+                        >
+                          Go to Guild Settings
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
         )}
       </main>
     </div>
