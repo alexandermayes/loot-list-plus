@@ -116,7 +116,13 @@ export default function RaidTiersPage() {
         return
       }
 
-      setRaidTiers(tiersData as RaidTier[] || [])
+      // Transform data to ensure expansion is a single object (Supabase returns it as array)
+      const transformedData: RaidTier[] = (tiersData || []).map(tier => ({
+        ...tier,
+        expansion: Array.isArray(tier.expansion) ? tier.expansion[0] : tier.expansion
+      }))
+
+      setRaidTiers(transformedData)
     } catch (err) {
       console.error('Unexpected error loading raid tiers:', err)
       setRaidTiers([])
