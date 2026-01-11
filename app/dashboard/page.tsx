@@ -15,6 +15,7 @@ import { useGuildContext } from '@/app/contexts/GuildContext'
 interface RaidTier {
   id: string
   name: string
+  is_active: boolean
   expansion: {
     name: string
   }
