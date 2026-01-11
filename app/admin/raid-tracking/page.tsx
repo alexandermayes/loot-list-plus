@@ -283,7 +283,7 @@ export default function RaidTrackingPage() {
     <div className="min-h-screen bg-[#151515]">
       <Sidebar user={user} currentView="raid-tracking" />
 
-      <main className="ml-[208px] min-h-screen bg-[#0a0a0a] border-l border-[rgba(255,255,255,0.1)] p-6">
+      <main className="ml-[208px] min-h-screen bg-[#09090c] border-l border-[rgba(255,255,255,0.1)] p-6">
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-3xl font-bold text-foreground">Raid Tracking & Attendance</h1>
           <Button

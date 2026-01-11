@@ -29,11 +29,16 @@ export default function CreateGuildPage() {
   // Form state
   const [guildName, setGuildName] = useState('')
   const [selectedDiscordServer, setSelectedDiscordServer] = useState('')
+  const [showManualEntry, setShowManualEntry] = useState(false)
   const [manualServerId, setManualServerId] = useState('')
   const [realmRegion, setRealmRegion] = useState('All')
   const [realm, setRealm] = useState('')
   const [faction, setFaction] = useState<'Alliance' | 'Horde'>('Alliance')
   const [expansion, setExpansion] = useState('Cataclysm')
+
+  // Bot installation state
+  const [botInstalled, setBotInstalled] = useState<boolean | null>(null)
+  const [checkingBot, setCheckingBot] = useState(false)
 
   const supabase = createClient()
   const router = useRouter()
@@ -119,6 +124,62 @@ export default function CreateGuildPage() {
     checkUser()
   }, [])
 
+  // Check if bot is installed when Discord server is selected
+  const checkBotInstallation = async () => {
+    // Get the active server ID
+    let activeServerId = ''
+    if (showManualEntry) {
+      activeServerId = manualServerId.trim()
+    } else {
+      activeServerId = selectedDiscordServer
+    }
+
+    if (!activeServerId || activeServerId === 'manual') {
+      setBotInstalled(null)
+      return
+    }
+
+    setCheckingBot(true)
+    try {
+      const response = await fetch(`/api/discord/check-bot?serverId=${activeServerId}`)
+      if (response.ok) {
+        const data = await response.json()
+        setBotInstalled(data.installed)
+      } else {
+        // If check fails, assume not installed to be safe
+        setBotInstalled(false)
+      }
+    } catch (error) {
+      console.error('Error checking bot installation:', error)
+      setBotInstalled(false)
+    } finally {
+      setCheckingBot(false)
+    }
+  }
+
+  useEffect(() => {
+    checkBotInstallation()
+  }, [selectedDiscordServer, manualServerId, showManualEntry])
+
+  // Re-check bot installation when user returns to the page (after adding bot in another tab)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      const hasServerId = showManualEntry ? manualServerId.trim() : selectedDiscordServer
+      if (document.visibilityState === 'visible' && hasServerId && hasServerId !== 'manual') {
+        // Only recheck if bot was previously not installed
+        if (botInstalled === false) {
+          console.log('Page became visible, rechecking bot installation...')
+          checkBotInstallation()
+        }
+      }
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+    }
+  }, [selectedDiscordServer, manualServerId, botInstalled, showManualEntry])
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
@@ -133,10 +194,47 @@ export default function CreateGuildPage() {
       return
     }
 
-    setCreating(true)
+    // Get the Discord server ID
+    const discordServerId = showManualEntry ? manualServerId.trim() : selectedDiscordServer
 
-    // Use dropdown selection first, fallback to manual input
-    const discordServerId = selectedDiscordServer || manualServerId.trim()
+    if (!discordServerId || discordServerId === 'manual') {
+      setError('Discord server is required')
+      return
+    }
+
+    if (botInstalled === false) {
+      setError('You must add the LootList+ bot to your Discord server before creating a guild')
+      return
+    }
+
+    if (botInstalled === null || checkingBot) {
+      setError('Please wait while we verify bot installation')
+      return
+    }
+
+    // Final check: Verify bot is still installed right before creating guild
+    setCreating(true)
+    try {
+      const botCheckResponse = await fetch(`/api/discord/check-bot?serverId=${discordServerId}`)
+      if (botCheckResponse.ok) {
+        const botCheckData = await botCheckResponse.json()
+        if (!botCheckData.installed) {
+          setError('The LootList+ bot is no longer in your Discord server. Please add it again.')
+          setBotInstalled(false)
+          setCreating(false)
+          return
+        }
+      } else {
+        setError('Unable to verify bot installation. Please try again.')
+        setCreating(false)
+        return
+      }
+    } catch (error) {
+      console.error('Error verifying bot before guild creation:', error)
+      setError('Unable to verify bot installation. Please try again.')
+      setCreating(false)
+      return
+    }
 
     try {
       const response = await fetch('/api/guilds', {
@@ -200,19 +298,20 @@ export default function CreateGuildPage() {
         {/* Instructions */}
         <div className="bg-card/50 border border-border rounded-lg p-6 space-y-4">
           <p className="text-foreground">
-            This website uses your guild's Discord server to help manage member access through Discord auto-join.
+            LootList+ requires a Discord server connection for automatic guild icon fetching and member management features.
           </p>
 
           <div className="space-y-2">
-            <p className="text-foreground font-medium">Instructions:</p>
+            <p className="text-foreground font-medium">Required Steps:</p>
             <ol className="list-decimal list-inside space-y-1 text-muted-foreground">
-              <li>Select your Discord server from the dropdown (optional)</li>
-              <li>Fill out the form below</li>
+              <li>Select your Discord server (or enter Server ID manually)</li>
+              <li>Add the LootList+ bot to your server when prompted</li>
+              <li>Complete the guild registration form</li>
             </ol>
           </div>
 
           <p className="text-muted-foreground">
-            Once registered, invite your guild members by sharing invite codes or using Discord auto-join.
+            After registration, invite guild members by sharing invite codes or using Discord auto-join.
           </p>
         </div>
 
@@ -258,68 +357,157 @@ export default function CreateGuildPage() {
             />
           </div>
 
-          {/* Discord Server Dropdown (if available) */}
-          {discordGuilds.length > 0 && (
+          {/* Discord Server Selection */}
+          <div className="space-y-2">
+            <Label htmlFor="discordServer" className="flex items-center gap-2 text-base">
+              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515a.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0a12.64 12.64 0 0 0-.617-1.25a.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057a19.9 19.9 0 0 0 5.993 3.03a.078.078 0 0 0 .084-.028a14.09 14.09 0 0 0 1.226-1.994a.076.076 0 0 0-.041-.106a13.107 13.107 0 0 1-1.872-.892a.077.077 0 0 1-.008-.128a10.2 10.2 0 0 0 .372-.292a.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127a12.299 12.299 0 0 1-1.873.892a.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028a19.839 19.839 0 0 0 6.002-3.03a.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419c0-1.333.956-2.419 2.157-2.419c1.21 0 2.176 1.096 2.157 2.42c0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419c0-1.333.955-2.419 2.157-2.419c1.21 0 2.176 1.096 2.157 2.42c0 1.333-.946 2.418-2.157 2.418z"/>
+              </svg>
+              Discord Server <span className="text-red-500">*</span>
+            </Label>
+            <p className="text-sm text-muted-foreground">
+              {discordGuilds.length > 0
+                ? 'Select from servers where you have admin permissions'
+                : 'Enter your Discord Server ID manually'
+              }
+            </p>
+            <select
+              id="discordServer"
+              value={showManualEntry ? 'manual' : selectedDiscordServer}
+              onChange={(e) => {
+                if (e.target.value === 'manual') {
+                  setShowManualEntry(true)
+                  setSelectedDiscordServer('')
+                  setBotInstalled(null)
+                } else {
+                  setShowManualEntry(false)
+                  setSelectedDiscordServer(e.target.value)
+                  setManualServerId('')
+                  setBotInstalled(null)
+                }
+              }}
+              disabled={creating}
+              className="w-full bg-background border border-border rounded-md px-3 py-2 text-base text-foreground"
+            >
+              <option value="">Select a server...</option>
+              {discordGuilds.length > 0 && discordGuilds.map((guild) => (
+                <option key={guild.id} value={guild.id}>
+                  {guild.name}
+                </option>
+              ))}
+              <option value="manual">Manually enter Server ID</option>
+            </select>
+          </div>
+
+          {/* Manual Discord Server ID Input (shown when manual option selected) */}
+          {showManualEntry && (
             <div className="space-y-2">
-              <Label htmlFor="discordServer" className="flex items-center gap-2 text-base">
-                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515a.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0a12.64 12.64 0 0 0-.617-1.25a.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057a19.9 19.9 0 0 0 5.993 3.03a.078.078 0 0 0 .084-.028a14.09 14.09 0 0 0 1.226-1.994a.076.076 0 0 0-.041-.106a13.107 13.107 0 0 1-1.872-.892a.077.077 0 0 1-.008-.128a10.2 10.2 0 0 0 .372-.292a.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127a12.299 12.299 0 0 1-1.873.892a.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028a19.839 19.839 0 0 0 6.002-3.03a.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419c0-1.333.956-2.419 2.157-2.419c1.21 0 2.176 1.096 2.157 2.42c0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419c0-1.333.955-2.419 2.157-2.419c1.21 0 2.176 1.096 2.157 2.42c0 1.333-.946 2.418-2.157 2.418z"/>
-                </svg>
-                Discord Server
+              <Label htmlFor="manualServerId" className="flex items-center gap-2 text-base">
+                Discord Server ID <span className="text-red-500">*</span>
+                <a href="https://support.discord.com/hc/en-us/articles/206346498-Where-can-I-find-my-User-Server-Message-ID"
+                   target="_blank"
+                   rel="noopener noreferrer"
+                   className="text-primary hover:underline text-sm">
+                  (how to find)
+                </a>
               </Label>
-              <p className="text-sm text-muted-foreground">ones you have admin permissions on</p>
-              <select
-                id="discordServer"
-                value={selectedDiscordServer}
-                onChange={(e) => setSelectedDiscordServer(e.target.value)}
+              <p className="text-sm text-muted-foreground mb-2">
+                Enable Developer Mode in Discord, then right-click your server → Copy Server ID
+              </p>
+              <Input
+                id="manualServerId"
+                type="text"
+                placeholder="paste your guild's server ID"
+                value={manualServerId}
+                onChange={(e) => setManualServerId(e.target.value)}
                 disabled={creating}
-                className="w-full bg-background border border-border rounded-md px-3 py-2 text-base text-foreground"
-              >
-                <option value="">—</option>
-                {discordGuilds.map((guild) => (
-                  <option key={guild.id} value={guild.id}>
-                    {guild.name}
-                  </option>
-                ))}
-              </select>
+                className="text-base"
+              />
             </div>
           )}
 
-          {/* Manual Discord Server ID (optional or fallback) */}
-          <div className="space-y-2">
-            <Label htmlFor="manualServerId" className="flex items-center gap-2 text-base">
-              {discordGuilds.length > 0 ? (
-                <>
-                  (optional){' '}
-                  <a href="https://support.discord.com/hc/en-us/articles/206346498-Where-can-I-find-my-User-Server-Message-ID"
-                     target="_blank"
-                     rel="noopener noreferrer"
-                     className="text-primary hover:underline">
-                    instructions
-                  </a>{' '}
-                  for finding a server ID
-                </>
-              ) : (
-                <>
-                  Discord Server ID (Optional)
-                </>
+          {/* Bot Status - Show when server is selected */}
+          {((selectedDiscordServer && selectedDiscordServer !== 'manual') || (showManualEntry && manualServerId.trim())) && (
+            <>
+              {/* Checking bot status */}
+              {checkingBot && (
+                <div className="bg-muted/50 border border-border rounded-lg p-6">
+                  <div className="flex items-center gap-3">
+                    <svg className="w-6 h-6 animate-spin text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/>
+                    </svg>
+                    <div>
+                      <p className="text-foreground font-medium">Verifying Bot Installation</p>
+                      <p className="text-sm text-muted-foreground">Checking if LootList+ bot is in your Discord server...</p>
+                    </div>
+                  </div>
+                </div>
               )}
-            </Label>
-            {discordGuilds.length === 0 && (
-              <p className="text-sm text-muted-foreground mb-2">
-                For automatic member joining. Enable Developer Mode in Discord, then right-click your server → Copy Server ID
-              </p>
-            )}
-            <Input
-              id="manualServerId"
-              type="text"
-              placeholder="paste your guild's server ID"
-              value={manualServerId}
-              onChange={(e) => setManualServerId(e.target.value)}
-              disabled={creating}
-              className="text-base"
-            />
-          </div>
+
+              {/* Bot is installed - Success message */}
+              {!checkingBot && botInstalled === true && (
+                <div className="bg-green-950/20 border border-green-600/50 rounded-lg p-6">
+                  <div className="flex items-start gap-3">
+                    <div className="text-green-500 text-2xl">✅</div>
+                    <div className="flex-1">
+                      <p className="font-semibold text-green-200 text-lg">Bot is Installed!</p>
+                      <p className="text-sm text-green-300/80 mt-1">
+                        The LootList+ bot is active in your Discord server. You're all set!
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Bot is NOT installed - Show add button */}
+              {!checkingBot && botInstalled === false && (
+                <div className="bg-primary/10 border border-primary/30 rounded-lg p-6 space-y-4">
+                  <div className="flex items-start gap-3">
+                    <div className="text-primary text-2xl">🤖</div>
+                    <div className="flex-1 space-y-3">
+                      <div>
+                        <p className="text-foreground font-semibold text-lg">Add LootList+ Bot to Your Discord</p>
+                        <p className="text-muted-foreground text-sm mt-1">
+                          Required for automatic guild icon fetching and Discord integration features.
+                        </p>
+                      </div>
+
+                      <div className="flex flex-wrap gap-2">
+                        <Button
+                          type="button"
+                          onClick={() => {
+                            window.open('https://discord.com/oauth2/authorize?client_id=1458757176171560980', '_blank')
+                          }}
+                          className="flex-1 sm:flex-none"
+                        >
+                          <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515a.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0a12.64 12.64 0 0 0-.617-1.25a.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057a19.9 19.9 0 0 0 5.993 3.03a.078.078 0 0 0 .084-.028a14.09 14.09 0 0 0 1.226-1.994a.076.076 0 0 0-.041-.106a13.107 13.107 0 0 1-1.872-.892a.077.077 0 0 1-.008-.128a10.2 10.2 0 0 0 .372-.292a.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127a12.299 12.299 0 0 1-1.873.892a.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028a19.839 19.839 0 0 0 6.002-3.03a.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419c0-1.333.956-2.419 2.157-2.419c1.21 0 2.176 1.096 2.157 2.42c0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419c0-1.333.955-2.419 2.157-2.419c1.21 0 2.176 1.096 2.157 2.42c0 1.333-.946 2.418-2.157 2.418z"/>
+                          </svg>
+                          Add Bot to Discord Server
+                        </Button>
+
+                        <Button
+                          type="button"
+                          onClick={() => checkBotInstallation()}
+                          variant="outline"
+                          className="flex-1 sm:flex-none"
+                        >
+                          <svg className="w-4 h-4 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/>
+                          </svg>
+                          Recheck
+                        </Button>
+                      </div>
+
+                      <p className="text-xs text-muted-foreground">
+                        You'll need admin permissions on your Discord server to add the bot. After adding, return here and click "Recheck" or the page will automatically verify.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
 
           {/* Expansion */}
           <div className="space-y-2">
@@ -464,10 +652,39 @@ export default function CreateGuildPage() {
           <Button
             type="submit"
             className="w-full py-6 text-lg"
-            disabled={creating || !discordVerified}
+            disabled={
+              creating ||
+              !discordVerified ||
+              (showManualEntry ? !manualServerId.trim() : (!selectedDiscordServer || selectedDiscordServer === 'manual')) ||
+              botInstalled === false ||
+              botInstalled === null ||
+              checkingBot
+            }
           >
-            {creating ? 'Creating Guild...' : 'Create Guild'}
+            {creating ? 'Creating Guild...' : checkingBot ? 'Checking Bot...' : 'Create Guild'}
           </Button>
+
+          {/* Helper text for button state */}
+          {!discordVerified && (
+            <p className="text-sm text-muted-foreground text-center -mt-3">
+              Discord verification required
+            </p>
+          )}
+          {discordVerified && (showManualEntry ? !manualServerId.trim() : (!selectedDiscordServer || selectedDiscordServer === 'manual')) && (
+            <p className="text-sm text-muted-foreground text-center -mt-3">
+              {showManualEntry ? 'Enter your Discord Server ID' : 'Select a Discord server to continue'}
+            </p>
+          )}
+          {discordVerified && ((selectedDiscordServer && selectedDiscordServer !== 'manual') || (showManualEntry && manualServerId.trim())) && botInstalled === false && (
+            <p className="text-sm text-yellow-400 text-center -mt-3">
+              Add the bot to your Discord server to continue
+            </p>
+          )}
+          {discordVerified && ((selectedDiscordServer && selectedDiscordServer !== 'manual') || (showManualEntry && manualServerId.trim())) && checkingBot && (
+            <p className="text-sm text-muted-foreground text-center -mt-3">
+              Verifying bot installation...
+            </p>
+          )}
         </form>
       </div>
     </div>

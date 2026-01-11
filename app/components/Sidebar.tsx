@@ -15,7 +15,7 @@ interface SidebarProps {
 export default function Sidebar({ user, currentView = 'overview', onViewChange }: SidebarProps) {
   const router = useRouter()
   const pathname = usePathname()
-  const { activeGuild, userGuilds, switchGuild, hasMultipleGuilds, isOfficer } = useGuildContext()
+  const { activeGuild, userGuilds, switchGuild, hasMultipleGuilds, isOfficer, activeMember } = useGuildContext()
   const [guildDropdownOpen, setGuildDropdownOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
   const supabase = createClient()
@@ -84,34 +84,40 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange }
   const currentMembership = userGuilds.find(g => g.guild.id === activeGuild?.id)
 
   return (
-    <aside className="fixed left-0 top-0 h-screen w-[208px] bg-[#151515] flex flex-col gap-12 px-2.5 pt-9 pb-2.5 z-50">
+    <aside className="fixed left-0 top-0 h-screen w-[208px] bg-[#0d0e11] flex flex-col gap-12 px-2.5 pt-9 pb-2.5 z-50">
       {/* Logo */}
       <div className="px-3">
-        <Image
-          src="/logo.svg"
-          alt="LootList+"
-          width={102}
-          height={16}
-          className="h-4 w-auto"
-          priority
-        />
+        <button
+          onClick={() => handleNavClick('overview')}
+          className="cursor-pointer hover:opacity-80 transition"
+        >
+          <Image
+            src="/logo.svg"
+            alt="LootList+"
+            width={102}
+            height={16}
+            className="h-4 w-auto"
+            priority
+          />
+        </button>
       </div>
 
       {/* Main Navigation */}
       <div className="flex-1 flex flex-col gap-6 min-h-0">
         {/* Guild Selector */}
         <div className="flex flex-col gap-3">
-          <div className="px-3">
-            <p className="font-poppins font-medium text-[10px] text-[#a1a1a1] uppercase tracking-wide">
-              CURRENT GUILD
-            </p>
-          </div>
+          <div className="flex flex-col gap-[4px]">
+            <div className="px-3">
+              <p className="font-poppins font-medium text-[10px] text-[#a1a1a1] uppercase tracking-wide">
+                CURRENT GUILD
+              </p>
+            </div>
 
-          <div className="relative" ref={dropdownRef}>
+            <div className="relative" ref={dropdownRef}>
             {!activeGuild ? (
               <button
                 onClick={() => router.push('/guild-select')}
-                className="w-full bg-white border border-[#1a1a1a] rounded-xl px-3.5 py-2 flex items-center gap-3 hover:bg-gray-100 transition"
+                className="w-full bg-[#ff8000] border border-[#1a1a1a] rounded-xl px-3.5 py-2 flex items-center gap-3 hover:bg-[#e67300] transition"
               >
                 <Image
                   src="/icons/add-circle.svg"
@@ -124,52 +130,70 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange }
                   <p className="font-poppins font-medium text-[13px] text-black leading-tight">
                     Create a guild
                   </p>
-                  <p className="font-poppins font-normal text-[8px] text-[#636363] leading-tight">
+                  <p className="font-poppins font-normal text-[10px] text-[#141313] leading-tight">
                     Start your own guild
                   </p>
                 </div>
               </button>
             ) : (
               <button
-                onClick={() => hasMultipleGuilds && setGuildDropdownOpen(!guildDropdownOpen)}
-                className="w-full bg-black border border-[#1a1a1a] rounded-xl px-3.5 py-2 flex items-center gap-3 hover:bg-[#0a0a0a] transition"
+                onClick={() => setGuildDropdownOpen(!guildDropdownOpen)}
+                className="w-full bg-[#141519] border border-[#1a1a1a] rounded-xl px-3.5 py-2 flex items-center gap-3 hover:bg-[#1a1a1a] transition"
               >
-                <div className="w-5 h-5 bg-[#d9d9d9] rounded-[4px] shrink-0" />
-                <div className="flex-1 text-left">
-                  <p className="font-poppins font-medium text-[13px] text-white leading-tight">
+                {activeGuild.icon_url ? (
+                  <Image
+                    src={activeGuild.icon_url}
+                    alt="Guild icon"
+                    width={20}
+                    height={20}
+                    className="w-5 h-5 rounded-[4px] shrink-0"
+                  />
+                ) : (
+                  <div className="w-5 h-5 bg-[#d9d9d9] rounded-[4px] shrink-0" />
+                )}
+                <div className="flex-1 text-left pb-[2px] pt-0 px-0 leading-[normal] min-w-0">
+                  <p className="font-poppins font-medium text-[13px] text-white w-full truncate">
                     {activeGuild.name}
                   </p>
-                  <p className="font-poppins font-normal text-[8px] text-[#a1a1a1] leading-tight">
+                  <p className="font-poppins font-normal text-[10px] text-[#a1a1a1] w-full truncate">
                     {activeGuild.realm ? `${activeGuild.realm} • ${activeGuild.faction}` : ''}
                   </p>
                 </div>
-                {hasMultipleGuilds && (
-                  <Image
-                    src="/icons/arrow-down.svg"
-                    alt="Toggle"
-                    width={20}
-                    height={20}
-                    className="w-5 h-5 shrink-0"
-                  />
-                )}
+                <Image
+                  src="/icons/arrow-down.svg"
+                  alt="Toggle"
+                  width={20}
+                  height={20}
+                  className={`w-5 h-5 shrink-0 transition-transform ${guildDropdownOpen ? 'rotate-180' : ''}`}
+                />
               </button>
             )}
 
             {/* Guild Dropdown */}
-            {guildDropdownOpen && hasMultipleGuilds && (
+            {guildDropdownOpen && (
               <div className="absolute top-full mt-2 left-0 w-full bg-[#1e1e1e] border border-[#2a2a2a] rounded-xl shadow-lg overflow-hidden z-50">
-                {userGuilds.map((g) => (
+                {hasMultipleGuilds && userGuilds.map((g) => (
                   <button
                     key={g.guild.id}
                     onClick={() => handleSwitchGuild(g.guild.id)}
                     className="w-full px-3.5 py-2 flex items-center gap-3 hover:bg-[#252525] transition text-left"
                   >
-                    <div className="w-5 h-5 bg-[#d9d9d9] rounded-[4px] shrink-0" />
-                    <div className="flex-1">
-                      <p className="font-poppins font-medium text-[13px] text-white leading-tight">
+                    {g.guild.icon_url ? (
+                      <Image
+                        src={g.guild.icon_url}
+                        alt="Guild icon"
+                        width={20}
+                        height={20}
+                        className="w-5 h-5 rounded-[4px] shrink-0"
+                      />
+                    ) : (
+                      <div className="w-5 h-5 bg-[#d9d9d9] rounded-[4px] shrink-0" />
+                    )}
+                    <div className="flex-1 pb-[2px] pt-0 px-0 leading-[normal] min-w-0">
+                      <p className="font-poppins font-medium text-[13px] text-white w-full truncate">
                         {g.guild.name}
                       </p>
-                      <p className="font-poppins font-normal text-[8px] text-[#a1a1a1] leading-tight">
+                      <p className="font-poppins font-normal text-[10px] text-[#a1a1a1] w-full truncate">
                         {g.guild.realm ? `${g.guild.realm} • ${g.guild.faction}` : ''}
                       </p>
                     </div>
@@ -178,23 +202,68 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange }
                     )}
                   </button>
                 ))}
+
+                {/* Join Guild Option */}
+                <button
+                  onClick={() => {
+                    setGuildDropdownOpen(false)
+                    router.push('/guild-select')
+                  }}
+                  className={`w-full px-3.5 py-2 flex items-center gap-3 hover:bg-[#252525] transition text-left ${hasMultipleGuilds ? 'border-t border-[#2a2a2a]' : ''}`}
+                >
+                  <Image
+                    src="/icons/add-circle.svg"
+                    alt="Join"
+                    width={20}
+                    height={20}
+                    className="w-5 h-5 shrink-0 brightness-0 invert"
+                  />
+                  <div className="flex-1">
+                    <p className="font-poppins font-medium text-[13px] text-white">
+                      Join another guild
+                    </p>
+                  </div>
+                </button>
+
+                {/* Create Guild Option */}
+                <button
+                  onClick={() => {
+                    setGuildDropdownOpen(false)
+                    router.push('/guild-select/create')
+                  }}
+                  className="w-full px-3.5 py-2 flex items-center gap-3 hover:bg-[#252525] transition text-left"
+                >
+                  <Image
+                    src="/icons/add-circle.svg"
+                    alt="Create"
+                    width={20}
+                    height={20}
+                    className="w-5 h-5 shrink-0 brightness-0 invert"
+                  />
+                  <div className="flex-1">
+                    <p className="font-poppins font-medium text-[13px] text-white">
+                      Create a guild
+                    </p>
+                  </div>
+                </button>
               </div>
             )}
+            </div>
           </div>
         </div>
 
         {/* Navigation Items */}
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-[8px]">
           {navItems.map((item) => (
             <button
               key={item.view}
               onClick={() => handleNavClick(item.view)}
               disabled={!activeGuild}
-              className={`w-full px-3.5 py-2 flex items-center gap-3 rounded-[40px] transition font-poppins font-medium text-[13px] ${
+              className={`w-full px-3.5 py-2.5 flex items-center gap-3 rounded-[40px] transition font-poppins font-medium text-[13px] ${
                 !activeGuild
                   ? 'opacity-20 cursor-not-allowed text-white'
                   : isActive(item.view)
-                  ? 'bg-[#131313] border border-[rgba(255,255,255,0.05)] text-white'
+                  ? 'bg-[rgba(255,128,0,0.2)] border-[0.5px] border-[rgba(255,128,0,0.2)] text-[#ff8000]'
                   : 'text-white hover:bg-[#1a1a1a]'
               }`}
             >
@@ -203,7 +272,10 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange }
                 alt={item.name}
                 width={20}
                 height={20}
-                className="w-5 h-5 shrink-0"
+                className={`w-5 h-5 shrink-0 ${
+                  activeGuild && isActive(item.view) ? 'brightness-0 saturate-100' : ''
+                }`}
+                style={activeGuild && isActive(item.view) ? { filter: 'invert(55%) sepia(89%) saturate(2274%) hue-rotate(1deg) brightness(101%) contrast(105%)' } : undefined}
               />
               <span>{item.name}</span>
             </button>
@@ -212,7 +284,7 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange }
 
         {/* Admin Settings */}
         {adminItems.length > 0 && (
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-[8px]">
             <div className="px-3">
               <p className="font-poppins font-medium text-[10px] text-[#a1a1a1] uppercase tracking-wide">
                 ADMIN SETTINGS
@@ -222,9 +294,9 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange }
               <button
                 key={item.view}
                 onClick={() => handleNavClick(item.view)}
-                className={`w-full px-3.5 py-2 flex items-center gap-3 rounded-[40px] transition font-poppins font-medium text-[13px] ${
+                className={`w-full px-3.5 py-[10px] flex items-center gap-3 rounded-[40px] transition font-poppins font-medium text-[13px] ${
                   isActive(item.view)
-                    ? 'bg-[#131313] border border-[rgba(255,255,255,0.05)] text-white'
+                    ? 'bg-[rgba(255,128,0,0.2)] border-[0.5px] border-[rgba(255,128,0,0.2)] text-[#ff8000]'
                     : 'text-white hover:bg-[#1a1a1a]'
                 }`}
               >
@@ -233,7 +305,10 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange }
                   alt={item.name}
                   width={20}
                   height={20}
-                  className="w-5 h-5 shrink-0"
+                  className={`w-5 h-5 shrink-0 ${
+                    isActive(item.view) ? 'brightness-0 saturate-100' : ''
+                  }`}
+                  style={isActive(item.view) ? { filter: 'invert(55%) sepia(89%) saturate(2274%) hue-rotate(1deg) brightness(101%) contrast(105%)' } : undefined}
                 />
                 <span>{item.name}</span>
               </button>
@@ -269,15 +344,25 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange }
         {/* User Profile Card */}
         <button
           onClick={() => router.push('/profile')}
-          className="w-full bg-[#1e1e1e] border border-[#1a1a1a] rounded-xl px-3.5 py-2 flex items-center gap-3 hover:bg-[#252525] transition mt-2"
+          className="w-full bg-[#141519] border border-[#1a1a1a] rounded-xl px-3.5 py-2 flex items-center gap-3 hover:bg-[#1a1a1a] transition mt-2"
         >
-          <div className="w-5 h-5 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 shrink-0" />
-          <div className="flex-1 text-left">
-            <p className="font-poppins font-medium text-[13px] text-white leading-tight">
-              {user?.user_metadata?.custom_claims?.global_name || user?.user_metadata?.full_name || currentMembership?.character_name || 'User'}
+          {user?.user_metadata?.avatar_url ? (
+            <Image
+              src={user.user_metadata.avatar_url}
+              alt="Avatar"
+              width={20}
+              height={20}
+              className="w-5 h-5 rounded-full shrink-0 border border-[rgba(255,255,255,0.1)]"
+            />
+          ) : (
+            <div className="w-5 h-5 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 shrink-0 border border-[rgba(255,255,255,0.1)]" />
+          )}
+          <div className="flex-1 text-left pb-[2px] pt-0 px-0 leading-[normal] min-w-0">
+            <p className="font-poppins font-medium text-[13px] text-white w-full truncate">
+              {user?.user_metadata?.custom_claims?.global_name || user?.user_metadata?.full_name || activeMember?.character_name || 'User'}
             </p>
-            <p className="font-poppins font-normal text-[8px] text-[#a1a1a1] leading-tight">
-              {currentMembership?.role || 'Member'}
+            <p className="font-poppins font-normal text-[10px] text-[#a1a1a1] w-full truncate">
+              {activeMember?.role || 'Member'}
             </p>
           </div>
           <Image

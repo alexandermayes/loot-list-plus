@@ -119,7 +119,7 @@ export default function Home() {
 
               {/* Buttons Section */}
               <div className="w-full max-w-[373px] flex flex-col gap-2.5">
-                {/* Sign up with Discord */}
+                {/* Continue with Discord */}
                 <button
                   onClick={handleDiscordLogin}
                   className="w-full px-5 py-3 bg-white hover:bg-gray-100 transition border border-[#383838] rounded-[52px] flex items-center justify-center gap-3"
@@ -132,7 +132,7 @@ export default function Home() {
                     className="w-6 h-6"
                   />
                   <span className="font-poppins font-medium text-base text-[#0a0a0a]">
-                    Sign up with Discord
+                    Continue with Discord
                   </span>
                 </button>
 

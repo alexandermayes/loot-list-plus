@@ -612,7 +612,7 @@ export default function LootList() {
       <div className="min-h-screen bg-[#151515]">
         <Sidebar user={user} currentView="loot-list" />
 
-        <main className="ml-[208px] min-h-screen bg-[#0a0a0a] border-l border-[rgba(255,255,255,0.1)]">
+        <main className="ml-[208px] min-h-screen bg-[#09090c] border-l border-[rgba(255,255,255,0.1)]">
         <div className="max-w-6xl mx-auto p-6 pb-20 space-y-3">
         {/* Status Banner */}
         {submission && (

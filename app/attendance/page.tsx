@@ -156,7 +156,7 @@ export default function AttendancePage() {
     <div className="min-h-screen bg-[#151515]">
       <Sidebar user={user} currentView="attendance" />
 
-      <main className="ml-[208px] min-h-screen bg-[#0a0a0a] border-l border-[rgba(255,255,255,0.1)] p-6">
+      <main className="ml-[208px] min-h-screen bg-[#09090c] border-l border-[rgba(255,255,255,0.1)] p-6">
         <h1 className="text-3xl font-bold text-foreground mb-6">My Attendance</h1>
 
         <div className="max-w-4xl mx-auto space-y-6">

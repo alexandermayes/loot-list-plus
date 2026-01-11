@@ -304,7 +304,7 @@ export default function MasterSheet() {
       <div className="min-h-screen bg-[#151515]">
         <Sidebar user={user} currentView="master-sheet" />
 
-        <main className="ml-[208px] min-h-screen bg-[#0a0a0a] border-l border-[rgba(255,255,255,0.1)] p-6 pb-24">
+        <main className="ml-[208px] min-h-screen bg-[#09090c] border-l border-[rgba(255,255,255,0.1)] p-6 pb-24">
         {/* Raid Tier Header */}
         {selectedTier && (
           <div className="mb-6">

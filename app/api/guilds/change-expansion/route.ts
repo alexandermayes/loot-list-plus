@@ -86,7 +86,8 @@ export async function POST(request: NextRequest) {
     const { expansionId, error: seedError } = await seedExpansionForGuild(
       serviceSupabase,
       guild_id,
-      expansion
+      expansion,
+      true // useServiceRole flag
     )
 
     if (seedError) {

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/utils/supabase/server'
+import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { seedExpansionForGuild } from '@/app/services/expansionSeeder'
 
 // POST - Create a new guild
@@ -79,11 +80,13 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Seed expansion and raid tiers
+    // Seed expansion and raid tiers using service role client (bypasses RLS)
+    const serviceSupabase = createServiceRoleClient()
     const { expansionId, error: seedError } = await seedExpansionForGuild(
-      supabase,
+      serviceSupabase,
       guild.id,
-      expansion
+      expansion,
+      true // useServiceRole flag
     )
 
     if (seedError) {
@@ -96,8 +99,8 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Set the active expansion for the guild
-    const { error: updateError } = await supabase
+    // Set the active expansion for the guild (use service role to bypass RLS)
+    const { error: updateError } = await serviceSupabase
       .from('guilds')
       .update({ active_expansion_id: expansionId })
       .eq('id', guild.id)
@@ -105,6 +108,27 @@ export async function POST(request: NextRequest) {
     if (updateError) {
       console.error('Error setting active expansion:', updateError)
       // Continue anyway - the expansion was created, just not set as active
+    }
+
+    // Auto-fetch Discord icon if server ID is provided
+    if (discord_server_id) {
+      try {
+        const iconResponse = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/api/discord/guild-icon?serverId=${discord_server_id}`)
+
+        if (iconResponse.ok) {
+          const iconData = await iconResponse.json()
+          if (iconData.iconUrl) {
+            // Update guild with icon URL using service role
+            await serviceSupabase
+              .from('guilds')
+              .update({ icon_url: iconData.iconUrl })
+              .eq('id', guild.id)
+          }
+        }
+      } catch (iconError) {
+        console.error('Failed to auto-fetch Discord icon:', iconError)
+        // Non-critical, continue
+      }
     }
 
     // Create default guild settings
@@ -234,6 +258,55 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ guilds })
   } catch (error) {
     console.error('Error in GET /api/guilds:', error)
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    )
+  }
+}
+
+// DELETE - Delete a guild
+export async function DELETE(request: NextRequest) {
+  try {
+    const supabase = await createClient()
+
+    // Check if user is authenticated
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    // Parse request body
+    const body = await request.json()
+    const { guild_id } = body
+
+    // Validate required fields
+    if (!guild_id) {
+      return NextResponse.json(
+        { error: 'Guild ID is required' },
+        { status: 400 }
+      )
+    }
+
+    // Delete guild using RPC (bypasses RLS and verifies creator)
+    const { error: deleteError } = await supabase.rpc('delete_guild', {
+      p_guild_id: guild_id
+    })
+
+    if (deleteError) {
+      console.error('Error deleting guild:', deleteError)
+      return NextResponse.json(
+        { error: deleteError.message || 'Failed to delete guild' },
+        { status: 500 }
+      )
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: 'Guild deleted successfully'
+    })
+  } catch (error) {
+    console.error('Error in DELETE /api/guilds:', error)
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

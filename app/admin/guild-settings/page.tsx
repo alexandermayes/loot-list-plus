@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import InviteCodeManager from './components/InviteCodeManager'
 import MemberManager from './components/MemberManager'
+import RealmSelector from '@/app/components/RealmSelector'
 
 export default function GuildSettingsPage() {
   const [loading, setLoading] = useState(true)
@@ -20,15 +21,19 @@ export default function GuildSettingsPage() {
 
   // Form state
   const [guildName, setGuildName] = useState('')
+  const [realmRegion, setRealmRegion] = useState('Americas & Oceania')
   const [realm, setRealm] = useState('')
   const [faction, setFaction] = useState<'Alliance' | 'Horde'>('Alliance')
   const [discordServerId, setDiscordServerId] = useState('')
+  const [guildIconUrl, setGuildIconUrl] = useState<string | null>(null)
   const [activeExpansion, setActiveExpansion] = useState<string | null>(null)
   const [changingExpansion, setChangingExpansion] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+  const [isGuildCreator, setIsGuildCreator] = useState(false)
 
   const supabase = createClient()
   const router = useRouter()
-  const { activeGuild, loading: guildLoading, isOfficer } = useGuildContext()
+  const { activeGuild, loading: guildLoading, isOfficer, refreshGuilds } = useGuildContext()
 
   useEffect(() => {
     const loadData = async () => {
@@ -55,6 +60,10 @@ export default function GuildSettingsPage() {
       setRealm(activeGuild.realm || '')
       setFaction(activeGuild.faction as 'Alliance' | 'Horde')
       setDiscordServerId(activeGuild.discord_server_id || '')
+      setGuildIconUrl((activeGuild as any).icon_url || null)
+
+      // Check if user is the guild creator
+      setIsGuildCreator(activeGuild.created_by === user.id)
 
       // Load active expansion
       if (activeGuild.active_expansion_id) {
@@ -87,25 +96,63 @@ export default function GuildSettingsPage() {
     setMessage(null)
 
     try {
-      const { error } = await supabase
-        .from('guilds')
-        .update({
-          name: guildName.trim(),
-          realm: realm.trim() || null,
-          faction,
-          discord_server_id: discordServerId.trim() || null
-        })
-        .eq('id', activeGuild.id)
+      // Check if Discord Server ID changed and we should auto-fetch the icon
+      const serverIdChanged = discordServerId.trim() && discordServerId.trim() !== activeGuild.discord_server_id
+      const shouldFetchIcon = discordServerId.trim() && (!guildIconUrl || serverIdChanged)
+      let finalIconUrl = guildIconUrl
+
+      // Auto-fetch icon if server ID exists and icon is missing or changed
+      if (shouldFetchIcon) {
+        setMessage({ type: 'success', text: 'Saving and fetching Discord icon...' })
+
+        try {
+          const response = await fetch(`/api/discord/guild-icon?serverId=${discordServerId.trim()}`)
+
+          if (response.ok) {
+            const data = await response.json()
+            if (data.iconUrl) {
+              finalIconUrl = data.iconUrl
+              setGuildIconUrl(data.iconUrl)
+            }
+          }
+          // Don't fail the save if icon fetch fails, just continue
+        } catch (iconError) {
+          console.error('Failed to auto-fetch icon:', iconError)
+        }
+      }
+
+      // Update basic guild info using RPC (bypasses RLS)
+      const { error } = await supabase.rpc('update_guild_info', {
+        p_guild_id: activeGuild.id,
+        p_name: guildName.trim(),
+        p_realm: realm.trim() || null,
+        p_faction: faction,
+        p_discord_server_id: discordServerId.trim() || null
+      })
 
       if (error) throw error
 
-      setMessage({ type: 'success', text: 'Guild information updated successfully' })
+      // Update icon separately using RPC (bypasses RLS)
+      if (finalIconUrl) {
+        const { error: iconError } = await supabase.rpc('update_guild_icon', {
+          p_guild_id: activeGuild.id,
+          p_icon_url: finalIconUrl
+        })
 
-      // Refresh guild context
-      window.location.reload()
+        if (iconError) {
+          console.error('Failed to update icon:', iconError)
+          // Don't fail the whole save if just the icon update fails
+        }
+      }
+
+      setMessage({ type: 'success', text: 'Guild information updated successfully' + (shouldFetchIcon && finalIconUrl ? ' (Discord icon fetched!)' : '') })
+
+      // Reload page to show updated guild info in sidebar
+      setTimeout(() => {
+        window.location.reload()
+      }, 800)
     } catch (error: any) {
       setMessage({ type: 'error', text: error.message || 'Failed to update guild information' })
-    } finally {
       setSaving(false)
     }
   }
@@ -136,10 +183,47 @@ export default function GuildSettingsPage() {
       }
 
       setMessage({ type: 'success', text: 'Expansion changed successfully! Reloading...' })
-      setTimeout(() => window.location.reload(), 1500)
+      setTimeout(() => {
+        window.location.reload()
+      }, 800)
     } catch (error: any) {
       setMessage({ type: 'error', text: error.message || 'Failed to change expansion' })
       setChangingExpansion(false)
+    }
+  }
+
+  const handleDeleteGuild = async () => {
+    if (!activeGuild) return
+
+    const confirmText = `DELETE ${activeGuild.name}`
+    const userInput = prompt(
+      `⚠️ DANGER: This will permanently delete "${activeGuild.name}" and ALL associated data including loot lists, attendance, and settings.\n\nThis action CANNOT be undone.\n\nType "${confirmText}" to confirm:`
+    )
+
+    if (userInput !== confirmText) {
+      return
+    }
+
+    setDeleting(true)
+    setMessage(null)
+
+    try {
+      const response = await fetch('/api/guilds', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ guild_id: activeGuild.id })
+      })
+
+      if (!response.ok) {
+        const data = await response.json()
+        throw new Error(data.error || 'Failed to delete guild')
+      }
+
+      // Force full page reload to guild select page
+      window.location.href = '/guild-select'
+    } catch (error: any) {
+      setMessage({ type: 'error', text: error.message || 'Failed to delete guild' })
+      setDeleting(false)
     }
   }
 
@@ -163,7 +247,7 @@ export default function GuildSettingsPage() {
     <div className="min-h-screen bg-[#151515]">
       <Sidebar user={user} currentView="guild-settings" />
 
-      <main className="ml-[208px] min-h-screen bg-[#0a0a0a] border-l border-[rgba(255,255,255,0.1)] p-6">
+      <main className="ml-[208px] min-h-screen bg-[#09090c] border-l border-[rgba(255,255,255,0.1)] p-6">
         <h1 className="text-3xl font-bold text-foreground mb-6">Guild Settings</h1>
 
         <div className="max-w-6xl mx-auto space-y-6">
@@ -195,26 +279,44 @@ export default function GuildSettingsPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="realm">Realm (Optional)</Label>
-              <Input
-                id="realm"
-                value={realm}
-                onChange={(e) => setRealm(e.target.value)}
-                placeholder="e.g., Faerlina, Whitemane"
+              <Label className="text-base">Realm (Optional)</Label>
+              <RealmSelector
+                region={realmRegion}
+                realm={realm}
+                onRegionChange={setRealmRegion}
+                onRealmChange={setRealm}
+                disabled={saving}
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="faction">Faction</Label>
-              <select
-                id="faction"
-                value={faction}
-                onChange={(e) => setFaction(e.target.value as 'Alliance' | 'Horde')}
-                className="w-full bg-background border border-border rounded-md px-3 py-2 text-foreground"
-              >
-                <option value="Alliance">Alliance</option>
-                <option value="Horde">Horde</option>
-              </select>
+              <Label htmlFor="faction" className="text-base">Faction</Label>
+              <div className="grid grid-cols-2 gap-4">
+                <button
+                  type="button"
+                  onClick={() => setFaction('Alliance')}
+                  disabled={saving}
+                  className={`p-4 rounded-lg border-2 transition ${
+                    faction === 'Alliance'
+                      ? 'border-blue-500 bg-blue-500/20 text-blue-200'
+                      : 'border-border bg-card hover:border-blue-500/50'
+                  }`}
+                >
+                  <p className="font-medium">Alliance</p>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFaction('Horde')}
+                  disabled={saving}
+                  className={`p-4 rounded-lg border-2 transition ${
+                    faction === 'Horde'
+                      ? 'border-red-500 bg-red-500/20 text-red-200'
+                      : 'border-border bg-card hover:border-red-500/50'
+                  }`}
+                >
+                  <p className="font-medium">Horde</p>
+                </button>
+              </div>
             </div>
 
             <Button
@@ -253,7 +355,7 @@ export default function GuildSettingsPage() {
               disabled={saving}
               variant="outline"
             >
-              {saving ? 'Saving...' : 'Update Discord Server'}
+              {saving ? 'Saving...' : 'Save Changes'}
             </Button>
           </CardContent>
         </Card>
@@ -315,6 +417,38 @@ export default function GuildSettingsPage() {
 
         {/* Members */}
         <MemberManager />
+
+        {/* Danger Zone - Only visible to guild creator */}
+        {isGuildCreator && (
+          <Card className="border-red-900/50">
+            <CardHeader>
+              <CardTitle className="text-red-400">Danger Zone</CardTitle>
+              <CardDescription>
+                Irreversible and destructive actions
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="rounded-lg border border-red-900/50 bg-red-950/20 p-4">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex-1">
+                    <h3 className="text-base font-semibold text-red-400 mb-1">Delete this guild</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Once you delete a guild, there is no going back. This will permanently delete all guild data including members, loot lists, attendance records, and settings.
+                    </p>
+                  </div>
+                  <Button
+                    onClick={handleDeleteGuild}
+                    disabled={deleting}
+                    variant="destructive"
+                    className="shrink-0"
+                  >
+                    {deleting ? 'Deleting...' : 'Delete Guild'}
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
         </div>
       </main>
     </div>

@@ -72,15 +72,17 @@ const EXPANSION_DATA: Record<string, ExpansionDefinition | null> = {
 /**
  * Seed an expansion with all raid tiers and loot items for a guild
  *
- * @param supabase - Supabase client with service role privileges
+ * @param supabase - Supabase client (can be service role or regular)
  * @param guildId - The guild to seed the expansion for
  * @param expansionName - The expansion to seed (e.g., "Classic", "The Burning Crusade")
+ * @param useServiceRole - Whether to use direct inserts (for service role client) instead of RPC
  * @returns The created expansion ID or an error message
  */
 export async function seedExpansionForGuild(
   supabase: SupabaseClient,
   guildId: string,
-  expansionName: string
+  expansionName: string,
+  useServiceRole: boolean = false
 ): Promise<{ expansionId: string; error?: string }> {
   const expansionData = EXPANSION_DATA[expansionName]
 
@@ -94,18 +96,39 @@ export async function seedExpansionForGuild(
 
   try {
     // 1. Create the expansion record
-    const { data: expansion, error: expError } = await supabase
-      .from('expansions')
-      .insert({
-        guild_id: guildId,
-        name: expansionData.displayName
-      })
-      .select()
-      .single()
+    let expansion: { id: string }
 
-    if (expError) {
-      console.error('Error creating expansion:', expError)
-      return { expansionId: '', error: `Failed to create expansion: ${expError.message}` }
+    if (useServiceRole) {
+      // Direct insert when using service role (bypasses RLS entirely)
+      const { data: expData, error: expError } = await supabase
+        .from('expansions')
+        .insert({
+          guild_id: guildId,
+          name: expansionData.displayName
+        })
+        .select()
+        .single()
+
+      if (expError) {
+        console.error('Error creating expansion:', expError)
+        return { expansionId: '', error: `Failed to create expansion: ${expError.message}` }
+      }
+
+      expansion = { id: expData.id }
+    } else {
+      // Use RPC when using regular client (bypasses RLS with auth checks)
+      const { data: expansionId, error: expError } = await supabase
+        .rpc('create_expansion_for_guild', {
+          p_guild_id: guildId,
+          p_name: expansionData.displayName
+        })
+
+      if (expError) {
+        console.error('Error creating expansion:', expError)
+        return { expansionId: '', error: `Failed to create expansion: ${expError.message}` }
+      }
+
+      expansion = { id: expansionId }
     }
 
     // 2. Create raid tiers with their loot items

@@ -183,7 +183,7 @@ export default function Dashboard() {
       <Sidebar user={user} currentView="overview" />
 
       {/* Main Content */}
-      <main className="ml-[208px] min-h-screen bg-[#0a0a0a] border-l border-[rgba(255,255,255,0.1)]">
+      <main className="ml-[208px] min-h-screen bg-[#09090c] border-l border-[rgba(255,255,255,0.1)]">
         {!activeGuild ? (
           <WelcomeScreen />
         ) : (

@@ -12,6 +12,7 @@ export interface Guild {
   realm: string | null
   faction: string
   discord_server_id: string | null
+  icon_url: string | null
   created_by: string | null
   is_active: boolean
   require_discord_verification: boolean
@@ -105,6 +106,7 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
             realm,
             faction,
             discord_server_id,
+            icon_url,
             created_by,
             is_active,
             require_discord_verification,

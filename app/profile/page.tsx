@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { PageHeader } from '@/components/ui/page-header'
 import { ProfileStats } from '@/components/profile/profile-stats'
-import { User, Mail, Shield, Calendar, Trophy, Settings, CheckCircle, XCircle } from 'lucide-react'
+import { User, Mail, Shield, Calendar, Trophy, Settings, CheckCircle, XCircle, LogOut } from 'lucide-react'
 
 export default function ProfilePage() {
   const [user, setUser] = useState<any>(null)
@@ -19,6 +19,11 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true)
   const supabase = createClient()
   const router = useRouter()
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut()
+    router.push('/')
+  }
 
   useEffect(() => {
     const loadProfile = async () => {
@@ -255,6 +260,26 @@ export default function ProfilePage() {
                 </p>
               </div>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Account Actions */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Account</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Button
+              onClick={handleLogout}
+              variant="destructive"
+              className="w-full sm:w-auto"
+            >
+              <LogOut className="w-4 h-4 mr-2" />
+              Log Out
+            </Button>
+            <p className="text-sm text-muted-foreground mt-3">
+              Logging out will end your session. You'll need to sign in again with Discord.
+            </p>
           </CardContent>
         </Card>
 
