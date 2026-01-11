@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Inter, Poppins } from "next/font/google";
 import Script from "next/script";
 import { GuildContextProvider } from "./contexts/GuildContext";
 import { NotificationProvider } from "./contexts/NotificationContext";
@@ -11,6 +11,12 @@ export const dynamic = 'force-dynamic'
 const inter = Inter({
   variable: "--font-inter",
   subsets: ["latin"],
+});
+
+const poppins = Poppins({
+  variable: "--font-poppins",
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
 });
 
 export const metadata: Metadata = {
@@ -43,7 +49,7 @@ export default function RootLayout({
         />
       </head>
       <body
-        className={`${inter.variable} antialiased font-sans`}
+        className={`${inter.variable} ${poppins.variable} antialiased font-sans`}
       >
         <NotificationProvider>
           <GuildContextProvider>

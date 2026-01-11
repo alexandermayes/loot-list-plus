@@ -6,6 +6,7 @@ import type { User } from '@supabase/supabase-js'
 import { ArrowLeft, LogOut, ChevronDown, Check } from 'lucide-react'
 import { useGuildContext } from '../contexts/GuildContext'
 import { useState, useRef, useEffect } from 'react'
+import Image from 'next/image'
 
 interface NavigationProps {
   user: User | null
@@ -72,7 +73,21 @@ export default function Navigation({
               Back
             </button>
           )}
-          <h1 className="text-xl font-bold text-primary">{title || 'LootList+'}</h1>
+          <Image
+            src="/logo.svg"
+            alt="LootList+"
+            width={160}
+            height={34}
+            className="h-8 w-auto cursor-pointer"
+            priority
+            onClick={() => router.push('/dashboard')}
+          />
+          {title && showBack && (
+            <span className="text-muted-foreground">•</span>
+          )}
+          {title && showBack && (
+            <h1 className="text-lg font-semibold text-foreground">{title}</h1>
+          )}
         </div>
 
         {/* Guild Switcher */}

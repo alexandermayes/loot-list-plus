@@ -4,9 +4,11 @@ import { createClient } from '@/utils/supabase/client'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Loader2 } from 'lucide-react'
+import Image from 'next/image'
 
 export default function Home() {
   const [loading, setLoading] = useState(true)
+  const [showLogin, setShowLogin] = useState(false)
   const supabase = createClient()
   const router = useRouter()
 
@@ -34,40 +36,187 @@ export default function Home() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="min-h-screen bg-[#151515] flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
-      <div className="bg-card rounded-xl p-8 w-full max-w-md shadow-2xl border border-border">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-primary">&lt;Big Yikes&gt;</h1>
-          <p className="text-muted-foreground mt-2">LootList+</p>
-          {process.env.VERCEL_ENV === 'preview' && (
-            <p className="text-xs text-yellow-500 mt-1">DEV ENVIRONMENT</p>
-          )}
+    <div className="relative min-h-screen w-full overflow-hidden">
+      {/* Background Image Section */}
+      <div className="absolute inset-0 bg-[#151515]">
+        <Image
+          src="/landing-background.png"
+          alt="Epic loot background"
+          fill
+          className="object-cover object-center scale-x-[-1]"
+          priority
+          quality={100}
+        />
+      </div>
+
+      {/* Logo in top left - Always visible */}
+      <div className="absolute top-[60px] left-[60px] z-30">
+        <Image
+          src="/logo.svg"
+          alt="LootList+"
+          width={179}
+          height={28}
+          className="h-7 w-auto"
+          priority
+        />
+      </div>
+
+      {/* Animated Panel */}
+      <div
+        className={`absolute right-0 top-0 h-screen bg-[#0a0a0a] flex flex-col transition-all duration-500 ease-in-out ${
+          showLogin ? 'w-full' : 'w-full md:w-[720px]'
+        }`}
+      >
+        {/* Toggle Button */}
+        <div className="absolute top-[50px] right-[60px] z-20">
+          <button
+            onClick={() => setShowLogin(!showLogin)}
+            className="px-5 py-3 bg-[#151515] text-white font-poppins font-semibold text-base rounded-[60px] hover:bg-[#1f1f1f] transition"
+          >
+            {showLogin ? 'Signup' : 'Login'}
+          </button>
         </div>
 
-        <button
-          onClick={handleDiscordLogin}
-          className="w-full py-4 bg-discord hover:bg-discord/90 rounded-lg text-discord-foreground font-semibold transition flex items-center justify-center gap-3"
-        >
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/>
-          </svg>
-          Continue with Discord
-        </button>
+        {/* Content Container */}
+        <div className="relative flex-1 flex items-center justify-center px-[60px]">
+          {/* Signup Content */}
+          <div
+            className={`absolute inset-0 flex items-center justify-center px-[60px] transition-opacity duration-300 ${
+              showLogin ? 'opacity-0 pointer-events-none' : 'opacity-100'
+            }`}
+          >
+            <div className="w-full max-w-[600px] flex flex-col items-center gap-[60px]">
+              {/* Content Section */}
+              <div className="w-full flex flex-col items-center gap-5">
+                {/* Icon */}
+                <div className="w-[33px] h-[44px] relative">
+                  <Image
+                    src="/lootlist-icon.svg"
+                    alt="LootList+ Icon"
+                    width={33}
+                    height={44}
+                    className="w-full h-full"
+                  />
+                </div>
 
-        <div className="mt-8 p-4 bg-secondary rounded-lg">
-          <h3 className="text-foreground font-medium mb-2">Why Discord?</h3>
-          <ul className="text-muted-foreground text-sm space-y-1">
-            <li>• No new password to remember</li>
-            <li>• Links to your Discord identity</li>
-            <li>• Officers can verify guild membership</li>
-          </ul>
+                {/* Headline */}
+                <h1 className="font-poppins font-bold text-[42px] leading-[43px] text-white text-center max-w-[600px]">
+                  Epic loot deserves an epic system.
+                </h1>
+
+                {/* Description */}
+                <p className="font-poppins font-normal text-base text-[#a1a1a1] text-center max-w-[600px]">
+                  LootList+ is a transparent loot management system for WoW guilds. Includes loot submissions, attendance, tracking, and more!
+                </p>
+              </div>
+
+              {/* Buttons Section */}
+              <div className="w-full max-w-[373px] flex flex-col gap-2.5">
+                {/* Sign up with Discord */}
+                <button
+                  onClick={handleDiscordLogin}
+                  className="w-full px-5 py-3 bg-white hover:bg-gray-100 transition border border-[#383838] rounded-[52px] flex items-center justify-center gap-3"
+                >
+                  <Image
+                    src="/discord-icon.svg"
+                    alt="Discord"
+                    width={24}
+                    height={24}
+                    className="w-6 h-6"
+                  />
+                  <span className="font-poppins font-medium text-base text-[#0a0a0a]">
+                    Sign up with Discord
+                  </span>
+                </button>
+
+                {/* Learn more */}
+                <button className="w-full px-5 py-3 bg-[#151515] hover:bg-[#1f1f1f] transition border border-[rgba(255,255,255,0.1)] rounded-[52px] flex items-center justify-center">
+                  <span className="font-poppins font-medium text-base text-white">
+                    Learn more
+                  </span>
+                </button>
+
+                {/* Terms and Privacy */}
+                <p className="font-poppins font-normal text-sm text-[#a1a1a1] text-center mt-0">
+                  By continuing, you agree to our{' '}
+                  <span className="text-white underline decoration-solid cursor-pointer hover:opacity-80">
+                    Terms of Service
+                  </span>
+                  {' '}and{' '}
+                  <span className="text-white underline decoration-solid cursor-pointer hover:opacity-80">
+                    Privacy Policy
+                  </span>.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Login Content */}
+          <div
+            className={`absolute inset-0 flex items-center justify-center px-[60px] transition-opacity duration-300 ${
+              showLogin ? 'opacity-100' : 'opacity-0 pointer-events-none'
+            }`}
+          >
+            <div className="w-[500px] flex flex-col items-center gap-[30px]">
+              {/* Content Section */}
+              <div className="w-[500px] flex flex-col items-center gap-5">
+                {/* Icon */}
+                <div className="w-[33px] h-[44px] relative">
+                  <Image
+                    src="/lootlist-icon.svg"
+                    alt="LootList+ Icon"
+                    width={33}
+                    height={44}
+                    className="w-full h-full"
+                  />
+                </div>
+
+                {/* Headline */}
+                <h1 className="font-poppins font-bold text-[42px] leading-[43px] text-white text-center w-[500px]">
+                  Login to LL+
+                </h1>
+              </div>
+
+              {/* Buttons Section */}
+              <div className="w-full flex flex-col items-center gap-2.5">
+                {/* Continue with Discord */}
+                <button
+                  onClick={handleDiscordLogin}
+                  className="px-[60px] py-3 bg-white hover:bg-gray-100 transition border border-[#383838] rounded-[52px] flex items-center justify-center gap-3 w-max"
+                >
+                  <Image
+                    src="/discord-icon.svg"
+                    alt="Discord"
+                    width={24}
+                    height={24}
+                    className="w-6 h-6"
+                  />
+                  <span className="font-poppins font-medium text-base text-[#0a0a0a]">
+                    Continue with Discord
+                  </span>
+                </button>
+
+                {/* Terms and Privacy */}
+                <p className="font-poppins font-normal text-sm text-[#a1a1a1] text-center" style={{ width: '100%', maxWidth: '312px' }}>
+                  By continuing, you agree to our{' '}
+                  <span className="text-white underline decoration-solid cursor-pointer hover:opacity-80">
+                    Terms of Service
+                  </span>
+                  {' '}and{' '}
+                  <span className="text-white underline decoration-solid cursor-pointer hover:opacity-80">
+                    Privacy Policy
+                  </span>.
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
