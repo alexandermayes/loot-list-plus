@@ -21,12 +21,19 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange }
   const [modalView, setModalView] = useState<'main' | 'discord'>('main')
   const [inviteCode, setInviteCode] = useState('')
   const [joining, setJoining] = useState(false)
-  const [errorMessage, setErrorMessage] = useState('')
+  const [showToast, setShowToast] = useState(false)
+  const [toastMessage, setToastMessage] = useState('')
   const [discordLoading, setDiscordLoading] = useState(false)
   const [availableGuilds, setAvailableGuilds] = useState<any[]>([])
   const [discordError, setDiscordError] = useState('')
   const dropdownRef = useRef<HTMLDivElement>(null)
   const supabase = createClient()
+
+  const showErrorToast = (message: string) => {
+    setToastMessage(message)
+    setShowToast(true)
+    setTimeout(() => setShowToast(false), 4000)
+  }
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -55,12 +62,11 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange }
 
   const handleJoinWithCode = async () => {
     if (!inviteCode.trim()) {
-      setErrorMessage('Please enter an invite code')
+      showErrorToast('Please enter an invite code')
       return
     }
 
     setJoining(true)
-    setErrorMessage('')
 
     try {
       const response = await fetch(`/api/guild-invites/${inviteCode.trim()}`, {
@@ -73,7 +79,7 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange }
       const data = await response.json()
 
       if (!response.ok) {
-        setErrorMessage(data.error || 'Failed to join guild')
+        showErrorToast(data.error || 'Failed to join guild')
         setJoining(false)
         return
       }
@@ -82,7 +88,7 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange }
       window.location.href = '/dashboard'
     } catch (err) {
       console.error('Error joining guild:', err)
-      setErrorMessage('An error occurred while joining the guild')
+      showErrorToast('An error occurred while joining the guild')
       setJoining(false)
     }
   }
@@ -199,6 +205,17 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange }
 
   return (
     <>
+    {/* Toast Notification */}
+    <div
+      className={`fixed top-4 left-1/2 -translate-x-1/2 z-[200] transition-all duration-300 ease-out ${
+        showToast ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4 pointer-events-none'
+      }`}
+    >
+      <div className="bg-red-950/95 border border-red-600/50 rounded-[12px] px-[24px] py-[16px] shadow-lg backdrop-blur-sm">
+        <p className="font-poppins text-[14px] text-red-200">{toastMessage}</p>
+      </div>
+    </div>
+
     <aside className="fixed left-0 top-0 h-screen w-[208px] bg-[#0d0e11] flex flex-col gap-12 px-2.5 pt-9 pb-2.5 z-50">
       {/* Logo */}
       <div className="px-3">
@@ -627,16 +644,15 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange }
                         onChange={(e) => {
                           const value = e.target.value.toUpperCase()
                           setInviteCode(value.slice(0, 12))
-                          setErrorMessage('')
                         }}
                         disabled={joining}
-                        className="flex-1 bg-[#151515] border border-[#383838] rounded-[52px] px-[20px] py-[12px] font-poppins font-medium text-[16px] text-white placeholder:text-white focus:outline-none focus:border-[#ff8000] transition uppercase leading-[normal]"
+                        className="flex-1 bg-[#151515] border border-[#383838] rounded-[52px] px-[20px] py-[12px] font-poppins font-medium text-[16px] text-white placeholder:text-[rgba(255,255,255,0.25)] focus:outline-none focus:border-[#ff8000] transition uppercase leading-[normal]"
                         maxLength={12}
                       />
                       <button
                         onClick={handleJoinWithCode}
                         disabled={!inviteCode.trim() || joining}
-                        className="bg-white border border-[#383838] rounded-[52px] px-[20px] py-[12px] font-poppins font-medium text-[16px] text-black hover:opacity-90 transition disabled:opacity-50 disabled:cursor-not-allowed leading-[normal]"
+                        className="bg-white border border-[#383838] rounded-[52px] px-[20px] py-[12px] font-poppins font-medium text-[16px] text-black hover:opacity-90 transition disabled:opacity-50 disabled:cursor-not-allowed leading-[normal] w-[100px] shrink-0"
                       >
                         {joining ? 'Joining...' : 'Join'}
                       </button>
@@ -662,13 +678,6 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange }
                   </p>
                 </div>
               </div>
-
-                {/* Error Message */}
-                {errorMessage && (
-                  <div className="mt-[24px] p-4 rounded-lg bg-red-950/50 border border-red-600/50">
-                    <p className="text-sm text-red-200 text-center">{errorMessage}</p>
-                  </div>
-                )}
               </div>
             ) : (
               /* Discord View */
