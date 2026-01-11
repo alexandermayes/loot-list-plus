@@ -15,9 +15,20 @@ export default function GuildSelectPage() {
   const [discordVerified, setDiscordVerified] = useState(false)
   const [hasGuilds, setHasGuilds] = useState(false)
   const [inviteCode, setInviteCode] = useState('')
+  const [validating, setValidating] = useState(false)
+  const [joining, setJoining] = useState(false)
+  const [toastMessage, setToastMessage] = useState('')
+  const [showToast, setShowToast] = useState(false)
+  const [guildInfo, setGuildInfo] = useState<any>(null)
 
   const supabase = createClient()
   const router = useRouter()
+
+  const showErrorToast = (message: string) => {
+    setToastMessage(message)
+    setShowToast(true)
+    setTimeout(() => setShowToast(false), 4000)
+  }
 
   useEffect(() => {
     const checkUser = async () => {
@@ -57,9 +68,70 @@ export default function GuildSelectPage() {
     checkUser()
   }, [])
 
-  const handleJoinWithCode = () => {
-    if (inviteCode.trim()) {
-      router.push(`/guild-select/join?code=${inviteCode.trim()}`)
+  const validateCode = async (code: string) => {
+    if (!code.trim()) {
+      showErrorToast('Please enter an invite code')
+      setGuildInfo(null)
+      return
+    }
+
+    setValidating(true)
+    setGuildInfo(null)
+
+    try {
+      const response = await fetch(`/api/guild-invites/${code.trim()}`)
+      const data = await response.json()
+
+      if (!response.ok) {
+        showErrorToast(data.error || 'Invalid invite code')
+        setValidating(false)
+        return
+      }
+
+      // Code is valid, show guild info
+      setGuildInfo(data)
+      setValidating(false)
+    } catch (err) {
+      console.error('Error validating code:', err)
+      showErrorToast('Failed to validate invite code')
+      setValidating(false)
+    }
+  }
+
+  const handleJoinWithCode = async () => {
+    if (!guildInfo) {
+      // If no guild info yet, validate the code
+      if (inviteCode.trim()) {
+        await validateCode(inviteCode.trim())
+      }
+      return
+    }
+
+    // If guild info exists, join the guild
+    setJoining(true)
+
+    try {
+      const response = await fetch(`/api/guild-invites/${inviteCode.trim()}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        showErrorToast(data.error || 'Failed to join guild')
+        setJoining(false)
+        return
+      }
+
+      // Success! Redirect to dashboard
+      window.location.href = '/dashboard'
+    } catch (err) {
+      console.error('Error joining guild:', err)
+      showErrorToast('An error occurred while joining the guild')
+      setJoining(false)
     }
   }
 
@@ -69,6 +141,17 @@ export default function GuildSelectPage() {
 
   return (
     <div className="flex h-screen bg-[#151515]">
+      {/* Toast Notification */}
+      <div
+        className={`fixed top-4 left-1/2 -translate-x-1/2 z-[100] transition-all duration-300 ease-out ${
+          showToast ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4 pointer-events-none'
+        }`}
+      >
+        <div className="bg-red-950/95 border border-red-600/50 rounded-[12px] px-[24px] py-[16px] shadow-lg backdrop-blur-sm">
+          <p className="font-poppins text-[14px] text-red-200">{toastMessage}</p>
+        </div>
+      </div>
+
       <Sidebar user={user} />
 
       {/* Main Content */}
@@ -162,21 +245,48 @@ export default function GuildSelectPage() {
                   </div>
                 </div>
 
-                <div className="flex gap-[10px] items-stretch w-full">
-                  <Input
-                    placeholder="ABC123DEF456"
-                    value={inviteCode}
-                    onChange={(e) => setInviteCode(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleJoinWithCode()}
-                    className="flex-1 bg-[#0d0e11] border-[#383838] border-[0.5px] rounded-[52px] px-[20px] py-[12px] font-poppins font-medium text-[16px] text-white placeholder:text-[rgba(255,255,255,0.25)] focus-visible:ring-0 focus-visible:ring-offset-0 focus:border-[#ff8000] focus:border-[1px] transition-colors h-auto"
-                  />
-                  <Button
-                    onClick={handleJoinWithCode}
-                    disabled={!inviteCode.trim()}
-                    className="bg-white border border-[#383838] rounded-[52px] px-[20px] py-[12px] font-poppins font-medium text-[16px] text-black hover:bg-gray-100 h-auto disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    Join
-                  </Button>
+                <div className="flex flex-col gap-[12px] w-full">
+                  <div className="flex gap-[10px] items-stretch w-full">
+                    <Input
+                      placeholder="ABC123DEF456"
+                      value={inviteCode}
+                      onChange={(e) => {
+                        setInviteCode(e.target.value.toUpperCase())
+                        setGuildInfo(null)
+                      }}
+                      onKeyDown={(e) => e.key === 'Enter' && handleJoinWithCode()}
+                      disabled={validating || joining}
+                      maxLength={12}
+                      className="flex-1 bg-[#0d0e11] border-[#383838] border-[0.5px] rounded-[52px] px-[20px] py-[12px] font-poppins font-medium text-[16px] text-white placeholder:text-[rgba(255,255,255,0.25)] focus-visible:ring-0 focus-visible:ring-offset-0 focus:border-[#ff8000] focus:border-[1px] transition-colors h-auto"
+                    />
+                    <Button
+                      onClick={handleJoinWithCode}
+                      disabled={!inviteCode.trim() || validating || joining}
+                      className="bg-white border border-[#383838] rounded-[52px] px-[20px] py-[12px] font-poppins font-medium text-[16px] text-black hover:bg-gray-100 h-auto disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {validating ? 'Checking...' : joining ? 'Joining...' : 'Join'}
+                    </Button>
+                  </div>
+
+                  {/* Guild Info (shown after validation) */}
+                  {guildInfo && (
+                    <div className="px-[20px] py-[16px] rounded-[12px] bg-green-950/20 border border-green-600/50">
+                      <div className="flex flex-col gap-[8px]">
+                        <p className="font-poppins font-bold text-[16px] text-green-200">Valid Invite Code!</p>
+                        <div className="flex flex-col gap-[4px]">
+                          <p className="font-poppins text-[14px] text-[#a1a1a1]">
+                            Guild: <span className="text-white font-medium">{guildInfo.guild.name}</span>
+                          </p>
+                          <p className="font-poppins text-[14px] text-[#a1a1a1]">
+                            Realm: <span className="text-white font-medium">{guildInfo.guild.realm || 'Not set'}</span>
+                          </p>
+                          <p className="font-poppins text-[14px] text-[#a1a1a1]">
+                            Faction: <span className="text-white font-medium">{guildInfo.guild.faction}</span>
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
