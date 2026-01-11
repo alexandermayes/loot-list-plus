@@ -7,7 +7,7 @@ import { useState, useRef, useEffect } from 'react'
 import { createClient } from '@/utils/supabase/client'
 
 interface SidebarProps {
-  user: any
+  user?: any
   currentView?: string
   onViewChange?: (view: string) => void
 }
@@ -117,20 +117,21 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange }
             {!activeGuild ? (
               <button
                 onClick={() => router.push('/guild-select')}
-                className="w-full bg-[#ff8000] border border-[#1a1a1a] rounded-xl px-3.5 py-2 flex items-center gap-3 hover:bg-[#e67300] transition"
+                className="w-full border-[#ff8000] border-[0.5px] rounded-[12px] px-3.5 py-2 flex items-center gap-3 hover:opacity-90 transition"
+                style={{ background: 'linear-gradient(179.949deg, rgb(255, 128, 0) 0.15%, rgb(153, 77, 0) 113.91%)' }}
               >
                 <Image
                   src="/icons/add-circle.svg"
                   alt="Add"
                   width={20}
                   height={20}
-                  className="w-5 h-5 shrink-0"
+                  className="w-5 h-5 shrink-0 brightness-0 invert"
                 />
-                <div className="flex-1 text-left">
-                  <p className="font-poppins font-medium text-[13px] text-black leading-tight">
+                <div className="flex-1 text-left leading-[normal]">
+                  <p className="font-poppins font-medium text-[13px] text-white">
                     Create a guild
                   </p>
-                  <p className="font-poppins font-normal text-[10px] text-[#141313] leading-tight">
+                  <p className="font-poppins font-normal text-[10px] text-[rgba(255,255,255,0.7)]">
                     Start your own guild
                   </p>
                 </div>
@@ -348,11 +349,17 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange }
         >
           {user?.user_metadata?.avatar_url ? (
             <Image
-              src={user.user_metadata.avatar_url}
+              src={user.user_metadata.avatar_url.startsWith('http')
+                ? user.user_metadata.avatar_url
+                : `https://cdn.discordapp.com/avatars/${user.user_metadata.provider_id}/${user.user_metadata.avatar_url}.png`}
               alt="Avatar"
               width={20}
               height={20}
               className="w-5 h-5 rounded-full shrink-0 border border-[rgba(255,255,255,0.1)]"
+              onError={(e) => {
+                const target = e.target as HTMLImageElement
+                target.src = 'https://cdn.discordapp.com/embed/avatars/0.png'
+              }}
             />
           ) : (
             <div className="w-5 h-5 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 shrink-0 border border-[rgba(255,255,255,0.1)]" />

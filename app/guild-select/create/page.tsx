@@ -34,7 +34,7 @@ export default function CreateGuildPage() {
   const [realmRegion, setRealmRegion] = useState('All')
   const [realm, setRealm] = useState('')
   const [faction, setFaction] = useState<'Alliance' | 'Horde'>('Alliance')
-  const [expansion, setExpansion] = useState('Cataclysm')
+  const [expansion, setExpansion] = useState('Classic')
 
   // Bot installation state
   const [botInstalled, setBotInstalled] = useState<boolean | null>(null)
