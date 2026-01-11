@@ -102,12 +102,12 @@ export default function RaidTiersPage() {
           id,
           name,
           is_active,
-          expansion:expansions!inner (
+          expansion:expansions (
             id,
             name
           )
         `)
-        .eq('expansion.id', expansionId)
+        .eq('expansion_id', expansionId)
         .order('name', { ascending: true })
 
       if (error) {
@@ -116,7 +116,7 @@ export default function RaidTiersPage() {
         return
       }
 
-      setRaidTiers(tiersData || [])
+      setRaidTiers(tiersData as RaidTier[] || [])
     } catch (err) {
       console.error('Unexpected error loading raid tiers:', err)
       setRaidTiers([])
