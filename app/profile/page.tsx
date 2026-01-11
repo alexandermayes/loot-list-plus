@@ -20,6 +20,8 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true)
   const [leaveGuildId, setLeaveGuildId] = useState<string | null>(null)
   const [leaving, setLeaving] = useState(false)
+  const [deleteGuildId, setDeleteGuildId] = useState<string | null>(null)
+  const [deleting, setDeleting] = useState(false)
   const supabase = createClient()
   const router = useRouter()
 
@@ -62,6 +64,40 @@ export default function ProfilePage() {
     }
   }
 
+  const handleDeleteGuild = async (guildId: string) => {
+    setDeleting(true)
+    try {
+      const response = await fetch('/api/guilds/delete', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ guild_id: guildId })
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        alert(data.error || 'Failed to delete guild')
+        setDeleting(false)
+        return
+      }
+
+      // If user has no other guilds, redirect to guild select
+      if (!data.has_other_guilds) {
+        window.location.href = '/guild-select'
+        return
+      }
+
+      // Refresh the page to show updated guild list
+      window.location.reload()
+    } catch (err) {
+      console.error('Error deleting guild:', err)
+      alert('An error occurred while deleting the guild')
+      setDeleting(false)
+    }
+  }
+
   useEffect(() => {
     const loadProfile = async () => {
       const { data: { user } } = await supabase.auth.getUser()
@@ -77,7 +113,7 @@ export default function ProfilePage() {
         .select(`
           *,
           class:wow_classes(name, color_hex),
-          guild:guilds(id, name, realm, faction)
+          guild:guilds(id, name, realm, faction, created_by)
         `)
         .eq('user_id', user.id)
 
@@ -310,31 +346,51 @@ export default function ProfilePage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {allGuilds.map((membership) => (
-                  <div
-                    key={membership.guild.id}
-                    className="flex items-center justify-between p-4 bg-muted rounded-lg"
-                  >
-                    <div className="flex-1">
-                      <p className="font-medium text-foreground">{membership.guild.name}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {membership.guild.realm && `${membership.guild.realm} • ${membership.guild.faction}`}
-                      </p>
-                      <Badge variant="secondary" className="mt-1">
-                        {membership.role}
-                      </Badge>
-                    </div>
-                    <Button
-                      onClick={() => setLeaveGuildId(membership.guild.id)}
-                      variant="destructive"
-                      size="sm"
-                      disabled={leaving}
+                {allGuilds.map((membership) => {
+                  const isCreator = membership.guild.created_by === user?.id
+                  return (
+                    <div
+                      key={membership.guild.id}
+                      className="flex items-center justify-between p-4 bg-muted rounded-lg"
                     >
-                      <LogOut className="w-4 h-4 mr-2" />
-                      Leave Guild
-                    </Button>
-                  </div>
-                ))}
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <p className="font-medium text-foreground">{membership.guild.name}</p>
+                          {isCreator && (
+                            <Badge variant="default" className="text-xs">Creator</Badge>
+                          )}
+                        </div>
+                        <p className="text-sm text-muted-foreground">
+                          {membership.guild.realm && `${membership.guild.realm} • ${membership.guild.faction}`}
+                        </p>
+                        <Badge variant="secondary" className="mt-1">
+                          {membership.role}
+                        </Badge>
+                      </div>
+                      {isCreator ? (
+                        <Button
+                          onClick={() => setDeleteGuildId(membership.guild.id)}
+                          variant="destructive"
+                          size="sm"
+                          disabled={deleting}
+                        >
+                          <LogOut className="w-4 h-4 mr-2" />
+                          Delete Guild
+                        </Button>
+                      ) : (
+                        <Button
+                          onClick={() => setLeaveGuildId(membership.guild.id)}
+                          variant="destructive"
+                          size="sm"
+                          disabled={leaving}
+                        >
+                          <LogOut className="w-4 h-4 mr-2" />
+                          Leave Guild
+                        </Button>
+                      )}
+                    </div>
+                  )
+                })}
               </div>
             </CardContent>
           </Card>
@@ -376,6 +432,48 @@ export default function ProfilePage() {
                   disabled={leaving}
                 >
                   {leaving ? 'Leaving...' : 'Leave Guild'}
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Delete Guild Confirmation Modal */}
+        {deleteGuildId && (
+          <div
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            onClick={() => !deleting && setDeleteGuildId(null)}
+          >
+            <div
+              className="bg-background border border-border rounded-lg max-w-md w-full p-6"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h3 className="text-xl font-bold text-foreground mb-2">Delete Guild?</h3>
+              <p className="text-muted-foreground mb-6">
+                Are you sure you want to permanently delete this guild? This will remove all data including members, loot submissions, and attendance records. This action cannot be undone.
+                {allGuilds.length === 1 && (
+                  <span className="block mt-2 text-destructive font-medium">
+                    This is your only guild. You'll need to create or join another guild to continue using LootList+.
+                  </span>
+                )}
+              </p>
+              <div className="flex gap-3 justify-end">
+                <Button
+                  onClick={() => setDeleteGuildId(null)}
+                  variant="outline"
+                  disabled={deleting}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={() => {
+                    handleDeleteGuild(deleteGuildId)
+                    setDeleteGuildId(null)
+                  }}
+                  variant="destructive"
+                  disabled={deleting}
+                >
+                  {deleting ? 'Deleting...' : 'Delete Guild'}
                 </Button>
               </div>
             </div>

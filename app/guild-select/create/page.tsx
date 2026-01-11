@@ -25,6 +25,7 @@ export default function CreateGuildPage() {
   const [discordVerified, setDiscordVerified] = useState(false)
   const [discordGuilds, setDiscordGuilds] = useState<DiscordGuild[]>([])
   const [error, setError] = useState('')
+  const [successMessage, setSuccessMessage] = useState('')
 
   // Form state
   const [guildName, setGuildName] = useState('')
@@ -35,6 +36,11 @@ export default function CreateGuildPage() {
   const [realm, setRealm] = useState('')
   const [faction, setFaction] = useState<'Alliance' | 'Horde'>('Alliance')
   const [expansion, setExpansion] = useState('Classic')
+
+  // Guild name validation state
+  const [checkingName, setCheckingName] = useState(false)
+  const [nameAvailable, setNameAvailable] = useState<boolean | null>(null)
+  const [nameError, setNameError] = useState('')
 
   // Bot installation state
   const [botInstalled, setBotInstalled] = useState<boolean | null>(null)
@@ -161,6 +167,63 @@ export default function CreateGuildPage() {
     checkBotInstallation()
   }, [selectedDiscordServer, manualServerId, showManualEntry])
 
+  // Check guild name uniqueness with debounce
+  useEffect(() => {
+    if (!guildName.trim()) {
+      setNameAvailable(null)
+      setNameError('')
+      return
+    }
+
+    const checkNameUniqueness = async () => {
+      setCheckingName(true)
+      setNameError('')
+
+      try {
+        const { data, error } = await supabase
+          .from('guilds')
+          .select('id, name')
+          .ilike('name', guildName.trim())
+          .limit(1)
+
+        if (error) {
+          console.error('Error checking guild name:', error)
+          setNameError('Failed to validate guild name')
+          setNameAvailable(null)
+        } else if (data && data.length > 0) {
+          setNameAvailable(false)
+          setNameError(`Guild name "${guildName.trim()}" is already taken`)
+        } else {
+          setNameAvailable(true)
+          setNameError('')
+        }
+      } catch (err) {
+        console.error('Error checking guild name:', err)
+        setNameError('Failed to validate guild name')
+        setNameAvailable(null)
+      } finally {
+        setCheckingName(false)
+      }
+    }
+
+    // Debounce the check by 500ms
+    const timeoutId = setTimeout(() => {
+      checkNameUniqueness()
+    }, 500)
+
+    return () => clearTimeout(timeoutId)
+  }, [guildName])
+
+  // Pre-fill guild name when Discord server is selected
+  useEffect(() => {
+    if (selectedDiscordServer && selectedDiscordServer !== 'manual' && !guildName) {
+      const selectedGuild = discordGuilds.find(g => g.id === selectedDiscordServer)
+      if (selectedGuild) {
+        setGuildName(selectedGuild.name)
+      }
+    }
+  }, [selectedDiscordServer, discordGuilds])
+
   // Re-check bot installation when user returns to the page (after adding bot in another tab)
   useEffect(() => {
     const handleVisibilityChange = () => {
@@ -183,6 +246,7 @@ export default function CreateGuildPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
+    setSuccessMessage('')
 
     if (!discordVerified) {
       setError('Discord verification required')
@@ -194,11 +258,28 @@ export default function CreateGuildPage() {
       return
     }
 
+    // Check if name is available
+    if (nameAvailable === false) {
+      setError('Guild name is already taken. Please choose a different name.')
+      return
+    }
+
+    // Wait for name check to complete if still checking
+    if (checkingName) {
+      setError('Please wait while we verify the guild name')
+      return
+    }
+
     // Get the Discord server ID
     const discordServerId = showManualEntry ? manualServerId.trim() : selectedDiscordServer
 
     if (!discordServerId || discordServerId === 'manual') {
       setError('Discord server is required')
+      return
+    }
+
+    if (!realm.trim()) {
+      setError('Realm is required')
       return
     }
 
@@ -244,7 +325,7 @@ export default function CreateGuildPage() {
         },
         body: JSON.stringify({
           name: guildName.trim(),
-          realm: realm.trim() || null,
+          realm: realm.trim(),
           faction,
           discord_server_id: discordServerId || null,
           expansion
@@ -259,8 +340,13 @@ export default function CreateGuildPage() {
         return
       }
 
-      // Force a full page reload to refresh guild context
-      window.location.href = '/dashboard'
+      // Show success message
+      setSuccessMessage(`Successfully created guild "${guildName.trim()}"!`)
+
+      // Wait a moment to show the success message, then redirect
+      setTimeout(() => {
+        window.location.href = '/dashboard'
+      }, 1500)
     } catch (err) {
       console.error('Error creating guild:', err)
       setError('An error occurred while creating the guild')
@@ -343,18 +429,50 @@ export default function CreateGuildPage() {
           <div className="space-y-2">
             <Label htmlFor="guildName" className="flex items-center gap-2 text-base">
               <Users2 className="w-5 h-5" />
-              Guild Name
+              Guild Name <span className="text-red-500">*</span>
             </Label>
-            <Input
-              id="guildName"
-              type="text"
-              placeholder="must be unique"
-              value={guildName}
-              onChange={(e) => setGuildName(e.target.value)}
-              required
-              disabled={creating}
-              className="text-base"
-            />
+            <div className="relative">
+              <Input
+                id="guildName"
+                type="text"
+                placeholder="must be unique"
+                value={guildName}
+                onChange={(e) => setGuildName(e.target.value)}
+                required
+                disabled={creating}
+                className={`text-base pr-10 ${
+                  nameAvailable === false ? 'border-red-500' :
+                  nameAvailable === true ? 'border-green-500' : ''
+                }`}
+              />
+              {checkingName && (
+                <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                  <svg className="w-5 h-5 animate-spin text-muted-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/>
+                  </svg>
+                </div>
+              )}
+              {!checkingName && nameAvailable === true && guildName.trim() && (
+                <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                  <svg className="w-5 h-5 text-green-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M20 6L9 17l-5-5"/>
+                  </svg>
+                </div>
+              )}
+              {!checkingName && nameAvailable === false && guildName.trim() && (
+                <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                  <svg className="w-5 h-5 text-red-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M18 6L6 18M6 6l12 12"/>
+                  </svg>
+                </div>
+              )}
+            </div>
+            {nameError && (
+              <p className="text-sm text-red-500">{nameError}</p>
+            )}
+            {!checkingName && nameAvailable === true && guildName.trim() && (
+              <p className="text-sm text-green-500">Guild name is available!</p>
+            )}
           </div>
 
           {/* Discord Server Selection */}
@@ -599,7 +717,7 @@ export default function CreateGuildPage() {
           {/* Region & Realm */}
           <div className="space-y-2">
             <Label className="text-base">
-              Realm (Optional)
+              Realm <span className="text-red-500">*</span>
             </Label>
             <RealmSelector
               region={realmRegion}
@@ -648,6 +766,12 @@ export default function CreateGuildPage() {
             </div>
           )}
 
+          {successMessage && (
+            <div className="p-4 rounded-lg bg-green-950/50 border border-green-600/50">
+              <p className="text-sm text-green-200">{successMessage}</p>
+            </div>
+          )}
+
           {/* Submit Button */}
           <Button
             type="submit"
@@ -655,13 +779,20 @@ export default function CreateGuildPage() {
             disabled={
               creating ||
               !discordVerified ||
+              !guildName.trim() ||
+              checkingName ||
+              nameAvailable === false ||
+              !realm.trim() ||
               (showManualEntry ? !manualServerId.trim() : (!selectedDiscordServer || selectedDiscordServer === 'manual')) ||
               botInstalled === false ||
               botInstalled === null ||
               checkingBot
             }
           >
-            {creating ? 'Creating Guild...' : checkingBot ? 'Checking Bot...' : 'Create Guild'}
+            {creating ? 'Creating Guild...' :
+             checkingBot ? 'Checking Bot...' :
+             checkingName ? 'Checking Name...' :
+             'Create Guild'}
           </Button>
 
           {/* Helper text for button state */}

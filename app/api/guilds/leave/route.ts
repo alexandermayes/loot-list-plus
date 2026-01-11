@@ -38,6 +38,20 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Check if user is the creator of the guild
+    const { data: guild, error: guildError } = await supabase
+      .from('guilds')
+      .select('created_by')
+      .eq('id', guild_id)
+      .single()
+
+    if (guild && guild.created_by === user.id) {
+      return NextResponse.json(
+        { error: 'Guild creators cannot leave their guild. You must delete the guild instead.' },
+        { status: 403 }
+      )
+    }
+
     // Delete the membership
     const { error: deleteError } = await supabase
       .from('guild_members')
