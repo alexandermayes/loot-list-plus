@@ -3,7 +3,7 @@
 import { createClient } from '@/utils/supabase/client'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import Navigation from '@/app/components/Navigation'
+import Sidebar from '@/app/components/Sidebar'
 import SearchableItemSelect from '@/app/components/SearchableItemSelect'
 import { Loader2 } from 'lucide-react'
 import { useGuildContext } from '@/app/contexts/GuildContext'
@@ -36,7 +36,9 @@ export default function LootList() {
   const [rankings, setRankings] = useState<Record<string, string>>({}) // "rank-slot" -> item_id (e.g., "50-1", "50-2")
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
-  const [raidTierId, setRaidTierId] = useState<string | null>(null)
+  const [raidTiers, setRaidTiers] = useState<any[]>([])
+  const [selectedTierId, setSelectedTierId] = useState<string | null>(null)
+  const [tierSubmissionStatuses, setTierSubmissionStatuses] = useState<Record<string, any>>({})
   const [guildId, setGuildId] = useState<string | null>(null)
   const [user, setUser] = useState<any>(null)
   const [member, setMember] = useState<any>(null)
@@ -100,95 +102,142 @@ export default function LootList() {
       // Default to true if setting doesn't exist
       setEnforceSlotRestrictions(settingsData?.enforce_slot_restrictions ?? true)
 
-      // Get active raid tier for this guild's active expansion
+      // Get all raid tiers for this guild's active expansion
       if (!activeGuild.active_expansion_id) {
         setLoading(false)
         return
       }
 
-      const { data: tierData } = await supabase
+      const { data: tiersData } = await supabase
         .from('raid_tiers')
-        .select('id, name')
+        .select('id, name, is_active')
         .eq('expansion_id', activeGuild.active_expansion_id)
-        .eq('is_active', true)
-        .single()
+        .order('name', { ascending: true })
 
-      if (!tierData) {
+      if (!tiersData || tiersData.length === 0) {
         setLoading(false)
         return
       }
 
-      setRaidTierId(tierData.id)
+      setRaidTiers(tiersData)
 
-      // Get loot items for this tier (ordered by id to maintain boss encounter order)
-      const { data: itemsData } = await supabase
-        .from('loot_items')
-        .select(`
-          id,
-          name,
-          boss_name,
-          item_slot,
-          wowhead_id,
-          classification,
-          item_type,
-          allocation_cost,
-          is_available,
-          loot_item_classes(class_id, spec_type)
-        `)
-        .eq('raid_tier_id', tierData.id)
-        .eq('is_available', true)
-        .order('id')
-
-      if (itemsData) {
-        const filteredItems = itemsData.filter(item => {
-          const classes = item.loot_item_classes as any[]
-          // Show items with no class restrictions, or items where the user's class is primary or secondary
-          return classes.length === 0 || classes.some(c => c.class_id === memberData.class_id)
-        })
-        setLootItems(filteredItems)
-      }
-
-      // Get existing submission
-      const { data: subData } = await supabase
-        .from('loot_submissions')
-        .select('id, status, submitted_at, review_notes')
-        .eq('user_id', user.id)
-        .eq('raid_tier_id', tierData.id)
-        .eq('guild_id', memberData.guild_id)
-        .single()
-
-      if (subData) {
-        setSubmission(subData)
-
-        // Get existing rankings
-        const { data: rankingsData } = await supabase
-          .from('loot_submission_items')
-          .select('loot_item_id, rank')
-          .eq('submission_id', subData.id)
-
-        if (rankingsData) {
-          const rankingsMap: Record<string, string> = {}
-          const rankCounts: Record<number, number> = {}
-
-          // Sort by rank descending to maintain order
-          rankingsData.sort((a, b) => b.rank - a.rank)
-
-          rankingsData.forEach(r => {
-            // Track how many items we've seen at this rank
-            rankCounts[r.rank] = (rankCounts[r.rank] || 0) + 1
-            const slot = rankCounts[r.rank]
-
-            rankingsMap[`${r.rank}-${slot}`] = r.loot_item_id
-          })
-          setRankings(rankingsMap)
-        }
-      }
+      // Default to active tier or first tier
+      const activeTier = tiersData.find(t => t.is_active) || tiersData[0]
+      setSelectedTierId(activeTier.id)
 
       setLoading(false)
     }
 
     loadData()
   }, [guildLoading, activeGuild])
+
+  // Load submission statuses for all tiers
+  useEffect(() => {
+    const loadSubmissionStatuses = async () => {
+      if (!user || !guildId || raidTiers.length === 0) return
+
+      const tierIds = raidTiers.map(t => t.id)
+
+      const { data: submissions } = await supabase
+        .from('loot_submissions')
+        .select('raid_tier_id, status, submitted_at')
+        .eq('user_id', user.id)
+        .eq('guild_id', guildId)
+        .in('raid_tier_id', tierIds)
+
+      // Build status map: { tierId: { status, submitted_at } }
+      const statusMap: Record<string, any> = {}
+      submissions?.forEach(sub => {
+        statusMap[sub.raid_tier_id] = {
+          status: sub.status,
+          submitted_at: sub.submitted_at
+        }
+      })
+
+      setTierSubmissionStatuses(statusMap)
+    }
+
+    loadSubmissionStatuses()
+  }, [user, guildId, raidTiers])
+
+  // Load loot items and submission for selected tier
+  useEffect(() => {
+    const loadTierData = async () => {
+      if (!selectedTierId || !guildId || !member) {
+        setLootItems([])
+        setSubmission(null)
+        setRankings({})
+        return
+      }
+
+      setLoading(true)
+
+      try {
+        // Load loot items for this tier
+        const { data: itemsData } = await supabase
+          .from('loot_items')
+          .select(`
+            id, name, boss_name, item_slot, wowhead_id,
+            classification, item_type, allocation_cost, is_available,
+            loot_item_classes(class_id, spec_type)
+          `)
+          .eq('raid_tier_id', selectedTierId)
+          .eq('is_available', true)
+          .order('id')
+
+        if (itemsData) {
+          const filteredItems = itemsData.filter(item => {
+            const classes = item.loot_item_classes as any[]
+            return classes.length === 0 || classes.some(c => c.class_id === member.class_id)
+          })
+          setLootItems(filteredItems)
+        }
+
+        // Load existing submission for this tier
+        const { data: subData } = await supabase
+          .from('loot_submissions')
+          .select('id, status, submitted_at, review_notes')
+          .eq('user_id', user.id)
+          .eq('raid_tier_id', selectedTierId)
+          .eq('guild_id', guildId)
+          .single()
+
+        if (subData) {
+          setSubmission(subData)
+
+          // Load existing rankings
+          const { data: rankingsData } = await supabase
+            .from('loot_submission_items')
+            .select('loot_item_id, rank')
+            .eq('submission_id', subData.id)
+
+          if (rankingsData) {
+            const rankingsMap: Record<string, string> = {}
+            const rankCounts: Record<number, number> = {}
+
+            rankingsData.sort((a, b) => b.rank - a.rank)
+
+            rankingsData.forEach(r => {
+              rankCounts[r.rank] = (rankCounts[r.rank] || 0) + 1
+              const slot = rankCounts[r.rank]
+              rankingsMap[`${r.rank}-${slot}`] = r.loot_item_id
+            })
+
+            setRankings(rankingsMap)
+          }
+        } else {
+          setSubmission(null)
+          setRankings({})
+        }
+      } catch (error) {
+        console.error('Error loading tier data:', error)
+      }
+
+      setLoading(false)
+    }
+
+    loadTierData()
+  }, [selectedTierId, user, guildId, member])
 
   // Refresh Wowhead tooltips after items are loaded and loading is complete
   useEffect(() => {
@@ -223,7 +272,7 @@ export default function LootList() {
   }
 
   const saveSubmission = async (submit: boolean) => {
-    if (!user || !raidTierId || !guildId) return
+    if (!user || !selectedTierId || !guildId) return
 
     setSaving(true)
 
@@ -236,7 +285,7 @@ export default function LootList() {
           .insert({
             user_id: user.id,
             guild_id: guildId,
-            raid_tier_id: raidTierId,
+            raid_tier_id: selectedTierId,
             status: submit ? 'pending' : 'draft',
             submitted_at: submit ? new Date().toISOString() : null
           })
@@ -292,6 +341,26 @@ export default function LootList() {
       }
 
       showNotification('success', submit ? 'Loot list submitted for review!' : 'Draft saved!')
+
+      // Refresh submission statuses after save
+      if (user && guildId && raidTiers.length > 0) {
+        const tierIds = raidTiers.map(t => t.id)
+        const { data: submissions } = await supabase
+          .from('loot_submissions')
+          .select('raid_tier_id, status, submitted_at')
+          .eq('user_id', user.id)
+          .eq('guild_id', guildId)
+          .in('raid_tier_id', tierIds)
+
+        const statusMap: Record<string, any> = {}
+        submissions?.forEach(sub => {
+          statusMap[sub.raid_tier_id] = {
+            status: sub.status,
+            submitted_at: sub.submitted_at
+          }
+        })
+        setTierSubmissionStatuses(statusMap)
+      }
     } catch (error: any) {
       showNotification('error', error.message || 'Failed to save')
     }
@@ -540,25 +609,17 @@ export default function LootList() {
 
   return (
     <ExpansionGuard>
-      <div className="min-h-screen bg-background">
-      <Navigation
-        user={user}
-        characterName={member?.character_name}
-        className={member?.class?.name}
-        classColor={member?.class?.color_hex}
-        role={member?.role}
-        showBack
-        backUrl="/dashboard"
-        title="My Loot List"
-      />
+      <div className="min-h-screen bg-[#151515]">
+        <Sidebar user={user} currentView="loot-list" />
 
-      <main className="max-w-6xl mx-auto p-6 space-y-3">
+        <main className="ml-[208px] min-h-screen bg-[#0a0a0a] border-l border-[rgba(255,255,255,0.1)]">
+        <div className="max-w-6xl mx-auto p-6 pb-20 space-y-3">
         {/* Status Banner */}
         {submission && (
           <div className={`rounded-xl p-4 border ${getStatusColor(submission.status)}`}>
             <div className="flex items-center justify-between">
               <div>
-                <p className="font-semibold">Status: {getStatusLabel(submission.status)}</p>
+                <p className="font-semibold">{raidTiers.find(t => t.id === selectedTierId)?.name || 'Raid Tier'}: {getStatusLabel(submission.status)}</p>
                 {submission.submitted_at && (
                   <p className="text-sm opacity-75">
                     Submitted: {new Date(submission.submitted_at).toLocaleDateString()}
@@ -974,8 +1035,62 @@ export default function LootList() {
             {saving ? 'Submitting...' : 'Submit for Review'}
           </button>
         </div>
+        </div>
+
+        {/* Raid Tier Tabs - Fixed at Bottom */}
+        {raidTiers.length > 0 && (
+          <div className="fixed bottom-0 left-[208px] right-0 bg-background border-t border-border shadow-2xl z-50">
+            <div className="max-w-6xl mx-auto">
+              <div className="flex items-center px-4 py-2 overflow-x-auto scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-gray-900">
+                <span className="text-muted-foreground text-sm font-medium mr-4 whitespace-nowrap">Raid Tiers:</span>
+                <div className="flex gap-2">
+                  {raidTiers.map((tier: any) => {
+                    const status = tierSubmissionStatuses[tier.id]
+                    const hasSubmission = !!status
+                    const statusColor = hasSubmission
+                      ? status.status === 'approved'
+                        ? 'text-green-400'
+                        : status.status === 'pending'
+                        ? 'text-yellow-400'
+                        : status.status === 'needs_revision'
+                        ? 'text-orange-400'
+                        : status.status === 'rejected'
+                        ? 'text-red-400'
+                        : 'text-gray-400'
+                      : ''
+
+                    return (
+                      <button
+                        key={tier.id}
+                        onClick={() => setSelectedTierId(tier.id)}
+                        className={`px-4 py-2 rounded-lg whitespace-nowrap text-sm font-medium transition-all ${
+                          selectedTierId === tier.id
+                            ? 'bg-primary text-primary-foreground shadow-lg'
+                            : 'bg-card text-muted-foreground hover:bg-secondary'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <span>{tier.name}</span>
+                          {tier.is_active && <span className="text-xs">⭐</span>}
+                          {hasSubmission && (
+                            <span className={`text-xs ${statusColor}`}>
+                              {status.status === 'approved' ? '✓' :
+                               status.status === 'pending' ? '⏳' :
+                               status.status === 'needs_revision' ? '⚠' :
+                               status.status === 'rejected' ? '✗' : '○'}
+                            </span>
+                          )}
+                        </div>
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </main>
-    </div>
+      </div>
     </ExpansionGuard>
   )
 }

@@ -3,7 +3,7 @@
 import { createClient } from '@/utils/supabase/client'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import Navigation from '@/app/components/Navigation'
+import Sidebar from '@/app/components/Sidebar'
 import ItemLink from '@/app/components/ItemLink'
 import { calculateAttendanceScore, getRankModifier, calculateLootScore } from '@/utils/calculations'
 import { Loader2, ExternalLink } from 'lucide-react'
@@ -301,19 +301,10 @@ export default function MasterSheet() {
 
   return (
     <ExpansionGuard>
-      <div className="min-h-screen bg-background">
-      <Navigation
-        user={user}
-        characterName={member?.character_name}
-        className={member?.class?.name}
-        classColor={member?.class?.color_hex}
-        role={member?.role}
-        showBack
-        backUrl="/dashboard"
-        title="Master Loot Sheet"
-      />
+      <div className="min-h-screen bg-[#151515]">
+        <Sidebar user={user} currentView="master-sheet" />
 
-      <main className="max-w-7xl mx-auto p-6 pb-24">
+        <main className="ml-[208px] min-h-screen bg-[#0a0a0a] border-l border-[rgba(255,255,255,0.1)] p-6 pb-24">
         {/* Raid Tier Header */}
         {selectedTier && (
           <div className="mb-6">
@@ -394,35 +385,34 @@ export default function MasterSheet() {
             Loot scores are calculated from item rank + attendance + role modifiers.
           </p>
         </div>
-      </main>
-
-      {/* Raid Tier Tabs - Fixed at Bottom */}
-      {raidTiers.length > 0 && (
-        <div className="fixed bottom-0 left-0 right-0 bg-background border-t border-border shadow-2xl">
-          <div className="max-w-7xl mx-auto">
-            <div className="flex items-center px-4 py-2 overflow-x-auto scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-gray-900">
-              <span className="text-muted-foreground text-sm font-medium mr-4 whitespace-nowrap">Raid Tiers:</span>
-              <div className="flex gap-2">
-                {raidTiers.map((tier: any) => (
-                  <button
-                    key={tier.id}
-                    onClick={() => setSelectedTierId(tier.id)}
-                    className={`px-4 py-2 rounded-lg whitespace-nowrap text-sm font-medium transition-all ${
-                      selectedTierId === tier.id
-                        ? 'bg-primary text-primary-foreground shadow-lg'
-                        : 'bg-card text-muted-foreground hover:bg-secondary'
-                    }`}
-                  >
-                    {tier.name}
-                    {tier.is_active && ' ⭐'}
-                  </button>
-                ))}
+        {/* Raid Tier Tabs - Fixed at Bottom */}
+        {raidTiers.length > 0 && (
+          <div className="fixed bottom-0 left-[208px] right-0 bg-background border-t border-border shadow-2xl">
+            <div className="max-w-7xl mx-auto">
+              <div className="flex items-center px-4 py-2 overflow-x-auto scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-gray-900">
+                <span className="text-muted-foreground text-sm font-medium mr-4 whitespace-nowrap">Raid Tiers:</span>
+                <div className="flex gap-2">
+                  {raidTiers.map((tier: any) => (
+                    <button
+                      key={tier.id}
+                      onClick={() => setSelectedTierId(tier.id)}
+                      className={`px-4 py-2 rounded-lg whitespace-nowrap text-sm font-medium transition-all ${
+                        selectedTierId === tier.id
+                          ? 'bg-primary text-primary-foreground shadow-lg'
+                          : 'bg-card text-muted-foreground hover:bg-secondary'
+                      }`}
+                    >
+                      {tier.name}
+                      {tier.is_active && ' ⭐'}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      )}
-    </div>
+        )}
+      </main>
+      </div>
     </ExpansionGuard>
   )
 }

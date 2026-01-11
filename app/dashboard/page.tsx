@@ -3,7 +3,8 @@
 import { createClient } from '@/utils/supabase/client'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import Navigation from '@/app/components/Navigation'
+import Sidebar from '@/app/components/Sidebar'
+import WelcomeScreen from '@/app/components/WelcomeScreen'
 import { ClipboardList, FileBarChart, Settings, ClipboardCheck } from 'lucide-react'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { ActionCard } from '@/components/ui/action-card'
@@ -33,6 +34,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true)
   const [user, setUser] = useState<any>(null)
   const [error, setError] = useState<string | null>(null)
+  const [currentView, setCurrentView] = useState('overview')
 
   const supabase = createClient()
   const router = useRouter()
@@ -177,21 +179,13 @@ export default function Dashboard() {
 
   const daysLeft = getDaysUntilDeadline()
 
-  return (
-    <div className="min-h-screen bg-background">
-      <Navigation
-        user={user}
-        characterName={activeMember?.character_name}
-        className={classInfo?.name}
-        classColor={classInfo?.color_hex}
-        role={activeMember?.role}
-        title={activeGuild?.name ? `LootList+ - ${activeGuild.name}` : 'LootList+'}
-      />
-
-      {/* Main Content */}
-      <main className="max-w-6xl mx-auto p-6 space-y-6">
-        {/* Guild Info */}
-        <Card>
+  const renderView = () => {
+    switch (currentView) {
+      case 'overview':
+        return (
+          <div className="p-8 space-y-6">
+            {/* Guild Info */}
+            <Card>
           <CardHeader>
             <CardTitle>Guild Info</CardTitle>
           </CardHeader>
@@ -228,7 +222,7 @@ export default function Dashboard() {
                   <p className="text-yellow-300 text-sm mt-1">{error}</p>
                   {isOfficer && (
                     <button
-                      onClick={() => router.push('/admin/guild-settings')}
+                      onClick={() => setCurrentView('guild-settings')}
                       className="mt-2 px-3 py-1 text-sm bg-yellow-600 hover:bg-yellow-700 text-white rounded transition"
                     >
                       Go to Guild Settings
@@ -239,58 +233,41 @@ export default function Dashboard() {
             </CardContent>
           </Card>
         )}
-
-        {/* Quick Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <ActionCard
-            title="My Loot List"
-            description="Submit or edit your rankings"
-            icon={ClipboardList}
-            onClick={() => router.push('/loot-list')}
-          />
-
-          <ActionCard
-            title="Master Sheet"
-            description="View all loot rankings"
-            icon={FileBarChart}
-            iconColor="bg-green-600"
-            onClick={() => router.push('/master-sheet')}
-          />
-
-          {isOfficer && (
-            <>
-              <ActionCard
-                title="Officer Admin"
-                description="Manage submissions & settings"
-                icon={Settings}
-                onClick={() => router.push('/admin')}
-              />
-
-              <ActionCard
-                title="Attendance"
-                description="Track raid attendance"
-                icon={ClipboardCheck}
-                iconColor="bg-blue-600"
-                onClick={() => router.push('/attendance')}
-              />
-            </>
-          )}
-        </div>
-
-        {/* Guild Management (Officer Only) */}
-        {isOfficer && (
-          <div className="mt-6">
-            <h2 className="text-xl font-semibold text-foreground mb-4">Guild Management</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <ActionCard
-                title="Guild Settings"
-                description="Edit guild info & invite codes"
-                icon={Settings}
-                iconColor="bg-purple-600"
-                onClick={() => router.push('/admin/guild-settings')}
-              />
-            </div>
           </div>
+        )
+      case 'master-sheet':
+        router.push('/master-sheet')
+        return null
+      case 'loot-list':
+        router.push('/loot-list')
+        return null
+      case 'attendance':
+        router.push('/attendance')
+        return null
+      case 'guild-settings':
+        router.push('/admin/guild-settings')
+        return null
+      case 'master-loot':
+        router.push('/admin')
+        return null
+      case 'raid-tracking':
+        router.push('/admin/raid-tracking')
+        return null
+      default:
+        return null
+    }
+  }
+
+  return (
+    <div className="min-h-screen bg-[#151515]">
+      <Sidebar user={user} currentView={currentView} onViewChange={setCurrentView} />
+
+      {/* Main Content */}
+      <main className="ml-[208px] min-h-screen bg-[#0a0a0a] border-l border-[rgba(255,255,255,0.1)]">
+        {!activeGuild ? (
+          <WelcomeScreen />
+        ) : (
+          renderView()
         )}
       </main>
     </div>

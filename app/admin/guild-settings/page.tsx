@@ -3,7 +3,7 @@
 import { createClient } from '@/utils/supabase/client'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import Navigation from '@/app/components/Navigation'
+import Sidebar from '@/app/components/Sidebar'
 import { useGuildContext } from '@/app/contexts/GuildContext'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -160,15 +160,13 @@ export default function GuildSettingsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navigation
-        user={user}
-        showBack
-        backUrl="/admin"
-        title="Guild Settings"
-      />
+    <div className="min-h-screen bg-[#151515]">
+      <Sidebar user={user} currentView="guild-settings" />
 
-      <main className="max-w-6xl mx-auto p-6 space-y-6">
+      <main className="ml-[208px] min-h-screen bg-[#0a0a0a] border-l border-[rgba(255,255,255,0.1)] p-6">
+        <h1 className="text-3xl font-bold text-foreground mb-6">Guild Settings</h1>
+
+        <div className="max-w-6xl mx-auto space-y-6">
         {message && (
           <div className={`p-4 rounded-lg ${
             message.type === 'success'
@@ -317,6 +315,7 @@ export default function GuildSettingsPage() {
 
         {/* Members */}
         <MemberManager />
+        </div>
       </main>
     </div>
   )

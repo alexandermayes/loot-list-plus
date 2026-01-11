@@ -4,7 +4,7 @@ import { createClient } from '@/utils/supabase/client'
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import type { User } from '@supabase/supabase-js'
-import Navigation from '@/app/components/Navigation'
+import Sidebar from '@/app/components/Sidebar'
 import { useGuildContext } from '@/app/contexts/GuildContext'
 
 interface Submission {
@@ -278,16 +278,13 @@ export default function AdminPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navigation
-        user={user}
-        showBack
-        backUrl="/dashboard"
-        title="Officer Admin"
-      />
+    <div className="min-h-screen bg-[#151515]">
+      <Sidebar user={user} currentView="master-loot" />
 
-      {/* Main Content */}
-      <main className="max-w-6xl mx-auto p-6 space-y-6">
+      <main className="ml-[208px] min-h-screen bg-[#0a0a0a] border-l border-[rgba(255,255,255,0.1)] p-6">
+        <h1 className="text-3xl font-bold text-foreground mb-6">Master Loot Admin</h1>
+
+        <div className="max-w-6xl mx-auto space-y-6">
         {message && (
           <div className={`p-4 rounded-lg ${
             message.type === 'success'
@@ -534,6 +531,7 @@ export default function AdminPage() {
             </div>
           </div>
         )}
+        </div>
       </main>
     </div>
   )
