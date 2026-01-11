@@ -110,8 +110,13 @@ export default function AdminPage() {
       }
 
       if (tiersData && tiersData.length > 0) {
-        setRaidTiers(tiersData as any)
-        const active = tiersData.find(t => t.is_active) as any
+        // Transform data to ensure expansion is a single object (Supabase returns it as array)
+        const transformedData = tiersData.map((tier: any) => ({
+          ...tier,
+          expansion: Array.isArray(tier.expansion) ? tier.expansion[0] : tier.expansion
+        }))
+        setRaidTiers(transformedData as any)
+        const active = transformedData.find(t => t.is_active) as any
         if (active) {
           setActiveTier(active)
 

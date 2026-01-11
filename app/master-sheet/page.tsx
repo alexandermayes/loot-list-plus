@@ -145,8 +145,13 @@ export default function MasterSheet() {
             .order('name', { ascending: true })
 
           if (tiersData && tiersData.length > 0) {
-            setRaidTiers(tiersData)
-            const activeTier = tiersData.find((t: any) => t.is_active) || tiersData[0]
+            // Transform data to ensure expansion is a single object (Supabase returns it as array)
+            const transformedData = tiersData.map((tier: any) => ({
+              ...tier,
+              expansion: Array.isArray(tier.expansion) ? tier.expansion[0] : tier.expansion
+            }))
+            setRaidTiers(transformedData)
+            const activeTier = transformedData.find((t: any) => t.is_active) || transformedData[0]
             setSelectedTierId(activeTier.id)
           }
         }

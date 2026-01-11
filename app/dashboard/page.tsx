@@ -100,10 +100,16 @@ export default function Dashboard() {
         console.error('Error loading raid tiers:', tiersError)
         setRaidTiers([])
       } else {
-        setRaidTiers(tiersData || [])
+        // Transform data to ensure expansion is a single object (Supabase returns it as array)
+        const transformedData: RaidTier[] = (tiersData || []).map(tier => ({
+          ...tier,
+          expansion: Array.isArray(tier.expansion) ? tier.expansion[0] : tier.expansion
+        }))
+
+        setRaidTiers(transformedData)
 
         // Default to active tier, or first tier if none active
-        const activeTier = tiersData?.find(t => t.is_active) || tiersData?.[0]
+        const activeTier = transformedData?.find(t => t.is_active) || transformedData?.[0]
         if (activeTier) {
           setSelectedTierId(activeTier.id)
           setRaidTier(activeTier as any)
