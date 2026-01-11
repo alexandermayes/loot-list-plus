@@ -50,7 +50,7 @@ export default function Home() {
           src="/landing-background.png"
           alt="Epic loot background"
           fill
-          className="object-cover object-center scale-x-[-1]"
+          className="object-cover object-center"
           priority
           quality={100}
         />
