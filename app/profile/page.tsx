@@ -14,15 +14,52 @@ import { User, Mail, Shield, Calendar, Trophy, Settings, CheckCircle, XCircle, L
 export default function ProfilePage() {
   const [user, setUser] = useState<any>(null)
   const [member, setMember] = useState<any>(null)
+  const [allGuilds, setAllGuilds] = useState<any[]>([])
   const [preferences, setPreferences] = useState<any>(null)
   const [stats, setStats] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const [leaveGuildId, setLeaveGuildId] = useState<string | null>(null)
+  const [leaving, setLeaving] = useState(false)
   const supabase = createClient()
   const router = useRouter()
 
   const handleLogout = async () => {
     await supabase.auth.signOut()
     router.push('/')
+  }
+
+  const handleLeaveGuild = async (guildId: string) => {
+    setLeaving(true)
+    try {
+      const response = await fetch('/api/guilds/leave', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ guild_id: guildId })
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        alert(data.error || 'Failed to leave guild')
+        setLeaving(false)
+        return
+      }
+
+      // If user has no other guilds, redirect to guild select with full page reload
+      if (!data.has_other_guilds) {
+        window.location.href = '/guild-select'
+        return
+      }
+
+      // Refresh the page to show updated guild list
+      window.location.reload()
+    } catch (err) {
+      console.error('Error leaving guild:', err)
+      alert('An error occurred while leaving the guild')
+      setLeaving(false)
+    }
   }
 
   useEffect(() => {
@@ -34,18 +71,20 @@ export default function ProfilePage() {
       }
       setUser(user)
 
-      // Get guild member info
-      const { data: memberData } = await supabase
+      // Get all guild memberships
+      const { data: allMemberships } = await supabase
         .from('guild_members')
         .select(`
           *,
           class:wow_classes(name, color_hex),
-          guild:guilds(name, realm, faction)
+          guild:guilds(id, name, realm, faction)
         `)
         .eq('user_id', user.id)
-        .single()
 
-      if (memberData) {
+      if (allMemberships && allMemberships.length > 0) {
+        setAllGuilds(allMemberships)
+        // Use the first guild for primary display (active guild should be first)
+        const memberData = allMemberships[0]
         setMember(memberData)
 
         // Load user preferences
@@ -262,6 +301,86 @@ export default function ProfilePage() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Guilds Section */}
+        {allGuilds.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Your Guilds</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {allGuilds.map((membership) => (
+                  <div
+                    key={membership.guild.id}
+                    className="flex items-center justify-between p-4 bg-muted rounded-lg"
+                  >
+                    <div className="flex-1">
+                      <p className="font-medium text-foreground">{membership.guild.name}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {membership.guild.realm && `${membership.guild.realm} • ${membership.guild.faction}`}
+                      </p>
+                      <Badge variant="secondary" className="mt-1">
+                        {membership.role}
+                      </Badge>
+                    </div>
+                    <Button
+                      onClick={() => setLeaveGuildId(membership.guild.id)}
+                      variant="destructive"
+                      size="sm"
+                      disabled={leaving}
+                    >
+                      <LogOut className="w-4 h-4 mr-2" />
+                      Leave Guild
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Leave Guild Confirmation Modal */}
+        {leaveGuildId && (
+          <div
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            onClick={() => !leaving && setLeaveGuildId(null)}
+          >
+            <div
+              className="bg-background border border-border rounded-lg max-w-md w-full p-6"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h3 className="text-xl font-bold text-foreground mb-2">Leave Guild?</h3>
+              <p className="text-muted-foreground mb-6">
+                Are you sure you want to leave this guild? This action cannot be undone.
+                {allGuilds.length === 1 && (
+                  <span className="block mt-2 text-destructive font-medium">
+                    This is your only guild. You'll need to join another guild to continue using LootList+.
+                  </span>
+                )}
+              </p>
+              <div className="flex gap-3 justify-end">
+                <Button
+                  onClick={() => setLeaveGuildId(null)}
+                  variant="outline"
+                  disabled={leaving}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={() => {
+                    handleLeaveGuild(leaveGuildId)
+                    setLeaveGuildId(null)
+                  }}
+                  variant="destructive"
+                  disabled={leaving}
+                >
+                  {leaving ? 'Leaving...' : 'Leave Guild'}
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Account Actions */}
         <Card>

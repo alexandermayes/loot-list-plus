@@ -58,13 +58,50 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Get user's Discord access token from session
+    const { data: { session } } = await supabase.auth.getSession()
+
+    if (!session?.provider_token) {
+      console.log('No Discord access token available')
+      return NextResponse.json(
+        { error: 'Discord authentication expired. Please log out and log in again.' },
+        { status: 403 }
+      )
+    }
+
+    // Fetch user's Discord guilds from Discord API
+    let discordGuilds: any[] = []
+    try {
+      const discordResponse = await fetch('https://discord.com/api/v10/users/@me/guilds', {
+        headers: {
+          'Authorization': `Bearer ${session.provider_token}`
+        }
+      })
+
+      if (!discordResponse.ok) {
+        console.error('Failed to fetch Discord guilds for verification:', discordResponse.status)
+        return NextResponse.json(
+          { error: 'Failed to verify Discord server membership' },
+          { status: 500 }
+        )
+      }
+
+      discordGuilds = await discordResponse.json()
+    } catch (error) {
+      console.error('Error fetching Discord guilds for verification:', error)
+      return NextResponse.json(
+        { error: 'Failed to verify Discord server membership' },
+        { status: 500 }
+      )
+    }
+
     // Verify user is in the Discord server
-    const discordGuilds = user.user_metadata?.guilds || []
     const isInDiscordServer = discordGuilds.some(
       (dg: any) => dg.id === guild.discord_server_id
     )
 
     if (!isInDiscordServer) {
+      console.log(`User not in Discord server ${guild.discord_server_id}. User's guilds:`, discordGuilds.map(g => g.id))
       return NextResponse.json(
         { error: 'You must be a member of this guild\'s Discord server' },
         { status: 403 }
