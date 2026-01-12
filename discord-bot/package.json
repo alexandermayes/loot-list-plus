@@ -1,0 +1,13 @@
+{
+  "name": "lootlist-plus-discord-bot",
+  "version": "1.0.0",
+  "description": "Discord bot for LootList+",
+  "main": "bot.js",
+  "scripts": {
+    "start": "node bot.js",
+    "dev": "node bot.js"
+  },
+  "keywords": ["discord", "bot", "lootlist"],
+  "author": "",
+  "license": "ISC"
+}
