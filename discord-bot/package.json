@@ -9,5 +9,9 @@
   },
   "keywords": ["discord", "bot", "lootlist"],
   "author": "",
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "discord.js": "^14.25.1",
+    "dotenv": "^17.2.3"
+  }
 }
