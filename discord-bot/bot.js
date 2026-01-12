@@ -1,5 +1,9 @@
 const { Client, GatewayIntentBits, ActivityType } = require('discord.js');
-require('dotenv').config({ path: '../.env.local' });
+
+// Only load .env.local in development (not in production like Railway)
+if (process.env.NODE_ENV !== 'production') {
+  require('dotenv').config({ path: '../.env.local' });
+}
 
 // Create a new Discord client with minimal intents
 const client = new Client({
@@ -45,7 +49,8 @@ client.on('shardReconnecting', () => {
 // Login to Discord
 const token = process.env.DISCORD_BOT_TOKEN;
 if (!token) {
-  console.error('❌ DISCORD_BOT_TOKEN not found in .env.local');
+  console.error('❌ DISCORD_BOT_TOKEN not found in environment variables');
+  console.error('   Please set DISCORD_BOT_TOKEN in Railway dashboard or .env.local for local development');
   process.exit(1);
 }
 
