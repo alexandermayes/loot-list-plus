@@ -6,11 +6,7 @@ import { createClient } from '@/utils/supabase/client'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Calendar } from 'lucide-react'
-import Sidebar from '@/app/components/Sidebar'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
-import { EmptyState } from '@/components/ui/empty-state'
-import { Button } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
 
 interface RaidEvent {
   id: string
@@ -274,61 +270,66 @@ export default function RaidTrackingPage() {
   }
 
   if (loading) {
-    return <LoadingSpinner fullScreen />
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <LoadingSpinner />
+      </div>
+    )
   }
 
   if (!isOfficer) return null
 
   return (
-    <div className="min-h-screen bg-[#151515]">
-      <Sidebar user={user} currentView="raid-tracking" />
-
-      <main className="ml-[208px] min-h-screen bg-[#09090c] border-l border-[rgba(255,255,255,0.1)] p-6">
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-3xl font-bold text-foreground">Raid Tracking & Attendance</h1>
-          <Button
+      <div className="p-8 space-y-6 font-poppins">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-[42px] font-bold text-white leading-tight">Raid Tracking & Attendance</h1>
+            <p className="text-[#a1a1a1] mt-1 text-[14px]">Track raid events and manage member attendance</p>
+          </div>
+          <button
             onClick={() => setShowNewRaidForm(true)}
-            variant="default"
+            className="px-5 py-3 bg-white hover:bg-gray-100 rounded-[40px] text-black font-medium text-[16px] transition"
           >
             + New Raid
-          </Button>
+          </button>
         </div>
 
         <div className="max-w-6xl mx-auto">
         {/* New Raid Form */}
         {showNewRaidForm && (
-          <Card className="p-4 mb-6">
-            <h3 className="text-foreground font-semibold mb-3">Create New Raid</h3>
+          <div className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl p-4 mb-6">
+            <h3 className="text-white font-semibold mb-3 text-[18px]">Create New Raid</h3>
             <div className="flex gap-4">
               <input
                 type="date"
                 value={newRaidDate}
                 onChange={(e) => setNewRaidDate(e.target.value)}
-                className="px-4 py-2 bg-input border border-border rounded-lg text-foreground"
+                className="px-5 py-3 bg-[#151515] border border-[#383838] rounded-[52px] text-white text-[13px] focus:outline-none focus:border-[#ff8000]"
               />
-              <Button
+              <button
                 onClick={createRaid}
                 disabled={saving || !newRaidDate}
-                variant="default"
+                className="px-5 py-3 bg-white hover:bg-gray-100 disabled:opacity-50 rounded-[40px] text-black font-medium text-[16px] transition"
               >
                 {saving ? 'Creating...' : 'Create'}
-              </Button>
-              <Button
+              </button>
+              <button
                 onClick={() => setShowNewRaidForm(false)}
-                variant="outline"
+                className="px-5 py-3 bg-[#151515] hover:bg-[#1a1a1a] border border-[rgba(255,255,255,0.1)] rounded-[40px] text-white font-medium text-[16px] transition"
               >
                 Cancel
-              </Button>
+              </button>
             </div>
-          </Card>
+          </div>
         )}
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* Raid List */}
           <div className="lg:col-span-1">
-            <div className="bg-card border border-border rounded-xl overflow-hidden">
-              <div className="p-4 bg-secondary">
-                <h2 className="text-foreground font-semibold">Raid Events</h2>
+            <div className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl overflow-hidden">
+              <div className="p-4 bg-[#151515]">
+                <h2 className="text-white font-semibold text-[18px]">Raid Events</h2>
               </div>
               <div className="max-h-[400px] overflow-y-auto">
                 {raidEvents.length > 0 ? (
@@ -336,26 +337,26 @@ export default function RaidTrackingPage() {
                     <button
                       key={raid.id}
                       onClick={() => setSelectedRaid(raid)}
-                      className={`w-full text-left p-4 border-b border-border hover:bg-accent transition ${
-                        selectedRaid?.id === raid.id ? 'bg-accent border-l-4 border-l-primary' : ''
+                      className={`w-full text-left p-4 border-b border-[rgba(255,255,255,0.1)] hover:bg-[#1a1a1a] transition ${
+                        selectedRaid?.id === raid.id ? 'bg-[#1a1a1a] border-l-4 border-l-[#ff8000]' : ''
                       }`}
                     >
-                      <p className="text-foreground font-medium">
+                      <p className="text-white font-medium text-[14px]">
                         {new Date(raid.raid_date).toLocaleDateString('en-US', {
                           weekday: 'short',
                           month: 'short',
                           day: 'numeric'
                         })}
                       </p>
-                      {raid.notes && <p className="text-muted-foreground text-sm">{raid.notes}</p>}
+                      {raid.notes && <p className="text-[#a1a1a1] text-[13px]">{raid.notes}</p>}
                     </button>
                   ))
                 ) : (
-                  <EmptyState
-                    icon={Calendar}
-                    title="No raids yet"
-                    description="Create your first raid to start tracking attendance"
-                  />
+                  <div className="p-8 text-center">
+                    <Calendar className="w-12 h-12 mx-auto text-[#a1a1a1] mb-2" />
+                    <p className="text-white font-medium text-[14px]">No raids yet</p>
+                    <p className="text-[#a1a1a1] text-[13px]">Create your first raid to start tracking attendance</p>
+                  </div>
                 )}
               </div>
             </div>
@@ -364,9 +365,9 @@ export default function RaidTrackingPage() {
           {/* Attendance Grid */}
           <div className="lg:col-span-3">
             {selectedRaid ? (
-              <div className="bg-card border border-border rounded-xl overflow-hidden">
-                <div className="p-4 bg-secondary">
-                  <h2 className="text-foreground font-semibold">
+              <div className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl overflow-hidden">
+                <div className="p-4 bg-[#151515]">
+                  <h2 className="text-white font-semibold text-[18px]">
                     {new Date(selectedRaid.raid_date).toLocaleDateString('en-US', {
                       weekday: 'long',
                       month: 'long',
@@ -378,7 +379,7 @@ export default function RaidTrackingPage() {
                 <div className="overflow-x-auto">
                   <table className="w-full">
                     <thead>
-                      <tr className="bg-secondary/50 text-muted-foreground text-sm">
+                      <tr className="bg-[#151515] text-[#a1a1a1] text-[13px]">
                         <th className="text-left p-3">Player</th>
                         <th className="text-left p-3">Role</th>
                         <th className="text-center p-3">Signed Up<br/><span className="text-xs">(+0.25)</span></th>
@@ -388,25 +389,25 @@ export default function RaidTrackingPage() {
                         <th className="text-center p-3">Modifier</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-border">
+                    <tbody className="divide-y divide-[rgba(255,255,255,0.1)]">
                       {members.map(member => {
                         const record = attendance[member.user_id] || { signed_up: false, attended: false, no_call_no_show: false }
                         const score = memberScores[member.user_id] || 0
                         const modifier = getRoleModifier(member.role)
 
                         return (
-                          <tr key={member.id} className="hover:bg-accent">
+                          <tr key={member.id} className="hover:bg-[#1a1a1a]">
                             <td className="p-3">
-                              <p className="text-foreground font-medium">{member.character_name}</p>
-                              <p className="text-sm" style={{ color: member.class_color }}>{member.class_name}</p>
+                              <p className="text-white font-medium text-[14px]">{member.character_name}</p>
+                              <p className="text-[13px]" style={{ color: member.class_color }}>{member.class_name}</p>
                             </td>
-                            <td className="p-3 text-muted-foreground">{member.role}</td>
+                            <td className="p-3 text-[#a1a1a1] text-[13px]">{member.role}</td>
                             <td className="p-3 text-center">
                               <input
                                 type="checkbox"
                                 checked={record.signed_up}
                                 onChange={(e) => updateAttendance(member.user_id, 'signed_up', e.target.checked)}
-                                className="w-5 h-5 rounded bg-input border-border text-green-500 focus:ring-green-500"
+                                className="w-5 h-5 rounded border-[#383838] bg-[#151515] text-green-500 focus:ring-green-500"
                               />
                             </td>
                             <td className="p-3 text-center">
@@ -414,7 +415,7 @@ export default function RaidTrackingPage() {
                                 type="checkbox"
                                 checked={record.attended}
                                 onChange={(e) => updateAttendance(member.user_id, 'attended', e.target.checked)}
-                                className="w-5 h-5 rounded bg-input border-border text-green-500 focus:ring-green-500"
+                                className="w-5 h-5 rounded border-[#383838] bg-[#151515] text-green-500 focus:ring-green-500"
                               />
                             </td>
                             <td className="p-3 text-center">
@@ -422,17 +423,17 @@ export default function RaidTrackingPage() {
                                 type="checkbox"
                                 checked={record.no_call_no_show}
                                 onChange={(e) => updateAttendance(member.user_id, 'no_call_no_show', e.target.checked)}
-                                className="w-5 h-5 rounded bg-input border-border text-red-500 focus:ring-red-500"
+                                className="w-5 h-5 rounded border-[#383838] bg-[#151515] text-red-500 focus:ring-red-500"
                               />
                             </td>
                             <td className="p-3 text-center">
                               <span className={`font-bold ${score >= 6 ? 'text-green-400' : score >= 4 ? 'text-yellow-400' : 'text-red-400'}`}>
                                 {score.toFixed(2)}
                               </span>
-                              <span className="text-muted-foreground"> / 8</span>
+                              <span className="text-[#a1a1a1]"> / 8</span>
                             </td>
                             <td className="p-3 text-center">
-                              <span className={modifier < 0 ? 'text-red-400' : 'text-muted-foreground'}>
+                              <span className={modifier < 0 ? 'text-red-400' : 'text-[#a1a1a1]'}>
                                 {modifier >= 0 ? '+' : ''}{modifier}
                               </span>
                             </td>
@@ -444,22 +445,22 @@ export default function RaidTrackingPage() {
                 </div>
               </div>
             ) : (
-              <Card className="p-8">
-                <EmptyState
-                  icon={Calendar}
-                  title="Select a raid"
-                  description="Choose a raid from the list to manage attendance"
-                />
-              </Card>
+              <div className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl p-8">
+                <div className="text-center">
+                  <Calendar className="w-12 h-12 mx-auto text-[#a1a1a1] mb-2" />
+                  <p className="text-white font-medium text-[14px]">Select a raid</p>
+                  <p className="text-[#a1a1a1] text-[13px]">Choose a raid from the list to manage attendance</p>
+                </div>
+              </div>
             )}
 
             {/* Legend */}
-            <div className="mt-4 bg-card border border-border rounded-xl p-4">
-              <h3 className="text-foreground font-semibold mb-2">Loot Score Formula</h3>
-              <p className="text-muted-foreground text-sm">
-                <strong className="text-primary">Loot Score</strong> = Item Rank + Attendance (4-week) + Role Modifier
+            <div className="mt-4 bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl p-4">
+              <h3 className="text-white font-semibold mb-2 text-[18px]">Loot Score Formula</h3>
+              <p className="text-[#a1a1a1] text-[13px]">
+                <strong className="text-[#ff8000]">Loot Score</strong> = Item Rank + Attendance (4-week) + Role Modifier
               </p>
-              <div className="mt-2 text-muted-foreground text-xs space-y-1">
+              <div className="mt-2 text-[#a1a1a1] text-xs space-y-1">
                 <p>• Signed up on time: +0.25 pts</p>
                 <p>• Full attendance: +0.75 pts</p>
                 <p>• No-call, no-show: Resets attendance to 0</p>
@@ -470,7 +471,6 @@ export default function RaidTrackingPage() {
           </div>
         </div>
         </div>
-      </main>
-    </div>
+      </div>
   )
 }

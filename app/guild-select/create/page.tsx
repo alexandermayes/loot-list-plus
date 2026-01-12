@@ -109,12 +109,16 @@ export default function CreateGuildPage() {
             }))
           } else {
             const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
-            console.error('Failed to fetch Discord servers:', errorData)
 
             if (response.status === 429) {
+              console.error('Discord rate limit:', errorData)
               setError('Discord rate limit reached. Please wait a minute and refresh the page.')
-            } else if (errorData.error) {
-              console.warn('Discord API error:', errorData.error)
+            } else if (response.status === 400) {
+              // Missing provider token - user needs to re-authenticate
+              console.warn('Discord provider token missing. User can still use manual server ID entry.')
+              // Don't show error, they can use manual entry
+            } else {
+              console.error('Failed to fetch Discord servers:', response.status, errorData)
             }
             // Don't set error for non-429 errors, just log and continue without Discord servers
           }
@@ -505,15 +509,15 @@ export default function CreateGuildPage() {
                 }
               }}
               disabled={creating}
-              className="w-full bg-background border border-border rounded-md px-3 py-2 text-base text-foreground"
+              className="w-full px-5 py-3 bg-[#151515] border border-[#383838] rounded-[52px] text-white text-[13px] focus:outline-none focus:border-[#ff8000] cursor-pointer select-custom disabled:opacity-50"
             >
-              <option value="">Select a server...</option>
+              <option value="" className="bg-[#151515] text-white">Select a server...</option>
               {discordGuilds.length > 0 && discordGuilds.map((guild) => (
-                <option key={guild.id} value={guild.id}>
+                <option key={guild.id} value={guild.id} className="bg-[#151515] text-white">
                   {guild.name}
                 </option>
               ))}
-              <option value="manual">Manually enter Server ID</option>
+              <option value="manual" className="bg-[#151515] text-white">Manually enter Server ID</option>
             </select>
           </div>
 

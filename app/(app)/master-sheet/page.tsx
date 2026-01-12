@@ -3,12 +3,12 @@
 import { createClient } from '@/utils/supabase/client'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import Sidebar from '@/app/components/Sidebar'
 import ItemLink from '@/app/components/ItemLink'
 import { calculateAttendanceScore, getRankModifier, calculateLootScore } from '@/utils/calculations'
-import { Loader2, ExternalLink } from 'lucide-react'
+import { ExternalLink } from 'lucide-react'
 import { useGuildContext } from '@/app/contexts/GuildContext'
 import { ExpansionGuard } from '@/app/components/ExpansionGuard'
+import { LoadingSpinner } from '@/components/ui/loading-spinner'
 
 interface LootItem {
   id: string
@@ -44,6 +44,27 @@ export default function MasterSheet() {
 
   const supabase = createClient()
   const router = useRouter()
+
+  // Define Classic raid tier progression order
+  const getRaidTierOrder = (tierName: string): number => {
+    const order: Record<string, number> = {
+      'Molten Core': 1,
+      'MC': 1, // Alternative name
+      'Onyxia\'s Lair': 2,
+      'Onyxia': 2, // Alternative name
+      'Blackwing Lair': 3,
+      'BWL': 3, // Alternative name
+      'Zul\'Gurub': 4,
+      'ZG': 4, // Alternative name
+      'Ruins of Ahn\'Qiraj': 5,
+      'AQ20': 5, // Alternative name
+      'Temple of Ahn\'Qiraj': 6,
+      'AQ40': 6, // Alternative name
+      'Naxxramas': 7,
+      'Naxx': 7 // Alternative name
+    }
+    return order[tierName] || 999 // Unknown tiers go to the end
+  }
 
   // Calculate attendance score for a user
   const calculateAttendance = async (userId: string): Promise<number> => {
@@ -142,7 +163,6 @@ export default function MasterSheet() {
               )
             `)
             .eq('expansion.id', activeGuild.active_expansion_id)
-            .order('name', { ascending: true })
 
           if (tiersData && tiersData.length > 0) {
             // Transform data to ensure expansion is a single object (Supabase returns it as array)
@@ -150,8 +170,14 @@ export default function MasterSheet() {
               ...tier,
               expansion: Array.isArray(tier.expansion) ? tier.expansion[0] : tier.expansion
             }))
-            setRaidTiers(transformedData)
-            const activeTier = transformedData.find((t: any) => t.is_active) || transformedData[0]
+
+            // Sort by Classic raid progression order
+            const sortedTiers = transformedData.sort((a: any, b: any) => {
+              return getRaidTierOrder(a.name) - getRaidTierOrder(b.name)
+            })
+
+            setRaidTiers(sortedTiers)
+            const activeTier = sortedTiers.find((t: any) => t.is_active) || sortedTiers[0]
             setSelectedTierId(activeTier.id)
           }
         }
@@ -298,73 +324,126 @@ export default function MasterSheet() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      <div className="min-h-screen flex items-center justify-center">
+        <LoadingSpinner />
       </div>
     )
   }
 
+  const bossNames = Object.keys(groupedByBoss)
+
+  const scrollToBoss = (bossName: string) => {
+    const element = document.getElementById(`boss-${bossName.replace(/\s+/g, '-')}`)
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
+  }
+
   return (
     <ExpansionGuard>
-      <div className="min-h-screen bg-[#151515]">
-        <Sidebar user={user} currentView="master-sheet" />
-
-        <main className="ml-[208px] min-h-screen bg-[#09090c] border-l border-[rgba(255,255,255,0.1)] p-6 pb-24">
-        {/* Raid Tier Header */}
-        {selectedTier && (
-          <div className="mb-6">
-            <h1 className="text-3xl font-bold text-foreground mb-2">
-              {selectedTier.name}: Loot Rankings
+      <div className="p-8 space-y-6 font-poppins">
+        {/* Header with Raid Tier Navigation */}
+        <div className="space-y-4">
+          <div>
+            <h1 className="text-[42px] font-bold text-white leading-tight">
+              {selectedTier?.name}: Loot Rankings
             </h1>
-            <p className="text-muted-foreground">
-              Showing all loot items and top 5 players for each
+            <p className="text-[#a1a1a1] text-base">
+              Top 5 players for each item
             </p>
           </div>
-        )}
+
+          {/* Raid Tier Tabs - At Top */}
+          {raidTiers.length > 0 && (
+            <div className="flex items-center gap-3 overflow-x-auto pb-2">
+              <span className="text-[#a1a1a1] text-sm font-medium whitespace-nowrap">Raid Tier:</span>
+              <div className="flex gap-2">
+                {raidTiers.map((tier: any) => (
+                  <button
+                    key={tier.id}
+                    onClick={() => setSelectedTierId(tier.id)}
+                    className={`px-5 py-2.5 rounded-[40px] whitespace-nowrap text-[13px] font-medium transition-all ${
+                      selectedTierId === tier.id
+                        ? 'bg-[rgba(255,128,0,0.2)] border-[0.5px] border-[rgba(255,128,0,0.2)] text-[#ff8000]'
+                        : 'bg-[#151515] border border-[rgba(255,255,255,0.1)] text-white hover:bg-[#1a1a1a]'
+                    }`}
+                  >
+                    {tier.name}
+                    {tier.is_active && ' ⭐'}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Boss Quick Navigation - Sticky */}
+          {bossNames.length > 0 && (
+            <div className="sticky top-0 z-10 bg-[#0d0e11]/95 backdrop-blur-sm border border-[rgba(255,255,255,0.1)] rounded-xl p-3">
+              <div className="flex items-center gap-3 overflow-x-auto">
+                <span className="text-[#a1a1a1] text-xs font-medium whitespace-nowrap">Jump to:</span>
+                <div className="flex gap-2">
+                  {bossNames.map((boss) => (
+                    <button
+                      key={boss}
+                      onClick={() => scrollToBoss(boss)}
+                      className="px-3 py-1.5 bg-[#151515] hover:bg-[#1a1a1a] border border-[rgba(255,255,255,0.1)] rounded-[40px] text-xs font-medium text-white whitespace-nowrap transition"
+                    >
+                      {boss}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
 
         {/* Loot Table */}
         {Object.keys(groupedByBoss).length === 0 ? (
-          <div className="bg-card border border-border rounded-xl p-12 text-center">
-            <p className="text-muted-foreground text-lg">No loot items found for this raid tier</p>
+          <div className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl p-8 text-center">
+            <p className="text-[#a1a1a1]">No loot items found for this raid tier</p>
           </div>
         ) : (
-          <div className="space-y-8">
+          <div className="space-y-4">
             {Object.entries(groupedByBoss).map(([boss, items]) => (
-              <div key={boss} className="bg-card border border-border rounded-xl overflow-hidden">
+              <div
+                key={boss}
+                id={`boss-${boss.replace(/\s+/g, '-')}`}
+                className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl overflow-hidden"
+              >
                 {/* Boss Header */}
                 <div className="bg-gradient-to-r from-red-900 to-red-700 px-6 py-3">
-                  <h2 className="text-xl font-bold text-foreground">{boss}</h2>
+                  <h2 className="text-[18px] font-bold text-white">{boss}</h2>
                 </div>
 
                 {/* Items Table */}
                 <div className="overflow-x-auto">
                   <table className="w-full">
                     <thead>
-                      <tr className="bg-accent border-b border-border">
-                        <th className="px-6 py-3 text-left text-sm font-semibold text-muted-foreground">Loot</th>
-                        <th className="px-6 py-3 text-left text-sm font-semibold text-muted-foreground">Next Up</th>
+                      <tr className="bg-[#0d0e11] border-b border-[rgba(255,255,255,0.1)]">
+                        <th className="px-6 py-3 text-left text-[13px] font-semibold text-[#a1a1a1]">Item</th>
+                        <th className="px-6 py-3 text-left text-[13px] font-semibold text-[#a1a1a1]">Rankings</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-border">
+                    <tbody className="divide-y divide-[rgba(255,255,255,0.1)]">
                       {items.map((ir) => (
-                        <tr key={ir.item.id} className={ir.rankings.length === 0 ? 'bg-pink-900/20' : 'hover:bg-accent'}>
-                          <td className="px-6 py-4">
+                        <tr key={ir.item.id} className={ir.rankings.length === 0 ? 'bg-pink-900/20' : ''}>
+                          <td className="px-6 py-3">
                             <ItemLink
                               name={ir.item.name}
                               wowheadId={ir.item.wowhead_id}
-                              className="text-primary hover:text-primary/80 font-medium"
+                              className="font-medium text-[14px]"
                             />
-                            <p className="text-muted-foreground text-sm">{ir.item.item_slot}</p>
+                            <p className="text-[#a1a1a1] text-[12px] mt-0.5">{ir.item.item_slot}</p>
                           </td>
-                          <td className="px-6 py-4">
+                          <td className="px-6 py-3">
                             {ir.rankings.length === 0 ? (
-                              <span className="text-muted-foreground italic">No rankings</span>
+                              <span className="text-[#a1a1a1] italic text-[13px]">No rankings</span>
                             ) : (
                               <div className="flex flex-wrap gap-2">
                                 {ir.rankings.map((ranking, index) => (
                                   <div
                                     key={index}
-                                    className="px-3 py-1 rounded text-sm font-medium text-foreground"
+                                    className="px-3 py-1 rounded-full text-[13px] font-medium text-white"
                                     style={{ backgroundColor: ranking.class_color }}
                                   >
                                     {ranking.player_name}: {Math.round(ranking.loot_score)}
@@ -384,39 +463,12 @@ export default function MasterSheet() {
         )}
 
         {/* Legend */}
-        <div className="mt-6 bg-card border border-border rounded-xl p-4">
-          <p className="text-muted-foreground text-sm">
-            <span className="font-semibold text-foreground">Note:</span> If your rank number is tied you will roll.
-            Loot scores are calculated from item rank + attendance + role modifiers.
+        <div className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl p-4">
+          <p className="text-[#a1a1a1] text-[13px]">
+            <span className="font-semibold text-white">Note:</span> If your rank number is tied you will roll.
+            Loot scores = item rank + attendance + role modifiers.
           </p>
         </div>
-        {/* Raid Tier Tabs - Fixed at Bottom */}
-        {raidTiers.length > 0 && (
-          <div className="fixed bottom-0 left-[208px] right-0 bg-background border-t border-border shadow-2xl">
-            <div className="max-w-7xl mx-auto">
-              <div className="flex items-center px-4 py-2 overflow-x-auto scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-gray-900">
-                <span className="text-muted-foreground text-sm font-medium mr-4 whitespace-nowrap">Raid Tiers:</span>
-                <div className="flex gap-2">
-                  {raidTiers.map((tier: any) => (
-                    <button
-                      key={tier.id}
-                      onClick={() => setSelectedTierId(tier.id)}
-                      className={`px-4 py-2 rounded-lg whitespace-nowrap text-sm font-medium transition-all ${
-                        selectedTierId === tier.id
-                          ? 'bg-primary text-primary-foreground shadow-lg'
-                          : 'bg-card text-muted-foreground hover:bg-secondary'
-                      }`}
-                    >
-                      {tier.name}
-                      {tier.is_active && ' ⭐'}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-      </main>
       </div>
     </ExpansionGuard>
   )

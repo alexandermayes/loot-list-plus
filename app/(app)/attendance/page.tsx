@@ -6,7 +6,6 @@ import { createClient } from '@/utils/supabase/client'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Calendar } from 'lucide-react'
-import Sidebar from '@/app/components/Sidebar'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { Card } from '@/components/ui/card'
 
@@ -149,45 +148,49 @@ export default function AttendancePage() {
   }
 
   if (loading) {
-    return <LoadingSpinner fullScreen />
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <LoadingSpinner />
+      </div>
+    )
   }
 
   return (
-    <div className="min-h-screen bg-[#151515]">
-      <Sidebar user={user} currentView="attendance" />
+      <div className="p-8 space-y-6 font-poppins">
+        {/* Header */}
+        <div>
+          <h1 className="text-[42px] font-bold text-white leading-tight">My Attendance</h1>
+          <p className="text-[#a1a1a1] mt-1 text-base">Track your raid attendance and view your attendance score</p>
+        </div>
 
-      <main className="ml-[208px] min-h-screen bg-[#09090c] border-l border-[rgba(255,255,255,0.1)] p-6">
-        <h1 className="text-3xl font-bold text-foreground mb-6">My Attendance</h1>
-
-        <div className="max-w-4xl mx-auto space-y-6">
-          {/* Summary Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Card className="p-6">
-              <p className="text-muted-foreground text-sm mb-1">4-Week Attendance Score</p>
-              <p className={`text-3xl font-bold ${
+        {/* Summary Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl p-6">
+              <p className="text-[#a1a1a1] text-sm mb-1">4-Week Attendance Score</p>
+              <p className={`text-[42px] font-bold leading-none ${
                 attendanceScore >= 6 ? 'text-green-400' :
                 attendanceScore >= 4 ? 'text-yellow-400' :
                 'text-red-400'
               }`}>
-                {attendanceScore.toFixed(2)} <span className="text-lg text-muted-foreground">/ 8.00</span>
+                {attendanceScore.toFixed(2)} <span className="text-[18px] text-[#a1a1a1]">/ 8.00</span>
               </p>
-            </Card>
+            </div>
 
-            <Card className="p-6">
-              <p className="text-muted-foreground text-sm mb-1">Role Modifier</p>
-              <p className={`text-3xl font-bold ${roleModifier < 0 ? 'text-red-400' : 'text-green-400'}`}>
+            <div className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl p-6">
+              <p className="text-[#a1a1a1] text-sm mb-1">Role Modifier</p>
+              <p className={`text-[42px] font-bold leading-none ${roleModifier < 0 ? 'text-red-400' : 'text-green-400'}`}>
                 {roleModifier >= 0 ? '+' : ''}{roleModifier}
               </p>
-              <p className="text-muted-foreground text-sm mt-1">{memberRole}</p>
-            </Card>
+              <p className="text-[#a1a1a1] text-sm mt-2">{memberRole}</p>
+            </div>
 
-            <Card className="p-6">
-              <p className="text-muted-foreground text-sm mb-1">Total Raids</p>
-              <p className="text-3xl font-bold text-foreground">
+            <div className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl p-6">
+              <p className="text-[#a1a1a1] text-sm mb-1">Total Raids</p>
+              <p className="text-[42px] font-bold text-white leading-none">
                 {attendanceRecords.length}
               </p>
-              <p className="text-muted-foreground text-sm mt-1">Last 8 weeks</p>
-            </Card>
+              <p className="text-[#a1a1a1] text-sm mt-2">Last 8 weeks</p>
+            </div>
           </div>
 
           {/* Attendance History */}
@@ -285,8 +288,6 @@ export default function AttendancePage() {
               <p>• No-call, no-show: Resets attendance to 0</p>
             </div>
           </Card>
-        </div>
-      </main>
-    </div>
+      </div>
   )
 }

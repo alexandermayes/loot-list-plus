@@ -3,11 +3,10 @@
 import { createClient } from '@/utils/supabase/client'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import Sidebar from '@/app/components/Sidebar'
 import SearchableItemSelect from '@/app/components/SearchableItemSelect'
-import { Loader2 } from 'lucide-react'
 import { useGuildContext } from '@/app/contexts/GuildContext'
 import { ExpansionGuard } from '@/app/components/ExpansionGuard'
+import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { useNotification } from '@/app/contexts/NotificationContext'
 
 interface LootItem {
@@ -43,10 +42,34 @@ export default function LootList() {
   const [user, setUser] = useState<any>(null)
   const [member, setMember] = useState<any>(null)
   const [enforceSlotRestrictions, setEnforceSlotRestrictions] = useState(true)
-  const [instructionsExpanded, setInstructionsExpanded] = useState(false)
+  const [showInstructionsModal, setShowInstructionsModal] = useState(false)
+  const [autoSaving, setAutoSaving] = useState(false)
+  const [lastSaved, setLastSaved] = useState<Date | null>(null)
+  const [initialLoadComplete, setInitialLoadComplete] = useState(false)
 
   const supabase = createClient()
   const router = useRouter()
+
+  // Define Classic raid tier progression order
+  const getRaidTierOrder = (tierName: string): number => {
+    const order: Record<string, number> = {
+      'Molten Core': 1,
+      'MC': 1, // Alternative name
+      'Onyxia\'s Lair': 2,
+      'Onyxia': 2, // Alternative name
+      'Blackwing Lair': 3,
+      'BWL': 3, // Alternative name
+      'Zul\'Gurub': 4,
+      'ZG': 4, // Alternative name
+      'Ruins of Ahn\'Qiraj': 5,
+      'AQ20': 5, // Alternative name
+      'Temple of Ahn\'Qiraj': 6,
+      'AQ40': 6, // Alternative name
+      'Naxxramas': 7,
+      'Naxx': 7 // Alternative name
+    }
+    return order[tierName] || 999 // Unknown tiers go to the end
+  }
 
   useEffect(() => {
     const loadData = async () => {
@@ -112,17 +135,21 @@ export default function LootList() {
         .from('raid_tiers')
         .select('id, name, is_active')
         .eq('expansion_id', activeGuild.active_expansion_id)
-        .order('name', { ascending: true })
 
       if (!tiersData || tiersData.length === 0) {
         setLoading(false)
         return
       }
 
-      setRaidTiers(tiersData)
+      // Sort by Classic raid progression order
+      const sortedTiers = tiersData.sort((a: any, b: any) => {
+        return getRaidTierOrder(a.name) - getRaidTierOrder(b.name)
+      })
+
+      setRaidTiers(sortedTiers)
 
       // Default to active tier or first tier
-      const activeTier = tiersData.find(t => t.is_active) || tiersData[0]
+      const activeTier = sortedTiers.find(t => t.is_active) || sortedTiers[0]
       setSelectedTierId(activeTier.id)
 
       setLoading(false)
@@ -170,6 +197,7 @@ export default function LootList() {
         return
       }
 
+      setInitialLoadComplete(false)
       setLoading(true)
 
       try {
@@ -234,6 +262,7 @@ export default function LootList() {
       }
 
       setLoading(false)
+      setInitialLoadComplete(true)
     }
 
     loadTierData()
@@ -368,13 +397,94 @@ export default function LootList() {
     setSaving(false)
   }
 
+  // Auto-save function (saves as draft without notifications)
+  const autoSave = async () => {
+    if (!user || !selectedTierId || !guildId) return
+
+    setAutoSaving(true)
+
+    try {
+      let submissionId = submission?.id
+
+      if (!submissionId) {
+        const { data: newSub, error: subError } = await supabase
+          .from('loot_submissions')
+          .insert({
+            user_id: user.id,
+            guild_id: guildId,
+            raid_tier_id: selectedTierId,
+            status: 'draft',
+            submitted_at: null
+          })
+          .select()
+          .single()
+
+        if (subError) throw subError
+        submissionId = newSub.id
+        setSubmission(newSub)
+      } else {
+        const { error: updateError } = await supabase
+          .from('loot_submissions')
+          .update({
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', submissionId)
+
+        if (updateError) throw updateError
+      }
+
+      // Delete existing rankings
+      await supabase
+        .from('loot_submission_items')
+        .delete()
+        .eq('submission_id', submissionId)
+
+      // Insert new rankings
+      const rankingsToInsert = Object.entries(rankings).map(([key, loot_item_id]) => {
+        const [rankStr] = key.split('-')
+        const rank = parseInt(rankStr)
+
+        return {
+          submission_id: submissionId,
+          loot_item_id,
+          rank
+        }
+      })
+
+      if (rankingsToInsert.length > 0) {
+        const { error: itemsError } = await supabase
+          .from('loot_submission_items')
+          .insert(rankingsToInsert)
+
+        if (itemsError) throw itemsError
+      }
+
+      setLastSaved(new Date())
+    } catch (error: any) {
+      console.error('Auto-save failed:', error)
+    }
+
+    setAutoSaving(false)
+  }
+
+  // Auto-save when rankings change (debounced)
+  useEffect(() => {
+    if (!user || !selectedTierId || !guildId || !initialLoadComplete) return
+
+    const timer = setTimeout(() => {
+      autoSave()
+    }, 2000) // 2 second debounce
+
+    return () => clearTimeout(timer)
+  }, [rankings, selectedTierId])
+
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'approved': return 'bg-success/20 border-success text-success-foreground'
-      case 'pending': return 'bg-warning/20 border-warning text-foreground'
-      case 'needs_revision': return 'bg-warning/30 border-warning/70 text-foreground'
-      case 'rejected': return 'bg-error/20 border-error text-error-foreground'
-      default: return 'bg-secondary border-border text-muted-foreground'
+      case 'approved': return 'bg-green-950/20 border-green-600 text-white'
+      case 'pending': return 'bg-yellow-950/20 border-yellow-600 text-white'
+      case 'needs_revision': return 'bg-orange-950/20 border-orange-600 text-white'
+      case 'rejected': return 'bg-red-950/20 border-red-600 text-white'
+      default: return 'bg-[#141519] border-[rgba(255,255,255,0.1)] text-[#a1a1a1]'
     }
   }
 
@@ -557,7 +667,7 @@ export default function LootList() {
     }
 
     return (
-      <tr className={`border-b border-border hover:bg-accent ${(isDuplicate1 || isDuplicate2) ? 'bg-red-900/20' : ''}`}>
+      <tr className={`border-b border-border ${(isDuplicate1 || isDuplicate2) ? 'bg-red-900/20' : ''}`}>
         <td className={`px-3 py-1.5 font-bold text-sm text-foreground bg-gradient-to-r ${getRankColor(rank)}`} rowSpan={1}>
           {rank}
         </td>
@@ -601,27 +711,107 @@ export default function LootList() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      <div className="min-h-screen flex items-center justify-center">
+        <LoadingSpinner />
       </div>
     )
   }
 
   return (
     <ExpansionGuard>
-      <div className="min-h-screen bg-[#151515]">
-        <Sidebar user={user} currentView="loot-list" />
+        <div className="p-8 space-y-6 font-poppins">
+        {/* Header */}
+        <div className="space-y-4">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h1 className="text-[42px] font-bold text-white leading-tight">Loot Lists</h1>
+              <p className="text-[#a1a1a1] mt-1 text-base">Rank your preferred items for {raidTiers.find(t => t.id === selectedTierId)?.name || 'this raid tier'}</p>
+            </div>
+            <div className="flex items-center gap-3">
+              {/* Auto-save status */}
+              <div className="text-sm text-[#a1a1a1]">
+                {autoSaving ? (
+                  <span>Saving...</span>
+                ) : lastSaved ? (
+                  <span>Saved {new Date(lastSaved).toLocaleTimeString()}</span>
+                ) : null}
+              </div>
+              {/* How to Rank Button */}
+              <button
+                onClick={() => setShowInstructionsModal(true)}
+                className="px-6 py-3 bg-[#151515] hover:bg-[#1a1a1a] border border-[rgba(255,255,255,0.1)] rounded-[52px] text-white font-medium text-base transition whitespace-nowrap"
+              >
+                How to Rank
+              </button>
+              {/* Submit for Review Button */}
+              <button
+                onClick={() => saveSubmission(true)}
+                disabled={saving || rankedCount === 0 || duplicateItems.length > 0 || hasValidationErrors}
+                className="px-6 py-3 bg-white hover:bg-gray-100 disabled:bg-[#1a1a1a] disabled:text-[#666] disabled:cursor-not-allowed disabled:border-[rgba(255,255,255,0.1)] border-2 border-white rounded-[52px] text-black font-medium text-base transition whitespace-nowrap shadow-lg"
+              >
+                {saving ? 'Submitting...' : 'Submit for Review'}
+              </button>
+            </div>
+          </div>
 
-        <main className="ml-[208px] min-h-screen bg-[#09090c] border-l border-[rgba(255,255,255,0.1)]">
-        <div className="max-w-6xl mx-auto p-6 pb-20 space-y-3">
+          {/* Raid Tier Tabs - At Top */}
+          {raidTiers.length > 0 && (
+            <div className="flex items-center gap-3 overflow-x-auto pb-2">
+              <span className="text-[#a1a1a1] text-sm font-medium whitespace-nowrap">Raid Tier:</span>
+              <div className="flex gap-2">
+                {raidTiers.map((tier: any) => {
+                  const status = tierSubmissionStatuses[tier.id]
+                  const hasSubmission = !!status
+                  const statusColor = hasSubmission
+                    ? status.status === 'approved'
+                      ? 'text-green-400'
+                      : status.status === 'pending'
+                      ? 'text-yellow-400'
+                      : status.status === 'needs_revision'
+                      ? 'text-orange-400'
+                      : status.status === 'rejected'
+                      ? 'text-red-400'
+                      : 'text-gray-400'
+                    : ''
+
+                  return (
+                    <button
+                      key={tier.id}
+                      onClick={() => setSelectedTierId(tier.id)}
+                      className={`px-5 py-2.5 rounded-[40px] whitespace-nowrap text-[13px] font-medium transition-all ${
+                        selectedTierId === tier.id
+                          ? 'bg-[rgba(255,128,0,0.2)] border-[0.5px] border-[rgba(255,128,0,0.2)] text-[#ff8000]'
+                          : 'bg-[#151515] border border-[rgba(255,255,255,0.1)] text-white hover:bg-[#1a1a1a]'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span>{tier.name}</span>
+                        {tier.is_active && <span className="text-xs">⭐</span>}
+                        {hasSubmission && (
+                          <span className={`text-xs ${statusColor}`}>
+                            {status.status === 'approved' ? '✓' :
+                             status.status === 'pending' ? '⏳' :
+                             status.status === 'needs_revision' ? '⚠' :
+                             status.status === 'rejected' ? '✗' : '○'}
+                          </span>
+                        )}
+                      </div>
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+
         {/* Status Banner */}
         {submission && (
-          <div className={`rounded-xl p-4 border ${getStatusColor(submission.status)}`}>
+          <div className={`rounded-xl p-6 border ${getStatusColor(submission.status)}`}>
             <div className="flex items-center justify-between">
               <div>
-                <p className="font-semibold">{raidTiers.find(t => t.id === selectedTierId)?.name || 'Raid Tier'}: {getStatusLabel(submission.status)}</p>
+                <p className="font-semibold text-base">{raidTiers.find(t => t.id === selectedTierId)?.name || 'Raid Tier'}: {getStatusLabel(submission.status)}</p>
                 {submission.submitted_at && (
-                  <p className="text-sm opacity-75">
+                  <p className="text-sm opacity-75 mt-1">
                     Submitted: {new Date(submission.submitted_at).toLocaleDateString()}
                   </p>
                 )}
@@ -631,101 +821,13 @@ export default function LootList() {
               </div>
             </div>
             {submission.review_notes && (
-              <div className="mt-3 p-3 bg-black/20 rounded-lg">
+              <div className="mt-3 p-4 bg-black/20 rounded-xl">
                 <p className="text-sm"><strong>Officer Notes:</strong> {submission.review_notes}</p>
               </div>
             )}
           </div>
         )}
 
-        {/* Instructions - Collapsible */}
-        <div className="bg-card border border-border rounded-xl overflow-hidden">
-          <button
-            onClick={() => setInstructionsExpanded(!instructionsExpanded)}
-            className="w-full px-4 py-3 flex items-center justify-between bg-accent hover:bg-accent/80 transition"
-          >
-            <h3 className="text-foreground font-semibold">How to Rank</h3>
-            <svg
-              className="w-5 h-5 text-foreground transition-transform"
-              style={{ transform: instructionsExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-            </svg>
-          </button>
-
-          {instructionsExpanded && (
-            <div className="p-4 space-y-4 border-t border-border">
-              {/* Core Structure */}
-              <div>
-                <h4 className="text-foreground font-semibold text-sm mb-2">Core Structure</h4>
-                <p className="text-muted-foreground text-sm">
-                  The system uses <span className="font-semibold text-foreground">50 desirability levels</span> (Level 50 being most desirable),
-                  with each level containing <span className="font-semibold text-foreground">2 item slots</span> divided into 6 brackets.
-                </p>
-              </div>
-
-              {/* Brackets */}
-              <div>
-                <h4 className="text-foreground font-semibold text-sm mb-2">Bracket Framework</h4>
-                <ul className="text-muted-foreground text-sm space-y-1">
-                  <li>• <span className="font-semibold text-red-300">Bracket 1:</span> Levels 50, 49, 48</li>
-                  <li>• <span className="font-semibold text-orange-300">Bracket 2:</span> Levels 47, 46, 45</li>
-                  <li>• <span className="font-semibold text-yellow-300">Bracket 3:</span> Levels 44, 43, 42</li>
-                  <li>• <span className="font-semibold text-amber-300">Bracket 4:</span> Levels 41, 40, 39</li>
-                  <li>• <span className="font-semibold text-green-300">No Bracket:</span> Levels 38-25 (Still main-spec priority)</li>
-                  <li>• <span className="font-semibold text-blue-300">Off-spec:</span> Levels 24-1 (Enhances guild flexibility)</li>
-                </ul>
-              </div>
-
-              {/* Key Rules */}
-              <div>
-                <h4 className="text-foreground font-semibold text-sm mb-2">Key Rules (Brackets 1-4)</h4>
-                <ul className="text-muted-foreground text-sm space-y-2">
-                  <li>
-                    <span className="font-semibold text-foreground">1. Allocation Point Limit:</span> Maximum 3 points per bracket.
-                    <ul className="ml-4 mt-1 space-y-0.5">
-                      <li>- <span className="text-red-300">Reserved items</span> cost 1 point</li>
-                      <li>- <span className="text-yellow-300">Limited items</span> cost 1 point</li>
-                      <li>- <span className="text-green-300">Unlimited items</span> cost 0 points</li>
-                    </ul>
-                  </li>
-                  <li>
-                    <span className="font-semibold text-foreground">2. Type Restriction:</span> Brackets 1-4 may only contain 1 item of a type
-                    (no duplicate weapon types in same bracket).
-                  </li>
-                  <li>
-                    <span className="font-semibold text-foreground">3. Reserved Items:</span> Must be the sole entry at that desirability level
-                    (cannot have another item in the same rank).
-                  </li>
-                  <li>
-                    <span className="font-semibold text-foreground">4. Equal Priority:</span> Both item slots per level receive equal priority when filled.
-                  </li>
-                  <li>
-                    <span className="font-semibold text-foreground">5. Dual Weapons:</span> Two identical non-unique weapons are permitted if not hand-specific
-                    (e.g., two of the same dagger).
-                  </li>
-                  <li>
-                    <span className="font-semibold text-foreground">6. Off-spec Importance:</span> Completing off-spec selections enhances guild flexibility
-                    and is encouraged.
-                  </li>
-                </ul>
-              </div>
-
-              {/* Important Notes */}
-              <div className="bg-blue-900/20 border border-blue-700 rounded-lg p-3">
-                <h4 className="text-blue-200 font-semibold text-sm mb-2">Important Notes</h4>
-                <ul className="text-blue-200 text-sm space-y-1">
-                  <li>• Each item can only be selected once across all ranks</li>
-                  <li>• Items in "No Bracket" don't guarantee unavailability - they indicate other classes receive priority</li>
-                  <li>• <span className="text-red-300 font-semibold">If your rank number is tied, you will roll</span></li>
-                </ul>
-              </div>
-            </div>
-          )}
-        </div>
 
         {/* Duplicate Warning */}
         {duplicateItems.length > 0 && (
@@ -1018,79 +1120,102 @@ export default function LootList() {
           </div>
         </div>
 
-        {/* Action Buttons */}
-        <div className="flex gap-4 sticky bottom-0 bg-background py-4">
-          <button
-            onClick={() => saveSubmission(false)}
-            disabled={saving}
-            className="flex-1 py-3 bg-secondary hover:bg-secondary/80 disabled:bg-card disabled:text-muted-foreground rounded-xl text-foreground font-semibold transition"
+        {/* How to Rank Modal */}
+        {showInstructionsModal && (
+          <div
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            onClick={() => setShowInstructionsModal(false)}
           >
-            {saving ? 'Saving...' : 'Save Draft'}
-          </button>
-          <button
-            onClick={() => saveSubmission(true)}
-            disabled={saving || rankedCount === 0 || duplicateItems.length > 0 || hasValidationErrors}
-            className="flex-1 py-3 bg-primary hover:bg-primary/90 disabled:bg-card disabled:text-muted-foreground rounded-xl text-primary-foreground font-semibold transition"
-          >
-            {saving ? 'Submitting...' : 'Submit for Review'}
-          </button>
-        </div>
-        </div>
+            <div
+              className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Modal Header */}
+              <div className="sticky top-0 bg-[#141519] border-b border-[rgba(255,255,255,0.1)] px-6 py-4 flex items-center justify-between">
+                <h2 className="text-white font-bold text-[24px]">How to Rank</h2>
+                <button
+                  onClick={() => setShowInstructionsModal(false)}
+                  className="text-[#a1a1a1] hover:text-white transition"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
 
-        {/* Raid Tier Tabs - Fixed at Bottom */}
-        {raidTiers.length > 0 && (
-          <div className="fixed bottom-0 left-[208px] right-0 bg-background border-t border-border shadow-2xl z-50">
-            <div className="max-w-6xl mx-auto">
-              <div className="flex items-center px-4 py-2 overflow-x-auto scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-gray-900">
-                <span className="text-muted-foreground text-sm font-medium mr-4 whitespace-nowrap">Raid Tiers:</span>
-                <div className="flex gap-2">
-                  {raidTiers.map((tier: any) => {
-                    const status = tierSubmissionStatuses[tier.id]
-                    const hasSubmission = !!status
-                    const statusColor = hasSubmission
-                      ? status.status === 'approved'
-                        ? 'text-green-400'
-                        : status.status === 'pending'
-                        ? 'text-yellow-400'
-                        : status.status === 'needs_revision'
-                        ? 'text-orange-400'
-                        : status.status === 'rejected'
-                        ? 'text-red-400'
-                        : 'text-gray-400'
-                      : ''
+              {/* Modal Content */}
+              <div className="p-6 space-y-4">
+                {/* Core Structure */}
+                <div>
+                  <h4 className="text-white font-semibold text-sm mb-2">Core Structure</h4>
+                  <p className="text-[#a1a1a1] text-sm">
+                    The system uses <span className="font-semibold text-white">50 desirability levels</span> (Level 50 being most desirable),
+                    with each level containing <span className="font-semibold text-white">2 item slots</span> divided into 6 brackets.
+                  </p>
+                </div>
 
-                    return (
-                      <button
-                        key={tier.id}
-                        onClick={() => setSelectedTierId(tier.id)}
-                        className={`px-4 py-2 rounded-lg whitespace-nowrap text-sm font-medium transition-all ${
-                          selectedTierId === tier.id
-                            ? 'bg-primary text-primary-foreground shadow-lg'
-                            : 'bg-card text-muted-foreground hover:bg-secondary'
-                        }`}
-                      >
-                        <div className="flex items-center gap-2">
-                          <span>{tier.name}</span>
-                          {tier.is_active && <span className="text-xs">⭐</span>}
-                          {hasSubmission && (
-                            <span className={`text-xs ${statusColor}`}>
-                              {status.status === 'approved' ? '✓' :
-                               status.status === 'pending' ? '⏳' :
-                               status.status === 'needs_revision' ? '⚠' :
-                               status.status === 'rejected' ? '✗' : '○'}
-                            </span>
-                          )}
-                        </div>
-                      </button>
-                    )
-                  })}
+                {/* Brackets */}
+                <div>
+                  <h4 className="text-white font-semibold text-sm mb-2">Bracket Framework</h4>
+                  <ul className="text-[#a1a1a1] text-sm space-y-1">
+                    <li>• <span className="font-semibold text-red-300">Bracket 1:</span> Levels 50, 49, 48</li>
+                    <li>• <span className="font-semibold text-orange-300">Bracket 2:</span> Levels 47, 46, 45</li>
+                    <li>• <span className="font-semibold text-yellow-300">Bracket 3:</span> Levels 44, 43, 42</li>
+                    <li>• <span className="font-semibold text-amber-300">Bracket 4:</span> Levels 41, 40, 39</li>
+                    <li>• <span className="font-semibold text-green-300">No Bracket:</span> Levels 38-25 (Still main-spec priority)</li>
+                    <li>• <span className="font-semibold text-blue-300">Off-spec:</span> Levels 24-1 (Enhances guild flexibility)</li>
+                  </ul>
+                </div>
+
+                {/* Key Rules */}
+                <div>
+                  <h4 className="text-white font-semibold text-sm mb-2">Key Rules (Brackets 1-4)</h4>
+                  <ul className="text-[#a1a1a1] text-sm space-y-2">
+                    <li>
+                      <span className="font-semibold text-white">1. Allocation Point Limit:</span> Maximum 3 points per bracket.
+                      <ul className="ml-4 mt-1 space-y-0.5">
+                        <li>- <span className="text-red-300">Reserved items</span> cost 1 point</li>
+                        <li>- <span className="text-yellow-300">Limited items</span> cost 1 point</li>
+                        <li>- <span className="text-green-300">Unlimited items</span> cost 0 points</li>
+                      </ul>
+                    </li>
+                    <li>
+                      <span className="font-semibold text-white">2. Type Restriction:</span> Brackets 1-4 may only contain 1 item of a type
+                      (no duplicate weapon types in same bracket).
+                    </li>
+                    <li>
+                      <span className="font-semibold text-white">3. Reserved Items:</span> Must be the sole entry at that desirability level
+                      (cannot have another item in the same rank).
+                    </li>
+                    <li>
+                      <span className="font-semibold text-white">4. Equal Priority:</span> Both item slots per level receive equal priority when filled.
+                    </li>
+                    <li>
+                      <span className="font-semibold text-white">5. Dual Weapons:</span> Two identical non-unique weapons are permitted if not hand-specific
+                      (e.g., two of the same dagger).
+                    </li>
+                    <li>
+                      <span className="font-semibold text-white">6. Off-spec Importance:</span> Completing off-spec selections enhances guild flexibility
+                      and is encouraged.
+                    </li>
+                  </ul>
+                </div>
+
+                {/* Important Notes */}
+                <div className="bg-blue-900/20 border border-blue-700 rounded-lg p-3">
+                  <h4 className="text-blue-200 font-semibold text-sm mb-2">Important Notes</h4>
+                  <ul className="text-blue-200 text-sm space-y-1">
+                    <li>• Each item can only be selected once across all ranks</li>
+                    <li>• Items in "No Bracket" don't guarantee unavailability - they indicate other classes receive priority</li>
+                    <li>• <span className="text-red-300 font-semibold">If your rank number is tied, you will roll</span></li>
+                  </ul>
                 </div>
               </div>
             </div>
           </div>
         )}
-      </main>
-      </div>
+
+        </div>
     </ExpansionGuard>
   )
 }

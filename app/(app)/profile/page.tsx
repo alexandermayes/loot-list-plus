@@ -20,8 +20,7 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true)
   const [leaveGuildId, setLeaveGuildId] = useState<string | null>(null)
   const [leaving, setLeaving] = useState(false)
-  const [deleteGuildId, setDeleteGuildId] = useState<string | null>(null)
-  const [deleting, setDeleting] = useState(false)
+  const [debugExpanded, setDebugExpanded] = useState(false)
   const supabase = createClient()
   const router = useRouter()
 
@@ -61,40 +60,6 @@ export default function ProfilePage() {
       console.error('Error leaving guild:', err)
       alert('An error occurred while leaving the guild')
       setLeaving(false)
-    }
-  }
-
-  const handleDeleteGuild = async (guildId: string) => {
-    setDeleting(true)
-    try {
-      const response = await fetch('/api/guilds/delete', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ guild_id: guildId })
-      })
-
-      const data = await response.json()
-
-      if (!response.ok) {
-        alert(data.error || 'Failed to delete guild')
-        setDeleting(false)
-        return
-      }
-
-      // If user has no other guilds, redirect to guild select
-      if (!data.has_other_guilds) {
-        window.location.href = '/guild-select'
-        return
-      }
-
-      // Refresh the page to show updated guild list
-      window.location.reload()
-    } catch (err) {
-      console.error('Error deleting guild:', err)
-      alert('An error occurred while deleting the guild')
-      setDeleting(false)
     }
   }
 
@@ -207,7 +172,13 @@ export default function ProfilePage() {
     loadProfile()
   }, [])
 
-  if (loading) return <LoadingSpinner fullScreen />
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <LoadingSpinner />
+      </div>
+    )
+  }
 
   const avatarUrl = user?.user_metadata?.avatar_url
     ? (user.user_metadata.avatar_url.startsWith('http')
@@ -216,63 +187,65 @@ export default function ProfilePage() {
     : 'https://cdn.discordapp.com/embed/avatars/0.png'
 
   return (
-    <div className="min-h-screen bg-background">
-      <PageHeader
-        title="Profile"
-        showBack
-        action={{
-          label: "Settings",
-          onClick: () => router.push('/profile/settings'),
-          variant: "outline"
-        }}
-      />
+      <div className="p-8 space-y-6 font-poppins">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-[42px] font-bold text-white leading-tight">Profile</h1>
+            <p className="text-[#a1a1a1] mt-1 text-base">Manage your account and Discord integration</p>
+          </div>
+        </div>
 
-      <main className="max-w-4xl mx-auto p-6 space-y-6">
         {/* Profile Overview */}
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-start gap-6">
-              <img
-                src={avatarUrl}
-                alt="Avatar"
-                className="w-24 h-24 rounded-full border-4 border-border"
-              />
-              <div className="flex-1">
-                <div className="flex items-center gap-3 mb-2">
-                  <h2 className="text-2xl font-bold text-foreground">
-                    {user?.user_metadata?.custom_claims?.global_name || user?.user_metadata?.full_name || member?.character_name || 'User'}
-                  </h2>
-                  <Badge variant="secondary">{member?.role || 'Member'}</Badge>
+        <div className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl p-6">
+          <div className="flex items-start gap-6">
+            <img
+              src={avatarUrl}
+              alt="Avatar"
+              className="w-24 h-24 rounded-full border-4 border-[rgba(255,255,255,0.1)]"
+            />
+            <div className="flex-1">
+              <div className="flex items-center gap-3 mb-2">
+                <h2 className="text-[24px] font-bold text-white">
+                  {user?.user_metadata?.custom_claims?.global_name || user?.user_metadata?.full_name || member?.character_name || 'User'}
+                </h2>
+                <span className="px-3 py-1 bg-[#151515] border border-[rgba(255,255,255,0.1)] rounded-full text-[#a1a1a1] text-[13px]">
+                  {member?.role || 'Member'}
+                </span>
+              </div>
+              {member?.class && (
+                <p className="text-[18px] mb-2 font-medium" style={{ color: member.class.color_hex }}>
+                  {member.class.name}
+                </p>
+              )}
+              <div className="flex items-center gap-4 text-[13px] text-[#a1a1a1]">
+                <div className="flex items-center gap-1">
+                  <Shield className="w-4 h-4" />
+                  <span>{member?.guild?.name || 'No guild'}</span>
                 </div>
-                {member?.class && (
-                  <p className="text-lg mb-2" style={{ color: member.class.color_hex }}>
-                    {member.class.name}
-                  </p>
-                )}
-                <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                {member?.guild?.realm && (
                   <div className="flex items-center gap-1">
-                    <Shield className="w-4 h-4" />
-                    <span>{member?.guild?.name || 'No guild'}</span>
+                    <Trophy className="w-4 h-4" />
+                    <span>{member.guild.realm}</span>
                   </div>
-                  {member?.guild?.realm && (
-                    <div className="flex items-center gap-1">
-                      <Trophy className="w-4 h-4" />
-                      <span>{member.guild.realm}</span>
-                    </div>
-                  )}
-                </div>
+                )}
               </div>
             </div>
-          </CardContent>
-        </Card>
+            <button
+              onClick={handleLogout}
+              className="px-6 py-3 bg-[#151515] hover:bg-[#1a1a1a] border border-[rgba(255,255,255,0.1)] rounded-[52px] text-white font-medium text-base transition whitespace-nowrap flex items-center gap-2"
+            >
+              <LogOut className="w-4 h-4" />
+              Log Out
+            </button>
+          </div>
+        </div>
 
         {/* Bio Section */}
         {preferences?.bio && (
-          <Card>
-            <CardContent className="pt-6">
-              <p className="text-foreground">{preferences.bio}</p>
-            </CardContent>
-          </Card>
+          <div className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl p-6">
+            <p className="text-white">{preferences.bio}</p>
+          </div>
         )}
 
         {/* Profile Stats */}
@@ -289,111 +262,109 @@ export default function ProfilePage() {
         )}
 
         {/* Discord Information */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <User className="w-5 h-5" />
-              Discord Information
+        <div className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl overflow-hidden">
+          <div className="px-6 py-4 border-b border-[rgba(255,255,255,0.1)]">
+            <div className="flex items-center gap-2">
+              <User className="w-5 h-5 text-white" />
+              <h3 className="text-[18px] font-semibold text-white">Discord Information</h3>
               {preferences?.discord_guild_member && (
-                <Badge variant="default" className="ml-auto">
-                  <CheckCircle className="w-3 h-3 mr-1" />
+                <span className="ml-auto px-3 py-1 bg-green-900/20 border border-green-600 rounded-full text-green-200 text-[13px] flex items-center gap-1">
+                  <CheckCircle className="w-3 h-3" />
                   Guild Verified
-                </Badge>
+                </span>
               )}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
+            </div>
+          </div>
+          <div className="p-6">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <p className="text-sm text-muted-foreground mb-1">Discord Display Name</p>
-                <p className="text-foreground font-medium">
+                <p className="text-[13px] text-[#a1a1a1] mb-1">Discord Display Name</p>
+                <p className="text-white font-medium">
                   {user?.user_metadata?.custom_claims?.global_name || 'N/A'}
                 </p>
               </div>
               {(preferences?.show_discord_username !== false) && (
                 <div>
-                  <p className="text-sm text-muted-foreground mb-1">Discord Username</p>
-                  <p className="text-foreground font-medium">
+                  <p className="text-[13px] text-[#a1a1a1] mb-1">Discord Username</p>
+                  <p className="text-white font-medium">
                     {user?.user_metadata?.full_name || user?.user_metadata?.name || 'N/A'}
                   </p>
                 </div>
               )}
               {(preferences?.show_email !== false) && user?.email && (
                 <div>
-                  <p className="text-sm text-muted-foreground mb-1">Email</p>
-                  <p className="text-foreground font-medium flex items-center gap-2">
+                  <p className="text-[13px] text-[#a1a1a1] mb-1">Email</p>
+                  <p className="text-white font-medium flex items-center gap-2">
                     <Mail className="w-4 h-4" />
                     {user.email}
                   </p>
                 </div>
               )}
               <div>
-                <p className="text-sm text-muted-foreground mb-1">Member Since</p>
-                <p className="text-foreground font-medium flex items-center gap-2">
+                <p className="text-[13px] text-[#a1a1a1] mb-1">Member Since</p>
+                <p className="text-white font-medium flex items-center gap-2">
                   <Calendar className="w-4 h-4" />
                   {new Date(user?.created_at).toLocaleDateString()}
                 </p>
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
         {/* Guilds Section */}
         {allGuilds.length > 0 && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Your Guilds</CardTitle>
-            </CardHeader>
-            <CardContent>
+          <div className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl overflow-hidden">
+            <div className="px-6 py-4 border-b border-[rgba(255,255,255,0.1)]">
+              <h3 className="text-[18px] font-semibold text-white">Your Guilds</h3>
+            </div>
+            <div className="p-6">
               <div className="space-y-3">
                 {allGuilds.map((membership) => {
                   const isCreator = membership.guild.created_by === user?.id
                   return (
                     <div
                       key={membership.guild.id}
-                      className="flex items-center justify-between p-4 bg-muted rounded-lg"
+                      className="flex items-center justify-between p-4 bg-[#0d0e11] border border-[rgba(255,255,255,0.1)] rounded-lg"
                     >
                       <div className="flex-1">
                         <div className="flex items-center gap-2">
-                          <p className="font-medium text-foreground">{membership.guild.name}</p>
+                          <p className="font-medium text-white">{membership.guild.name}</p>
                           {isCreator && (
-                            <Badge variant="default" className="text-xs">Creator</Badge>
+                            <span className="px-2 py-0.5 bg-[rgba(255,128,0,0.2)] border border-[rgba(255,128,0,0.3)] rounded text-[#ff8000] text-xs">Creator</span>
                           )}
                         </div>
-                        <p className="text-sm text-muted-foreground">
+                        <p className="text-[13px] text-[#a1a1a1]">
                           {membership.guild.realm && `${membership.guild.realm} • ${membership.guild.faction}`}
                         </p>
-                        <Badge variant="secondary" className="mt-1">
+                        <span className="inline-block mt-1 px-2 py-0.5 bg-[#151515] border border-[rgba(255,255,255,0.1)] rounded text-[#a1a1a1] text-xs">
                           {membership.role}
-                        </Badge>
+                        </span>
                       </div>
                       {isCreator ? (
-                        <Button
-                          onClick={() => setDeleteGuildId(membership.guild.id)}
-                          variant="destructive"
-                          size="sm"
-                          disabled={deleting}
-                        >
-                          <LogOut className="w-4 h-4 mr-2" />
-                          Delete Guild
-                        </Button>
+                        <div className="text-right">
+                          <span className="block px-3 py-1 border border-[rgba(255,255,255,0.1)] rounded-full text-white text-[13px] mb-1">
+                            Guild Creator
+                          </span>
+                          <p className="text-xs text-[#a1a1a1]">
+                            Go to <button onClick={() => router.push('/admin/settings')} className="text-[#ff8000] underline hover:no-underline">Guild Settings</button> to manage
+                          </p>
+                        </div>
                       ) : (
-                        <Button
+                        <button
                           onClick={() => setLeaveGuildId(membership.guild.id)}
-                          variant="destructive"
-                          size="sm"
                           disabled={leaving}
+                          className="px-4 py-2 bg-red-900/20 hover:bg-red-900/30 border border-red-600 rounded-[52px] text-red-200 text-[13px] font-medium transition flex items-center gap-2 disabled:opacity-50"
                         >
-                          <LogOut className="w-4 h-4 mr-2" />
+                          <LogOut className="w-4 h-4" />
                           Leave Guild
-                        </Button>
+                        </button>
                       )}
                     </div>
                   )
                 })}
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         )}
 
         {/* Leave Guild Confirmation Modal */}
@@ -403,126 +374,83 @@ export default function ProfilePage() {
             onClick={() => !leaving && setLeaveGuildId(null)}
           >
             <div
-              className="bg-background border border-border rounded-lg max-w-md w-full p-6"
+              className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl max-w-md w-full p-6"
               onClick={(e) => e.stopPropagation()}
             >
-              <h3 className="text-xl font-bold text-foreground mb-2">Leave Guild?</h3>
-              <p className="text-muted-foreground mb-6">
+              <h3 className="text-[20px] font-bold text-white mb-2">Leave Guild?</h3>
+              <p className="text-[#a1a1a1] mb-6">
                 Are you sure you want to leave this guild? This action cannot be undone.
                 {allGuilds.length === 1 && (
-                  <span className="block mt-2 text-destructive font-medium">
+                  <span className="block mt-2 text-red-400 font-medium">
                     This is your only guild. You'll need to join another guild to continue using LootList+.
                   </span>
                 )}
               </p>
               <div className="flex gap-3 justify-end">
-                <Button
+                <button
                   onClick={() => setLeaveGuildId(null)}
-                  variant="outline"
                   disabled={leaving}
+                  className="px-5 py-2.5 bg-[#151515] hover:bg-[#1a1a1a] border border-[rgba(255,255,255,0.1)] rounded-[52px] text-white text-[13px] font-medium transition disabled:opacity-50"
                 >
                   Cancel
-                </Button>
-                <Button
+                </button>
+                <button
                   onClick={() => {
                     handleLeaveGuild(leaveGuildId)
                     setLeaveGuildId(null)
                   }}
-                  variant="destructive"
                   disabled={leaving}
+                  className="px-5 py-2.5 bg-red-900/20 hover:bg-red-900/30 border border-red-600 rounded-[52px] text-red-200 text-[13px] font-medium transition disabled:opacity-50"
                 >
                   {leaving ? 'Leaving...' : 'Leave Guild'}
-                </Button>
+                </button>
               </div>
             </div>
           </div>
         )}
 
-        {/* Delete Guild Confirmation Modal */}
-        {deleteGuildId && (
-          <div
-            className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-            onClick={() => !deleting && setDeleteGuildId(null)}
-          >
+        {/* Raw User Data (Debug) - Only visible to creator */}
+        {(user?.user_metadata?.custom_claims?.global_name === '_zev' ||
+          user?.user_metadata?.name === '_zev' ||
+          user?.user_metadata?.full_name === '_zev') && (
+          <div className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl overflow-hidden">
             <div
-              className="bg-background border border-border rounded-lg max-w-md w-full p-6"
-              onClick={(e) => e.stopPropagation()}
+              className="px-6 py-4 border-b border-[rgba(255,255,255,0.1)] cursor-pointer hover:bg-[#1a1a1a] transition"
+              onClick={() => setDebugExpanded(!debugExpanded)}
             >
-              <h3 className="text-xl font-bold text-foreground mb-2">Delete Guild?</h3>
-              <p className="text-muted-foreground mb-6">
-                Are you sure you want to permanently delete this guild? This will remove all data including members, loot submissions, and attendance records. This action cannot be undone.
-                {allGuilds.length === 1 && (
-                  <span className="block mt-2 text-destructive font-medium">
-                    This is your only guild. You'll need to create or join another guild to continue using LootList+.
-                  </span>
-                )}
-              </p>
-              <div className="flex gap-3 justify-end">
-                <Button
-                  onClick={() => setDeleteGuildId(null)}
-                  variant="outline"
-                  disabled={deleting}
+              <div className="flex items-center justify-between">
+                <h3 className="text-[18px] font-semibold text-white">Debug: Available User Data</h3>
+                <svg
+                  className="w-5 h-5 text-white transition-transform"
+                  style={{ transform: debugExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
                 >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={() => {
-                    handleDeleteGuild(deleteGuildId)
-                    setDeleteGuildId(null)
-                  }}
-                  variant="destructive"
-                  disabled={deleting}
-                >
-                  {deleting ? 'Deleting...' : 'Delete Guild'}
-                </Button>
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
               </div>
             </div>
+            {debugExpanded && (
+              <div className="p-6">
+                <div className="space-y-4">
+                  <div>
+                    <h4 className="font-semibold text-[13px] text-white mb-2">user.user_metadata:</h4>
+                    <pre className="bg-[#0d0e11] p-4 rounded-lg overflow-x-auto text-xs text-[#a1a1a1]">
+                      {JSON.stringify(user?.user_metadata, null, 2)}
+                    </pre>
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-[13px] text-white mb-2">Guild Member Data:</h4>
+                    <pre className="bg-[#0d0e11] p-4 rounded-lg overflow-x-auto text-xs text-[#a1a1a1]">
+                      {JSON.stringify(member, null, 2)}
+                    </pre>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
-
-        {/* Account Actions */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Account</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Button
-              onClick={handleLogout}
-              variant="destructive"
-              className="w-full sm:w-auto"
-            >
-              <LogOut className="w-4 h-4 mr-2" />
-              Log Out
-            </Button>
-            <p className="text-sm text-muted-foreground mt-3">
-              Logging out will end your session. You'll need to sign in again with Discord.
-            </p>
-          </CardContent>
-        </Card>
-
-        {/* Raw User Data (Debug) */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Debug: Available User Data</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div>
-                <h4 className="font-semibold text-sm text-foreground mb-2">user.user_metadata:</h4>
-                <pre className="bg-muted p-4 rounded-lg overflow-x-auto text-xs">
-                  {JSON.stringify(user?.user_metadata, null, 2)}
-                </pre>
-              </div>
-              <div>
-                <h4 className="font-semibold text-sm text-foreground mb-2">Guild Member Data:</h4>
-                <pre className="bg-muted p-4 rounded-lg overflow-x-auto text-xs">
-                  {JSON.stringify(member, null, 2)}
-                </pre>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </main>
-    </div>
+      </div>
   )
 }

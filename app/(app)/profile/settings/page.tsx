@@ -144,7 +144,13 @@ export default function SettingsPage() {
     }
   }
 
-  if (loading) return <LoadingSpinner fullScreen />
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <LoadingSpinner />
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-background">

@@ -4,8 +4,8 @@ import { createClient } from '@/utils/supabase/client'
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import type { User } from '@supabase/supabase-js'
-import Sidebar from '@/app/components/Sidebar'
 import { useGuildContext } from '@/app/contexts/GuildContext'
+import { LoadingSpinner } from '@/components/ui/loading-spinner'
 
 interface Submission {
   id: string
@@ -276,25 +276,24 @@ export default function AdminPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+      <div className="min-h-screen flex items-center justify-center">
+        <LoadingSpinner />
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-[#151515]">
-      <Sidebar user={user} currentView="master-loot" />
-
-      <main className="ml-[208px] min-h-screen bg-[#09090c] border-l border-[rgba(255,255,255,0.1)] p-6">
-        <h1 className="text-3xl font-bold text-foreground mb-6">Master Loot Admin</h1>
-
-        <div className="max-w-6xl mx-auto space-y-6">
+      <div className="p-8 space-y-6 font-poppins">
+        {/* Header */}
+        <div>
+          <h1 className="text-[42px] font-bold text-white leading-tight">Master Loot Admin</h1>
+          <p className="text-[#a1a1a1] mt-1 text-[14px]">Review and manage loot submissions from guild members</p>
+        </div>
         {message && (
-          <div className={`p-4 rounded-lg ${
+          <div className={`p-4 rounded-xl ${
             message.type === 'success'
-              ? 'bg-success/20 border border-success text-success-foreground'
-              : 'bg-error/20 border border-error text-error-foreground'
+              ? 'bg-green-950/50 border border-green-600/50 text-green-200'
+              : 'bg-red-950/50 border border-red-600/50 text-red-200'
           }`}>
             {message.text}
           </div>
@@ -302,17 +301,17 @@ export default function AdminPage() {
 
         {/* Active Tier & Deadline */}
         {activeTier && (
-          <div className="bg-card border border-border rounded-xl p-6">
-            <h2 className="text-lg font-semibold text-foreground mb-4">Active Raid Tier</h2>
+          <div className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl p-6">
+            <h2 className="text-[24px] font-semibold text-white mb-4">Active Raid Tier</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
               <div>
-                <p className="text-muted-foreground text-sm mb-1">Tier</p>
-                <p className="text-foreground font-medium">{activeTier.name}</p>
-                <p className="text-muted-foreground text-sm">{activeTier.expansion?.name}</p>
+                <p className="text-[#a1a1a1] text-[13px] mb-1">Tier</p>
+                <p className="text-white font-medium text-[14px]">{activeTier.name}</p>
+                <p className="text-[#a1a1a1] text-[13px]">{activeTier.expansion?.name}</p>
               </div>
               {deadline && (
                 <div>
-                  <p className="text-muted-foreground text-sm mb-1">Deadline</p>
+                  <p className="text-[#a1a1a1] text-[13px] mb-1">Deadline</p>
                   <input
                     type="datetime-local"
                     value={deadline.deadline_at ? new Date(deadline.deadline_at).toISOString().slice(0, 16) : ''}
@@ -320,9 +319,9 @@ export default function AdminPage() {
                       ...prev,
                       deadline_at: new Date(e.target.value).toISOString()
                     } : null)}
-                    className="w-full bg-secondary border border-border rounded-lg px-3 py-2 text-foreground mb-2"
+                    className="w-full px-5 py-3 bg-[#151515] border border-[#383838] rounded-[52px] text-white text-[13px] focus:outline-none focus:border-[#ff8000] mb-2"
                   />
-                  <label className="flex items-center gap-2 text-foreground">
+                  <label className="flex items-center gap-2 text-white">
                     <input
                       type="checkbox"
                       checked={deadline.is_locked}
@@ -330,12 +329,13 @@ export default function AdminPage() {
                         ...prev,
                         is_locked: e.target.checked
                       } : null)}
+                      className="w-5 h-5 rounded border-[#383838] bg-[#151515] text-[#ff8000] focus:ring-[#ff8000]"
                     />
-                    <span className="text-sm">Lock submissions</span>
+                    <span className="text-[13px]">Lock submissions</span>
                   </label>
                   <button
                     onClick={handleDeadlineUpdate}
-                    className="mt-2 w-full py-2 bg-primary hover:bg-primary/90 rounded-lg text-primary-foreground font-semibold transition"
+                    className="mt-2 w-full px-5 py-3 bg-white hover:bg-gray-100 rounded-[40px] text-black font-medium text-[16px] transition"
                   >
                     Update Deadline
                   </button>
@@ -346,32 +346,32 @@ export default function AdminPage() {
         )}
 
         {/* Submissions */}
-        <div className="bg-card border border-border rounded-xl p-6">
+        <div className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl p-6">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-4">
-              <h2 className="text-lg font-semibold text-foreground">Loot Submissions</h2>
+              <h2 className="text-[24px] font-semibold text-white">Loot Submissions</h2>
               <div className="flex gap-2">
                 <button
                   onClick={() => router.push('/admin/settings')}
-                  className="px-4 py-2 bg-primary hover:bg-primary/90 rounded-lg text-primary-foreground text-sm font-semibold transition"
+                  className="px-4 py-2 bg-[#151515] hover:bg-[#1a1a1a] border border-[rgba(255,255,255,0.1)] rounded-[40px] text-white text-[13px] font-medium transition"
                 >
                   ⚙️ Settings
                 </button>
                 <button
                   onClick={() => router.push('/admin/raid-tiers')}
-                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 rounded-lg text-foreground text-sm font-semibold transition"
+                  className="px-4 py-2 bg-[#151515] hover:bg-[#1a1a1a] border border-[rgba(255,255,255,0.1)] rounded-[40px] text-white text-[13px] font-medium transition"
                 >
                   🏰 Raid Tiers
                 </button>
                 <button
                   onClick={() => router.push('/admin/loot-items')}
-                  className="px-4 py-2 bg-green-600 hover:bg-green-700 rounded-lg text-foreground text-sm font-semibold transition"
+                  className="px-4 py-2 bg-[#151515] hover:bg-[#1a1a1a] border border-[rgba(255,255,255,0.1)] rounded-[40px] text-white text-[13px] font-medium transition"
                 >
                   ⚔️ Manage Loot
                 </button>
                 <button
                   onClick={() => router.push('/admin/import')}
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-foreground text-sm font-semibold transition"
+                  className="px-4 py-2 bg-[#151515] hover:bg-[#1a1a1a] border border-[rgba(255,255,255,0.1)] rounded-[40px] text-white text-[13px] font-medium transition"
                 >
                   📥 Import
                 </button>
@@ -382,10 +382,10 @@ export default function AdminPage() {
                 <button
                   key={f}
                   onClick={() => setFilter(f as any)}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
+                  className={`px-4 py-2 rounded-[40px] text-[13px] font-medium transition ${
                     filter === f
-                      ? 'bg-primary text-primary-foreground'
-                      : 'bg-secondary text-foreground hover:bg-secondary/80'
+                      ? 'bg-[rgba(255,128,0,0.2)] border-[0.5px] border-[rgba(255,128,0,0.2)] text-[#ff8000]'
+                      : 'bg-[#151515] text-white hover:bg-[#1a1a1a] border border-[rgba(255,255,255,0.1)]'
                   }`}
                 >
                   {f.charAt(0).toUpperCase() + f.slice(1)}
@@ -395,39 +395,39 @@ export default function AdminPage() {
           </div>
 
           {filteredSubmissions.length === 0 ? (
-            <p className="text-muted-foreground text-center py-8">No submissions found</p>
+            <p className="text-[#a1a1a1] text-center py-8 text-[14px]">No submissions found</p>
           ) : (
             <div className="space-y-4">
               {filteredSubmissions.map((sub) => (
                 <div
                   key={sub.id}
-                  className="bg-secondary rounded-lg p-4 border border-border"
+                  className="bg-[#151515] rounded-xl p-4 border border-[rgba(255,255,255,0.1)]"
                 >
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center gap-4">
                       <div>
-                        <p className="text-foreground font-medium">
+                        <p className="text-white font-medium text-[14px]">
                           {sub.member?.character_name || 'Unknown'}
                         </p>
-                        <p className="text-sm" style={{ color: sub.member?.class?.color_hex || '#888' }}>
+                        <p className="text-[13px]" style={{ color: sub.member?.class?.color_hex || '#888' }}>
                           {sub.member?.class?.name || 'Unknown'} • {sub.member?.role}
                         </p>
                       </div>
                     </div>
                     <div className="text-right">
                       <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                        sub.status === 'approved' ? 'bg-success text-success-foreground' :
-                        sub.status === 'rejected' ? 'bg-error text-error-foreground' :
-                        'bg-warning text-warning-foreground'
+                        sub.status === 'approved' ? 'bg-green-950/50 border border-green-600/50 text-green-200' :
+                        sub.status === 'rejected' ? 'bg-red-950/50 border border-red-600/50 text-red-200' :
+                        'bg-yellow-950/50 border border-yellow-600/50 text-yellow-200'
                       }`}>
                         {sub.status}
                       </span>
-                      <p className="text-muted-foreground text-xs mt-1">
+                      <p className="text-[#a1a1a1] text-xs mt-1">
                         {sub.item_count} items
                       </p>
                       <button
                         onClick={() => viewSubmissionDetails(sub.id)}
-                        className="mt-2 px-3 py-1 bg-blue-600 hover:bg-blue-700 rounded text-foreground text-xs font-semibold transition"
+                        className="mt-2 px-3 py-1 bg-[#ff8000] hover:bg-[#e67300] rounded-[40px] text-white text-xs font-semibold transition"
                       >
                         View Details
                       </button>
@@ -435,39 +435,39 @@ export default function AdminPage() {
                   </div>
 
                   {sub.submitted_at && (
-                    <p className="text-muted-foreground text-sm mb-4">
+                    <p className="text-[#a1a1a1] text-[13px] mb-4">
                       Submitted: {new Date(sub.submitted_at).toLocaleString()}
                     </p>
                   )}
 
                   {sub.review_notes && (
-                    <div className="bg-card rounded p-3 mb-4">
-                      <p className="text-muted-foreground text-sm mb-1">Review Notes:</p>
-                      <p className="text-foreground text-sm">{sub.review_notes}</p>
+                    <div className="bg-[#0d0e11] rounded-xl p-3 mb-4">
+                      <p className="text-[#a1a1a1] text-[13px] mb-1">Review Notes:</p>
+                      <p className="text-white text-[13px]">{sub.review_notes}</p>
                     </div>
                   )}
 
                   {sub.status === 'pending' && (
-                    <div className="mt-4 pt-4 border-t border-border">
+                    <div className="mt-4 pt-4 border-t border-[rgba(255,255,255,0.1)]">
                       <textarea
                         placeholder="Review notes (optional)"
                         value={reviewNotes}
                         onChange={(e) => setReviewNotes(e.target.value)}
-                        className="w-full bg-background border border-border rounded-lg px-3 py-2 text-foreground mb-3 resize-none"
+                        className="w-full px-5 py-3 bg-[#0d0e11] border border-[#383838] rounded-xl text-white text-[13px] focus:outline-none focus:border-[#ff8000] mb-3 resize-none"
                         rows={3}
                       />
                       <div className="flex gap-2">
                         <button
                           onClick={() => handleReview(sub.id, 'approved')}
                           disabled={reviewing === sub.id}
-                          className="flex-1 py-2 bg-green-600 hover:bg-green-700 disabled:opacity-50 rounded-lg text-foreground font-semibold transition"
+                          className="flex-1 px-5 py-3 bg-green-600 hover:bg-green-700 disabled:opacity-50 rounded-[40px] text-white font-medium text-[16px] transition"
                         >
                           {reviewing === sub.id ? 'Processing...' : 'Approve'}
                         </button>
                         <button
                           onClick={() => handleReview(sub.id, 'rejected')}
                           disabled={reviewing === sub.id}
-                          className="flex-1 py-2 bg-red-600 hover:bg-red-700 disabled:opacity-50 rounded-lg text-foreground font-semibold transition"
+                          className="flex-1 px-5 py-3 bg-red-600 hover:bg-red-700 disabled:opacity-50 rounded-[40px] text-white font-medium text-[16px] transition"
                         >
                           {reviewing === sub.id ? 'Processing...' : 'Reject'}
                         </button>
@@ -483,15 +483,15 @@ export default function AdminPage() {
         {/* Submission Details Modal */}
         {viewingSubmission && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-            <div className="bg-card border border-border rounded-xl max-w-4xl w-full max-h-[80vh] overflow-hidden flex flex-col">
-              <div className="p-6 border-b border-border flex items-center justify-between">
-                <h3 className="text-xl font-bold text-foreground">Submission Details</h3>
+            <div className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl max-w-4xl w-full max-h-[80vh] overflow-hidden flex flex-col">
+              <div className="p-6 border-b border-[rgba(255,255,255,0.1)] flex items-center justify-between">
+                <h3 className="text-[24px] font-bold text-white">Submission Details</h3>
                 <button
                   onClick={() => {
                     setViewingSubmission(null)
                     setSubmissionDetails([])
                   }}
-                  className="text-muted-foreground hover:text-foreground transition"
+                  className="text-[#a1a1a1] hover:text-white transition"
                 >
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -500,7 +500,7 @@ export default function AdminPage() {
               </div>
               <div className="overflow-y-auto p-6">
                 {submissionDetails.length === 0 ? (
-                  <p className="text-muted-foreground text-center py-8">No items ranked</p>
+                  <p className="text-[#a1a1a1] text-center py-8 text-[14px]">No items ranked</p>
                 ) : (
                   <div className="space-y-2">
                     {submissionDetails
@@ -508,10 +508,10 @@ export default function AdminPage() {
                       .map((item: any, index: number) => (
                         <div
                           key={index}
-                          className="bg-secondary rounded-lg p-4 flex items-center justify-between"
+                          className="bg-[#151515] rounded-xl p-4 flex items-center justify-between"
                         >
                           <div className="flex items-center gap-4">
-                            <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center text-primary-foreground font-bold">
+                            <div className="w-10 h-10 bg-[#ff8000] rounded-lg flex items-center justify-center text-white font-bold">
                               {item.rank}
                             </div>
                             <div>
@@ -519,11 +519,11 @@ export default function AdminPage() {
                                 href={`https://www.wowhead.com/classic/item=${item.loot_item?.wowhead_id}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="text-primary hover:text-purple-300 font-medium"
+                                className="text-[#ff8000] hover:text-[#e67300] font-medium"
                               >
                                 {item.loot_item?.name || 'Unknown Item'}
                               </a>
-                              <p className="text-muted-foreground text-sm">
+                              <p className="text-[#a1a1a1] text-[13px]">
                                 {item.loot_item?.boss_name} • {item.loot_item?.item_slot}
                               </p>
                             </div>
@@ -536,8 +536,6 @@ export default function AdminPage() {
             </div>
           </div>
         )}
-        </div>
-      </main>
-    </div>
+      </div>
   )
 }

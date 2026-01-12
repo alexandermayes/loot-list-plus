@@ -2,10 +2,11 @@
 
 import { createClient } from '@/utils/supabase/client'
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 import type { User } from '@supabase/supabase-js'
-import Navigation from '@/app/components/Navigation'
+import Link from 'next/link'
 import { useGuildContext } from '@/app/contexts/GuildContext'
+import { LoadingSpinner } from '@/components/ui/loading-spinner'
 
 interface GuildSettings {
   id?: string
@@ -179,60 +180,84 @@ export default function SettingsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+      <div className="min-h-screen flex items-center justify-center">
+        <LoadingSpinner />
       </div>
     )
   }
 
   if (!settings) return null
 
-  return (
-    <div className="min-h-screen bg-background">
-      <Navigation
-        user={user}
-        showBack
-        backUrl="/admin"
-        title="Guild Settings"
-      />
+  const adminTabs = [
+    { name: 'Settings', href: '/admin/settings', icon: '⚙️' },
+    { name: 'Raid Tiers', href: '/admin/raid-tiers', icon: '🏰' },
+    { name: 'Manage Loot', href: '/admin/loot-items', icon: '✅' },
+    { name: 'Import', href: '/admin/import', icon: '📥' },
+  ]
 
-      <main className="max-w-4xl mx-auto p-6 space-y-6">
+  const pathname = usePathname()
+
+  return (
+      <div className="p-8 space-y-6 font-poppins">
+        {/* Header */}
+        <div>
+          <h1 className="text-[42px] font-bold text-white leading-tight">Loot Master Settings</h1>
+          <p className="text-[#a1a1a1] mt-1 text-[14px]">Configure your guild's loot distribution system</p>
+        </div>
+
+        {/* Navigation Tabs */}
+        <div className="flex gap-2 border-b border-[rgba(255,255,255,0.1)] pb-2 overflow-x-auto">
+          {adminTabs.map((tab) => (
+            <Link
+              key={tab.href}
+              href={tab.href}
+              className={`px-4 py-2 rounded-t-lg whitespace-nowrap text-[13px] font-medium transition-all ${
+                pathname === tab.href
+                  ? 'bg-[rgba(255,128,0,0.2)] border-[0.5px] border-[rgba(255,128,0,0.2)] text-[#ff8000]'
+                  : 'text-[#a1a1a1] hover:text-white hover:bg-[#1a1a1a]'
+              }`}
+            >
+              <span className="mr-2">{tab.icon}</span>
+              {tab.name}
+            </Link>
+          ))}
+        </div>
         {message && (
-          <div className={`p-4 rounded-lg ${
+          <div className={`p-4 rounded-xl ${
             message.type === 'success'
-              ? 'bg-success/20 border border-success text-success-foreground'
-              : 'bg-error/20 border border-error text-error-foreground'
+              ? 'bg-green-950/50 border border-green-600/50 text-green-200'
+              : 'bg-red-950/50 border border-red-600/50 text-red-200'
           }`}>
             {message.text}
           </div>
         )}
 
         {/* Attendance Settings */}
-        <div className="bg-card border border-border rounded-xl p-6">
-          <h2 className="text-xl font-semibold text-foreground mb-4">Attendance Settings</h2>
-          
+        <div className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl p-6">
+          <h2 className="text-[24px] font-bold text-white mb-4">Attendance Settings</h2>
+
           <div className="space-y-4">
             <div>
-              <label className="block text-foreground mb-2">Attendance Type</label>
+              <label className="block text-white mb-2 text-[13px] font-medium">Attendance Type</label>
               <select
                 value={settings.attendance_type}
                 onChange={(e) => setSettings({ ...settings, attendance_type: e.target.value as 'linear' | 'breakpoint' })}
-                className="w-full px-3 py-2 bg-secondary border border-border rounded-lg text-foreground"
+                className="w-full px-5 py-3 bg-[#151515] border border-[#383838] rounded-[52px] text-white text-[13px] focus:outline-none focus:border-[#ff8000] cursor-pointer select-custom"
               >
-                <option value="linear">Linear</option>
-                <option value="breakpoint">Breakpoint</option>
+                <option value="linear" className="bg-[#151515] text-white">Linear</option>
+                <option value="breakpoint" className="bg-[#151515] text-white">Breakpoint</option>
               </select>
             </div>
 
             <div>
-              <label className="block text-foreground mb-2">Rolling Attendance Period (weeks)</label>
+              <label className="block text-white mb-2 text-[13px] font-medium">Rolling Attendance Period (weeks)</label>
               <input
                 type="number"
                 min="1"
                 max="12"
                 value={settings.rolling_attendance_weeks}
                 onChange={(e) => setSettings({ ...settings, rolling_attendance_weeks: parseInt(e.target.value) || 4 })}
-                className="w-full px-3 py-2 bg-secondary border border-border rounded-lg text-foreground"
+                className="w-full px-5 py-3 bg-[#151515] border border-[#383838] rounded-[52px] text-white text-[13px] focus:outline-none focus:border-[#ff8000]"
               />
             </div>
 
@@ -241,14 +266,14 @@ export default function SettingsPage() {
                 type="checkbox"
                 checked={settings.use_signups}
                 onChange={(e) => setSettings({ ...settings, use_signups: e.target.checked })}
-                className="w-5 h-5"
+                className="w-5 h-5 rounded border-[#383838] bg-[#151515] text-[#ff8000] focus:ring-[#ff8000]"
               />
-              <label className="text-foreground">Use raid signups for attendance bonus</label>
+              <label className="text-white text-[13px]">Use raid signups for attendance bonus</label>
             </div>
 
             {settings.use_signups && (
               <div>
-                <label className="block text-foreground mb-2">Signup Weight (decimal, e.g., 0.25)</label>
+                <label className="block text-white mb-2 text-[13px] font-medium">Signup Weight (decimal, e.g., 0.25)</label>
                 <input
                   type="number"
                   step="0.01"
@@ -256,27 +281,27 @@ export default function SettingsPage() {
                   max="1"
                   value={settings.signup_weight}
                   onChange={(e) => setSettings({ ...settings, signup_weight: parseFloat(e.target.value) || 0.25 })}
-                  className="w-full px-3 py-2 bg-secondary border border-border rounded-lg text-foreground"
+                  className="w-full px-5 py-3 bg-[#151515] border border-[#383838] rounded-[52px] text-white text-[13px] focus:outline-none focus:border-[#ff8000]"
                 />
               </div>
             )}
 
             {settings.attendance_type === 'breakpoint' && (
-              <div className="space-y-3 pt-4 border-t border-border">
-                <h3 className="text-foreground font-medium">Attendance Bonuses</h3>
-                
+              <div className="space-y-3 pt-4 border-t border-[rgba(255,255,255,0.1)]">
+                <h3 className="text-white font-medium text-[14px]">Attendance Bonuses</h3>
+
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-foreground mb-1 text-sm">Max Bonus</label>
+                    <label className="block text-white mb-1 text-[10px] font-medium">Max Bonus</label>
                     <input
                       type="number"
                       value={settings.max_attendance_bonus}
                       onChange={(e) => setSettings({ ...settings, max_attendance_bonus: parseFloat(e.target.value) || 0 })}
-                      className="w-full px-3 py-2 bg-secondary border border-border rounded-lg text-foreground"
+                      className="w-full px-5 py-3 bg-[#151515] border border-[#383838] rounded-[52px] text-white text-[13px] focus:outline-none focus:border-[#ff8000]"
                     />
                   </div>
                   <div>
-                    <label className="block text-foreground mb-1 text-sm">Threshold (0.0-1.0)</label>
+                    <label className="block text-white mb-1 text-[10px] font-medium">Threshold (0.0-1.0)</label>
                     <input
                       type="number"
                       step="0.01"
@@ -284,23 +309,23 @@ export default function SettingsPage() {
                       max="1"
                       value={settings.max_attendance_threshold}
                       onChange={(e) => setSettings({ ...settings, max_attendance_threshold: parseFloat(e.target.value) || 0 })}
-                      className="w-full px-3 py-2 bg-secondary border border-border rounded-lg text-foreground"
+                      className="w-full px-5 py-3 bg-[#151515] border border-[#383838] rounded-[52px] text-white text-[13px] focus:outline-none focus:border-[#ff8000]"
                     />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-foreground mb-1 text-sm">Middle Bonus</label>
+                    <label className="block text-white mb-1 text-[10px] font-medium">Middle Bonus</label>
                     <input
                       type="number"
                       value={settings.middle_attendance_bonus}
                       onChange={(e) => setSettings({ ...settings, middle_attendance_bonus: parseFloat(e.target.value) || 0 })}
-                      className="w-full px-3 py-2 bg-secondary border border-border rounded-lg text-foreground"
+                      className="w-full px-5 py-3 bg-[#151515] border border-[#383838] rounded-[52px] text-white text-[13px] focus:outline-none focus:border-[#ff8000]"
                     />
                   </div>
                   <div>
-                    <label className="block text-foreground mb-1 text-sm">Threshold (0.0-1.0)</label>
+                    <label className="block text-white mb-1 text-[10px] font-medium">Threshold (0.0-1.0)</label>
                     <input
                       type="number"
                       step="0.01"
@@ -308,23 +333,23 @@ export default function SettingsPage() {
                       max="1"
                       value={settings.middle_attendance_threshold}
                       onChange={(e) => setSettings({ ...settings, middle_attendance_threshold: parseFloat(e.target.value) || 0 })}
-                      className="w-full px-3 py-2 bg-secondary border border-border rounded-lg text-foreground"
+                      className="w-full px-5 py-3 bg-[#151515] border border-[#383838] rounded-[52px] text-white text-[13px] focus:outline-none focus:border-[#ff8000]"
                     />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-foreground mb-1 text-sm">Bottom Bonus</label>
+                    <label className="block text-white mb-1 text-[10px] font-medium">Bottom Bonus</label>
                     <input
                       type="number"
                       value={settings.bottom_attendance_bonus}
                       onChange={(e) => setSettings({ ...settings, bottom_attendance_bonus: parseFloat(e.target.value) || 0 })}
-                      className="w-full px-3 py-2 bg-secondary border border-border rounded-lg text-foreground"
+                      className="w-full px-5 py-3 bg-[#151515] border border-[#383838] rounded-[52px] text-white text-[13px] focus:outline-none focus:border-[#ff8000]"
                     />
                   </div>
                   <div>
-                    <label className="block text-foreground mb-1 text-sm">Threshold (0.0-1.0)</label>
+                    <label className="block text-white mb-1 text-[10px] font-medium">Threshold (0.0-1.0)</label>
                     <input
                       type="number"
                       step="0.01"
@@ -332,7 +357,7 @@ export default function SettingsPage() {
                       max="1"
                       value={settings.bottom_attendance_threshold}
                       onChange={(e) => setSettings({ ...settings, bottom_attendance_threshold: parseFloat(e.target.value) || 0 })}
-                      className="w-full px-3 py-2 bg-secondary border border-border rounded-lg text-foreground"
+                      className="w-full px-5 py-3 bg-[#151515] border border-[#383838] rounded-[52px] text-white text-[13px] focus:outline-none focus:border-[#ff8000]"
                     />
                   </div>
                 </div>
@@ -342,8 +367,8 @@ export default function SettingsPage() {
         </div>
 
         {/* Bad Luck Prevention */}
-        <div className="bg-card border border-border rounded-xl p-6">
-          <h2 className="text-xl font-semibold text-foreground mb-4">Bad Luck Prevention</h2>
+        <div className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl p-6">
+          <h2 className="text-[24px] font-bold text-white mb-4">Bad Luck Prevention</h2>
 
           <div className="space-y-4">
             <div className="flex items-center gap-3">
@@ -351,18 +376,18 @@ export default function SettingsPage() {
                 type="checkbox"
                 checked={settings.see_item_bonus}
                 onChange={(e) => setSettings({ ...settings, see_item_bonus: e.target.checked })}
-                className="w-5 h-5"
+                className="w-5 h-5 rounded border-[#383838] bg-[#151515] text-[#ff8000] focus:ring-[#ff8000]"
               />
-              <label className="text-foreground">Permanent bonus for seeing item but not receiving</label>
+              <label className="text-white text-[13px]">Permanent bonus for seeing item but not receiving</label>
             </div>
             {settings.see_item_bonus && (
               <div>
-                <label className="block text-foreground mb-2">Bonus Value</label>
+                <label className="block text-white mb-2 text-[13px] font-medium">Bonus Value</label>
                 <input
                   type="number"
                   value={settings.see_item_bonus_value}
                   onChange={(e) => setSettings({ ...settings, see_item_bonus_value: parseFloat(e.target.value) || 0 })}
-                  className="w-full px-3 py-2 bg-secondary border border-border rounded-lg text-foreground"
+                  className="w-full px-5 py-3 bg-[#151515] border border-[#383838] rounded-[52px] text-white text-[13px] focus:outline-none focus:border-[#ff8000]"
                 />
               </div>
             )}
@@ -372,18 +397,18 @@ export default function SettingsPage() {
                 type="checkbox"
                 checked={settings.pass_item_bonus}
                 onChange={(e) => setSettings({ ...settings, pass_item_bonus: e.target.checked })}
-                className="w-5 h-5"
+                className="w-5 h-5 rounded border-[#383838] bg-[#151515] text-[#ff8000] focus:ring-[#ff8000]"
               />
-              <label className="text-foreground">Bonus for passing an item</label>
+              <label className="text-white text-[13px]">Bonus for passing an item</label>
             </div>
             {settings.pass_item_bonus && (
               <div>
-                <label className="block text-foreground mb-2">Bonus Value</label>
+                <label className="block text-white mb-2 text-[13px] font-medium">Bonus Value</label>
                 <input
                   type="number"
                   value={settings.pass_item_bonus_value}
                   onChange={(e) => setSettings({ ...settings, pass_item_bonus_value: parseFloat(e.target.value) || 0 })}
-                  className="w-full px-3 py-2 bg-secondary border border-border rounded-lg text-foreground"
+                  className="w-full px-5 py-3 bg-[#151515] border border-[#383838] rounded-[52px] text-white text-[13px] focus:outline-none focus:border-[#ff8000]"
                 />
               </div>
             )}
@@ -391,9 +416,9 @@ export default function SettingsPage() {
         </div>
 
         {/* Loot List Restrictions */}
-        <div className="bg-card border border-border rounded-xl p-6">
-          <h2 className="text-xl font-semibold text-foreground mb-4">Loot List Restrictions</h2>
-          <p className="text-muted-foreground text-sm mb-4">Control what items players can select in their loot lists</p>
+        <div className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl p-6">
+          <h2 className="text-[24px] font-bold text-white mb-4">Loot List Restrictions</h2>
+          <p className="text-[#a1a1a1] text-[13px] mb-4">Control what items players can select in their loot lists</p>
 
           <div className="space-y-4">
             <div className="flex items-start gap-3">
@@ -401,11 +426,11 @@ export default function SettingsPage() {
                 type="checkbox"
                 checked={settings.enforce_slot_restrictions}
                 onChange={(e) => setSettings({ ...settings, enforce_slot_restrictions: e.target.checked })}
-                className="w-5 h-5 mt-0.5"
+                className="w-5 h-5 mt-0.5 rounded border-[#383838] bg-[#151515] text-[#ff8000] focus:ring-[#ff8000]"
               />
               <div>
-                <label className="text-foreground font-medium">Enforce Slot Restrictions</label>
-                <p className="text-muted-foreground text-sm mt-1">
+                <label className="text-white font-medium text-[13px]">Enforce Slot Restrictions</label>
+                <p className="text-[#a1a1a1] text-[13px] mt-1">
                   When enabled, players can only select one item per slot type (e.g., 1 ring, 1 weapon, 1 trinket) in each loot bracket.
                   This prevents players from filling brackets with multiple items of the same slot.
                 </p>
@@ -415,19 +440,19 @@ export default function SettingsPage() {
         </div>
 
         {/* Rank Modifiers */}
-        <div className="bg-card border border-border rounded-xl p-6">
-          <h2 className="text-xl font-semibold text-foreground mb-4">Rank Modifiers</h2>
-          <p className="text-muted-foreground text-sm mb-4">Set bonus values for each guild rank (can be positive or negative)</p>
-          
+        <div className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl p-6">
+          <h2 className="text-[24px] font-bold text-white mb-4">Rank Modifiers</h2>
+          <p className="text-[#a1a1a1] text-[13px] mb-4">Set bonus values for each guild rank (can be positive or negative)</p>
+
           <div className="space-y-3">
             {Object.keys(rankModifiers).map(rank => (
               <div key={rank} className="flex items-center gap-4">
-                <label className="text-gray-300 w-32">{rank}</label>
+                <label className="text-white w-32 text-[13px]">{rank}</label>
                 <input
                   type="number"
                   value={rankModifiers[rank]}
                   onChange={(e) => updateRankModifier(rank, e.target.value)}
-                  className="flex-1 px-3 py-2 bg-secondary border border-border rounded-lg text-foreground"
+                  className="flex-1 px-5 py-3 bg-[#151515] border border-[#383838] rounded-[52px] text-white text-[13px] focus:outline-none focus:border-[#ff8000]"
                   placeholder="0"
                 />
               </div>
@@ -436,17 +461,17 @@ export default function SettingsPage() {
         </div>
 
         {/* Raid Days */}
-        <div className="bg-card border border-border rounded-xl p-6">
-          <h2 className="text-xl font-semibold text-foreground mb-4">Raid Schedule</h2>
-          
+        <div className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl p-6">
+          <h2 className="text-[24px] font-bold text-white mb-4">Raid Schedule</h2>
+
           <div className="space-y-4">
             <div>
-              <label className="block text-foreground mb-2">First Raid Week Date</label>
+              <label className="block text-white mb-2 text-[13px] font-medium">First Raid Week Date</label>
               <input
                 type="date"
                 value={settings.first_raid_week_date || ''}
                 onChange={(e) => setSettings({ ...settings, first_raid_week_date: e.target.value })}
-                className="w-full px-3 py-2 bg-secondary border border-border rounded-lg text-foreground"
+                className="w-full px-5 py-3 bg-[#151515] border border-[#383838] rounded-[52px] text-white text-[13px] focus:outline-none focus:border-[#ff8000]"
               />
             </div>
           </div>
@@ -456,19 +481,18 @@ export default function SettingsPage() {
         <div className="flex justify-end gap-4">
           <button
             onClick={() => router.push('/admin')}
-            className="px-6 py-3 bg-secondary hover:bg-secondary/80 rounded-lg text-foreground font-semibold transition"
+            className="px-5 py-3 bg-[#151515] hover:bg-[#1a1a1a] rounded-[40px] text-white font-medium text-[16px] transition"
           >
             Cancel
           </button>
           <button
             onClick={handleSave}
             disabled={saving}
-            className="px-6 py-3 bg-primary hover:bg-primary/90 disabled:opacity-50 rounded-lg text-primary-foreground font-semibold transition"
+            className="px-5 py-3 bg-white hover:bg-gray-100 disabled:opacity-50 rounded-[40px] text-black font-medium text-[16px] transition"
           >
             {saving ? 'Saving...' : 'Save Settings'}
           </button>
         </div>
-      </main>
-    </div>
+      </div>
   )
 }

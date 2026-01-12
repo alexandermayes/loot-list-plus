@@ -2,10 +2,11 @@
 
 import { createClient } from '@/utils/supabase/client'
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 import type { User } from '@supabase/supabase-js'
-import Navigation from '@/app/components/Navigation'
+import Link from 'next/link'
 import { useGuildContext } from '@/app/contexts/GuildContext'
+import { LoadingSpinner } from '@/components/ui/loading-spinner'
 
 interface RaidTier {
   id: string
@@ -33,7 +34,7 @@ export default function RaidTiersPage() {
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
   const [showAddForm, setShowAddForm] = useState(false)
   const [editingTier, setEditingTier] = useState<string | null>(null)
-  
+
   // Form state
   const [formData, setFormData] = useState({
     name: '',
@@ -44,6 +45,27 @@ export default function RaidTiersPage() {
   const supabase = createClient()
   const router = useRouter()
   const { activeGuild, loading: guildLoading, isOfficer } = useGuildContext()
+
+  // Define Classic raid tier progression order
+  const getRaidTierOrder = (tierName: string): number => {
+    const order: Record<string, number> = {
+      'Molten Core': 1,
+      'MC': 1,
+      'Onyxia\'s Lair': 2,
+      'Onyxia': 2,
+      'Blackwing Lair': 3,
+      'BWL': 3,
+      'Zul\'Gurub': 4,
+      'ZG': 4,
+      'Ruins of Ahn\'Qiraj': 5,
+      'AQ20': 5,
+      'Temple of Ahn\'Qiraj': 6,
+      'AQ40': 6,
+      'Naxxramas': 7,
+      'Naxx': 7
+    }
+    return order[tierName] || 999
+  }
 
   useEffect(() => {
     const loadData = async () => {
@@ -108,7 +130,6 @@ export default function RaidTiersPage() {
           )
         `)
         .eq('expansion_id', expansionId)
-        .order('name', { ascending: true })
 
       if (error) {
         console.error('Error loading raid tiers:', error)
@@ -122,7 +143,12 @@ export default function RaidTiersPage() {
         expansion: Array.isArray(tier.expansion) ? tier.expansion[0] : tier.expansion
       }))
 
-      setRaidTiers(transformedData)
+      // Sort by Classic raid progression order
+      const sortedTiers = transformedData.sort((a, b) => {
+        return getRaidTierOrder(a.name) - getRaidTierOrder(b.name)
+      })
+
+      setRaidTiers(sortedTiers)
     } catch (err) {
       console.error('Unexpected error loading raid tiers:', err)
       setRaidTiers([])
@@ -251,27 +277,51 @@ export default function RaidTiersPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+      <div className="min-h-screen flex items-center justify-center">
+        <LoadingSpinner />
       </div>
     )
   }
 
-  return (
-    <div className="min-h-screen bg-background">
-      <Navigation
-        user={user}
-        showBack
-        backUrl="/admin"
-        title="Manage Raid Tiers"
-      />
+  const adminTabs = [
+    { name: 'Settings', href: '/admin/settings', icon: '⚙️' },
+    { name: 'Raid Tiers', href: '/admin/raid-tiers', icon: '🏰' },
+    { name: 'Manage Loot', href: '/admin/loot-items', icon: '✅' },
+    { name: 'Import', href: '/admin/import', icon: '📥' },
+  ]
 
-      <main className="max-w-4xl mx-auto p-6 space-y-6">
+  const pathname = usePathname()
+
+  return (
+      <div className="p-8 space-y-6 font-poppins">
+        {/* Header */}
+        <div>
+          <h1 className="text-[42px] font-bold text-white leading-tight">Loot Master Settings</h1>
+          <p className="text-[#a1a1a1] mt-1 text-[14px]">Configure your guild's loot distribution system</p>
+        </div>
+
+        {/* Navigation Tabs */}
+        <div className="flex gap-2 border-b border-[rgba(255,255,255,0.1)] pb-2 overflow-x-auto">
+          {adminTabs.map((tab) => (
+            <Link
+              key={tab.href}
+              href={tab.href}
+              className={`px-4 py-2 rounded-t-lg whitespace-nowrap text-[13px] font-medium transition-all ${
+                pathname === tab.href
+                  ? 'bg-[rgba(255,128,0,0.2)] border-[0.5px] border-[rgba(255,128,0,0.2)] text-[#ff8000]'
+                  : 'text-[#a1a1a1] hover:text-white hover:bg-[#1a1a1a]'
+              }`}
+            >
+              <span className="mr-2">{tab.icon}</span>
+              {tab.name}
+            </Link>
+          ))}
+        </div>
         {message && (
-          <div className={`p-4 rounded-lg ${
+          <div className={`p-4 rounded-xl ${
             message.type === 'success'
-              ? 'bg-success/20 border border-success text-success-foreground'
-              : 'bg-error/20 border border-error text-error-foreground'
+              ? 'bg-green-950/50 border border-green-600/50 text-green-200'
+              : 'bg-red-950/50 border border-red-600/50 text-red-200'
           }`}>
             {message.text}
           </div>
@@ -279,39 +329,39 @@ export default function RaidTiersPage() {
 
         {/* Add/Edit Form */}
         {showAddForm && (
-          <div className="bg-card border border-border rounded-xl p-6">
-            <h2 className="text-xl font-semibold text-foreground mb-4">
+          <div className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl p-6">
+            <h2 className="text-[24px] font-bold text-white mb-4">
               {editingTier ? 'Edit Raid Tier' : 'Add New Raid Tier'}
             </h2>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-foreground mb-2">Raid Tier Name</label>
+                <label className="block text-white mb-2 text-[13px] font-medium">Raid Tier Name</label>
                 <input
                   type="text"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   placeholder="e.g., Molten Core, Blackwing Lair, AQ40"
-                  className="w-full px-3 py-2 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  className="w-full px-5 py-3 bg-[#151515] border border-[#383838] rounded-[52px] text-white text-[13px] focus:outline-none focus:border-[#ff8000]"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-foreground mb-2">Expansion</label>
+                <label className="block text-white mb-2 text-[13px] font-medium">Expansion</label>
                 {expansions.length > 0 ? (
                   <select
                     value={formData.expansion_id}
                     onChange={(e) => setFormData({ ...formData, expansion_id: e.target.value })}
-                    className="w-full px-3 py-2 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    className="w-full px-5 py-3 bg-[#151515] border border-[#383838] rounded-[52px] text-white text-[13px] focus:outline-none focus:border-[#ff8000] cursor-pointer select-custom"
                     required
                   >
-                    <option value="">Select an expansion</option>
+                    <option value="" className="bg-[#151515] text-white">Select an expansion</option>
                     {expansions.map(exp => (
-                      <option key={exp.id} value={exp.id}>{exp.name}</option>
+                      <option key={exp.id} value={exp.id} className="bg-[#151515] text-white">{exp.name}</option>
                     ))}
                   </select>
                 ) : (
-                  <div className="p-3 bg-warning/20 border border-warning rounded-lg text-warning-foreground text-sm">
+                  <div className="p-3 bg-yellow-950/50 border border-yellow-600/50 rounded-xl text-yellow-200 text-[13px]">
                     No expansions found. Please create an expansion first.
                   </div>
                 )}
@@ -322,16 +372,16 @@ export default function RaidTiersPage() {
                   type="checkbox"
                   checked={formData.is_active}
                   onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
-                  className="w-5 h-5"
+                  className="w-5 h-5 rounded border-[#383838] bg-[#151515] text-[#ff8000] focus:ring-[#ff8000]"
                 />
-                <label className="text-foreground">Set as active raid tier</label>
+                <label className="text-white text-[13px]">Set as active raid tier</label>
               </div>
 
               <div className="flex gap-3">
                 <button
                   type="submit"
                   disabled={saving}
-                  className="px-6 py-2 bg-primary hover:bg-primary/90 text-primary-foreground disabled:opacity-50 rounded-lg font-semibold transition"
+                  className="px-5 py-3 bg-white hover:bg-gray-100 text-black disabled:opacity-50 rounded-[40px] font-medium text-[16px] transition"
                 >
                   {saving ? 'Saving...' : editingTier ? 'Update' : 'Create'}
                 </button>
@@ -342,7 +392,7 @@ export default function RaidTiersPage() {
                     setEditingTier(null)
                     setFormData({ name: '', expansion_id: '', is_active: false })
                   }}
-                  className="px-6 py-2 bg-secondary hover:bg-secondary/80 rounded-lg text-foreground font-semibold transition"
+                  className="px-5 py-3 bg-[#151515] hover:bg-[#1a1a1a] rounded-[40px] text-white font-medium text-[16px] transition"
                 >
                   Cancel
                 </button>
@@ -352,61 +402,61 @@ export default function RaidTiersPage() {
         )}
 
         {/* Raid Tiers List */}
-        <div className="bg-card border border-border rounded-xl p-6">
+        <div className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl p-6">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold text-foreground">Raid Tiers</h2>
+            <h2 className="text-[24px] font-bold text-white">Raid Tiers</h2>
             <button
               onClick={() => {
                 setShowAddForm(true)
                 setEditingTier(null)
                 setFormData({ name: '', expansion_id: '', is_active: false })
               }}
-              className="px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg font-semibold transition"
+              className="px-5 py-3 bg-white hover:bg-gray-100 text-black rounded-[40px] font-medium text-[16px] transition"
             >
               + Add Raid Tier
             </button>
           </div>
 
           {raidTiers.length === 0 ? (
-            <p className="text-muted-foreground text-center py-8">No raid tiers found. Create your first one above.</p>
+            <p className="text-[#a1a1a1] text-center py-8 text-[13px]">No raid tiers found. Create your first one above.</p>
           ) : (
             <div className="space-y-3">
               {raidTiers.map((tier) => (
                 <div
                   key={tier.id}
-                  className="bg-secondary rounded-lg p-4 flex items-center justify-between"
+                  className="bg-[#151515] rounded-xl p-4 flex items-center justify-between border border-[rgba(255,255,255,0.1)]"
                 >
                   <div className="flex items-center gap-4">
                     <div>
                       <div className="flex items-center gap-2">
-                        <h3 className="text-foreground font-semibold">{tier.name}</h3>
+                        <h3 className="text-white font-semibold text-[14px]">{tier.name}</h3>
                         {tier.is_active && (
-                          <span className="px-2 py-1 bg-success/20 text-success-foreground text-xs rounded-full">
-                            Active ⭐
+                          <span className="px-2 py-1 bg-green-950/50 text-green-200 text-[10px] rounded-full border border-green-600/50">
+                            Active
                           </span>
                         )}
                       </div>
-                      <p className="text-muted-foreground text-sm">{tier.expansion?.name || 'No expansion'}</p>
+                      <p className="text-[#a1a1a1] text-[13px]">{tier.expansion?.name || 'No expansion'}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
                     {!tier.is_active && (
                       <button
                         onClick={() => handleSetActive(tier.id)}
-                        className="px-3 py-1 bg-blue-600 hover:bg-blue-700 rounded text-foreground text-sm font-semibold transition"
+                        className="px-3.5 py-2 bg-[#ff8000] hover:bg-[#e67300] rounded-[40px] text-white text-[13px] font-medium transition"
                       >
                         Set Active
                       </button>
                     )}
                     <button
                       onClick={() => handleEdit(tier)}
-                      className="px-3 py-1 bg-gray-600 hover:bg-gray-500 rounded text-foreground text-sm font-semibold transition"
+                      className="px-3.5 py-2 bg-[#151515] hover:bg-[#1a1a1a] border border-[rgba(255,255,255,0.1)] rounded-[40px] text-white text-[13px] font-medium transition"
                     >
                       Edit
                     </button>
                     <button
                       onClick={() => handleDelete(tier.id)}
-                      className="px-3 py-1 bg-red-600 hover:bg-red-700 rounded text-foreground text-sm font-semibold transition"
+                      className="px-3.5 py-2 bg-red-950/50 hover:bg-red-900/50 border border-red-600/50 rounded-[40px] text-red-200 text-[13px] font-medium transition"
                     >
                       Delete
                     </button>
@@ -418,10 +468,10 @@ export default function RaidTiersPage() {
         </div>
 
         {/* Quick Add Common Tiers */}
-        <div className="bg-card border border-border rounded-xl p-6">
-          <h3 className="text-lg font-semibold text-foreground mb-4">Quick Add Common Raids</h3>
+        <div className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl p-6">
+          <h3 className="text-[18px] font-bold text-white mb-4">Quick Add Common Raids</h3>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-            {['Molten Core', 'Blackwing Lair', 'AQ40', 'Naxxramas', 'Onyxia', 'ZG', 'AQ20', 'MC'].map(raidName => (
+            {['Molten Core', 'Onyxia', 'Blackwing Lair', 'ZG', 'AQ20', 'AQ40', 'Naxxramas'].map(raidName => (
               <button
                 key={raidName}
                 onClick={() => {
@@ -429,14 +479,13 @@ export default function RaidTiersPage() {
                   setShowAddForm(true)
                   setEditingTier(null)
                 }}
-                className="px-3 py-2 bg-secondary hover:bg-secondary/80 rounded-lg text-foreground text-sm transition"
+                className="px-3.5 py-2 bg-[#151515] hover:bg-[#1a1a1a] border border-[rgba(255,255,255,0.1)] rounded-xl text-white text-[13px] transition"
               >
                 {raidName}
               </button>
             ))}
           </div>
         </div>
-      </main>
-    </div>
+      </div>
   )
 }

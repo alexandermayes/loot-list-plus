@@ -2,9 +2,9 @@
 
 import { createClient } from '@/utils/supabase/client'
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 import type { User } from '@supabase/supabase-js'
-import Navigation from '@/app/components/Navigation'
+import Link from 'next/link'
 import { useGuildContext } from '@/app/contexts/GuildContext'
 
 export default function ImportPage() {
@@ -251,70 +251,94 @@ export default function ImportPage() {
     throw new Error('Member import requires user authentication. Please add members through the app interface.')
   }
 
-  return (
-    <div className="min-h-screen bg-background">
-      <Navigation
-        user={user}
-        showBack
-        backUrl="/admin"
-        title="Import Data"
-      />
+  const adminTabs = [
+    { name: 'Settings', href: '/admin/settings', icon: '⚙️' },
+    { name: 'Raid Tiers', href: '/admin/raid-tiers', icon: '🏰' },
+    { name: 'Manage Loot', href: '/admin/loot-items', icon: '✅' },
+    { name: 'Import', href: '/admin/import', icon: '📥' },
+  ]
 
-      <main className="max-w-4xl mx-auto p-6 space-y-6">
+  const pathname = usePathname()
+
+  return (
+      <div className="p-8 space-y-6 font-poppins">
+        {/* Header */}
+        <div>
+          <h1 className="text-[42px] font-bold text-white leading-tight">Loot Master Settings</h1>
+          <p className="text-[#a1a1a1] mt-1 text-[14px]">Configure your guild's loot distribution system</p>
+        </div>
+
+        {/* Navigation Tabs */}
+        <div className="flex gap-2 border-b border-[rgba(255,255,255,0.1)] pb-2 overflow-x-auto">
+          {adminTabs.map((tab) => (
+            <Link
+              key={tab.href}
+              href={tab.href}
+              className={`px-4 py-2 rounded-t-lg whitespace-nowrap text-[13px] font-medium transition-all ${
+                pathname === tab.href
+                  ? 'bg-[rgba(255,128,0,0.2)] border-[0.5px] border-[rgba(255,128,0,0.2)] text-[#ff8000]'
+                  : 'text-[#a1a1a1] hover:text-white hover:bg-[#1a1a1a]'
+              }`}
+            >
+              <span className="mr-2">{tab.icon}</span>
+              {tab.name}
+            </Link>
+          ))}
+        </div>
         {message && (
-          <div className={`p-4 rounded-lg ${
+          <div className={`p-4 rounded-xl ${
             message.type === 'success'
-              ? 'bg-success/20 border border-success text-success-foreground'
-              : 'bg-error/20 border border-error text-error-foreground'
+              ? 'bg-green-950/50 border border-green-600/50 text-green-200'
+              : 'bg-red-950/50 border border-red-600/50 text-red-200'
           }`}>
             {message.text}
           </div>
         )}
 
-        <div className="bg-card border border-border rounded-xl p-6">
-          <h2 className="text-xl font-semibold text-foreground mb-4">Import Data from CSV</h2>
+        <div className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl p-6">
+          <h2 className="text-[24px] font-semibold text-white mb-4">Import Data from CSV</h2>
 
           <div className="space-y-4">
             <div>
-              <label className="block text-foreground mb-2">Import Type</label>
+              <label className="block text-[13px] font-medium text-white mb-2">Import Type</label>
               <select
                 value={importType}
                 onChange={(e) => setImportType(e.target.value as any)}
-                className="w-full px-3 py-2 bg-secondary border border-border rounded-lg text-foreground"
+                className="w-full px-5 py-3 bg-[#151515] border border-[#383838] rounded-[52px] text-white text-[13px] focus:outline-none focus:border-[#ff8000] cursor-pointer select-custom"
               >
-                <option value="attendance">Attendance Records</option>
-                <option value="loot_items">Loot Items</option>
-                <option value="members">Guild Members (Not Available)</option>
+                <option value="attendance" className="bg-[#151515] text-white">Attendance Records</option>
+                <option value="loot_items" className="bg-[#151515] text-white">Loot Items</option>
+                <option value="members" className="bg-[#151515] text-white">Guild Members (Not Available)</option>
               </select>
             </div>
 
             <div>
-              <label className="block text-foreground mb-2">CSV File</label>
+              <label className="block text-[13px] font-medium text-white mb-2">CSV File</label>
               <input
                 type="file"
                 accept=".csv"
                 onChange={handleFileChange}
-                className="w-full px-3 py-2 bg-secondary border border-border rounded-lg text-foreground"
+                className="w-full px-5 py-3 bg-[#151515] border border-[#383838] rounded-[52px] text-white text-[13px] focus:outline-none focus:border-[#ff8000]"
               />
             </div>
 
-            <div className="bg-secondary rounded-lg p-4">
-              <h3 className="text-foreground font-medium mb-2">Expected CSV Format:</h3>
+            <div className="bg-[#151515] rounded-xl p-4">
+              <h3 className="text-white font-medium mb-2 text-[14px]">Expected CSV Format:</h3>
               {importType === 'attendance' && (
-                <div className="text-muted-foreground text-sm space-y-1">
-                  <p><strong>Headers:</strong> date, character_name, signed_up, attended, no_call_no_show</p>
-                  <p><strong>Example:</strong></p>
-                  <pre className="bg-card p-2 rounded text-xs">
+                <div className="text-[#a1a1a1] text-[13px] space-y-1">
+                  <p><strong className="text-white">Headers:</strong> date, character_name, signed_up, attended, no_call_no_show</p>
+                  <p><strong className="text-white">Example:</strong></p>
+                  <pre className="bg-[#0d0e11] p-2 rounded text-xs mt-2">
 {`date,character_name,signed_up,attended,no_call_no_show
 2025-01-14,PlayerName,true,true,false`}
                   </pre>
                 </div>
               )}
               {importType === 'loot_items' && (
-                <div className="text-muted-foreground text-sm space-y-1">
-                  <p><strong>Headers:</strong> name, boss_name, item_slot, wowhead_id</p>
-                  <p><strong>Example:</strong></p>
-                  <pre className="bg-card p-2 rounded text-xs">
+                <div className="text-[#a1a1a1] text-[13px] space-y-1">
+                  <p><strong className="text-white">Headers:</strong> name, boss_name, item_slot, wowhead_id</p>
+                  <p><strong className="text-white">Example:</strong></p>
+                  <pre className="bg-[#0d0e11] p-2 rounded text-xs mt-2">
 {`name,boss_name,item_slot,wowhead_id
 Thunderfury,Prince,Weapon,19019`}
                   </pre>
@@ -325,13 +349,12 @@ Thunderfury,Prince,Weapon,19019`}
             <button
               onClick={handleImport}
               disabled={!file || loading}
-              className="w-full py-3 bg-primary hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg text-primary-foreground font-semibold transition"
+              className="w-full px-5 py-3 bg-white hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed rounded-[40px] text-black font-medium text-[16px] transition"
             >
               {loading ? 'Importing...' : 'Import Data'}
             </button>
           </div>
         </div>
-      </main>
-    </div>
+      </div>
   )
 }
