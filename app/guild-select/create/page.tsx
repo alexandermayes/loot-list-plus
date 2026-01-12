@@ -216,7 +216,7 @@ export default function CreateGuildPage() {
 
   // Pre-fill guild name when Discord server is selected
   useEffect(() => {
-    if (selectedDiscordServer && selectedDiscordServer !== 'manual' && !guildName) {
+    if (selectedDiscordServer && selectedDiscordServer !== 'manual') {
       const selectedGuild = discordGuilds.find(g => g.id === selectedDiscordServer)
       if (selectedGuild) {
         setGuildName(selectedGuild.name)
