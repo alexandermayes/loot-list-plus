@@ -451,7 +451,7 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange }
       </div>
 
       {/* Bottom Section */}
-      <div className="flex flex-col gap-0">
+      <div className="flex flex-col gap-0 relative z-10 bg-[#0d0e11] pt-3 -mx-2.5 px-2.5 -mb-2.5 pb-2.5 border-t border-[rgba(255,255,255,0.1)]">
         <button className="w-full px-3.5 py-2 flex items-center gap-3 rounded-[40px] hover:bg-[#1a1a1a] transition font-poppins font-medium text-[13px] text-white">
           <Image
             src="/icons/help.svg"

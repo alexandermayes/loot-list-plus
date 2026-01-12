@@ -31,6 +31,11 @@ export default function GuildSettingsPage() {
   const router = useRouter()
   const { activeGuild, loading: guildLoading, isOfficer, refreshGuilds } = useGuildContext()
 
+  // Set page title
+  useEffect(() => {
+    document.title = 'LootList+ • Guild Settings'
+  }, [])
+
   useEffect(() => {
     const loadData = async () => {
       const { data: { user } } = await supabase.auth.getUser()

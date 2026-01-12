@@ -64,6 +64,11 @@ export default function SettingsPage() {
   const router = useRouter()
   const { activeGuild, loading: guildLoading, isOfficer } = useGuildContext()
 
+  // Set page title
+  useEffect(() => {
+    document.title = 'LootList+ • Settings'
+  }, [])
+
   useEffect(() => {
     const loadData = async () => {
       const { data: { user } } = await supabase.auth.getUser()

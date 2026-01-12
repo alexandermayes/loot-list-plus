@@ -60,6 +60,11 @@ export default function AdminLootItems() {
   const pathname = usePathname()
   const { activeGuild, activeMember, loading: guildLoading, isOfficer } = useGuildContext()
 
+  // Set page title
+  useEffect(() => {
+    document.title = 'LootList+ • Manage Loot'
+  }, [])
+
   useEffect(() => {
     if (!guildLoading) {
       loadData()

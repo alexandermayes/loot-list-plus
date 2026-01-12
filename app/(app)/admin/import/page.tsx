@@ -19,6 +19,11 @@ export default function ImportPage() {
   const router = useRouter()
   const { activeGuild, loading: guildLoading, isOfficer } = useGuildContext()
 
+  // Set page title
+  useEffect(() => {
+    document.title = 'LootList+ • Import'
+  }, [])
+
   useEffect(() => {
     const checkAuth = async () => {
       const { data: { user } } = await supabase.auth.getUser()

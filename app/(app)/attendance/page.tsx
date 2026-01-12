@@ -38,6 +38,11 @@ export default function AttendancePage() {
   const supabase = createClient()
   const router = useRouter()
 
+  // Set page title
+  useEffect(() => {
+    document.title = 'LootList+ • Attendance'
+  }, [])
+
   useEffect(() => {
     const loadData = async () => {
       const { data: { user } } = await supabase.auth.getUser()

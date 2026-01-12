@@ -24,6 +24,11 @@ export default function ProfilePage() {
   const supabase = createClient()
   const router = useRouter()
 
+  // Set page title
+  useEffect(() => {
+    document.title = 'LootList+ • Profile'
+  }, [])
+
   const handleLogout = async () => {
     await supabase.auth.signOut()
     router.push('/')

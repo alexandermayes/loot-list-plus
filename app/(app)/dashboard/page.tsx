@@ -49,6 +49,11 @@ export default function Dashboard() {
   const supabase = createClient()
   const router = useRouter()
 
+  // Set page title
+  useEffect(() => {
+    document.title = 'LootList+ • Dashboard'
+  }, [])
+
   // Define Classic raid tier progression order
   const getRaidTierOrder = (tierName: string): number => {
     const order: Record<string, number> = {

@@ -47,6 +47,11 @@ export default function RaidTrackingPage() {
   const supabase = createClient()
   const router = useRouter()
 
+  // Set page title
+  useEffect(() => {
+    document.title = 'LootList+ • Raid Tracking'
+  }, [])
+
   useEffect(() => {
     const loadData = async () => {
       const { data: { user } } = await supabase.auth.getUser()

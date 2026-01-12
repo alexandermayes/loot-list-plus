@@ -46,6 +46,11 @@ export default function RaidTiersPage() {
   const router = useRouter()
   const { activeGuild, loading: guildLoading, isOfficer } = useGuildContext()
 
+  // Set page title
+  useEffect(() => {
+    document.title = 'LootList+ • Raid Tiers'
+  }, [])
+
   // Define Classic raid tier progression order
   const getRaidTierOrder = (tierName: string): number => {
     const order: Record<string, number> = {
