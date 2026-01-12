@@ -159,9 +159,27 @@ export default function GuildSelectPage() {
       .eq('user_id', user?.id)
       .single()
 
+    // If not verified but user logged in with Discord, auto-verify them
     if (!preferences?.discord_verified) {
-      showErrorToast('Please verify your Discord account in your profile first')
-      return
+      console.log('User not verified, attempting auto-verification...')
+      try {
+        const verifyResponse = await fetch('/api/verify-discord', {
+          method: 'POST'
+        })
+
+        if (!verifyResponse.ok) {
+          const errorData = await verifyResponse.json()
+          showErrorToast(errorData.error || 'Please verify your Discord account in your profile first')
+          return
+        }
+
+        console.log('Auto-verification successful')
+        setDiscordVerified(true)
+      } catch (err) {
+        console.error('Auto-verification failed:', err)
+        showErrorToast('Please verify your Discord account in your profile first')
+        return
+      }
     }
 
     setShowDiscordModal(true)

@@ -106,10 +106,28 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange }
       .eq('user_id', user?.id)
       .single()
 
+    // If not verified but user logged in with Discord, auto-verify them
     if (!preferences?.discord_verified) {
-      setDiscordError('Discord verification required')
-      setDiscordLoading(false)
-      return
+      console.log('User not verified, attempting auto-verification...')
+      try {
+        const verifyResponse = await fetch('/api/verify-discord', {
+          method: 'POST'
+        })
+
+        if (!verifyResponse.ok) {
+          const errorData = await verifyResponse.json()
+          setDiscordError(errorData.error || 'Discord verification required. Please go to your Profile to verify your Discord account.')
+          setDiscordLoading(false)
+          return
+        }
+
+        console.log('Auto-verification successful')
+      } catch (err) {
+        console.error('Auto-verification failed:', err)
+        setDiscordError('Discord verification required. Please go to your Profile to verify your Discord account.')
+        setDiscordLoading(false)
+        return
+      }
     }
 
     // Fetch available guilds
