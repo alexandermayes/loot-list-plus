@@ -65,6 +65,11 @@ export default function AdminPage() {
   const router = useRouter()
   const { activeGuild, loading: guildLoading, isOfficer } = useGuildContext()
 
+  // Set page title
+  useEffect(() => {
+    document.title = 'LootList+ • Master Loot'
+  }, [])
+
   useEffect(() => {
     const loadData = async () => {
       const { data: { user } } = await supabase.auth.getUser()
@@ -203,11 +208,12 @@ export default function AdminPage() {
   }, [activeTier, guildId, loadSubmissions])
 
   const handleReview = async (submissionId: string, status: 'approved' | 'rejected') => {
+    console.log('handleReview called:', { submissionId, status, reviewNotes })
     setReviewing(submissionId)
     setMessage(null)
 
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('loot_submissions')
         .update({
           status,
@@ -215,17 +221,24 @@ export default function AdminPage() {
           reviewed_at: new Date().toISOString()
         })
         .eq('id', submissionId)
+        .select()
 
-      if (error) throw error
+      console.log('Update result:', { data, error })
+
+      if (error) {
+        console.error('Update error:', error)
+        throw error
+      }
 
       setMessage({ type: 'success', text: `Submission ${status} successfully` })
       setReviewNotes('')
       setReviewing(null)
-      
+
       if (guildId && activeTier) {
         await loadSubmissions(guildId, activeTier.id)
       }
     } catch (error: any) {
+      console.error('handleReview error:', error)
       setMessage({ type: 'error', text: error.message || 'Failed to update submission' })
       setReviewing(null)
     }
