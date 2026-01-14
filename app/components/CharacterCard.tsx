@@ -2,6 +2,13 @@
 
 import { Character } from '@/app/contexts/GuildContext'
 
+// Get WoWhead class icon URL
+function getClassIconUrl(className: string | undefined): string {
+  if (!className) return ''
+  const classNameLower = className.toLowerCase().replace(' ', '')
+  return `https://wow.zamimg.com/images/wow/icons/large/classicon_${classNameLower}.jpg`
+}
+
 interface CharacterCardProps {
   character: Character
   onClick?: () => void
@@ -33,13 +40,21 @@ export function CharacterCard({
       onClick={onClick}
     >
       <div className="flex items-center gap-3">
-        {/* Class Icon Circle */}
-        <div
-          className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-lg"
-          style={{ backgroundColor: classColor }}
-        >
-          {character.name.charAt(0).toUpperCase()}
-        </div>
+        {/* Character Class Icon */}
+        {character.class?.name ? (
+          <img
+            src={getClassIconUrl(character.class.name)}
+            alt={character.class.name}
+            className="w-12 h-12 rounded-full border border-border flex-shrink-0"
+          />
+        ) : (
+          <div
+            className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-lg border border-border flex-shrink-0"
+            style={{ backgroundColor: classColor }}
+          >
+            {character.name.charAt(0).toUpperCase()}
+          </div>
+        )}
 
         {/* Character Info */}
         <div className="flex-1 min-w-0">

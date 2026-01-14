@@ -11,6 +11,13 @@ import { PageHeader } from '@/components/ui/page-header'
 import { ProfileStats } from '@/components/profile/profile-stats'
 import { User, Mail, Shield, Calendar, Trophy, Settings, CheckCircle, XCircle, LogOut } from 'lucide-react'
 
+// Get WoWhead class icon URL
+function getClassIconUrl(className: string | undefined): string {
+  if (!className) return ''
+  const classNameLower = className.toLowerCase().replace(' ', '')
+  return `https://wow.zamimg.com/images/wow/icons/large/classicon_${classNameLower}.jpg`
+}
+
 export default function ProfilePage() {
   const [user, setUser] = useState<any>(null)
   const [member, setMember] = useState<any>(null)
@@ -410,6 +417,18 @@ export default function ProfilePage() {
                     className="flex items-center justify-between p-4 bg-[#0d0e11] border border-[rgba(255,255,255,0.1)] rounded-lg"
                   >
                     <div className="flex items-center gap-3">
+                      {/* Character Class Icon */}
+                      {character.class?.name ? (
+                        <img
+                          src={getClassIconUrl(character.class.name)}
+                          alt={character.class.name}
+                          className="w-12 h-12 rounded-full border border-border flex-shrink-0"
+                        />
+                      ) : (
+                        <div className="w-12 h-12 bg-gradient-to-br from-[#ff8000] to-[#ff6000] rounded-full flex items-center justify-center border border-border flex-shrink-0">
+                          <span className="text-white font-bold text-lg">{character.name.charAt(0).toUpperCase()}</span>
+                        </div>
+                      )}
                       <div className="flex-1">
                         <div className="flex items-center gap-2">
                           <p className="font-medium text-white">{character.name}</p>
@@ -417,9 +436,11 @@ export default function ProfilePage() {
                             <span className="px-2 py-0.5 bg-[rgba(255,128,0,0.2)] border border-[rgba(255,128,0,0.3)] rounded text-[#ff8000] text-xs">Main</span>
                           )}
                         </div>
-                        {character.class && (
-                          <p className="text-[13px] font-medium" style={{ color: character.class.color_hex }}>
-                            {character.class.name}
+                        {(character.spec || character.class) && (
+                          <p className="text-[13px] font-medium" style={{ color: character.class?.color_hex }}>
+                            {character.spec?.name && character.class?.name
+                              ? `${character.spec.name} ${character.class.name}`
+                              : character.spec?.name || character.class?.name}
                           </p>
                         )}
                       </div>
