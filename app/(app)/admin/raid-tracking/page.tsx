@@ -16,6 +16,7 @@ interface RaidEvent {
 
 interface Member {
   id: string
+  character_id: string
   user_id: string
   character_name: string
   class_name: string
@@ -24,6 +25,7 @@ interface Member {
 }
 
 interface AttendanceRecord {
+  character_id: string
   user_id: string
   signed_up: boolean
   attended: boolean
@@ -94,27 +96,42 @@ export default function RaidTrackingPage() {
         }
       }
 
-      // Get all guild members
-      const { data: membersData } = await supabase
-        .from('guild_members')
-        .select('id, user_id, character_name, role, class:wow_classes(name, color_hex)')
+      // Get all guild characters
+      const { data: membershipsData } = await supabase
+        .from('character_guild_memberships')
+        .select(`
+          id,
+          character_id,
+          role,
+          character:characters!inner (
+            id,
+            name,
+            user_id,
+            class:wow_classes(name, color_hex)
+          )
+        `)
         .eq('guild_id', memberData.guild_id)
         .eq('is_active', true)
 
-      if (membersData) {
-        const formatted = membersData.map(m => ({
-          id: m.id,
-          user_id: m.user_id,
-          character_name: m.character_name || 'Unknown',
-          class_name: (m.class as any)?.name || 'Unknown',
-          class_color: (m.class as any)?.color_hex || '#888888',
-          role: m.role
-        }))
-        setMembers(formatted)
+      let formattedMembers: Member[] = []
+      if (membershipsData) {
+        formattedMembers = membershipsData.map(m => {
+          const char = (m as any).character
+          return {
+            id: m.id,
+            character_id: m.character_id,
+            user_id: char.user_id,
+            character_name: char.name || 'Unknown',
+            class_name: char.class?.name || 'Unknown',
+            class_color: char.class?.color_hex || '#888888',
+            role: m.role
+          }
+        })
+        setMembers(formattedMembers)
       }
 
-      // Calculate attendance scores for all members
-      await calculateAllScores(memberData.guild_id, membersData || [])
+      // Calculate attendance scores for all characters
+      await calculateAllScores(memberData.guild_id, formattedMembers)
 
       setLoading(false)
     }
@@ -122,7 +139,7 @@ export default function RaidTrackingPage() {
     loadData()
   }, [])
 
-  const calculateAllScores = async (guildId: string, members: any[]) => {
+  const calculateAllScores = async (guildId: string, members: Member[]) => {
     const fourWeeksAgo = new Date()
     fourWeeksAgo.setDate(fourWeeksAgo.getDate() - 28)
 
@@ -143,26 +160,32 @@ export default function RaidTrackingPage() {
     // Get all attendance records for these raids
     const { data: records } = await supabase
       .from('attendance_records')
-      .select('user_id, signed_up, attended, no_call_no_show')
+      .select('character_id, user_id, signed_up, attended, no_call_no_show')
       .in('raid_event_id', raidIds)
 
     const scores: Record<string, number> = {}
 
     members.forEach(m => {
-      const userRecords = records?.filter(r => r.user_id === m.user_id) || []
+      // Try character-based first, fall back to user-based
+      let charRecords = records?.filter(r => r.character_id === m.character_id) || []
+
+      // Fall back to user-based if no character records found
+      if (charRecords.length === 0) {
+        charRecords = records?.filter(r => r.user_id === m.user_id) || []
+      }
 
       // Check for any no-call-no-show
-      const hasNCNS = userRecords.some(r => r.no_call_no_show)
+      const hasNCNS = charRecords.some(r => r.no_call_no_show)
 
       if (hasNCNS) {
-        scores[m.user_id] = 0
+        scores[m.character_id] = 0
       } else {
         let score = 0
-        userRecords.forEach(r => {
+        charRecords.forEach(r => {
           if (r.signed_up) score += 0.25
           if (r.attended) score += 0.75
         })
-        scores[m.user_id] = Math.min(score, 8) // Cap at 8
+        scores[m.character_id] = Math.min(score, 8) // Cap at 8
       }
     })
 
@@ -175,12 +198,15 @@ export default function RaidTrackingPage() {
 
       const { data: records } = await supabase
         .from('attendance_records')
-        .select('user_id, signed_up, attended, no_call_no_show')
+        .select('character_id, user_id, signed_up, attended, no_call_no_show')
         .eq('raid_event_id', selectedRaid.id)
 
       const attendanceMap: Record<string, AttendanceRecord> = {}
       records?.forEach(r => {
-        attendanceMap[r.user_id] = {
+        // Use character_id as primary key, fallback to user_id for backward compatibility
+        const key = r.character_id || r.user_id
+        attendanceMap[key] = {
+          character_id: r.character_id,
           user_id: r.user_id,
           signed_up: r.signed_up,
           attended: r.attended,
@@ -224,10 +250,10 @@ export default function RaidTrackingPage() {
     setSaving(false)
   }
 
-  const updateAttendance = async (userId: string, field: 'signed_up' | 'attended' | 'no_call_no_show', value: boolean) => {
+  const updateAttendance = async (characterId: string, userId: string, field: 'signed_up' | 'attended' | 'no_call_no_show', value: boolean) => {
     if (!selectedRaid) return
 
-    const current = attendance[userId] || { user_id: userId, signed_up: false, attended: false, no_call_no_show: false }
+    const current = attendance[characterId] || { character_id: characterId, user_id: userId, signed_up: false, attended: false, no_call_no_show: false }
     const updated = { ...current, [field]: value }
 
     // If marking as no-call-no-show, uncheck others
@@ -241,19 +267,20 @@ export default function RaidTrackingPage() {
       updated.no_call_no_show = false
     }
 
-    setAttendance(prev => ({ ...prev, [userId]: updated }))
+    setAttendance(prev => ({ ...prev, [characterId]: updated }))
 
     // Upsert to database
     await supabase
       .from('attendance_records')
       .upsert({
         raid_event_id: selectedRaid.id,
+        character_id: characterId,
         user_id: userId,
         signed_up: updated.signed_up,
         attended: updated.attended,
         no_call_no_show: updated.no_call_no_show
       }, {
-        onConflict: 'raid_event_id,user_id'
+        onConflict: 'raid_event_id,character_id'
       })
 
     // Recalculate scores
@@ -396,8 +423,8 @@ export default function RaidTrackingPage() {
                     </thead>
                     <tbody className="divide-y divide-[rgba(255,255,255,0.1)]">
                       {members.map(member => {
-                        const record = attendance[member.user_id] || { signed_up: false, attended: false, no_call_no_show: false }
-                        const score = memberScores[member.user_id] || 0
+                        const record = attendance[member.character_id] || { signed_up: false, attended: false, no_call_no_show: false }
+                        const score = memberScores[member.character_id] || 0
                         const modifier = getRoleModifier(member.role)
 
                         return (
@@ -411,7 +438,7 @@ export default function RaidTrackingPage() {
                               <input
                                 type="checkbox"
                                 checked={record.signed_up}
-                                onChange={(e) => updateAttendance(member.user_id, 'signed_up', e.target.checked)}
+                                onChange={(e) => updateAttendance(member.character_id, member.user_id, 'signed_up', e.target.checked)}
                                 className="w-5 h-5 rounded border-[#383838] bg-[#151515] text-green-500 focus:ring-green-500"
                               />
                             </td>
@@ -419,7 +446,7 @@ export default function RaidTrackingPage() {
                               <input
                                 type="checkbox"
                                 checked={record.attended}
-                                onChange={(e) => updateAttendance(member.user_id, 'attended', e.target.checked)}
+                                onChange={(e) => updateAttendance(member.character_id, member.user_id, 'attended', e.target.checked)}
                                 className="w-5 h-5 rounded border-[#383838] bg-[#151515] text-green-500 focus:ring-green-500"
                               />
                             </td>
@@ -427,7 +454,7 @@ export default function RaidTrackingPage() {
                               <input
                                 type="checkbox"
                                 checked={record.no_call_no_show}
-                                onChange={(e) => updateAttendance(member.user_id, 'no_call_no_show', e.target.checked)}
+                                onChange={(e) => updateAttendance(member.character_id, member.user_id, 'no_call_no_show', e.target.checked)}
                                 className="w-5 h-5 rounded border-[#383838] bg-[#151515] text-red-500 focus:ring-red-500"
                               />
                             </td>

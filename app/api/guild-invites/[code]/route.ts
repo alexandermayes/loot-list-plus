@@ -159,7 +159,7 @@ export async function POST(
       )
     }
 
-    // Create guild member entry
+    // Create guild member entry (for backward compatibility)
     const { error: memberError } = await supabase
       .from('guild_members')
       .insert({
@@ -180,6 +180,32 @@ export async function POST(
         { error: 'Failed to join guild' },
         { status: 500 }
       )
+    }
+
+    // Check if user has an active character and create character_guild_membership
+    const { data: activeCharData } = await supabase
+      .from('user_active_characters')
+      .select('active_character_id')
+      .eq('user_id', user.id)
+      .single()
+
+    if (activeCharData?.active_character_id) {
+      // Create character guild membership for active character
+      const { error: charMemberError } = await supabase
+        .from('character_guild_memberships')
+        .insert({
+          character_id: activeCharData.active_character_id,
+          guild_id: inviteCode.guild_id,
+          role: 'Member',
+          is_active: true,
+          joined_at: new Date().toISOString(),
+          joined_via: 'invite_code'
+        })
+
+      if (charMemberError) {
+        console.error('Error creating character guild membership:', charMemberError)
+        // Not critical, continue
+      }
     }
 
     // Increment current_uses

@@ -41,20 +41,65 @@ export interface GuildMembership {
   }
 }
 
+// New Character System Types
+export interface Character {
+  id: string
+  user_id: string
+  name: string
+  realm: string | null
+  class_id: string | null
+  spec_id: string | null
+  level: number | null
+  is_main: boolean
+  battle_net_id: number | null
+  region: string | null
+  created_at: string
+  updated_at: string
+  class?: {
+    id: string
+    name: string
+    color_hex: string
+  }
+  spec?: {
+    id: string
+    name: string
+  }
+}
+
+export interface CharacterGuildMembership {
+  id: string
+  character_id: string
+  guild_id: string
+  role: string
+  is_active: boolean
+  joined_at: string
+  joined_via: string
+  character: Character
+  guild: Guild
+}
+
 export interface GuildContextType {
-  // State
+  // Existing State
   activeGuild: Guild | null
   activeMember: GuildMember | null
   userGuilds: GuildMembership[]
   loading: boolean
 
+  // New Character State
+  activeCharacter: Character | null
+  userCharacters: Character[]
+  characterMemberships: CharacterGuildMembership[]
+
   // Methods
-  switchGuild: (guildId: string) => Promise<void>
+  switchGuild: (guildId: string, characterId?: string) => Promise<void>
   refreshGuilds: () => Promise<void>
+  switchCharacter: (characterId: string) => Promise<void>
+  refreshCharacters: () => Promise<void>
 
   // Derived state
   isOfficer: boolean
   hasMultipleGuilds: boolean
+  hasMultipleCharacters: boolean
 }
 
 // Create context
@@ -62,9 +107,16 @@ const GuildContext = createContext<GuildContextType | undefined>(undefined)
 
 // Provider component
 export function GuildContextProvider({ children }: { children: ReactNode }) {
+  // Existing State
   const [activeGuild, setActiveGuild] = useState<Guild | null>(null)
   const [activeMember, setActiveMember] = useState<GuildMember | null>(null)
   const [userGuilds, setUserGuilds] = useState<GuildMembership[]>([])
+
+  // New Character State
+  const [activeCharacter, setActiveCharacter] = useState<Character | null>(null)
+  const [userCharacters, setUserCharacters] = useState<Character[]>([])
+  const [characterMemberships, setCharacterMemberships] = useState<CharacterGuildMembership[]>([])
+
   const [loading, setLoading] = useState(true)
   const [user, setUser] = useState<User | null>(null)
 
@@ -208,8 +260,146 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  // Switch to a different guild
-  const switchGuild = async (guildId: string) => {
+  // Load user's characters and their guild memberships
+  const loadCharacters = async () => {
+    try {
+      if (!user) return
+
+      // Fetch all user's characters (without embedded spec to avoid PostgREST relationship issues)
+      const { data: characters, error: charactersError } = await supabase
+        .from('characters')
+        .select(`
+          *,
+          class:wow_classes (
+            id,
+            name,
+            color_hex
+          )
+        `)
+        .eq('user_id', user.id)
+        .order('is_main', { ascending: false })
+        .order('created_at', { ascending: true })
+
+      if (charactersError) {
+        console.error('Error loading characters:', charactersError)
+        console.error('Error details:', JSON.stringify(charactersError, null, 2))
+        console.error('Error code:', charactersError?.code)
+        console.error('Error message:', charactersError?.message)
+        console.error('Error hint:', charactersError?.hint)
+        setUserCharacters([])
+        setCharacterMemberships([])
+        return
+      }
+
+      // Fetch specs separately for characters that have spec_id
+      let enrichedCharacters: typeof characters = []
+
+      if (characters && characters.length > 0) {
+        const specIds = characters
+          .map(c => c.spec_id)
+          .filter(Boolean) as string[]
+
+        if (specIds.length > 0) {
+          const { data: specs } = await supabase
+            .from('class_specs')
+            .select('id, name')
+            .in('id', specIds)
+
+          // Attach specs to characters
+          enrichedCharacters = characters.map(char => ({
+            ...char,
+            spec: specs?.find(s => s.id === char.spec_id) || null
+          }))
+        } else {
+          enrichedCharacters = characters
+        }
+
+        setUserCharacters(enrichedCharacters)
+      } else {
+        setUserCharacters([])
+      }
+
+      // Fetch all character guild memberships
+      if (characters && characters.length > 0) {
+        const characterIds = characters.map(c => c.id)
+        const { data: memberships, error: membershipsError } = await supabase
+          .from('character_guild_memberships')
+          .select(`
+            id,
+            character_id,
+            guild_id,
+            role,
+            is_active,
+            joined_at,
+            joined_via,
+            character:characters (
+              id,
+              name,
+              realm,
+              level,
+              is_main,
+              class:wow_classes (
+                id,
+                name,
+                color_hex
+              ),
+              spec:class_specs (
+                id,
+                name
+              )
+            ),
+            guild:guilds (
+              id,
+              name,
+              realm,
+              faction,
+              discord_server_id,
+              icon_url,
+              created_by,
+              is_active,
+              require_discord_verification,
+              created_at,
+              active_expansion_id
+            )
+          `)
+          .in('character_id', characterIds)
+          .eq('is_active', true)
+
+        if (membershipsError) {
+          console.error('Error loading character memberships:', membershipsError)
+          console.error('Memberships error details:', JSON.stringify(membershipsError, null, 2))
+          console.error('Memberships error code:', membershipsError?.code)
+          console.error('Memberships error message:', membershipsError?.message)
+          setCharacterMemberships([])
+        } else {
+          setCharacterMemberships(memberships || [])
+        }
+      }
+
+      // Check for saved active character (just get IDs, we already have character data)
+      const { data: activeCharData } = await supabase
+        .from('user_active_characters')
+        .select('active_character_id, active_guild_id')
+        .eq('user_id', user.id)
+        .maybeSingle()
+
+      if (activeCharData?.active_character_id) {
+        // Find the character from our enriched characters (which have specs attached)
+        const activeChar = enrichedCharacters.find(c => c.id === activeCharData.active_character_id)
+        if (activeChar) {
+          setActiveCharacter(activeChar)
+        }
+      } else if (enrichedCharacters.length > 0) {
+        // If no active character saved, use first character (main if available)
+        setActiveCharacter(enrichedCharacters[0])
+      }
+    } catch (error) {
+      console.error('Error in loadCharacters:', error)
+    }
+  }
+
+  // Switch to a different guild (with optional character)
+  const switchGuild = async (guildId: string, characterId?: string) => {
     if (!user) return
 
     try {
@@ -218,6 +408,38 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
       if (!targetGuild) {
         console.error('User is not a member of guild:', guildId)
         return
+      }
+
+      // If characterId provided, verify character is in that guild
+      if (characterId) {
+        const charMembership = characterMemberships.find(
+          m => m.character_id === characterId && m.guild_id === guildId
+        )
+        if (!charMembership) {
+          console.error('Character is not in this guild:', characterId, guildId)
+          return
+        }
+
+        // Update active character via API
+        const charResponse = await fetch('/api/user/active-character', {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ character_id: characterId, guild_id: guildId })
+        })
+
+        if (!charResponse.ok) {
+          const data = await charResponse.json()
+          console.error('Error switching character:', data.error)
+          return
+        }
+
+        // Update local character state
+        const activeChar = userCharacters.find(c => c.id === characterId)
+        if (activeChar) {
+          setActiveCharacter(activeChar)
+        }
       }
 
       // Update active guild via API
@@ -246,15 +468,75 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  // Switch to a different character
+  const switchCharacter = async (characterId: string) => {
+    if (!user) return
+
+    try {
+      // Verify character belongs to user
+      const targetChar = userCharacters.find(c => c.id === characterId)
+      if (!targetChar) {
+        console.error('Character not found:', characterId)
+        return
+      }
+
+      // Update active character via API
+      const response = await fetch('/api/user/active-character', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          character_id: characterId,
+          guild_id: activeGuild?.id || null
+        })
+      })
+
+      if (!response.ok) {
+        const data = await response.json()
+        console.error('Error switching character:', data.error)
+        return
+      }
+
+      // Update local state
+      setActiveCharacter(targetChar)
+
+      // If switching to a character in active guild, update isOfficer
+      if (activeGuild) {
+        const membership = characterMemberships.find(
+          m => m.character_id === characterId && m.guild_id === activeGuild.id
+        )
+        if (membership) {
+          // Character is in current guild, refresh to update permissions
+          router.refresh()
+        }
+      }
+    } catch (error) {
+      console.error('Error in switchCharacter:', error)
+    }
+  }
+
   // Refresh guilds (useful after joining a new guild)
   const refreshGuilds = async () => {
     await loadGuilds()
   }
 
-  // Load guilds on mount
+  // Refresh characters (useful after creating a new character)
+  const refreshCharacters = async () => {
+    await loadCharacters()
+  }
+
+  // Load guilds and characters on mount
   useEffect(() => {
     loadGuilds()
   }, [])
+
+  // Load characters when user is set
+  useEffect(() => {
+    if (user) {
+      loadCharacters()
+    }
+  }, [user])
 
   // Listen for auth changes
   useEffect(() => {
@@ -265,6 +547,9 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
         setActiveGuild(null)
         setActiveMember(null)
         setUserGuilds([])
+        setActiveCharacter(null)
+        setUserCharacters([])
+        setCharacterMemberships([])
         setUser(null)
       }
     })
@@ -275,18 +560,43 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
   }, [])
 
   // Derived state
-  const isOfficer = activeMember?.role === 'Officer'
+  // Check if user has officer role via either old system or new character system
+  const isOfficer =
+    activeMember?.role === 'Officer' ||
+    activeMember?.role === 'Guild Master' ||
+    (activeCharacter && activeGuild &&
+      characterMemberships.some(
+        m => m.character_id === activeCharacter.id &&
+             m.guild_id === activeGuild.id &&
+             (m.role === 'Officer' || m.role === 'Guild Master')
+      )
+    )
+
   const hasMultipleGuilds = userGuilds.length > 1
+  const hasMultipleCharacters = userCharacters.length > 1
 
   const value: GuildContextType = {
+    // Existing
     activeGuild,
     activeMember,
     userGuilds,
     loading,
+
+    // New Character System
+    activeCharacter,
+    userCharacters,
+    characterMemberships,
+
+    // Methods
     switchGuild,
     refreshGuilds,
+    switchCharacter,
+    refreshCharacters,
+
+    // Derived state
     isOfficer,
-    hasMultipleGuilds
+    hasMultipleGuilds,
+    hasMultipleCharacters
   }
 
   return (

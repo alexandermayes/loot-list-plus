@@ -31,6 +31,11 @@ export default function GuildSelectPage() {
   const [showToast, setShowToast] = useState(false)
   const [guildInfo, setGuildInfo] = useState<any>(null)
 
+  // Character selection state
+  const [showCharacterModal, setShowCharacterModal] = useState(false)
+  const [userCharacters, setUserCharacters] = useState<any[]>([])
+  const [selectedCharacterId, setSelectedCharacterId] = useState<string | null>(null)
+
   // Discord modal state
   const [showDiscordModal, setShowDiscordModal] = useState(false)
   const [discordLoading, setDiscordLoading] = useState(false)
@@ -84,6 +89,33 @@ export default function GuildSelectPage() {
     checkUser()
   }, [])
 
+  const loadUserCharacters = async () => {
+    if (!user) return
+
+    const { data: characters } = await supabase
+      .from('characters')
+      .select(`
+        id,
+        name,
+        is_main,
+        class:wow_classes(name, color_hex)
+      `)
+      .eq('user_id', user.id)
+      .order('is_main', { ascending: false })
+      .order('name', { ascending: true })
+
+    if (characters) {
+      setUserCharacters(characters)
+      // Auto-select the main character if available
+      const mainChar = characters.find(c => c.is_main)
+      if (mainChar) {
+        setSelectedCharacterId(mainChar.id)
+      } else if (characters.length > 0) {
+        setSelectedCharacterId(characters[0].id)
+      }
+    }
+  }
+
   const validateCode = async (code: string) => {
     if (!code.trim()) {
       showErrorToast('Please enter an invite code')
@@ -107,6 +139,9 @@ export default function GuildSelectPage() {
       // Code is valid, show guild info
       setGuildInfo(data)
       setValidating(false)
+
+      // Load user characters for selection
+      await loadUserCharacters()
     } catch (err) {
       console.error('Error validating code:', err)
       showErrorToast('Failed to validate invite code')
@@ -123,10 +158,57 @@ export default function GuildSelectPage() {
       return
     }
 
-    // If guild info exists, join the guild
+    // If guild info exists, show character selection modal
+    setShowCharacterModal(true)
+  }
+
+  const confirmJoinWithCharacter = async () => {
+    if (!selectedCharacterId && userCharacters.length > 0) {
+      showErrorToast('Please select a character')
+      return
+    }
+
     setJoining(true)
 
     try {
+      // If no characters exist, user needs to create one first
+      if (userCharacters.length === 0) {
+        // Join guild first, then redirect to character creation
+        const response = await fetch(`/api/guild-invites/${inviteCode.trim()}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        })
+
+        const data = await response.json()
+
+        if (!response.ok) {
+          showErrorToast(data.error || 'Failed to join guild')
+          setJoining(false)
+          return
+        }
+
+        // Redirect to character creation
+        router.push('/characters/create?firstTime=true')
+        return
+      }
+
+      // Set the selected character as active before joining
+      if (selectedCharacterId) {
+        await fetch('/api/user/active-character', {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            character_id: selectedCharacterId,
+            guild_id: guildInfo.guild.id
+          })
+        })
+      }
+
+      // Join the guild
       const response = await fetch(`/api/guild-invites/${inviteCode.trim()}`, {
         method: 'POST',
         headers: {
@@ -523,6 +605,100 @@ export default function GuildSelectPage() {
                   We check which Discord servers you're a member of and match them with LootList+ guilds that have Discord integration enabled.
                 </p>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Character Selection Modal */}
+      {showCharacterModal && (
+        <div
+          className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          onClick={() => !joining && setShowCharacterModal(false)}
+        >
+          <div
+            className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl max-w-md w-full"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="px-6 py-4 border-b border-[rgba(255,255,255,0.1)]">
+              <h3 className="text-[20px] font-bold text-white">Select Character</h3>
+              <p className="text-[13px] text-[#a1a1a1] mt-1">
+                Choose which character is joining {guildInfo?.guild?.name}
+              </p>
+            </div>
+
+            {/* Modal Content */}
+            <div className="p-6">
+              {userCharacters.length > 0 ? (
+                <div className="space-y-3">
+                  {userCharacters.map((char) => (
+                    <button
+                      key={char.id}
+                      onClick={() => setSelectedCharacterId(char.id)}
+                      className={`w-full text-left p-4 rounded-lg border transition ${
+                        selectedCharacterId === char.id
+                          ? 'bg-[rgba(255,128,0,0.2)] border-[rgba(255,128,0,0.3)]'
+                          : 'bg-[#0d0e11] border-[rgba(255,255,255,0.1)] hover:border-[rgba(255,255,255,0.2)]'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <p className="font-medium text-white">{char.name}</p>
+                            {char.is_main && (
+                              <span className="px-2 py-0.5 bg-[rgba(255,128,0,0.2)] border border-[rgba(255,128,0,0.3)] rounded text-[#ff8000] text-xs">
+                                Main
+                              </span>
+                            )}
+                          </div>
+                          {char.class && (
+                            <p className="text-[13px] font-medium" style={{ color: char.class.color_hex }}>
+                              {char.class.name}
+                            </p>
+                          )}
+                        </div>
+                        {selectedCharacterId === char.id && (
+                          <svg className="w-5 h-5 text-[#ff8000]" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                          </svg>
+                        )}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-6">
+                  <p className="text-[#a1a1a1] mb-4">
+                    You don't have any characters yet. You'll need to create one to join the guild.
+                  </p>
+                  <div className="flex items-center gap-2 text-[13px] text-[#a1a1a1] bg-[#0d0e11] border border-[rgba(255,255,255,0.1)] rounded-lg p-3">
+                    <svg className="w-4 h-4 shrink-0" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5">
+                      <circle cx="10" cy="10" r="9" />
+                      <path d="M10 6v4M10 14h.01" strokeLinecap="round" />
+                    </svg>
+                    <p>You'll be redirected to create your first character after joining.</p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="px-6 py-4 border-t border-[rgba(255,255,255,0.1)] flex gap-3 justify-end">
+              <button
+                onClick={() => setShowCharacterModal(false)}
+                disabled={joining}
+                className="px-5 py-2.5 bg-[#151515] hover:bg-[#1a1a1a] border border-[rgba(255,255,255,0.1)] rounded-[52px] text-white text-[13px] font-medium transition disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmJoinWithCharacter}
+                disabled={joining || (userCharacters.length > 0 && !selectedCharacterId)}
+                className="px-5 py-2.5 bg-[#ff8000] hover:bg-[#ff9500] rounded-[52px] text-white text-[13px] font-medium transition disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {joining ? 'Joining...' : userCharacters.length > 0 ? 'Join with Character' : 'Join & Create Character'}
+              </button>
             </div>
           </div>
         </div>

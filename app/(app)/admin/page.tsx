@@ -161,24 +161,25 @@ export default function AdminPage() {
         status,
         submitted_at,
         review_notes,
-        user_id
+        character_id
       `)
       .eq('guild_id', guildId)
       .eq('raid_tier_id', tierId)
 
     if (!submissionsData) return
 
-    // Get member data and item counts for each submission
+    // Get character data and item counts for each submission
     const submissionsWithDetails = await Promise.all(
       submissionsData.map(async (sub: any) => {
-        const { data: memberData } = await supabase
-          .from('guild_members')
+        const { data: characterData } = await supabase
+          .from('characters')
           .select(`
-            character_name,
-            role,
+            id,
+            name,
+            user_id,
             class:wow_classes(name, color_hex)
           `)
-          .eq('user_id', sub.user_id)
+          .eq('id', sub.character_id)
           .single()
 
         const { count } = await supabase
@@ -188,10 +189,14 @@ export default function AdminPage() {
 
         return {
           ...sub,
-          member: memberData || null,
+          member: characterData ? {
+            character_name: characterData.name,
+            role: 'Member', // Can be fetched from character_guild_memberships if needed
+            class: characterData.class
+          } : null,
           item_count: count || 0,
           user: {
-            id: sub.user_id,
+            id: characterData?.user_id || '',
             user_metadata: {}
           }
         }

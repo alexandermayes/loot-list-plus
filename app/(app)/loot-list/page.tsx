@@ -28,7 +28,7 @@ interface Submission {
 }
 
 export default function LootList() {
-  const { activeGuild, loading: guildLoading } = useGuildContext()
+  const { activeGuild, activeCharacter, loading: guildLoading } = useGuildContext()
   const { showNotification } = useNotification()
   const [lootItems, setLootItems] = useState<LootItem[]>([])
   const [submission, setSubmission] = useState<Submission | null>(null)
@@ -95,29 +95,17 @@ export default function LootList() {
         return
       }
 
-      const { data: memberData } = await supabase
-        .from('guild_members')
-        .select(`
-          guild_id,
-          class_id,
-          character_name,
-          role,
-          class:wow_classes(name, color_hex)
-        `)
-        .eq('user_id', user.id)
-        .eq('guild_id', activeGuild.id)
-        .single()
-
-      if (!memberData) {
+      if (!activeCharacter) {
         setLoading(false)
         return
       }
 
-      setGuildId(memberData.guild_id)
+      setGuildId(activeGuild.id)
       setMember({
-        character_name: memberData.character_name,
-        role: memberData.role,
-        class: memberData.class
+        character_name: activeCharacter.name,
+        role: 'Member', // Can be updated if needed from character_guild_memberships
+        class: activeCharacter.class,
+        class_id: activeCharacter.class_id
       })
 
       // Load guild settings to check slot restrictions
@@ -161,19 +149,19 @@ export default function LootList() {
     }
 
     loadData()
-  }, [guildLoading, activeGuild])
+  }, [guildLoading, activeGuild, activeCharacter])
 
   // Load submission statuses for all tiers
   useEffect(() => {
     const loadSubmissionStatuses = async () => {
-      if (!user || !guildId || raidTiers.length === 0) return
+      if (!activeCharacter || !guildId || raidTiers.length === 0) return
 
       const tierIds = raidTiers.map(t => t.id)
 
       const { data: submissions } = await supabase
         .from('loot_submissions')
         .select('raid_tier_id, status, submitted_at')
-        .eq('user_id', user.id)
+        .eq('character_id', activeCharacter.id)
         .eq('guild_id', guildId)
         .in('raid_tier_id', tierIds)
 
@@ -190,12 +178,12 @@ export default function LootList() {
     }
 
     loadSubmissionStatuses()
-  }, [user, guildId, raidTiers])
+  }, [activeCharacter, guildId, raidTiers])
 
   // Load loot items and submission for selected tier
   useEffect(() => {
     const loadTierData = async () => {
-      if (!selectedTierId || !guildId || !member) {
+      if (!selectedTierId || !guildId || !activeCharacter) {
         setLootItems([])
         setSubmission(null)
         setRankings({})
@@ -221,7 +209,7 @@ export default function LootList() {
         if (itemsData) {
           const filteredItems = itemsData.filter(item => {
             const classes = item.loot_item_classes as any[]
-            return classes.length === 0 || classes.some(c => c.class_id === member.class_id)
+            return classes.length === 0 || classes.some(c => c.class_id === activeCharacter.class_id)
           })
           setLootItems(filteredItems)
         }
@@ -230,7 +218,7 @@ export default function LootList() {
         const { data: subData } = await supabase
           .from('loot_submissions')
           .select('id, status, submitted_at, review_notes')
-          .eq('user_id', user.id)
+          .eq('character_id', activeCharacter.id)
           .eq('raid_tier_id', selectedTierId)
           .eq('guild_id', guildId)
           .single()
@@ -271,7 +259,7 @@ export default function LootList() {
     }
 
     loadTierData()
-  }, [selectedTierId, user, guildId, member])
+  }, [selectedTierId, activeCharacter, guildId])
 
   // Refresh Wowhead tooltips after items are loaded and loading is complete
   useEffect(() => {
@@ -306,7 +294,7 @@ export default function LootList() {
   }
 
   const saveSubmission = async (submit: boolean) => {
-    if (!user || !selectedTierId || !guildId) return
+    if (!activeCharacter || !selectedTierId || !guildId) return
 
     setSaving(true)
 
@@ -317,7 +305,7 @@ export default function LootList() {
         const { data: newSub, error: subError } = await supabase
           .from('loot_submissions')
           .insert({
-            user_id: user.id,
+            character_id: activeCharacter.id,
             guild_id: guildId,
             raid_tier_id: selectedTierId,
             status: submit ? 'pending' : 'draft',
@@ -356,13 +344,15 @@ export default function LootList() {
 
       // Insert new rankings (convert from "rank-slot" format)
       const rankingsToInsert = Object.entries(rankings).map(([key, loot_item_id]) => {
-        const [rankStr] = key.split('-')
+        const [rankStr, slotStr] = key.split('-')
         const rank = parseInt(rankStr)
+        const slot = parseInt(slotStr)
 
         return {
           submission_id: submissionId,
           loot_item_id,
-          rank
+          rank,
+          slot
         }
       })
 
@@ -377,12 +367,12 @@ export default function LootList() {
       showNotification('success', submit ? 'Loot list submitted for review!' : 'Draft saved!')
 
       // Refresh submission statuses after save
-      if (user && guildId && raidTiers.length > 0) {
+      if (activeCharacter && guildId && raidTiers.length > 0) {
         const tierIds = raidTiers.map(t => t.id)
         const { data: submissions } = await supabase
           .from('loot_submissions')
           .select('raid_tier_id, status, submitted_at')
-          .eq('user_id', user.id)
+          .eq('character_id', activeCharacter.id)
           .eq('guild_id', guildId)
           .in('raid_tier_id', tierIds)
 
@@ -404,18 +394,39 @@ export default function LootList() {
 
   // Auto-save function (saves as draft without notifications)
   const autoSave = async () => {
-    if (!user || !selectedTierId || !guildId) return
+    if (!activeCharacter || !selectedTierId || !guildId) return
+
+    // Don't auto-save if submission is in a read-only state
+    if (submission && submission.status && !['draft', 'needs_revision'].includes(submission.status)) {
+      console.log('Auto-save skipped: submission is in read-only state', submission.status)
+      return
+    }
 
     setAutoSaving(true)
 
     try {
+      // First verify the character is a member of this guild
+      const { data: membership, error: membershipError } = await supabase
+        .from('character_guild_memberships')
+        .select('id')
+        .eq('character_id', activeCharacter.id)
+        .eq('guild_id', guildId)
+        .single()
+
+      if (membershipError || !membership) {
+        console.error('Character is not a member of this guild. Membership check failed:', membershipError)
+        showNotification('error', 'Your character needs to rejoin this guild. Please visit Guild Settings.')
+        setAutoSaving(false)
+        return
+      }
+
       let submissionId = submission?.id
 
       if (!submissionId) {
         const { data: newSub, error: subError } = await supabase
           .from('loot_submissions')
           .insert({
-            user_id: user.id,
+            character_id: activeCharacter.id,
             guild_id: guildId,
             raid_tier_id: selectedTierId,
             status: 'draft',
@@ -424,7 +435,10 @@ export default function LootList() {
           .select()
           .single()
 
-        if (subError) throw subError
+        if (subError) {
+          console.error('Submission insert error:', subError)
+          throw new Error(subError.message || 'Failed to create submission')
+        }
         submissionId = newSub.id
         setSubmission(newSub)
       } else {
@@ -435,24 +449,34 @@ export default function LootList() {
           })
           .eq('id', submissionId)
 
-        if (updateError) throw updateError
+        if (updateError) {
+          console.error('Submission update error:', updateError)
+          throw new Error(updateError.message || 'Failed to update submission')
+        }
       }
 
       // Delete existing rankings
-      await supabase
+      const { error: deleteError } = await supabase
         .from('loot_submission_items')
         .delete()
         .eq('submission_id', submissionId)
 
-      // Insert new rankings
+      if (deleteError) {
+        console.error('Delete items error:', deleteError)
+        throw new Error(deleteError.message || 'Failed to delete existing rankings')
+      }
+
+      // Insert new rankings (convert from "rank-slot" format)
       const rankingsToInsert = Object.entries(rankings).map(([key, loot_item_id]) => {
-        const [rankStr] = key.split('-')
+        const [rankStr, slotStr] = key.split('-')
         const rank = parseInt(rankStr)
+        const slot = parseInt(slotStr)
 
         return {
           submission_id: submissionId,
           loot_item_id,
-          rank
+          rank,
+          slot
         }
       })
 
@@ -461,12 +485,16 @@ export default function LootList() {
           .from('loot_submission_items')
           .insert(rankingsToInsert)
 
-        if (itemsError) throw itemsError
+        if (itemsError) {
+          console.error('Insert items error:', itemsError)
+          throw new Error(itemsError.message || 'Failed to save rankings')
+        }
       }
 
       setLastSaved(new Date())
     } catch (error: any) {
       console.error('Auto-save failed:', error)
+      showNotification('error', error.message || 'Auto-save failed')
     }
 
     setAutoSaving(false)
@@ -474,7 +502,7 @@ export default function LootList() {
 
   // Auto-save when rankings change (debounced)
   useEffect(() => {
-    if (!user || !selectedTierId || !guildId || !initialLoadComplete) return
+    if (!activeCharacter || !selectedTierId || !guildId || !initialLoadComplete) return
 
     const timer = setTimeout(() => {
       autoSave()

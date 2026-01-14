@@ -15,6 +15,7 @@ export default function ProfilePage() {
   const [user, setUser] = useState<any>(null)
   const [member, setMember] = useState<any>(null)
   const [allGuilds, setAllGuilds] = useState<any[]>([])
+  const [characters, setCharacters] = useState<any[]>([])
   const [preferences, setPreferences] = useState<any>(null)
   const [stats, setStats] = useState<any>(null)
   const [loading, setLoading] = useState(true)
@@ -92,6 +93,23 @@ export default function ProfilePage() {
         // Use the first guild for primary display (active guild should be first)
         const memberData = allMemberships[0]
         setMember(memberData)
+
+        // Load all user's characters
+        const { data: charactersData } = await supabase
+          .from('characters')
+          .select(`
+            id,
+            name,
+            is_main,
+            class:wow_classes(name, color_hex)
+          `)
+          .eq('user_id', user.id)
+          .order('is_main', { ascending: false })
+          .order('name', { ascending: true })
+
+        if (charactersData) {
+          setCharacters(charactersData)
+        }
 
         // Load user preferences
         const { data: prefsData } = await supabase
@@ -371,6 +389,57 @@ export default function ProfilePage() {
             </div>
           </div>
         )}
+
+        {/* Characters Section */}
+        <div className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl overflow-hidden">
+          <div className="px-6 py-4 border-b border-[rgba(255,255,255,0.1)] flex items-center justify-between">
+            <h3 className="text-[18px] font-semibold text-white">My Characters</h3>
+            <button
+              onClick={() => router.push('/characters/manage')}
+              className="px-4 py-2 bg-[rgba(255,128,0,0.2)] hover:bg-[rgba(255,128,0,0.3)] border border-[rgba(255,128,0,0.3)] rounded-[52px] text-[#ff8000] text-[13px] font-medium transition"
+            >
+              Manage Characters
+            </button>
+          </div>
+          <div className="p-6">
+            {characters.length > 0 ? (
+              <div className="space-y-3">
+                {characters.map((character) => (
+                  <div
+                    key={character.id}
+                    className="flex items-center justify-between p-4 bg-[#0d0e11] border border-[rgba(255,255,255,0.1)] rounded-lg"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <p className="font-medium text-white">{character.name}</p>
+                          {character.is_main && (
+                            <span className="px-2 py-0.5 bg-[rgba(255,128,0,0.2)] border border-[rgba(255,128,0,0.3)] rounded text-[#ff8000] text-xs">Main</span>
+                          )}
+                        </div>
+                        {character.class && (
+                          <p className="text-[13px] font-medium" style={{ color: character.class.color_hex }}>
+                            {character.class.name}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <p className="text-[#a1a1a1] mb-4">You haven't created any characters yet.</p>
+                <button
+                  onClick={() => router.push('/characters/create')}
+                  className="px-6 py-3 bg-[#ff8000] hover:bg-[#ff9500] rounded-[52px] text-white font-medium text-base transition"
+                >
+                  Create Your First Character
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
 
         {/* Leave Guild Confirmation Modal */}
         {leaveGuildId && (

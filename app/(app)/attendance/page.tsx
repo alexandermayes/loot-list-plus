@@ -30,6 +30,7 @@ export default function AttendancePage() {
   const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>([])
   const [loading, setLoading] = useState(true)
   const [user, setUser] = useState<any>(null)
+  const [activeCharacter, setActiveCharacter] = useState<any>(null)
   const [guildId, setGuildId] = useState<string | null>(null)
   const [attendanceScore, setAttendanceScore] = useState(0)
   const [roleModifier, setRoleModifier] = useState(0)
@@ -52,30 +53,53 @@ export default function AttendancePage() {
       }
       setUser(user)
 
-      // Get member data
-      const { data: memberData } = await supabase
-        .from('guild_members')
-        .select('role, guild_id')
+      // Get active character
+      const { data: activeCharData } = await supabase
+        .from('user_active_characters')
+        .select('active_character_id, active_guild_id')
         .eq('user_id', user.id)
         .single()
 
-      if (!memberData) {
+      if (!activeCharData?.active_character_id || !activeCharData?.active_guild_id) {
         setLoading(false)
         return
       }
 
-      setGuildId(memberData.guild_id)
-      setMemberRole(memberData.role)
+      // Get character details
+      const { data: characterData } = await supabase
+        .from('characters')
+        .select('id, name, class:wow_classes(name, color_hex)')
+        .eq('id', activeCharData.active_character_id)
+        .single()
+
+      if (!characterData) {
+        setLoading(false)
+        return
+      }
+
+      setActiveCharacter(characterData)
+      setGuildId(activeCharData.active_guild_id)
+
+      // Get character's role in the guild
+      const { data: membershipData } = await supabase
+        .from('character_guild_memberships')
+        .select('role')
+        .eq('character_id', characterData.id)
+        .eq('guild_id', activeCharData.active_guild_id)
+        .single()
+
+      const role = membershipData?.role || 'Member'
+      setMemberRole(role)
 
       // Calculate role modifier
-      const modifier = getRoleModifier(memberData.role)
+      const modifier = getRoleModifier(role)
       setRoleModifier(modifier)
 
       // Get raid events (last 8 weeks)
       const eightWeeksAgo = new Date()
       eightWeeksAgo.setDate(eightWeeksAgo.getDate() - 56)
 
-      // Get attendance records for this user
+      // Get attendance records for this character
       const { data: recordsData } = await supabase
         .from('attendance_records')
         .select(`
@@ -89,8 +113,8 @@ export default function AttendancePage() {
             guild_id
           )
         `)
-        .eq('user_id', user.id)
-        .eq('raid_event.guild_id', memberData.guild_id)
+        .eq('character_id', characterData.id)
+        .eq('raid_event.guild_id', activeCharData.active_guild_id)
         .gte('raid_event.raid_date', eightWeeksAgo.toISOString().split('T')[0])
         .order('raid_event.raid_date', { ascending: false })
 
@@ -105,7 +129,7 @@ export default function AttendancePage() {
       const { data: recentRaids } = await supabase
         .from('raid_events')
         .select('id')
-        .eq('guild_id', memberData.guild_id)
+        .eq('guild_id', activeCharData.active_guild_id)
         .gte('raid_date', fourWeeksAgo.toISOString().split('T')[0])
 
       if (recentRaids && recentRaids.length > 0) {
@@ -114,7 +138,7 @@ export default function AttendancePage() {
         const { data: recentRecords } = await supabase
           .from('attendance_records')
           .select('signed_up, attended, no_call_no_show')
-          .eq('user_id', user.id)
+          .eq('character_id', characterData.id)
           .in('raid_event_id', raidIds)
 
         if (recentRecords && recentRecords.length > 0) {

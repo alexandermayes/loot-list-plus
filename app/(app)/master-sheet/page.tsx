@@ -32,7 +32,7 @@ interface ItemRankings {
 }
 
 export default function MasterSheet() {
-  const { activeGuild, loading: guildLoading } = useGuildContext()
+  const { activeGuild, activeCharacter, loading: guildLoading } = useGuildContext()
   const [allItemRankings, setAllItemRankings] = useState<ItemRankings[]>([])
   const [loading, setLoading] = useState(true)
   const [guildId, setGuildId] = useState<string | null>(null)
@@ -71,8 +71,8 @@ export default function MasterSheet() {
     return order[tierName] || 999 // Unknown tiers go to the end
   }
 
-  // Calculate attendance score for a user
-  const calculateAttendance = async (userId: string): Promise<number> => {
+  // Calculate attendance score for a character (or user for backward compatibility)
+  const calculateAttendance = async (userId: string, characterId?: string): Promise<number> => {
     if (!guildId || !guildSettings) return 0
 
     const weeks = guildSettings.rolling_attendance_weeks || 4
@@ -90,11 +90,26 @@ export default function MasterSheet() {
 
     const raidIds = recentRaids.map(r => r.id)
 
-    const { data: records } = await supabase
-      .from('attendance_records')
-      .select('signed_up, attended, no_call_no_show')
-      .eq('user_id', userId)
-      .in('raid_event_id', raidIds)
+    // Try character-based attendance first, fall back to user-based
+    let records
+    if (characterId) {
+      const { data } = await supabase
+        .from('attendance_records')
+        .select('signed_up, attended, no_call_no_show')
+        .eq('character_id', characterId)
+        .in('raid_event_id', raidIds)
+      records = data
+    }
+
+    // Fall back to user-based if no character records found
+    if (!records || records.length === 0) {
+      const { data } = await supabase
+        .from('attendance_records')
+        .select('signed_up, attended, no_call_no_show')
+        .eq('user_id', userId)
+        .in('raid_event_id', raidIds)
+      records = data
+    }
 
     if (!records || records.length === 0) return 0
 
@@ -123,68 +138,59 @@ export default function MasterSheet() {
         return
       }
 
-      const { data: memberData } = await supabase
-        .from('guild_members')
-        .select(`
-          guild_id,
-          character_name,
-          role,
-          class:wow_classes(name, color_hex)
-        `)
-        .eq('user_id', user.id)
+      if (!activeCharacter) {
+        setLoading(false)
+        return
+      }
+
+      setGuildId(activeGuild.id)
+      setMember({
+        character_name: activeCharacter.name,
+        role: 'Member', // Can be updated if needed from character_guild_memberships
+        class: activeCharacter.class
+      })
+
+      // Load guild settings
+      const { data: settingsData } = await supabase
+        .from('guild_settings')
+        .select('*')
         .eq('guild_id', activeGuild.id)
         .single()
 
-      if (memberData) {
-        setGuildId(memberData.guild_id)
-        setMember({
-          character_name: memberData.character_name,
-          role: memberData.role,
-          class: memberData.class
-        })
+      if (settingsData) {
+        setGuildSettings(settingsData)
+      }
 
-        // Load guild settings
-        const { data: settingsData } = await supabase
-          .from('guild_settings')
-          .select('*')
-          .eq('guild_id', memberData.guild_id)
-          .single()
-
-        if (settingsData) {
-          setGuildSettings(settingsData)
-        }
-
-        // Load raid tiers for active expansion (single join query)
-        if (activeGuild?.active_expansion_id) {
-          const { data: tiersData } = await supabase
-            .from('raid_tiers')
-            .select(`
+      // Load raid tiers for active expansion (single join query)
+      if (activeGuild?.active_expansion_id) {
+        const { data: tiersData } = await supabase
+          .from('raid_tiers')
+          .select(`
+            id,
+            name,
+            is_active,
+            expansion:expansions!inner (
               id,
-              name,
-              is_active,
-              expansion:expansions!inner (
-                id,
-                name
-              )
-            `)
-            .eq('expansion.id', activeGuild.active_expansion_id)
+              name
+            )
+          `)
+          .eq('expansion.id', activeGuild.active_expansion_id)
 
-          if (tiersData && tiersData.length > 0) {
-            // Transform data to ensure expansion is a single object (Supabase returns it as array)
-            const transformedData = tiersData.map((tier: any) => ({
-              ...tier,
-              expansion: Array.isArray(tier.expansion) ? tier.expansion[0] : tier.expansion
-            }))
+        if (tiersData && tiersData.length > 0) {
+          // Transform data to ensure expansion is a single object (Supabase returns it as array)
+          const transformedData = tiersData.map((tier: any) => ({
+            ...tier,
+            expansion: Array.isArray(tier.expansion) ? tier.expansion[0] : tier.expansion
+          }))
 
-            // Sort by Classic raid progression order
-            const sortedTiers = transformedData.sort((a: any, b: any) => {
-              return getRaidTierOrder(a.name) - getRaidTierOrder(b.name)
-            })
+          // Sort by Classic raid progression order
+          const sortedTiers = transformedData.sort((a: any, b: any) => {
+            return getRaidTierOrder(a.name) - getRaidTierOrder(b.name)
+          })
 
-            setRaidTiers(sortedTiers)
-            const activeTier = sortedTiers.find((t: any) => t.is_active) || sortedTiers[0]
-            setSelectedTierId(activeTier.id)
-          }
+          setRaidTiers(sortedTiers)
+          const activeTier = sortedTiers.find((t: any) => t.is_active) || sortedTiers[0]
+          setSelectedTierId(activeTier.id)
         }
       }
 
@@ -192,7 +198,7 @@ export default function MasterSheet() {
     }
 
     loadData()
-  }, [guildLoading, activeGuild])
+  }, [guildLoading, activeGuild, activeCharacter])
 
   // Load all item rankings when tier is selected
   useEffect(() => {
@@ -221,10 +227,17 @@ export default function MasterSheet() {
 
         // Get all ranking submissions for all items at once
         const itemIds = itemsData.map(i => i.id)
-        const { data: allRankingsData } = await supabase
+        const { data: allRankingsData, error: rankingsError } = await supabase
           .from('loot_submission_items')
-          .select('rank, submission_id, loot_item_id')
+          .select('rank, slot, submission_id, loot_item_id')
           .in('loot_item_id', itemIds)
+
+        if (rankingsError) {
+          console.error('Error loading rankings:', rankingsError)
+          setAllItemRankings(itemsData.map(item => ({ item, rankings: [] })))
+          setLoading(false)
+          return
+        }
 
         if (!allRankingsData || allRankingsData.length === 0) {
           setAllItemRankings(itemsData.map(item => ({ item, rankings: [] })))
@@ -234,11 +247,15 @@ export default function MasterSheet() {
 
         // Get all submissions
         const submissionIds = [...new Set(allRankingsData.map(r => r.submission_id))]
-        const { data: subsData } = await supabase
+        const { data: subsData, error: subsError } = await supabase
           .from('loot_submissions')
-          .select('id, status, user_id')
+          .select('id, status, character_id')
           .in('id', submissionIds)
           .in('status', ['approved', 'pending'])
+
+        if (subsError) {
+          console.error('Error loading submissions:', subsError)
+        }
 
         if (!subsData || subsData.length === 0) {
           setAllItemRankings(itemsData.map(item => ({ item, rankings: [] })))
@@ -246,17 +263,32 @@ export default function MasterSheet() {
           return
         }
 
-        // Get all member info
-        const userIds = [...new Set(subsData.map(s => s.user_id))]
-        const { data: membersData } = await supabase
-          .from('guild_members')
-          .select('user_id, character_name, role, class:wow_classes(name, color_hex)')
-          .in('user_id', userIds)
+        // Get all character info (filter out nulls)
+        const characterIds = [...new Set(subsData.map(s => s.character_id).filter(id => id !== null))]
 
-        // Pre-calculate attendance for all users
+        if (characterIds.length === 0) {
+          setAllItemRankings(itemsData.map(item => ({ item, rankings: [] })))
+          setLoading(false)
+          return
+        }
+
+        const { data: charactersData, error: charError } = await supabase
+          .from('characters')
+          .select('id, name, user_id, class:wow_classes(name, color_hex)')
+          .in('id', characterIds)
+
+        if (charError) {
+          console.error('Error loading characters:', charError)
+          setAllItemRankings(itemsData.map(item => ({ item, rankings: [] })))
+          setLoading(false)
+          return
+        }
+
+        // Pre-calculate attendance for all characters (with user fallback)
         const attendanceCache: Record<string, number> = {}
-        for (const userId of userIds) {
-          attendanceCache[userId] = await calculateAttendance(userId)
+        for (const character of charactersData || []) {
+          // Use character ID as cache key
+          attendanceCache[character.id] = await calculateAttendance(character.user_id, character.id)
         }
 
         // Build rankings for each item
@@ -270,17 +302,17 @@ export default function MasterSheet() {
             const sub = subsData.find(s => s.id === r.submission_id)
             if (!sub) continue
 
-            const member = membersData?.find(m => m.user_id === sub.user_id)
-            if (!member) continue
+            const character = charactersData?.find(c => c.id === sub.character_id)
+            if (!character) continue
 
-            const attendance = attendanceCache[sub.user_id] || 0
-            const roleModifier = getRankModifier(member.role, guildSettings)
+            const attendance = attendanceCache[character.id] || 0
+            const roleModifier = getRankModifier('Member', guildSettings) // Role will need to be fetched from character_guild_memberships if needed
             const lootScore = calculateLootScore(r.rank, attendance, roleModifier)
 
             rankings.push({
-              player_name: member.character_name || 'Unknown',
-              class_name: (member.class as any)?.name || 'Unknown',
-              class_color: (member.class as any)?.color_hex || '#888888',
+              player_name: character.name || 'Unknown',
+              class_name: (character.class as any)?.name || 'Unknown',
+              class_color: (character.class as any)?.color_hex || '#888888',
               loot_score: lootScore,
               rank: r.rank
             })

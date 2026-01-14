@@ -5,6 +5,7 @@ import { useGuildContext } from '../contexts/GuildContext'
 import Image from 'next/image'
 import { useState, useRef, useEffect } from 'react'
 import { createClient } from '@/utils/supabase/client'
+import { CharacterSelector } from './CharacterSelector'
 
 interface SidebarProps {
   user?: any
@@ -402,6 +403,18 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange }
             </div>
           </div>
         </div>
+
+        {/* Character Selector */}
+        {activeGuild && (
+          <div className="flex flex-col gap-3">
+            <div className="px-3">
+              <p className="font-poppins font-medium text-[10px] text-[#a1a1a1] uppercase tracking-wide">
+                CHARACTER
+              </p>
+            </div>
+            <CharacterSelector />
+          </div>
+        )}
 
         {/* Navigation Items */}
         <div className="flex flex-col gap-[8px]">
