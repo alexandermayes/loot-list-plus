@@ -269,9 +269,6 @@ export default function RoleManager() {
                         </div>
                         <div>
                           <p className="text-white font-medium text-[14px]">{role.name}</p>
-                          {role.is_default && (
-                            <p className="text-[#666] text-[11px]">Default role</p>
-                          )}
                         </div>
                       </div>
 
