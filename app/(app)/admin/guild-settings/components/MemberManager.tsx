@@ -318,15 +318,15 @@ export default function MemberManager() {
                     </div>
 
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-2">
-                        <p className="font-semibold text-white text-[15px]" style={{ color: mainChar?.class?.color_hex || '#fff' }}>
+                      <div className="flex items-center gap-2 mb-1 flex-wrap">
+                        <p className="font-semibold text-white text-[15px] whitespace-nowrap" style={{ color: mainChar?.class?.color_hex || '#fff' }}>
                           {displayName}
+                          {mainChar?.spec && mainChar?.class && (
+                            <span className="text-[#a1a1a1] text-[13px] font-normal ml-2">
+                              • {mainChar.spec.name} {mainChar.class.name}
+                            </span>
+                          )}
                         </p>
-                        {mainChar?.spec && mainChar?.class && (
-                          <span className="text-[#a1a1a1] text-[13px]">
-                            • {mainChar.spec.name} {mainChar.class.name}
-                          </span>
-                        )}
                         {member.role === 'Guild Master' && (
                           <span className="px-2 py-0.5 bg-[#ff8000]/20 text-[#ff8000] text-[11px] rounded border border-[#ff8000]/30 flex-shrink-0">
                             Guild Master
