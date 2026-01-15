@@ -3,7 +3,7 @@
 import { createClient } from '@/utils/supabase/client'
 import { useState, useEffect } from 'react'
 import { useGuildContext } from '@/app/contexts/GuildContext'
-import { Plus, Trash2, Shield, User, Edit2, Check, X, Crown } from 'lucide-react'
+import { Plus, Trash2, Shield, User, Edit2, Check, X, Crown, ChevronUp, ChevronDown } from 'lucide-react'
 
 interface GuildRole {
   id: string
@@ -79,7 +79,12 @@ export default function RoleManager() {
     }
 
     try {
-      const maxPosition = Math.max(...roles.map(r => r.position), 0)
+      // Find minimum position among custom roles and Member (below Officer at 50)
+      const customRoles = roles.filter(r => r.position < 50)
+      const minPosition = customRoles.length > 0 ? Math.min(...customRoles.map(r => r.position)) : 0
+
+      // Add new role below all existing custom roles
+      const newPosition = minPosition - 1
 
       const { error } = await supabase
         .from('guild_roles')
@@ -87,7 +92,7 @@ export default function RoleManager() {
           guild_id: activeGuild.id,
           name: newRoleName.trim(),
           color_hex: '#a1a1a1', // All custom roles use Member color
-          position: maxPosition + 1,
+          position: newPosition,
           is_default: false
         })
 
@@ -152,6 +157,42 @@ export default function RoleManager() {
       await loadRoles()
     } catch (error: any) {
       setMessage({ type: 'error', text: error.message || 'Failed to delete role' })
+    }
+  }
+
+  const handleMoveRole = async (role: GuildRole, direction: 'up' | 'down') => {
+    try {
+      // Get moveable roles (everything except Guild Master and Officer)
+      const moveableRoles = roles.filter(r => r.name !== 'Guild Master' && r.name !== 'Officer')
+      const currentIndex = moveableRoles.findIndex(r => r.id === role.id)
+
+      if (direction === 'up' && currentIndex === 0) return // Already at top of moveable roles
+      if (direction === 'down' && currentIndex === moveableRoles.length - 1) return // Already at bottom
+
+      const swapIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1
+      const swapRole = moveableRoles[swapIndex]
+
+      // Swap positions
+      const updates = [
+        supabase
+          .from('guild_roles')
+          .update({ position: swapRole.position })
+          .eq('id', role.id),
+        supabase
+          .from('guild_roles')
+          .update({ position: role.position })
+          .eq('id', swapRole.id)
+      ]
+
+      const results = await Promise.all(updates)
+
+      if (results.some(r => r.error)) {
+        throw new Error('Failed to update positions')
+      }
+
+      await loadRoles()
+    } catch (error: any) {
+      setMessage({ type: 'error', text: error.message || 'Failed to reorder roles' })
     }
   }
 
@@ -235,6 +276,25 @@ export default function RoleManager() {
                       </div>
 
                       <div className="flex items-center gap-2">
+                        {/* Move up/down buttons - only for Member and custom roles */}
+                        {role.name !== 'Guild Master' && role.name !== 'Officer' && (
+                          <div className="flex gap-1">
+                            <button
+                              onClick={() => handleMoveRole(role, 'up')}
+                              disabled={roles.filter(r => r.name !== 'Guild Master' && r.name !== 'Officer').findIndex(r => r.id === role.id) === 0}
+                              className="p-2 bg-[#151515] hover:bg-[#1a1a1a] border border-[rgba(255,255,255,0.1)] rounded-lg text-white hover:text-white transition disabled:opacity-30 disabled:cursor-not-allowed"
+                            >
+                              <ChevronUp className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => handleMoveRole(role, 'down')}
+                              disabled={roles.filter(r => r.name !== 'Guild Master' && r.name !== 'Officer').findIndex(r => r.id === role.id) === roles.filter(r => r.name !== 'Guild Master' && r.name !== 'Officer').length - 1}
+                              className="p-2 bg-[#151515] hover:bg-[#1a1a1a] border border-[rgba(255,255,255,0.1)] rounded-lg text-white hover:text-white transition disabled:opacity-30 disabled:cursor-not-allowed"
+                            >
+                              <ChevronDown className="w-4 h-4" />
+                            </button>
+                          </div>
+                        )}
                         <button
                           onClick={() => handleStartEditRole(role)}
                           className="p-2 bg-[#151515] hover:bg-[#1a1a1a] border border-[rgba(255,255,255,0.1)] rounded-lg text-white hover:text-white transition"
