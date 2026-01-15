@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { useGuildContext } from '@/app/contexts/GuildContext'
 import InviteCodeManager from './components/InviteCodeManager'
 import MemberManager from './components/MemberManager'
+import RoleManager from './components/RoleManager'
 import RealmSelector from '@/app/components/RealmSelector'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 
@@ -261,106 +262,96 @@ export default function GuildSettingsPage() {
           </div>
         )}
 
-        {/* Basic Information */}
-        <div className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl overflow-hidden">
-          <div className="p-6 border-b border-[rgba(255,255,255,0.1)]">
-            <h2 className="text-[24px] font-semibold text-white">Basic Information</h2>
-            <p className="text-[#a1a1a1] text-[13px] mt-1">Update your guild's basic details</p>
-          </div>
-          <div className="p-6 space-y-4">
-            <div className="space-y-2">
-              <label htmlFor="guildName" className="block text-[13px] font-medium text-white">Guild Name</label>
-              <input
-                id="guildName"
-                value={guildName}
-                onChange={(e) => setGuildName(e.target.value)}
-                placeholder="Enter guild name"
-                className="w-full px-5 py-3 bg-[#151515] border border-[#383838] rounded-[52px] text-white text-[13px] focus:outline-none focus:border-[#ff8000]"
-              />
+        {/* Guild Information and Members - Side by Side */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Basic Information */}
+          <div className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl overflow-hidden">
+            <div className="p-6 border-b border-[rgba(255,255,255,0.1)]">
+              <h2 className="text-[24px] font-semibold text-white">Guild Information</h2>
+              <p className="text-[#a1a1a1] text-[13px] mt-1">Update your guild's basic details</p>
             </div>
-
-            <div className="space-y-2">
-              <label className="block text-[13px] font-medium text-white">Realm (Optional)</label>
-              <RealmSelector
-                region={realmRegion}
-                realm={realm}
-                onRegionChange={setRealmRegion}
-                onRealmChange={setRealm}
-                disabled={saving}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <label htmlFor="faction" className="block text-[13px] font-medium text-white">Faction</label>
-              <div className="grid grid-cols-2 gap-4">
-                <button
-                  type="button"
-                  onClick={() => setFaction('Alliance')}
-                  disabled={saving}
-                  className={`p-4 rounded-xl border-2 transition ${
-                    faction === 'Alliance'
-                      ? 'border-blue-500 bg-blue-500/20 text-blue-200'
-                      : 'border-[rgba(255,255,255,0.1)] bg-[#151515] hover:border-blue-500/50 text-white'
-                  }`}
-                >
-                  <p className="font-medium text-[14px]">Alliance</p>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setFaction('Horde')}
-                  disabled={saving}
-                  className={`p-4 rounded-xl border-2 transition ${
-                    faction === 'Horde'
-                      ? 'border-red-500 bg-red-500/20 text-red-200'
-                      : 'border-[rgba(255,255,255,0.1)] bg-[#151515] hover:border-red-500/50 text-white'
-                  }`}
-                >
-                  <p className="font-medium text-[14px]">Horde</p>
-                </button>
+            <div className="p-6 space-y-4">
+              <div className="space-y-2">
+                <label htmlFor="guildName" className="block text-[13px] font-medium text-white">Guild Name</label>
+                <input
+                  id="guildName"
+                  value={guildName}
+                  onChange={(e) => setGuildName(e.target.value)}
+                  placeholder="Enter guild name"
+                  className="w-full px-5 py-3 bg-[#151515] border border-[#383838] rounded-[52px] text-white text-[13px] focus:outline-none focus:border-[#ff8000]"
+                />
               </div>
-            </div>
 
-            <button
-              onClick={handleSaveBasicInfo}
-              disabled={saving || !guildName.trim()}
-              className="w-full px-5 py-3 bg-white hover:bg-gray-100 disabled:opacity-50 rounded-[40px] text-black font-medium text-[16px] transition"
-            >
-              {saving ? 'Saving...' : 'Save Changes'}
-            </button>
+              <div className="space-y-2">
+                <label className="block text-[13px] font-medium text-white">Realm (Optional)</label>
+                <RealmSelector
+                  region={realmRegion}
+                  realm={realm}
+                  onRegionChange={setRealmRegion}
+                  onRealmChange={setRealm}
+                  disabled={saving}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label htmlFor="faction" className="block text-[13px] font-medium text-white">Faction</label>
+                <div className="grid grid-cols-2 gap-4">
+                  <button
+                    type="button"
+                    onClick={() => setFaction('Alliance')}
+                    disabled={saving}
+                    className={`p-4 rounded-xl border-2 transition ${
+                      faction === 'Alliance'
+                        ? 'border-blue-500 bg-blue-500/20 text-blue-200'
+                        : 'border-[rgba(255,255,255,0.1)] bg-[#151515] hover:border-blue-500/50 text-white'
+                    }`}
+                  >
+                    <p className="font-medium text-[14px]">Alliance</p>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFaction('Horde')}
+                    disabled={saving}
+                    className={`p-4 rounded-xl border-2 transition ${
+                      faction === 'Horde'
+                        ? 'border-red-500 bg-red-500/20 text-red-200'
+                        : 'border-[rgba(255,255,255,0.1)] bg-[#151515] hover:border-red-500/50 text-white'
+                    }`}
+                  >
+                    <p className="font-medium text-[14px]">Horde</p>
+                  </button>
+                </div>
+              </div>
+
+              <button
+                onClick={handleSaveBasicInfo}
+                disabled={saving || !guildName.trim()}
+                className="w-full px-5 py-3 bg-white hover:bg-gray-100 disabled:opacity-50 rounded-[40px] text-black font-medium text-[16px] transition"
+              >
+                {saving ? 'Saving...' : 'Save Changes'}
+              </button>
+            </div>
+          </div>
+
+          {/* Current Members - with fixed scroll */}
+          <div className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl overflow-hidden flex flex-col" style={{ maxHeight: '600px' }}>
+            <div className="p-6 border-b border-[rgba(255,255,255,0.1)] flex-shrink-0">
+              <h2 className="text-[24px] font-semibold text-white">Current Members</h2>
+              <p className="text-[#a1a1a1] text-[13px] mt-1">Manage guild members and roles</p>
+            </div>
+            <div className="overflow-y-auto flex-1">
+              <MemberManager />
+            </div>
           </div>
         </div>
 
-        {/* Discord Integration */}
+        {/* Guild Roles */}
         <div className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl overflow-hidden">
           <div className="p-6 border-b border-[rgba(255,255,255,0.1)]">
-            <h2 className="text-[24px] font-semibold text-white">Discord Integration</h2>
-            <p className="text-[#a1a1a1] text-[13px] mt-1">
-              Connect your Discord server to allow automatic guild joins
-            </p>
+            <h2 className="text-[24px] font-semibold text-white">Guild Roles</h2>
+            <p className="text-[#a1a1a1] text-[13px] mt-1">Create and manage custom roles for your guild members</p>
           </div>
-          <div className="p-6 space-y-4">
-            <div className="space-y-2">
-              <label htmlFor="discordServerId" className="block text-[13px] font-medium text-white">Discord Server ID</label>
-              <input
-                id="discordServerId"
-                value={discordServerId}
-                onChange={(e) => setDiscordServerId(e.target.value)}
-                placeholder="Enter Discord server ID"
-                className="w-full px-5 py-3 bg-[#151515] border border-[#383838] rounded-[52px] text-white text-[13px] focus:outline-none focus:border-[#ff8000]"
-              />
-              <p className="text-xs text-[#a1a1a1]">
-                Enable Developer Mode in Discord, right-click your server, and select "Copy Server ID"
-              </p>
-            </div>
-
-            <button
-              onClick={handleSaveBasicInfo}
-              disabled={saving}
-              className="px-5 py-3 bg-[#151515] hover:bg-[#1a1a1a] disabled:opacity-50 border border-[rgba(255,255,255,0.1)] rounded-[40px] text-white font-medium text-[16px] transition"
-            >
-              {saving ? 'Saving...' : 'Save Changes'}
-            </button>
-          </div>
+          <RoleManager />
         </div>
 
         {/* Guild Expansion */}
@@ -415,11 +406,41 @@ export default function GuildSettingsPage() {
           </div>
         </div>
 
+        {/* Discord Integration */}
+        <div className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl overflow-hidden">
+          <div className="p-6 border-b border-[rgba(255,255,255,0.1)]">
+            <h2 className="text-[24px] font-semibold text-white">Discord Integration</h2>
+            <p className="text-[#a1a1a1] text-[13px] mt-1">
+              Connect your Discord server to allow automatic guild joins
+            </p>
+          </div>
+          <div className="p-6 space-y-4">
+            <div className="space-y-2">
+              <label htmlFor="discordServerId" className="block text-[13px] font-medium text-white">Discord Server ID</label>
+              <input
+                id="discordServerId"
+                value={discordServerId}
+                onChange={(e) => setDiscordServerId(e.target.value)}
+                placeholder="Enter Discord server ID"
+                className="w-full px-5 py-3 bg-[#151515] border border-[#383838] rounded-[52px] text-white text-[13px] focus:outline-none focus:border-[#ff8000]"
+              />
+              <p className="text-xs text-[#a1a1a1]">
+                Enable Developer Mode in Discord, right-click your server, and select "Copy Server ID"
+              </p>
+            </div>
+
+            <button
+              onClick={handleSaveBasicInfo}
+              disabled={saving}
+              className="px-5 py-3 bg-[#151515] hover:bg-[#1a1a1a] disabled:opacity-50 border border-[rgba(255,255,255,0.1)] rounded-[40px] text-white font-medium text-[16px] transition"
+            >
+              {saving ? 'Saving...' : 'Save Changes'}
+            </button>
+          </div>
+        </div>
+
         {/* Invite Codes */}
         <InviteCodeManager />
-
-        {/* Members */}
-        <MemberManager />
 
         {/* Danger Zone - Only visible to guild creator */}
         {isGuildCreator && (
