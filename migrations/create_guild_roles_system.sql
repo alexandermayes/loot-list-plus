@@ -13,14 +13,15 @@ CREATE TABLE IF NOT EXISTS guild_roles (
   CONSTRAINT unique_role_per_guild UNIQUE(guild_id, name)
 );
 
-CREATE INDEX idx_guild_roles_guild_id ON guild_roles(guild_id);
-CREATE INDEX idx_guild_roles_position ON guild_roles(position);
+CREATE INDEX IF NOT EXISTS idx_guild_roles_guild_id ON guild_roles(guild_id);
+CREATE INDEX IF NOT EXISTS idx_guild_roles_position ON guild_roles(position);
 
 -- Enable RLS
 ALTER TABLE guild_roles ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies
 -- Guild members can view roles in their guild
+DROP POLICY IF EXISTS "Guild members can view guild roles" ON guild_roles;
 CREATE POLICY "Guild members can view guild roles" ON guild_roles
   FOR SELECT
   USING (
@@ -33,6 +34,7 @@ CREATE POLICY "Guild members can view guild roles" ON guild_roles
   );
 
 -- Officers can insert roles
+DROP POLICY IF EXISTS "Officers can create guild roles" ON guild_roles;
 CREATE POLICY "Officers can create guild roles" ON guild_roles
   FOR INSERT
   WITH CHECK (
@@ -46,6 +48,7 @@ CREATE POLICY "Officers can create guild roles" ON guild_roles
   );
 
 -- Officers can update roles (including renaming defaults)
+DROP POLICY IF EXISTS "Officers can update guild roles" ON guild_roles;
 CREATE POLICY "Officers can update guild roles" ON guild_roles
   FOR UPDATE
   USING (
@@ -59,6 +62,7 @@ CREATE POLICY "Officers can update guild roles" ON guild_roles
   );
 
 -- Officers can delete roles (except defaults)
+DROP POLICY IF EXISTS "Officers can delete guild roles" ON guild_roles;
 CREATE POLICY "Officers can delete guild roles" ON guild_roles
   FOR DELETE
   USING (
