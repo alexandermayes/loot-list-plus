@@ -1,9 +1,10 @@
 'use client'
 
 import { useState } from 'react'
-import { ChevronDown, Plus, Check } from 'lucide-react'
+import { ChevronDown, Check } from 'lucide-react'
 import { useGuildContext, Character } from '@/app/contexts/GuildContext'
 import { useRouter } from 'next/navigation'
+import Image from 'next/image'
 
 // Get WoWhead class icon URL
 function getClassIconUrl(className: string | undefined): string {
@@ -49,7 +50,13 @@ export function CharacterSelector() {
         onClick={handleCreateCharacter}
         className="w-full px-[14px] py-2 bg-[#141519] hover:bg-[#1a1a1a] border border-[#1a1a1a] rounded-xl text-foreground text-left transition flex items-center gap-3"
       >
-        <Plus className="w-5 h-5 text-primary" />
+        <Image
+          src="/icons/add-circle.svg"
+          alt="Create"
+          width={20}
+          height={20}
+          className="w-5 h-5 shrink-0 brightness-0 invert"
+        />
         <span className="text-[13px] font-medium">Create Character</span>
       </button>
     )
@@ -244,13 +251,24 @@ export function CharacterSelector() {
                 </>
               )}
 
-              {/* Create New Character */}
-              <div className="border-t border-[#1a1a1a] mt-2 pt-2">
+              {/* Create Character */}
+              <div className="border-t border-border mt-2 pt-2">
                 <button
                   onClick={handleCreateCharacter}
-                  className="w-full px-3 py-2 text-sm text-left text-primary hover:bg-accent rounded transition"
+                  className="w-full px-3 py-2 flex items-center gap-3 hover:bg-[#252525] transition text-left"
                 >
-                  + Create New Character
+                  <Image
+                    src="/icons/add-circle.svg"
+                    alt="Create"
+                    width={20}
+                    height={20}
+                    className="w-5 h-5 shrink-0 brightness-0 invert"
+                  />
+                  <div className="flex-1">
+                    <p className="font-poppins font-medium text-[13px] text-white">
+                      Create character
+                    </p>
+                  </div>
                 </button>
               </div>
             </div>

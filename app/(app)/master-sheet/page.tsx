@@ -1,10 +1,11 @@
 'use client'
 
 import { createClient } from '@/utils/supabase/client'
-import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect, useRef } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import ItemLink from '@/app/components/ItemLink'
 import { calculateAttendanceScore, getRankModifier, calculateLootScore } from '@/utils/calculations'
+import { getBossOrder } from '@/utils/bossOrder'
 import { ExternalLink } from 'lucide-react'
 import { useGuildContext } from '@/app/contexts/GuildContext'
 import { ExpansionGuard } from '@/app/components/ExpansionGuard'
@@ -44,6 +45,8 @@ export default function MasterSheet() {
 
   const supabase = createClient()
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const scrollPendingRef = useRef<string | null>(null)
 
   // Set page title
   useEffect(() => {
@@ -189,8 +192,19 @@ export default function MasterSheet() {
           })
 
           setRaidTiers(sortedTiers)
-          const activeTier = sortedTiers.find((t: any) => t.is_active) || sortedTiers[0]
-          setSelectedTierId(activeTier.id)
+
+          // Only set default tier if we don't have one selected yet
+          if (!selectedTierId) {
+            // Check if there's a tier in the query params first
+            const tierFromUrl = searchParams.get('tier')
+            if (tierFromUrl && sortedTiers.find((t: any) => t.id === tierFromUrl)) {
+              setSelectedTierId(tierFromUrl)
+            } else {
+              // Otherwise use active tier or first tier
+              const activeTier = sortedTiers.find((t: any) => t.is_active) || sortedTiers[0]
+              setSelectedTierId(activeTier.id)
+            }
+          }
         }
       }
 
@@ -347,6 +361,60 @@ export default function MasterSheet() {
     }
   }, [allItemRankings])
 
+  // Handle tier switching from query params
+  useEffect(() => {
+    const tierId = searchParams.get('tier')
+    const itemId = searchParams.get('item')
+
+    // If we have a tier parameter, switch to it and store scroll target
+    if (tierId && raidTiers.length > 0) {
+      const tierExists = raidTiers.find(t => t.id === tierId)
+      if (tierExists && tierId !== selectedTierId) {
+        if (itemId) {
+          scrollPendingRef.current = itemId
+        }
+        setSelectedTierId(tierId)
+      } else if (tierExists && tierId === selectedTierId && itemId) {
+        // Already on correct tier, just need to scroll
+        scrollPendingRef.current = itemId
+      }
+    } else if (itemId && !tierId) {
+      // No tier specified, just scroll to item
+      scrollPendingRef.current = itemId
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams, selectedTierId, raidTiers.length])
+
+  // Scroll to item when items are loaded
+  useEffect(() => {
+    const itemId = scrollPendingRef.current
+
+    if (itemId && allItemRankings.length > 0) {
+      // Check if the item exists in current rankings
+      const itemExists = allItemRankings.some(ir => ir.item.id === itemId)
+
+      if (itemExists) {
+        const timer = setTimeout(() => {
+          const element = document.getElementById(`item-${itemId}`)
+          if (element) {
+            element.scrollIntoView({ behavior: 'smooth', block: 'center' })
+            // Highlight the item briefly
+            element.classList.add('ring-2', 'ring-[#ff8000]')
+            setTimeout(() => {
+              element.classList.remove('ring-2', 'ring-[#ff8000]')
+            }, 2000)
+
+            // Clear the pending scroll
+            scrollPendingRef.current = null
+          }
+        }, 600)
+
+        return () => clearTimeout(timer)
+      }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allItemRankings.length])
+
   // Group items by boss
   const groupedByBoss: Record<string, ItemRankings[]> = {}
   allItemRankings.forEach(ir => {
@@ -367,7 +435,7 @@ export default function MasterSheet() {
     )
   }
 
-  const bossNames = Object.keys(groupedByBoss)
+  const bossNames = Object.keys(groupedByBoss).sort((a, b) => getBossOrder(a) - getBossOrder(b))
 
   const scrollToBoss = (bossName: string) => {
     const element = document.getElementById(`boss-${bossName.replace(/\s+/g, '-')}`)
@@ -441,7 +509,7 @@ export default function MasterSheet() {
           </div>
         ) : (
           <div className="space-y-4">
-            {Object.entries(groupedByBoss).map(([boss, items]) => (
+            {Object.entries(groupedByBoss).sort(([bossA], [bossB]) => getBossOrder(bossA) - getBossOrder(bossB)).map(([boss, items]) => (
               <div
                 key={boss}
                 id={`boss-${boss.replace(/\s+/g, '-')}`}
@@ -463,7 +531,11 @@ export default function MasterSheet() {
                     </thead>
                     <tbody className="divide-y divide-[rgba(255,255,255,0.1)]">
                       {items.map((ir) => (
-                        <tr key={ir.item.id} className={ir.rankings.length === 0 ? 'bg-pink-900/20' : ''}>
+                        <tr
+                          key={ir.item.id}
+                          id={`item-${ir.item.id}`}
+                          className={`transition-all ${ir.rankings.length === 0 ? 'bg-pink-900/20' : ''}`}
+                        >
                           <td className="px-6 py-3">
                             <ItemLink
                               name={ir.item.name}

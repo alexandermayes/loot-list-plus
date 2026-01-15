@@ -9,6 +9,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import ItemLink from './ItemLink'
+import { getBossOrder } from '@/utils/bossOrder'
 
 interface Item {
   id: string
@@ -31,7 +32,7 @@ export default function SearchableItemSelect({
   items,
   value,
   onChange,
-  placeholder = '-- Select Item --',
+  placeholder = 'Select item',
   disabled = new Set(),
   currentValue
 }: SearchableItemSelectProps) {
@@ -50,7 +51,7 @@ export default function SearchableItemSelect({
     item.name.toLowerCase().includes(search.toLowerCase())
   )
 
-  // Group items by boss (maintain encounter order)
+  // Group items by boss and sort by Classic WoW encounter order
   const itemsByBoss: Record<string, Item[]> = {}
   const bossOrder: string[] = []
 
@@ -63,39 +64,65 @@ export default function SearchableItemSelect({
     itemsByBoss[boss].push(item)
   })
 
-  const bossNames = bossOrder
+  // Sort bosses by Classic WoW progression order
+  const bossNames = bossOrder.sort((a, b) => getBossOrder(a) - getBossOrder(b))
 
-  // Close dropdown when clicking outside or scrolling outside
+  // Close dropdown when clicking outside and update position on scroll
   useEffect(() => {
+    if (!isOpen) return
+
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      const target = event.target as Node
+      // Check if click is outside both the button and dropdown
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(target) &&
+        buttonRef.current &&
+        !buttonRef.current.contains(target)
+      ) {
         setIsOpen(false)
         setSearch('')
       }
     }
 
-    const handleScroll = (event: Event) => {
-      // Only close if scrolling is happening outside the dropdown
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsOpen(false)
-        setSearch('')
-      }
+    let rafId: number | null = null
+    const handleScroll = () => {
+      // Use requestAnimationFrame to throttle position updates
+      if (rafId) return
+
+      rafId = requestAnimationFrame(() => {
+        if (buttonRef.current && isOpen) {
+          const rect = buttonRef.current.getBoundingClientRect()
+          setDropdownPosition({
+            top: rect.bottom,
+            left: rect.left,
+            width: rect.width
+          })
+        }
+        rafId = null
+      })
     }
 
-    if (isOpen) {
+    // Small delay to prevent immediate closure on open
+    const timeoutId = setTimeout(() => {
       document.addEventListener('mousedown', handleClickOutside)
-      window.addEventListener('scroll', handleScroll, true)
-    }
+    }, 0)
+
+    window.addEventListener('scroll', handleScroll, true)
 
     return () => {
+      clearTimeout(timeoutId)
       document.removeEventListener('mousedown', handleClickOutside)
       window.removeEventListener('scroll', handleScroll, true)
+      if (rafId) {
+        cancelAnimationFrame(rafId)
+      }
     }
   }, [isOpen])
 
-  // Calculate dropdown position when opening
-  useEffect(() => {
-    if (isOpen && buttonRef.current) {
+  // Handle opening the dropdown with position calculation
+  const handleOpen = () => {
+    if (buttonRef.current) {
       const rect = buttonRef.current.getBoundingClientRect()
       setDropdownPosition({
         top: rect.bottom,
@@ -103,7 +130,8 @@ export default function SearchableItemSelect({
         width: rect.width
       })
     }
-  }, [isOpen])
+    setIsOpen(true)
+  }
 
   // Focus search input when dropdown opens
   useEffect(() => {
@@ -112,28 +140,20 @@ export default function SearchableItemSelect({
     }
   }, [isOpen])
 
-  // Refresh Wowhead tooltips when value changes (after selection)
+  // Refresh Wowhead tooltips when value changes or dropdown opens
   useEffect(() => {
-    if (value && typeof window !== 'undefined' && (window as any).$WowheadPower) {
-      // Very short delay to let the new link render
+    if (typeof window !== 'undefined' && (window as any).$WowheadPower) {
       const timer = setTimeout(() => {
-        (window as any).$WowheadPower.refreshLinks()
-      }, 10)
+        try {
+          (window as any).$WowheadPower.refreshLinks()
+        } catch (e) {
+          // Silently fail if Wowhead not loaded
+        }
+      }, isOpen ? 50 : 10)
 
       return () => clearTimeout(timer)
     }
-  }, [value])
-
-  // Refresh Wowhead tooltips when dropdown opens or search results change
-  useEffect(() => {
-    if (isOpen && typeof window !== 'undefined' && (window as any).$WowheadPower) {
-      const timer = setTimeout(() => {
-        (window as any).$WowheadPower.refreshLinks()
-      }, 100)
-
-      return () => clearTimeout(timer)
-    }
-  }, [isOpen, filteredItems.length])
+  }, [value, isOpen])
 
   const handleSelect = (itemId: string) => {
     onChange(itemId)
@@ -153,7 +173,7 @@ export default function SearchableItemSelect({
       <button
         ref={buttonRef}
         type="button"
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={() => isOpen ? setIsOpen(false) : handleOpen()}
         className="w-full px-3 py-2 bg-[#151515] border border-[#383838] rounded-[52px] text-white text-left focus:outline-none focus:border-[#ff8000] flex items-center justify-between gap-2"
       >
         <span className="truncate flex items-center gap-2 min-w-0">
@@ -182,7 +202,7 @@ export default function SearchableItemSelect({
       </button>
 
       {/* Dropdown */}
-      {isOpen && (
+      {isOpen && dropdownPosition.width > 0 && (
         <div
           ref={dropdownContentRef}
           className="fixed z-[9999] bg-[#151515] border border-[#383838] rounded-lg shadow-lg max-h-96 overflow-hidden"
@@ -208,7 +228,11 @@ export default function SearchableItemSelect({
           {/* Clear Option */}
           {value && (
             <button
-              onClick={handleClear}
+              onMouseDown={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                handleClear()
+              }}
               className="w-full px-3 py-2 text-left hover:bg-[#1a1a1a] text-[#a1a1a1] text-sm border-b border-[rgba(255,255,255,0.1)]"
             >
               -- Clear Selection --
@@ -236,7 +260,13 @@ export default function SearchableItemSelect({
                     return (
                       <button
                         key={item.id}
-                        onClick={() => !isDisabled && handleSelect(item.id)}
+                        onMouseDown={(e) => {
+                          e.preventDefault()
+                          e.stopPropagation()
+                          if (!isDisabled) {
+                            handleSelect(item.id)
+                          }
+                        }}
                         disabled={isDisabled}
                         className={`w-full px-3 py-2 text-left hover:bg-[#1a1a1a] flex items-center gap-2 min-w-0 ${
                           isDisabled ? 'opacity-50 cursor-not-allowed' : ''

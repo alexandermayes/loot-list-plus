@@ -3,7 +3,7 @@
 import { createClient } from '@/utils/supabase/client'
 import { useState, useEffect } from 'react'
 import { useGuildContext } from '@/app/contexts/GuildContext'
-import { UserX, Shield, User } from 'lucide-react'
+import { UserX, Shield, User, Crown } from 'lucide-react'
 
 interface Character {
   id: string
@@ -69,7 +69,8 @@ export default function MemberManager() {
           console.warn('guild_roles table not found, using default roles')
           setRoles([
             { id: '1', name: 'Member', color_hex: '#a1a1a1', position: 0, is_default: true },
-            { id: '2', name: 'Officer', color_hex: '#fbbf24', position: 1, is_default: true }
+            { id: '2', name: 'Officer', color_hex: '#fbbf24', position: 1, is_default: true },
+            { id: '3', name: 'Guild Master', color_hex: '#ff8000', position: 2, is_default: true }
           ] as GuildRole[])
         }
         return
@@ -81,7 +82,8 @@ export default function MemberManager() {
       // Fall back to default roles on any error
       setRoles([
         { id: '1', name: 'Member', color_hex: '#a1a1a1', position: 0, is_default: true },
-        { id: '2', name: 'Officer', color_hex: '#fbbf24', position: 1, is_default: true }
+        { id: '2', name: 'Officer', color_hex: '#fbbf24', position: 1, is_default: true },
+        { id: '3', name: 'Guild Master', color_hex: '#ff8000', position: 2, is_default: true }
       ] as GuildRole[])
     }
   }
@@ -196,10 +198,21 @@ export default function MemberManager() {
         }
       })
 
-      // Sort by role (Officer first) then by name
+      // Sort by role hierarchy (Guild Master > Officer > Member) then by name
+      const roleHierarchy: Record<string, number> = {
+        'Guild Master': 3,
+        'Officer': 2,
+        'Member': 1
+      }
+
       membersArray.sort((a, b) => {
-        if (a.role === 'Officer' && b.role !== 'Officer') return -1
-        if (a.role !== 'Officer' && b.role === 'Officer') return 1
+        const aRoleValue = roleHierarchy[a.role] || 0
+        const bRoleValue = roleHierarchy[b.role] || 0
+
+        if (aRoleValue !== bRoleValue) {
+          return bRoleValue - aRoleValue // Higher values first
+        }
+
         const aName = a.mainCharacter?.name || a.discordName
         const bName = b.mainCharacter?.name || b.discordName
         return aName.localeCompare(bName)
@@ -295,7 +308,9 @@ export default function MemberManager() {
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex items-start gap-4 flex-1 min-w-0">
                     <div className="flex items-center justify-center w-10 h-10 rounded-full bg-[#151515] border border-[rgba(255,255,255,0.1)] flex-shrink-0">
-                      {member.role === 'Officer' ? (
+                      {member.role === 'Guild Master' ? (
+                        <Crown className="w-5 h-5 text-[#ff8000]" />
+                      ) : member.role === 'Officer' ? (
                         <Shield className="w-5 h-5 text-yellow-400" />
                       ) : (
                         <User className="w-5 h-5 text-[#a1a1a1]" />
@@ -310,6 +325,11 @@ export default function MemberManager() {
                         {mainChar?.spec && mainChar?.class && (
                           <span className="text-[#a1a1a1] text-[13px]">
                             • {mainChar.spec.name} {mainChar.class.name}
+                          </span>
+                        )}
+                        {member.role === 'Guild Master' && (
+                          <span className="px-2 py-0.5 bg-[#ff8000]/20 text-[#ff8000] text-[11px] rounded border border-[#ff8000]/30 flex-shrink-0">
+                            Guild Master
                           </span>
                         )}
                         {member.role === 'Officer' && (

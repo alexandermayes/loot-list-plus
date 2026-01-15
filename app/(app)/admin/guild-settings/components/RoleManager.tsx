@@ -3,7 +3,7 @@
 import { createClient } from '@/utils/supabase/client'
 import { useState, useEffect } from 'react'
 import { useGuildContext } from '@/app/contexts/GuildContext'
-import { Plus, Trash2, Shield, User, Edit2, Check, X } from 'lucide-react'
+import { Plus, Trash2, Shield, User, Edit2, Check, X, Crown } from 'lucide-react'
 
 interface GuildRole {
   id: string
@@ -163,6 +163,7 @@ export default function RoleManager() {
   }
 
   const getRoleIcon = (roleName: string) => {
+    if (roleName === 'Guild Master') return <Crown className="w-4 h-4" />
     if (roleName === 'Officer') return <Shield className="w-4 h-4" />
     return <User className="w-4 h-4" />
   }

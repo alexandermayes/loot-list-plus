@@ -265,7 +265,7 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
     try {
       if (!user) return
 
-      // Fetch all user's characters (without embedded spec to avoid PostgREST relationship issues)
+      // Fetch all user's characters
       const { data: characters, error: charactersError } = await supabase
         .from('characters')
         .select(`
@@ -274,6 +274,9 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
             id,
             name,
             color_hex
+          ),
+          spec:class_specs (
+            name
           )
         `)
         .eq('user_id', user.id)

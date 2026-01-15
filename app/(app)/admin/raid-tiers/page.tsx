@@ -44,6 +44,7 @@ export default function RaidTiersPage() {
 
   const supabase = createClient()
   const router = useRouter()
+  const pathname = usePathname()
   const { activeGuild, loading: guildLoading, isOfficer } = useGuildContext()
 
   // Set page title
@@ -294,8 +295,6 @@ export default function RaidTiersPage() {
     { name: 'Manage Loot', href: '/admin/loot-items', icon: '✅' },
     { name: 'Import', href: '/admin/import', icon: '📥' },
   ]
-
-  const pathname = usePathname()
 
   return (
       <div className="p-8 space-y-6 font-poppins">

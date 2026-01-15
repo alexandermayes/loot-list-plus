@@ -97,6 +97,26 @@ WHERE NOT EXISTS (
   SELECT 1 FROM guild_roles WHERE guild_id = guilds.id AND name = 'Officer'
 );
 
+INSERT INTO guild_roles (guild_id, name, color_hex, position, is_default)
+SELECT
+  id,
+  'Guild Master',
+  '#ff8000',
+  2,
+  true
+FROM guilds
+WHERE NOT EXISTS (
+  SELECT 1 FROM guild_roles WHERE guild_id = guilds.id AND name = 'Guild Master'
+);
+
+-- Set guild creators to Guild Master role
+UPDATE guild_members gm
+SET role = 'Guild Master'
+FROM guilds g
+WHERE gm.guild_id = g.id
+AND gm.user_id = g.created_by
+AND gm.role != 'Guild Master';
+
 -- Function to enforce max 10 roles per guild
 CREATE OR REPLACE FUNCTION check_max_roles_per_guild()
 RETURNS TRIGGER AS $$
@@ -129,7 +149,8 @@ BEGIN
   INSERT INTO guild_roles (guild_id, name, color_hex, position, is_default)
   VALUES
     (NEW.id, 'Member', '#a1a1a1', 0, true),
-    (NEW.id, 'Officer', '#fbbf24', 1, true);
+    (NEW.id, 'Officer', '#fbbf24', 1, true),
+    (NEW.id, 'Guild Master', '#ff8000', 2, true);
 
   RETURN NEW;
 END;

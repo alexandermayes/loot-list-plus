@@ -1,7 +1,7 @@
 'use client'
 
 import { createClient } from '@/utils/supabase/client'
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import SearchableItemSelect from '@/app/components/SearchableItemSelect'
 import { useGuildContext } from '@/app/contexts/GuildContext'
@@ -46,9 +46,23 @@ export default function LootList() {
   const [autoSaving, setAutoSaving] = useState(false)
   const [lastSaved, setLastSaved] = useState<Date | null>(null)
   const [initialLoadComplete, setInitialLoadComplete] = useState(false)
+  const [initialRankings, setInitialRankings] = useState<Record<string, string>>({}) // Track original rankings to detect changes
+  const [originalStatus, setOriginalStatus] = useState<string | null>(null) // Track original submission status
+
+  const rankingsRef = useRef(rankings)
+  const submissionRef = useRef(submission)
 
   const supabase = createClient()
   const router = useRouter()
+
+  // Keep refs in sync
+  useEffect(() => {
+    rankingsRef.current = rankings
+  }, [rankings])
+
+  useEffect(() => {
+    submissionRef.current = submission
+  }, [submission])
 
   // Set page title
   useEffect(() => {
@@ -229,26 +243,25 @@ export default function LootList() {
           // Load existing rankings
           const { data: rankingsData } = await supabase
             .from('loot_submission_items')
-            .select('loot_item_id, rank')
+            .select('loot_item_id, rank, slot')
             .eq('submission_id', subData.id)
 
           if (rankingsData) {
             const rankingsMap: Record<string, string> = {}
-            const rankCounts: Record<number, number> = {}
-
-            rankingsData.sort((a, b) => b.rank - a.rank)
 
             rankingsData.forEach(r => {
-              rankCounts[r.rank] = (rankCounts[r.rank] || 0) + 1
-              const slot = rankCounts[r.rank]
-              rankingsMap[`${r.rank}-${slot}`] = r.loot_item_id
+              rankingsMap[`${r.rank}-${r.slot}`] = r.loot_item_id
             })
 
             setRankings(rankingsMap)
+            setInitialRankings(rankingsMap) // Store initial state to track changes
+            setOriginalStatus(subData.status) // Store original status
           }
         } else {
           setSubmission(null)
           setRankings({})
+          setInitialRankings({}) // Reset initial rankings when no submission
+          setOriginalStatus(null) // Reset original status
         }
       } catch (error) {
         console.error('Error loading tier data:', error)
@@ -282,16 +295,18 @@ export default function LootList() {
     return null // No bracket (ranks 38-25)
   }
 
-  const handleItemSelect = (rank: number, slot: number, itemId: string) => {
+  const handleItemSelect = useCallback((rank: number, slot: number, itemId: string) => {
     const key = `${rank}-${slot}`
     if (itemId === '') {
-      const newRankings = { ...rankings }
-      delete newRankings[key]
-      setRankings(newRankings)
+      setRankings(prev => {
+        const newRankings = { ...prev }
+        delete newRankings[key]
+        return newRankings
+      })
     } else {
       setRankings(prev => ({ ...prev, [key]: itemId }))
     }
-  }
+  }, [])
 
   const saveSubmission = async (submit: boolean) => {
     if (!activeCharacter || !selectedTierId || !guildId) return
@@ -366,6 +381,11 @@ export default function LootList() {
 
       showNotification('success', submit ? 'Loot list submitted for review!' : 'Draft saved!')
 
+      // Update initial rankings and original status to reflect saved state
+      setInitialRankings({ ...rankings })
+      const newStatus = submit ? 'pending' : 'draft'
+      setOriginalStatus(newStatus)
+
       // Refresh submission statuses after save
       if (activeCharacter && guildId && raidTiers.length > 0) {
         const tierIds = raidTiers.map(t => t.id)
@@ -393,13 +413,26 @@ export default function LootList() {
   }
 
   // Auto-save function (saves as draft without notifications)
-  const autoSave = async () => {
+  const autoSave = useCallback(async () => {
     if (!activeCharacter || !selectedTierId || !guildId) return
 
-    // Don't auto-save if submission is in a read-only state
-    if (submission && submission.status && !['draft', 'needs_revision'].includes(submission.status)) {
-      console.log('Auto-save skipped: submission is in read-only state', submission.status)
-      return
+    const currentSubmission = submissionRef.current
+    const currentRankings = rankingsRef.current
+
+    // Determine if rankings have changed
+    const currentKeys = Object.keys(currentRankings).sort()
+    const initialKeys = Object.keys(initialRankings).sort()
+    const rankingsChanged = currentKeys.length !== initialKeys.length ||
+      currentKeys.some(key => currentRankings[key] !== initialRankings[key])
+
+    // Determine target status based on changes
+    let targetStatus = currentSubmission?.status || 'draft'
+    if (rankingsChanged && (currentSubmission?.status === 'approved' || currentSubmission?.status === 'pending')) {
+      // If there are changes and status is approved/pending, change to draft
+      targetStatus = 'draft'
+    } else if (!rankingsChanged && currentSubmission?.status === 'draft' && originalStatus && ['approved', 'pending'].includes(originalStatus)) {
+      // If no changes and status is draft but original was approved/pending, restore original
+      targetStatus = originalStatus
     }
 
     setAutoSaving(true)
@@ -420,7 +453,7 @@ export default function LootList() {
         return
       }
 
-      let submissionId = submission?.id
+      let submissionId = currentSubmission?.id
 
       if (!submissionId) {
         const { data: newSub, error: subError } = await supabase
@@ -429,7 +462,7 @@ export default function LootList() {
             character_id: activeCharacter.id,
             guild_id: guildId,
             raid_tier_id: selectedTierId,
-            status: 'draft',
+            status: targetStatus,
             submitted_at: null
           })
           .select()
@@ -445,6 +478,7 @@ export default function LootList() {
         const { error: updateError } = await supabase
           .from('loot_submissions')
           .update({
+            status: targetStatus,
             updated_at: new Date().toISOString()
           })
           .eq('id', submissionId)
@@ -453,6 +487,9 @@ export default function LootList() {
           console.error('Submission update error:', updateError)
           throw new Error(updateError.message || 'Failed to update submission')
         }
+
+        // Update local submission state
+        setSubmission(prev => prev ? { ...prev, status: targetStatus } : null)
       }
 
       // Delete existing rankings
@@ -467,7 +504,7 @@ export default function LootList() {
       }
 
       // Insert new rankings (convert from "rank-slot" format)
-      const rankingsToInsert = Object.entries(rankings).map(([key, loot_item_id]) => {
+      const rankingsToInsert = Object.entries(currentRankings).map(([key, loot_item_id]) => {
         const [rankStr, slotStr] = key.split('-')
         const rank = parseInt(rankStr)
         const slot = parseInt(slotStr)
@@ -498,7 +535,7 @@ export default function LootList() {
     }
 
     setAutoSaving(false)
-  }
+  }, [activeCharacter, selectedTierId, guildId, supabase, showNotification, initialRankings, originalStatus])
 
   // Auto-save when rankings change (debounced)
   useEffect(() => {
@@ -506,10 +543,10 @@ export default function LootList() {
 
     const timer = setTimeout(() => {
       autoSave()
-    }, 2000) // 2 second debounce
+    }, 300) // 300ms debounce
 
     return () => clearTimeout(timer)
-  }, [rankings, selectedTierId])
+  }, [rankings, selectedTierId, activeCharacter, guildId, initialLoadComplete, autoSave])
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -532,8 +569,23 @@ export default function LootList() {
   }
 
   const rankedCount = Object.keys(rankings).length
-  const selectedItems = new Set(Object.values(rankings))
-  const duplicateItems = Object.values(rankings).filter((itemId, index, arr) => arr.indexOf(itemId) !== index)
+  const selectedItems = useMemo(() => new Set(Object.values(rankings)), [rankings])
+  const duplicateItems = useMemo(() =>
+    Object.values(rankings).filter((itemId, index, arr) => arr.indexOf(itemId) !== index),
+    [rankings]
+  )
+
+  // Check if rankings have changed since initial load
+  const hasChanges = useMemo(() => {
+    const currentKeys = Object.keys(rankings).sort()
+    const initialKeys = Object.keys(initialRankings).sort()
+
+    // Different number of rankings = changed
+    if (currentKeys.length !== initialKeys.length) return true
+
+    // Check if any ranking values differ
+    return currentKeys.some(key => rankings[key] !== initialRankings[key])
+  }, [rankings, initialRankings])
 
   // Bracket validation
   type BracketValidation = {
@@ -677,7 +729,7 @@ export default function LootList() {
     return 'Off-spec'
   }
 
-  const RankRow = ({ rank }: { rank: number }) => {
+  const RankRow = React.memo(({ rank }: { rank: number }) => {
     const selectedItemId1 = rankings[`${rank}-1`]
     const selectedItemId2 = rankings[`${rank}-2`]
     const selectedItem1 = selectedItemId1 ? lootItems.find(i => i.id === selectedItemId1) : null
@@ -740,7 +792,7 @@ export default function LootList() {
         </td>
       </tr>
     )
-  }
+  })
 
   if (loading) {
     return (
@@ -775,14 +827,6 @@ export default function LootList() {
                 className="px-6 py-3 bg-[#151515] hover:bg-[#1a1a1a] border border-[rgba(255,255,255,0.1)] rounded-[52px] text-white font-medium text-base transition whitespace-nowrap"
               >
                 How to Rank
-              </button>
-              {/* Submit for Review Button */}
-              <button
-                onClick={() => saveSubmission(true)}
-                disabled={saving || rankedCount === 0 || duplicateItems.length > 0 || hasValidationErrors}
-                className="px-6 py-3 bg-white hover:bg-gray-100 disabled:bg-[#1a1a1a] disabled:text-[#666] disabled:cursor-not-allowed disabled:border-[rgba(255,255,255,0.1)] border-2 border-white rounded-[52px] text-black font-medium text-base transition whitespace-nowrap shadow-lg"
-              >
-                {saving ? 'Submitting...' : 'Submit for Review'}
               </button>
             </div>
           </div>
@@ -838,22 +882,40 @@ export default function LootList() {
         </div>
 
         {/* Status Banner */}
-        {submission && (
-          <div className={`rounded-xl p-6 border ${getStatusColor(submission.status)}`}>
+        {selectedTierId && (
+          <div className={`rounded-xl p-6 border ${submission ? getStatusColor(submission.status) : getStatusColor('draft')}`}>
             <div className="flex items-center justify-between">
               <div>
-                <p className="font-semibold text-base">{raidTiers.find(t => t.id === selectedTierId)?.name || 'Raid Tier'}: {getStatusLabel(submission.status)}</p>
-                {submission.submitted_at && (
+                <p className="font-semibold text-base">{raidTiers.find(t => t.id === selectedTierId)?.name || 'Raid Tier'}: {submission ? getStatusLabel(submission.status) : 'Draft'}</p>
+                {submission?.submitted_at && (
                   <p className="text-sm opacity-75 mt-1">
                     Submitted: {new Date(submission.submitted_at).toLocaleDateString()}
                   </p>
                 )}
               </div>
-              <div className="text-right">
+              <div className="flex items-center gap-4">
                 <span className="text-sm opacity-75">{rankedCount} items ranked</span>
+                {/* Submit for Review Button */}
+                <button
+                  onClick={() => saveSubmission(true)}
+                  disabled={
+                    saving ||
+                    rankedCount === 0 ||
+                    duplicateItems.length > 0 ||
+                    hasValidationErrors ||
+                    (!hasChanges && (submission?.status === 'approved' || submission?.status === 'pending'))
+                  }
+                  className={`px-6 py-3 rounded-[52px] font-medium text-base transition whitespace-nowrap shadow-lg
+                    ${(!hasChanges && (submission?.status === 'approved' || submission?.status === 'pending')) || saving || rankedCount === 0 || duplicateItems.length > 0 || hasValidationErrors
+                      ? 'bg-[#1a1a1a] text-[#666] cursor-not-allowed border-[rgba(255,255,255,0.1)] border-2'
+                      : 'bg-white hover:bg-gray-100 text-black border-2 border-white'
+                    }`}
+                >
+                  {saving ? 'Submitting...' : 'Submit for Review'}
+                </button>
               </div>
             </div>
-            {submission.review_notes && (
+            {submission?.review_notes && (
               <div className="mt-3 p-4 bg-black/20 rounded-xl">
                 <p className="text-sm"><strong>Officer Notes:</strong> {submission.review_notes}</p>
               </div>
@@ -908,14 +970,21 @@ export default function LootList() {
             </div>
           </div>
           <div className="overflow-x-auto">
-            <table className="w-full">
+            <table className="w-full table-fixed">
+              <colgroup>
+                <col style={{ width: '64px' }} />
+                <col style={{ width: '320px' }} />
+                <col style={{ width: '160px' }} />
+                <col style={{ width: '320px' }} />
+                <col style={{ width: '160px' }} />
+              </colgroup>
               <thead>
                 <tr className="bg-accent border-b border-border">
-                  <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground w-16">Rank</th>
+                  <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">Rank</th>
                   <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">Loot #1</th>
-                  <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground w-40">Details</th>
+                  <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">Details</th>
                   <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">Loot #2</th>
-                  <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground w-40">Details</th>
+                  <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">Details</th>
                 </tr>
               </thead>
               <tbody>
@@ -966,14 +1035,21 @@ export default function LootList() {
             </div>
           </div>
           <div className="overflow-x-auto">
-            <table className="w-full">
+            <table className="w-full table-fixed">
+              <colgroup>
+                <col style={{ width: '64px' }} />
+                <col style={{ width: '320px' }} />
+                <col style={{ width: '160px' }} />
+                <col style={{ width: '320px' }} />
+                <col style={{ width: '160px' }} />
+              </colgroup>
               <thead>
                 <tr className="bg-accent border-b border-border">
-                  <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground w-16">Rank</th>
+                  <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">Rank</th>
                   <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">Loot #1</th>
-                  <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground w-40">Details</th>
+                  <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">Details</th>
                   <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">Loot #2</th>
-                  <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground w-40">Details</th>
+                  <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">Details</th>
                 </tr>
               </thead>
               <tbody>
@@ -1024,14 +1100,21 @@ export default function LootList() {
             </div>
           </div>
           <div className="overflow-x-auto">
-            <table className="w-full">
+            <table className="w-full table-fixed">
+              <colgroup>
+                <col style={{ width: '64px' }} />
+                <col style={{ width: '320px' }} />
+                <col style={{ width: '160px' }} />
+                <col style={{ width: '320px' }} />
+                <col style={{ width: '160px' }} />
+              </colgroup>
               <thead>
                 <tr className="bg-accent border-b border-border">
-                  <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground w-16">Rank</th>
+                  <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">Rank</th>
                   <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">Loot #1</th>
-                  <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground w-40">Details</th>
+                  <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">Details</th>
                   <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">Loot #2</th>
-                  <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground w-40">Details</th>
+                  <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">Details</th>
                 </tr>
               </thead>
               <tbody>
@@ -1082,14 +1165,21 @@ export default function LootList() {
             </div>
           </div>
           <div className="overflow-x-auto">
-            <table className="w-full">
+            <table className="w-full table-fixed">
+              <colgroup>
+                <col style={{ width: '64px' }} />
+                <col style={{ width: '320px' }} />
+                <col style={{ width: '160px' }} />
+                <col style={{ width: '320px' }} />
+                <col style={{ width: '160px' }} />
+              </colgroup>
               <thead>
                 <tr className="bg-accent border-b border-border">
-                  <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground w-16">Rank</th>
+                  <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">Rank</th>
                   <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">Loot #1</th>
-                  <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground w-40">Details</th>
+                  <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">Details</th>
                   <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">Loot #2</th>
-                  <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground w-40">Details</th>
+                  <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">Details</th>
                 </tr>
               </thead>
               <tbody>
@@ -1108,14 +1198,21 @@ export default function LootList() {
             <p className="text-green-200 text-xs">Still considered main-spec priority</p>
           </div>
           <div className="overflow-x-auto">
-            <table className="w-full">
+            <table className="w-full table-fixed">
+              <colgroup>
+                <col style={{ width: '64px' }} />
+                <col style={{ width: '320px' }} />
+                <col style={{ width: '160px' }} />
+                <col style={{ width: '320px' }} />
+                <col style={{ width: '160px' }} />
+              </colgroup>
               <thead>
                 <tr className="bg-accent border-b border-border">
-                  <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground w-16">Rank</th>
+                  <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">Rank</th>
                   <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">Loot #1</th>
-                  <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground w-40">Details</th>
+                  <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">Details</th>
                   <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">Loot #2</th>
-                  <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground w-40">Details</th>
+                  <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">Details</th>
                 </tr>
               </thead>
               <tbody>
@@ -1134,14 +1231,21 @@ export default function LootList() {
             <p className="text-blue-200 text-xs">Off-spec items to support guild flexibility</p>
           </div>
           <div className="overflow-x-auto">
-            <table className="w-full">
+            <table className="w-full table-fixed">
+              <colgroup>
+                <col style={{ width: '64px' }} />
+                <col style={{ width: '320px' }} />
+                <col style={{ width: '160px' }} />
+                <col style={{ width: '320px' }} />
+                <col style={{ width: '160px' }} />
+              </colgroup>
               <thead>
                 <tr className="bg-accent border-b border-border">
-                  <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground w-16">Rank</th>
+                  <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">Rank</th>
                   <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">Loot #1</th>
-                  <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground w-40">Details</th>
+                  <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">Details</th>
                   <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">Loot #2</th>
-                  <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground w-40">Details</th>
+                  <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">Details</th>
                 </tr>
               </thead>
               <tbody>
