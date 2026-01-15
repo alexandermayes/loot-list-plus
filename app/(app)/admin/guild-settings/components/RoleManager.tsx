@@ -20,11 +20,9 @@ export default function RoleManager() {
   const [loading, setLoading] = useState(true)
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
   const [newRoleName, setNewRoleName] = useState('')
-  const [newRoleColor, setNewRoleColor] = useState('#808080')
   const [isAddingRole, setIsAddingRole] = useState(false)
   const [editingRoleId, setEditingRoleId] = useState<string | null>(null)
   const [editingRoleName, setEditingRoleName] = useState('')
-  const [editingRoleColor, setEditingRoleColor] = useState('')
 
   const supabase = createClient()
   const { activeGuild } = useGuildContext()
@@ -88,7 +86,7 @@ export default function RoleManager() {
         .insert({
           guild_id: activeGuild.id,
           name: newRoleName.trim(),
-          color_hex: newRoleColor,
+          color_hex: '#a1a1a1', // All custom roles use Member color
           position: maxPosition + 1,
           is_default: false
         })
@@ -97,7 +95,6 @@ export default function RoleManager() {
 
       setMessage({ type: 'success', text: 'Role created successfully' })
       setNewRoleName('')
-      setNewRoleColor('#808080')
       setIsAddingRole(false)
       await loadRoles()
     } catch (error: any) {
@@ -108,7 +105,6 @@ export default function RoleManager() {
   const handleStartEditRole = (role: GuildRole) => {
     setEditingRoleId(role.id)
     setEditingRoleName(role.name)
-    setEditingRoleColor(role.color_hex)
   }
 
   const handleSaveEditRole = async (roleId: string) => {
@@ -121,8 +117,7 @@ export default function RoleManager() {
       const { error } = await supabase
         .from('guild_roles')
         .update({
-          name: editingRoleName.trim(),
-          color_hex: editingRoleColor
+          name: editingRoleName.trim()
         })
         .eq('id', roleId)
 
@@ -131,7 +126,6 @@ export default function RoleManager() {
       setMessage({ type: 'success', text: 'Role updated successfully' })
       setEditingRoleId(null)
       setEditingRoleName('')
-      setEditingRoleColor('')
       await loadRoles()
     } catch (error: any) {
       setMessage({ type: 'error', text: error.message || 'Failed to update role' })
@@ -141,7 +135,6 @@ export default function RoleManager() {
   const handleCancelEdit = () => {
     setEditingRoleId(null)
     setEditingRoleName('')
-    setEditingRoleColor('')
   }
 
   const handleDeleteRole = async (roleId: string, roleName: string) => {
@@ -196,22 +189,14 @@ export default function RoleManager() {
                   {isEditing ? (
                     // Edit mode
                     <div className="space-y-3">
-                      <div className="flex items-center gap-3">
-                        <input
-                          type="text"
-                          value={editingRoleName}
-                          onChange={(e) => setEditingRoleName(e.target.value)}
-                          placeholder="Role name"
-                          maxLength={50}
-                          className="flex-1 px-3 py-2 bg-[#151515] border border-[rgba(255,255,255,0.1)] rounded-lg text-white text-[13px] focus:outline-none focus:border-[rgba(255,255,255,0.3)]"
-                        />
-                        <input
-                          type="color"
-                          value={editingRoleColor}
-                          onChange={(e) => setEditingRoleColor(e.target.value)}
-                          className="w-10 h-10 rounded border border-[rgba(255,255,255,0.2)] bg-[#151515] cursor-pointer"
-                        />
-                      </div>
+                      <input
+                        type="text"
+                        value={editingRoleName}
+                        onChange={(e) => setEditingRoleName(e.target.value)}
+                        placeholder="Role name"
+                        maxLength={50}
+                        className="w-full px-3 py-2 bg-[#151515] border border-[rgba(255,255,255,0.1)] rounded-lg text-white text-[13px] focus:outline-none focus:border-[rgba(255,255,255,0.3)]"
+                      />
                       <div className="flex gap-2">
                         <button
                           onClick={() => handleSaveEditRole(role.id)}
@@ -250,10 +235,6 @@ export default function RoleManager() {
                       </div>
 
                       <div className="flex items-center gap-2">
-                        <div
-                          className="w-6 h-6 rounded border border-[rgba(255,255,255,0.2)]"
-                          style={{ backgroundColor: role.color_hex }}
-                        />
                         <button
                           onClick={() => handleStartEditRole(role)}
                           className="p-2 bg-[#151515] hover:bg-[#1a1a1a] border border-[rgba(255,255,255,0.1)] rounded-lg text-white hover:text-white transition"
@@ -300,26 +281,6 @@ export default function RoleManager() {
                 />
               </div>
 
-              <div>
-                <label className="block text-[13px] text-[#a1a1a1] mb-2">Role Color</label>
-                <div className="flex items-center gap-3">
-                  <input
-                    type="color"
-                    value={newRoleColor}
-                    onChange={(e) => setNewRoleColor(e.target.value)}
-                    className="w-12 h-10 rounded border border-[rgba(255,255,255,0.2)] bg-[#151515] cursor-pointer"
-                  />
-                  <input
-                    type="text"
-                    value={newRoleColor}
-                    onChange={(e) => setNewRoleColor(e.target.value)}
-                    placeholder="#808080"
-                    maxLength={7}
-                    className="flex-1 px-3 py-2 bg-[#151515] border border-[rgba(255,255,255,0.1)] rounded-lg text-white text-[13px] focus:outline-none focus:border-[rgba(255,255,255,0.3)]"
-                  />
-                </div>
-              </div>
-
               <div className="flex gap-2">
                 <button
                   onClick={handleAddRole}
@@ -331,7 +292,6 @@ export default function RoleManager() {
                   onClick={() => {
                     setIsAddingRole(false)
                     setNewRoleName('')
-                    setNewRoleColor('#808080')
                   }}
                   className="flex-1 px-4 py-2 bg-[#151515] text-white rounded-lg text-[13px] font-medium hover:bg-[#1a1a1a] border border-[rgba(255,255,255,0.1)] transition"
                 >
