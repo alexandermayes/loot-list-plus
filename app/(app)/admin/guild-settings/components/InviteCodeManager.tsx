@@ -3,10 +3,6 @@
 import { createClient } from '@/utils/supabase/client'
 import { useState, useEffect } from 'react'
 import { useGuildContext } from '@/app/contexts/GuildContext'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import { Copy, X, Plus } from 'lucide-react'
 
 interface InviteCode {
@@ -121,23 +117,23 @@ export default function InviteCodeManager() {
   }
 
   return (
-    <Card>
-      <CardHeader>
+    <div className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl overflow-hidden">
+      <div className="p-6 border-b border-[rgba(255,255,255,0.1)]">
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle>Invite Codes</CardTitle>
-            <CardDescription>Generate and manage invite codes for your guild</CardDescription>
+            <h2 className="text-[24px] font-semibold text-white">Invite Codes</h2>
+            <p className="text-[#a1a1a1] text-[13px] mt-1">Generate and manage invite codes for your guild</p>
           </div>
-          <Button
+          <button
             onClick={() => setShowGenerateForm(!showGenerateForm)}
-            size="sm"
+            className="px-4 py-2 bg-white hover:bg-gray-100 rounded-[40px] text-black font-medium text-[13px] transition flex items-center gap-2"
           >
-            <Plus className="w-4 h-4 mr-2" />
+            <Plus className="w-4 h-4" />
             Generate Code
-          </Button>
+          </button>
         </div>
-      </CardHeader>
-      <CardContent className="space-y-4">
+      </div>
+      <div className="p-6 space-y-4">
         {message && (
           <div className={`p-3 rounded-lg ${
             message.type === 'success'
@@ -150,53 +146,56 @@ export default function InviteCodeManager() {
 
         {/* Generate Form */}
         {showGenerateForm && (
-          <div className="p-4 bg-secondary rounded-lg space-y-4">
-            <h3 className="font-medium text-foreground">Generate New Invite Code</h3>
+          <div className="p-4 bg-[#0d0e11] border border-[rgba(255,255,255,0.1)] rounded-lg space-y-4">
+            <h3 className="font-medium text-white text-[14px]">Generate New Invite Code</h3>
 
             <div className="space-y-2">
-              <Label htmlFor="expiresAt">Expires At (Optional)</Label>
-              <Input
+              <label htmlFor="expiresAt" className="block text-[13px] font-medium text-white">Expires At (Optional)</label>
+              <input
                 id="expiresAt"
                 type="datetime-local"
                 value={expiresAt}
                 onChange={(e) => setExpiresAt(e.target.value)}
+                className="w-full px-5 py-3 bg-[#151515] border border-[#383838] rounded-[52px] text-white text-[13px] focus:outline-none focus:border-[#ff8000]"
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="maxUses">Max Uses (Optional)</Label>
-              <Input
+              <label htmlFor="maxUses" className="block text-[13px] font-medium text-white">Max Uses (Optional)</label>
+              <input
                 id="maxUses"
                 type="number"
                 min="1"
                 value={maxUses}
                 onChange={(e) => setMaxUses(e.target.value)}
                 placeholder="Unlimited if empty"
+                className="w-full px-5 py-3 bg-[#151515] border border-[#383838] rounded-[52px] text-white text-[13px] focus:outline-none focus:border-[#ff8000]"
               />
             </div>
 
             <div className="flex gap-2">
-              <Button
+              <button
                 onClick={handleGenerateCode}
                 disabled={generating}
+                className="px-5 py-3 bg-white hover:bg-gray-100 disabled:opacity-50 rounded-[40px] text-black font-medium text-[16px] transition"
               >
                 {generating ? 'Generating...' : 'Generate'}
-              </Button>
-              <Button
+              </button>
+              <button
                 onClick={() => setShowGenerateForm(false)}
-                variant="outline"
+                className="px-5 py-3 bg-[#151515] hover:bg-[#1a1a1a] border border-[rgba(255,255,255,0.1)] rounded-[40px] text-white font-medium text-[16px] transition"
               >
                 Cancel
-              </Button>
+              </button>
             </div>
           </div>
         )}
 
         {/* Invite Codes List */}
         {loading ? (
-          <p className="text-muted-foreground text-center py-4">Loading...</p>
+          <p className="text-[#a1a1a1] text-center py-4">Loading...</p>
         ) : inviteCodes.length === 0 ? (
-          <p className="text-muted-foreground text-center py-4">No invite codes yet</p>
+          <p className="text-[#a1a1a1] text-center py-4">No invite codes yet</p>
         ) : (
           <div className="space-y-3">
             {inviteCodes.map((code) => {
@@ -206,16 +205,16 @@ export default function InviteCodeManager() {
               return (
                 <div
                   key={code.id}
-                  className={`p-4 bg-secondary rounded-lg border ${
+                  className={`p-4 bg-[#0d0e11] rounded-lg border ${
                     !code.is_active || isExpired || isMaxedOut
                       ? 'border-red-600/50 opacity-60'
-                      : 'border-border'
+                      : 'border-[rgba(255,255,255,0.1)]'
                   }`}
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex-1 space-y-2">
                       <div className="flex items-center gap-2">
-                        <code className="px-2 py-1 bg-background rounded font-mono text-primary">
+                        <code className="px-2 py-1 bg-[#151515] rounded font-mono text-white text-[13px]">
                           {code.code}
                         </code>
                         {!code.is_active && (
@@ -235,7 +234,7 @@ export default function InviteCodeManager() {
                         )}
                       </div>
 
-                      <div className="text-sm text-muted-foreground space-y-1">
+                      <div className="text-[13px] text-[#a1a1a1] space-y-1">
                         <p>
                           Uses: {code.current_uses}
                           {code.max_uses ? ` / ${code.max_uses}` : ' (unlimited)'}
@@ -247,30 +246,27 @@ export default function InviteCodeManager() {
                       </div>
 
                       <div className="flex items-center gap-2">
-                        <Input
+                        <input
                           value={code.share_url}
                           readOnly
-                          className="font-mono text-sm"
+                          className="flex-1 px-3 py-2 bg-[#151515] border border-[#383838] rounded-lg text-white text-[13px] font-mono focus:outline-none"
                         />
-                        <Button
+                        <button
                           onClick={() => copyToClipboard(code.share_url)}
-                          size="sm"
-                          variant="outline"
+                          className="p-2 bg-[#151515] hover:bg-[#1a1a1a] border border-[rgba(255,255,255,0.1)] rounded-lg text-white transition"
                         >
                           <Copy className="w-4 h-4" />
-                        </Button>
+                        </button>
                       </div>
                     </div>
 
                     {code.is_active && !isExpired && !isMaxedOut && (
-                      <Button
+                      <button
                         onClick={() => handleDeactivateCode(code.id)}
-                        size="sm"
-                        variant="outline"
-                        className="ml-4"
+                        className="ml-4 p-2 bg-[#151515] hover:bg-red-950/50 border border-[rgba(255,255,255,0.1)] hover:border-red-600/30 rounded-lg text-red-400 hover:text-red-300 transition"
                       >
                         <X className="w-4 h-4" />
-                      </Button>
+                      </button>
                     )}
                   </div>
                 </div>
@@ -278,7 +274,7 @@ export default function InviteCodeManager() {
             })}
           </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   )
 }

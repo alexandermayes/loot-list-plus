@@ -408,6 +408,9 @@ export default function GuildSettingsPage() {
           </div>
         </div>
 
+        {/* Invite Codes */}
+        <InviteCodeManager />
+
         {/* Discord Integration */}
         <div className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl overflow-hidden">
           <div className="p-6 border-b border-[rgba(255,255,255,0.1)]">
@@ -440,9 +443,6 @@ export default function GuildSettingsPage() {
             </button>
           </div>
         </div>
-
-        {/* Invite Codes */}
-        <InviteCodeManager />
 
         {/* Danger Zone - Only visible to guild creator */}
         {isGuildCreator && (
