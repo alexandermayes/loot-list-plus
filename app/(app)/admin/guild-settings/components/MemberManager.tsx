@@ -327,16 +327,6 @@ export default function MemberManager() {
                             </span>
                           )}
                         </p>
-                        {member.role === 'Guild Master' && (
-                          <span className="px-2 py-0.5 bg-[#ff8000]/20 text-[#ff8000] text-[11px] rounded border border-[#ff8000]/30 flex-shrink-0">
-                            Guild Master
-                          </span>
-                        )}
-                        {member.role === 'Officer' && (
-                          <span className="px-2 py-0.5 bg-yellow-950/50 text-yellow-200 text-[11px] rounded border border-yellow-600/30 flex-shrink-0">
-                            Officer
-                          </span>
-                        )}
                         {mainChar?.is_main && (
                           <span className="px-2 py-0.5 bg-[#ff8000]/20 text-[#ff8000] text-[11px] rounded border border-[#ff8000]/30 flex-shrink-0">
                             Main
