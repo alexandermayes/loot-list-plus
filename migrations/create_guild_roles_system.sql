@@ -72,7 +72,31 @@ CREATE POLICY "Officers can delete guild roles" ON guild_roles
     )
   );
 
--- Seed default roles for all existing guilds
+-- Seed default roles for all existing guilds (higher position = higher rank)
+INSERT INTO guild_roles (guild_id, name, color_hex, position, is_default)
+SELECT
+  id,
+  'Guild Master',
+  '#ff8000',
+  100,
+  true
+FROM guilds
+WHERE NOT EXISTS (
+  SELECT 1 FROM guild_roles WHERE guild_id = guilds.id AND name = 'Guild Master'
+);
+
+INSERT INTO guild_roles (guild_id, name, color_hex, position, is_default)
+SELECT
+  id,
+  'Officer',
+  '#fbbf24',
+  50,
+  true
+FROM guilds
+WHERE NOT EXISTS (
+  SELECT 1 FROM guild_roles WHERE guild_id = guilds.id AND name = 'Officer'
+);
+
 INSERT INTO guild_roles (guild_id, name, color_hex, position, is_default)
 SELECT
   id,
@@ -83,30 +107,6 @@ SELECT
 FROM guilds
 WHERE NOT EXISTS (
   SELECT 1 FROM guild_roles WHERE guild_id = guilds.id AND name = 'Member'
-);
-
-INSERT INTO guild_roles (guild_id, name, color_hex, position, is_default)
-SELECT
-  id,
-  'Officer',
-  '#fbbf24',
-  1,
-  true
-FROM guilds
-WHERE NOT EXISTS (
-  SELECT 1 FROM guild_roles WHERE guild_id = guilds.id AND name = 'Officer'
-);
-
-INSERT INTO guild_roles (guild_id, name, color_hex, position, is_default)
-SELECT
-  id,
-  'Guild Master',
-  '#ff8000',
-  2,
-  true
-FROM guilds
-WHERE NOT EXISTS (
-  SELECT 1 FROM guild_roles WHERE guild_id = guilds.id AND name = 'Guild Master'
 );
 
 -- Set guild creators to Guild Master role
@@ -148,9 +148,9 @@ RETURNS TRIGGER AS $$
 BEGIN
   INSERT INTO guild_roles (guild_id, name, color_hex, position, is_default)
   VALUES
-    (NEW.id, 'Member', '#a1a1a1', 0, true),
-    (NEW.id, 'Officer', '#fbbf24', 1, true),
-    (NEW.id, 'Guild Master', '#ff8000', 2, true);
+    (NEW.id, 'Guild Master', '#ff8000', 100, true),
+    (NEW.id, 'Officer', '#fbbf24', 50, true),
+    (NEW.id, 'Member', '#a1a1a1', 0, true);
 
   RETURN NEW;
 END;

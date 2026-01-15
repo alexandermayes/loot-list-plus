@@ -44,7 +44,7 @@ export default function RoleManager() {
         .from('guild_roles')
         .select('*')
         .eq('guild_id', activeGuild.id)
-        .order('position', { ascending: true })
+        .order('position', { ascending: false })
 
       if (error) {
         console.error('Error loading roles:', error)
