@@ -27,6 +27,7 @@ export default function GuildSettingsPage() {
   const [changingExpansion, setChangingExpansion] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [isGuildCreator, setIsGuildCreator] = useState(false)
+  const [showRolesModal, setShowRolesModal] = useState(false)
 
   const supabase = createClient()
   const router = useRouter()
@@ -336,22 +337,23 @@ export default function GuildSettingsPage() {
           {/* Current Members - with fixed scroll */}
           <div className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl overflow-hidden flex flex-col" style={{ maxHeight: '600px' }}>
             <div className="p-6 border-b border-[rgba(255,255,255,0.1)] flex-shrink-0">
-              <h2 className="text-[24px] font-semibold text-white">Current Members</h2>
-              <p className="text-[#a1a1a1] text-[13px] mt-1">Manage guild members and roles</p>
+              <div className="flex items-start justify-between">
+                <div>
+                  <h2 className="text-[24px] font-semibold text-white">Current Members</h2>
+                  <p className="text-[#a1a1a1] text-[13px] mt-1">Manage guild members and roles</p>
+                </div>
+                <button
+                  onClick={() => setShowRolesModal(true)}
+                  className="px-4 py-2 bg-[#151515] hover:bg-[#1a1a1a] border border-[rgba(255,255,255,0.1)] rounded-lg text-white text-[13px] font-medium transition"
+                >
+                  Manage Roles
+                </button>
+              </div>
             </div>
             <div className="overflow-y-auto flex-1">
               <MemberManager />
             </div>
           </div>
-        </div>
-
-        {/* Guild Roles */}
-        <div className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl overflow-hidden">
-          <div className="p-6 border-b border-[rgba(255,255,255,0.1)]">
-            <h2 className="text-[24px] font-semibold text-white">Guild Roles</h2>
-            <p className="text-[#a1a1a1] text-[13px] mt-1">Create and manage custom roles for your guild members</p>
-          </div>
-          <RoleManager />
         </div>
 
         {/* Guild Expansion */}
@@ -468,6 +470,35 @@ export default function GuildSettingsPage() {
                     {deleting ? 'Deleting...' : 'Delete Guild'}
                   </button>
                 </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Roles Management Modal */}
+        {showRolesModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70" onClick={() => setShowRolesModal(false)}>
+            <div
+              className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl w-full max-w-2xl max-h-[80vh] overflow-hidden flex flex-col"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="p-6 border-b border-[rgba(255,255,255,0.1)] flex items-center justify-between flex-shrink-0">
+                <div>
+                  <h2 className="text-[24px] font-semibold text-white">Guild Roles</h2>
+                  <p className="text-[#a1a1a1] text-[13px] mt-1">Create and manage custom roles for your guild members</p>
+                </div>
+                <button
+                  onClick={() => setShowRolesModal(false)}
+                  className="p-2 hover:bg-[rgba(255,255,255,0.1)] rounded-lg text-[#a1a1a1] hover:text-white transition"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                  </svg>
+                </button>
+              </div>
+              <div className="overflow-y-auto flex-1">
+                <RoleManager />
               </div>
             </div>
           </div>
