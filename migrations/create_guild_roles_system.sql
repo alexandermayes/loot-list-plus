@@ -10,10 +10,7 @@ CREATE TABLE IF NOT EXISTS guild_roles (
   is_default BOOLEAN DEFAULT false,
   created_at TIMESTAMPTZ DEFAULT NOW(),
 
-  CONSTRAINT unique_role_per_guild UNIQUE(guild_id, name),
-  CONSTRAINT max_10_roles_per_guild CHECK (
-    (SELECT COUNT(*) FROM guild_roles WHERE guild_id = guild_roles.guild_id) <= 10
-  )
+  CONSTRAINT unique_role_per_guild UNIQUE(guild_id, name)
 );
 
 CREATE INDEX idx_guild_roles_guild_id ON guild_roles(guild_id);
@@ -99,6 +96,31 @@ FROM guilds
 WHERE NOT EXISTS (
   SELECT 1 FROM guild_roles WHERE guild_id = guilds.id AND name = 'Officer'
 );
+
+-- Function to enforce max 10 roles per guild
+CREATE OR REPLACE FUNCTION check_max_roles_per_guild()
+RETURNS TRIGGER AS $$
+DECLARE
+  role_count INTEGER;
+BEGIN
+  SELECT COUNT(*) INTO role_count
+  FROM guild_roles
+  WHERE guild_id = NEW.guild_id;
+
+  IF role_count >= 10 THEN
+    RAISE EXCEPTION 'Guild cannot have more than 10 roles';
+  END IF;
+
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Trigger to check role limit before insert
+DROP TRIGGER IF EXISTS enforce_max_roles ON guild_roles;
+CREATE TRIGGER enforce_max_roles
+  BEFORE INSERT ON guild_roles
+  FOR EACH ROW
+  EXECUTE FUNCTION check_max_roles_per_guild();
 
 -- Function to create default roles when a new guild is created
 CREATE OR REPLACE FUNCTION create_default_guild_roles()
