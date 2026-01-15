@@ -162,8 +162,8 @@ export default function RoleManager() {
 
   const handleMoveRole = async (role: GuildRole, direction: 'up' | 'down') => {
     try {
-      // Get moveable roles (everything except Guild Master and Officer)
-      const moveableRoles = roles.filter(r => r.name !== 'Guild Master' && r.name !== 'Officer')
+      // Get moveable roles (everything except position 100 and 50)
+      const moveableRoles = roles.filter(r => r.position !== 100 && r.position !== 50)
       const currentIndex = moveableRoles.findIndex(r => r.id === role.id)
 
       if (direction === 'up' && currentIndex === 0) return // Already at top of moveable roles
@@ -196,9 +196,9 @@ export default function RoleManager() {
     }
   }
 
-  const getRoleIcon = (roleName: string) => {
-    if (roleName === 'Guild Master') return <Crown className="w-4 h-4" />
-    if (roleName === 'Officer') return <Shield className="w-4 h-4" />
+  const getRoleIcon = (position: number) => {
+    if (position === 100) return <Crown className="w-4 h-4" />
+    if (position === 50) return <Shield className="w-4 h-4" />
     return <User className="w-4 h-4" />
   }
 
@@ -264,7 +264,7 @@ export default function RoleManager() {
                           style={{ backgroundColor: role.color_hex + '20', border: `1px solid ${role.color_hex}` }}
                         >
                           <span style={{ color: role.color_hex }}>
-                            {getRoleIcon(role.name)}
+                            {getRoleIcon(role.position)}
                           </span>
                         </div>
                         <div>
@@ -276,19 +276,19 @@ export default function RoleManager() {
                       </div>
 
                       <div className="flex items-center gap-2">
-                        {/* Move up/down buttons - only for Member and custom roles */}
-                        {role.name !== 'Guild Master' && role.name !== 'Officer' && (
+                        {/* Move up/down buttons - only for Member and custom roles (not position 100 or 50) */}
+                        {role.position !== 100 && role.position !== 50 && (
                           <div className="flex gap-1">
                             <button
                               onClick={() => handleMoveRole(role, 'up')}
-                              disabled={roles.filter(r => r.name !== 'Guild Master' && r.name !== 'Officer').findIndex(r => r.id === role.id) === 0}
+                              disabled={roles.filter(r => r.position !== 100 && r.position !== 50).findIndex(r => r.id === role.id) === 0}
                               className="p-2 bg-[#151515] hover:bg-[#1a1a1a] border border-[rgba(255,255,255,0.1)] rounded-lg text-white hover:text-white transition disabled:opacity-30 disabled:cursor-not-allowed"
                             >
                               <ChevronUp className="w-4 h-4" />
                             </button>
                             <button
                               onClick={() => handleMoveRole(role, 'down')}
-                              disabled={roles.filter(r => r.name !== 'Guild Master' && r.name !== 'Officer').findIndex(r => r.id === role.id) === roles.filter(r => r.name !== 'Guild Master' && r.name !== 'Officer').length - 1}
+                              disabled={roles.filter(r => r.position !== 100 && r.position !== 50).findIndex(r => r.id === role.id) === roles.filter(r => r.position !== 100 && r.position !== 50).length - 1}
                               className="p-2 bg-[#151515] hover:bg-[#1a1a1a] border border-[rgba(255,255,255,0.1)] rounded-lg text-white hover:text-white transition disabled:opacity-30 disabled:cursor-not-allowed"
                             >
                               <ChevronDown className="w-4 h-4" />

@@ -198,19 +198,15 @@ export default function MemberManager() {
         }
       })
 
-      // Sort by role hierarchy (Guild Master > Officer > Member) then by name
-      const roleHierarchy: Record<string, number> = {
-        'Guild Master': 3,
-        'Officer': 2,
-        'Member': 1
-      }
-
+      // Sort by role hierarchy based on position (higher position = higher rank) then by name
       membersArray.sort((a, b) => {
-        const aRoleValue = roleHierarchy[a.role] || 0
-        const bRoleValue = roleHierarchy[b.role] || 0
+        const aRoleInfo = roles.find(r => r.name === a.role)
+        const bRoleInfo = roles.find(r => r.name === b.role)
+        const aPosition = aRoleInfo?.position || 0
+        const bPosition = bRoleInfo?.position || 0
 
-        if (aRoleValue !== bRoleValue) {
-          return bRoleValue - aRoleValue // Higher values first
+        if (aPosition !== bPosition) {
+          return bPosition - aPosition // Higher positions first (100 > 50 > 0)
         }
 
         const aName = a.mainCharacter?.name || a.discordName
@@ -300,6 +296,17 @@ export default function MemberManager() {
             const hasCharacters = member.characters.length > 0
             const displayName = mainChar?.name || member.discordName
 
+            // Get role info from roles array to determine icon by position
+            const memberRoleInfo = roles.find(r => r.name === member.role)
+            const rolePosition = memberRoleInfo?.position || 0
+
+            // Determine icon based on position (not name)
+            const getRoleIcon = () => {
+              if (rolePosition === 100) return <Crown className="w-5 h-5 text-[#ff8000]" />
+              if (rolePosition === 50) return <Shield className="w-5 h-5 text-yellow-400" />
+              return <User className="w-5 h-5 text-[#a1a1a1]" />
+            }
+
             return (
               <div
                 key={member.user_id}
@@ -308,13 +315,7 @@ export default function MemberManager() {
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex items-start gap-4 flex-1 min-w-0">
                     <div className="flex items-center justify-center w-10 h-10 rounded-full bg-[#151515] border border-[rgba(255,255,255,0.1)] flex-shrink-0">
-                      {member.role === 'Guild Master' ? (
-                        <Crown className="w-5 h-5 text-[#ff8000]" />
-                      ) : member.role === 'Officer' ? (
-                        <Shield className="w-5 h-5 text-yellow-400" />
-                      ) : (
-                        <User className="w-5 h-5 text-[#a1a1a1]" />
-                      )}
+                      {getRoleIcon()}
                     </div>
 
                     <div className="flex-1 min-w-0">
