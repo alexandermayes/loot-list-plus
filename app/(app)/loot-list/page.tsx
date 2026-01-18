@@ -333,6 +333,8 @@ export default function LootList() {
         submissionId = newSub.id
         setSubmission(newSub)
       } else {
+        // If updating an existing submission, always set to pending when submitting
+        // (even if it was previously approved, it needs re-approval after changes)
         const { error: updateError } = await supabase
           .from('loot_submissions')
           .update({
@@ -347,7 +349,8 @@ export default function LootList() {
         setSubmission(prev => prev ? {
           ...prev,
           status: submit ? 'pending' : 'draft',
-          submitted_at: submit ? new Date().toISOString() : prev.submitted_at
+          submitted_at: submit ? new Date().toISOString() : prev.submitted_at,
+          updated_at: new Date().toISOString()
         } : null)
       }
 
