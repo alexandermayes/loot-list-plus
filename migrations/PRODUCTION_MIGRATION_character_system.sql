@@ -28,6 +28,16 @@ CREATE TABLE IF NOT EXISTS characters (
   CONSTRAINT unique_character_per_user UNIQUE(user_id, name)
 );
 
+-- Ensure unique constraint exists (in case table was created without it)
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'unique_character_per_user'
+  ) THEN
+    ALTER TABLE characters ADD CONSTRAINT unique_character_per_user UNIQUE(user_id, name);
+  END IF;
+END $$;
+
 CREATE INDEX IF NOT EXISTS idx_characters_user_id ON characters(user_id);
 CREATE INDEX IF NOT EXISTS idx_characters_battle_net_id ON characters(battle_net_id);
 CREATE INDEX IF NOT EXISTS idx_characters_is_main ON characters(is_main);
@@ -43,6 +53,16 @@ CREATE TABLE IF NOT EXISTS character_guild_memberships (
   joined_via VARCHAR(50) DEFAULT 'manual',
   CONSTRAINT unique_character_guild UNIQUE(character_id, guild_id)
 );
+
+-- Ensure unique constraint exists (in case table was created without it)
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'unique_character_guild'
+  ) THEN
+    ALTER TABLE character_guild_memberships ADD CONSTRAINT unique_character_guild UNIQUE(character_id, guild_id);
+  END IF;
+END $$;
 
 CREATE INDEX IF NOT EXISTS idx_char_guild_character_id ON character_guild_memberships(character_id);
 CREATE INDEX IF NOT EXISTS idx_char_guild_guild_id ON character_guild_memberships(guild_id);
