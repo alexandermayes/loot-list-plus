@@ -61,7 +61,7 @@ export default function AdminLootItems() {
   const [filterTier, setFilterTier] = useState<string>('all')
   const [raidTiers, setRaidTiers] = useState<any[]>([])
   const [currentPage, setCurrentPage] = useState(1)
-  const itemsPerPage = 25
+  const [itemsPerPage, setItemsPerPage] = useState(100)
   // Track specs for each item: { itemId: { primary: Set<specId>, secondary: Set<specId> } }
   const [itemSpecs, setItemSpecs] = useState<Record<string, { primary: Set<string>, secondary: Set<string> }>>({})
   // Track roles for each item: { itemId: Set<role> }
@@ -152,10 +152,10 @@ export default function AdminLootItems() {
     return () => clearTimeout(timer)
   }, [searchTerm])
 
-  // Reset to page 1 when filters change
+  // Reset to page 1 when filters or items per page change
   useEffect(() => {
     setCurrentPage(1)
-  }, [debouncedSearchTerm, filterTier])
+  }, [debouncedSearchTerm, filterTier, itemsPerPage])
 
   useEffect(() => {
     if (!guildLoading) {
@@ -1419,110 +1419,130 @@ export default function AdminLootItems() {
           </div>
 
           {/* Pagination Controls */}
-          {filteredItems.length > 0 && totalPages > 1 && (
-            <div className="flex items-center justify-center gap-6 px-4 py-6 bg-[#0d0e11] border-t border-[rgba(255,255,255,0.1)]">
-              {/* Previous Button */}
-              <button
-                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                disabled={currentPage === 1}
-                className="flex items-center justify-center w-9 h-9 rounded-md bg-[#151515] border border-[#383838] text-white hover:bg-[#1a1a1a] hover:border-[#ff8000] disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-[#151515] disabled:hover:border-[#383838] transition-colors"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                </svg>
-              </button>
-
-              {/* Page Numbers */}
+          {filteredItems.length > 0 && (
+            <div className="flex items-center justify-between px-4 py-6 bg-[#0d0e11] border-t border-[rgba(255,255,255,0.1)]">
+              {/* Left: Rows per page */}
               <div className="flex items-center gap-2">
-                {(() => {
-                  const pageNumbers = []
-                  const showEllipsisStart = currentPage > 3
-                  const showEllipsisEnd = currentPage < totalPages - 2
-
-                  // Always show first page
-                  pageNumbers.push(
-                    <button
-                      key={1}
-                      onClick={() => setCurrentPage(1)}
-                      className={`flex items-center justify-center min-w-[36px] h-9 px-3 rounded-md text-sm font-medium transition-colors ${
-                        currentPage === 1
-                          ? 'bg-[#ff8000] text-white border border-[#ff8000]'
-                          : 'bg-[#151515] text-[#a1a1a1] border border-[#383838] hover:bg-[#1a1a1a] hover:border-[#ff8000] hover:text-white'
-                      }`}
-                    >
-                      1
-                    </button>
-                  )
-
-                  // Ellipsis after first page
-                  if (showEllipsisStart) {
-                    pageNumbers.push(
-                      <span key="ellipsis-start" className="text-[#a1a1a1] px-2">...</span>
-                    )
-                  }
-
-                  // Pages around current page
-                  const startPage = Math.max(2, currentPage - 1)
-                  const endPage = Math.min(totalPages - 1, currentPage + 1)
-
-                  for (let i = startPage; i <= endPage; i++) {
-                    pageNumbers.push(
-                      <button
-                        key={i}
-                        onClick={() => setCurrentPage(i)}
-                        className={`flex items-center justify-center min-w-[36px] h-9 px-3 rounded-md text-sm font-medium transition-colors ${
-                          currentPage === i
-                            ? 'bg-[#ff8000] text-white border border-[#ff8000]'
-                            : 'bg-[#151515] text-[#a1a1a1] border border-[#383838] hover:bg-[#1a1a1a] hover:border-[#ff8000] hover:text-white'
-                        }`}
-                      >
-                        {i}
-                      </button>
-                    )
-                  }
-
-                  // Ellipsis before last page
-                  if (showEllipsisEnd) {
-                    pageNumbers.push(
-                      <span key="ellipsis-end" className="text-[#a1a1a1] px-2">...</span>
-                    )
-                  }
-
-                  // Always show last page if there's more than 1 page
-                  if (totalPages > 1) {
-                    pageNumbers.push(
-                      <button
-                        key={totalPages}
-                        onClick={() => setCurrentPage(totalPages)}
-                        className={`flex items-center justify-center min-w-[36px] h-9 px-3 rounded-md text-sm font-medium transition-colors ${
-                          currentPage === totalPages
-                            ? 'bg-[#ff8000] text-white border border-[#ff8000]'
-                            : 'bg-[#151515] text-[#a1a1a1] border border-[#383838] hover:bg-[#1a1a1a] hover:border-[#ff8000] hover:text-white'
-                        }`}
-                      >
-                        {totalPages}
-                      </button>
-                    )
-                  }
-
-                  return pageNumbers
-                })()}
+                <span className="text-sm text-[#a1a1a1]">Rows per page:</span>
+                <select
+                  value={itemsPerPage}
+                  onChange={(e) => setItemsPerPage(Number(e.target.value))}
+                  className="px-3 py-1.5 bg-[#151515] border border-[#383838] rounded-md text-white text-sm focus:outline-none focus:border-[#ff8000] cursor-pointer"
+                >
+                  <option value={25}>25</option>
+                  <option value={50}>50</option>
+                  <option value={100}>100</option>
+                  <option value={200}>200</option>
+                </select>
               </div>
 
-              {/* Next Button */}
-              <button
-                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                disabled={currentPage === totalPages}
-                className="flex items-center justify-center w-9 h-9 rounded-md bg-[#151515] border border-[#383838] text-white hover:bg-[#1a1a1a] hover:border-[#ff8000] disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-[#151515] disabled:hover:border-[#383838] transition-colors"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
-              </button>
+              {/* Center: Page navigation */}
+              {totalPages > 1 && (
+                <div className="flex items-center gap-6">
+                  {/* Previous Button */}
+                  <button
+                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                    disabled={currentPage === 1}
+                    className="flex items-center justify-center w-9 h-9 rounded-md bg-[#151515] border border-[#383838] text-white hover:bg-[#1a1a1a] hover:border-[#ff8000] disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-[#151515] disabled:hover:border-[#383838] transition-colors"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                    </svg>
+                  </button>
 
-              {/* Items Count */}
-              <div className="text-sm text-[#a1a1a1] ml-4">
-                {startIndex + 1}-{Math.min(endIndex, filteredItems.length)} of {filteredItems.length}
+                  {/* Page Numbers */}
+                  <div className="flex items-center gap-2">
+                    {(() => {
+                      const pageNumbers = []
+                      const showEllipsisStart = currentPage > 3
+                      const showEllipsisEnd = currentPage < totalPages - 2
+
+                      // Always show first page
+                      pageNumbers.push(
+                        <button
+                          key={1}
+                          onClick={() => setCurrentPage(1)}
+                          className={`flex items-center justify-center min-w-[36px] h-9 px-3 rounded-md text-sm font-medium transition-colors ${
+                            currentPage === 1
+                              ? 'bg-[#ff8000] text-white border border-[#ff8000]'
+                              : 'bg-[#151515] text-[#a1a1a1] border border-[#383838] hover:bg-[#1a1a1a] hover:border-[#ff8000] hover:text-white'
+                          }`}
+                        >
+                          1
+                        </button>
+                      )
+
+                      // Ellipsis after first page
+                      if (showEllipsisStart) {
+                        pageNumbers.push(
+                          <span key="ellipsis-start" className="text-[#a1a1a1] px-2">...</span>
+                        )
+                      }
+
+                      // Pages around current page
+                      const startPage = Math.max(2, currentPage - 1)
+                      const endPage = Math.min(totalPages - 1, currentPage + 1)
+
+                      for (let i = startPage; i <= endPage; i++) {
+                        pageNumbers.push(
+                          <button
+                            key={i}
+                            onClick={() => setCurrentPage(i)}
+                            className={`flex items-center justify-center min-w-[36px] h-9 px-3 rounded-md text-sm font-medium transition-colors ${
+                              currentPage === i
+                                ? 'bg-[#ff8000] text-white border border-[#ff8000]'
+                                : 'bg-[#151515] text-[#a1a1a1] border border-[#383838] hover:bg-[#1a1a1a] hover:border-[#ff8000] hover:text-white'
+                            }`}
+                          >
+                            {i}
+                          </button>
+                        )
+                      }
+
+                      // Ellipsis before last page
+                      if (showEllipsisEnd) {
+                        pageNumbers.push(
+                          <span key="ellipsis-end" className="text-[#a1a1a1] px-2">...</span>
+                        )
+                      }
+
+                      // Always show last page if there's more than 1 page
+                      if (totalPages > 1) {
+                        pageNumbers.push(
+                          <button
+                            key={totalPages}
+                            onClick={() => setCurrentPage(totalPages)}
+                            className={`flex items-center justify-center min-w-[36px] h-9 px-3 rounded-md text-sm font-medium transition-colors ${
+                              currentPage === totalPages
+                                ? 'bg-[#ff8000] text-white border border-[#ff8000]'
+                                : 'bg-[#151515] text-[#a1a1a1] border border-[#383838] hover:bg-[#1a1a1a] hover:border-[#ff8000] hover:text-white'
+                            }`}
+                          >
+                            {totalPages}
+                          </button>
+                        )
+                      }
+
+                      return pageNumbers
+                    })()}
+                  </div>
+
+                  {/* Next Button */}
+                  <button
+                    onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                    disabled={currentPage === totalPages}
+                    className="flex items-center justify-center w-9 h-9 rounded-md bg-[#151515] border border-[#383838] text-white hover:bg-[#1a1a1a] hover:border-[#ff8000] disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-[#151515] disabled:hover:border-[#383838] transition-colors"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </button>
+                </div>
+              )}
+
+              {/* Right: Results display */}
+              <div className="text-sm text-[#a1a1a1]">
+                Showing {startIndex + 1} to {Math.min(endIndex, filteredItems.length)} of {filteredItems.length} results
               </div>
             </div>
           )}
