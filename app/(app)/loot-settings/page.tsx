@@ -1421,19 +1421,9 @@ export default function AdminLootItems() {
           {/* Pagination Controls */}
           {filteredItems.length > 0 && (
             <div className="flex items-center justify-between px-4 py-6 bg-[#0d0e11] border-t border-[rgba(255,255,255,0.1)]">
-              {/* Left: Rows per page */}
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-[#a1a1a1]">Rows per page:</span>
-                <select
-                  value={itemsPerPage}
-                  onChange={(e) => setItemsPerPage(Number(e.target.value))}
-                  className="px-3 py-1.5 bg-[#151515] border border-[#383838] rounded-md text-white text-sm focus:outline-none focus:border-[#ff8000] cursor-pointer"
-                >
-                  <option value={25}>25</option>
-                  <option value={50}>50</option>
-                  <option value={100}>100</option>
-                  <option value={200}>200</option>
-                </select>
+              {/* Left: Results display */}
+              <div className="text-sm text-[#a1a1a1]">
+                Showing {startIndex + 1} to {Math.min(endIndex, filteredItems.length)} of {filteredItems.length} results
               </div>
 
               {/* Center: Page navigation */}
@@ -1540,9 +1530,19 @@ export default function AdminLootItems() {
                 </div>
               )}
 
-              {/* Right: Results display */}
-              <div className="text-sm text-[#a1a1a1]">
-                Showing {startIndex + 1} to {Math.min(endIndex, filteredItems.length)} of {filteredItems.length} results
+              {/* Right: Rows per page */}
+              <div className="flex items-center gap-3">
+                <span className="text-sm text-[#a1a1a1]">Rows per page:</span>
+                <select
+                  value={itemsPerPage}
+                  onChange={(e) => setItemsPerPage(Number(e.target.value))}
+                  className="px-4 py-2 bg-[#151515] border border-[#383838] rounded-[52px] text-white text-[13px] focus:outline-none focus:border-[#ff8000] cursor-pointer select-custom"
+                >
+                  <option value={25} className="bg-[#151515]">25</option>
+                  <option value={50} className="bg-[#151515]">50</option>
+                  <option value={100} className="bg-[#151515]">100</option>
+                  <option value={200} className="bg-[#151515]">200</option>
+                </select>
               </div>
             </div>
           )}
