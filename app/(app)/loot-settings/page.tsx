@@ -1,7 +1,7 @@
 'use client'
 
 import { createClient } from '@/utils/supabase/client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import ItemLink from '@/app/components/ItemLink'
@@ -994,26 +994,8 @@ export default function AdminLootItems() {
     }
   }
 
-  // Get display name for a spec (e.g., "Paladin Holy" or just "Hunter" for single-spec classes)
-  const getSpecName = (specId: string) => {
-    const spec = classSpecs.find(s => s.id === specId)
-    if (!spec) return ''
-
-    // Use combined_name if available (includes class name)
-    if (spec.combined_name) {
-      return spec.combined_name
-    }
-
-    // Fallback to old logic if combined_name not available
-    const wowClass = classes.find(c => c.id === spec.class_id)
-    if (wowClass?.name === spec.name) {
-      return wowClass.name
-    }
-    return `${wowClass?.name} ${spec.name}`
-  }
-
-  // Get role group specs - returns spec IDs for each role
-  const getRoleGroupSpecs = () => {
+  // Get role group specs - returns spec IDs for each role - MEMOIZED
+  const getRoleGroupSpecs = useMemo(() => {
     const { getSpecsForRole } = require('@/utils/spec-role-mapping')
 
     const roles = ['tank', 'healer', 'physical', 'caster'] as const
@@ -1028,11 +1010,61 @@ export default function AdminLootItems() {
     })
 
     return roleGroups
-  }
+  }, [classSpecs])
+
+  // Get all available specs as "Class Spec" options for dropdown - MEMOIZED
+  const classSpecOptions = useMemo(() => {
+    return classSpecs
+      .map(spec => {
+        const wowClass = classes.find(c => c.id === spec.class_id)
+
+        // If class name equals spec name, just show class name
+        const label = wowClass?.name === spec.name
+          ? wowClass.name
+          : `${wowClass?.name} ${spec.name}`
+
+        return {
+          id: spec.id,
+          label,
+          classColor: wowClass?.color_hex || '#888888'
+        }
+      })
+      .sort((a, b) => a.label.localeCompare(b.label))
+  }, [classSpecs, classes])
+
+  // Get display name for a spec (e.g., "Paladin Holy" or just "Hunter" for single-spec classes)
+  const getSpecName = useCallback((specId: string) => {
+    const spec = classSpecs.find(s => s.id === specId)
+    if (!spec) return ''
+
+    // Use combined_name if available (includes class name)
+    if (spec.combined_name) {
+      return spec.combined_name
+    }
+
+    // Fallback to old logic if combined_name not available
+    const wowClass = classes.find(c => c.id === spec.class_id)
+    if (wowClass?.name === spec.name) {
+      return wowClass.name
+    }
+    return `${wowClass?.name} ${spec.name}`
+  }, [classSpecs, classes])
+
+  // Get color for a spec (from class color)
+  const getSpecColor = useCallback((specId: string) => {
+    // Role groups and 'all' don't have colors
+    if (specId.startsWith('role:') || specId === 'all') {
+      return undefined
+    }
+
+    const spec = classSpecs.find(s => s.id === specId)
+    if (!spec) return undefined
+    const wowClass = classes.find(c => c.id === spec.class_id)
+    return wowClass?.color_hex || undefined
+  }, [classSpecs, classes])
 
   // Get consolidated display for selected specs (consolidates role groups)
-  const getConsolidatedSpecNames = (selectedIds: Set<string>) => {
-    const roleGroups = getRoleGroupSpecs()
+  const getConsolidatedSpecNames = useCallback((selectedIds: Set<string>) => {
     const remainingIds = new Set(selectedIds)
     const displayItems: Array<{ name: string, color?: string }> = []
 
@@ -1044,7 +1076,7 @@ export default function AdminLootItems() {
       'caster': 'All Caster DPS'
     }
 
-    Object.entries(roleGroups).forEach(([role, roleSpecIds]) => {
+    Object.entries(getRoleGroupSpecs).forEach(([role, roleSpecIds]) => {
       const allRoleSpecsSelected = Array.from(roleSpecIds).every(specId => selectedIds.has(specId))
 
       if (allRoleSpecsSelected && roleSpecIds.size > 0) {
@@ -1063,10 +1095,10 @@ export default function AdminLootItems() {
     })
 
     return displayItems
-  }
+  }, [getRoleGroupSpecs, getSpecName, getSpecColor])
 
   // Check if a role group checkbox should be checked
-  const isRoleGroupSelected = (roleId: string, selectedIds: Set<string>) => {
+  const isRoleGroupSelected = useCallback((roleId: string, selectedIds: Set<string>) => {
     if (roleId === 'all') {
       // Check if all specs are selected
       return selectedIds.size === classSpecs.length && classSpecs.length > 0
@@ -1074,8 +1106,7 @@ export default function AdminLootItems() {
 
     if (roleId.startsWith('role:')) {
       const role = roleId.replace('role:', '')
-      const roleGroups = getRoleGroupSpecs()
-      const roleSpecIds = roleGroups[role]
+      const roleSpecIds = getRoleGroupSpecs[role]
 
       if (!roleSpecIds || roleSpecIds.size === 0) return false
 
@@ -1085,40 +1116,7 @@ export default function AdminLootItems() {
 
     // Regular spec - just check if it's in the set
     return selectedIds.has(roleId)
-  }
-
-  // Get color for a spec (from class color)
-  const getSpecColor = (specId: string) => {
-    // Role groups and 'all' don't have colors
-    if (specId.startsWith('role:') || specId === 'all') {
-      return undefined
-    }
-
-    const spec = classSpecs.find(s => s.id === specId)
-    if (!spec) return undefined
-    const wowClass = classes.find(c => c.id === spec.class_id)
-    return wowClass?.color_hex || undefined
-  }
-
-  // Get all available specs as "Class Spec" options for dropdown
-  const getClassSpecOptions = () => {
-    return classSpecs
-      .map(spec => {
-        const wowClass = classes.find(c => c.id === spec.class_id)
-
-        // If class name equals spec name, just show class name
-        const label = wowClass?.name === spec.name
-          ? wowClass.name
-          : `${wowClass?.name} ${spec.name}`
-
-        return {
-          id: spec.id,
-          label,
-          classColor: wowClass?.color_hex || '#888888'
-        }
-      })
-      .sort((a, b) => a.label.localeCompare(b.label))
-  }
+  }, [classSpecs, getRoleGroupSpecs])
 
   const filteredItems = lootItems.filter(item => {
     const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -1334,7 +1332,7 @@ export default function AdminLootItems() {
                           },
                           {
                             label: 'Individual Specs',
-                            options: getClassSpecOptions().map(opt => ({
+                            options: classSpecOptions.map(opt => ({
                               id: opt.id,
                               label: opt.label,
                               disabled: itemSpecs[item.id]?.secondary.has(opt.id)
@@ -1369,7 +1367,7 @@ export default function AdminLootItems() {
                           },
                           {
                             label: 'Individual Specs',
-                            options: getClassSpecOptions().map(opt => ({
+                            options: classSpecOptions.map(opt => ({
                               id: opt.id,
                               label: opt.label,
                               disabled: itemSpecs[item.id]?.primary.has(opt.id)
