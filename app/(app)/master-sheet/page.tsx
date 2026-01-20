@@ -297,7 +297,7 @@ export default function MasterSheet() {
             character_guild_memberships!inner(role)
           `)
           .in('id', characterIds)
-          .eq('character_guild_memberships.guild_id', activeGuild.id)
+          .eq('character_guild_memberships.guild_id', activeGuild!.id)
 
         if (charError) {
           console.error('Error loading characters:', charError)
