@@ -260,13 +260,13 @@ export default function MasterSheet() {
           return
         }
 
-        // Get all submissions
+        // Get all submissions (only approved lists show on master sheet)
         const submissionIds = [...new Set(allRankingsData.map(r => r.submission_id))]
         const { data: subsData, error: subsError } = await supabase
           .from('loot_submissions')
           .select('id, status, character_id')
           .in('id', submissionIds)
-          .in('status', ['approved', 'pending'])
+          .eq('status', 'approved')
 
         if (subsError) {
           console.error('Error loading submissions:', subsError)
