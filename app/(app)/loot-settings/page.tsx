@@ -57,6 +57,7 @@ export default function AdminLootItems() {
   const [user, setUser] = useState<any>(null)
   const [member, setMember] = useState<any>(null)
   const [searchTerm, setSearchTerm] = useState('')
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('')
   const [filterTier, setFilterTier] = useState<string>('all')
   const [raidTiers, setRaidTiers] = useState<any[]>([])
   // Track specs for each item: { itemId: { primary: Set<specId>, secondary: Set<specId> } }
@@ -139,6 +140,15 @@ export default function AdminLootItems() {
   useEffect(() => {
     document.title = 'LootList+ • Master Loot'
   }, [])
+
+  // Debounce search term for better performance
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm)
+    }, 300)
+
+    return () => clearTimeout(timer)
+  }, [searchTerm])
 
   useEffect(() => {
     if (!guildLoading) {
@@ -1118,12 +1128,15 @@ export default function AdminLootItems() {
     return selectedIds.has(roleId)
   }, [classSpecs, getRoleGroupSpecs])
 
-  const filteredItems = lootItems.filter(item => {
-    const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         item.boss_name.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesTier = filterTier === 'all' || (item.raid_tier as any)?.name === filterTier
-    return matchesSearch && matchesTier
-  })
+  // Memoize filtered items to prevent unnecessary recalculations
+  const filteredItems = useMemo(() => {
+    return lootItems.filter(item => {
+      const matchesSearch = item.name.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+                           item.boss_name.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
+      const matchesTier = filterTier === 'all' || (item.raid_tier as any)?.name === filterTier
+      return matchesSearch && matchesTier
+    })
+  }, [lootItems, debouncedSearchTerm, filterTier])
 
   if (loading) {
     return (
