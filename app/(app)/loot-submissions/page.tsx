@@ -144,6 +144,9 @@ export default function MasterLootPage() {
 
     if (error) {
       console.error('Error loading submissions:', error)
+      console.error('Error details:', JSON.stringify(error, null, 2))
+      console.error('Error message:', error?.message)
+      console.error('Error code:', error?.code)
       return
     }
 
