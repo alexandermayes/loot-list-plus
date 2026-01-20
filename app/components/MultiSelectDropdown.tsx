@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useMemo, useCallback, memo } from 'react'
 
 interface Option {
   id: string
@@ -29,7 +29,7 @@ interface MultiSelectDropdownProps {
   variant?: 'primary' | 'secondary'
 }
 
-export default function MultiSelectDropdown({
+const MultiSelectDropdown = memo(function MultiSelectDropdown({
   placeholder,
   selectedIds,
   options,
@@ -97,21 +97,22 @@ export default function MultiSelectDropdown({
     }
   }, [isOpen])
 
-  const handleToggle = (optionId: string, isChecked: boolean) => {
+  const handleToggle = useCallback((optionId: string, isChecked: boolean) => {
     if (isChecked) {
       onAdd(optionId)
     } else {
       onRemove(optionId)
     }
-  }
+  }, [onAdd, onRemove])
 
-  // Filter options by search term
-  const filterOptions = (opts: Option[]) => {
+  // Filter options by search term - memoized
+  const filterOptions = useCallback((opts: Option[]) => {
     if (!search) return opts
+    const lowerSearch = search.toLowerCase()
     return opts.filter(opt =>
-      opt.label.toLowerCase().includes(search.toLowerCase())
+      opt.label.toLowerCase().includes(lowerSearch)
     )
-  }
+  }, [search])
 
   const renderButtonContent = () => {
     if (selectedIds.size === 0) {
@@ -149,7 +150,7 @@ export default function MultiSelectDropdown({
     )
   }
 
-  const handleToggleDropdown = () => {
+  const handleToggleDropdown = useCallback(() => {
     if (!isOpen && buttonRef.current) {
       const rect = buttonRef.current.getBoundingClientRect()
       const dropdownMaxHeight = 400 // Approximate max height of dropdown (search + options)
@@ -165,7 +166,7 @@ export default function MultiSelectDropdown({
       })
     }
     setIsOpen(!isOpen)
-  }
+  }, [isOpen])
 
   return (
     <div ref={dropdownRef} className="relative">
@@ -319,4 +320,6 @@ export default function MultiSelectDropdown({
       )}
     </div>
   )
-}
+})
+
+export default MultiSelectDropdown
