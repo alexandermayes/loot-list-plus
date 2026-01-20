@@ -369,10 +369,10 @@ export default function MemberManager() {
                     <select
                       value={member.role}
                       onChange={(e) => handleChangeRole(member.user_id, e.target.value)}
-                      className="px-3 py-2 bg-[#151515] hover:bg-[#1a1a1a] border border-[rgba(255,255,255,0.1)] rounded-lg text-white text-[13px] font-medium transition cursor-pointer focus:outline-none focus:border-[rgba(255,255,255,0.3)]"
+                      className="px-5 py-2.5 bg-[#151515] border border-[#383838] rounded-[52px] text-white text-[13px] font-medium focus:outline-none focus:border-[#ff8000] cursor-pointer select-custom transition"
                     >
                       {roles.map((role) => (
-                        <option key={role.id} value={role.name}>
+                        <option key={role.id} value={role.name} className="bg-[#151515]">
                           {role.name}
                         </option>
                       ))}
