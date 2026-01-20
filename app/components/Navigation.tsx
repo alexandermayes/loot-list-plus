@@ -130,9 +130,16 @@ export default function Navigation({
                         setDropdownOpen(false)
                         router.push('/guild-select')
                       }}
-                      className="w-full px-3 py-2 text-sm text-left text-primary hover:bg-[#1a1a1a] rounded transition"
+                      className="w-full px-3 py-2 flex items-center gap-3 hover:bg-[#1a1a1a] rounded-lg transition text-left"
                     >
-                      + Join Another Guild
+                      <svg className="w-5 h-5 shrink-0 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                      </svg>
+                      <div className="flex-1">
+                        <p className="font-poppins font-medium text-[13px] text-primary">
+                          Join a guild
+                        </p>
+                      </div>
                     </button>
                   </div>
                 </div>
