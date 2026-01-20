@@ -43,22 +43,38 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Verify user is an officer of this guild
-    const { data: member, error: memberError } = await supabase
+    // Verify user is an officer of this guild (support both old and new system)
+    // Check old system first
+    const { data: oldMember } = await supabase
       .from('guild_members')
       .select('role')
       .eq('user_id', user.id)
       .eq('guild_id', guild_id)
-      .single()
+      .maybeSingle()
 
-    if (memberError || !member) {
-      return NextResponse.json(
-        { error: 'You are not a member of this guild' },
-        { status: 403 }
-      )
+    const isOfficerOldSystem = oldMember && (oldMember.role === 'Officer' || oldMember.role === 'Guild Master')
+
+    // Check new character system
+    const { data: userCharacters } = await supabase
+      .from('characters')
+      .select('id')
+      .eq('user_id', user.id)
+
+    let isOfficerNewSystem = false
+    if (userCharacters && userCharacters.length > 0) {
+      const characterIds = userCharacters.map(c => c.id)
+      const { data: charMemberships } = await supabase
+        .from('character_guild_memberships')
+        .select('role')
+        .eq('guild_id', guild_id)
+        .in('character_id', characterIds)
+        .in('role', ['Officer', 'Guild Master'])
+        .limit(1)
+
+      isOfficerNewSystem = charMemberships && charMemberships.length > 0
     }
 
-    if (member.role !== 'Officer') {
+    if (!isOfficerOldSystem && !isOfficerNewSystem) {
       return NextResponse.json(
         { error: 'Only officers can change the guild expansion' },
         { status: 403 }

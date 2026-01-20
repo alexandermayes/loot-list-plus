@@ -173,8 +173,8 @@ export default function MemberManager() {
             id: char.id,
             name: char.name,
             is_main: char.is_main,
-            class: char.class,
-            spec: char.spec
+            class: Array.isArray(char.class) ? char.class[0] : char.class,
+            spec: Array.isArray(char.spec) ? char.spec[0] : char.spec
           }))
 
         // Sort characters - main first, then alphabetically

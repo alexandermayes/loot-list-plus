@@ -47,13 +47,31 @@ export default function DiscordJoinPage() {
         .eq('user_id', currentUser.id)
         .single()
 
+      // Auto-verify if user logged in with Discord but not verified yet
       if (!preferences?.discord_verified) {
-        setDiscordVerified(false)
-        setLoading(false)
-        return
-      }
+        console.log('User not verified, attempting auto-verification on page load...')
+        try {
+          const verifyResponse = await fetch('/api/verify-discord', {
+            method: 'POST'
+          })
 
-      setDiscordVerified(true)
+          if (verifyResponse.ok) {
+            console.log('Auto-verification successful on page load')
+            setDiscordVerified(true)
+          } else {
+            setDiscordVerified(false)
+            setLoading(false)
+            return
+          }
+        } catch (err) {
+          console.error('Auto-verification failed on page load:', err)
+          setDiscordVerified(false)
+          setLoading(false)
+          return
+        }
+      } else {
+        setDiscordVerified(true)
+      }
 
       // Fetch available guilds
       try {

@@ -40,6 +40,11 @@ export default function GuildSettingsPage() {
 
   useEffect(() => {
     const loadData = async () => {
+      // Wait for guild context to finish loading
+      if (guildLoading) {
+        return
+      }
+
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) {
         router.push('/')
@@ -48,7 +53,7 @@ export default function GuildSettingsPage() {
       setUser(user)
 
       // Check if officer using context
-      if (!guildLoading && !isOfficer) {
+      if (!isOfficer) {
         router.push('/dashboard')
         return
       }
@@ -90,10 +95,16 @@ export default function GuildSettingsPage() {
     if (!guildLoading) {
       loadData()
     }
-  }, [guildLoading, activeGuild, isOfficer])
+  }, [guildLoading, activeGuild])
 
   const handleSaveBasicInfo = async () => {
     if (!activeGuild) return
+
+    // Validate required fields
+    if (!realm.trim()) {
+      setMessage({ type: 'error', text: 'Please select a realm' })
+      return
+    }
 
     setSaving(true)
     setMessage(null)
@@ -128,7 +139,7 @@ export default function GuildSettingsPage() {
       const { error } = await supabase.rpc('update_guild_info', {
         p_guild_id: activeGuild.id,
         p_name: guildName.trim(),
-        p_realm: realm.trim() || null,
+        p_realm: realm.trim(), // Required field
         p_faction: faction,
         p_discord_server_id: discordServerId.trim() || null
       })
@@ -284,7 +295,7 @@ export default function GuildSettingsPage() {
               </div>
 
               <div className="space-y-2">
-                <label className="block text-[13px] font-medium text-white">Realm (Optional)</label>
+                <label className="block text-[13px] font-medium text-white">Realm</label>
                 <RealmSelector
                   region={realmRegion}
                   realm={realm}

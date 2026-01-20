@@ -9,7 +9,12 @@ interface GuildSettings {
   middle_attendance_threshold: number
   bottom_attendance_bonus: number
   bottom_attendance_threshold: number
+  guild_rank_bonuses_enabled: boolean
   rank_modifiers: Record<string, number>
+  minimum_raid_days_enabled: boolean
+  minimum_raid_days: number
+  late_early_penalty_enabled: boolean
+  late_early_penalty_value: number
   see_item_bonus: boolean
   see_item_bonus_value: number
   pass_item_bonus: boolean
@@ -33,6 +38,7 @@ const DEFAULT_SETTINGS: Partial<GuildSettings> = {
   middle_attendance_threshold: 0.5,
   bottom_attendance_bonus: 1,
   bottom_attendance_threshold: 0.25,
+  guild_rank_bonuses_enabled: true,
   rank_modifiers: {
     'Pro Yiker': 0,
     'Raid Yiker': 0,
@@ -40,6 +46,10 @@ const DEFAULT_SETTINGS: Partial<GuildSettings> = {
     'Alt Yiker': -4,
     'New Yiker': -1
   },
+  minimum_raid_days_enabled: true,
+  minimum_raid_days: 2,
+  late_early_penalty_enabled: true,
+  late_early_penalty_value: 0.25,
   see_item_bonus: true,
   see_item_bonus_value: 1,
   pass_item_bonus: false,
@@ -103,6 +113,12 @@ export function calculateAttendanceScore(
  */
 export function getRankModifier(role: string, settings: Partial<GuildSettings> = {}): number {
   const config = { ...DEFAULT_SETTINGS, ...settings } as GuildSettings
+
+  // If guild rank bonuses are disabled, return 0
+  if (!config.guild_rank_bonuses_enabled) {
+    return 0
+  }
+
   return config.rank_modifiers[role] || 0
 }
 

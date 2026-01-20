@@ -50,7 +50,7 @@ export default function MasterSheet() {
 
   // Set page title
   useEffect(() => {
-    document.title = 'LootList+ • Master Sheet'
+    document.title = 'LootList+ • Loot Rankings'
   }, [])
 
   // Define Classic raid tier progression order
@@ -230,6 +230,7 @@ export default function MasterSheet() {
           .from('loot_items')
           .select('id, name, boss_name, item_slot, wowhead_id')
           .eq('raid_tier_id', selectedTierId)
+          .eq('is_available', true)
           .order('boss_name')
           .order('name')
 
@@ -288,8 +289,15 @@ export default function MasterSheet() {
 
         const { data: charactersData, error: charError } = await supabase
           .from('characters')
-          .select('id, name, user_id, class:wow_classes(name, color_hex)')
+          .select(`
+            id,
+            name,
+            user_id,
+            class:wow_classes(name, color_hex),
+            character_guild_memberships!inner(role)
+          `)
           .in('id', characterIds)
+          .eq('character_guild_memberships.guild_id', activeGuild.id)
 
         if (charError) {
           console.error('Error loading characters:', charError)
@@ -320,7 +328,8 @@ export default function MasterSheet() {
             if (!character) continue
 
             const attendance = attendanceCache[character.id] || 0
-            const roleModifier = getRankModifier('Member', guildSettings) // Role will need to be fetched from character_guild_memberships if needed
+            const characterRole = (character as any).character_guild_memberships?.[0]?.role || 'Member'
+            const roleModifier = getRankModifier(characterRole, guildSettings)
             const lootScore = calculateLootScore(r.rank, attendance, roleModifier)
 
             rankings.push({
@@ -536,13 +545,15 @@ export default function MasterSheet() {
                           id={`item-${ir.item.id}`}
                           className={`transition-all ${ir.rankings.length === 0 ? 'bg-pink-900/20' : ''}`}
                         >
-                          <td className="px-6 py-3">
-                            <ItemLink
-                              name={ir.item.name}
-                              wowheadId={ir.item.wowhead_id}
-                              className="font-medium text-[14px]"
-                            />
-                            <p className="text-[#a1a1a1] text-[12px] mt-0.5">{ir.item.item_slot}</p>
+                          <td className="px-6 py-3" style={{ maxWidth: '250px' }}>
+                            <div className="truncate overflow-hidden">
+                              <ItemLink
+                                name={ir.item.name}
+                                wowheadId={ir.item.wowhead_id}
+                                className="font-medium text-[14px]"
+                              />
+                            </div>
+                            <p className="text-[#a1a1a1] text-[12px] mt-0.5 truncate">{ir.item.item_slot}</p>
                           </td>
                           <td className="px-6 py-3">
                             {ir.rankings.length === 0 ? (

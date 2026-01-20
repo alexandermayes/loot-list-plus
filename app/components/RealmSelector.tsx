@@ -152,7 +152,7 @@ export default function RealmSelector({
           type="button"
           onClick={() => !disabled && setRegionDropdownOpen(!regionDropdownOpen)}
           disabled={disabled}
-          className="h-11 px-4 bg-secondary/80 border border-border rounded-l-md border-r-0 text-foreground font-medium flex items-center gap-2 hover:bg-secondary disabled:opacity-50 min-w-[100px] justify-between"
+          className="h-11 px-4 bg-[#151515] border border-[#383838] rounded-l-[52px] border-r-0 text-white font-medium flex items-center gap-2 hover:bg-[#1a1a1a] disabled:opacity-50 min-w-[100px] justify-between focus:outline-none focus:border-[#ff8000] transition-colors"
         >
           <span>{regionCode}</span>
           <svg
@@ -169,27 +169,27 @@ export default function RealmSelector({
         {regionDropdownOpen && (
           <div
             ref={regionDropdownRef}
-            className="absolute z-[9999] mt-1 bg-secondary border border-border rounded-lg shadow-lg overflow-hidden min-w-[120px]"
+            className="absolute z-[9999] mt-1 bg-[#151515] border border-[#383838] rounded-lg shadow-lg overflow-hidden min-w-[120px]"
           >
             <button
               type="button"
               onClick={() => handleRegionSelect('All')}
-              className={`w-full px-4 py-2 text-left hover:bg-accent transition ${
-                region === 'All' ? 'bg-accent' : ''
+              className={`w-full px-4 py-2 text-left hover:bg-[#1a1a1a] transition ${
+                region === 'All' ? 'bg-[#1a1a1a]' : ''
               }`}
             >
-              <div className="font-medium text-foreground">All</div>
+              <div className="font-medium text-white">All</div>
             </button>
             {REALM_REGIONS.map((r) => (
               <button
                 key={r}
                 type="button"
                 onClick={() => handleRegionSelect(r)}
-                className={`w-full px-4 py-2 text-left hover:bg-accent transition ${
-                  region === r ? 'bg-accent' : ''
+                className={`w-full px-4 py-2 text-left hover:bg-[#1a1a1a] transition ${
+                  region === r ? 'bg-[#1a1a1a]' : ''
                 }`}
               >
-                <div className="font-medium text-foreground">{REGION_CODES[r]}</div>
+                <div className="font-medium text-white">{REGION_CODES[r]}</div>
               </button>
             ))}
           </div>
@@ -203,9 +203,9 @@ export default function RealmSelector({
           type="button"
           onClick={() => !disabled && region && setRealmDropdownOpen(!realmDropdownOpen)}
           disabled={disabled || !region}
-          className="w-full h-11 px-4 bg-background border border-border rounded-r-md text-foreground text-left flex items-center justify-between disabled:opacity-50 disabled:cursor-not-allowed hover:bg-accent/50"
+          className="w-full h-11 px-4 bg-[#151515] border border-[#383838] rounded-r-[52px] text-white text-left flex items-center justify-between disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#1a1a1a] focus:outline-none focus:border-[#ff8000] transition-colors"
         >
-          <span className={realm ? '' : 'text-muted-foreground'}>
+          <span className={realm ? '' : 'text-[#a1a1a1]'}>
             {realm || 'Realm'}
           </span>
           <svg
@@ -222,7 +222,7 @@ export default function RealmSelector({
         {realmDropdownOpen && (
           <div
             ref={realmDropdownRef}
-            className="fixed z-[9999] bg-secondary border border-border rounded-lg shadow-lg max-h-96 overflow-hidden"
+            className="fixed z-[9999] bg-[#151515] border border-[#383838] rounded-lg shadow-lg max-h-96 overflow-hidden"
             style={{
               top: `${dropdownPosition.top + 4}px`,
               left: `${dropdownPosition.left}px`,
@@ -230,14 +230,14 @@ export default function RealmSelector({
             }}
           >
             {/* Search Input */}
-            <div className="p-2 border-b border-border sticky top-0 bg-secondary">
+            <div className="p-2 border-b border-[rgba(255,255,255,0.1)] sticky top-0 bg-[#151515]">
               <input
                 ref={searchInputRef}
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search realms..."
-                className="w-full px-3 py-2 bg-input border border-border rounded-md text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                className="w-full px-3 py-2 bg-[#0d0e11] border border-[rgba(255,255,255,0.1)] rounded-md text-white text-sm focus:outline-none focus:border-[#ff8000]"
               />
             </div>
 
@@ -249,7 +249,7 @@ export default function RealmSelector({
                   setRealmDropdownOpen(false)
                   setSearch('')
                 }}
-                className="w-full px-3 py-2 text-left hover:bg-accent text-muted-foreground text-sm border-b border-border"
+                className="w-full px-3 py-2 text-left hover:bg-[#1a1a1a] text-[#a1a1a1] text-sm border-b border-[rgba(255,255,255,0.1)]"
               >
                 -- Clear Selection --
               </button>
@@ -258,7 +258,7 @@ export default function RealmSelector({
             {/* Realms List */}
             <div className="max-h-80 overflow-y-auto">
               {filteredVersions.length === 0 ? (
-                <div className="px-3 py-4 text-center text-muted-foreground text-sm">
+                <div className="px-3 py-4 text-center text-[#a1a1a1] text-sm">
                   No realms found
                 </div>
               ) : (
@@ -267,8 +267,8 @@ export default function RealmSelector({
                   return (
                     <div key={version}>
                       {/* Version Header */}
-                      <div className="px-3 py-2 bg-accent/50 border-b border-border">
-                        <p className="text-xs font-semibold text-foreground uppercase tracking-wide">
+                      <div className="px-3 py-2 bg-[#1a1a1a] border-b border-[rgba(255,255,255,0.1)]">
+                        <p className="text-xs font-semibold text-white uppercase tracking-wide">
                           {version}
                         </p>
                       </div>
@@ -278,11 +278,11 @@ export default function RealmSelector({
                           key={realmInfo.name}
                           type="button"
                           onClick={() => handleRealmSelect(realmInfo.name)}
-                          className={`w-full px-3 py-2 text-left hover:bg-accent flex items-center gap-2 ${
-                            realm === realmInfo.name ? 'bg-accent' : ''
+                          className={`w-full px-3 py-2 text-left hover:bg-[#1a1a1a] flex items-center gap-2 ${
+                            realm === realmInfo.name ? 'bg-[#1a1a1a]' : ''
                           }`}
                         >
-                          <div className="font-medium text-foreground">{realmInfo.name}</div>
+                          <div className="font-medium text-white">{realmInfo.name}</div>
                         </button>
                       ))}
                     </div>

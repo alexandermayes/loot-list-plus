@@ -119,7 +119,7 @@ export default function RaidTiersPage() {
     if (!guildLoading) {
       loadData()
     }
-  }, [guildLoading, activeGuild, isOfficer])
+  }, [guildLoading, activeGuild])
 
   const loadRaidTiers = async (expansionId: string) => {
     try {
@@ -290,10 +290,8 @@ export default function RaidTiersPage() {
   }
 
   const adminTabs = [
-    { name: 'Settings', href: '/admin/settings', icon: '⚙️' },
+    { name: 'Master Loot', href: '/loot-settings', icon: '⚙️' },
     { name: 'Raid Tiers', href: '/admin/raid-tiers', icon: '🏰' },
-    { name: 'Manage Loot', href: '/admin/loot-items', icon: '✅' },
-    { name: 'Import', href: '/admin/import', icon: '📥' },
   ]
 
   return (

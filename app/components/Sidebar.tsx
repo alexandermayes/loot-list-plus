@@ -198,7 +198,8 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange }
         'loot-list': '/loot-list',
         'attendance': '/attendance',
         'guild-settings': '/admin/guild-settings',
-        'master-loot': '/admin',
+        'loot-submissions': '/loot-submissions',
+        'loot-settings': '/loot-settings',
         'raid-tracking': '/admin/raid-tracking',
       }
       router.push(routeMap[view] || '/dashboard')
@@ -214,7 +215,8 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange }
 
   const adminItems = isOfficer ? [
     { name: 'Guild Settings', view: 'guild-settings', icon: '/icons/guild-settings.svg' },
-    { name: 'Master Loot', view: 'master-loot', icon: '/icons/master-loot.svg' },
+    { name: 'Loot Submissions', view: 'loot-submissions', icon: '/icons/master-loot.svg' },
+    { name: 'Master Loot', view: 'loot-settings', icon: '/icons/loot-lists.svg' },
     { name: 'Raid Tracking', view: 'raid-tracking', icon: '/icons/raid-tracking.svg' },
   ] : []
 
@@ -235,9 +237,9 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange }
       </div>
     </div>
 
-    <aside className="fixed left-0 top-0 h-screen w-[208px] bg-[#0d0e11] flex flex-col gap-12 px-2.5 pt-9 pb-2.5 z-50">
+    <aside className="fixed left-0 top-0 h-screen w-[208px] bg-[#0d0e11] flex flex-col px-0 pt-9 pb-0 z-50">
       {/* Logo */}
-      <div className="px-3">
+      <div className="px-6 mb-12">
         <button
           onClick={() => handleNavClick('overview')}
           className="cursor-pointer hover:opacity-80 transition"
@@ -253,8 +255,8 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange }
         </button>
       </div>
 
-      {/* Main Navigation */}
-      <div className="flex-1 flex flex-col gap-6 min-h-0">
+      {/* Main Navigation - Scrollable (extends to bottom) */}
+      <div className="flex-1 flex flex-col gap-6 min-h-0 overflow-y-auto sidebar-scrollable px-2.5 pb-[170px]">
         {/* Guild Selector */}
         <div className="flex flex-col gap-3">
           <div className="flex flex-col gap-[4px]">
@@ -323,12 +325,12 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange }
 
             {/* Guild Dropdown */}
             {guildDropdownOpen && (
-              <div className="absolute top-full mt-2 left-0 w-full bg-[#1e1e1e] border border-[#2a2a2a] rounded-xl shadow-lg overflow-hidden z-50">
+              <div className="absolute top-full mt-2 left-0 w-full bg-[#151515] border border-[#383838] rounded-xl shadow-lg overflow-hidden z-50">
                 {hasMultipleGuilds && userGuilds.map((g) => (
                   <button
                     key={g.guild.id}
                     onClick={() => handleSwitchGuild(g.guild.id)}
-                    className="w-full px-3.5 py-2 flex items-center gap-3 hover:bg-[#252525] transition text-left"
+                    className="w-full px-3.5 py-2 flex items-center gap-3 hover:bg-[#1a1a1a] transition text-left"
                   >
                     {g.guild.icon_url ? (
                       <Image
@@ -361,7 +363,7 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange }
                     setGuildDropdownOpen(false)
                     setShowJoinModal(true)
                   }}
-                  className={`w-full px-3.5 py-2 flex items-center gap-3 hover:bg-[#252525] transition text-left ${hasMultipleGuilds ? 'border-t border-[#2a2a2a]' : ''}`}
+                  className={`w-full px-3.5 py-2 flex items-center gap-3 hover:bg-[#1a1a1a] transition text-left ${hasMultipleGuilds ? 'border-t border-[rgba(255,255,255,0.1)]' : ''}`}
                 >
                   <Image
                     src="/icons/add-circle.svg"
@@ -383,7 +385,7 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange }
                     setGuildDropdownOpen(false)
                     router.push('/guild-select/create')
                   }}
-                  className="w-full px-3.5 py-2 flex items-center gap-3 hover:bg-[#252525] transition text-left"
+                  className="w-full px-3.5 py-2 flex items-center gap-3 hover:bg-[#1a1a1a] transition text-left"
                 >
                   <Image
                     src="/icons/add-circle.svg"
@@ -481,8 +483,8 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange }
         )}
       </div>
 
-      {/* Bottom Section */}
-      <div className="flex flex-col gap-0 relative z-10 bg-[#0d0e11] pt-3 -mx-2.5 px-2.5 -mb-2.5 pb-2.5 border-t border-[rgba(255,255,255,0.1)]">
+      {/* Bottom Section - Fixed at bottom, overlays scrollable area */}
+      <div className="absolute bottom-0 left-0 right-0 flex flex-col gap-0 z-10 bg-[#0d0e11] border-t border-[#222224] p-[10px] w-[208px]">
         <button className="w-full px-3.5 py-2 flex items-center gap-3 rounded-[40px] hover:bg-[#1a1a1a] transition font-poppins font-medium text-[13px] text-white">
           <Image
             src="/icons/help.svg"

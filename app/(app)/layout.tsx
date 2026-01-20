@@ -25,7 +25,8 @@ export default function AppLayout({
     if (pathname === '/loot-list') return 'loot-list'
     if (pathname === '/attendance') return 'attendance'
     if (pathname === '/admin/guild-settings') return 'guild-settings'
-    if (pathname === '/admin') return 'master-loot'
+    if (pathname === '/loot-submissions') return 'loot-submissions'
+    if (pathname === '/loot-settings') return 'loot-settings'
     if (pathname === '/admin/raid-tracking') return 'raid-tracking'
     // Return empty string for profile and other pages that shouldn't highlight nav items
     return ''

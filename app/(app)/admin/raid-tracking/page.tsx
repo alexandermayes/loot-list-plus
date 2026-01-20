@@ -468,15 +468,23 @@ export default function RaidTrackingPage() {
   const importSignups = async () => {
     if (!showImportModal || !activeGuild) return
 
-    const lines = importData.trim().split('\n').map(l => l.trim()).filter(l => l)
+    // Parse names - support both comma-separated and newline-separated formats
+    const names = importData
+      .trim()
+      .split(/[\n,]+/)  // Split by newlines OR commas
+      .map(name => name.trim())
+      .filter(name => name.length > 0)
+
+    console.log(`📥 Importing ${names.length} names:`, names)
+
     const linkedUpdates: any[] = []
     const unlinkedUpdates: any[] = []
     let matchedCount = 0
     let unmatchedCount = 0
 
-    lines.forEach(line => {
+    names.forEach(name => {
       const member = members.find(m =>
-        m.character_name.toLowerCase() === line.toLowerCase()
+        m.character_name.toLowerCase() === name.toLowerCase()
       )
 
       if (member) {
@@ -499,7 +507,7 @@ export default function RaidTrackingPage() {
         unlinkedUpdates.push({
           raid_event_id: showImportModal.raidId,
           guild_id: activeGuild.id,
-          character_name: line,
+          character_name: name,
           character_id: null,
           user_id: null,
           signed_up: importType === 'signup',
@@ -947,7 +955,11 @@ export default function RaidTrackingPage() {
             <textarea
               value={importData}
               onChange={e => setImportData(e.target.value)}
-              placeholder={`Paste character names (one per line)\nCharacterName1\nCharacterName2\nCharacterName3\n\nMatched names will be linked to accounts.\nUnmatched names will be tracked and linked if they join later.`}
+              placeholder={
+                importType === 'signup'
+                  ? `Paste signup names (comma-separated or one per line)\n\nExample:\nHeadjaws, Calonise, Leroyspankin, Nardziz\n\nOr:\nHeadjaws\nCalonise\nLeroyspankin\n\nMatched names will be linked to accounts.\nUnmatched names will be tracked and linked if they join later.`
+                  : `Paste attendance names (comma-separated or one per line)\n\nExample:\nHeadjaws, Calonise, Leroyspankin\n\nOr:\nHeadjaws\nCalonise\nLeroyspankin\n\nMatched names will be linked to accounts.\nUnmatched names will be tracked and linked if they join later.`
+              }
               className="w-full h-64 px-4 py-3 bg-[#0d0e11] border border-[rgba(255,255,255,0.1)] rounded-lg text-white text-[14px] focus:outline-none focus:border-[#ff8000] mb-4 font-mono"
             />
             <div className="flex gap-2">

@@ -95,28 +95,28 @@ export default function Navigation({
           <div className="relative" ref={dropdownRef}>
             <button
               onClick={() => setDropdownOpen(!dropdownOpen)}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-card border border-border hover:bg-accent transition"
+              className="flex items-center gap-2 px-4 py-2 rounded-[52px] bg-[#151515] border border-[#383838] hover:bg-[#1a1a1a] focus:outline-none focus:border-[#ff8000] transition"
             >
-              <span className="text-sm font-medium text-foreground">{activeGuild.name}</span>
-              <ChevronDown className="w-4 h-4 text-muted-foreground" />
+              <span className="text-sm font-medium text-white">{activeGuild.name}</span>
+              <ChevronDown className="w-4 h-4 text-[#a1a1a1]" />
             </button>
 
             {dropdownOpen && (
-              <div className="absolute top-full mt-2 left-0 w-64 bg-card border border-border rounded-lg shadow-lg z-50">
+              <div className="absolute top-full mt-2 left-0 w-64 bg-[#151515] border border-[#383838] rounded-lg shadow-lg z-50">
                 <div className="p-2">
-                  <div className="px-3 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  <div className="px-3 py-2 text-xs font-semibold text-[#a1a1a1] uppercase tracking-wider">
                     Your Guilds
                   </div>
                   {userGuilds.map((guild) => (
                     <button
                       key={guild.guild.id}
                       onClick={() => handleSwitchGuild(guild.guild.id)}
-                      className="w-full flex items-center justify-between px-3 py-2 rounded hover:bg-accent transition text-left"
+                      className="w-full flex items-center justify-between px-3 py-2 rounded hover:bg-[#1a1a1a] transition text-left"
                     >
                       <div className="flex flex-col">
-                        <span className="text-sm font-medium text-foreground">{guild.guild.name}</span>
+                        <span className="text-sm font-medium text-white">{guild.guild.name}</span>
                         {guild.guild.realm && (
-                          <span className="text-xs text-muted-foreground">{guild.guild.realm}</span>
+                          <span className="text-xs text-[#a1a1a1]">{guild.guild.realm}</span>
                         )}
                       </div>
                       {activeGuild.id === guild.guild.id && (
@@ -124,13 +124,13 @@ export default function Navigation({
                       )}
                     </button>
                   ))}
-                  <div className="border-t border-border mt-2 pt-2">
+                  <div className="border-t border-[rgba(255,255,255,0.1)] mt-2 pt-2">
                     <button
                       onClick={() => {
                         setDropdownOpen(false)
                         router.push('/guild-select')
                       }}
-                      className="w-full px-3 py-2 text-sm text-left text-primary hover:bg-accent rounded transition"
+                      className="w-full px-3 py-2 text-sm text-left text-primary hover:bg-[#1a1a1a] rounded transition"
                     >
                       + Join Another Guild
                     </button>

@@ -82,7 +82,28 @@ export default function GuildSelectPage() {
         .eq('user_id', currentUser.id)
         .single()
 
-      setDiscordVerified(prefs?.discord_verified || false)
+      // Auto-verify if user logged in with Discord but not verified yet
+      if (!prefs?.discord_verified) {
+        console.log('User not verified, attempting auto-verification on page load...')
+        try {
+          const verifyResponse = await fetch('/api/verify-discord', {
+            method: 'POST'
+          })
+
+          if (verifyResponse.ok) {
+            console.log('Auto-verification successful on page load')
+            setDiscordVerified(true)
+          } else {
+            setDiscordVerified(false)
+          }
+        } catch (err) {
+          console.error('Auto-verification failed on page load:', err)
+          setDiscordVerified(false)
+        }
+      } else {
+        setDiscordVerified(true)
+      }
+
       setLoading(false)
     }
 
@@ -234,34 +255,10 @@ export default function GuildSelectPage() {
   }
 
   const handleOpenDiscordModal = async () => {
-    // Check Discord verification
-    const { data: preferences } = await supabase
-      .from('user_preferences')
-      .select('discord_verified')
-      .eq('user_id', user?.id)
-      .single()
-
-    // If not verified but user logged in with Discord, auto-verify them
-    if (!preferences?.discord_verified) {
-      console.log('User not verified, attempting auto-verification...')
-      try {
-        const verifyResponse = await fetch('/api/verify-discord', {
-          method: 'POST'
-        })
-
-        if (!verifyResponse.ok) {
-          const errorData = await verifyResponse.json()
-          showErrorToast(errorData.error || 'Please verify your Discord account in your profile first')
-          return
-        }
-
-        console.log('Auto-verification successful')
-        setDiscordVerified(true)
-      } catch (err) {
-        console.error('Auto-verification failed:', err)
-        showErrorToast('Please verify your Discord account in your profile first')
-        return
-      }
+    // Verification is now handled on page load, so just check the state
+    if (!discordVerified) {
+      showErrorToast('Discord verification is required. Please try refreshing the page.')
+      return
     }
 
     setShowDiscordModal(true)

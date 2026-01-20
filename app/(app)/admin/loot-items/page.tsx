@@ -60,85 +60,6 @@ export default function AdminLootItems() {
   const pathname = usePathname()
   const { activeGuild, activeMember, loading: guildLoading, isOfficer } = useGuildContext()
 
-  // Set page title
-  useEffect(() => {
-    document.title = 'LootList+ • Manage Loot'
-  }, [])
-
-  useEffect(() => {
-    if (!guildLoading) {
-      loadData()
-    }
-  }, [guildLoading, activeGuild, isOfficer])
-
-  // Refresh Wowhead tooltips after items are loaded
-  useEffect(() => {
-    if (lootItems.length > 0 && typeof window !== 'undefined' && (window as any).$WowheadPower) {
-      setTimeout(() => {
-        (window as any).$WowheadPower.refreshLinks()
-      }, 100)
-    }
-  }, [lootItems])
-
-  const loadData = async () => {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) {
-      router.push('/')
-      return
-    }
-    setUser(user)
-
-    // Check if officer using context
-    if (!isOfficer) {
-      router.push('/dashboard')
-      return
-    }
-
-    if (!activeGuild || !activeMember) {
-      setLoading(false)
-      return
-    }
-
-    setMember(activeMember)
-
-    // Load all WoW classes
-    const { data: classesData } = await supabase
-      .from('wow_classes')
-      .select('*')
-      .order('name')
-
-    if (classesData) {
-      setClasses(classesData)
-    }
-
-    // Load all class specs
-    const { data: specsData } = await supabase
-      .from('class_specs')
-      .select('*')
-      .order('name')
-
-    if (specsData) {
-      setClassSpecs(specsData)
-    }
-
-    // Load raid tiers for filtering (only for active expansion)
-    if (activeGuild.active_expansion_id) {
-      const { data: tiersData } = await supabase
-        .from('raid_tiers')
-        .select('id, name')
-        .eq('expansion_id', activeGuild.active_expansion_id)
-        .order('name')
-
-      if (tiersData) {
-        setRaidTiers(tiersData)
-      }
-
-      // Load all loot items
-      await loadLootItems(activeGuild.active_expansion_id)
-    }
-    setLoading(false)
-  }
-
   const loadLootItems = async (expansionId: string) => {
     // Get raid tiers for active expansion
     const { data: tiersData } = await supabase
@@ -200,6 +121,85 @@ export default function AdminLootItems() {
       setItemSpecs(specs)
     }
   }
+
+  const loadData = async () => {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      router.push('/')
+      return
+    }
+    setUser(user)
+
+    // Check if officer using context
+    if (!isOfficer) {
+      router.push('/dashboard')
+      return
+    }
+
+    if (!activeGuild || !activeMember) {
+      setLoading(false)
+      return
+    }
+
+    setMember(activeMember)
+
+    // Load all WoW classes
+    const { data: classesData } = await supabase
+      .from('wow_classes')
+      .select('*')
+      .order('name')
+
+    if (classesData) {
+      setClasses(classesData)
+    }
+
+    // Load all class specs
+    const { data: specsData } = await supabase
+      .from('class_specs')
+      .select('*')
+      .order('name')
+
+    if (specsData) {
+      setClassSpecs(specsData)
+    }
+
+    // Load raid tiers for filtering (only for active expansion)
+    if (activeGuild.active_expansion_id) {
+      const { data: tiersData } = await supabase
+        .from('raid_tiers')
+        .select('id, name')
+        .eq('expansion_id', activeGuild.active_expansion_id)
+        .order('name')
+
+      if (tiersData) {
+        setRaidTiers(tiersData)
+      }
+
+      // Load all loot items
+      await loadLootItems(activeGuild.active_expansion_id)
+    }
+    setLoading(false)
+  }
+
+  // Set page title
+  useEffect(() => {
+    document.title = 'LootList+ • Manage Loot'
+  }, [])
+
+  useEffect(() => {
+    if (!guildLoading) {
+      loadData()
+    }
+  }, [guildLoading, activeGuild])
+
+  // Refresh Wowhead tooltips after items are loaded
+  useEffect(() => {
+    if (lootItems.length > 0 && typeof window !== 'undefined' && (window as any).$WowheadPower) {
+      setTimeout(() => {
+        (window as any).$WowheadPower.refreshLinks()
+      }, 100)
+    }
+  }, [lootItems])
 
   const toggleAvailability = async (itemId: string, currentStatus: boolean) => {
     const { error } = await supabase
@@ -357,10 +357,8 @@ export default function AdminLootItems() {
   }
 
   const adminTabs = [
-    { name: 'Settings', href: '/admin/settings', icon: '⚙️' },
+    { name: 'Master Loot', href: '/loot-settings', icon: '⚙️' },
     { name: 'Raid Tiers', href: '/admin/raid-tiers', icon: '🏰' },
-    { name: 'Manage Loot', href: '/admin/loot-items', icon: '✅' },
-    { name: 'Import', href: '/admin/import', icon: '📥' },
   ]
 
   return (

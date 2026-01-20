@@ -47,7 +47,7 @@ export default function ImportPage() {
     if (!guildLoading) {
       checkAuth()
     }
-  }, [guildLoading, activeGuild, isOfficer])
+  }, [guildLoading, activeGuild])
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -257,10 +257,8 @@ export default function ImportPage() {
   }
 
   const adminTabs = [
-    { name: 'Settings', href: '/admin/settings', icon: '⚙️' },
+    { name: 'Master Loot', href: '/loot-settings', icon: '⚙️' },
     { name: 'Raid Tiers', href: '/admin/raid-tiers', icon: '🏰' },
-    { name: 'Manage Loot', href: '/admin/loot-items', icon: '✅' },
-    { name: 'Import', href: '/admin/import', icon: '📥' },
   ]
 
   const pathname = usePathname()

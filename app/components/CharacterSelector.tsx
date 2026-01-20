@@ -48,7 +48,7 @@ export function CharacterSelector() {
     return (
       <button
         onClick={handleCreateCharacter}
-        className="w-full px-[14px] py-2 bg-[#141519] hover:bg-[#1a1a1a] border border-[#1a1a1a] rounded-xl text-foreground text-left transition flex items-center gap-3"
+        className="w-full px-[14px] py-2 bg-[#141519] hover:bg-[#1a1a1a] border border-[#1a1a1a] rounded-xl text-white text-left transition flex items-center gap-3"
       >
         <Image
           src="/icons/add-circle.svg"
@@ -75,7 +75,7 @@ export function CharacterSelector() {
           <img
             src={getClassIconUrl(activeCharacter.class.name)}
             alt={activeCharacter.class.name}
-            className="w-5 h-5 rounded-full flex-shrink-0 border border-border"
+            className="w-5 h-5 rounded-full flex-shrink-0 border border-[#383838]"
           />
         ) : (
           <div
@@ -103,7 +103,7 @@ export function CharacterSelector() {
           )}
         </div>
 
-        <ChevronDown className="w-5 h-5 text-muted-foreground flex-shrink-0" />
+        <ChevronDown className="w-5 h-5 text-[#a1a1a1] flex-shrink-0" />
       </button>
 
       {/* Dropdown */}
@@ -140,11 +140,11 @@ export function CharacterSelector() {
                             <img
                               src={getClassIconUrl(char.class.name)}
                               alt={char.class.name}
-                              className="w-5 h-5 rounded-full flex-shrink-0 border border-border"
+                              className="w-5 h-5 rounded-full flex-shrink-0 border border-[#383838]"
                             />
                           ) : (
                             <div
-                              className="w-5 h-5 rounded-full flex items-center justify-center text-white font-bold text-[10px] flex-shrink-0 border border-border"
+                              className="w-5 h-5 rounded-full flex items-center justify-center text-white font-bold text-[10px] flex-shrink-0 border border-[#383838]"
                               style={{ backgroundColor: charColor }}
                             >
                               {char.name.charAt(0).toUpperCase()}
@@ -210,11 +210,11 @@ export function CharacterSelector() {
                                 <img
                                   src={getClassIconUrl(char.class.name)}
                                   alt={char.class.name}
-                                  className="w-5 h-5 rounded-full flex-shrink-0 border border-border"
+                                  className="w-5 h-5 rounded-full flex-shrink-0 border border-[#383838]"
                                 />
                               ) : (
                                 <div
-                                  className="w-5 h-5 rounded-full flex items-center justify-center text-white font-bold text-[10px] flex-shrink-0 border border-border"
+                                  className="w-5 h-5 rounded-full flex items-center justify-center text-white font-bold text-[10px] flex-shrink-0 border border-[#383838]"
                                   style={{ backgroundColor: charColor }}
                                 >
                                   {char.name.charAt(0).toUpperCase()}
@@ -252,10 +252,10 @@ export function CharacterSelector() {
               )}
 
               {/* Create Character */}
-              <div className="border-t border-border mt-2 pt-2">
+              <div className="border-t border-[#1a1a1a] mt-2 pt-2">
                 <button
                   onClick={handleCreateCharacter}
-                  className="w-full px-3 py-2 flex items-center gap-3 hover:bg-[#252525] transition text-left"
+                  className="w-full px-3 py-2 flex items-center gap-3 hover:bg-[#1a1a1a] transition text-left"
                 >
                   <Image
                     src="/icons/add-circle.svg"

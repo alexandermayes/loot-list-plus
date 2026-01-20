@@ -1,10 +1,10 @@
 'use client'
 
 import { createClient } from '@/utils/supabase/client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import WelcomeScreen from '@/app/components/WelcomeScreen'
-import { User, CheckCircle2, AlertCircle, Trophy } from 'lucide-react'
+import { User, CheckCircle2, AlertCircle, Trophy, X } from 'lucide-react'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { useGuildContext } from '@/app/contexts/GuildContext'
 import ItemLink from '@/app/components/ItemLink'
@@ -109,6 +109,7 @@ export default function Dashboard() {
   const [lootPriority, setLootPriority] = useState<LootPriorityItem[]>([])
   const [receivedItems, setReceivedItems] = useState<ReceivedItem[]>([])
   const [actionsNeeded, setActionsNeeded] = useState<LootSubmission[]>([])
+  const [dismissedActions, setDismissedActions] = useState<Set<string>>(new Set())
 
   // Stats state
   const [stats, setStats] = useState({
@@ -140,6 +141,20 @@ export default function Dashboard() {
     }
   }, [lootPriority, receivedItems])
 
+  // Load dismissed actions from localStorage
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('dismissedActions')
+      if (stored) {
+        try {
+          setDismissedActions(new Set(JSON.parse(stored)))
+        } catch (e) {
+          console.error('Failed to parse dismissed actions:', e)
+        }
+      }
+    }
+  }, [])
+
   // Set greeting once when component mounts
   useEffect(() => {
     const initGreeting = async () => {
@@ -151,6 +166,24 @@ export default function Dashboard() {
     }
     initGreeting()
   }, []) // Empty dependency array - only run once on mount
+
+  // Handle dismissing an action
+  const handleDismissAction = (e: React.MouseEvent, submissionId: string) => {
+    e.stopPropagation() // Prevent triggering the parent click handler
+    const newDismissed = new Set(dismissedActions)
+    newDismissed.add(submissionId)
+    setDismissedActions(newDismissed)
+
+    // Save to localStorage
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('dismissedActions', JSON.stringify(Array.from(newDismissed)))
+    }
+  }
+
+  // Calculate visible actions count (excluding dismissed)
+  const visibleActionsCount = useMemo(() => {
+    return actionsNeeded.filter(submission => !dismissedActions.has(submission.id)).length
+  }, [actionsNeeded, dismissedActions])
 
   useEffect(() => {
     const loadData = async () => {
@@ -426,11 +459,15 @@ export default function Dashboard() {
 
           // Filter out current character and build tied characters list
           const tiedCharacters: TiedCharacter[] = (sameRankSubmissions || [])
-            .filter(sub => sub.submission?.character_id !== characterId)
+            .filter(sub => {
+              const submission = Array.isArray(sub.submission) ? sub.submission[0] : sub.submission
+              return submission?.character_id !== characterId
+            })
             .map(sub => {
-              const char = Array.isArray(sub.submission?.character)
-                ? sub.submission.character[0]
-                : sub.submission?.character
+              const submission = Array.isArray(sub.submission) ? sub.submission[0] : sub.submission
+              const char = Array.isArray(submission?.character)
+                ? submission.character[0]
+                : submission?.character
               const classInfo = Array.isArray(char?.class) ? char.class[0] : char?.class
 
               return {
@@ -672,7 +709,7 @@ export default function Dashboard() {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-[#a1a1a1]">Actions Needed</p>
-                      <p className="text-[42px] font-bold text-white mt-2 leading-none">{stats.actionsNeeded}</p>
+                      <p className="text-[42px] font-bold text-white mt-2 leading-none">{visibleActionsCount}</p>
                     </div>
                     <div className="w-12 h-12 bg-orange-500/20 rounded-full flex items-center justify-center">
                       <AlertCircle className="w-6 h-6 text-orange-500" />
@@ -796,13 +833,13 @@ export default function Dashboard() {
           </div>
 
           {/* Actions Needed - Current Character */}
-          {actionsNeeded.length > 0 && (
+          {actionsNeeded.filter(submission => !dismissedActions.has(submission.id)).length > 0 && (
             <div className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl p-6">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-[24px] font-bold text-white">Actions Needed</h2>
               </div>
               <div className="space-y-4">
-                {actionsNeeded.map(submission => (
+                {actionsNeeded.filter(submission => !dismissedActions.has(submission.id)).map(submission => (
                   <div
                     key={submission.id}
                     className="bg-[#151515] border border-[rgba(255,255,255,0.1)] rounded-xl p-4 hover:border-[#ff8000]/50 transition cursor-pointer"
@@ -829,7 +866,14 @@ export default function Dashboard() {
                             : 'Address feedback and resubmit'}
                         </p>
                       </div>
-                      <div className="ml-4">
+                      <div className="ml-4 flex items-center gap-2">
+                        <button
+                          onClick={(e) => handleDismissAction(e, submission.id)}
+                          className="p-2 bg-[#151515] hover:bg-red-950/50 border border-[rgba(255,255,255,0.1)] hover:border-red-600/30 rounded-lg text-[#a1a1a1] hover:text-red-400 transition"
+                          title="Dismiss"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
                         <button className="px-4 py-2 bg-[#ff8000] hover:bg-[#ff9000] text-white rounded-[52px] text-sm font-medium transition">
                           {submission.status === 'draft' ? 'Continue' : 'Revise'}
                         </button>

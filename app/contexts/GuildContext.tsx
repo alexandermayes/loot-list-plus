@@ -117,8 +117,12 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
   const [userCharacters, setUserCharacters] = useState<Character[]>([])
   const [characterMemberships, setCharacterMemberships] = useState<CharacterGuildMembership[]>([])
 
-  const [loading, setLoading] = useState(true)
+  const [guildsLoading, setGuildsLoading] = useState(true)
+  const [charactersLoading, setCharactersLoading] = useState(true)
   const [user, setUser] = useState<User | null>(null)
+
+  // Combined loading state - only false when both guilds AND characters are loaded
+  const loading = guildsLoading || charactersLoading
 
   const supabase = createClient()
   const router = useRouter()
@@ -126,7 +130,7 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
   // Load user's guilds and active guild
   const loadGuilds = async () => {
     try {
-      setLoading(true)
+      setGuildsLoading(true)
 
       // Get authenticated user
       const { data: { user: currentUser } } = await supabase.auth.getUser()
@@ -134,7 +138,8 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
         setActiveGuild(null)
         setActiveMember(null)
         setUserGuilds([])
-        setLoading(false)
+        setGuildsLoading(false)
+        setCharactersLoading(false)
         return
       }
       setUser(currentUser)
@@ -181,7 +186,7 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
         console.error('Error message:', membershipsError?.message)
         console.error('Error hint:', membershipsError?.hint)
         setUserGuilds([])
-        setLoading(false)
+        setGuildsLoading(false)
         return
       }
 
@@ -208,7 +213,7 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
       if (guilds.length === 0) {
         setActiveGuild(null)
         setActiveMember(null)
-        setLoading(false)
+        setGuildsLoading(false)
         // Don't redirect here - let pages handle it
         return
       }
@@ -256,14 +261,18 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       console.error('Error in loadGuilds:', error)
     } finally {
-      setLoading(false)
+      setGuildsLoading(false)
     }
   }
 
   // Load user's characters and their guild memberships
   const loadCharacters = async () => {
     try {
-      if (!user) return
+      setCharactersLoading(true)
+      if (!user) {
+        setCharactersLoading(false)
+        return
+      }
 
       // Fetch all user's characters
       const { data: characters, error: charactersError } = await supabase
@@ -337,10 +346,17 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
             joined_via,
             character:characters (
               id,
+              user_id,
               name,
               realm,
+              class_id,
+              spec_id,
               level,
               is_main,
+              battle_net_id,
+              region,
+              created_at,
+              updated_at,
               class:wow_classes (
                 id,
                 name,
@@ -375,7 +391,20 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
           console.error('Memberships error message:', membershipsError?.message)
           setCharacterMemberships([])
         } else {
-          setCharacterMemberships(memberships || [])
+          // Transform the data to handle arrays from Supabase joins
+          const transformedMemberships = (memberships || []).map(m => {
+            const char = Array.isArray(m.character) ? m.character[0] : m.character
+            return {
+              ...m,
+              character: char ? {
+                ...char,
+                class: Array.isArray(char.class) ? char.class[0] : char.class,
+                spec: Array.isArray(char.spec) ? char.spec[0] : char.spec
+              } : char,
+              guild: Array.isArray(m.guild) ? m.guild[0] : m.guild
+            }
+          })
+          setCharacterMemberships(transformedMemberships)
         }
       }
 
@@ -398,6 +427,8 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
       }
     } catch (error) {
       console.error('Error in loadCharacters:', error)
+    } finally {
+      setCharactersLoading(false)
     }
   }
 
@@ -564,7 +595,7 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
 
   // Derived state
   // Check if user has officer role via either old system or new character system
-  const isOfficer =
+  const isOfficer = !!(
     activeMember?.role === 'Officer' ||
     activeMember?.role === 'Guild Master' ||
     (activeCharacter && activeGuild &&
@@ -574,6 +605,7 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
              (m.role === 'Officer' || m.role === 'Guild Master')
       )
     )
+  )
 
   const hasMultipleGuilds = userGuilds.length > 1
   const hasMultipleCharacters = userCharacters.length > 1

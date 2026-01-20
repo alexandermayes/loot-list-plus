@@ -2,7 +2,7 @@
 
 import { createClient } from '@/utils/supabase/client'
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import SearchableItemSelect from '@/app/components/SearchableItemSelect'
 import { useGuildContext } from '@/app/contexts/GuildContext'
 import { ExpansionGuard } from '@/app/components/ExpansionGuard'
@@ -18,6 +18,7 @@ interface LootItem {
   classification?: string // Reserved, Limited, Unlimited
   item_type?: string // For duplicate detection
   allocation_cost?: number // 0 or 1
+  roles?: string[] // Roles that can use this item
 }
 
 interface Submission {
@@ -36,7 +37,14 @@ export default function LootList() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [raidTiers, setRaidTiers] = useState<any[]>([])
-  const [selectedTierId, setSelectedTierId] = useState<string | null>(null)
+  const [selectedTierId, setSelectedTierId] = useState<string | null>(() => {
+    // Try to read tier from URL on initial load
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search)
+      return params.get('tier')
+    }
+    return null
+  })
   const [tierSubmissionStatuses, setTierSubmissionStatuses] = useState<Record<string, any>>({})
   const [guildId, setGuildId] = useState<string | null>(null)
   const [user, setUser] = useState<any>(null)
@@ -48,12 +56,14 @@ export default function LootList() {
   const [initialLoadComplete, setInitialLoadComplete] = useState(false)
   const [initialRankings, setInitialRankings] = useState<Record<string, string>>({}) // Track original rankings to detect changes
   const [originalStatus, setOriginalStatus] = useState<string | null>(null) // Track original submission status
+  const [expandedErrors, setExpandedErrors] = useState<Set<string>>(new Set()) // Track which bracket errors are expanded
 
   const rankingsRef = useRef(rankings)
   const submissionRef = useRef(submission)
 
   const supabase = createClient()
   const router = useRouter()
+  const searchParams = useSearchParams()
 
   // Keep refs in sync
   useEffect(() => {
@@ -89,6 +99,15 @@ export default function LootList() {
     }
     return order[tierName] || 999 // Unknown tiers go to the end
   }
+
+  // Helper to change tier and update URL
+  const changeTier = useCallback((tierId: string) => {
+    setSelectedTierId(tierId)
+    // Update URL with tier parameter
+    const params = new URLSearchParams(searchParams.toString())
+    params.set('tier', tierId)
+    router.push(`?${params.toString()}`, { scroll: false })
+  }, [searchParams, router])
 
   useEffect(() => {
     const loadData = async () => {
@@ -155,9 +174,30 @@ export default function LootList() {
 
       setRaidTiers(sortedTiers)
 
-      // Default to active tier or first tier
-      const activeTier = sortedTiers.find(t => t.is_active) || sortedTiers[0]
-      setSelectedTierId(activeTier.id)
+      // Determine which tier to select
+      const tierIdFromUrl = searchParams.get('tier')
+      let tierToSelect: any
+
+      if (tierIdFromUrl && sortedTiers.some(t => t.id === tierIdFromUrl)) {
+        // URL has a valid tier, use it
+        tierToSelect = sortedTiers.find(t => t.id === tierIdFromUrl)!
+        // Only update state if it's different (avoid unnecessary re-renders)
+        if (selectedTierId !== tierToSelect.id) {
+          setSelectedTierId(tierToSelect.id)
+        }
+      } else if (selectedTierId && sortedTiers.some(t => t.id === selectedTierId)) {
+        // Already have a valid tier selected from initial state, keep it and update URL
+        const params = new URLSearchParams(searchParams.toString())
+        params.set('tier', selectedTierId)
+        router.replace(`?${params.toString()}`, { scroll: false })
+      } else {
+        // No valid tier yet, use default and update both state and URL
+        tierToSelect = sortedTiers.find(t => t.is_active) || sortedTiers[0]
+        setSelectedTierId(tierToSelect.id)
+        const params = new URLSearchParams(searchParams.toString())
+        params.set('tier', tierToSelect.id)
+        router.replace(`?${params.toString()}`, { scroll: false })
+      }
 
       setLoading(false)
     }
@@ -213,7 +253,7 @@ export default function LootList() {
           .from('loot_items')
           .select(`
             id, name, boss_name, item_slot, wowhead_id,
-            classification, item_type, allocation_cost, is_available,
+            classification, item_type, allocation_cost, is_available, roles,
             loot_item_classes(class_id, spec_type)
           `)
           .eq('raid_tier_id', selectedTierId)
@@ -221,9 +261,37 @@ export default function LootList() {
           .order('id')
 
         if (itemsData) {
+          // Load character's spec to determine roles
+          let characterSpecName: string | null = null
+          if (activeCharacter.spec_id) {
+            const { data: specData } = await supabase
+              .from('class_specs')
+              .select('name')
+              .eq('id', activeCharacter.spec_id)
+              .single()
+
+            characterSpecName = specData?.name || null
+          }
+
+          // Import the spec role mapping
+          const { canSpecUseItem } = await import('@/utils/spec-role-mapping')
+
           const filteredItems = itemsData.filter(item => {
             const classes = item.loot_item_classes as any[]
-            return classes.length === 0 || classes.some(c => c.class_id === activeCharacter.class_id)
+            const classMatch = classes.length === 0 || classes.some(c => c.class_id === activeCharacter.class_id)
+
+            // If no class match, don't show the item
+            if (!classMatch) return false
+
+            // If item has no role restrictions, show it
+            const itemRoles = item.roles || []
+            if (itemRoles.length === 0) return true
+
+            // If character has no spec set, show all items for their class
+            if (!characterSpecName) return true
+
+            // Check if character's spec roles match any of the item's roles
+            return canSpecUseItem(characterSpecName, itemRoles)
           })
           setLootItems(filteredItems)
         }
@@ -306,6 +374,24 @@ export default function LootList() {
     } else {
       setRankings(prev => ({ ...prev, [key]: itemId }))
     }
+  }, [])
+
+  const handleClearList = useCallback(() => {
+    if (confirm('Are you sure you want to clear all ranked items? This cannot be undone.')) {
+      setRankings({})
+    }
+  }, [])
+
+  const toggleErrorExpanded = useCallback((bracketName: string) => {
+    setExpandedErrors(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(bracketName)) {
+        newSet.delete(bracketName)
+      } else {
+        newSet.add(bracketName)
+      }
+      return newSet
+    })
   }, [])
 
   const saveSubmission = async (submit: boolean) => {
@@ -857,7 +943,7 @@ export default function LootList() {
                   return (
                     <button
                       key={tier.id}
-                      onClick={() => setSelectedTierId(tier.id)}
+                      onClick={() => changeTier(tier.id)}
                       className={`px-5 py-2.5 rounded-[40px] whitespace-nowrap text-[13px] font-medium transition-all ${
                         selectedTierId === tier.id
                           ? 'bg-[rgba(255,128,0,0.2)] border-[0.5px] border-[rgba(255,128,0,0.2)] text-[#ff8000]'
@@ -898,6 +984,15 @@ export default function LootList() {
               </div>
               <div className="flex items-center gap-4">
                 <span className="text-sm opacity-75">{rankedCount} items ranked</span>
+                {/* Clear List Button */}
+                {rankedCount > 0 && (
+                  <button
+                    onClick={handleClearList}
+                    className="px-6 py-3 bg-[#151515] hover:bg-red-950/50 border border-[rgba(255,255,255,0.1)] hover:border-red-600/30 rounded-[52px] text-red-400 hover:text-red-300 font-medium text-base transition whitespace-nowrap"
+                  >
+                    Clear List
+                  </button>
+                )}
                 {/* Submit for Review Button */}
                 <button
                   onClick={() => saveSubmission(true)}
@@ -937,26 +1032,15 @@ export default function LootList() {
         {/* Bracket 1 (50-48) */}
         <div className="bg-card border border-border rounded-xl overflow-hidden">
           <div className="bg-gradient-to-r from-red-900 to-red-700 px-4 py-2">
-            <div className="flex items-start justify-between">
+            <div className="flex items-start justify-between gap-4">
               <div>
                 <h2 className="text-lg font-bold text-foreground">Bracket 1 (50-48)</h2>
                 {(() => {
                   const validation = getBracketValidation('Bracket 1 (50-48)')
                   return validation ? (
-                    <div className="mt-1">
-                      <p className={`text-xs font-semibold ${validation.violations.length > 0 ? 'text-red-200' : 'text-red-200'}`}>
-                        Allocation Points: {validation.allocationPoints}/{validation.maxPoints}
-                      </p>
-                      {validation.violations.length > 0 && (
-                        <div className="mt-1 bg-red-800/50 rounded p-1.5">
-                          <ul className="space-y-0.5 text-xs text-red-100">
-                            {validation.violations.map((violation, idx) => (
-                              <li key={idx}>⚠ {violation}</li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-                    </div>
+                    <p className={`text-xs font-semibold mt-1 ${validation.violations.length > 0 ? 'text-red-200' : 'text-red-200'}`}>
+                      Allocation Points: {validation.allocationPoints}/{validation.maxPoints}
+                    </p>
                   ) : (
                     <p className="text-red-200 text-xs mt-1">Max 3 allocation points per bracket</p>
                   )
@@ -964,10 +1048,32 @@ export default function LootList() {
               </div>
               {(() => {
                 const validation = getBracketValidation('Bracket 1 (50-48)')
+                const bracketName = 'Bracket 1 (50-48)'
+                const isExpanded = expandedErrors.has(bracketName)
                 return validation && validation.violations.length > 0 ? (
-                  <span className="text-xs bg-red-700 px-2 py-1 rounded font-semibold">
-                    {validation.violations.length} {validation.violations.length === 1 ? 'Error' : 'Errors'}
-                  </span>
+                  <div className="flex flex-col items-end gap-2">
+                    <button
+                      onClick={() => toggleErrorExpanded(bracketName)}
+                      className="flex items-center gap-2 bg-red-500 hover:bg-red-600 border-2 border-red-300 px-3 py-1.5 rounded-lg font-bold text-white shadow-lg animate-pulse transition-colors cursor-pointer"
+                    >
+                      <span className="text-sm whitespace-nowrap">
+                        {validation.violations.length} {validation.violations.length === 1 ? 'Error' : 'Errors'}
+                      </span>
+                      <span className="text-xs">{isExpanded ? '▼' : '▶'}</span>
+                    </button>
+                    {isExpanded && (
+                      <div className="bg-red-600 border-2 border-red-400 rounded-lg px-3 py-2 shadow-lg max-w-md">
+                        <ul className="space-y-1 text-sm font-semibold text-white">
+                          {validation.violations.map((violation, idx) => (
+                            <li key={idx} className="flex items-center gap-2">
+                              <span className="text-base">⚠️</span>
+                              <span>{violation}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
                 ) : null
               })()}
             </div>
@@ -1002,26 +1108,15 @@ export default function LootList() {
         {/* Bracket 2 (47-45) */}
         <div className="bg-card border border-border rounded-xl overflow-hidden">
           <div className="bg-gradient-to-r from-orange-900 to-orange-700 px-4 py-2">
-            <div className="flex items-start justify-between">
+            <div className="flex items-start justify-between gap-4">
               <div>
                 <h2 className="text-lg font-bold text-foreground">Bracket 2 (47-45)</h2>
                 {(() => {
                   const validation = getBracketValidation('Bracket 2 (47-45)')
                   return validation ? (
-                    <div className="mt-1">
-                      <p className={`text-xs font-semibold ${validation.violations.length > 0 ? 'text-orange-200' : 'text-orange-200'}`}>
-                        Allocation Points: {validation.allocationPoints}/{validation.maxPoints}
-                      </p>
-                      {validation.violations.length > 0 && (
-                        <div className="mt-1 bg-orange-800/50 rounded p-1.5">
-                          <ul className="space-y-0.5 text-xs text-orange-100">
-                            {validation.violations.map((violation, idx) => (
-                              <li key={idx}>⚠ {violation}</li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-                    </div>
+                    <p className={`text-xs font-semibold mt-1 ${validation.violations.length > 0 ? 'text-orange-200' : 'text-orange-200'}`}>
+                      Allocation Points: {validation.allocationPoints}/{validation.maxPoints}
+                    </p>
                   ) : (
                     <p className="text-orange-200 text-xs mt-1">Max 3 allocation points per bracket</p>
                   )
@@ -1029,10 +1124,32 @@ export default function LootList() {
               </div>
               {(() => {
                 const validation = getBracketValidation('Bracket 2 (47-45)')
+                const bracketName = 'Bracket 2 (47-45)'
+                const isExpanded = expandedErrors.has(bracketName)
                 return validation && validation.violations.length > 0 ? (
-                  <span className="text-xs bg-orange-700 px-2 py-1 rounded font-semibold">
-                    {validation.violations.length} {validation.violations.length === 1 ? 'Error' : 'Errors'}
-                  </span>
+                  <div className="flex flex-col items-end gap-2">
+                    <button
+                      onClick={() => toggleErrorExpanded(bracketName)}
+                      className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 border-2 border-orange-300 px-3 py-1.5 rounded-lg font-bold text-white shadow-lg animate-pulse transition-colors cursor-pointer"
+                    >
+                      <span className="text-sm whitespace-nowrap">
+                        {validation.violations.length} {validation.violations.length === 1 ? 'Error' : 'Errors'}
+                      </span>
+                      <span className="text-xs">{isExpanded ? '▼' : '▶'}</span>
+                    </button>
+                    {isExpanded && (
+                      <div className="bg-orange-600 border-2 border-orange-400 rounded-lg px-3 py-2 shadow-lg max-w-md">
+                        <ul className="space-y-1 text-sm font-semibold text-white">
+                          {validation.violations.map((violation, idx) => (
+                            <li key={idx} className="flex items-center gap-2">
+                              <span className="text-base">⚠️</span>
+                              <span>{violation}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
                 ) : null
               })()}
             </div>
@@ -1067,26 +1184,15 @@ export default function LootList() {
         {/* Bracket 3 (44-42) */}
         <div className="bg-card border border-border rounded-xl overflow-hidden">
           <div className="bg-gradient-to-r from-yellow-900 to-yellow-700 px-4 py-2">
-            <div className="flex items-start justify-between">
+            <div className="flex items-start justify-between gap-4">
               <div>
                 <h2 className="text-lg font-bold text-foreground">Bracket 3 (44-42)</h2>
                 {(() => {
                   const validation = getBracketValidation('Bracket 3 (44-42)')
                   return validation ? (
-                    <div className="mt-1">
-                      <p className={`text-xs font-semibold ${validation.violations.length > 0 ? 'text-yellow-200' : 'text-yellow-200'}`}>
-                        Allocation Points: {validation.allocationPoints}/{validation.maxPoints}
-                      </p>
-                      {validation.violations.length > 0 && (
-                        <div className="mt-1 bg-yellow-800/50 rounded p-1.5">
-                          <ul className="space-y-0.5 text-xs text-yellow-100">
-                            {validation.violations.map((violation, idx) => (
-                              <li key={idx}>⚠ {violation}</li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-                    </div>
+                    <p className={`text-xs font-semibold mt-1 ${validation.violations.length > 0 ? 'text-yellow-200' : 'text-yellow-200'}`}>
+                      Allocation Points: {validation.allocationPoints}/{validation.maxPoints}
+                    </p>
                   ) : (
                     <p className="text-yellow-200 text-xs mt-1">Max 3 allocation points per bracket</p>
                   )
@@ -1094,10 +1200,32 @@ export default function LootList() {
               </div>
               {(() => {
                 const validation = getBracketValidation('Bracket 3 (44-42)')
+                const bracketName = 'Bracket 3 (44-42)'
+                const isExpanded = expandedErrors.has(bracketName)
                 return validation && validation.violations.length > 0 ? (
-                  <span className="text-xs bg-yellow-700 px-2 py-1 rounded font-semibold">
-                    {validation.violations.length} {validation.violations.length === 1 ? 'Error' : 'Errors'}
-                  </span>
+                  <div className="flex flex-col items-end gap-2">
+                    <button
+                      onClick={() => toggleErrorExpanded(bracketName)}
+                      className="flex items-center gap-2 bg-yellow-500 hover:bg-yellow-600 border-2 border-yellow-300 px-3 py-1.5 rounded-lg font-bold text-white shadow-lg animate-pulse transition-colors cursor-pointer"
+                    >
+                      <span className="text-sm whitespace-nowrap">
+                        {validation.violations.length} {validation.violations.length === 1 ? 'Error' : 'Errors'}
+                      </span>
+                      <span className="text-xs">{isExpanded ? '▼' : '▶'}</span>
+                    </button>
+                    {isExpanded && (
+                      <div className="bg-yellow-600 border-2 border-yellow-400 rounded-lg px-3 py-2 shadow-lg max-w-md">
+                        <ul className="space-y-1 text-sm font-semibold text-white">
+                          {validation.violations.map((violation, idx) => (
+                            <li key={idx} className="flex items-center gap-2">
+                              <span className="text-base">⚠️</span>
+                              <span>{violation}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
                 ) : null
               })()}
             </div>
@@ -1132,26 +1260,15 @@ export default function LootList() {
         {/* Bracket 4 (41-39) */}
         <div className="bg-card border border-border rounded-xl overflow-hidden">
           <div className="bg-gradient-to-r from-amber-900 to-amber-700 px-4 py-2">
-            <div className="flex items-start justify-between">
+            <div className="flex items-start justify-between gap-4">
               <div>
                 <h2 className="text-lg font-bold text-foreground">Bracket 4 (41-39)</h2>
                 {(() => {
                   const validation = getBracketValidation('Bracket 4 (41-39)')
                   return validation ? (
-                    <div className="mt-1">
-                      <p className={`text-xs font-semibold ${validation.violations.length > 0 ? 'text-amber-200' : 'text-amber-200'}`}>
-                        Allocation Points: {validation.allocationPoints}/{validation.maxPoints}
-                      </p>
-                      {validation.violations.length > 0 && (
-                        <div className="mt-1 bg-amber-800/50 rounded p-1.5">
-                          <ul className="space-y-0.5 text-xs text-amber-100">
-                            {validation.violations.map((violation, idx) => (
-                              <li key={idx}>⚠ {violation}</li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-                    </div>
+                    <p className={`text-xs font-semibold mt-1 ${validation.violations.length > 0 ? 'text-amber-200' : 'text-amber-200'}`}>
+                      Allocation Points: {validation.allocationPoints}/{validation.maxPoints}
+                    </p>
                   ) : (
                     <p className="text-amber-200 text-xs mt-1">Max 3 allocation points per bracket</p>
                   )
@@ -1159,10 +1276,32 @@ export default function LootList() {
               </div>
               {(() => {
                 const validation = getBracketValidation('Bracket 4 (41-39)')
+                const bracketName = 'Bracket 4 (41-39)'
+                const isExpanded = expandedErrors.has(bracketName)
                 return validation && validation.violations.length > 0 ? (
-                  <span className="text-xs bg-amber-700 px-2 py-1 rounded font-semibold">
-                    {validation.violations.length} {validation.violations.length === 1 ? 'Error' : 'Errors'}
-                  </span>
+                  <div className="flex flex-col items-end gap-2">
+                    <button
+                      onClick={() => toggleErrorExpanded(bracketName)}
+                      className="flex items-center gap-2 bg-amber-500 hover:bg-amber-600 border-2 border-amber-300 px-3 py-1.5 rounded-lg font-bold text-white shadow-lg animate-pulse transition-colors cursor-pointer"
+                    >
+                      <span className="text-sm whitespace-nowrap">
+                        {validation.violations.length} {validation.violations.length === 1 ? 'Error' : 'Errors'}
+                      </span>
+                      <span className="text-xs">{isExpanded ? '▼' : '▶'}</span>
+                    </button>
+                    {isExpanded && (
+                      <div className="bg-amber-600 border-2 border-amber-400 rounded-lg px-3 py-2 shadow-lg max-w-md">
+                        <ul className="space-y-1 text-sm font-semibold text-white">
+                          {validation.violations.map((violation, idx) => (
+                            <li key={idx} className="flex items-center gap-2">
+                              <span className="text-base">⚠️</span>
+                              <span>{violation}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
                 ) : null
               })()}
             </div>
