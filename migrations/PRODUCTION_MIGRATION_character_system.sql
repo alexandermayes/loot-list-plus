@@ -271,9 +271,9 @@ INSERT INTO characters (user_id, name, realm, class_id, level, is_main, created_
 SELECT DISTINCT
   gm.user_id,
   gm.character_name,
-  NULL as realm,  -- Will be filled in later if available
+  NULL::VARCHAR(255) as realm,  -- Will be filled in later if available
   gm.class_id,
-  NULL as level,
+  NULL::INTEGER as level,
   true as is_main,  -- Mark first character as main
   gm.joined_at
 FROM guild_members gm
