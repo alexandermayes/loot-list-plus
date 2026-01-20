@@ -60,6 +60,8 @@ export default function AdminLootItems() {
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('')
   const [filterTier, setFilterTier] = useState<string>('all')
   const [raidTiers, setRaidTiers] = useState<any[]>([])
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 25
   // Track specs for each item: { itemId: { primary: Set<specId>, secondary: Set<specId> } }
   const [itemSpecs, setItemSpecs] = useState<Record<string, { primary: Set<string>, secondary: Set<string> }>>({})
   // Track roles for each item: { itemId: Set<role> }
@@ -149,6 +151,11 @@ export default function AdminLootItems() {
 
     return () => clearTimeout(timer)
   }, [searchTerm])
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [debouncedSearchTerm, filterTier])
 
   useEffect(() => {
     if (!guildLoading) {
@@ -1138,6 +1145,14 @@ export default function AdminLootItems() {
     })
   }, [lootItems, debouncedSearchTerm, filterTier])
 
+  // Pagination calculations
+  const totalPages = Math.ceil(filteredItems.length / itemsPerPage)
+  const startIndex = (currentPage - 1) * itemsPerPage
+  const endIndex = startIndex + itemsPerPage
+  const paginatedItems = useMemo(() => {
+    return filteredItems.slice(startIndex, endIndex)
+  }, [filteredItems, startIndex, endIndex])
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -1272,7 +1287,7 @@ export default function AdminLootItems() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-[rgba(255,255,255,0.1)]">
-                {filteredItems.map((item) => (
+                {paginatedItems.map((item) => (
                   <tr key={item.id} className="hover:bg-[#1a1a1a]">
                     <td className="px-4 py-3">
                       <button
@@ -1402,6 +1417,46 @@ export default function AdminLootItems() {
               </tbody>
             </table>
           </div>
+
+          {/* Pagination Controls */}
+          {filteredItems.length > 0 && totalPages > 1 && (
+            <div className="flex items-center justify-between px-4 py-4 border-t border-[rgba(255,255,255,0.1)]">
+              <div className="text-sm text-[#a1a1a1]">
+                Showing {startIndex + 1}-{Math.min(endIndex, filteredItems.length)} of {filteredItems.length} items
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                  disabled={currentPage === 1}
+                  className="px-4 py-2 bg-[#151515] border border-[#383838] rounded-lg text-white text-sm hover:bg-[#1a1a1a] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  Previous
+                </button>
+                <div className="flex items-center gap-2">
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                    <button
+                      key={page}
+                      onClick={() => setCurrentPage(page)}
+                      className={`w-10 h-10 rounded-lg text-sm transition-colors ${
+                        currentPage === page
+                          ? 'bg-[#ff8000] text-white'
+                          : 'bg-[#151515] border border-[#383838] text-white hover:bg-[#1a1a1a]'
+                      }`}
+                    >
+                      {page}
+                    </button>
+                  ))}
+                </div>
+                <button
+                  onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                  disabled={currentPage === totalPages}
+                  className="px-4 py-2 bg-[#151515] border border-[#383838] rounded-lg text-white text-sm hover:bg-[#1a1a1a] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
         {filteredItems.length === 0 && (
