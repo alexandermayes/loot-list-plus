@@ -254,44 +254,27 @@ export default function LootList() {
           .select(`
             id, name, boss_name, item_slot, wowhead_id,
             classification, item_type, allocation_cost, is_available, roles,
-            loot_item_classes(class_id, spec_type)
+            loot_item_classes(class_id, spec_id, spec_type)
           `)
           .eq('raid_tier_id', selectedTierId)
           .eq('is_available', true)
           .order('id')
 
         if (itemsData) {
-          // Load character's spec to determine roles
-          let characterSpecName: string | null = null
-          if (activeCharacter.spec_id) {
-            const { data: specData } = await supabase
-              .from('class_specs')
-              .select('name')
-              .eq('id', activeCharacter.spec_id)
-              .single()
-
-            characterSpecName = specData?.name || null
-          }
-
-          // Import the spec role mapping
-          const { canSpecUseItem } = await import('@/utils/spec-role-mapping')
-
           const filteredItems = itemsData.filter(item => {
             const classes = item.loot_item_classes as any[]
-            const classMatch = classes.length === 0 || classes.some(c => c.class_id === activeCharacter.class_id)
 
-            // If no class match, don't show the item
-            if (!classMatch) return false
-
-            // If item has no role restrictions, show it
-            const itemRoles = item.roles || []
-            if (itemRoles.length === 0) return true
+            // If no spec restrictions, show to anyone
+            if (classes.length === 0) return true
 
             // If character has no spec set, show all items for their class
-            if (!characterSpecName) return true
+            if (!activeCharacter.spec_id) {
+              return classes.some(c => c.class_id === activeCharacter.class_id)
+            }
 
-            // Check if character's spec roles match any of the item's roles
-            return canSpecUseItem(characterSpecName, itemRoles)
+            // Check if character's specific spec is in primary or secondary list
+            const specMatch = classes.some(c => c.spec_id === activeCharacter.spec_id)
+            return specMatch
           })
           setLootItems(filteredItems)
         }
