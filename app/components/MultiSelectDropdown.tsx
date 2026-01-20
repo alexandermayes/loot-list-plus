@@ -75,11 +75,15 @@ export default function MultiSelectDropdown({
     }
   }, [isOpen])
 
-  // Close dropdown on scroll or resize
+  // Close dropdown on scroll or resize (but not when scrolling inside dropdown)
   useEffect(() => {
     if (!isOpen) return
 
-    const handleScrollOrResize = () => {
+    const handleScrollOrResize = (e: Event) => {
+      // Don't close if scrolling inside the dropdown
+      if (e.type === 'scroll' && dropdownRef.current?.contains(e.target as Node)) {
+        return
+      }
       setIsOpen(false)
       setSearch('')
     }
