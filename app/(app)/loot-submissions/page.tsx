@@ -135,56 +135,43 @@ export default function MasterLootPage() {
   }, [guildLoading, activeGuild])
 
   const loadSubmissions = useCallback(async (guildId: string, tierId: string) => {
-    const { data: submissionsData } = await supabase
-      .from('loot_submissions')
-      .select(`
-        id,
-        status,
-        submitted_at,
-        review_notes,
-        character_id
-      `)
-      .eq('guild_id', guildId)
-      .eq('raid_tier_id', tierId)
-      .neq('status', 'draft')
+    // Use RPC function to bypass RLS and get all submission data with character names
+    const { data: submissionsData, error } = await supabase
+      .rpc('get_guild_submissions', {
+        p_guild_id: guildId,
+        p_raid_tier_id: tierId
+      })
+
+    if (error) {
+      console.error('Error loading submissions:', error)
+      return
+    }
 
     if (!submissionsData) return
 
-    const submissionsWithDetails = await Promise.all(
-      submissionsData.map(async (sub: any) => {
-        const { data: characterData } = await supabase
-          .from('characters')
-          .select(`
-            id,
-            name,
-            user_id,
-            class:wow_classes(name, color_hex)
-          `)
-          .eq('id', sub.character_id)
-          .single()
-
-        const { count } = await supabase
-          .from('loot_submission_items')
-          .select('*', { count: 'exact', head: true })
-          .eq('submission_id', sub.id)
-
-        return {
-          ...sub,
-          member: characterData ? {
-            character_name: characterData.name,
-            role: 'Member',
-            class: characterData.class
-          } : null,
-          item_count: count || 0,
-          user: {
-            id: characterData?.user_id || '',
-            user_metadata: {}
-          }
+    // Transform data to match expected format
+    const formattedSubmissions = submissionsData.map((sub: any) => ({
+      id: sub.id,
+      status: sub.status,
+      submitted_at: sub.submitted_at,
+      review_notes: sub.review_notes,
+      character_id: sub.character_id,
+      member: sub.character_name ? {
+        character_name: sub.character_name,
+        role: 'Member',
+        class: {
+          name: sub.character_class_name,
+          color_hex: sub.character_class_color
         }
-      })
-    )
+      } : null,
+      item_count: sub.item_count || 0,
+      user: {
+        id: sub.user_id || '',
+        user_metadata: {}
+      }
+    }))
 
-    setSubmissions(submissionsWithDetails as any)
+    setSubmissions(formattedSubmissions as any)
   }, [supabase])
 
   useEffect(() => {
