@@ -874,7 +874,7 @@ export default function Dashboard() {
                         >
                           <X className="w-4 h-4" />
                         </button>
-                        <button className="px-4 py-2 bg-[#ff8000] hover:bg-[#ff9000] text-white rounded-[52px] text-sm font-medium transition">
+                        <button className="px-4 py-2 bg-white hover:bg-gray-100 text-black rounded-[52px] text-sm font-medium transition">
                           {submission.status === 'draft' ? 'Continue' : 'Revise'}
                         </button>
                       </div>

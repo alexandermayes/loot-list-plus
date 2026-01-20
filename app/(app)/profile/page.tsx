@@ -453,7 +453,7 @@ export default function ProfilePage() {
                 <p className="text-[#a1a1a1] mb-4">You haven't created any characters yet.</p>
                 <button
                   onClick={() => router.push('/characters/create')}
-                  className="px-6 py-3 bg-[#ff8000] hover:bg-[#ff9500] rounded-[52px] text-white font-medium text-base transition"
+                  className="px-6 py-3 bg-white hover:bg-gray-100 rounded-[52px] text-black font-medium text-base transition"
                 >
                   Create Your First Character
                 </button>

@@ -286,7 +286,7 @@ export default function CreateCharacterPage() {
             <button
               type="submit"
               disabled={loading}
-              className="px-8 py-3 bg-[#ff8000] hover:bg-[#ff9500] rounded-[52px] text-white font-medium text-[16px] transition disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-8 py-3 bg-white hover:bg-gray-100 rounded-[52px] text-black font-medium text-[16px] transition disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? 'Creating...' : 'Create Character'}
             </button>

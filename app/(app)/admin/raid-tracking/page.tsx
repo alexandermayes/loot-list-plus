@@ -905,7 +905,7 @@ export default function RaidTrackingPage() {
               </button>
               <button
                 onClick={confirmSkipDay}
-                className="flex-1 px-4 py-2 bg-[#ff8000] hover:bg-[#ff9500] rounded-[52px] text-white text-[14px] font-medium transition"
+                className="flex-1 px-4 py-2 bg-white hover:bg-gray-100 rounded-[52px] text-black text-[14px] font-medium transition"
               >
                 Skip Day
               </button>
@@ -971,7 +971,7 @@ export default function RaidTrackingPage() {
               </button>
               <button
                 onClick={importSignups}
-                className="flex-1 px-4 py-2 bg-[#ff8000] hover:bg-[#ff9500] rounded-[52px] text-white text-[14px] font-medium transition"
+                className="flex-1 px-4 py-2 bg-white hover:bg-gray-100 rounded-[52px] text-black text-[14px] font-medium transition"
               >
                 Import {importType === 'signup' ? 'Signups' : 'Attendance'}
               </button>

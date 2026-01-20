@@ -49,7 +49,7 @@ export default function ManageCharactersPage() {
 
             <button
               onClick={() => router.push('/characters/create')}
-              className="px-6 py-3 bg-[#ff8000] hover:bg-[#ff9500] rounded-[52px] text-white font-medium text-[16px] transition flex items-center gap-2"
+              className="px-6 py-3 bg-white hover:bg-gray-100 rounded-[52px] text-black font-medium text-[16px] transition flex items-center gap-2"
             >
               <Plus className="w-5 h-5" />
               Create Character
@@ -72,7 +72,7 @@ export default function ManageCharactersPage() {
               </p>
               <button
                 onClick={() => router.push('/characters/create')}
-                className="px-8 py-3 bg-[#ff8000] hover:bg-[#ff9500] rounded-[52px] text-white font-medium text-[16px] transition"
+                className="px-8 py-3 bg-white hover:bg-gray-100 rounded-[52px] text-black font-medium text-[16px] transition"
               >
                 Create Your First Character
               </button>

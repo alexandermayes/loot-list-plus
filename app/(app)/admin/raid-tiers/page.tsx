@@ -445,7 +445,7 @@ export default function RaidTiersPage() {
                     {!tier.is_active && (
                       <button
                         onClick={() => handleSetActive(tier.id)}
-                        className="px-3.5 py-2 bg-[#ff8000] hover:bg-[#e67300] rounded-[40px] text-white text-[13px] font-medium transition"
+                        className="px-3.5 py-2 bg-white hover:bg-gray-100 rounded-[40px] text-black text-[13px] font-medium transition"
                       >
                         Set Active
                       </button>

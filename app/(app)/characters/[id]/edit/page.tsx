@@ -209,7 +209,7 @@ export default function EditCharacterPage() {
             <h2 className="text-[24px] font-bold text-white mb-4">Character Not Found</h2>
             <button
               onClick={() => router.push('/characters/manage')}
-              className="px-8 py-3 bg-[#ff8000] hover:bg-[#ff9500] rounded-[52px] text-white font-medium text-[16px] transition"
+              className="px-8 py-3 bg-white hover:bg-gray-100 rounded-[52px] text-black font-medium text-[16px] transition"
             >
               Back to Characters
             </button>
@@ -353,7 +353,7 @@ export default function EditCharacterPage() {
               <button
                 type="submit"
                 disabled={saving}
-                className="px-8 py-3 bg-[#ff8000] hover:bg-[#ff9500] rounded-[52px] text-white font-medium text-[16px] transition disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-8 py-3 bg-white hover:bg-gray-100 rounded-[52px] text-black font-medium text-[16px] transition disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {saving ? 'Saving...' : 'Save Changes'}
               </button>
