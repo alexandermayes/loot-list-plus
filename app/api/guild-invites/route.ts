@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
         .in('role', ['Officer', 'Guild Master'])
         .limit(1)
 
-      isOfficerNewSystem = charMemberships && charMemberships.length > 0
+      isOfficerNewSystem = !!(charMemberships && charMemberships.length > 0)
     }
 
     if (!isOfficerOldSystem && !isOfficerNewSystem) {
@@ -173,7 +173,7 @@ export async function GET(request: NextRequest) {
         .in('role', ['Officer', 'Guild Master'])
         .limit(1)
 
-      isOfficerNewSystem = charMemberships && charMemberships.length > 0
+      isOfficerNewSystem = !!(charMemberships && charMemberships.length > 0)
     }
 
     if (!isOfficerOldSystem && !isOfficerNewSystem) {
