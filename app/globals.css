@@ -118,6 +118,30 @@
     height: 18px !important;
     display: inline-block !important;
   }
+
+  /* Custom scrollbar styles */
+  .sidebar-scrollable::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .sidebar-scrollable::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .sidebar-scrollable::-webkit-scrollbar-thumb {
+    background: #2a2d35;
+    border-radius: 3px;
+  }
+
+  .sidebar-scrollable::-webkit-scrollbar-thumb:hover {
+    background: #34373f;
+  }
+
+  /* Firefox scrollbar */
+  .sidebar-scrollable {
+    scrollbar-width: thin;
+    scrollbar-color: #2a2d35 transparent;
+  }
 }
 
 @layer utilities {
@@ -135,9 +159,9 @@
     appearance: none;
     background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='white' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
     background-repeat: no-repeat;
-    background-position: right 0.5rem center;
+    background-position: right 1rem center;
     background-size: 10px 6px;
-    padding-right: 2rem;
+    padding-right: 2.5rem;
   }
 
   .select-custom-xs {
@@ -147,5 +171,71 @@
     background-position: right 0.25rem center;
     background-size: 8px 5px;
     padding-right: 1.5rem;
+  }
+
+  /* Date picker calendar icon button styling - circular icon button */
+  .date-picker-wrapper {
+    position: relative;
+  }
+
+  .date-picker-input::-webkit-calendar-picker-indicator {
+    cursor: pointer;
+    position: relative;
+    background-color: #151515;
+    border: 1px solid #383838;
+    border-radius: 50%;
+    padding: 6px;
+    width: 24px;
+    height: 24px;
+    margin-right: 6px;
+    transition: all 0.2s ease;
+    opacity: 1;
+    background-size: 12px 12px;
+    background-position: center;
+  }
+
+  .date-picker-input::-webkit-calendar-picker-indicator:hover {
+    background-color: #1a1a1a;
+    border-color: #ff8000;
+    transform: scale(1.1);
+  }
+
+  .date-picker-input::-webkit-calendar-picker-indicator:active {
+    background-color: #0d0e11;
+    transform: scale(0.95);
+  }
+
+  /* Hide spin buttons and clear button */
+  .date-picker-input::-webkit-inner-spin-button,
+  .date-picker-input::-webkit-clear-button {
+    display: none;
+  }
+
+  /* Firefox date picker icon */
+  .date-picker-input::-moz-calendar-picker-indicator {
+    cursor: pointer;
+    position: relative;
+    background-color: #151515;
+    border: 1px solid #383838;
+    border-radius: 50%;
+    padding: 6px;
+    width: 24px;
+    height: 24px;
+    margin-right: 6px;
+    transition: all 0.2s ease;
+    opacity: 1;
+    background-size: 12px 12px;
+    background-position: center;
+  }
+
+  .date-picker-input::-moz-calendar-picker-indicator:hover {
+    background-color: #1a1a1a;
+    border-color: #ff8000;
+    transform: scale(1.1);
+  }
+
+  .date-picker-input::-moz-calendar-picker-indicator:active {
+    background-color: #0d0e11;
+    transform: scale(0.95);
   }
 }
