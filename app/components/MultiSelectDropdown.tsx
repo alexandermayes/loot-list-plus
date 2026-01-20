@@ -45,7 +45,7 @@ export default function MultiSelectDropdown({
 }: MultiSelectDropdownProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [search, setSearch] = useState('')
-  const [dropdownPosition, setDropdownPosition] = useState<{ top: number, left: number, width: number } | null>(null)
+  const [dropdownPosition, setDropdownPosition] = useState<{ top: number, left: number, width: number, openUpwards: boolean } | null>(null)
   const dropdownRef = useRef<HTMLDivElement>(null)
   const buttonRef = useRef<HTMLButtonElement>(null)
   const searchInputRef = useRef<HTMLInputElement>(null)
@@ -148,10 +148,16 @@ export default function MultiSelectDropdown({
   const handleToggleDropdown = () => {
     if (!isOpen && buttonRef.current) {
       const rect = buttonRef.current.getBoundingClientRect()
+      const dropdownMaxHeight = 400 // Approximate max height of dropdown (search + options)
+      const spaceBelow = window.innerHeight - rect.bottom
+      const spaceAbove = rect.top
+      const openUpwards = spaceBelow < dropdownMaxHeight && spaceAbove > spaceBelow
+
       setDropdownPosition({
-        top: rect.bottom,
+        top: openUpwards ? rect.top : rect.bottom,
         left: rect.left,
-        width: rect.width
+        width: rect.width,
+        openUpwards
       })
     }
     setIsOpen(!isOpen)
@@ -178,9 +184,10 @@ export default function MultiSelectDropdown({
 
       {isOpen && dropdownPosition && (
         <div
-          className="fixed z-[9999] mt-1 max-w-xs bg-[#151515] border border-[#383838] rounded-lg shadow-xl overflow-hidden"
+          className="fixed z-[9999] max-w-xs bg-[#151515] border border-[#383838] rounded-lg shadow-xl overflow-hidden"
           style={{
-            top: `${dropdownPosition.top + 4}px`,
+            top: dropdownPosition.openUpwards ? 'auto' : `${dropdownPosition.top + 4}px`,
+            bottom: dropdownPosition.openUpwards ? `${window.innerHeight - dropdownPosition.top + 4}px` : 'auto',
             left: `${dropdownPosition.left}px`,
             width: `${dropdownPosition.width}px`
           }}
