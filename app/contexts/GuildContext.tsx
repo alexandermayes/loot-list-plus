@@ -594,18 +594,57 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
   }, [])
 
   // Derived state
-  // Check if user has officer role via either old system or new character system
-  const isOfficer = !!(
-    activeMember?.role === 'Officer' ||
-    activeMember?.role === 'Guild Master' ||
-    (activeCharacter && activeGuild &&
-      characterMemberships.some(
-        m => m.character_id === activeCharacter.id &&
-             m.guild_id === activeGuild.id &&
-             (m.role === 'Officer' || m.role === 'Guild Master')
+  // Check if user has officer role via position (>= 50) instead of hardcoded names
+  // This allows guilds to customize role names while maintaining permissions
+  const [isOfficer, setIsOfficer] = useState(false)
+
+  useEffect(() => {
+    const checkOfficerStatus = async () => {
+      // Check old system first (backwards compatibility)
+      if (activeMember && activeGuild) {
+        const { data: roleData } = await supabase
+          .from('guild_roles')
+          .select('position')
+          .eq('guild_id', activeGuild.id)
+          .eq('name', activeMember.role)
+          .single()
+
+        if (roleData && roleData.position >= 50) {
+          setIsOfficer(true)
+          return
+        }
+      }
+
+      // Check new character system
+      if (!activeCharacter || !activeGuild) {
+        setIsOfficer(false)
+        return
+      }
+
+      // Find the membership for the active character in the active guild
+      const membership = characterMemberships.find(
+        m => m.character_id === activeCharacter.id && m.guild_id === activeGuild.id
       )
-    )
-  )
+
+      if (!membership) {
+        setIsOfficer(false)
+        return
+      }
+
+      // Fetch the role position from guild_roles
+      const { data: roleData } = await supabase
+        .from('guild_roles')
+        .select('position')
+        .eq('guild_id', activeGuild.id)
+        .eq('name', membership.role)
+        .single()
+
+      // Position >= 50 means officer or guild master
+      setIsOfficer(!!(roleData && roleData.position >= 50))
+    }
+
+    checkOfficerStatus()
+  }, [activeCharacter, activeGuild, characterMemberships, activeMember])
 
   const hasMultipleGuilds = userGuilds.length > 1
   const hasMultipleCharacters = userCharacters.length > 1
