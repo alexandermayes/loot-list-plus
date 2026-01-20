@@ -45,8 +45,7 @@ const specMapping: Record<string, string> = {
   // Role groups for convenience
   'Physical': 'Warrior Arms/Fury', // Will need to handle as role group
   'Caster': 'Mage Mage', // Will need to handle as role group
-  'Healer': 'Priest Holy/Disc', // Will need to handle as role group
-  'Tank': 'Warrior Protection'
+  'Healer': 'Priest Holy/Disc' // Will need to handle as role group
 }
 
 // Item data from the spreadsheet
