@@ -98,23 +98,14 @@ ALTER TABLE user_active_characters ENABLE ROW LEVEL SECURITY;
 -- STEP 3: RLS Policies for Characters
 -- =====================================================
 
+-- Note: Removed "Guild members can view guild characters" policy as it caused infinite recursion
+-- Users can only view their own characters via this policy
 DROP POLICY IF EXISTS "Users can view own characters" ON characters;
 CREATE POLICY "Users can view own characters" ON characters
   FOR SELECT
   USING (auth.uid() = user_id);
 
 DROP POLICY IF EXISTS "Guild members can view guild characters" ON characters;
-CREATE POLICY "Guild members can view guild characters" ON characters
-  FOR SELECT
-  USING (
-    EXISTS (
-      SELECT 1 FROM character_guild_memberships cgm1
-      INNER JOIN character_guild_memberships cgm2 ON cgm1.guild_id = cgm2.guild_id
-      INNER JOIN characters c ON c.id = cgm2.character_id
-      WHERE cgm1.character_id = characters.id
-      AND c.user_id = auth.uid()
-    )
-  );
 
 DROP POLICY IF EXISTS "Users can insert own characters" ON characters;
 CREATE POLICY "Users can insert own characters" ON characters
