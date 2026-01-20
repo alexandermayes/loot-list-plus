@@ -444,8 +444,8 @@ export default function AdminLootItems() {
         </div>
 
         {/* Items Table */}
-        <div className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl overflow-hidden">
-          <div className="overflow-x-auto">
+        <div className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl overflow-visible">
+          <div className="overflow-x-auto rounded-xl">
             <table className="w-full">
               <thead>
                 <tr className="bg-[#1a1a1a] border-b border-[rgba(255,255,255,0.1)]">
