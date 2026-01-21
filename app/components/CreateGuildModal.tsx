@@ -677,7 +677,7 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
                         }`}
                       >
                         <img
-                          src="https://wow.zamimg.com/images/wow/icons/large/ui_alliance_icon.jpg"
+                          src="https://wow.zamimg.com/images/wow/icons/large/inv_bannerpvp_02.jpg"
                           alt="Alliance"
                           className="w-10 h-10 rounded"
                         />
@@ -694,7 +694,7 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
                         }`}
                       >
                         <img
-                          src="https://wow.zamimg.com/images/wow/icons/large/ui_horde_icon.jpg"
+                          src="https://wow.zamimg.com/images/wow/icons/large/inv_bannerpvp_01.jpg"
                           alt="Horde"
                           className="w-10 h-10 rounded"
                         />
