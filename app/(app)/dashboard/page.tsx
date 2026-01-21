@@ -4,7 +4,8 @@ import { createClient } from '@/utils/supabase/client'
 import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import WelcomeScreen from '@/app/components/WelcomeScreen'
-import { User, CheckCircle2, AlertCircle, Trophy, X } from 'lucide-react'
+import { CreateCharacterModal } from '@/app/components/CreateCharacterModal'
+import { User, CheckCircle2, AlertCircle, Trophy, X, Plus } from 'lucide-react'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { useGuildContext } from '@/app/contexts/GuildContext'
 import ItemLink from '@/app/components/ItemLink'
@@ -111,6 +112,7 @@ export default function Dashboard() {
   const [receivedItems, setReceivedItems] = useState<ReceivedItem[]>([])
   const [actionsNeeded, setActionsNeeded] = useState<LootSubmission[]>([])
   const [dismissedActions, setDismissedActions] = useState<Set<string>>(new Set())
+  const [showCreateCharacterModal, setShowCreateCharacterModal] = useState(false)
 
   // Stats state
   const [stats, setStats] = useState({
@@ -649,6 +651,31 @@ export default function Dashboard() {
             </div>
           )}
 
+          {/* Create Character CTA - Show when no active character */}
+          {!activeCharacter && (
+            <div
+              onClick={() => setShowCreateCharacterModal(true)}
+              className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl p-6 hover:border-[#ff8000]/50 transition cursor-pointer"
+            >
+              <div className="flex items-center gap-4">
+                <div className="w-16 h-16 bg-[#252525] border border-[#383838] rounded-full flex items-center justify-center">
+                  <Plus className="w-8 h-8 text-[#a1a1a1]" />
+                </div>
+                <div className="flex-1">
+                  <h2 className="text-[24px] font-bold text-white">
+                    Create Your First Character
+                  </h2>
+                  <p className="text-[#a1a1a1] text-sm mt-1">
+                    Add a character to start submitting loot lists and tracking your priority
+                  </p>
+                </div>
+                <button className="px-6 py-2.5 bg-white hover:bg-gray-100 text-black rounded-[52px] text-[13px] font-medium transition">
+                  Create Character
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Current Character Info Card with Stats */}
           {activeCharacter && (
             <div className="flex flex-col lg:flex-row gap-6">
@@ -906,6 +933,12 @@ export default function Dashboard() {
 
         </div>
       )}
+
+      {/* Create Character Modal */}
+      <CreateCharacterModal
+        isOpen={showCreateCharacterModal}
+        onClose={() => setShowCreateCharacterModal(false)}
+      />
     </>
   )
 }

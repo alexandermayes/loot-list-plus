@@ -2,13 +2,17 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { useGuildContext } from '@/app/contexts/GuildContext'
+import { useGuildContext, Character } from '@/app/contexts/GuildContext'
 import { CharacterCard } from '@/app/components/CharacterCard'
+import { CreateCharacterModal } from '@/app/components/CreateCharacterModal'
+import { EditCharacterModal } from '@/app/components/EditCharacterModal'
 import { Plus, ArrowLeft } from 'lucide-react'
 
 export default function ManageCharactersPage() {
   const router = useRouter()
   const { userCharacters, characterMemberships, refreshCharacters, loading } = useGuildContext()
+  const [showCreateModal, setShowCreateModal] = useState(false)
+  const [editingCharacter, setEditingCharacter] = useState<Character | null>(null)
 
   useEffect(() => {
     document.title = 'LootList+ • Manage Characters'
@@ -48,7 +52,7 @@ export default function ManageCharactersPage() {
             </div>
 
             <button
-              onClick={() => router.push('/characters/create')}
+              onClick={() => setShowCreateModal(true)}
               className="px-6 py-3 bg-white hover:bg-gray-100 rounded-[52px] text-black font-medium text-[16px] transition flex items-center gap-2"
             >
               <Plus className="w-5 h-5" />
@@ -71,7 +75,7 @@ export default function ManageCharactersPage() {
                 Create your first character to start managing loot lists and joining guilds
               </p>
               <button
-                onClick={() => router.push('/characters/create')}
+                onClick={() => setShowCreateModal(true)}
                 className="px-8 py-3 bg-white hover:bg-gray-100 rounded-[52px] text-black font-medium text-[16px] transition"
               >
                 Create Your First Character
@@ -93,7 +97,7 @@ export default function ManageCharactersPage() {
                       <CharacterCard
                         key={character.id}
                         character={character}
-                        onClick={() => router.push(`/characters/${character.id}/edit`)}
+                        onClick={() => setEditingCharacter(character)}
                         showGuildCount
                         guildCount={getGuildCount(character.id)}
                       />
@@ -115,7 +119,7 @@ export default function ManageCharactersPage() {
                       <CharacterCard
                         key={character.id}
                         character={character}
-                        onClick={() => router.push(`/characters/${character.id}/edit`)}
+                        onClick={() => setEditingCharacter(character)}
                         showGuildCount
                         guildCount={getGuildCount(character.id)}
                       />
@@ -142,6 +146,19 @@ export default function ManageCharactersPage() {
           </div>
         )}
       </div>
+
+      {/* Modals */}
+      <CreateCharacterModal
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onSuccess={() => refreshCharacters()}
+      />
+      <EditCharacterModal
+        isOpen={editingCharacter !== null}
+        onClose={() => setEditingCharacter(null)}
+        character={editingCharacter}
+        onSuccess={() => refreshCharacters()}
+      />
     </div>
   )
 }

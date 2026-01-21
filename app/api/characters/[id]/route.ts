@@ -185,7 +185,7 @@ export async function PUT(
 
 /**
  * DELETE /api/characters/[id]
- * Delete a character
+ * Delete a character (requires name confirmation, cascades to loot submissions)
  */
 export async function DELETE(
   request: Request,
@@ -206,29 +206,74 @@ export async function DELETE(
 
     const { id } = await params
 
-    // Check if character has any loot submissions
-    const { data: submissions, error: submissionsError } = await supabase
-      .from('loot_submissions')
-      .select('id')
-      .eq('character_id', id)
-      .limit(1)
+    // Parse request body for confirmation
+    let confirmName = ''
+    try {
+      const body = await request.json()
+      confirmName = body.confirmName || ''
+    } catch {
+      // No body provided
+    }
 
-    if (submissionsError) {
-      console.error('Error checking submissions:', submissionsError)
+    // Get the character to verify ownership and name
+    const { data: character, error: charError } = await supabase
+      .from('characters')
+      .select('id, name, user_id')
+      .eq('id', id)
+      .eq('user_id', user.id)
+      .single()
+
+    if (charError || !character) {
       return NextResponse.json(
-        { error: 'Failed to check character submissions' },
-        { status: 500 }
+        { error: 'Character not found or unauthorized' },
+        { status: 404 }
       )
     }
 
-    if (submissions && submissions.length > 0) {
+    // Verify confirmation name matches (case-insensitive)
+    if (confirmName.toLowerCase() !== character.name.toLowerCase()) {
       return NextResponse.json(
-        {
-          error:
-            'Cannot delete character with existing loot submissions. Please remove submissions first.',
-        },
-        { status: 409 }
+        { error: 'Character name confirmation does not match' },
+        { status: 400 }
       )
+    }
+
+    // Delete loot submission items first (they reference loot_submissions)
+    const { data: submissions } = await supabase
+      .from('loot_submissions')
+      .select('id')
+      .eq('character_id', id)
+
+    if (submissions && submissions.length > 0) {
+      const submissionIds = submissions.map(s => s.id)
+
+      // Delete loot submission items
+      const { error: itemsError } = await supabase
+        .from('loot_submission_items')
+        .delete()
+        .in('submission_id', submissionIds)
+
+      if (itemsError) {
+        console.error('Error deleting submission items:', itemsError)
+        return NextResponse.json(
+          { error: 'Failed to delete character loot data' },
+          { status: 500 }
+        )
+      }
+
+      // Delete loot submissions
+      const { error: submissionsError } = await supabase
+        .from('loot_submissions')
+        .delete()
+        .eq('character_id', id)
+
+      if (submissionsError) {
+        console.error('Error deleting submissions:', submissionsError)
+        return NextResponse.json(
+          { error: 'Failed to delete character submissions' },
+          { status: 500 }
+        )
+      }
     }
 
     // Delete character (will cascade to character_guild_memberships)

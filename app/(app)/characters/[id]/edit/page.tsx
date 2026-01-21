@@ -37,6 +37,7 @@ export default function EditCharacterPage() {
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [deleteConfirmName, setDeleteConfirmName] = useState('')
   const [error, setError] = useState('')
 
   useEffect(() => {
@@ -154,8 +155,11 @@ export default function EditCharacterPage() {
   }
 
   const handleDelete = async () => {
-    if (!showDeleteConfirm) {
-      setShowDeleteConfirm(true)
+    if (!character) return
+
+    // Verify name matches
+    if (deleteConfirmName.toLowerCase() !== character.name.toLowerCase()) {
+      setError('Character name does not match')
       return
     }
 
@@ -164,7 +168,13 @@ export default function EditCharacterPage() {
 
     try {
       const response = await fetch(`/api/characters/${characterId}`, {
-        method: 'DELETE'
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          confirmName: deleteConfirmName
+        })
       })
 
       const data = await response.json()
@@ -172,7 +182,6 @@ export default function EditCharacterPage() {
       if (!response.ok) {
         setError(data.error || 'Failed to delete character')
         setDeleting(false)
-        setShowDeleteConfirm(false)
         return
       }
 
@@ -185,8 +194,12 @@ export default function EditCharacterPage() {
       console.error('Error deleting character:', err)
       setError('An error occurred while deleting the character')
       setDeleting(false)
-      setShowDeleteConfirm(false)
     }
+  }
+
+  const handleCancelDelete = () => {
+    setShowDeleteConfirm(false)
+    setDeleteConfirmName('')
   }
 
   const guildCount = characterMemberships.filter(
@@ -373,7 +386,7 @@ export default function EditCharacterPage() {
         <div className="bg-[#141519] border border-red-900/50 rounded-xl p-6">
           <h2 className="text-[18px] font-semibold text-red-400 mb-2">Danger Zone</h2>
           <p className="text-[14px] text-[#a1a1a1] mb-4">
-            Deleting a character is permanent and cannot be undone. {guildCount > 0 && 'This will remove the character from all guilds.'}
+            Deleting a character is permanent and cannot be undone. This will delete all loot submissions and remove the character from all guilds.
           </p>
 
           {!showDeleteConfirm ? (
@@ -385,22 +398,37 @@ export default function EditCharacterPage() {
               Delete Character
             </button>
           ) : (
-            <div className="flex items-center gap-4">
-              <button
-                onClick={handleDelete}
-                disabled={deleting}
-                className="px-6 py-3 bg-red-600 hover:bg-red-700 rounded-[52px] text-white font-medium text-[14px] transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-              >
-                <Trash2 className="w-4 h-4" />
-                {deleting ? 'Deleting...' : 'Confirm Delete'}
-              </button>
-              <button
-                onClick={() => setShowDeleteConfirm(false)}
-                disabled={deleting}
-                className="px-6 py-3 bg-[#151515] hover:bg-[#1a1a1a] border border-[rgba(255,255,255,0.1)] rounded-[52px] text-white font-medium text-[14px] transition"
-              >
-                Cancel
-              </button>
+            <div className="space-y-4">
+              <div className="p-4 bg-red-900/20 border border-red-600/50 rounded-xl">
+                <p className="text-red-200 text-[14px] mb-3">
+                  To confirm deletion, type <span className="font-bold text-white">{character?.name}</span> below:
+                </p>
+                <input
+                  type="text"
+                  value={deleteConfirmName}
+                  onChange={(e) => setDeleteConfirmName(e.target.value)}
+                  placeholder="Type character name to confirm"
+                  className="w-full px-4 py-3 bg-[#0d0e11] border border-red-600/50 rounded-xl text-white text-[14px] focus:outline-none focus:border-red-500 transition"
+                  autoFocus
+                />
+              </div>
+              <div className="flex items-center gap-4">
+                <button
+                  onClick={handleDelete}
+                  disabled={deleting || deleteConfirmName.toLowerCase() !== character?.name.toLowerCase()}
+                  className="px-6 py-3 bg-red-600 hover:bg-red-700 rounded-[52px] text-white font-medium text-[14px] transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  {deleting ? 'Deleting...' : 'Delete Forever'}
+                </button>
+                <button
+                  onClick={handleCancelDelete}
+                  disabled={deleting}
+                  className="px-6 py-3 bg-[#151515] hover:bg-[#1a1a1a] border border-[rgba(255,255,255,0.1)] rounded-[52px] text-white font-medium text-[14px] transition"
+                >
+                  Cancel
+                </button>
+              </div>
             </div>
           )}
         </div>

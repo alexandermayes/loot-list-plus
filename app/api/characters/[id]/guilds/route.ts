@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/utils/supabase/server'
+import { createServiceRoleClient } from '@/utils/supabase/service-role'
 
 /**
  * GET /api/characters/[id]/guilds
@@ -168,11 +169,22 @@ export async function POST(
           )
         }
 
+        // Also ensure guild_members record is active
+        const serviceSupabase = createServiceRoleClient()
+        await serviceSupabase
+          .from('guild_members')
+          .upsert({
+            guild_id,
+            user_id: user.id,
+            role: membership.role,
+            is_active: true
+          }, { onConflict: 'guild_id,user_id' })
+
         return NextResponse.json({ membership }, { status: 200 })
       }
     }
 
-    // Create new membership
+    // Create new character membership
     const { data: membership, error } = await supabase
       .from('character_guild_memberships')
       .insert({
@@ -201,6 +213,33 @@ export async function POST(
         { error: 'Failed to add character to guild' },
         { status: 500 }
       )
+    }
+
+    // Also ensure guild_members record exists for this user (for backwards compatibility)
+    const serviceSupabase = createServiceRoleClient()
+    const { data: existingGuildMember } = await serviceSupabase
+      .from('guild_members')
+      .select('id')
+      .eq('guild_id', guild_id)
+      .eq('user_id', user.id)
+      .maybeSingle()
+
+    if (!existingGuildMember) {
+      // Create guild_members record
+      const { error: guildMemberError } = await serviceSupabase
+        .from('guild_members')
+        .insert({
+          guild_id,
+          user_id: user.id,
+          role,
+          joined_via,
+          is_active: true
+        })
+
+      if (guildMemberError) {
+        console.error('Error creating guild_members record:', guildMemberError)
+        // Non-critical - character membership was created, continue
+      }
     }
 
     return NextResponse.json({ membership }, { status: 201 })

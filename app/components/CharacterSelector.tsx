@@ -5,6 +5,7 @@ import { ChevronDown, Check } from 'lucide-react'
 import { useGuildContext, Character } from '@/app/contexts/GuildContext'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
+import { CreateCharacterModal } from './CreateCharacterModal'
 
 // Get WoWhead class icon URL
 function getClassIconUrl(className: string | undefined): string {
@@ -23,6 +24,7 @@ export function CharacterSelector() {
   } = useGuildContext()
 
   const [isOpen, setIsOpen] = useState(false)
+  const [showCreateModal, setShowCreateModal] = useState(false)
   const router = useRouter()
 
   // Filter characters that are in the active guild
@@ -41,7 +43,7 @@ export function CharacterSelector() {
 
   const handleCreateCharacter = () => {
     setIsOpen(false)
-    router.push('/characters/create')
+    setShowCreateModal(true)
   }
 
   const handleManageCharacters = () => {
@@ -51,23 +53,57 @@ export function CharacterSelector() {
 
   if (!activeCharacter) {
     return (
-      <button
-        onClick={handleCreateCharacter}
-        className="w-full px-[14px] py-2 bg-[#141519] hover:bg-[#1a1a1a] border border-[#1a1a1a] rounded-xl text-white text-left transition flex items-center gap-3"
-      >
-        <Image
-          src="/icons/add-circle.svg"
-          alt="Create"
-          width={20}
-          height={20}
-          className="w-5 h-5 shrink-0 brightness-0 invert"
+      <>
+        <button
+          onClick={handleCreateCharacter}
+          className="w-full px-[14px] py-2.5 bg-white hover:bg-gray-100 rounded-[52px] text-black text-left transition flex items-center gap-3"
+        >
+          <Image
+            src="/icons/add-circle.svg"
+            alt="Create"
+            width={20}
+            height={20}
+            className="w-5 h-5 shrink-0"
+          />
+          <span className="text-[13px] font-medium">Create Character</span>
+        </button>
+        <CreateCharacterModal
+          isOpen={showCreateModal}
+          onClose={() => setShowCreateModal(false)}
         />
-        <span className="text-[13px] font-medium">Create Character</span>
-      </button>
+      </>
     )
   }
 
   const classColor = activeCharacter.class?.color_hex || '#808080'
+  const needsSetup = !activeCharacter.class_id
+
+  // If character needs setup, show a setup prompt instead of regular selector
+  if (needsSetup) {
+    return (
+      <>
+        <button
+          onClick={() => router.push(`/characters/${activeCharacter.id}/edit`)}
+          className="w-full px-[14px] py-2 bg-primary/10 hover:bg-primary/20 border border-primary/30 rounded-xl text-white text-left transition flex items-center gap-3"
+        >
+          <div className="w-5 h-5 rounded-full flex items-center justify-center bg-primary/20 text-primary font-bold text-[10px] flex-shrink-0 border border-primary/30">
+            {activeCharacter.name.charAt(0).toUpperCase()}
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-[13px] font-medium text-white truncate">{activeCharacter.name}</p>
+            <p className="text-[10px] text-primary">Setup required - tap to configure</p>
+          </div>
+          <svg className="w-4 h-4 text-primary flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          </svg>
+        </button>
+        <CreateCharacterModal
+          isOpen={showCreateModal}
+          onClose={() => setShowCreateModal(false)}
+        />
+      </>
+    )
+  }
 
   return (
     <div className="relative">
@@ -294,6 +330,11 @@ export function CharacterSelector() {
           </div>
         </>
       )}
+
+      <CreateCharacterModal
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+      />
     </div>
   )
 }
