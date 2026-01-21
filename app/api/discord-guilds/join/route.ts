@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
     // Get the guild details
     const { data: guild, error: guildError } = await supabase
       .from('guilds')
-      .select('id, name, discord_server_id, is_active')
+      .select('id, name, realm, discord_server_id, is_active')
       .eq('id', guild_id)
       .single()
 
