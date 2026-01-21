@@ -550,8 +550,6 @@ export const tempestkeep: Raid = {
         { name: 'Chestguard of the Vanquished Hero', slot: 'Token', wowhead_id: 30237 },
         { name: 'Chestguard of the Vanquished Champion', slot: 'Token', wowhead_id: 30238 },
         { name: 'Chestguard of the Vanquished Defender', slot: 'Token', wowhead_id: 30236 },
-        // Quest Item
-        { name: 'Kael\'s Vial Remnant', slot: 'Quest', wowhead_id: 31545 },
       ],
     },
     {

@@ -167,15 +167,15 @@ const bossIconNames: Record<string, string> = {
   'Attumen the Huntsman': 'ability_mount_undeadhorse',
   'Moroes': 'inv_weapon_shortblade_22',
   'Maiden of Virtue': 'spell_holy_holybolt',
-  'Opera Event': 'inv_misc_theatermask_01',
+  'Opera Event': 'inv_helmet_28',
   'The Big Bad Wolf': 'ability_druid_primalprecision',
   'Romulo & Julianne': 'inv_misc_flower_01',
   'Wizard of Oz': 'inv_helmet_13',
   'The Curator': 'inv_enchant_essencearcanelarge',
   'Terestian Illhoof': 'spell_shadow_summonimp',
   'Shade of Aran': 'inv_staff_13',
-  'Netherspite': 'spell_arcane_portalnetherstorm',
-  'Chess Event': 'inv_misc_chess_kingwhite',
+  'Netherspite': 'inv_misc_monsterscales_10',
+  'Chess Event': 'inv_staff_medivh',
   'Prince Malchezaar': 'inv_sword_59',
   'Nightbane': 'spell_shadow_raisedead',
 
@@ -198,7 +198,7 @@ const bossIconNames: Record<string, string> = {
   'Al\'ar': 'inv_misc_birdbeck_02',
   'High Astromancer Solarian': 'spell_arcane_starfire',
   'Void Reaver': 'spell_shadow_shadowandflame',
-  'Kael\'thas Sunstrider': 'achievement_boss_kaelthas',
+  'Kael\'thas Sunstrider': 'achievement_boss_kael-thassunstrider_01',
   'Trash': 'inv_misc_bag_10_blue',
 
   // Mount Hyjal
@@ -206,7 +206,7 @@ const bossIconNames: Record<string, string> = {
   'Anetheron': 'spell_shadow_carrionswarm',
   'Kaz\'rogal': 'spell_shadow_deathcoil',
   'Azgalor': 'spell_fire_fireball02',
-  'Archimonde': 'achievement_boss_archimonde',
+  'Archimonde': 'achievement_boss_archimonde-',
 
   // Black Temple
   'High Warlord Naj\'entus': 'inv_spear_06',
