@@ -132,6 +132,11 @@ export function CreateCharacterModal({ isOpen, onClose, onSuccess }: CreateChara
       // If user has an active guild, automatically add character to it
       if (activeGuild && data.character) {
         try {
+          // Check if user is the guild creator - they should be Guild Master
+          const { data: { user } } = await supabase.auth.getUser()
+          const isGuildCreator = user && activeGuild.created_by === user.id
+          const role = isGuildCreator ? 'Guild Master' : 'Member'
+
           await fetch(`/api/characters/${data.character.id}/guilds`, {
             method: 'POST',
             headers: {
@@ -139,7 +144,7 @@ export function CreateCharacterModal({ isOpen, onClose, onSuccess }: CreateChara
             },
             body: JSON.stringify({
               guild_id: activeGuild.id,
-              role: 'Member',
+              role,
               joined_via: 'manual'
             })
           })

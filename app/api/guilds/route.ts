@@ -200,14 +200,14 @@ export async function POST(request: NextRequest) {
       console.log('[GUILD CREATE] Created character:', characterId)
     }
 
-    // Create character guild membership for creator as Officer (use service role)
+    // Create character guild membership for creator as Guild Master (use service role)
     console.log('[GUILD CREATE] Creating membership for character:', characterId, 'guild:', guild.id)
     const { error: memberError } = await serviceSupabase
       .from('character_guild_memberships')
       .insert({
         character_id: characterId,
         guild_id: guild.id,
-        role: 'Officer',
+        role: 'Guild Master',
         is_active: true,
         joined_at: new Date().toISOString(),
         joined_via: 'manual'
