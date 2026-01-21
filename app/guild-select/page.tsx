@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import Sidebar from '@/app/components/Sidebar'
 import Image from 'next/image'
+import { CreateGuildModal } from '@/app/components/CreateGuildModal'
 
 interface AvailableGuild {
   id: string
@@ -42,6 +43,9 @@ export default function GuildSelectPage() {
   const [discordLoading, setDiscordLoading] = useState(false)
   const [availableGuilds, setAvailableGuilds] = useState<AvailableGuild[]>([])
   const [discordError, setDiscordError] = useState('')
+
+  // Create guild modal state
+  const [showCreateGuildModal, setShowCreateGuildModal] = useState(false)
 
   const supabase = createClient()
   const router = useRouter()
@@ -494,6 +498,40 @@ export default function GuildSelectPage() {
               </div>
             </div>
 
+            {/* Create Guild Section */}
+            <div className="w-full">
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-[rgba(255,255,255,0.1)]"></div>
+                </div>
+                <div className="relative flex justify-center">
+                  <span className="px-4 text-[14px] text-[#a1a1a1] bg-[#09090c]">or</span>
+                </div>
+              </div>
+
+              <button
+                onClick={() => setShowCreateGuildModal(true)}
+                className="mt-6 w-full bg-gradient-to-r from-[#ff8000]/10 to-[#ff6000]/10 hover:from-[#ff8000]/20 hover:to-[#ff6000]/20 border border-[#ff8000]/30 hover:border-[#ff8000]/50 rounded-[40px] px-[24px] py-[20px] flex items-center justify-center gap-4 transition group"
+              >
+                <div className="w-12 h-12 bg-gradient-to-br from-[#ff8000] to-[#ff6000] rounded-xl flex items-center justify-center shrink-0 shadow-lg shadow-[#ff8000]/20 group-hover:shadow-[#ff8000]/30 transition">
+                  <svg className="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12 5v14M5 12h14" />
+                  </svg>
+                </div>
+                <div className="text-left">
+                  <p className="font-poppins font-bold text-[18px] text-white leading-[normal]">
+                    Create Your Own Guild
+                  </p>
+                  <p className="font-poppins font-normal text-[14px] text-[#a1a1a1] leading-[normal]">
+                    Start a new guild and become Guild Master
+                  </p>
+                </div>
+                <svg className="w-6 h-6 text-[#ff8000] ml-auto opacity-50 group-hover:opacity-100 group-hover:translate-x-1 transition" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M9 18l6-6-6-6" />
+                </svg>
+              </button>
+            </div>
+
             {/* Need Help Section */}
             <div className="flex flex-col gap-[10px] items-center justify-center rounded-[40px] p-[24px] max-w-[409px] text-center">
               <div className="flex gap-[10px] items-center justify-center w-full">
@@ -507,7 +545,7 @@ export default function GuildSelectPage() {
                 </p>
               </div>
               <p className="font-poppins font-normal text-[14px] text-[#a1a1a1] text-center w-full leading-[normal]">
-                Ask your guild officer for an invite code or Discord link. Setting up a new guild? You'll become the first officer.
+                Ask your guild officer for an invite code or Discord link.
               </p>
             </div>
           </div>
@@ -625,6 +663,12 @@ export default function GuildSelectPage() {
           </div>
         </div>
       )}
+
+      {/* Create Guild Modal */}
+      <CreateGuildModal
+        isOpen={showCreateGuildModal}
+        onClose={() => setShowCreateGuildModal(false)}
+      />
 
       {/* Character Selection Modal */}
       {showCharacterModal && (
