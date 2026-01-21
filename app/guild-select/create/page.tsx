@@ -87,7 +87,7 @@ export default function CreateGuildPage() {
               cacheTimestamp = parsed.timestamp
               const fifteenMinutes = 15 * 60 * 1000
 
-              if (cachedData && Date.now() - cacheTimestamp < fifteenMinutes) {
+              if (cachedData && cachedData.length > 0 && Date.now() - cacheTimestamp < fifteenMinutes) {
                 console.log('Using cached Discord servers:', cachedData.length)
                 setDiscordGuilds(cachedData)
                 setLoading(false)
