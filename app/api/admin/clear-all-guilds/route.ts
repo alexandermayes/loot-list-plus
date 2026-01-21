@@ -1,48 +1,119 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/utils/supabase/admin'
 
-export async function POST() {
+export async function POST(request: NextRequest) {
   try {
     const supabase = createAdminClient()
 
-    // First, delete all guild members (to avoid foreign key issues)
-    const { error: membersError } = await supabase
+    // Check for guild name to keep
+    let keepGuildName: string | null = null
+    let keepGuildId: string | null = null
+
+    try {
+      const body = await request.json()
+      keepGuildName = body.keep_guild_name || null
+    } catch {
+      // No body provided, delete all
+    }
+
+    // If keeping a guild, find its ID first
+    if (keepGuildName) {
+      const { data: guildToKeep } = await supabase
+        .from('guilds')
+        .select('id')
+        .ilike('name', keepGuildName)
+        .single()
+
+      if (guildToKeep) {
+        keepGuildId = guildToKeep.id
+        console.log(`Keeping guild: ${keepGuildName} (${keepGuildId})`)
+      }
+    }
+
+    // Build the delete query for guild members
+    let membersQuery = supabase
       .from('guild_members')
       .delete()
-      .neq('id', '00000000-0000-0000-0000-000000000000') // Delete all
+
+    if (keepGuildId) {
+      membersQuery = membersQuery.neq('guild_id', keepGuildId)
+    } else {
+      membersQuery = membersQuery.neq('id', '00000000-0000-0000-0000-000000000000')
+    }
+
+    const { error: membersError } = await membersQuery
 
     if (membersError) {
       console.error('Error deleting guild members:', membersError)
       return NextResponse.json({ error: membersError.message }, { status: 500 })
     }
 
-    // Delete all invite codes
-    const { error: invitesError } = await supabase
+    // Delete character guild memberships
+    let charMembersQuery = supabase
+      .from('character_guild_memberships')
+      .delete()
+
+    if (keepGuildId) {
+      charMembersQuery = charMembersQuery.neq('guild_id', keepGuildId)
+    } else {
+      charMembersQuery = charMembersQuery.neq('id', '00000000-0000-0000-0000-000000000000')
+    }
+
+    const { error: charMembersError } = await charMembersQuery
+
+    if (charMembersError) {
+      console.error('Error deleting character guild memberships:', charMembersError)
+      // Not critical, continue
+    }
+
+    // Delete invite codes
+    let invitesQuery = supabase
       .from('guild_invite_codes')
       .delete()
-      .neq('id', '00000000-0000-0000-0000-000000000000') // Delete all
+
+    if (keepGuildId) {
+      invitesQuery = invitesQuery.neq('guild_id', keepGuildId)
+    } else {
+      invitesQuery = invitesQuery.neq('id', '00000000-0000-0000-0000-000000000000')
+    }
+
+    const { error: invitesError } = await invitesQuery
 
     if (invitesError) {
       console.error('Error deleting invite codes:', invitesError)
       // Not critical, continue
     }
 
-    // Delete all active guild entries
-    const { error: activeError } = await supabase
+    // Delete active guild entries
+    let activeQuery = supabase
       .from('user_active_guilds')
       .delete()
-      .neq('user_id', '00000000-0000-0000-0000-000000000000') // Delete all
+
+    if (keepGuildId) {
+      activeQuery = activeQuery.neq('active_guild_id', keepGuildId)
+    } else {
+      activeQuery = activeQuery.neq('user_id', '00000000-0000-0000-0000-000000000000')
+    }
+
+    const { error: activeError } = await activeQuery
 
     if (activeError) {
       console.error('Error deleting active guilds:', activeError)
       // Not critical, continue
     }
 
-    // Finally, delete all guilds
-    const { error: guildsError } = await supabase
+    // Finally, delete guilds
+    let guildsQuery = supabase
       .from('guilds')
       .delete()
-      .neq('id', '00000000-0000-0000-0000-000000000000') // Delete all
+
+    if (keepGuildId) {
+      guildsQuery = guildsQuery.neq('id', keepGuildId)
+    } else {
+      guildsQuery = guildsQuery.neq('id', '00000000-0000-0000-0000-000000000000')
+    }
+
+    const { error: guildsError } = await guildsQuery
 
     if (guildsError) {
       console.error('Error deleting guilds:', guildsError)
@@ -51,7 +122,10 @@ export async function POST() {
 
     return NextResponse.json({
       success: true,
-      message: 'All guilds, members, and related data have been deleted'
+      message: keepGuildId
+        ? `All guilds except "${keepGuildName}" have been deleted`
+        : 'All guilds, members, and related data have been deleted',
+      kept_guild: keepGuildId ? { id: keepGuildId, name: keepGuildName } : null
     })
   } catch (error: any) {
     console.error('Error:', error)
