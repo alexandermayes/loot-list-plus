@@ -159,13 +159,26 @@ export async function POST(request: NextRequest) {
       .select('id')
       .eq('character_id', characterId)
       .eq('guild_id', guild_id)
+      .eq('is_active', true)
       .single()
 
     if (existingMembership) {
-      return NextResponse.json(
-        { error: 'You are already a member of this guild' },
-        { status: 400 }
-      )
+      // Already a member - just set as active guild and return success
+      console.log('[DISCORD JOIN] Already a member, setting as active guild')
+      await serviceSupabase
+        .from('user_active_characters')
+        .upsert({
+          user_id: user.id,
+          active_character_id: characterId,
+          active_guild_id: guild_id,
+          updated_at: new Date().toISOString()
+        })
+
+      return NextResponse.json({
+        success: true,
+        guild_id: guild_id,
+        message: 'Already a member - set as active guild'
+      })
     }
 
     // Create character guild membership
