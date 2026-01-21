@@ -664,13 +664,13 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
 
                   {/* Faction */}
                   <div>
-                    <label className="block text-[13px] font-medium text-white mb-3">
+                    <label className="block text-[13px] font-medium text-white mb-2">
                       Faction
                     </label>
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-2 gap-2">
                       <button
                         onClick={() => setFaction('Alliance')}
-                        className={`p-4 rounded-xl border-2 transition flex items-center justify-center gap-3 ${
+                        className={`px-3 py-2.5 rounded-lg border transition flex items-center justify-center gap-2 ${
                           faction === 'Alliance'
                             ? 'border-blue-500 bg-blue-500/20'
                             : 'border-[#383838] bg-[#151515] hover:border-blue-500/50'
@@ -679,15 +679,15 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
                         <img
                           src="https://wow.zamimg.com/images/wow/icons/large/inv_bannerpvp_02.jpg"
                           alt="Alliance"
-                          className="w-10 h-10 rounded"
+                          className="w-6 h-6 rounded"
                         />
-                        <span className={`font-medium ${faction === 'Alliance' ? 'text-blue-400' : 'text-white'}`}>
+                        <span className={`font-medium text-[13px] ${faction === 'Alliance' ? 'text-blue-400' : 'text-white'}`}>
                           Alliance
                         </span>
                       </button>
                       <button
                         onClick={() => setFaction('Horde')}
-                        className={`p-4 rounded-xl border-2 transition flex items-center justify-center gap-3 ${
+                        className={`px-3 py-2.5 rounded-lg border transition flex items-center justify-center gap-2 ${
                           faction === 'Horde'
                             ? 'border-red-500 bg-red-500/20'
                             : 'border-[#383838] bg-[#151515] hover:border-red-500/50'
@@ -696,9 +696,9 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
                         <img
                           src="https://wow.zamimg.com/images/wow/icons/large/inv_bannerpvp_01.jpg"
                           alt="Horde"
-                          className="w-10 h-10 rounded"
+                          className="w-6 h-6 rounded"
                         />
-                        <span className={`font-medium ${faction === 'Horde' ? 'text-red-400' : 'text-white'}`}>
+                        <span className={`font-medium text-[13px] ${faction === 'Horde' ? 'text-red-400' : 'text-white'}`}>
                           Horde
                         </span>
                       </button>
