@@ -39,7 +39,7 @@ export default function ItemLink({ name, wowheadId, className = '', clickable = 
       href={clickable ? `https://www.wowhead.com/${domain}/item=${wowheadId}` : '#'}
       target={clickable ? "_blank" : undefined}
       rel={clickable ? "noopener noreferrer" : undefined}
-      className={`${className} inline-flex items-center gap-1`}
+      className={className}
       style={{
         color: '#a335ee'
       }}

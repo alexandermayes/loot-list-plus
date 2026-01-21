@@ -88,35 +88,34 @@
     font-feature-settings: "rlig" 1, "calt" 1;
   }
 
-  /* Reserve space for Wowhead icons to prevent layout shift */
+  /* Style Wowhead item links - reserve space for icon to prevent layout shift */
   a[data-wowhead] {
     display: inline-block !important;
-    padding-left: 21px;
-    position: relative;
+    padding-left: 26px !important;
+    position: relative !important;
     min-height: 18px;
-    /* Gray placeholder background */
-    background-image: linear-gradient(to bottom, rgba(128, 128, 128, 0.3), rgba(128, 128, 128, 0.3));
+    /* Question mark placeholder icon until real icon loads */
+    background-image: url('https://wow.zamimg.com/images/wow/icons/small/inv_misc_questionmark.jpg');
     background-size: 18px 18px;
-    background-position: 0px center;
+    background-position: left center;
     background-repeat: no-repeat;
   }
 
-  /* Position Wowhead icons on top of the placeholder */
+  /* Position Wowhead icons absolutely over the reserved space */
   a[data-wowhead] .iconsmall,
   a[data-wowhead] > img {
     position: absolute !important;
-    left: 0px !important;
+    left: 0 !important;
     top: 50% !important;
     transform: translateY(-50%) !important;
     width: 18px !important;
     height: 18px !important;
-    display: inline-block !important;
   }
 
   a[data-wowhead] .iconsmall img {
     width: 18px !important;
     height: 18px !important;
-    display: inline-block !important;
+    display: block !important;
   }
 
   /* Custom scrollbar styles */
