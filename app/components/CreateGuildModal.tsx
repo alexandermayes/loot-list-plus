@@ -677,9 +677,9 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
                         }`}
                       >
                         <img
-                          src="https://wow.zamimg.com/images/icons/alliance.png"
+                          src="https://wow.zamimg.com/images/wow/icons/large/ui_alliance_icon.jpg"
                           alt="Alliance"
-                          className="w-8 h-8"
+                          className="w-10 h-10 rounded"
                         />
                         <span className={`font-medium ${faction === 'Alliance' ? 'text-blue-400' : 'text-white'}`}>
                           Alliance
@@ -694,9 +694,9 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
                         }`}
                       >
                         <img
-                          src="https://wow.zamimg.com/images/icons/horde.png"
+                          src="https://wow.zamimg.com/images/wow/icons/large/ui_horde_icon.jpg"
                           alt="Horde"
-                          className="w-8 h-8"
+                          className="w-10 h-10 rounded"
                         />
                         <span className={`font-medium ${faction === 'Horde' ? 'text-red-400' : 'text-white'}`}>
                           Horde

@@ -254,30 +254,44 @@ export default function GuildSettingsPage() {
 
               <div className="space-y-2">
                 <label htmlFor="faction" className="block text-[13px] font-medium text-white">Faction</label>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-3">
                   <button
                     type="button"
                     onClick={() => setFaction('Alliance')}
                     disabled={saving}
-                    className={`p-4 rounded-xl border-2 transition ${
+                    className={`p-4 rounded-xl border-2 transition flex items-center justify-center gap-3 ${
                       faction === 'Alliance'
-                        ? 'border-blue-500 bg-blue-500/20 text-blue-200'
-                        : 'border-[rgba(255,255,255,0.1)] bg-[#151515] hover:border-blue-500/50 text-white'
+                        ? 'border-blue-500 bg-blue-500/20'
+                        : 'border-[rgba(255,255,255,0.1)] bg-[#151515] hover:border-blue-500/50'
                     }`}
                   >
-                    <p className="font-medium text-[14px]">Alliance</p>
+                    <img
+                      src="https://wow.zamimg.com/images/wow/icons/large/ui_alliance_icon.jpg"
+                      alt="Alliance"
+                      className="w-8 h-8 rounded"
+                    />
+                    <span className={`font-medium text-[14px] ${faction === 'Alliance' ? 'text-blue-400' : 'text-white'}`}>
+                      Alliance
+                    </span>
                   </button>
                   <button
                     type="button"
                     onClick={() => setFaction('Horde')}
                     disabled={saving}
-                    className={`p-4 rounded-xl border-2 transition ${
+                    className={`p-4 rounded-xl border-2 transition flex items-center justify-center gap-3 ${
                       faction === 'Horde'
-                        ? 'border-red-500 bg-red-500/20 text-red-200'
-                        : 'border-[rgba(255,255,255,0.1)] bg-[#151515] hover:border-red-500/50 text-white'
+                        ? 'border-red-500 bg-red-500/20'
+                        : 'border-[rgba(255,255,255,0.1)] bg-[#151515] hover:border-red-500/50'
                     }`}
                   >
-                    <p className="font-medium text-[14px]">Horde</p>
+                    <img
+                      src="https://wow.zamimg.com/images/wow/icons/large/ui_horde_icon.jpg"
+                      alt="Horde"
+                      className="w-8 h-8 rounded"
+                    />
+                    <span className={`font-medium text-[14px] ${faction === 'Horde' ? 'text-red-400' : 'text-white'}`}>
+                      Horde
+                    </span>
                   </button>
                 </div>
               </div>
