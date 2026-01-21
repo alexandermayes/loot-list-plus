@@ -97,12 +97,13 @@ interface ReceivedItem {
 }
 
 export default function Dashboard() {
-  const { activeGuild, activeMember, activeCharacter, userGuilds, loading: guildLoading, isOfficer, currentExpansion } = useGuildContext()
+  const { activeGuild, activeMember, activeCharacter, userGuilds, loading: guildLoading, isOfficer, currentExpansion, characterMemberships } = useGuildContext()
   const [raidTiers, setRaidTiers] = useState<RaidTier[]>([])
   const [loading, setLoading] = useState(true)
   const [user, setUser] = useState<any>(null)
   const [error, setError] = useState<string | null>(null)
   const [greeting, setGreeting] = useState<string>('')
+  const [redirecting, setRedirecting] = useState(false)
 
   // New dashboard state
   const [allSubmissions, setAllSubmissions] = useState<LootSubmission[]>([]) // For current character
@@ -200,8 +201,16 @@ export default function Dashboard() {
         return
       }
 
-      // If no active guild, redirect to guild select
-      if (!activeGuild && userGuilds.length === 0) {
+      // Prevent redirect loop
+      if (redirecting) {
+        return
+      }
+
+      // If no active guild and no character memberships, redirect to guild select
+      // Use characterMemberships instead of userGuilds for accurate check
+      if (!activeGuild && characterMemberships.length === 0) {
+        console.log('[DASHBOARD] No guild found, redirecting to guild-select...')
+        setRedirecting(true)
         router.push('/guild-select')
         return
       }
@@ -572,7 +581,7 @@ export default function Dashboard() {
     }
   }
 
-  if (loading || guildLoading) {
+  if (loading || guildLoading || redirecting) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <LoadingSpinner />
