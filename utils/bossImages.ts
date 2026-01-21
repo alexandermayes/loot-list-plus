@@ -194,14 +194,11 @@ const bossIconNames: Record<string, string> = {
   'Fathom-Lord Karathress': 'spell_nature_earthquake',
   'Lady Vashj': 'achievement_boss_ladyvashj',
 
-  // Tempest Keep
+  // Tempest Keep: The Eye
   'Al\'ar': 'inv_misc_birdbeck_02',
   'High Astromancer Solarian': 'spell_arcane_starfire',
   'Void Reaver': 'spell_shadow_shadowandflame',
   'Kael\'thas Sunstrider': 'achievement_boss_kaelthas',
-  'Priestess Delrissa': 'spell_holy_prayerofhealing',
-  'Selin Fireheart': 'spell_fire_immolation',
-  'Vexallus': 'spell_nature_lightning',
 
   // Mount Hyjal
   'Rage Winterchill': 'spell_frost_glacier',
