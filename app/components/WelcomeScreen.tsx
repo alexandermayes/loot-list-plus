@@ -12,9 +12,8 @@ export default function WelcomeScreen() {
   const router = useRouter()
   const supabase = createClient()
 
-  const handleDiscordJoin = async () => {
-    // TODO: Implement Discord guild sync
-    alert('Discord integration coming soon!')
+  const handleDiscordJoin = () => {
+    router.push('/guild-select/discord-join')
   }
 
   const handleCodeJoin = async () => {
