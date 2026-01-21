@@ -61,18 +61,30 @@ export default function GuildSelectPage() {
       }
       setUser(currentUser)
 
-      // Check if user already has guilds
-      const { data: memberships } = await supabase
-        .from('guild_members')
+      // Check if user already has guilds (via character memberships)
+      // First get user's characters
+      const { data: userChars } = await supabase
+        .from('characters')
         .select('id')
         .eq('user_id', currentUser.id)
-        .limit(1)
 
-      if (memberships && memberships.length > 0) {
-        setHasGuilds(true)
-        // User has guilds, redirect to dashboard
-        router.push('/dashboard')
-        return
+      if (userChars && userChars.length > 0) {
+        const characterIds = userChars.map(c => c.id)
+
+        // Check if any characters have guild memberships
+        const { data: memberships } = await supabase
+          .from('character_guild_memberships')
+          .select('id')
+          .in('character_id', characterIds)
+          .eq('is_active', true)
+          .limit(1)
+
+        if (memberships && memberships.length > 0) {
+          setHasGuilds(true)
+          // User has guilds, redirect to dashboard
+          router.push('/dashboard')
+          return
+        }
       }
 
       // Check Discord verification status
