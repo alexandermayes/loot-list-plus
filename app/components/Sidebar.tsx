@@ -6,6 +6,7 @@ import Image from 'next/image'
 import { useState, useRef, useEffect } from 'react'
 import { createClient } from '@/utils/supabase/client'
 import { CharacterSelector } from './CharacterSelector'
+import { CreateGuildModal } from './CreateGuildModal'
 
 interface SidebarProps {
   user?: any
@@ -27,6 +28,7 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange }
   const [discordLoading, setDiscordLoading] = useState(false)
   const [availableGuilds, setAvailableGuilds] = useState<any[]>([])
   const [discordError, setDiscordError] = useState('')
+  const [showCreateGuildModal, setShowCreateGuildModal] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
   const supabase = createClient()
 
@@ -271,7 +273,7 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange }
             <div className="relative" ref={dropdownRef}>
             {!activeGuild ? (
               <button
-                onClick={() => router.push('/guild-select/create')}
+                onClick={() => setShowCreateGuildModal(true)}
                 className="w-full border-[#ff8000] border-[0.5px] rounded-[12px] px-3.5 py-2 flex items-center gap-3 hover:opacity-90 transition"
                 style={{ background: 'linear-gradient(179.949deg, rgb(255, 128, 0) 0.15%, rgb(153, 77, 0) 113.91%)' }}
               >
@@ -385,7 +387,7 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange }
                 <button
                   onClick={() => {
                     setGuildDropdownOpen(false)
-                    router.push('/guild-select/create')
+                    setShowCreateGuildModal(true)
                   }}
                   className="w-full px-3.5 py-2 flex items-center gap-3 hover:bg-[#1a1a1a] transition text-left"
                 >
@@ -549,6 +551,12 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange }
         </button>
       </div>
     </aside>
+
+    {/* Create Guild Modal */}
+    <CreateGuildModal
+      isOpen={showCreateGuildModal}
+      onClose={() => setShowCreateGuildModal(false)}
+    />
 
     {/* Join Guild Modal */}
     {showJoinModal && (
