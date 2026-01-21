@@ -578,8 +578,7 @@ export default function MasterSheet() {
           {/* Raid Tier Tabs - At Top */}
           {raidTiers.length > 0 && (
             <div className="flex items-center gap-3 overflow-x-auto pb-2">
-              <span className="text-[#a1a1a1] text-sm font-medium whitespace-nowrap">Raid Tier:</span>
-              <div className="flex gap-2">
+                            <div className="flex gap-2">
                 {raidTiers.map((tier: any) => (
                   <button
                     key={tier.id}
@@ -600,21 +599,26 @@ export default function MasterSheet() {
 
           {/* Boss Quick Navigation - Sticky */}
           {bossNames.length > 0 && (
-            <div className="sticky top-0 z-10 bg-[#0d0e11]/95 backdrop-blur-sm border border-[rgba(255,255,255,0.1)] rounded-xl p-3">
-              <div className="flex items-center gap-3 overflow-x-auto">
-                <span className="text-[#a1a1a1] text-xs font-medium whitespace-nowrap">Jump to:</span>
-                <div className="flex gap-2 flex-1">
-                  {bossNames.map((boss) => (
-                    <button
-                      key={boss}
-                      onClick={() => scrollToBoss(boss)}
-                      className="px-3 py-1.5 bg-[#151515] hover:bg-[#1a1a1a] border border-[rgba(255,255,255,0.1)] rounded-[40px] text-xs font-medium text-white whitespace-nowrap transition"
-                    >
-                      {boss}
-                    </button>
-                  ))}
+            <div className="sticky top-0 z-10 flex gap-3">
+              {/* Boss chips container */}
+              <div className="flex-1 bg-[#0d0e11]/95 backdrop-blur-sm border border-[rgba(255,255,255,0.1)] rounded-xl p-3 overflow-x-auto">
+                <div className="flex items-center gap-3">
+                                    <div className="flex gap-2">
+                    {bossNames.map((boss) => (
+                      <button
+                        key={boss}
+                        onClick={() => scrollToBoss(boss)}
+                        className="px-3 py-1.5 bg-[#151515] hover:bg-[#1a1a1a] border border-[rgba(255,255,255,0.1)] rounded-[40px] text-xs font-medium text-white whitespace-nowrap transition"
+                      >
+                        {boss}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-                <div className="flex gap-2 border-l border-[rgba(255,255,255,0.1)] pl-3 ml-auto">
+              </div>
+              {/* Expand/Collapse container */}
+              <div className="flex-shrink-0 bg-[#0d0e11]/95 backdrop-blur-sm border border-[rgba(255,255,255,0.1)] rounded-xl p-3">
+                <div className="flex gap-2 h-full items-center">
                   <button
                     onClick={expandAll}
                     className="px-3 py-1.5 bg-[#151515] hover:bg-[#1a1a1a] border border-[rgba(255,255,255,0.1)] rounded-[40px] text-xs font-medium text-[#a1a1a1] hover:text-white whitespace-nowrap transition"
