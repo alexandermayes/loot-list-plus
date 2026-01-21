@@ -669,75 +669,50 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
                     </label>
                     <div className="grid grid-cols-2 gap-2">
                       <button
-                        onClick={() => {
-                          if (faction !== 'Alliance') {
-                            setFaction('Alliance')
-                            // Trigger animation by adding/removing a class
-                            const btn = document.getElementById('alliance-btn')
-                            btn?.classList.remove('faction-selected')
-                            void btn?.offsetWidth // Force reflow
-                            btn?.classList.add('faction-selected')
-                          }
-                        }}
-                        id="alliance-btn"
-                        className={`group relative px-3 py-2.5 rounded-lg border transition-all duration-300 flex items-center justify-center gap-2 overflow-hidden ${
+                        onClick={() => setFaction('Alliance')}
+                        className={`alliance-btn group relative px-3 py-2.5 rounded-lg border transition-all duration-300 flex items-center justify-center gap-2 overflow-hidden ${
                           faction === 'Alliance'
                             ? 'border-blue-500 bg-blue-500/20'
-                            : 'border-[#383838] bg-[#151515] hover:border-blue-500/50'
+                            : 'border-[#383838] bg-[#151515]'
                         }`}
                       >
                         <img
                           src="https://wow.zamimg.com/images/wow/icons/large/inv_bannerpvp_02.jpg"
                           alt="Alliance"
-                          className={`w-6 h-6 rounded relative z-10 transition-transform duration-300 ${faction === 'Alliance' ? 'scale-110' : 'group-hover:scale-105'}`}
+                          className={`w-6 h-6 rounded relative z-10 transition-transform duration-300 ${faction === 'Alliance' ? 'scale-110' : 'group-hover:scale-110'}`}
                         />
-                        <span className={`font-medium text-[13px] relative z-10 ${faction === 'Alliance' ? 'text-blue-400' : 'text-white'}`}>
+                        <span className={`font-medium text-[13px] relative z-10 transition-colors duration-300 ${faction === 'Alliance' ? 'text-blue-400' : 'text-white group-hover:text-blue-400'}`}>
                           Alliance
                         </span>
                       </button>
                       <button
-                        onClick={() => {
-                          if (faction !== 'Horde') {
-                            setFaction('Horde')
-                            const btn = document.getElementById('horde-btn')
-                            btn?.classList.remove('faction-selected')
-                            void btn?.offsetWidth // Force reflow
-                            btn?.classList.add('faction-selected')
-                          }
-                        }}
-                        id="horde-btn"
-                        className={`group relative px-3 py-2.5 rounded-lg border transition-all duration-300 flex items-center justify-center gap-2 overflow-hidden ${
+                        onClick={() => setFaction('Horde')}
+                        className={`horde-btn group relative px-3 py-2.5 rounded-lg border transition-all duration-300 flex items-center justify-center gap-2 overflow-hidden ${
                           faction === 'Horde'
                             ? 'border-red-500 bg-red-500/20'
-                            : 'border-[#383838] bg-[#151515] hover:border-red-500/50'
+                            : 'border-[#383838] bg-[#151515]'
                         }`}
                       >
                         <img
                           src="https://wow.zamimg.com/images/wow/icons/large/inv_bannerpvp_01.jpg"
                           alt="Horde"
-                          className={`w-6 h-6 rounded relative z-10 transition-transform duration-300 ${faction === 'Horde' ? 'scale-110' : 'group-hover:scale-105'}`}
+                          className={`w-6 h-6 rounded relative z-10 transition-transform duration-300 ${faction === 'Horde' ? 'scale-110' : 'group-hover:scale-110'}`}
                         />
-                        <span className={`font-medium text-[13px] relative z-10 ${faction === 'Horde' ? 'text-red-400' : 'text-white'}`}>
+                        <span className={`font-medium text-[13px] relative z-10 transition-colors duration-300 ${faction === 'Horde' ? 'text-red-400' : 'text-white group-hover:text-red-400'}`}>
                           Horde
                         </span>
                       </button>
                     </div>
                     <style jsx>{`
-                      @keyframes alliance-burst {
-                        0% { box-shadow: 0 0 0 0 rgba(59,130,246,0.7); transform: scale(1); }
-                        50% { box-shadow: 0 0 20px 10px rgba(59,130,246,0.4); transform: scale(1.05); }
-                        100% { box-shadow: 0 0 0 0 rgba(59,130,246,0); transform: scale(1); }
+                      .alliance-btn:hover {
+                        border-color: rgb(59, 130, 246);
+                        box-shadow: 0 0 20px rgba(59, 130, 246, 0.5), 0 0 40px rgba(59, 130, 246, 0.2);
+                        background: rgba(59, 130, 246, 0.15);
                       }
-                      @keyframes horde-burst {
-                        0% { box-shadow: 0 0 0 0 rgba(239,68,68,0.7); transform: scale(1); }
-                        50% { box-shadow: 0 0 20px 10px rgba(239,68,68,0.4); transform: scale(1.05); }
-                        100% { box-shadow: 0 0 0 0 rgba(239,68,68,0); transform: scale(1); }
-                      }
-                      #alliance-btn.faction-selected {
-                        animation: alliance-burst 0.4s ease-out;
-                      }
-                      #horde-btn.faction-selected {
-                        animation: horde-burst 0.4s ease-out;
+                      .horde-btn:hover {
+                        border-color: rgb(239, 68, 68);
+                        box-shadow: 0 0 20px rgba(239, 68, 68, 0.5), 0 0 40px rgba(239, 68, 68, 0.2);
+                        background: rgba(239, 68, 68, 0.15);
                       }
                     `}</style>
                   </div>
