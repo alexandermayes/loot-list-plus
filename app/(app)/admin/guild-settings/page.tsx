@@ -259,18 +259,21 @@ export default function GuildSettingsPage() {
                     type="button"
                     onClick={() => setFaction('Alliance')}
                     disabled={saving}
-                    className={`px-3 py-2.5 rounded-lg border transition flex items-center justify-center gap-2 ${
+                    className={`group relative px-3 py-2.5 rounded-lg border transition-all duration-300 flex items-center justify-center gap-2 overflow-hidden ${
                       faction === 'Alliance'
-                        ? 'border-blue-500 bg-blue-500/20'
+                        ? 'border-blue-500 bg-blue-500/20 shadow-[0_0_20px_rgba(59,130,246,0.5)] scale-[1.02]'
                         : 'border-[rgba(255,255,255,0.1)] bg-[#151515] hover:border-blue-500/50'
                     }`}
                   >
+                    {faction === 'Alliance' && (
+                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-blue-400/20 to-transparent animate-[shimmer_2s_infinite]" />
+                    )}
                     <img
                       src="https://wow.zamimg.com/images/wow/icons/large/inv_bannerpvp_02.jpg"
                       alt="Alliance"
-                      className="w-6 h-6 rounded"
+                      className={`w-6 h-6 rounded relative z-10 transition-transform duration-300 ${faction === 'Alliance' ? 'scale-110' : 'group-hover:scale-105'}`}
                     />
-                    <span className={`font-medium text-[13px] ${faction === 'Alliance' ? 'text-blue-400' : 'text-white'}`}>
+                    <span className={`font-medium text-[13px] relative z-10 ${faction === 'Alliance' ? 'text-blue-400' : 'text-white'}`}>
                       Alliance
                     </span>
                   </button>
@@ -278,22 +281,35 @@ export default function GuildSettingsPage() {
                     type="button"
                     onClick={() => setFaction('Horde')}
                     disabled={saving}
-                    className={`px-3 py-2.5 rounded-lg border transition flex items-center justify-center gap-2 ${
+                    className={`group relative px-3 py-2.5 rounded-lg border transition-all duration-300 flex items-center justify-center gap-2 overflow-hidden ${
                       faction === 'Horde'
-                        ? 'border-red-500 bg-red-500/20'
+                        ? 'border-red-500 bg-red-500/20 shadow-[0_0_20px_rgba(239,68,68,0.5)] scale-[1.02]'
                         : 'border-[rgba(255,255,255,0.1)] bg-[#151515] hover:border-red-500/50'
                     }`}
                   >
+                    {faction === 'Horde' && (
+                      <div className="absolute inset-0 bg-gradient-to-t from-red-600/30 via-orange-500/10 to-transparent animate-[flicker_0.5s_ease-in-out_infinite_alternate]" />
+                    )}
                     <img
                       src="https://wow.zamimg.com/images/wow/icons/large/inv_bannerpvp_01.jpg"
                       alt="Horde"
-                      className="w-6 h-6 rounded"
+                      className={`w-6 h-6 rounded relative z-10 transition-transform duration-300 ${faction === 'Horde' ? 'scale-110' : 'group-hover:scale-105'}`}
                     />
-                    <span className={`font-medium text-[13px] ${faction === 'Horde' ? 'text-red-400' : 'text-white'}`}>
+                    <span className={`font-medium text-[13px] relative z-10 ${faction === 'Horde' ? 'text-red-400' : 'text-white'}`}>
                       Horde
                     </span>
                   </button>
                 </div>
+                <style jsx>{`
+                  @keyframes shimmer {
+                    0% { transform: translateX(-100%); }
+                    100% { transform: translateX(100%); }
+                  }
+                  @keyframes flicker {
+                    0% { opacity: 0.5; }
+                    100% { opacity: 1; }
+                  }
+                `}</style>
               </div>
 
               <button
