@@ -204,6 +204,7 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange }
         'loot-submissions': '/loot-submissions',
         'loot-settings': '/loot-settings',
         'raid-tracking': '/admin/raid-tracking',
+        'prio-list': '/admin/prio-list',
       }
       router.push(routeMap[view] || '/dashboard')
     }
@@ -221,6 +222,7 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange }
     { name: 'Manage Expansions', view: 'expansions', icon: '/icons/raid-tracking.svg' },
     { name: 'Loot Submissions', view: 'loot-submissions', icon: '/icons/master-loot.svg' },
     { name: 'Master Loot', view: 'loot-settings', icon: '/icons/loot-lists.svg' },
+    { name: 'Priority List', view: 'prio-list', icon: '/icons/master-sheet.svg' },
     { name: 'Raid Tracking', view: 'raid-tracking', icon: '/icons/raid-tracking.svg' },
   ] : []
 

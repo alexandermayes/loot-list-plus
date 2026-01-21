@@ -129,9 +129,62 @@ export function calculateLootScore(
   itemRank: number,
   attendanceScore: number,
   rankModifier: number,
-  badLuckBonus: number = 0
+  badLuckBonus: number = 0,
+  priorityBonus: number = 0
 ): number {
-  return itemRank + attendanceScore + rankModifier + badLuckBonus
+  return itemRank + attendanceScore + rankModifier + badLuckBonus + priorityBonus
+}
+
+/**
+ * Item Priority configuration
+ */
+export interface ItemPriority {
+  role_priorities: Record<string, number | null>
+  class_priorities: Record<string, number | null>
+  character_priorities: Record<string, number | null>
+  priority_bonuses: { role: number; class: number; character: number }
+}
+
+/**
+ * Calculate priority bonus for a character on a specific item
+ * @param priority - The item's priority configuration
+ * @param characterId - The character's ID
+ * @param specId - The character's spec ID
+ * @param role - The character's role ('tank', 'healer', 'physical', 'caster')
+ * @returns The total priority bonus
+ */
+export function calculatePriorityBonus(
+  priority: ItemPriority | null | undefined,
+  characterId: string,
+  specId: string | null,
+  role: string | null
+): number {
+  if (!priority) return 0
+
+  let bonus = 0
+  const bonuses = priority.priority_bonuses || { role: 5, class: 3, character: 2 }
+
+  // Check role priority
+  if (role && priority.role_priorities && priority.role_priorities[role] != null) {
+    const rolePriority = priority.role_priorities[role] as number
+    // Higher priority (lower number) = higher bonus
+    // Priority 1 gets full bonus, priority 2 gets half, etc.
+    bonus += bonuses.role / rolePriority
+  }
+
+  // Check class/spec priority
+  if (specId && priority.class_priorities && priority.class_priorities[specId] != null) {
+    const classPriority = priority.class_priorities[specId] as number
+    bonus += bonuses.class / classPriority
+  }
+
+  // Check individual character priority
+  if (characterId && priority.character_priorities && priority.character_priorities[characterId] != null) {
+    const charPriority = priority.character_priorities[characterId] as number
+    bonus += bonuses.character / charPriority
+  }
+
+  return bonus
 }
 
 /**

@@ -4,8 +4,10 @@ import { createClient } from '@/utils/supabase/client'
 import { useState, useEffect, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import ItemLink from '@/app/components/ItemLink'
-import { calculateAttendanceScore, getRankModifier, calculateLootScore } from '@/utils/calculations'
+import { calculateAttendanceScore, getRankModifier, calculateLootScore, calculatePriorityBonus, type ItemPriority } from '@/utils/calculations'
+import { getSpecRoles } from '@/utils/spec-role-mapping'
 import { getBossOrder } from '@/utils/bossOrder'
+import { getBossImage } from '@/utils/bossImages'
 import { ExternalLink } from 'lucide-react'
 import { useGuildContext } from '@/app/contexts/GuildContext'
 import { ExpansionGuard } from '@/app/components/ExpansionGuard'
@@ -43,6 +45,8 @@ export default function MasterSheet() {
   const [raidTiers, setRaidTiers] = useState<any[]>([])
   const [selectedTierId, setSelectedTierId] = useState<string | null>(null)
   const [masterSheetVisible, setMasterSheetVisible] = useState<boolean>(false)
+  const [itemPriorities, setItemPriorities] = useState<Record<string, ItemPriority>>({})
+  const [collapsedBosses, setCollapsedBosses] = useState<Set<string>>(new Set())
 
   const supabase = createClient()
   const router = useRouter()
@@ -54,23 +58,49 @@ export default function MasterSheet() {
     document.title = 'LootList+ • Loot Rankings'
   }, [])
 
-  // Define Classic raid tier progression order
+  // Define raid tier progression order (Classic + TBC)
   const getRaidTierOrder = (tierName: string): number => {
     const order: Record<string, number> = {
+      // Classic
       'Molten Core': 1,
-      'MC': 1, // Alternative name
+      'MC': 1,
       'Onyxia\'s Lair': 2,
-      'Onyxia': 2, // Alternative name
+      'Onyxia': 2,
       'Blackwing Lair': 3,
-      'BWL': 3, // Alternative name
+      'BWL': 3,
       'Zul\'Gurub': 4,
-      'ZG': 4, // Alternative name
+      'ZG': 4,
       'Ruins of Ahn\'Qiraj': 5,
-      'AQ20': 5, // Alternative name
+      'AQ20': 5,
       'Temple of Ahn\'Qiraj': 6,
-      'AQ40': 6, // Alternative name
+      'AQ40': 6,
       'Naxxramas': 7,
-      'Naxx': 7 // Alternative name
+      'Naxx': 7,
+      // TBC Tier 4
+      'Karazhan': 10,
+      'Kara': 10,
+      'Gruul\'s Lair': 11,
+      'Gruul': 11,
+      'Magtheridon\'s Lair': 12,
+      'Mag': 12,
+      // TBC Tier 5
+      'Serpentshrine Cavern': 20,
+      'SSC': 20,
+      'Tempest Keep: The Eye': 21,
+      'Tempest Keep': 21,
+      'The Eye': 21,
+      'TK': 21,
+      // TBC Tier 6
+      'Hyjal Summit': 30,
+      'Mount Hyjal': 30,
+      'Hyjal': 30,
+      'Black Temple': 31,
+      'BT': 31,
+      'Zul\'Aman': 32,
+      'ZA': 32,
+      'Sunwell Plateau': 33,
+      'Sunwell': 33,
+      'SWP': 33
     }
     return order[tierName] || 999 // Unknown tiers go to the end
   }
@@ -310,7 +340,9 @@ export default function MasterSheet() {
             id,
             name,
             user_id,
+            spec_id,
             class:wow_classes(name, color_hex),
+            spec:class_specs(id, name),
             character_guild_memberships!inner(role)
           `)
           .in('id', characterIds)
@@ -322,6 +354,23 @@ export default function MasterSheet() {
           setLoading(false)
           return
         }
+
+        // Load item priorities for this tier
+        let prioritiesMap: Record<string, ItemPriority> = {}
+        try {
+          const prioResponse = await fetch(
+            `/api/prio-list?guild_id=${guildId}&raid_tier_id=${selectedTierId}`
+          )
+          if (prioResponse.ok) {
+            const prioData = await prioResponse.json()
+            for (const prio of prioData.priorities || []) {
+              prioritiesMap[prio.item_id] = prio
+            }
+          }
+        } catch (err) {
+          console.error('Error loading item priorities:', err)
+        }
+        setItemPriorities(prioritiesMap)
 
         // Pre-calculate attendance for all characters (with user fallback)
         const attendanceCache: Record<string, number> = {}
@@ -347,7 +396,29 @@ export default function MasterSheet() {
             const attendance = attendanceCache[character.id] || 0
             const characterRole = (character as any).character_guild_memberships?.[0]?.role || 'Member'
             const roleModifier = getRankModifier(characterRole, guildSettings)
-            const lootScore = calculateLootScore(r.rank, attendance, roleModifier)
+
+            // Calculate priority bonus
+            const itemPriority = prioritiesMap[item.id]
+            const specId = (character as any).spec_id || null
+            const specName = (character as any).spec?.name || null
+            const className = (character.class as any)?.name || null
+
+            // Determine the character's role based on their spec
+            let specRole: string | null = null
+            if (specName && className) {
+              const fullSpecName = className === specName ? className : `${className} ${specName}`
+              const roles = getSpecRoles(fullSpecName)
+              specRole = roles.length > 0 ? roles[0] : null
+            }
+
+            const priorityBonus = calculatePriorityBonus(
+              itemPriority,
+              character.id,
+              specId,
+              specRole
+            )
+
+            const lootScore = calculateLootScore(r.rank, attendance, roleModifier, 0, priorityBonus)
 
             rankings.push({
               player_name: character.name || 'Unknown',
@@ -470,6 +541,26 @@ export default function MasterSheet() {
     }
   }
 
+  const toggleBossCollapse = (bossName: string) => {
+    setCollapsedBosses(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(bossName)) {
+        newSet.delete(bossName)
+      } else {
+        newSet.add(bossName)
+      }
+      return newSet
+    })
+  }
+
+  const collapseAll = () => {
+    setCollapsedBosses(new Set(bossNames))
+  }
+
+  const expandAll = () => {
+    setCollapsedBosses(new Set())
+  }
+
   return (
     <ExpansionGuard>
       <div className="p-8 space-y-6 font-poppins">
@@ -512,7 +603,7 @@ export default function MasterSheet() {
             <div className="sticky top-0 z-10 bg-[#0d0e11]/95 backdrop-blur-sm border border-[rgba(255,255,255,0.1)] rounded-xl p-3">
               <div className="flex items-center gap-3 overflow-x-auto">
                 <span className="text-[#a1a1a1] text-xs font-medium whitespace-nowrap">Jump to:</span>
-                <div className="flex gap-2">
+                <div className="flex gap-2 flex-1">
                   {bossNames.map((boss) => (
                     <button
                       key={boss}
@@ -522,6 +613,20 @@ export default function MasterSheet() {
                       {boss}
                     </button>
                   ))}
+                </div>
+                <div className="flex gap-2 border-l border-[rgba(255,255,255,0.1)] pl-3 ml-auto">
+                  <button
+                    onClick={expandAll}
+                    className="px-3 py-1.5 bg-[#151515] hover:bg-[#1a1a1a] border border-[rgba(255,255,255,0.1)] rounded-[40px] text-xs font-medium text-[#a1a1a1] hover:text-white whitespace-nowrap transition"
+                  >
+                    Expand All
+                  </button>
+                  <button
+                    onClick={collapseAll}
+                    className="px-3 py-1.5 bg-[#151515] hover:bg-[#1a1a1a] border border-[rgba(255,255,255,0.1)] rounded-[40px] text-xs font-medium text-[#a1a1a1] hover:text-white whitespace-nowrap transition"
+                  >
+                    Collapse All
+                  </button>
                 </div>
               </div>
             </div>
@@ -564,68 +669,108 @@ export default function MasterSheet() {
                 <p className="text-[#a1a1a1]">No loot items found for this raid tier</p>
               </div>
             ) : (
-          <div className="space-y-4">
-            {Object.entries(groupedByBoss).sort(([bossA], [bossB]) => getBossOrder(bossA) - getBossOrder(bossB)).map(([boss, items]) => (
-              <div
-                key={boss}
-                id={`boss-${boss.replace(/\s+/g, '-')}`}
-                className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl overflow-hidden"
-              >
-                {/* Boss Header */}
-                <div className="bg-gradient-to-r from-red-900 to-red-700 px-6 py-3">
-                  <h2 className="text-[18px] font-bold text-white">{boss}</h2>
-                </div>
+          <div className="space-y-3">
+            {Object.entries(groupedByBoss).sort(([bossA], [bossB]) => getBossOrder(bossA) - getBossOrder(bossB)).map(([boss, items]) => {
+              const isCollapsed = collapsedBosses.has(boss)
+              return (
+                <div
+                  key={boss}
+                  id={`boss-${boss.replace(/\s+/g, '-')}`}
+                  className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl overflow-hidden"
+                >
+                  {/* Boss Header - Clickable */}
+                  <button
+                    onClick={() => toggleBossCollapse(boss)}
+                    className="w-full px-5 py-3 flex items-center justify-between hover:bg-[#1a1a1a] transition-colors"
+                  >
+                    <div className="flex items-center gap-3">
+                      {getBossImage(boss) && (
+                        <img
+                          src={getBossImage(boss)!}
+                          alt={boss}
+                          className="w-6 h-6 rounded"
+                        />
+                      )}
+                      <h2 className="text-[15px] font-semibold text-white">{boss}</h2>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="text-[12px] text-[#666] font-medium">
+                        {items.length} item{items.length !== 1 ? 's' : ''}
+                      </span>
+                      <svg
+                        className={`w-4 h-4 text-[#a1a1a1] transition-transform ${isCollapsed ? '' : 'rotate-90'}`}
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </div>
+                  </button>
 
-                {/* Items Table */}
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="bg-[#0d0e11] border-b border-[rgba(255,255,255,0.1)]">
-                        <th className="px-6 py-3 text-left text-[13px] font-semibold text-[#a1a1a1]">Item</th>
-                        <th className="px-6 py-3 text-left text-[13px] font-semibold text-[#a1a1a1]">Rankings</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-[rgba(255,255,255,0.1)]">
-                      {items.map((ir) => (
-                        <tr
-                          key={ir.item.id}
-                          id={`item-${ir.item.id}`}
-                          className={`transition-all ${ir.rankings.length === 0 ? 'bg-pink-900/20' : ''}`}
-                        >
-                          <td className="px-6 py-3" style={{ maxWidth: '250px' }}>
-                            <div className="truncate overflow-hidden">
-                              <ItemLink
-                                name={ir.item.name}
-                                wowheadId={ir.item.wowhead_id}
-                                className="font-medium text-[14px]"
-                              />
-                            </div>
-                            <p className="text-[#a1a1a1] text-[12px] mt-0.5 truncate">{ir.item.item_slot}</p>
-                          </td>
-                          <td className="px-6 py-3">
-                            {ir.rankings.length === 0 ? (
-                              <span className="text-[#a1a1a1] italic text-[13px]">No rankings</span>
-                            ) : (
-                              <div className="flex flex-wrap gap-2">
-                                {ir.rankings.map((ranking, index) => (
-                                  <div
-                                    key={index}
-                                    className="px-3 py-1 rounded-full text-[13px] font-medium text-white"
-                                    style={{ backgroundColor: ranking.class_color }}
-                                  >
-                                    {ranking.player_name}: {Math.round(ranking.loot_score)}
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                  {/* Items Table - Collapsible */}
+                  {!isCollapsed && (
+                    <div className="border-t border-[rgba(255,255,255,0.1)]">
+                      <table className="w-full">
+                        <thead>
+                          <tr className="bg-[#0d0e11]">
+                            <th className="px-5 py-2.5 text-left text-[12px] font-medium text-[#666] w-[280px]">Item</th>
+                            <th className="px-3 py-2.5 text-left text-[12px] font-medium text-[#666] w-[100px]">Slot</th>
+                            <th className="px-3 py-2.5 text-center text-[12px] font-medium text-[#666] w-[120px]">#1</th>
+                            <th className="px-3 py-2.5 text-center text-[12px] font-medium text-[#666] w-[120px]">#2</th>
+                            <th className="px-3 py-2.5 text-center text-[12px] font-medium text-[#666] w-[120px]">#3</th>
+                            <th className="px-3 py-2.5 text-center text-[12px] font-medium text-[#666] w-[120px]">#4</th>
+                            <th className="px-3 py-2.5 text-center text-[12px] font-medium text-[#666] w-[120px]">#5</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-[rgba(255,255,255,0.05)]">
+                          {items.map((ir) => (
+                            <tr
+                              key={ir.item.id}
+                              id={`item-${ir.item.id}`}
+                              className={`transition-all hover:bg-[#1a1a1a] ${ir.rankings.length === 0 ? 'bg-[#1a1519]' : ''}`}
+                            >
+                              <td className="px-5 py-2.5">
+                                <ItemLink
+                                  name={ir.item.name}
+                                  wowheadId={ir.item.wowhead_id}
+                                  className="font-medium text-[13px]"
+                                />
+                              </td>
+                              <td className="px-3 py-2.5 text-[12px] text-[#666]">
+                                {ir.item.item_slot}
+                              </td>
+                              {[0, 1, 2, 3, 4].map((index) => {
+                                const ranking = ir.rankings[index]
+                                return (
+                                  <td key={index} className="px-3 py-2.5 text-center">
+                                    {ranking ? (
+                                      <div className="flex flex-col items-center">
+                                        <span
+                                          className="text-[13px] font-medium"
+                                          style={{ color: ranking.class_color }}
+                                        >
+                                          {ranking.player_name}
+                                        </span>
+                                        <span className="text-[11px] text-[#666]">
+                                          {Math.round(ranking.loot_score)}
+                                        </span>
+                                      </div>
+                                    ) : (
+                                      <span className="text-[#333]">—</span>
+                                    )}
+                                  </td>
+                                )
+                              })}
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
                 </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
             )}
           </>
@@ -633,10 +778,16 @@ export default function MasterSheet() {
 
         {/* Legend */}
         <div className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl p-4">
-          <p className="text-[#a1a1a1] text-[13px]">
-            <span className="font-semibold text-white">Note:</span> If your rank number is tied you will roll.
-            Loot scores = item rank + attendance + role modifiers.
-          </p>
+          <div className="flex items-center justify-between">
+            <p className="text-[#666] text-[12px]">
+              Scores = item rank + attendance + role modifiers + priority bonuses. Ties go to roll.
+            </p>
+            {Object.keys(itemPriorities).length > 0 && (
+              <p className="text-[#666] text-[12px]">
+                {Object.keys(itemPriorities).length} items with priority
+              </p>
+            )}
+          </div>
         </div>
       </div>
     </ExpansionGuard>

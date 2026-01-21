@@ -76,7 +76,7 @@ function transformTBCRaids(): RaidDefinition[] {
 // Classic WoW expansion data
 const CLASSIC_WOW_DATA: ExpansionDefinition = {
   name: 'Classic',
-  displayName: 'Classic WoW',
+  displayName: 'Classic',
   raids: transformClassicRaids()
 }
 

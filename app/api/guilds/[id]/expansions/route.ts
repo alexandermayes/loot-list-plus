@@ -82,61 +82,51 @@ export async function POST(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Verify user is an officer in this guild
-    const { data: membership, error: membershipError } = await supabase
-      .from('character_guild_memberships')
-      .select(`
-        id,
-        role,
-        guild_id,
-        character:characters!inner (
-          user_id
-        )
-      `)
-      .eq('guild_id', guildId)
-      .eq('is_active', true)
-      .eq('characters.user_id', user.id)
+    // Check if user is guild creator (always has officer permissions)
+    const { data: guild } = await supabase
+      .from('guilds')
+      .select('created_by')
+      .eq('id', guildId)
       .single()
 
-    console.log('POST /api/guilds/[id]/expansions - User ID:', user.id)
-    console.log('POST /api/guilds/[id]/expansions - Guild ID:', guildId)
-    console.log('POST /api/guilds/[id]/expansions - Membership query result:', membership)
-    console.log('POST /api/guilds/[id]/expansions - Membership error:', membershipError)
+    const isGuildCreator = guild?.created_by === user.id
 
-    if (!membership) {
-      console.log('POST /api/guilds/[id]/expansions - No membership found')
-      return NextResponse.json({
-        error: 'Not a member of this guild',
-        debug: {
-          userId: user.id,
-          guildId,
-          membershipError: membershipError?.message
-        }
-      }, { status: 403 })
-    }
+    // If not guild creator, verify user is an officer via character membership
+    if (!isGuildCreator) {
+      const { data: membership, error: membershipError } = await supabase
+        .from('character_guild_memberships')
+        .select(`
+          id,
+          role,
+          guild_id,
+          character:characters!inner (
+            user_id
+          )
+        `)
+        .eq('guild_id', guildId)
+        .eq('is_active', true)
+        .eq('characters.user_id', user.id)
+        .single()
 
-    // Check if user is an officer (position >= 50)
-    const { data: roleData, error: roleError } = await supabase
-      .from('guild_roles')
-      .select('position')
-      .eq('guild_id', guildId)
-      .eq('name', membership.role)
-      .single()
+      if (!membership) {
+        return NextResponse.json({
+          error: 'Not a member of this guild'
+        }, { status: 403 })
+      }
 
-    console.log('POST /api/guilds/[id]/expansions - Role:', membership.role)
-    console.log('POST /api/guilds/[id]/expansions - Role data:', roleData)
-    console.log('POST /api/guilds/[id]/expansions - Role error:', roleError)
+      // Check if user is an officer (position >= 50)
+      const { data: roleData } = await supabase
+        .from('guild_roles')
+        .select('position')
+        .eq('guild_id', guildId)
+        .eq('name', membership.role)
+        .single()
 
-    if (!roleData || roleData.position < 50) {
-      console.log('POST /api/guilds/[id]/expansions - Insufficient permissions. Position:', roleData?.position)
-      return NextResponse.json({
-        error: 'Officer permissions required',
-        debug: {
-          role: membership.role,
-          position: roleData?.position,
-          required: 50
-        }
-      }, { status: 403 })
+      if (!roleData || roleData.position < 50) {
+        return NextResponse.json({
+          error: 'Officer permissions required'
+        }, { status: 403 })
+      }
     }
 
     // Seed the expansion using service role to bypass RLS

@@ -55,10 +55,10 @@ export default function RaidTiersPage() {
     document.title = 'LootList+ • Raid Tiers'
   }, [])
 
-  // Define Classic and TBC raid tier progression order
+  // Define raid tier progression order (Classic + TBC)
   const getRaidTierOrder = (tierName: string): number => {
     const order: Record<string, number> = {
-      // Classic (Vanilla) raids
+      // Classic
       'Molten Core': 1,
       'MC': 1,
       'Onyxia\'s Lair': 2,
@@ -73,28 +73,32 @@ export default function RaidTiersPage() {
       'AQ40': 6,
       'Naxxramas': 7,
       'Naxx': 7,
-
-      // TBC raids
-      'Karazhan': 11,
-      'Kara': 11,
-      'Gruul\'s Lair': 12,
-      'Gruul': 12,
-      'Magtheridon\'s Lair': 13,
-      'Magtheridon': 13,
-      'Mag': 13,
-      'Serpentshrine Cavern': 14,
-      'SSC': 14,
-      'Tempest Keep': 15,
-      'TK': 15,
-      'Mount Hyjal': 16,
-      'Hyjal': 16,
-      'Black Temple': 17,
-      'BT': 17,
-      'Zul\'Aman': 18,
-      'ZA': 18,
-      'Sunwell Plateau': 19,
-      'Sunwell': 19,
-      'SWP': 19
+      // TBC Tier 4
+      'Karazhan': 10,
+      'Kara': 10,
+      'Gruul\'s Lair': 11,
+      'Gruul': 11,
+      'Magtheridon\'s Lair': 12,
+      'Magtheridon': 12,
+      'Mag': 12,
+      // TBC Tier 5
+      'Serpentshrine Cavern': 20,
+      'SSC': 20,
+      'Tempest Keep: The Eye': 21,
+      'Tempest Keep': 21,
+      'The Eye': 21,
+      'TK': 21,
+      // TBC Tier 6
+      'Hyjal Summit': 30,
+      'Mount Hyjal': 30,
+      'Hyjal': 30,
+      'Black Temple': 31,
+      'BT': 31,
+      'Zul\'Aman': 32,
+      'ZA': 32,
+      'Sunwell Plateau': 33,
+      'Sunwell': 33,
+      'SWP': 33
     }
     return order[tierName] || 999
   }

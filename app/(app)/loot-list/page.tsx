@@ -89,23 +89,49 @@ export default function LootList() {
     document.title = 'LootList+ • Loot List'
   }, [])
 
-  // Define Classic raid tier progression order
+  // Define raid tier progression order (Classic + TBC)
   const getRaidTierOrder = (tierName: string): number => {
     const order: Record<string, number> = {
+      // Classic
       'Molten Core': 1,
-      'MC': 1, // Alternative name
+      'MC': 1,
       'Onyxia\'s Lair': 2,
-      'Onyxia': 2, // Alternative name
+      'Onyxia': 2,
       'Blackwing Lair': 3,
-      'BWL': 3, // Alternative name
+      'BWL': 3,
       'Zul\'Gurub': 4,
-      'ZG': 4, // Alternative name
+      'ZG': 4,
       'Ruins of Ahn\'Qiraj': 5,
-      'AQ20': 5, // Alternative name
+      'AQ20': 5,
       'Temple of Ahn\'Qiraj': 6,
-      'AQ40': 6, // Alternative name
+      'AQ40': 6,
       'Naxxramas': 7,
-      'Naxx': 7 // Alternative name
+      'Naxx': 7,
+      // TBC Tier 4
+      'Karazhan': 10,
+      'Kara': 10,
+      'Gruul\'s Lair': 11,
+      'Gruul': 11,
+      'Magtheridon\'s Lair': 12,
+      'Mag': 12,
+      // TBC Tier 5
+      'Serpentshrine Cavern': 20,
+      'SSC': 20,
+      'Tempest Keep: The Eye': 21,
+      'Tempest Keep': 21,
+      'The Eye': 21,
+      'TK': 21,
+      // TBC Tier 6
+      'Hyjal Summit': 30,
+      'Mount Hyjal': 30,
+      'Hyjal': 30,
+      'Black Temple': 31,
+      'BT': 31,
+      'Zul\'Aman': 32,
+      'ZA': 32,
+      'Sunwell Plateau': 33,
+      'Sunwell': 33,
+      'SWP': 33
     }
     return order[tierName] || 999 // Unknown tiers go to the end
   }
