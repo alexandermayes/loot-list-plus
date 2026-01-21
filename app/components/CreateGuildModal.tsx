@@ -66,6 +66,7 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
   const [nameAvailable, setNameAvailable] = useState<boolean | null>(null)
   const [nameError, setNameError] = useState('')
   const [error, setError] = useState('')
+  const [discordError, setDiscordError] = useState('')
 
   // Load user and Discord servers on open
   useEffect(() => {
@@ -74,6 +75,11 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
       // Reset to first step
       setCurrentStep('discord')
       setError('')
+      setDiscordError('')
+      setDiscordGuilds([])
+      setSelectedDiscordServer('')
+      setShowManualEntry(false)
+      setManualServerId('')
     }
   }, [isOpen])
 
@@ -108,6 +114,7 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
   }
 
   const loadDiscordServers = async (userId: string) => {
+    setDiscordError('')
     try {
       const cacheKey = `discord_servers_${userId}`
       const cached = localStorage.getItem(cacheKey)
@@ -120,7 +127,7 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
           const cacheTimestamp = parsed.timestamp
           const fifteenMinutes = 15 * 60 * 1000
 
-          if (cachedData && Date.now() - cacheTimestamp < fifteenMinutes) {
+          if (cachedData && cachedData.length > 0 && Date.now() - cacheTimestamp < fifteenMinutes) {
             setDiscordGuilds(cachedData)
             return
           }
@@ -130,8 +137,9 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
       }
 
       const response = await fetch('/api/discord-servers')
+      const data = await response.json()
+
       if (response.ok) {
-        const data = await response.json()
         const guilds = data.guilds || []
         setDiscordGuilds(guilds)
         localStorage.setItem(cacheKey, JSON.stringify({
@@ -140,9 +148,14 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
         }))
       } else if (response.status === 429 && cachedData) {
         setDiscordGuilds(cachedData)
+      } else {
+        // Clear cache on error
+        localStorage.removeItem(cacheKey)
+        setDiscordError(data.error || 'Failed to load Discord servers')
       }
     } catch (err) {
       console.error('Error fetching Discord servers:', err)
+      setDiscordError('Failed to connect to Discord')
     }
   }
 
@@ -427,7 +440,16 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
                       Choose the server where your guild members are
                     </p>
 
-                    {discordGuilds.length > 0 ? (
+                    {discordError ? (
+                      <div className="p-4 bg-yellow-900/20 border border-yellow-600/50 rounded-xl">
+                        <p className="text-yellow-200 text-[13px] mb-2">{discordError}</p>
+                        {discordError.includes('log out') && (
+                          <p className="text-yellow-200/70 text-[12px]">
+                            Your Discord session may have expired. Try logging out and back in, or use the manual entry below.
+                          </p>
+                        )}
+                      </div>
+                    ) : discordGuilds.length > 0 ? (
                       <div className="grid grid-cols-1 gap-2 max-h-[200px] overflow-y-auto pr-2">
                         {discordGuilds.map((guild) => (
                           <button
@@ -467,8 +489,11 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
                         ))}
                       </div>
                     ) : (
-                      <div className="text-center py-4 text-[#a1a1a1] text-[13px]">
-                        No Discord servers found. Enter your Server ID manually below.
+                      <div className="p-4 bg-[#151515] border border-[#383838] rounded-xl">
+                        <p className="text-white text-[13px] font-medium mb-2">No Discord servers found</p>
+                        <p className="text-[#a1a1a1] text-[12px] mb-3">
+                          We only show servers where you have admin or manage permissions. Enter your Server ID manually below if you don't see your server.
+                        </p>
                       </div>
                     )}
 
