@@ -26,10 +26,10 @@ export default function ItemLink({ name, wowheadId, className = '', clickable = 
   }
 
   // Detect expansion based on item ID ranges
-  // Classic: 1-23000
-  // TBC: 23000-35000
+  // Classic: 1-22000 (roughly)
+  // TBC: 22000-35000 (some TBC items like enchanting recipes start at 22xxx)
   // WotLK: 35000-51000
-  const isTBC = wowheadId >= 23000 && wowheadId < 35000
+  const isTBC = wowheadId >= 22000 && wowheadId < 35000
   const isWotLK = wowheadId >= 35000 && wowheadId < 51000
 
   const domain = isTBC ? 'tbc' : isWotLK ? 'wrath' : 'classic'
