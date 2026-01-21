@@ -152,46 +152,56 @@ export async function POST(request: NextRequest) {
     }
 
     // Get or create a character for the guild creator
-    // First, check if user has any characters
-    const { data: existingCharacters } = await supabase
+    // First, check if user has any characters (use service role to bypass RLS)
+    const { data: existingCharacters, error: checkError } = await serviceSupabase
       .from('characters')
       .select('id')
       .eq('user_id', user.id)
       .limit(1)
+
+    console.log('[GUILD CREATE] Check existing characters:', { existingCharacters, checkError })
 
     let characterId: string
 
     if (existingCharacters && existingCharacters.length > 0) {
       // Use existing character
       characterId = existingCharacters[0].id
+      console.log('[GUILD CREATE] Using existing character:', characterId)
     } else {
-      // Create a default character for the user
-      const { data: newCharacter, error: charError } = await supabase
+      // Create a default character for the user (use service role to bypass RLS)
+      const characterName = user.user_metadata?.full_name || user.user_metadata?.name || 'Guild Master'
+      console.log('[GUILD CREATE] Creating character with name:', characterName)
+
+      const { data: newCharacter, error: charError } = await serviceSupabase
         .from('characters')
         .insert({
           user_id: user.id,
-          name: user.user_metadata?.full_name || 'Guild Master',
+          name: characterName,
           realm: realm || null,
           is_main: true
         })
         .select('id')
         .single()
 
+      console.log('[GUILD CREATE] Character creation result:', { newCharacter, charError })
+
       if (charError || !newCharacter) {
-        console.error('Error creating character:', charError)
+        console.error('[GUILD CREATE] Error creating character:', charError)
         // Clean up guild if character creation fails
         await serviceSupabase.from('guilds').delete().eq('id', guild.id)
         return NextResponse.json(
-          { error: 'Failed to create character for guild creator' },
+          { error: `Failed to create character: ${charError?.message || 'Unknown error'}` },
           { status: 500 }
         )
       }
 
       characterId = newCharacter.id
+      console.log('[GUILD CREATE] Created character:', characterId)
     }
 
-    // Create character guild membership for creator as Officer
-    const { error: memberError } = await supabase
+    // Create character guild membership for creator as Officer (use service role)
+    console.log('[GUILD CREATE] Creating membership for character:', characterId, 'guild:', guild.id)
+    const { error: memberError } = await serviceSupabase
       .from('character_guild_memberships')
       .insert({
         character_id: characterId,
@@ -202,18 +212,21 @@ export async function POST(request: NextRequest) {
         joined_via: 'manual'
       })
 
+    console.log('[GUILD CREATE] Membership creation result:', { memberError })
+
     if (memberError) {
-      console.error('Error creating character guild membership:', memberError)
+      console.error('[GUILD CREATE] Error creating character guild membership:', memberError)
       // Clean up guild if membership creation fails
       await serviceSupabase.from('guilds').delete().eq('id', guild.id)
       return NextResponse.json(
-        { error: 'Failed to create guild membership' },
+        { error: `Failed to create guild membership: ${memberError.message}` },
         { status: 500 }
       )
     }
 
-    // Set as active character and guild for user
-    await supabase
+    // Set as active character and guild for user (use service role)
+    console.log('[GUILD CREATE] Setting active character and guild')
+    await serviceSupabase
       .from('user_active_characters')
       .upsert({
         user_id: user.id,
@@ -221,6 +234,8 @@ export async function POST(request: NextRequest) {
         active_guild_id: guild.id,
         updated_at: new Date().toISOString()
       })
+
+    console.log('[GUILD CREATE] Guild creation complete!')
 
     return NextResponse.json({
       success: true,
