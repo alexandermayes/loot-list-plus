@@ -319,7 +319,7 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const guilds = memberships?.map(m => ({
+    const guilds = memberships?.map((m: any) => ({
       membership_id: m.id,
       character_id: m.character_id,
       character_name: m.character?.name || 'Unknown',
