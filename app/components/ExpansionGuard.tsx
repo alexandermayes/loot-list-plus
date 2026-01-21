@@ -40,12 +40,12 @@ export function ExpansionGuard({ children }: { children: React.ReactNode }) {
               <p className="text-muted-foreground">
                 {isOfficer
                   ? 'Your guild needs to select an expansion before you can use loot features.'
-                  : 'Ask an officer to select an expansion in Guild Settings.'}
+                  : 'Ask an officer to select an expansion in Manage Expansions.'}
               </p>
               <div className="flex flex-col gap-2">
                 {isOfficer && (
-                  <Button onClick={() => router.push('/admin/guild-settings')}>
-                    Go to Guild Settings
+                  <Button onClick={() => router.push('/admin/expansions')}>
+                    Go to Manage Expansions
                   </Button>
                 )}
                 <Button variant="outline" onClick={() => router.push('/dashboard')}>

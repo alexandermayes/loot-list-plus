@@ -222,7 +222,7 @@ export default function Dashboard() {
       // Check if guild has active expansion set
       if (!activeGuild.active_expansion_id) {
         setRaidTiers([])
-        setError('⚠️ Your guild needs to select an expansion. Ask an officer to go to Guild Settings.')
+        setError('⚠️ Your guild needs to select an expansion. Ask an officer to go to Manage Expansions.')
         setLoading(false)
         return
       }
@@ -629,10 +629,10 @@ export default function Dashboard() {
                   <p className="text-[#a1a1a1] text-sm mt-1">{error}</p>
                   {isOfficer && (
                     <button
-                      onClick={() => router.push('/admin/guild-settings')}
+                      onClick={() => router.push('/admin/expansions')}
                       className="mt-3 px-5 py-3 text-base bg-white hover:bg-gray-100 text-black rounded-[52px] font-medium transition"
                     >
-                      Go to Guild Settings
+                      Go to Manage Expansions
                     </button>
                   )}
                 </div>
