@@ -117,15 +117,27 @@ export async function GET() {
       })
     }
 
-    // Filter out guilds user is already a member of
-    const { data: existingMemberships } = await supabase
-      .from('guild_members')
-      .select('guild_id')
+    // Filter out guilds user is already a member of (via character_guild_memberships)
+    // First get user's characters
+    const { data: userCharacters } = await supabase
+      .from('characters')
+      .select('id')
       .eq('user_id', user.id)
 
-    const existingGuildIds = new Set(
-      existingMemberships?.map(m => m.guild_id) || []
-    )
+    const characterIds = userCharacters?.map(c => c.id) || []
+
+    let existingGuildIds = new Set<string>()
+    if (characterIds.length > 0) {
+      const { data: existingMemberships } = await supabase
+        .from('character_guild_memberships')
+        .select('guild_id')
+        .in('character_id', characterIds)
+        .eq('is_active', true)
+
+      existingGuildIds = new Set(
+        existingMemberships?.map(m => m.guild_id) || []
+      )
+    }
 
     // Remove duplicates by keeping only the first guild for each discord_server_id
     const uniqueGuilds = matchingGuilds.reduce((acc: any[], guild: any) => {
