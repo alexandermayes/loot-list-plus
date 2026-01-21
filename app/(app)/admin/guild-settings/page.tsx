@@ -257,17 +257,23 @@ export default function GuildSettingsPage() {
                 <div className="grid grid-cols-2 gap-2">
                   <button
                     type="button"
-                    onClick={() => setFaction('Alliance')}
+                    onClick={() => {
+                      if (faction !== 'Alliance') {
+                        setFaction('Alliance')
+                        const btn = document.getElementById('settings-alliance-btn')
+                        btn?.classList.remove('faction-selected')
+                        void btn?.offsetWidth
+                        btn?.classList.add('faction-selected')
+                      }
+                    }}
+                    id="settings-alliance-btn"
                     disabled={saving}
                     className={`group relative px-3 py-2.5 rounded-lg border transition-all duration-300 flex items-center justify-center gap-2 overflow-hidden ${
                       faction === 'Alliance'
-                        ? 'border-blue-500 bg-blue-500/20 shadow-[0_0_20px_rgba(59,130,246,0.5)] scale-[1.02]'
+                        ? 'border-blue-500 bg-blue-500/20'
                         : 'border-[rgba(255,255,255,0.1)] bg-[#151515] hover:border-blue-500/50'
                     }`}
                   >
-                    {faction === 'Alliance' && (
-                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-blue-400/20 to-transparent animate-[shimmer_2s_infinite]" />
-                    )}
                     <img
                       src="https://wow.zamimg.com/images/wow/icons/large/inv_bannerpvp_02.jpg"
                       alt="Alliance"
@@ -279,17 +285,23 @@ export default function GuildSettingsPage() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => setFaction('Horde')}
+                    onClick={() => {
+                      if (faction !== 'Horde') {
+                        setFaction('Horde')
+                        const btn = document.getElementById('settings-horde-btn')
+                        btn?.classList.remove('faction-selected')
+                        void btn?.offsetWidth
+                        btn?.classList.add('faction-selected')
+                      }
+                    }}
+                    id="settings-horde-btn"
                     disabled={saving}
                     className={`group relative px-3 py-2.5 rounded-lg border transition-all duration-300 flex items-center justify-center gap-2 overflow-hidden ${
                       faction === 'Horde'
-                        ? 'border-red-500 bg-red-500/20 shadow-[0_0_20px_rgba(239,68,68,0.5)] scale-[1.02]'
+                        ? 'border-red-500 bg-red-500/20'
                         : 'border-[rgba(255,255,255,0.1)] bg-[#151515] hover:border-red-500/50'
                     }`}
                   >
-                    {faction === 'Horde' && (
-                      <div className="absolute inset-0 bg-gradient-to-t from-red-600/30 via-orange-500/10 to-transparent animate-[flicker_0.5s_ease-in-out_infinite_alternate]" />
-                    )}
                     <img
                       src="https://wow.zamimg.com/images/wow/icons/large/inv_bannerpvp_01.jpg"
                       alt="Horde"
@@ -301,13 +313,21 @@ export default function GuildSettingsPage() {
                   </button>
                 </div>
                 <style jsx>{`
-                  @keyframes shimmer {
-                    0% { transform: translateX(-100%); }
-                    100% { transform: translateX(100%); }
+                  @keyframes alliance-burst {
+                    0% { box-shadow: 0 0 0 0 rgba(59,130,246,0.7); transform: scale(1); }
+                    50% { box-shadow: 0 0 20px 10px rgba(59,130,246,0.4); transform: scale(1.05); }
+                    100% { box-shadow: 0 0 0 0 rgba(59,130,246,0); transform: scale(1); }
                   }
-                  @keyframes flicker {
-                    0% { opacity: 0.5; }
-                    100% { opacity: 1; }
+                  @keyframes horde-burst {
+                    0% { box-shadow: 0 0 0 0 rgba(239,68,68,0.7); transform: scale(1); }
+                    50% { box-shadow: 0 0 20px 10px rgba(239,68,68,0.4); transform: scale(1.05); }
+                    100% { box-shadow: 0 0 0 0 rgba(239,68,68,0); transform: scale(1); }
+                  }
+                  #settings-alliance-btn.faction-selected {
+                    animation: alliance-burst 0.4s ease-out;
+                  }
+                  #settings-horde-btn.faction-selected {
+                    animation: horde-burst 0.4s ease-out;
                   }
                 `}</style>
               </div>

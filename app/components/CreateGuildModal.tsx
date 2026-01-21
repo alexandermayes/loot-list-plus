@@ -669,17 +669,23 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
                     </label>
                     <div className="grid grid-cols-2 gap-2">
                       <button
-                        onClick={() => setFaction('Alliance')}
+                        onClick={() => {
+                          if (faction !== 'Alliance') {
+                            setFaction('Alliance')
+                            // Trigger animation by adding/removing a class
+                            const btn = document.getElementById('alliance-btn')
+                            btn?.classList.remove('faction-selected')
+                            void btn?.offsetWidth // Force reflow
+                            btn?.classList.add('faction-selected')
+                          }
+                        }}
+                        id="alliance-btn"
                         className={`group relative px-3 py-2.5 rounded-lg border transition-all duration-300 flex items-center justify-center gap-2 overflow-hidden ${
                           faction === 'Alliance'
-                            ? 'border-blue-500 bg-blue-500/20 shadow-[0_0_20px_rgba(59,130,246,0.5)] scale-[1.02]'
+                            ? 'border-blue-500 bg-blue-500/20'
                             : 'border-[#383838] bg-[#151515] hover:border-blue-500/50'
                         }`}
                       >
-                        {/* Alliance shimmer effect */}
-                        {faction === 'Alliance' && (
-                          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-blue-400/20 to-transparent animate-[shimmer_2s_infinite]" />
-                        )}
                         <img
                           src="https://wow.zamimg.com/images/wow/icons/large/inv_bannerpvp_02.jpg"
                           alt="Alliance"
@@ -688,23 +694,24 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
                         <span className={`font-medium text-[13px] relative z-10 ${faction === 'Alliance' ? 'text-blue-400' : 'text-white'}`}>
                           Alliance
                         </span>
-                        {/* Alliance selection burst */}
-                        {faction === 'Alliance' && (
-                          <div className="absolute inset-0 rounded-lg animate-[alliance-pulse_0.5s_ease-out]" style={{ boxShadow: '0 0 30px rgba(59,130,246,0.8)' }} />
-                        )}
                       </button>
                       <button
-                        onClick={() => setFaction('Horde')}
+                        onClick={() => {
+                          if (faction !== 'Horde') {
+                            setFaction('Horde')
+                            const btn = document.getElementById('horde-btn')
+                            btn?.classList.remove('faction-selected')
+                            void btn?.offsetWidth // Force reflow
+                            btn?.classList.add('faction-selected')
+                          }
+                        }}
+                        id="horde-btn"
                         className={`group relative px-3 py-2.5 rounded-lg border transition-all duration-300 flex items-center justify-center gap-2 overflow-hidden ${
                           faction === 'Horde'
-                            ? 'border-red-500 bg-red-500/20 shadow-[0_0_20px_rgba(239,68,68,0.5)] scale-[1.02]'
+                            ? 'border-red-500 bg-red-500/20'
                             : 'border-[#383838] bg-[#151515] hover:border-red-500/50'
                         }`}
                       >
-                        {/* Horde fire effect */}
-                        {faction === 'Horde' && (
-                          <div className="absolute inset-0 bg-gradient-to-t from-red-600/30 via-orange-500/10 to-transparent animate-[flicker_0.5s_ease-in-out_infinite_alternate]" />
-                        )}
                         <img
                           src="https://wow.zamimg.com/images/wow/icons/large/inv_bannerpvp_01.jpg"
                           alt="Horde"
@@ -713,28 +720,24 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
                         <span className={`font-medium text-[13px] relative z-10 ${faction === 'Horde' ? 'text-red-400' : 'text-white'}`}>
                           Horde
                         </span>
-                        {/* Horde selection burst */}
-                        {faction === 'Horde' && (
-                          <div className="absolute inset-0 rounded-lg animate-[horde-pulse_0.5s_ease-out]" style={{ boxShadow: '0 0 30px rgba(239,68,68,0.8)' }} />
-                        )}
                       </button>
                     </div>
                     <style jsx>{`
-                      @keyframes shimmer {
-                        0% { transform: translateX(-100%); }
-                        100% { transform: translateX(100%); }
+                      @keyframes alliance-burst {
+                        0% { box-shadow: 0 0 0 0 rgba(59,130,246,0.7); transform: scale(1); }
+                        50% { box-shadow: 0 0 20px 10px rgba(59,130,246,0.4); transform: scale(1.05); }
+                        100% { box-shadow: 0 0 0 0 rgba(59,130,246,0); transform: scale(1); }
                       }
-                      @keyframes flicker {
-                        0% { opacity: 0.5; }
-                        100% { opacity: 1; }
+                      @keyframes horde-burst {
+                        0% { box-shadow: 0 0 0 0 rgba(239,68,68,0.7); transform: scale(1); }
+                        50% { box-shadow: 0 0 20px 10px rgba(239,68,68,0.4); transform: scale(1.05); }
+                        100% { box-shadow: 0 0 0 0 rgba(239,68,68,0); transform: scale(1); }
                       }
-                      @keyframes alliance-pulse {
-                        0% { opacity: 1; transform: scale(0.8); }
-                        100% { opacity: 0; transform: scale(1.2); }
+                      #alliance-btn.faction-selected {
+                        animation: alliance-burst 0.4s ease-out;
                       }
-                      @keyframes horde-pulse {
-                        0% { opacity: 1; transform: scale(0.8); }
-                        100% { opacity: 0; transform: scale(1.2); }
+                      #horde-btn.faction-selected {
+                        animation: horde-burst 0.4s ease-out;
                       }
                     `}</style>
                   </div>
