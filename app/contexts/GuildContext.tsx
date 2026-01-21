@@ -733,10 +733,32 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
       }
 
       // Guild creator is always an officer (even without a character)
-      if (user && activeGuild.created_by === user.id) {
-        console.log('[GUILD CONTEXT] User is guild creator, setting isOfficer=true')
+      // First check from cached activeGuild
+      if (user && activeGuild.created_by && activeGuild.created_by === user.id) {
+        console.log('[GUILD CONTEXT] User is guild creator (cached), setting isOfficer=true')
         setIsOfficer(true)
         return
+      }
+
+      // Fallback: query guild directly to verify created_by (in case cached data is stale)
+      if (user) {
+        const { data: guildCheck } = await supabase
+          .from('guilds')
+          .select('created_by')
+          .eq('id', activeGuild.id)
+          .single()
+
+        console.log('[GUILD CONTEXT] Guild creator check:', {
+          userId: user.id,
+          guildCreatedBy: guildCheck?.created_by,
+          match: guildCheck?.created_by === user.id
+        })
+
+        if (guildCheck?.created_by === user.id) {
+          console.log('[GUILD CONTEXT] User is guild creator (verified), setting isOfficer=true')
+          setIsOfficer(true)
+          return
+        }
       }
 
       // Check old system (backwards compatibility)
