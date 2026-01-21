@@ -151,14 +151,51 @@ export async function POST(request: NextRequest) {
       // Continue anyway - settings can be created later
     }
 
-    // Create guild member entry for creator as Officer
+    // Get or create a character for the guild creator
+    // First, check if user has any characters
+    const { data: existingCharacters } = await supabase
+      .from('characters')
+      .select('id')
+      .eq('user_id', user.id)
+      .limit(1)
+
+    let characterId: string
+
+    if (existingCharacters && existingCharacters.length > 0) {
+      // Use existing character
+      characterId = existingCharacters[0].id
+    } else {
+      // Create a default character for the user
+      const { data: newCharacter, error: charError } = await supabase
+        .from('characters')
+        .insert({
+          user_id: user.id,
+          name: user.user_metadata?.full_name || 'Guild Master',
+          realm: realm || null,
+          is_main: true
+        })
+        .select('id')
+        .single()
+
+      if (charError || !newCharacter) {
+        console.error('Error creating character:', charError)
+        // Clean up guild if character creation fails
+        await serviceSupabase.from('guilds').delete().eq('id', guild.id)
+        return NextResponse.json(
+          { error: 'Failed to create character for guild creator' },
+          { status: 500 }
+        )
+      }
+
+      characterId = newCharacter.id
+    }
+
+    // Create character guild membership for creator as Officer
     const { error: memberError } = await supabase
-      .from('guild_members')
+      .from('character_guild_memberships')
       .insert({
-        user_id: user.id,
+        character_id: characterId,
         guild_id: guild.id,
-        character_name: user.user_metadata?.full_name || 'Unknown',
-        class_id: null, // Will be set later
         role: 'Officer',
         is_active: true,
         joined_at: new Date().toISOString(),
@@ -166,28 +203,24 @@ export async function POST(request: NextRequest) {
       })
 
     if (memberError) {
-      console.error('Error creating guild member:', memberError)
-      // Clean up guild if member creation fails
-      await supabase.from('guilds').delete().eq('id', guild.id)
+      console.error('Error creating character guild membership:', memberError)
+      // Clean up guild if membership creation fails
+      await serviceSupabase.from('guilds').delete().eq('id', guild.id)
       return NextResponse.json(
         { error: 'Failed to create guild membership' },
         { status: 500 }
       )
     }
 
-    // Set as active guild for user
-    const { error: activeGuildError } = await supabase
-      .from('user_active_guilds')
+    // Set as active character and guild for user
+    await supabase
+      .from('user_active_characters')
       .upsert({
         user_id: user.id,
+        active_character_id: characterId,
         active_guild_id: guild.id,
         updated_at: new Date().toISOString()
       })
-
-    if (activeGuildError) {
-      console.error('Error setting active guild:', activeGuildError)
-      // Not critical, continue
-    }
 
     return NextResponse.json({
       success: true,
@@ -218,14 +251,38 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Get all guild memberships for user
+    // Get all characters for user
+    const { data: characters, error: charError } = await supabase
+      .from('characters')
+      .select('id, name')
+      .eq('user_id', user.id)
+
+    if (charError) {
+      console.error('Error fetching characters:', charError)
+      return NextResponse.json(
+        { error: 'Failed to fetch characters' },
+        { status: 500 }
+      )
+    }
+
+    if (!characters || characters.length === 0) {
+      return NextResponse.json({ guilds: [] })
+    }
+
+    const characterIds = characters.map(c => c.id)
+
+    // Get all guild memberships for user's characters
     const { data: memberships, error: memberError } = await supabase
-      .from('guild_members')
+      .from('character_guild_memberships')
       .select(`
         id,
-        character_name,
+        character_id,
         role,
         joined_at,
+        character:characters!inner (
+          id,
+          name
+        ),
         guild:guilds (
           id,
           name,
@@ -236,7 +293,7 @@ export async function GET(request: NextRequest) {
           is_active
         )
       `)
-      .eq('user_id', user.id)
+      .in('character_id', characterIds)
       .eq('is_active', true)
 
     if (memberError) {
@@ -249,7 +306,8 @@ export async function GET(request: NextRequest) {
 
     const guilds = memberships?.map(m => ({
       membership_id: m.id,
-      character_name: m.character_name,
+      character_id: m.character_id,
+      character_name: m.character?.name || 'Unknown',
       role: m.role,
       joined_at: m.joined_at,
       guild: m.guild
