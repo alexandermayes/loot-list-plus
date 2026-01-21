@@ -37,6 +37,7 @@ export default function AttendancePage() {
   const [roleModifier, setRoleModifier] = useState(0)
   const [memberRole, setMemberRole] = useState('')
   const [guildSettings, setGuildSettings] = useState<any>(null)
+  const [expansionStartDate, setExpansionStartDate] = useState<string | null>(null)
 
   const supabase = createClient()
   const router = useRouter()
@@ -93,6 +94,25 @@ export default function AttendancePage() {
         setGuildSettings(settingsData)
       }
 
+      // Get current expansion's raid start date
+      const { data: guildData } = await supabase
+        .from('guilds')
+        .select('active_expansion_id')
+        .eq('id', activeCharData.active_guild_id)
+        .single()
+
+      let raidStartDate: string | null = null
+      if (guildData?.active_expansion_id) {
+        const { data: expansionData } = await supabase
+          .from('expansions')
+          .select('raid_start_date')
+          .eq('id', guildData.active_expansion_id)
+          .single()
+
+        raidStartDate = expansionData?.raid_start_date || null
+        setExpansionStartDate(raidStartDate)
+      }
+
       // Get character's role in the guild
       const { data: membershipData } = await supabase
         .from('character_guild_memberships')
@@ -108,9 +128,14 @@ export default function AttendancePage() {
       const modifier = getRankModifier(role, settingsData || {})
       setRoleModifier(modifier)
 
-      // Get raid events (last 8 weeks)
+      // Get raid events (last 8 weeks OR expansion start date, whichever is more recent)
       const eightWeeksAgo = new Date()
       eightWeeksAgo.setDate(eightWeeksAgo.getDate() - 56)
+
+      // Use expansion start date as lower bound if set
+      const lowerBound = raidStartDate
+        ? new Date(Math.max(new Date(raidStartDate).getTime(), eightWeeksAgo.getTime()))
+        : eightWeeksAgo
 
       // Get attendance records for this character
       const { data: recordsData } = await supabase
@@ -128,7 +153,7 @@ export default function AttendancePage() {
         `)
         .eq('character_id', characterData.id)
         .eq('raid_event.guild_id', activeCharData.active_guild_id)
-        .gte('raid_event.raid_date', eightWeeksAgo.toISOString().split('T')[0])
+        .gte('raid_event.raid_date', lowerBound.toISOString().split('T')[0])
         .order('raid_event.raid_date', { ascending: false })
 
       if (recordsData) {
@@ -140,11 +165,16 @@ export default function AttendancePage() {
       const periodStart = new Date()
       periodStart.setDate(periodStart.getDate() - (weeks * 7))
 
+      // Use expansion start date as lower bound if set
+      const scoreLowerBound = raidStartDate
+        ? new Date(Math.max(new Date(raidStartDate).getTime(), periodStart.getTime()))
+        : periodStart
+
       const { data: recentRaids } = await supabase
         .from('raid_events')
         .select('id')
         .eq('guild_id', activeCharData.active_guild_id)
-        .gte('raid_date', periodStart.toISOString().split('T')[0])
+        .gte('raid_date', scoreLowerBound.toISOString().split('T')[0])
 
       if (recentRaids && recentRaids.length > 0) {
         const raidIds = recentRaids.map(r => r.id)

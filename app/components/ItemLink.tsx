@@ -25,16 +25,25 @@ export default function ItemLink({ name, wowheadId, className = '', clickable = 
     }
   }
 
+  // Detect expansion based on item ID ranges
+  // Classic: 1-23000
+  // TBC: 23000-35000
+  // WotLK: 35000-51000
+  const isTBC = wowheadId >= 23000 && wowheadId < 35000
+  const isWotLK = wowheadId >= 35000 && wowheadId < 51000
+
+  const domain = isTBC ? 'tbc' : isWotLK ? 'wrath' : 'classic'
+
   return (
     <a
-      href={clickable ? `https://www.wowhead.com/classic/item=${wowheadId}` : '#'}
+      href={clickable ? `https://www.wowhead.com/${domain}/item=${wowheadId}` : '#'}
       target={clickable ? "_blank" : undefined}
       rel={clickable ? "noopener noreferrer" : undefined}
       className={`${className} inline-flex items-center gap-1`}
       style={{
         color: '#a335ee'
       }}
-      data-wowhead={`item=${wowheadId}&domain=classic`}
+      data-wowhead={`item=${wowheadId}&domain=${domain}`}
       onClick={handleClick}
     >
       {name}

@@ -716,6 +716,9 @@ export default function CreateGuildPage() {
                 />
               </button>
             </div>
+            <p className="text-sm text-muted-foreground mt-2">
+              Select your starting expansion. You can add additional expansions from the Admin panel after guild creation.
+            </p>
           </div>
 
           {/* Region & Realm */}

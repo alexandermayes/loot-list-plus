@@ -78,6 +78,14 @@ export interface CharacterGuildMembership {
   guild: Guild
 }
 
+export interface GuildExpansion {
+  expansion_id: string
+  expansion_name: string
+  raid_start_date: string | null
+  is_current: boolean
+  created_at: string
+}
+
 export interface GuildContextType {
   // Existing State
   activeGuild: Guild | null
@@ -90,11 +98,18 @@ export interface GuildContextType {
   userCharacters: Character[]
   characterMemberships: CharacterGuildMembership[]
 
+  // Expansion State
+  currentExpansion: GuildExpansion | null
+  guildExpansions: GuildExpansion[]
+  viewingExpansionId: string | null // For when users view past expansions
+
   // Methods
   switchGuild: (guildId: string, characterId?: string) => Promise<void>
   refreshGuilds: () => Promise<void>
   switchCharacter: (characterId: string) => Promise<void>
   refreshCharacters: () => Promise<void>
+  setViewingExpansion: (expansionId: string | null) => void
+  refreshExpansions: () => Promise<void>
 
   // Derived state
   isOfficer: boolean
@@ -116,6 +131,11 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
   const [activeCharacter, setActiveCharacter] = useState<Character | null>(null)
   const [userCharacters, setUserCharacters] = useState<Character[]>([])
   const [characterMemberships, setCharacterMemberships] = useState<CharacterGuildMembership[]>([])
+
+  // Expansion State
+  const [currentExpansion, setCurrentExpansion] = useState<GuildExpansion | null>(null)
+  const [guildExpansions, setGuildExpansions] = useState<GuildExpansion[]>([])
+  const [viewingExpansionId, setViewingExpansionId] = useState<string | null>(null)
 
   const [guildsLoading, setGuildsLoading] = useState(true)
   const [charactersLoading, setCharactersLoading] = useState(true)
@@ -432,6 +452,48 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  // Load expansions for active guild
+  const loadExpansions = async (guildId: string) => {
+    try {
+      const { data, error } = await supabase
+        .rpc('get_guild_expansions', { p_guild_id: guildId })
+
+      if (error) {
+        console.error('Error loading expansions:', error)
+        console.error('Error details:', JSON.stringify(error, null, 2))
+        console.error('Error code:', error?.code)
+        console.error('Error message:', error?.message)
+        console.error('Error hint:', error?.hint)
+        setGuildExpansions([])
+        setCurrentExpansion(null)
+        return
+      }
+
+      setGuildExpansions(data || [])
+
+      // Set current expansion
+      const current = (data || []).find((exp: GuildExpansion) => exp.is_current)
+      setCurrentExpansion(current || null)
+
+      // Reset viewing expansion when guild changes
+      setViewingExpansionId(null)
+    } catch (error) {
+      console.error('Error in loadExpansions:', error)
+      setGuildExpansions([])
+      setCurrentExpansion(null)
+    }
+  }
+
+  const refreshExpansions = async () => {
+    if (activeGuild) {
+      await loadExpansions(activeGuild.id)
+    }
+  }
+
+  const setViewingExpansion = (expansionId: string | null) => {
+    setViewingExpansionId(expansionId)
+  }
+
   // Switch to a different guild (with optional character)
   const switchGuild = async (guildId: string, characterId?: string) => {
     if (!user) return
@@ -572,6 +634,17 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
     }
   }, [user])
 
+  // Load expansions when active guild changes
+  useEffect(() => {
+    if (activeGuild) {
+      loadExpansions(activeGuild.id)
+    } else {
+      setGuildExpansions([])
+      setCurrentExpansion(null)
+      setViewingExpansionId(null)
+    }
+  }, [activeGuild?.id])
+
   // Listen for auth changes
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
@@ -584,6 +657,9 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
         setActiveCharacter(null)
         setUserCharacters([])
         setCharacterMemberships([])
+        setGuildExpansions([])
+        setCurrentExpansion(null)
+        setViewingExpansionId(null)
         setUser(null)
       }
     })
@@ -661,11 +737,18 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
     userCharacters,
     characterMemberships,
 
+    // Expansion State
+    currentExpansion,
+    guildExpansions,
+    viewingExpansionId,
+
     // Methods
     switchGuild,
     refreshGuilds,
     switchCharacter,
     refreshCharacters,
+    setViewingExpansion,
+    refreshExpansions,
 
     // Derived state
     isOfficer,

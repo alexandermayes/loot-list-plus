@@ -97,7 +97,7 @@ interface ReceivedItem {
 }
 
 export default function Dashboard() {
-  const { activeGuild, activeMember, activeCharacter, userGuilds, loading: guildLoading, isOfficer } = useGuildContext()
+  const { activeGuild, activeMember, activeCharacter, userGuilds, loading: guildLoading, isOfficer, currentExpansion } = useGuildContext()
   const [raidTiers, setRaidTiers] = useState<RaidTier[]>([])
   const [loading, setLoading] = useState(true)
   const [user, setUser] = useState<any>(null)
@@ -227,11 +227,18 @@ export default function Dashboard() {
         return
       }
 
-      // Get raid tiers for active expansion
+      // Get raid tiers for current expansion
+      const expansionId = currentExpansion?.expansion_id || activeGuild.active_expansion_id
+      if (!expansionId) {
+        setRaidTiers([])
+        setLoading(false)
+        return
+      }
+
       const { data: tiersData, error: tiersError } = await supabase
         .from('raid_tiers')
         .select('id, name, is_active')
-        .eq('expansion_id', activeGuild.active_expansion_id)
+        .eq('expansion_id', expansionId)
 
       if (tiersError) {
         console.error('Error loading raid tiers:', tiersError)
@@ -240,17 +247,17 @@ export default function Dashboard() {
         setRaidTiers(tiersData || [])
       }
 
-      // Load all dashboard data
-      await loadDashboardData(user.id, activeGuild.id)
+      // Load all dashboard data (pass raid tiers to filter by expansion)
+      await loadDashboardData(user.id, activeGuild.id, tiersData || [])
 
       setLoading(false)
     }
 
     loadData()
-  }, [guildLoading, activeGuild, activeCharacter])
+  }, [guildLoading, activeGuild, activeCharacter, currentExpansion])
 
   // Function to load all dashboard data for current character
-  const loadDashboardData = async (userId: string, guildId: string) => {
+  const loadDashboardData = async (userId: string, guildId: string, currentExpansionTiers: RaidTier[]) => {
     try {
       if (!activeCharacter) {
         return
@@ -265,13 +272,16 @@ export default function Dashboard() {
         class: activeCharacter.class
       }
 
+      // Get tier IDs for current expansion only
+      const currentExpansionTierIds = currentExpansionTiers.map(t => t.id)
 
-      // Get submissions for CURRENT CHARACTER ONLY across all tiers
+      // Get submissions for CURRENT CHARACTER ONLY for current expansion tiers
       const { data: submissions, error: submissionsError } = await supabase
         .from('loot_submissions')
         .select('id, character_id, guild_id, raid_tier_id, status, updated_at')
         .eq('character_id', activeCharacter.id)
         .eq('guild_id', guildId)
+        .in('raid_tier_id', currentExpansionTierIds)
         .order('updated_at', { ascending: false })
 
       if (submissionsError) {

@@ -198,6 +198,7 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange }
         'loot-list': '/loot-list',
         'attendance': '/attendance',
         'guild-settings': '/admin/guild-settings',
+        'expansions': '/admin/expansions',
         'loot-submissions': '/loot-submissions',
         'loot-settings': '/loot-settings',
         'raid-tracking': '/admin/raid-tracking',
@@ -215,6 +216,7 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange }
 
   const adminItems = isOfficer ? [
     { name: 'Guild Settings', view: 'guild-settings', icon: '/icons/guild-settings.svg' },
+    { name: 'Manage Expansions', view: 'expansions', icon: '/icons/raid-tracking.svg' },
     { name: 'Loot Submissions', view: 'loot-submissions', icon: '/icons/master-loot.svg' },
     { name: 'Master Loot', view: 'loot-settings', icon: '/icons/loot-lists.svg' },
     { name: 'Raid Tracking', view: 'raid-tracking', icon: '/icons/raid-tracking.svg' },
@@ -460,7 +462,7 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange }
               <button
                 key={item.view}
                 onClick={() => handleNavClick(item.view)}
-                className={`w-full px-3.5 py-[10px] flex items-center gap-3 rounded-[40px] transition font-poppins font-medium text-[13px] ${
+                className={`w-full px-3.5 py-[10px] flex items-center gap-3 rounded-[40px] transition font-poppins font-medium text-[13px] text-left ${
                   isActive(item.view)
                     ? 'bg-[rgba(255,128,0,0.2)] border-[0.5px] border-[rgba(255,128,0,0.2)] text-[#ff8000]'
                     : 'text-white hover:bg-[#1a1a1a]'
@@ -476,7 +478,7 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange }
                   }`}
                   style={isActive(item.view) ? { filter: 'invert(55%) sepia(89%) saturate(2274%) hue-rotate(1deg) brightness(101%) contrast(105%)' } : undefined}
                 />
-                <span>{item.name}</span>
+                <span className="whitespace-nowrap overflow-hidden text-ellipsis">{item.name}</span>
               </button>
             ))}
           </div>

@@ -29,7 +29,15 @@ interface Submission {
 }
 
 export default function LootList() {
-  const { activeGuild, activeCharacter, loading: guildLoading } = useGuildContext()
+  const {
+    activeGuild,
+    activeCharacter,
+    loading: guildLoading,
+    currentExpansion,
+    guildExpansions,
+    viewingExpansionId,
+    setViewingExpansion
+  } = useGuildContext()
   const { showNotification } = useNotification()
   const [lootItems, setLootItems] = useState<LootItem[]>([])
   const [submission, setSubmission] = useState<Submission | null>(null)
@@ -37,6 +45,7 @@ export default function LootList() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [raidTiers, setRaidTiers] = useState<any[]>([])
+  const [selectedTierDeadline, setSelectedTierDeadline] = useState<string | null>(null)
   const [selectedTierId, setSelectedTierId] = useState<string | null>(() => {
     // Try to read tier from URL on initial load
     if (typeof window !== 'undefined') {
@@ -60,6 +69,7 @@ export default function LootList() {
 
   const rankingsRef = useRef(rankings)
   const submissionRef = useRef(submission)
+  const savingInProgressRef = useRef(false)
 
   const supabase = createClient()
   const router = useRouter()
@@ -151,16 +161,18 @@ export default function LootList() {
       // Default to true if setting doesn't exist
       setEnforceSlotRestrictions(settingsData?.enforce_slot_restrictions ?? true)
 
-      // Get all raid tiers for this guild's active expansion
-      if (!activeGuild.active_expansion_id) {
+      // Get all raid tiers for the viewing expansion (or current expansion if not viewing a specific one)
+      const targetExpansionId = viewingExpansionId || currentExpansion?.expansion_id
+
+      if (!targetExpansionId) {
         setLoading(false)
         return
       }
 
       const { data: tiersData } = await supabase
         .from('raid_tiers')
-        .select('id, name, is_active')
-        .eq('expansion_id', activeGuild.active_expansion_id)
+        .select('id, name, is_active, submission_deadline')
+        .eq('expansion_id', targetExpansionId)
 
       if (!tiersData || tiersData.length === 0) {
         setLoading(false)
@@ -203,7 +215,7 @@ export default function LootList() {
     }
 
     loadData()
-  }, [guildLoading, activeGuild, activeCharacter])
+  }, [guildLoading, activeGuild, activeCharacter, viewingExpansionId, currentExpansion])
 
   // Load submission statuses for all tiers
   useEffect(() => {
@@ -241,6 +253,7 @@ export default function LootList() {
         setLootItems([])
         setSubmission(null)
         setRankings({})
+        setSelectedTierDeadline(null)
         return
       }
 
@@ -248,6 +261,10 @@ export default function LootList() {
       setLoading(true)
 
       try {
+        // Load selected tier's deadline
+        const selectedTier = raidTiers.find(t => t.id === selectedTierId)
+        setSelectedTierDeadline(selectedTier?.submission_deadline || null)
+
         // Load loot items for this tier
         const { data: itemsData } = await supabase
           .from('loot_items')
@@ -286,7 +303,7 @@ export default function LootList() {
           .eq('character_id', activeCharacter.id)
           .eq('raid_tier_id', selectedTierId)
           .eq('guild_id', guildId)
-          .single()
+          .maybeSingle()
 
         if (subData) {
           setSubmission(subData)
@@ -336,6 +353,12 @@ export default function LootList() {
       return () => clearTimeout(timer)
     }
   }, [loading, lootItems.length]) // Only trigger on loading state change and item count change, not on lootItems content change
+
+  // Helper to check if we're past the submission deadline
+  const isPastDeadline = (): boolean => {
+    if (!selectedTierDeadline) return false
+    return new Date() > new Date(selectedTierDeadline)
+  }
 
   // Helper function to get bracket name and ranks for a given rank
   const getBracketForRank = (rank: number): { name: string, ranks: number[] } | null => {
@@ -488,6 +511,14 @@ export default function LootList() {
   const autoSave = useCallback(async () => {
     if (!activeCharacter || !selectedTierId || !guildId) return
 
+    // Prevent concurrent saves using ref (more reliable than state)
+    if (savingInProgressRef.current) {
+      console.log('Save already in progress, skipping...')
+      return
+    }
+
+    savingInProgressRef.current = true
+
     const currentSubmission = submissionRef.current
     const currentRankings = rankingsRef.current
 
@@ -516,11 +547,12 @@ export default function LootList() {
         .select('id')
         .eq('character_id', activeCharacter.id)
         .eq('guild_id', guildId)
-        .single()
+        .maybeSingle()
 
       if (membershipError || !membership) {
         console.error('Character is not a member of this guild. Membership check failed:', membershipError)
         showNotification('error', 'Your character needs to rejoin this guild. Please visit Guild Settings.')
+        savingInProgressRef.current = false
         setAutoSaving(false)
         return
       }
@@ -564,16 +596,18 @@ export default function LootList() {
         setSubmission(prev => prev ? { ...prev, status: targetStatus } : null)
       }
 
-      // Delete existing rankings
-      const { error: deleteError } = await supabase
+      // Delete existing rankings - wait for it to complete
+      const { error: deleteError, count: deleteCount } = await supabase
         .from('loot_submission_items')
-        .delete()
+        .delete({ count: 'exact' })
         .eq('submission_id', submissionId)
 
       if (deleteError) {
         console.error('Delete items error:', deleteError)
         throw new Error(deleteError.message || 'Failed to delete existing rankings')
       }
+
+      console.log(`Deleted ${deleteCount} existing items for submission ${submissionId}`)
 
       // Insert new rankings (convert from "rank-slot" format)
       const rankingsToInsert = Object.entries(currentRankings).map(([key, loot_item_id]) => {
@@ -590,12 +624,17 @@ export default function LootList() {
       })
 
       if (rankingsToInsert.length > 0) {
+        // Use upsert to handle any remaining duplicates gracefully
         const { error: itemsError } = await supabase
           .from('loot_submission_items')
-          .insert(rankingsToInsert)
+          .upsert(rankingsToInsert, {
+            onConflict: 'submission_id,rank,slot',
+            ignoreDuplicates: false
+          })
 
         if (itemsError) {
           console.error('Insert items error:', itemsError)
+          console.error('Attempted to insert:', rankingsToInsert.length, 'items')
           throw new Error(itemsError.message || 'Failed to save rankings')
         }
       }
@@ -604,9 +643,11 @@ export default function LootList() {
     } catch (error: any) {
       console.error('Auto-save failed:', error)
       showNotification('error', error.message || 'Auto-save failed')
+    } finally {
+      // Always clear the save lock
+      savingInProgressRef.current = false
+      setAutoSaving(false)
     }
-
-    setAutoSaving(false)
   }, [activeCharacter, selectedTierId, guildId, supabase, showNotification, initialRankings, originalStatus])
 
   // Auto-save when rankings change (debounced)
@@ -882,7 +923,16 @@ export default function LootList() {
           <div className="flex items-start justify-between gap-4">
             <div>
               <h1 className="text-[42px] font-bold text-white leading-tight">Loot Lists</h1>
-              <p className="text-[#a1a1a1] mt-1 text-base">Rank your preferred items for {raidTiers.find(t => t.id === selectedTierId)?.name || 'this raid tier'}</p>
+              <div className="mt-1">
+                <p className="text-[#a1a1a1] text-base inline">
+                  Rank your preferred items for {raidTiers.find(t => t.id === selectedTierId)?.name || 'this raid tier'}
+                </p>
+                {viewingExpansionId && (
+                  <span className="ml-2 px-3 py-1 bg-blue-950/50 border border-blue-600/50 text-blue-300 text-xs font-medium rounded-full">
+                    Viewing Past: {guildExpansions.find(e => e.expansion_id === viewingExpansionId)?.expansion_name}
+                  </span>
+                )}
+              </div>
             </div>
             <div className="flex items-center gap-3">
               {/* Auto-save status */}
@@ -902,6 +952,36 @@ export default function LootList() {
               </button>
             </div>
           </div>
+
+          {/* Expansion Selector */}
+          {guildExpansions.length > 1 && (
+            <div className="flex items-center gap-3 overflow-x-auto pb-2">
+              <span className="text-[#a1a1a1] text-sm font-medium whitespace-nowrap">Expansion:</span>
+              <div className="flex gap-2">
+                {guildExpansions.map((expansion) => {
+                  const isViewing = viewingExpansionId === expansion.expansion_id
+                  const isCurrent = expansion.is_current && !viewingExpansionId
+
+                  return (
+                    <button
+                      key={expansion.expansion_id}
+                      onClick={() => setViewingExpansion(expansion.is_current ? null : expansion.expansion_id)}
+                      className={`px-5 py-2.5 rounded-[40px] whitespace-nowrap text-[13px] font-medium transition-all ${
+                        isViewing || isCurrent
+                          ? 'bg-[rgba(255,128,0,0.2)] border-[0.5px] border-[rgba(255,128,0,0.2)] text-[#ff8000]'
+                          : 'bg-[#151515] border border-[rgba(255,255,255,0.1)] text-white hover:bg-[#1a1a1a]'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span>{expansion.expansion_name}</span>
+                        {expansion.is_current && <span className="text-xs">⭐</span>}
+                      </div>
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          )}
 
           {/* Raid Tier Tabs - At Top */}
           {raidTiers.length > 0 && (
@@ -964,6 +1044,11 @@ export default function LootList() {
                     Submitted: {new Date(submission.submitted_at).toLocaleDateString()}
                   </p>
                 )}
+                {selectedTierDeadline && !isPastDeadline() && (
+                  <p className="text-sm opacity-75 mt-1">
+                    Deadline: {new Date(selectedTierDeadline).toLocaleString()}
+                  </p>
+                )}
               </div>
               <div className="flex items-center gap-4">
                 <span className="text-sm opacity-75">{rankedCount} items ranked</span>
@@ -1004,6 +1089,22 @@ export default function LootList() {
           </div>
         )}
 
+
+        {/* Deadline Warning */}
+        {selectedTierDeadline && isPastDeadline() && (
+          <div className="bg-yellow-900/50 border border-yellow-500 rounded-xl p-4 text-yellow-200">
+            <div className="flex items-start gap-3">
+              <span className="text-xl">⏰</span>
+              <div>
+                <p className="font-semibold mb-1">Submission Deadline Passed</p>
+                <p className="text-sm">
+                  The deadline for this raid tier was {new Date(selectedTierDeadline).toLocaleString()}.
+                  You can still submit changes, but they will require officer approval before being visible on the master sheet.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Duplicate Warning */}
         {duplicateItems.length > 0 && (

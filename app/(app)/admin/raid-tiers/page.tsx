@@ -12,6 +12,8 @@ interface RaidTier {
   id: string
   name: string
   is_active: boolean
+  master_sheet_visible: boolean
+  submission_deadline: string | null
   expansion: {
     id: string
     name: string
@@ -34,6 +36,7 @@ export default function RaidTiersPage() {
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
   const [showAddForm, setShowAddForm] = useState(false)
   const [editingTier, setEditingTier] = useState<string | null>(null)
+  const [deadlineInputs, setDeadlineInputs] = useState<Record<string, string>>({})
 
   // Form state
   const [formData, setFormData] = useState({
@@ -52,9 +55,10 @@ export default function RaidTiersPage() {
     document.title = 'LootList+ • Raid Tiers'
   }, [])
 
-  // Define Classic raid tier progression order
+  // Define Classic and TBC raid tier progression order
   const getRaidTierOrder = (tierName: string): number => {
     const order: Record<string, number> = {
+      // Classic (Vanilla) raids
       'Molten Core': 1,
       'MC': 1,
       'Onyxia\'s Lair': 2,
@@ -68,7 +72,29 @@ export default function RaidTiersPage() {
       'Temple of Ahn\'Qiraj': 6,
       'AQ40': 6,
       'Naxxramas': 7,
-      'Naxx': 7
+      'Naxx': 7,
+
+      // TBC raids
+      'Karazhan': 11,
+      'Kara': 11,
+      'Gruul\'s Lair': 12,
+      'Gruul': 12,
+      'Magtheridon\'s Lair': 13,
+      'Magtheridon': 13,
+      'Mag': 13,
+      'Serpentshrine Cavern': 14,
+      'SSC': 14,
+      'Tempest Keep': 15,
+      'TK': 15,
+      'Mount Hyjal': 16,
+      'Hyjal': 16,
+      'Black Temple': 17,
+      'BT': 17,
+      'Zul\'Aman': 18,
+      'ZA': 18,
+      'Sunwell Plateau': 19,
+      'Sunwell': 19,
+      'SWP': 19
     }
     return order[tierName] || 999
   }
@@ -130,6 +156,8 @@ export default function RaidTiersPage() {
           id,
           name,
           is_active,
+          master_sheet_visible,
+          submission_deadline,
           expansion:expansions (
             id,
             name
@@ -155,6 +183,17 @@ export default function RaidTiersPage() {
       })
 
       setRaidTiers(sortedTiers)
+
+      // Initialize deadline inputs for each tier
+      const deadlines: Record<string, string> = {}
+      sortedTiers.forEach(tier => {
+        if (tier.submission_deadline) {
+          deadlines[tier.id] = new Date(tier.submission_deadline).toISOString().slice(0, 16)
+        } else {
+          deadlines[tier.id] = ''
+        }
+      })
+      setDeadlineInputs(deadlines)
     } catch (err) {
       console.error('Unexpected error loading raid tiers:', err)
       setRaidTiers([])
@@ -278,6 +317,46 @@ export default function RaidTiersPage() {
       await loadRaidTiers(activeExpansionId!)
     } catch (error: any) {
       setMessage({ type: 'error', text: error.message || 'Failed to update active tier' })
+    }
+  }
+
+  const handleToggleMasterSheetVisibility = async (tierId: string, currentValue: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('raid_tiers')
+        .update({ master_sheet_visible: !currentValue })
+        .eq('id', tierId)
+
+      if (error) throw error
+
+      setMessage({
+        type: 'success',
+        text: !currentValue
+          ? 'Master sheet is now visible to players'
+          : 'Master sheet is now hidden from players'
+      })
+      await loadRaidTiers(activeExpansionId!)
+    } catch (error: any) {
+      setMessage({ type: 'error', text: error.message || 'Failed to update visibility' })
+    }
+  }
+
+  const handleUpdateDeadline = async (tierId: string, deadline: string | null) => {
+    try {
+      const { error } = await supabase
+        .from('raid_tiers')
+        .update({ submission_deadline: deadline })
+        .eq('id', tierId)
+
+      if (error) throw error
+
+      setMessage({
+        type: 'success',
+        text: deadline ? 'Submission deadline updated' : 'Submission deadline removed'
+      })
+      await loadRaidTiers(activeExpansionId!)
+    } catch (error: any) {
+      setMessage({ type: 'error', text: error.message || 'Failed to update deadline' })
     }
   }
 
@@ -422,49 +501,103 @@ export default function RaidTiersPage() {
           {raidTiers.length === 0 ? (
             <p className="text-[#a1a1a1] text-center py-8 text-[13px]">No raid tiers found. Create your first one above.</p>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-4">
               {raidTiers.map((tier) => (
-                <div
-                  key={tier.id}
-                  className="bg-[#151515] rounded-xl p-4 flex items-center justify-between border border-[rgba(255,255,255,0.1)]"
-                >
-                  <div className="flex items-center gap-4">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <h3 className="text-white font-semibold text-[14px]">{tier.name}</h3>
-                        {tier.is_active && (
-                          <span className="px-2 py-1 bg-green-950/50 text-green-200 text-[10px] rounded-full border border-green-600/50">
-                            Active
-                          </span>
-                        )}
+                  <div
+                    key={tier.id}
+                    className="bg-[#151515] rounded-xl p-5 border border-[rgba(255,255,255,0.1)]"
+                  >
+                    {/* Header Row */}
+                    <div className="flex items-center justify-between mb-4">
+                      <div>
+                        <div className="flex items-center gap-2 mb-1">
+                          <h3 className="text-white font-semibold text-[15px]">{tier.name}</h3>
+                          {tier.is_active && (
+                            <span className="px-2 py-0.5 bg-green-950/50 text-green-200 text-[10px] rounded-full border border-green-600/50 font-medium">
+                              Active
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-[#a1a1a1] text-[12px]">{tier.expansion?.name || 'No expansion'}</p>
                       </div>
-                      <p className="text-[#a1a1a1] text-[13px]">{tier.expansion?.name || 'No expansion'}</p>
+                      <div className="flex items-center gap-2">
+                        {!tier.is_active && (
+                          <button
+                            onClick={() => handleSetActive(tier.id)}
+                            className="px-4 py-2 bg-white hover:bg-gray-100 rounded-[40px] text-black text-[13px] font-medium transition"
+                          >
+                            Set Active
+                          </button>
+                        )}
+                        <button
+                          onClick={() => handleEdit(tier)}
+                          className="px-4 py-2 bg-[#1a1a1a] hover:bg-[#222] border border-[rgba(255,255,255,0.1)] rounded-[40px] text-white text-[13px] font-medium transition"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => handleDelete(tier.id)}
+                          className="px-4 py-2 bg-red-950/50 hover:bg-red-900/50 border border-red-600/50 rounded-[40px] text-red-200 text-[13px] font-medium transition"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Master Sheet Visibility Control */}
+                    <div className="flex items-center justify-between p-3 bg-[#0d0e11] rounded-lg mb-3">
+                      <div>
+                        <p className="text-white text-[13px] font-medium mb-0.5">Master Sheet Visibility</p>
+                        <p className="text-[#a1a1a1] text-[11px]">
+                          {tier.master_sheet_visible
+                            ? 'Players can see loot rankings'
+                            : 'Hidden - prevents gaming the system'}
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => handleToggleMasterSheetVisibility(tier.id, tier.master_sheet_visible)}
+                        className={`px-4 py-2 rounded-[40px] text-[13px] font-medium transition ${
+                          tier.master_sheet_visible
+                            ? 'bg-green-950/50 text-green-200 border border-green-600/50 hover:bg-green-900/50'
+                            : 'bg-[#1a1a1a] text-[#a1a1a1] border border-[rgba(255,255,255,0.1)] hover:bg-[#222]'
+                        }`}
+                      >
+                        {tier.master_sheet_visible ? '👁️ Visible' : '🔒 Hidden'}
+                      </button>
+                    </div>
+
+                    {/* Submission Deadline Control */}
+                    <div className="p-3 bg-[#0d0e11] rounded-lg">
+                      <div className="flex items-center justify-between mb-2">
+                        <div>
+                          <p className="text-white text-[13px] font-medium mb-0.5">Submission Deadline</p>
+                          <p className="text-[#a1a1a1] text-[11px]">
+                            {tier.submission_deadline
+                              ? `Set for ${new Date(tier.submission_deadline).toLocaleString()}`
+                              : 'No deadline set - players can submit anytime'}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="datetime-local"
+                          value={deadlineInputs[tier.id] || ''}
+                          onChange={(e) => setDeadlineInputs({
+                            ...deadlineInputs,
+                            [tier.id]: e.target.value
+                          })}
+                          className="flex-1 px-3 py-2 bg-[#151515] border border-[rgba(255,255,255,0.1)] rounded-lg text-white text-[12px] focus:outline-none focus:border-[#ff8000] transition"
+                        />
+                        <button
+                          onClick={() => handleUpdateDeadline(tier.id, deadlineInputs[tier.id] || null)}
+                          className="px-4 py-2 bg-white hover:bg-gray-100 rounded-[40px] text-black text-[12px] font-medium transition"
+                        >
+                          {deadlineInputs[tier.id] ? 'Save' : 'Clear'}
+                        </button>
+                      </div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    {!tier.is_active && (
-                      <button
-                        onClick={() => handleSetActive(tier.id)}
-                        className="px-3.5 py-2 bg-white hover:bg-gray-100 rounded-[40px] text-black text-[13px] font-medium transition"
-                      >
-                        Set Active
-                      </button>
-                    )}
-                    <button
-                      onClick={() => handleEdit(tier)}
-                      className="px-3.5 py-2 bg-[#151515] hover:bg-[#1a1a1a] border border-[rgba(255,255,255,0.1)] rounded-[40px] text-white text-[13px] font-medium transition"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => handleDelete(tier.id)}
-                      className="px-3.5 py-2 bg-red-950/50 hover:bg-red-900/50 border border-red-600/50 rounded-[40px] text-red-200 text-[13px] font-medium transition"
-                    >
-                      Delete
-                    </button>
-                  </div>
-                </div>
-              ))}
+                ))}
             </div>
           )}
         </div>

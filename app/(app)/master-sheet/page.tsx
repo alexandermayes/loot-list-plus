@@ -33,7 +33,7 @@ interface ItemRankings {
 }
 
 export default function MasterSheet() {
-  const { activeGuild, activeCharacter, loading: guildLoading } = useGuildContext()
+  const { activeGuild, activeCharacter, loading: guildLoading, isOfficer } = useGuildContext()
   const [allItemRankings, setAllItemRankings] = useState<ItemRankings[]>([])
   const [loading, setLoading] = useState(true)
   const [guildId, setGuildId] = useState<string | null>(null)
@@ -42,6 +42,7 @@ export default function MasterSheet() {
   const [guildSettings, setGuildSettings] = useState<any>(null)
   const [raidTiers, setRaidTiers] = useState<any[]>([])
   const [selectedTierId, setSelectedTierId] = useState<string | null>(null)
+  const [masterSheetVisible, setMasterSheetVisible] = useState<boolean>(false)
 
   const supabase = createClient()
   const router = useRouter()
@@ -172,6 +173,7 @@ export default function MasterSheet() {
             id,
             name,
             is_active,
+            master_sheet_visible,
             expansion:expansions!inner (
               id,
               name
@@ -214,11 +216,26 @@ export default function MasterSheet() {
     loadData()
   }, [guildLoading, activeGuild, activeCharacter])
 
+  // Update master sheet visibility when selected tier changes
+  useEffect(() => {
+    if (selectedTierId && raidTiers.length > 0) {
+      const tier = raidTiers.find(t => t.id === selectedTierId)
+      setMasterSheetVisible(tier?.master_sheet_visible ?? false)
+    }
+  }, [selectedTierId, raidTiers])
+
   // Load all item rankings when tier is selected
   useEffect(() => {
     const loadAllRankings = async () => {
       if (!selectedTierId || !guildId || !guildSettings) {
         setAllItemRankings([])
+        return
+      }
+
+      // Only load rankings if master sheet is visible OR user is an officer
+      if (!masterSheetVisible && !isOfficer) {
+        setAllItemRankings([])
+        setLoading(false)
         return
       }
 
@@ -359,7 +376,7 @@ export default function MasterSheet() {
     }
 
     loadAllRankings()
-  }, [selectedTierId, guildId, guildSettings])
+  }, [selectedTierId, guildId, guildSettings, masterSheetVisible, isOfficer])
 
   // Refresh Wowhead tooltips after items are loaded
   useEffect(() => {
@@ -511,12 +528,42 @@ export default function MasterSheet() {
           )}
         </div>
 
-        {/* Loot Table */}
-        {Object.keys(groupedByBoss).length === 0 ? (
-          <div className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl p-8 text-center">
-            <p className="text-[#a1a1a1]">No loot items found for this raid tier</p>
+        {/* Master Sheet Hidden Warning */}
+        {!masterSheetVisible && !isOfficer ? (
+          <div className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl p-12 text-center">
+            <div className="max-w-md mx-auto">
+              <div className="w-16 h-16 bg-[#1a1a1a] rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-3xl">🔒</span>
+              </div>
+              <h3 className="text-xl font-semibold text-white mb-2">Master Sheet Not Available</h3>
+              <p className="text-[#a1a1a1]">
+                The loot rankings for this raid tier are currently hidden. Officers will make them visible once the submission deadline has passed.
+              </p>
+            </div>
           </div>
         ) : (
+          <>
+            {/* Officer Viewing Hidden Sheet Badge */}
+            {!masterSheetVisible && isOfficer && (
+              <div className="bg-blue-950/50 border border-blue-600/50 rounded-xl p-4">
+                <div className="flex items-center gap-3">
+                  <span className="text-xl">👁️</span>
+                  <div>
+                    <p className="text-blue-200 font-semibold">Officer Preview</p>
+                    <p className="text-blue-300 text-sm">
+                      The master sheet is currently hidden from members. Only officers can see these rankings.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Loot Table */}
+            {Object.keys(groupedByBoss).length === 0 ? (
+              <div className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl p-8 text-center">
+                <p className="text-[#a1a1a1]">No loot items found for this raid tier</p>
+              </div>
+            ) : (
           <div className="space-y-4">
             {Object.entries(groupedByBoss).sort(([bossA], [bossB]) => getBossOrder(bossA) - getBossOrder(bossB)).map(([boss, items]) => (
               <div
@@ -580,6 +627,8 @@ export default function MasterSheet() {
               </div>
             ))}
           </div>
+            )}
+          </>
         )}
 
         {/* Legend */}

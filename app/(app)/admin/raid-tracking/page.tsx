@@ -58,7 +58,7 @@ export default function RaidTrackingPage() {
 
   const supabase = createClient()
   const router = useRouter()
-  const { activeGuild, isOfficer, loading: guildLoading } = useGuildContext()
+  const { activeGuild, isOfficer, loading: guildLoading, currentExpansion } = useGuildContext()
 
   useEffect(() => {
     document.title = 'LootList+ • Raid Tracking'
@@ -79,7 +79,7 @@ export default function RaidTrackingPage() {
         return
       }
 
-      if (!activeGuild) {
+      if (!activeGuild || !currentExpansion) {
         setLoading(false)
         return
       }
@@ -96,8 +96,7 @@ export default function RaidTrackingPage() {
         console.log('📅 Loaded guild settings:', {
           raid_days_per_week: settings.raid_days_per_week,
           first_raid_day: settings.first_raid_day,
-          second_raid_day: settings.second_raid_day,
-          reset_date: settings.reset_date
+          second_raid_day: settings.second_raid_day
         })
       }
 
@@ -151,17 +150,17 @@ export default function RaidTrackingPage() {
 
       // Generate and load raid dates
       if (settings) {
-        await generateRaidDates(activeGuild.id, settings)
+        await generateRaidDates(activeGuild.id, settings, currentExpansion)
       }
 
       setLoading(false)
     }
 
     loadData()
-  }, [guildLoading, activeGuild, isOfficer])
+  }, [guildLoading, activeGuild, isOfficer, currentExpansion])
 
-  const generateRaidDates = async (guildId: string, settings: any) => {
-    const { raid_days_per_week, first_raid_day, second_raid_day, third_raid_day, fourth_raid_day, fifth_raid_day, reset_date } = settings
+  const generateRaidDates = async (guildId: string, settings: any, expansion: any) => {
+    const { raid_days_per_week, first_raid_day, second_raid_day, third_raid_day, fourth_raid_day, fifth_raid_day } = settings
 
     console.log('🔧 Generating raid dates with settings:', {
       raid_days_per_week,
@@ -170,7 +169,8 @@ export default function RaidTrackingPage() {
       third_raid_day,
       fourth_raid_day,
       fifth_raid_day,
-      reset_date
+      expansion_name: expansion?.expansion_name,
+      raid_start_date: expansion?.raid_start_date
     })
 
     const raidDays = [first_raid_day, second_raid_day, third_raid_day, fourth_raid_day, fifth_raid_day]
@@ -179,17 +179,17 @@ export default function RaidTrackingPage() {
 
     console.log('📋 Raid days of week:', raidDays, '(0=Sun, 1=Mon, 2=Tue, 3=Wed, 4=Thu, 5=Fri, 6=Sat)')
 
-    // Generate dates: from reset_date to today only
+    // Generate dates: from expansion raid_start_date to today only
     const dates: string[] = []
     const today = new Date()
     today.setHours(0, 0, 0, 0) // Normalize to start of day
 
-    // Use guild reset_date or default to 4 weeks ago if not set
-    const startDate = reset_date
-      ? new Date(reset_date + 'T00:00:00')
+    // Use expansion raid_start_date or default to 4 weeks ago if not set
+    const startDate = expansion?.raid_start_date
+      ? new Date(expansion.raid_start_date + 'T00:00:00')
       : new Date(today.getTime() - (4 * 7 * 24 * 60 * 60 * 1000))
 
-    console.log('📅 Date range:', {
+    console.log('📅 Date range for', expansion?.expansion_name + ':', {
       startDate: startDate.toISOString().split('T')[0],
       today: today.toISOString().split('T')[0]
     })
@@ -579,8 +579,8 @@ export default function RaidTrackingPage() {
 
   const today = new Date().toISOString().split('T')[0]
 
-  // Check if reset date is in the future
-  const resetDateInFuture = guildSettings?.reset_date && guildSettings.reset_date > today
+  // Check if raid start date is in the future
+  const raidStartDateInFuture = currentExpansion?.raid_start_date && currentExpansion.raid_start_date > today
 
   // Group raids by week (starting on the first raid day from settings)
   const firstRaidDay = guildSettings?.first_raid_day ?? 0 // Default to Sunday if not set
@@ -638,11 +638,16 @@ export default function RaidTrackingPage() {
       {/* Header */}
       <div>
         <h1 className="text-[42px] font-bold text-white leading-tight">Raid Tracking</h1>
-        <p className="text-[#8a8d94] mt-1 text-[14px]">Manage attendance and signups for each raid day</p>
+        <p className="text-[#8a8d94] mt-1 text-[14px]">
+          Manage attendance and signups for each raid day
+          {currentExpansion && (
+            <span className="text-[#ff8000] ml-2">• {currentExpansion.expansion_name}</span>
+          )}
+        </p>
       </div>
 
       {/* Legend */}
-      {!resetDateInFuture && (
+      {!raidStartDateInFuture && (
         <div className="flex items-center gap-4 text-[13px] flex-wrap">
           <span className="text-[#a1a1a1]">Status Options:</span>
           <div className="flex items-center gap-1">
@@ -669,7 +674,7 @@ export default function RaidTrackingPage() {
       )}
 
       {/* Future Raid Start Message */}
-      {resetDateInFuture && guildSettings && (
+      {raidStartDateInFuture && currentExpansion && (
         <div className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl p-8 text-center">
           <div className="max-w-md mx-auto space-y-4">
             <div className="w-16 h-16 mx-auto bg-[#ff8000]/20 rounded-full flex items-center justify-center">
@@ -677,11 +682,11 @@ export default function RaidTrackingPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
             </div>
-            <h3 className="text-[24px] font-bold text-white">Raids Haven't Started Yet</h3>
+            <h3 className="text-[24px] font-bold text-white">{currentExpansion.expansion_name} Raids Haven't Started Yet</h3>
             <p className="text-[#a1a1a1] text-[14px]">
-              Your first raid week is scheduled to begin on{' '}
+              Your first raid week for <span className="text-[#ff8000]">{currentExpansion.expansion_name}</span> is scheduled to begin on{' '}
               <span className="text-white font-medium">
-                {new Date(guildSettings.reset_date + 'T00:00:00').toLocaleDateString('en-US', {
+                {new Date(currentExpansion.raid_start_date + 'T00:00:00').toLocaleDateString('en-US', {
                   weekday: 'long',
                   month: 'long',
                   day: 'numeric',
@@ -697,7 +702,7 @@ export default function RaidTrackingPage() {
       )}
 
       {/* Raid Days Grouped by Week */}
-      {!resetDateInFuture && (
+      {!raidStartDateInFuture && (
         <div className="space-y-6">
         {weekKeys.map((weekStart) => {
           const raids = raidsByWeek[weekStart]
