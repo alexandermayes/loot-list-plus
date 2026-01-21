@@ -30,6 +30,7 @@ export default function GuildSelectPage() {
   const [toastMessage, setToastMessage] = useState('')
   const [showToast, setShowToast] = useState(false)
   const [guildInfo, setGuildInfo] = useState<any>(null)
+  const [redirecting, setRedirecting] = useState(false)
 
   // Character selection state
   const [showCharacterModal, setShowCharacterModal] = useState(false)
@@ -53,9 +54,13 @@ export default function GuildSelectPage() {
 
   useEffect(() => {
     const checkUser = async () => {
+      // Prevent redirect loop
+      if (redirecting) return
+
       // Check if logged in
       const { data: { user: currentUser } } = await supabase.auth.getUser()
       if (!currentUser) {
+        setRedirecting(true)
         router.push('/')
         return
       }
@@ -82,6 +87,8 @@ export default function GuildSelectPage() {
         if (memberships && memberships.length > 0) {
           setHasGuilds(true)
           // User has guilds, redirect to dashboard
+          console.log('[GUILD SELECT] User has guilds, redirecting to dashboard...')
+          setRedirecting(true)
           router.push('/dashboard')
           return
         }
@@ -334,7 +341,7 @@ export default function GuildSelectPage() {
     }
   }
 
-  if (loading) {
+  if (loading || redirecting) {
     return <LoadingSpinner fullScreen />
   }
 
