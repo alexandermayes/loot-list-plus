@@ -86,7 +86,8 @@ export async function POST(request: NextRequest) {
       serviceSupabase,
       guild.id,
       expansion,
-      true // useServiceRole flag
+      true, // setAsCurrent - set this expansion as the guild's current expansion
+      true  // useServiceRole - use direct inserts instead of RPC (bypasses RLS)
     )
 
     if (seedError) {

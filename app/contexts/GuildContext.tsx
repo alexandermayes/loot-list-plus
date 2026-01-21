@@ -352,8 +352,12 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
       }
 
       // Fetch all character guild memberships
+      // Declare outside if block so we can use it for setting active guild later
+      let transformedMemberships: any[] = []
+
       if (characters && characters.length > 0) {
         const characterIds = characters.map(c => c.id)
+        console.log('[GUILD CONTEXT] Fetching memberships for character IDs:', characterIds)
         const { data: memberships, error: membershipsError } = await supabase
           .from('character_guild_memberships')
           .select(`
@@ -404,6 +408,9 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
           .in('character_id', characterIds)
           .eq('is_active', true)
 
+        console.log('[GUILD CONTEXT] Memberships query result:', { memberships, membershipsError })
+        console.log('[GUILD CONTEXT] Memberships count:', memberships?.length || 0)
+
         if (membershipsError) {
           console.error('Error loading character memberships:', membershipsError)
           console.error('Memberships error details:', JSON.stringify(membershipsError, null, 2))
@@ -412,7 +419,7 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
           setCharacterMemberships([])
         } else {
           // Transform the data to handle arrays from Supabase joins
-          const transformedMemberships = (memberships || []).map(m => {
+          transformedMemberships = (memberships || []).map(m => {
             const char = Array.isArray(m.character) ? m.character[0] : m.character
             return {
               ...m,
@@ -435,6 +442,9 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
         .eq('user_id', user.id)
         .maybeSingle()
 
+      console.log('[GUILD CONTEXT] Active char data:', activeCharData)
+      console.log('[GUILD CONTEXT] Transformed memberships for active guild check:', transformedMemberships.length)
+
       if (activeCharData?.active_character_id) {
         // Find the character from our enriched characters (which have specs attached)
         const activeChar = enrichedCharacters.find(c => c.id === activeCharData.active_character_id)
@@ -444,6 +454,46 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
       } else if (enrichedCharacters.length > 0) {
         // If no active character saved, use first character (main if available)
         setActiveCharacter(enrichedCharacters[0])
+      }
+
+      // Set activeGuild from character memberships (new system)
+      // This is critical - the old loadGuilds uses guild_members table which may be empty
+      if (activeCharData?.active_guild_id) {
+        // Find the guild from memberships
+        const membershipWithGuild = transformedMemberships.find(m => m.guild_id === activeCharData.active_guild_id)
+        if (membershipWithGuild?.guild) {
+          console.log('[GUILD CONTEXT] Setting activeGuild from user_active_characters:', membershipWithGuild.guild.name)
+          setActiveGuild(membershipWithGuild.guild as Guild)
+        } else {
+          // No membership found - user might have deleted their character but still has active_guild_id
+          // Fetch the guild directly to allow them to still see it and create a new character
+          console.log('[GUILD CONTEXT] No membership found for active_guild_id, fetching guild directly:', activeCharData.active_guild_id)
+          const { data: guildData } = await supabase
+            .from('guilds')
+            .select('*')
+            .eq('id', activeCharData.active_guild_id)
+            .eq('is_active', true)
+            .single()
+
+          if (guildData) {
+            console.log('[GUILD CONTEXT] Setting activeGuild from direct fetch:', guildData.name)
+            setActiveGuild(guildData as Guild)
+          }
+        }
+      } else if (transformedMemberships.length > 0 && transformedMemberships[0]?.guild) {
+        // If no saved active guild, use first guild from character memberships
+        console.log('[GUILD CONTEXT] Setting activeGuild to first membership guild:', transformedMemberships[0].guild.name)
+        setActiveGuild(transformedMemberships[0].guild as Guild)
+
+        // Also save this as the active guild
+        await supabase
+          .from('user_active_characters')
+          .upsert({
+            user_id: user.id,
+            active_character_id: enrichedCharacters[0]?.id || null,
+            active_guild_id: transformedMemberships[0].guild_id,
+            updated_at: new Date().toISOString()
+          })
       }
     } catch (error) {
       console.error('Error in loadCharacters:', error)
@@ -676,8 +726,21 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const checkOfficerStatus = async () => {
-      // Check old system first (backwards compatibility)
-      if (activeMember && activeGuild) {
+      // No guild = not an officer
+      if (!activeGuild) {
+        setIsOfficer(false)
+        return
+      }
+
+      // Guild creator is always an officer (even without a character)
+      if (user && activeGuild.created_by === user.id) {
+        console.log('[GUILD CONTEXT] User is guild creator, setting isOfficer=true')
+        setIsOfficer(true)
+        return
+      }
+
+      // Check old system (backwards compatibility)
+      if (activeMember) {
         const { data: roleData } = await supabase
           .from('guild_roles')
           .select('position')
@@ -692,7 +755,7 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
       }
 
       // Check new character system
-      if (!activeCharacter || !activeGuild) {
+      if (!activeCharacter) {
         setIsOfficer(false)
         return
       }
@@ -720,7 +783,7 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
     }
 
     checkOfficerStatus()
-  }, [activeCharacter, activeGuild, characterMemberships, activeMember])
+  }, [activeCharacter, activeGuild, characterMemberships, activeMember, user])
 
   const hasMultipleGuilds = userGuilds.length > 1
   const hasMultipleCharacters = userCharacters.length > 1

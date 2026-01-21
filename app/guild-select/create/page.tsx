@@ -77,21 +77,26 @@ export default function CreateGuildPage() {
           // Check cache first (15 minute cache to reduce rate limiting)
           const cacheKey = `discord_servers_${currentUser.id}`
           const cached = localStorage.getItem(cacheKey)
+          let cachedData: any[] | null = null
+          let cacheTimestamp = 0
 
           if (cached) {
             try {
-              const { data, timestamp } = JSON.parse(cached)
+              const parsed = JSON.parse(cached)
+              cachedData = parsed.data
+              cacheTimestamp = parsed.timestamp
               const fifteenMinutes = 15 * 60 * 1000
 
-              if (Date.now() - timestamp < fifteenMinutes) {
-                console.log('Using cached Discord servers:', data.length)
-                setDiscordGuilds(data)
+              if (Date.now() - cacheTimestamp < fifteenMinutes) {
+                console.log('Using cached Discord servers:', cachedData.length)
+                setDiscordGuilds(cachedData)
                 setLoading(false)
                 return
               }
             } catch (err) {
               // Invalid cache, clear it
               localStorage.removeItem(cacheKey)
+              cachedData = null
             }
           }
 
@@ -112,7 +117,14 @@ export default function CreateGuildPage() {
 
             if (response.status === 429) {
               console.error('Discord rate limit:', errorData)
-              setError('Discord rate limit reached. Please wait a minute and refresh the page.')
+              // Fall back to stale cache if available
+              if (cachedData && cachedData.length > 0) {
+                console.log('Using stale cached Discord servers due to rate limit:', cachedData.length)
+                setDiscordGuilds(cachedData)
+                // Don't show error, just use stale cache
+              } else {
+                setError('Discord rate limit reached. Please wait a minute and refresh, or enter your Discord Server ID manually below.')
+              }
             } else if (response.status === 400) {
               // Missing provider token - user needs to re-authenticate
               console.warn('Discord provider token missing. User can still use manual server ID entry.')
