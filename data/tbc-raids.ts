@@ -553,6 +553,37 @@ export const tempestkeep: Raid = {
         // Quest Item
         { name: 'Kael\'s Vial Remnant', slot: 'Quest', wowhead_id: 31545 },
       ],
+    },
+    {
+      name: 'Trash',
+      items: [
+        // Trash Drops
+        { name: 'Seventh Ring of the Tirisfalen', slot: 'Finger', wowhead_id: 30028 },
+        { name: 'Mantle of the Elven Kings', slot: 'Shoulder', wowhead_id: 30024 },
+        { name: 'Fire-Cord of the Magus', slot: 'Waist', wowhead_id: 30020 },
+        { name: 'Bark-Gloves of Ancient Wisdom', slot: 'Hands', wowhead_id: 30029 },
+        { name: 'Girdle of Fallen Stars', slot: 'Waist', wowhead_id: 30030 },
+        { name: 'Bands of the Celestial Archer', slot: 'Wrist', wowhead_id: 30026 },
+        // Blacksmithing Recipes
+        { name: 'Plans: Belt of the Guardian', slot: 'Recipe', wowhead_id: 30321 },
+        { name: 'Plans: Boots of the Protector', slot: 'Recipe', wowhead_id: 30323 },
+        { name: 'Plans: Red Belt of Battle', slot: 'Recipe', wowhead_id: 30322 },
+        { name: 'Plans: Red Havoc Boots', slot: 'Recipe', wowhead_id: 30324 },
+        // Leatherworking Recipes
+        { name: 'Pattern: Belt of Deep Shadow', slot: 'Recipe', wowhead_id: 30302 },
+        { name: 'Pattern: Belt of Natural Power', slot: 'Recipe', wowhead_id: 30301 },
+        { name: 'Pattern: Belt of the Black Eagle', slot: 'Recipe', wowhead_id: 30303 },
+        { name: 'Pattern: Boots of Natural Grace', slot: 'Recipe', wowhead_id: 30305 },
+        { name: 'Pattern: Boots of the Crimson Hawk', slot: 'Recipe', wowhead_id: 30307 },
+        { name: 'Pattern: Boots of Utter Darkness', slot: 'Recipe', wowhead_id: 30306 },
+        { name: 'Pattern: Hurricane Boots', slot: 'Recipe', wowhead_id: 30308 },
+        { name: 'Pattern: Monsoon Belt', slot: 'Recipe', wowhead_id: 30304 },
+        // Tailoring Recipes
+        { name: 'Pattern: Belt of Blasting', slot: 'Recipe', wowhead_id: 30280 },
+        { name: 'Pattern: Belt of the Long Road', slot: 'Recipe', wowhead_id: 30281 },
+        { name: 'Pattern: Boots of Blasting', slot: 'Recipe', wowhead_id: 30282 },
+        { name: 'Pattern: Boots of the Long Road', slot: 'Recipe', wowhead_id: 30283 },
+      ],
     }
   ],
 }

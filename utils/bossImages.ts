@@ -199,6 +199,7 @@ const bossIconNames: Record<string, string> = {
   'High Astromancer Solarian': 'spell_arcane_starfire',
   'Void Reaver': 'spell_shadow_shadowandflame',
   'Kael\'thas Sunstrider': 'achievement_boss_kaelthas',
+  'Trash': 'inv_misc_bag_10_blue',
 
   // Mount Hyjal
   'Rage Winterchill': 'spell_frost_glacier',
