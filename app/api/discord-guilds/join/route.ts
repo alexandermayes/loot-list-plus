@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/utils/supabase/server'
+import { createServiceRoleClient } from '@/utils/supabase/service-role'
 
 // POST - Join guild via Discord verification
 export async function POST(request: NextRequest) {
@@ -108,29 +109,72 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Check if user is already a member
-    const { data: existingMember } = await supabase
-      .from('guild_members')
+    // Use service role client to bypass RLS for character operations
+    const serviceSupabase = createServiceRoleClient()
+
+    // Get or create a character for the user
+    const { data: existingCharacters } = await serviceSupabase
+      .from('characters')
       .select('id')
       .eq('user_id', user.id)
+      .limit(1)
+
+    let characterId: string
+
+    if (existingCharacters && existingCharacters.length > 0) {
+      // Use existing character
+      characterId = existingCharacters[0].id
+      console.log('[DISCORD JOIN] Using existing character:', characterId)
+    } else {
+      // Create a default character for the user
+      const characterName = user.user_metadata?.full_name || user.user_metadata?.custom_claims?.global_name || user.user_metadata?.name || 'Discord Member'
+      console.log('[DISCORD JOIN] Creating character with name:', characterName)
+
+      const { data: newCharacter, error: charError } = await serviceSupabase
+        .from('characters')
+        .insert({
+          user_id: user.id,
+          name: characterName,
+          realm: guild.realm || null,
+          is_main: true
+        })
+        .select('id')
+        .single()
+
+      if (charError || !newCharacter) {
+        console.error('[DISCORD JOIN] Error creating character:', charError)
+        return NextResponse.json(
+          { error: `Failed to create character: ${charError?.message || 'Unknown error'}` },
+          { status: 500 }
+        )
+      }
+
+      characterId = newCharacter.id
+      console.log('[DISCORD JOIN] Created character:', characterId)
+    }
+
+    // Check if character is already a member of this guild
+    const { data: existingMembership } = await serviceSupabase
+      .from('character_guild_memberships')
+      .select('id')
+      .eq('character_id', characterId)
       .eq('guild_id', guild_id)
       .single()
 
-    if (existingMember) {
+    if (existingMembership) {
       return NextResponse.json(
         { error: 'You are already a member of this guild' },
         { status: 400 }
       )
     }
 
-    // Create guild member entry
-    const { error: memberError } = await supabase
-      .from('guild_members')
+    // Create character guild membership
+    console.log('[DISCORD JOIN] Creating membership for character:', characterId, 'guild:', guild_id)
+    const { error: memberError } = await serviceSupabase
+      .from('character_guild_memberships')
       .insert({
-        user_id: user.id,
+        character_id: characterId,
         guild_id: guild_id,
-        character_name: user.user_metadata?.full_name || user.user_metadata?.custom_claims?.global_name || 'Unknown',
-        class_id: null, // Will be set later
         role: 'Member',
         is_active: true,
         joined_at: new Date().toISOString(),
@@ -138,26 +182,25 @@ export async function POST(request: NextRequest) {
       })
 
     if (memberError) {
-      console.error('Error creating guild member:', memberError)
+      console.error('[DISCORD JOIN] Error creating character guild membership:', memberError)
       return NextResponse.json(
-        { error: 'Failed to join guild' },
+        { error: `Failed to join guild: ${memberError.message}` },
         { status: 500 }
       )
     }
 
-    // Set as active guild for user
-    const { error: activeGuildError } = await supabase
-      .from('user_active_guilds')
+    // Set as active character and guild for user
+    console.log('[DISCORD JOIN] Setting active character and guild')
+    await serviceSupabase
+      .from('user_active_characters')
       .upsert({
         user_id: user.id,
+        active_character_id: characterId,
         active_guild_id: guild_id,
         updated_at: new Date().toISOString()
       })
 
-    if (activeGuildError) {
-      console.error('Error setting active guild:', activeGuildError)
-      // Not critical, continue
-    }
+    console.log('[DISCORD JOIN] Guild join complete!')
 
     return NextResponse.json({
       success: true,

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/utils/supabase/server'
+import { createServiceRoleClient } from '@/utils/supabase/service-role'
 
 // GET - Validate invite code and get guild info
 export async function GET(
@@ -144,69 +145,103 @@ export async function POST(
       )
     }
 
-    // Check if user is already a member
-    const { data: existingMember } = await supabase
-      .from('guild_members')
+    // Use service role client to bypass RLS for character operations
+    const serviceSupabase = createServiceRoleClient()
+
+    // Get the guild details for realm
+    const { data: guildData } = await supabase
+      .from('guilds')
+      .select('realm')
+      .eq('id', inviteCode.guild_id)
+      .single()
+
+    // Get or create a character for the user
+    const { data: existingCharacters } = await serviceSupabase
+      .from('characters')
       .select('id')
       .eq('user_id', user.id)
+      .limit(1)
+
+    let characterId: string
+
+    if (existingCharacters && existingCharacters.length > 0) {
+      // Use existing character
+      characterId = existingCharacters[0].id
+      console.log('[INVITE JOIN] Using existing character:', characterId)
+    } else {
+      // Create a default character for the user
+      const characterName = user.user_metadata?.full_name || user.user_metadata?.name || 'Guild Member'
+      console.log('[INVITE JOIN] Creating character with name:', characterName)
+
+      const { data: newCharacter, error: charError } = await serviceSupabase
+        .from('characters')
+        .insert({
+          user_id: user.id,
+          name: characterName,
+          realm: guildData?.realm || null,
+          is_main: true
+        })
+        .select('id')
+        .single()
+
+      if (charError || !newCharacter) {
+        console.error('[INVITE JOIN] Error creating character:', charError)
+        return NextResponse.json(
+          { error: `Failed to create character: ${charError?.message || 'Unknown error'}` },
+          { status: 500 }
+        )
+      }
+
+      characterId = newCharacter.id
+      console.log('[INVITE JOIN] Created character:', characterId)
+    }
+
+    // Check if character is already a member of this guild
+    const { data: existingMembership } = await serviceSupabase
+      .from('character_guild_memberships')
+      .select('id')
+      .eq('character_id', characterId)
       .eq('guild_id', inviteCode.guild_id)
       .single()
 
-    if (existingMember) {
+    if (existingMembership) {
       return NextResponse.json(
         { error: 'You are already a member of this guild' },
         { status: 400 }
       )
     }
 
-    // Create guild member entry (for backward compatibility)
-    const { error: memberError } = await supabase
-      .from('guild_members')
+    // Create character guild membership
+    console.log('[INVITE JOIN] Creating membership for character:', characterId, 'guild:', inviteCode.guild_id)
+    const { error: memberError } = await serviceSupabase
+      .from('character_guild_memberships')
       .insert({
-        user_id: user.id,
+        character_id: characterId,
         guild_id: inviteCode.guild_id,
-        character_name: user.user_metadata?.full_name || 'Unknown',
-        class_id: null, // Will be set later
         role: 'Member',
         is_active: true,
         joined_at: new Date().toISOString(),
-        joined_via: 'invite_code',
-        invite_code_id: inviteCode.id
+        joined_via: 'invite_code'
       })
 
     if (memberError) {
-      console.error('Error creating guild member:', memberError)
+      console.error('[INVITE JOIN] Error creating character guild membership:', memberError)
       return NextResponse.json(
-        { error: 'Failed to join guild' },
+        { error: `Failed to join guild: ${memberError.message}` },
         { status: 500 }
       )
     }
 
-    // Check if user has an active character and create character_guild_membership
-    const { data: activeCharData } = await supabase
+    // Set as active character and guild for user
+    console.log('[INVITE JOIN] Setting active character and guild')
+    await serviceSupabase
       .from('user_active_characters')
-      .select('active_character_id')
-      .eq('user_id', user.id)
-      .single()
-
-    if (activeCharData?.active_character_id) {
-      // Create character guild membership for active character
-      const { error: charMemberError } = await supabase
-        .from('character_guild_memberships')
-        .insert({
-          character_id: activeCharData.active_character_id,
-          guild_id: inviteCode.guild_id,
-          role: 'Member',
-          is_active: true,
-          joined_at: new Date().toISOString(),
-          joined_via: 'invite_code'
-        })
-
-      if (charMemberError) {
-        console.error('Error creating character guild membership:', charMemberError)
-        // Not critical, continue
-      }
-    }
+      .upsert({
+        user_id: user.id,
+        active_character_id: characterId,
+        active_guild_id: inviteCode.guild_id,
+        updated_at: new Date().toISOString()
+      })
 
     // Increment current_uses
     const { error: updateError } = await supabase
@@ -219,19 +254,7 @@ export async function POST(
       // Not critical, continue
     }
 
-    // Set as active guild for user
-    const { error: activeGuildError } = await supabase
-      .from('user_active_guilds')
-      .upsert({
-        user_id: user.id,
-        active_guild_id: inviteCode.guild_id,
-        updated_at: new Date().toISOString()
-      })
-
-    if (activeGuildError) {
-      console.error('Error setting active guild:', activeGuildError)
-      // Not critical, continue
-    }
+    console.log('[INVITE JOIN] Guild join complete!')
 
     return NextResponse.json({
       success: true,
