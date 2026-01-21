@@ -33,16 +33,49 @@ export const karazhan: Raid = {
   tier: 'Tier 4',
   bosses: [
     {
+      name: 'Servant\'s Quarters',
+      items: [
+        // Hyakiss the Lurker - Waist items
+        { name: 'Lurker\'s Cord', slot: 'Waist', wowhead_id: 30675 },
+        { name: 'Lurker\'s Grasp', slot: 'Waist', wowhead_id: 30676 },
+        { name: 'Lurker\'s Belt', slot: 'Waist', wowhead_id: 30677 },
+        { name: 'Lurker\'s Girdle', slot: 'Waist', wowhead_id: 30678 },
+        // Rokad the Ravager - Wrist items
+        { name: 'Ravager\'s Cuffs', slot: 'Wrist', wowhead_id: 30684 },
+        { name: 'Ravager\'s Wrist-Wraps', slot: 'Wrist', wowhead_id: 30685 },
+        { name: 'Ravager\'s Bands', slot: 'Wrist', wowhead_id: 30686 },
+        { name: 'Ravager\'s Bracers', slot: 'Wrist', wowhead_id: 30687 },
+        // Shadikith the Glider - Feet items
+        { name: 'Glider\'s Foot-Wraps', slot: 'Feet', wowhead_id: 30680 },
+        { name: 'Glider\'s Boots', slot: 'Feet', wowhead_id: 30681 },
+        { name: 'Glider\'s Sabatons', slot: 'Feet', wowhead_id: 30682 },
+        { name: 'Glider\'s Greaves', slot: 'Feet', wowhead_id: 30683 },
+      ],
+    },
+    {
       name: 'Attumen the Huntsman',
       items: [
-        { name: 'Spectral Band of Innervation', slot: 'Finger', wowhead_id: 28477 },
-        { name: 'Stalker\'s War Bands', slot: 'Wrist', wowhead_id: 28454 },
-        { name: 'Gloves of Dexterous Manipulation', slot: 'Hands', wowhead_id: 28507 },
-        { name: 'Handwraps of Flowing Thought', slot: 'Hands', wowhead_id: 28505 },
+        // Rings & Amulets
+        { name: 'Spectral Band of Innervation', slot: 'Finger', wowhead_id: 28510 },
+        { name: 'Worgen Claw Necklace', slot: 'Neck', wowhead_id: 28509 },
+        // Cloth
+        { name: 'Gloves of Saintly Blessings', slot: 'Hands', wowhead_id: 28508 },
+        { name: 'Handwraps of Flowing Thought', slot: 'Hands', wowhead_id: 28507 },
+        { name: 'Harbinger Bands', slot: 'Wrist', wowhead_id: 28477 },
+        // Leather
+        { name: 'Gloves of Dexterous Manipulation', slot: 'Hands', wowhead_id: 28506 },
+        { name: 'Bracers of the White Stag', slot: 'Wrist', wowhead_id: 28453 },
+        // Mail
         { name: 'Whirlwind Bracers', slot: 'Wrist', wowhead_id: 28503 },
-        { name: 'Bracers of the White Stag', slot: 'Wrist', wowhead_id: 28502 },
+        { name: 'Stalker\'s War Bands', slot: 'Wrist', wowhead_id: 28454 },
+        // Plate
+        { name: 'Gauntlets of Renewed Hope', slot: 'Hands', wowhead_id: 28505 },
+        { name: 'Vambraces of Courage', slot: 'Wrist', wowhead_id: 28502 },
+        // Weapons & Other
         { name: 'Steelhawk Crossbow', slot: 'Ranged', wowhead_id: 28504 },
         { name: 'Fiery Warhorse\'s Reins', slot: 'Mount', wowhead_id: 30480 },
+        // Recipe
+        { name: 'Schematic: Stabilized Eternium Scope', slot: 'Recipe', wowhead_id: 23809 },
       ],
     },
     {
@@ -60,6 +93,8 @@ export const karazhan: Raid = {
         { name: 'Idol of the Avian Heart', slot: 'Relic', wowhead_id: 28568 },
         { name: 'Boots of Valiance', slot: 'Feet', wowhead_id: 28569 },
         { name: 'Shadow-Cloak of Dalaran', slot: 'Back', wowhead_id: 28570 },
+        // Recipe
+        { name: 'Formula: Enchant Weapon - Mongoose', slot: 'Recipe', wowhead_id: 22559 },
       ],
     },
     {
@@ -108,6 +143,10 @@ export const karazhan: Raid = {
         { name: 'Dragon-Quake Shoulderguards', slot: 'Shoulder', wowhead_id: 28631 },
         { name: 'Forest Wind Shoulderpads', slot: 'Shoulder', wowhead_id: 28647 },
         { name: 'Garona\'s Signet Ring', slot: 'Finger', wowhead_id: 28649 },
+        // Tier 4 Glove Tokens
+        { name: 'Gloves of the Fallen Hero', slot: 'Token', wowhead_id: 29756 },
+        { name: 'Gloves of the Fallen Champion', slot: 'Token', wowhead_id: 29757 },
+        { name: 'Gloves of the Fallen Defender', slot: 'Token', wowhead_id: 29758 },
       ],
     },
     {
@@ -124,6 +163,8 @@ export const karazhan: Raid = {
         { name: 'Mender\'s Heart-Ring', slot: 'Finger', wowhead_id: 28661 },
         { name: 'Breastplate of the Lightbinder', slot: 'Chest', wowhead_id: 28662 },
         { name: 'The Lightning Capacitor', slot: 'Trinket', wowhead_id: 28785 },
+        // Recipe
+        { name: 'Formula: Enchant Weapon - Soulfrost', slot: 'Recipe', wowhead_id: 22561 },
       ],
     },
     {
@@ -141,6 +182,8 @@ export const karazhan: Raid = {
         { name: 'Pendant of the Violet Eye', slot: 'Trinket', wowhead_id: 28727 },
         { name: 'Mantle of the Mind Flayer', slot: 'Shoulder', wowhead_id: 28726 },
         { name: 'Aran\'s Soothing Sapphire', slot: 'Held In Off-hand', wowhead_id: 28728 },
+        // Recipe
+        { name: 'Formula: Enchant Weapon - Sunfire', slot: 'Recipe', wowhead_id: 22560 },
       ],
     },
     {
@@ -163,17 +206,24 @@ export const karazhan: Raid = {
     {
       name: 'Chess Event',
       items: [
+        // Rings & Amulets
+        { name: 'Ring of Recurrence', slot: 'Finger', wowhead_id: 28753 },
         { name: 'Mithril Chain of Heroism', slot: 'Neck', wowhead_id: 28745 },
+        // Cloth
+        { name: 'Headdress of the High Potentate', slot: 'Head', wowhead_id: 28756 },
+        // Leather
+        { name: 'Bladed Shoulderpads of the Merciless', slot: 'Shoulder', wowhead_id: 28755 },
+        { name: 'Forestlord Striders', slot: 'Feet', wowhead_id: 28752 },
+        { name: 'Girdle of Treachery', slot: 'Waist', wowhead_id: 28750 },
+        // Mail
+        { name: 'Fiend Slayer Boots', slot: 'Feet', wowhead_id: 28746 },
+        { name: 'Heart-Flame Leggings', slot: 'Legs', wowhead_id: 28751 },
+        // Plate
         { name: 'Legplates of the Innocent', slot: 'Legs', wowhead_id: 28748 },
         { name: 'Battlescar Boots', slot: 'Feet', wowhead_id: 28747 },
-        { name: 'Girdle of Treachery', slot: 'Waist', wowhead_id: 28749 },
-        { name: 'Forestlord Striders', slot: 'Feet', wowhead_id: 28750 },
-        { name: 'Heart-Flame Leggings', slot: 'Legs', wowhead_id: 28751 },
-        { name: 'Headdress of the High Potentate', slot: 'Head', wowhead_id: 28752 },
-        { name: 'Ring of Recurrence', slot: 'Finger', wowhead_id: 28753 },
+        // Weapons & Shields
         { name: 'Triptych Shield of the Ancients', slot: 'Off Hand', wowhead_id: 28754 },
-        { name: 'Bladed Shoulderpads of the Merciless', slot: 'Shoulder', wowhead_id: 28755 },
-        { name: 'King\'s Defender', slot: 'One-Hand', wowhead_id: 28756 },
+        { name: 'King\'s Defender', slot: 'One-Hand', wowhead_id: 28749 },
       ],
     },
     {
@@ -191,6 +241,10 @@ export const karazhan: Raid = {
         { name: 'The Decapitator', slot: 'One-Hand', wowhead_id: 28767 },
         { name: 'Sunfury Bow of the Phoenix', slot: 'Ranged', wowhead_id: 28772 },
         { name: 'Gorehowl', slot: 'Two-Hand', wowhead_id: 28773 },
+        // Tier 4 Head Tokens
+        { name: 'Helm of the Fallen Hero', slot: 'Token', wowhead_id: 29759 },
+        { name: 'Helm of the Fallen Champion', slot: 'Token', wowhead_id: 29760 },
+        { name: 'Helm of the Fallen Defender', slot: 'Token', wowhead_id: 29761 },
       ],
     },
     {
@@ -230,6 +284,10 @@ export const gruulslair: Raid = {
         { name: 'Belt of Divine Inspiration', slot: 'Waist', wowhead_id: 28799 },
         { name: 'Hammer of the Naaru', slot: 'Two-Hand', wowhead_id: 28800 },
         { name: 'Maulgar\'s Warhelm', slot: 'Head', wowhead_id: 28801 },
+        // Tier 4 Shoulder Tokens
+        { name: 'Pauldrons of the Fallen Hero', slot: 'Token', wowhead_id: 29762 },
+        { name: 'Pauldrons of the Fallen Champion', slot: 'Token', wowhead_id: 29763 },
+        { name: 'Pauldrons of the Fallen Defender', slot: 'Token', wowhead_id: 29764 },
       ],
     },
     {
@@ -247,6 +305,10 @@ export const gruulslair: Raid = {
         { name: 'Gauntlets of the Dragonslayer', slot: 'Hands', wowhead_id: 28827 },
         { name: 'Gronn-Stitched Girdle', slot: 'Waist', wowhead_id: 28828 },
         { name: 'Dragonspine Trophy', slot: 'Trinket', wowhead_id: 28830 },
+        // Tier 4 Leg Tokens
+        { name: 'Leggings of the Fallen Hero', slot: 'Token', wowhead_id: 29765 },
+        { name: 'Leggings of the Fallen Champion', slot: 'Token', wowhead_id: 29766 },
+        { name: 'Leggings of the Fallen Defender', slot: 'Token', wowhead_id: 29767 },
       ],
     }
   ],
@@ -275,6 +337,12 @@ export const magtheridonslair: Raid = {
         { name: 'Eredar Wand of Obliteration', slot: 'Ranged', wowhead_id: 28783 },
         { name: 'Eye of Magtheridon', slot: 'Trinket', wowhead_id: 28789 },
         { name: 'Aegis of the Vindicator', slot: 'Off Hand', wowhead_id: 29458 },
+        // Tier 4 Chest Tokens
+        { name: 'Chestguard of the Fallen Hero', slot: 'Token', wowhead_id: 29753 },
+        { name: 'Chestguard of the Fallen Champion', slot: 'Token', wowhead_id: 29754 },
+        { name: 'Chestguard of the Fallen Defender', slot: 'Token', wowhead_id: 29755 },
+        // 20-Slot Bag
+        { name: 'Pit Lord\'s Satchel', slot: 'Bag', wowhead_id: 28803 },
       ],
     }
   ],
@@ -334,6 +402,10 @@ export const serpentshrinecavern: Raid = {
         { name: 'Fang of the Leviathan', slot: 'Main Hand', wowhead_id: 30095 },
         { name: 'Coral-Barbed Shoulderpads', slot: 'Shoulder', wowhead_id: 30097 },
         { name: 'Tsunami Talisman', slot: 'Trinket', wowhead_id: 30627 },
+        // Tier 5 Glove Tokens
+        { name: 'Gloves of the Vanquished Hero', slot: 'Token', wowhead_id: 30240 },
+        { name: 'Gloves of the Vanquished Champion', slot: 'Token', wowhead_id: 30241 },
+        { name: 'Gloves of the Vanquished Defender', slot: 'Token', wowhead_id: 30239 },
       ],
     },
     {
@@ -345,6 +417,10 @@ export const serpentshrinecavern: Raid = {
         { name: 'Bloodsea Brigand\'s Vest', slot: 'Chest', wowhead_id: 30101 },
         { name: 'Sextant of Unstable Currents', slot: 'Trinket', wowhead_id: 30626 },
         { name: 'Fathom-Brooch of the Tidewalker', slot: 'Trinket', wowhead_id: 30663 },
+        // Tier 5 Leg Tokens
+        { name: 'Leggings of the Vanquished Hero', slot: 'Token', wowhead_id: 30246 },
+        { name: 'Leggings of the Vanquished Champion', slot: 'Token', wowhead_id: 30247 },
+        { name: 'Leggings of the Vanquished Defender', slot: 'Token', wowhead_id: 30245 },
       ],
     },
     {
@@ -380,6 +456,12 @@ export const serpentshrinecavern: Raid = {
         { name: 'Runetotem\'s Mantle', slot: 'Shoulder', wowhead_id: 30111 },
         { name: 'Glorious Gauntlets of Crestfall', slot: 'Hands', wowhead_id: 30112 },
         { name: 'Prism of Inner Calm', slot: 'Trinket', wowhead_id: 30621 },
+        // Tier 5 Helm Tokens
+        { name: 'Helm of the Vanquished Hero', slot: 'Token', wowhead_id: 30243 },
+        { name: 'Helm of the Vanquished Champion', slot: 'Token', wowhead_id: 30244 },
+        { name: 'Helm of the Vanquished Defender', slot: 'Token', wowhead_id: 30242 },
+        // Quest Item
+        { name: 'Vashj\'s Vial Remnant', slot: 'Quest', wowhead_id: 31544 },
       ],
     }
   ],
@@ -421,6 +503,10 @@ export const tempestkeep: Raid = {
         { name: 'Warp-Spring Coil', slot: 'Trinket', wowhead_id: 30450 },
         { name: 'Fel Reaver\'s Piston', slot: 'Trinket', wowhead_id: 30619 },
         { name: 'Wristguards of Determination', slot: 'Wrist', wowhead_id: 32515 },
+        // Tier 5 Shoulder Tokens
+        { name: 'Pauldrons of the Vanquished Hero', slot: 'Token', wowhead_id: 30249 },
+        { name: 'Pauldrons of the Vanquished Champion', slot: 'Token', wowhead_id: 30250 },
+        { name: 'Pauldrons of the Vanquished Defender', slot: 'Token', wowhead_id: 30248 },
       ],
     },
     {
@@ -460,6 +546,12 @@ export const tempestkeep: Raid = {
         { name: 'Leggings of Murderous Intent', slot: 'Legs', wowhead_id: 30236 },
         { name: 'Sunshower Light Cloak', slot: 'Back', wowhead_id: 30237 },
         { name: 'Rod of the Sun King', slot: 'Main Hand', wowhead_id: 29996 },
+        // Tier 5 Chest Tokens
+        { name: 'Chestguard of the Vanquished Hero', slot: 'Token', wowhead_id: 30237 },
+        { name: 'Chestguard of the Vanquished Champion', slot: 'Token', wowhead_id: 30238 },
+        { name: 'Chestguard of the Vanquished Defender', slot: 'Token', wowhead_id: 30236 },
+        // Quest Item
+        { name: 'Kael\'s Vial Remnant', slot: 'Quest', wowhead_id: 31545 },
       ],
     }
   ],
@@ -533,6 +625,10 @@ export const mounthyjal: Raid = {
         { name: 'Bow-stitched Leggings', slot: 'Legs', wowhead_id: 30900 },
         { name: 'Don Rodrigo\'s Poncho', slot: 'Chest', wowhead_id: 30899 },
         { name: 'Boundless Agony', slot: 'One-Hand', wowhead_id: 30901 },
+        // Tier 6 Glove Tokens
+        { name: 'Gloves of the Forgotten Conqueror', slot: 'Token', wowhead_id: 31092 },
+        { name: 'Gloves of the Forgotten Protector', slot: 'Token', wowhead_id: 31094 },
+        { name: 'Gloves of the Forgotten Vanquisher', slot: 'Token', wowhead_id: 31093 },
       ],
     },
     {
@@ -550,6 +646,10 @@ export const mounthyjal: Raid = {
         { name: 'Antonidas\'s Aegis of Rapt Concentration', slot: 'Off Hand', wowhead_id: 30909 },
         { name: 'Tempest of Chaos', slot: 'Main Hand', wowhead_id: 30910 },
         { name: 'Robes of Rhonin', slot: 'Chest', wowhead_id: 30913 },
+        // Tier 6 Helm Tokens
+        { name: 'Helm of the Forgotten Conqueror', slot: 'Token', wowhead_id: 31097 },
+        { name: 'Helm of the Forgotten Protector', slot: 'Token', wowhead_id: 31095 },
+        { name: 'Helm of the Forgotten Vanquisher', slot: 'Token', wowhead_id: 31096 },
       ],
     }
   ],
@@ -650,6 +750,10 @@ export const blacktemple: Raid = {
         { name: 'Wand of Prismatic Focus', slot: 'Ranged', wowhead_id: 32343 },
         { name: 'Staff of Immaculate Recovery', slot: 'Two-Hand', wowhead_id: 32344 },
         { name: 'Shadowmoon Insignia', slot: 'Trinket', wowhead_id: 32501 },
+        // Tier 6 Chest Tokens
+        { name: 'Chestguard of the Forgotten Conqueror', slot: 'Token', wowhead_id: 31089 },
+        { name: 'Chestguard of the Forgotten Protector', slot: 'Token', wowhead_id: 31091 },
+        { name: 'Chestguard of the Forgotten Vanquisher', slot: 'Token', wowhead_id: 31090 },
       ],
     },
     {
@@ -679,6 +783,10 @@ export const blacktemple: Raid = {
         { name: 'Blade of Savagery', slot: 'One-Hand', wowhead_id: 32369 },
         { name: 'Shadowmaster\'s Boots', slot: 'Feet', wowhead_id: 32366 },
         { name: 'Nadina\'s Pendant of Purity', slot: 'Neck', wowhead_id: 32370 },
+        // Tier 6 Leg Tokens
+        { name: 'Leggings of the Forgotten Conqueror', slot: 'Token', wowhead_id: 31098 },
+        { name: 'Leggings of the Forgotten Protector', slot: 'Token', wowhead_id: 31100 },
+        { name: 'Leggings of the Forgotten Vanquisher', slot: 'Token', wowhead_id: 31099 },
       ],
     },
     {
@@ -692,6 +800,10 @@ export const blacktemple: Raid = {
         { name: 'Veil of Turning Leaves', slot: 'Shoulder', wowhead_id: 32518 },
         { name: 'Choker of Serrated Blades', slot: 'Neck', wowhead_id: 32591 },
         { name: 'Boots of the Divine Light', slot: 'Feet', wowhead_id: 32609 },
+        // Tier 6 Shoulder Tokens
+        { name: 'Pauldrons of the Forgotten Conqueror', slot: 'Token', wowhead_id: 31101 },
+        { name: 'Pauldrons of the Forgotten Protector', slot: 'Token', wowhead_id: 31103 },
+        { name: 'Pauldrons of the Forgotten Vanquisher', slot: 'Token', wowhead_id: 31102 },
       ],
     },
     {
@@ -709,6 +821,9 @@ export const blacktemple: Raid = {
         { name: 'Faceplate of the Impenetrable', slot: 'Head', wowhead_id: 32521 },
         { name: 'Shroud of the Highborne', slot: 'Back', wowhead_id: 32524 },
         { name: 'Cowl of the Illidari High Lord', slot: 'Head', wowhead_id: 32525 },
+        // Warglaives of Azzinoth (Legendary)
+        { name: 'Warglaive of Azzinoth (Main Hand)', slot: 'Legendary', wowhead_id: 32837 },
+        { name: 'Warglaive of Azzinoth (Off Hand)', slot: 'Legendary', wowhead_id: 32838 },
       ],
     }
   ],
@@ -804,6 +919,19 @@ export const zulaman: Raid = {
         { name: 'Ancient Aqir Artifact', slot: 'Trinket', wowhead_id: 33830 },
         { name: 'Berserker\'s Call', slot: 'Trinket', wowhead_id: 33831 },
         { name: 'Loop of Cursed Bones', slot: 'Neck', wowhead_id: 33466 },
+        // Recipe
+        { name: 'Formula: Enchant Weapon - Executioner', slot: 'Recipe', wowhead_id: 33307 },
+      ],
+    },
+    {
+      name: 'Timed Event',
+      items: [
+        // Rewards from completing the timed event (4 bosses before timer)
+        { name: 'Amani War Bear', slot: 'Mount', wowhead_id: 33809 },
+        { name: 'Mana Attuned Band', slot: 'Finger', wowhead_id: 33494 },
+        { name: 'Signet of Primal Wrath', slot: 'Finger', wowhead_id: 33496 },
+        { name: 'Band of the Ranger-General', slot: 'Finger', wowhead_id: 33495 },
+        { name: 'Ring of Flowing Light', slot: 'Finger', wowhead_id: 33497 },
       ],
     }
   ],
@@ -890,6 +1018,11 @@ export const sunwellplateau: Raid = {
         { name: 'Harness of Carnal Instinct', slot: 'Chest', wowhead_id: 34211 },
         { name: 'Slayer\'s Boots', slot: 'Feet', wowhead_id: 34445 },
         { name: 'Rhythmic Cloak of Change', slot: 'Back', wowhead_id: 34232 },
+        // Naaru Sliver Trinkets
+        { name: 'Commendation of Kael\'thas', slot: 'Trinket', wowhead_id: 34473 },
+        { name: 'Shard of Contempt', slot: 'Trinket', wowhead_id: 34472 },
+        { name: 'Vial of the Sunwell', slot: 'Trinket', wowhead_id: 34471 },
+        { name: 'Shifting Naaru Sliver', slot: 'Trinket', wowhead_id: 34429 },
       ],
     },
     {

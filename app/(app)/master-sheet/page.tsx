@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import ItemLink from '@/app/components/ItemLink'
 import { calculateAttendanceScore, getRankModifier, calculateLootScore, calculatePriorityBonus, type ItemPriority } from '@/utils/calculations'
 import { getSpecRoles } from '@/utils/spec-role-mapping'
-import { getBossOrder } from '@/utils/bossOrder'
+import { getBossOrder, normalizeBossName } from '@/utils/bossOrder'
 import { getBossImage } from '@/utils/bossImages'
 import { ExternalLink } from 'lucide-react'
 import { useGuildContext } from '@/app/contexts/GuildContext'
@@ -512,10 +512,10 @@ export default function MasterSheet() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [allItemRankings.length])
 
-  // Group items by boss
+  // Group items by boss (normalize boss names to merge multi-boss encounters like Opera Event)
   const groupedByBoss: Record<string, ItemRankings[]> = {}
   allItemRankings.forEach(ir => {
-    const boss = ir.item.boss_name
+    const boss = normalizeBossName(ir.item.boss_name)
     if (!groupedByBoss[boss]) {
       groupedByBoss[boss] = []
     }

@@ -8,6 +8,7 @@ import { useGuildContext } from '@/app/contexts/GuildContext'
 import { ExpansionGuard } from '@/app/components/ExpansionGuard'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { useNotification } from '@/app/contexts/NotificationContext'
+import { normalizeBossName } from '@/utils/bossOrder'
 
 interface LootItem {
   id: string
@@ -907,7 +908,7 @@ export default function LootList() {
         <td className="px-3 py-1.5">
           {selectedItem1 ? (
             <div className="flex items-center gap-2">
-              <p className="text-muted-foreground text-xs">{selectedItem1.boss_name}</p>
+              <p className="text-muted-foreground text-xs">{normalizeBossName(selectedItem1.boss_name)}</p>
               {selectedItem1.classification && getClassificationBadge(selectedItem1.classification)}
             </div>
           ) : <span className="text-muted-foreground text-xs">-</span>}
@@ -924,7 +925,7 @@ export default function LootList() {
         <td className="px-3 py-1.5">
           {selectedItem2 ? (
             <div className="flex items-center gap-2">
-              <p className="text-muted-foreground text-xs">{selectedItem2.boss_name}</p>
+              <p className="text-muted-foreground text-xs">{normalizeBossName(selectedItem2.boss_name)}</p>
               {selectedItem2.classification && getClassificationBadge(selectedItem2.classification)}
             </div>
           ) : <span className="text-muted-foreground text-xs">-</span>}

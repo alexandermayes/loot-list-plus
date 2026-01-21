@@ -9,7 +9,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import ItemLink from './ItemLink'
-import { getBossOrder } from '@/utils/bossOrder'
+import { getBossOrder, normalizeBossName } from '@/utils/bossOrder'
 
 interface Item {
   id: string
@@ -52,11 +52,12 @@ export default function SearchableItemSelect({
   )
 
   // Group items by boss and sort by Classic WoW encounter order
+  // Normalize boss names to merge multi-boss encounters (e.g., Opera Event)
   const itemsByBoss: Record<string, Item[]> = {}
   const bossOrder: string[] = []
 
   filteredItems.forEach(item => {
-    const boss = item.boss_name || 'Unknown'
+    const boss = normalizeBossName(item.boss_name || 'Unknown')
     if (!itemsByBoss[boss]) {
       itemsByBoss[boss] = []
       bossOrder.push(boss) // Track order as we encounter each boss

@@ -8,6 +8,7 @@ import ItemLink from '@/app/components/ItemLink'
 import { useGuildContext } from '@/app/contexts/GuildContext'
 import { ExpansionGuard } from '@/app/components/ExpansionGuard'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
+import { normalizeBossName } from '@/utils/bossOrder'
 
 interface LootItem {
   id: string
@@ -481,7 +482,7 @@ export default function AdminLootItems() {
                     <td className="px-4 py-3 text-white">
                       <ItemLink name={item.name} wowheadId={item.wowhead_id} />
                     </td>
-                    <td className="px-4 py-3 text-[#a1a1a1]">{item.boss_name}</td>
+                    <td className="px-4 py-3 text-[#a1a1a1]">{normalizeBossName(item.boss_name)}</td>
                     <td className="px-4 py-3 text-[#a1a1a1]">{item.item_slot}</td>
                     <td className="px-4 py-3 text-[#a1a1a1]">{(item.raid_tier as any)?.name}</td>
                     <td className="px-4 py-3">

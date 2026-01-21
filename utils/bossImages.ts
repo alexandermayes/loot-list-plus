@@ -163,6 +163,7 @@ const bossIconNames: Record<string, string> = {
   // ==================== TBC ====================
 
   // Karazhan
+  'Servant\'s Quarters': 'ability_hunter_pet_spider',
   'Attumen the Huntsman': 'ability_mount_undeadhorse',
   'Moroes': 'inv_weapon_shortblade_22',
   'Maiden of Virtue': 'spell_holy_holybolt',
@@ -227,6 +228,7 @@ const bossIconNames: Record<string, string> = {
   'Hex Lord Malacrass': 'spell_shadow_painspike',
   'Jan\'alai': 'spell_fire_flamebolt',
   'Zul\'jin': 'inv_axe_09',
+  'Timed Event': 'ability_mount_jungletiger',
 
   // Sunwell Plateau
   'Kalecgos': 'spell_arcane_arcane03',

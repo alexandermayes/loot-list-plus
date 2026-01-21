@@ -9,6 +9,7 @@ import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { Settings } from 'lucide-react'
 import Link from 'next/link'
 import ItemLink from '@/app/components/ItemLink'
+import { normalizeBossName } from '@/utils/bossOrder'
 
 interface Submission {
   id: string
@@ -438,7 +439,7 @@ export default function MasterLootPage() {
                           wowheadId={detail.loot_item?.wowhead_id}
                           className="font-medium text-[14px]"
                         />
-                        <p className="text-[#a1a1a1] text-[12px]">{detail.loot_item?.boss_name}</p>
+                        <p className="text-[#a1a1a1] text-[12px]">{detail.loot_item?.boss_name ? normalizeBossName(detail.loot_item.boss_name) : ''}</p>
                       </div>
                       <span className="px-3 py-1 bg-[#ff8000] text-white rounded-full text-[13px] font-medium">
                         Rank {detail.rank}

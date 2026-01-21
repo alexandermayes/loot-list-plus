@@ -1,9 +1,44 @@
 /**
+ * Boss Name Normalization
+ * Merges multiple boss encounters into a single display name
+ * (e.g., Opera Event sub-bosses → "Opera Event")
+ */
+const BOSS_NAME_ALIASES: Record<string, string> = {
+  // Karazhan Opera Event (Big Bad Wolf, Romulo & Julianne, Wizard of Oz)
+  'The Big Bad Wolf': 'Opera Event',
+  'Big Bad Wolf': 'Opera Event',
+  'Romulo & Julianne': 'Opera Event',
+  'Romulo and Julianne': 'Opera Event',
+  'Julianne': 'Opera Event',
+  'Wizard of Oz': 'Opera Event',
+  'The Wizard of Oz': 'Opera Event',
+  'The Crone': 'Opera Event',
+
+  // Karazhan Chess Event
+  'Echo of Medivh': 'Chess Event',
+
+  // Karazhan Servant's Quarters (combines 3 rare spawns)
+  'Hyakiss the Lurker': 'Servant\'s Quarters',
+  'Rokad the Ravager': 'Servant\'s Quarters',
+  'Shadikith the Glider': 'Servant\'s Quarters',
+}
+
+/**
+ * Normalizes boss names to merge multi-boss encounters
+ * e.g., "The Big Bad Wolf" → "Opera Event"
+ */
+export function normalizeBossName(bossName: string): string {
+  return BOSS_NAME_ALIASES[bossName] || bossName
+}
+
+/**
  * WoW Boss Order
  * Returns a numeric order for each boss based on raid progression
  * Classic: 1-57, TBC: 100-199
  */
 export function getBossOrder(bossName: string): number {
+  // Normalize boss name first to handle aliases
+  const normalizedName = normalizeBossName(bossName)
   const order: Record<string, number> = {
     // ==================== CLASSIC ====================
 
@@ -81,24 +116,25 @@ export function getBossOrder(bossName: string): number {
     // ==================== TBC ====================
 
     // Karazhan (Tier 4)
-    'Attumen the Huntsman': 100,
-    'Moroes': 101,
-    'Maiden of Virtue': 102,
-    'Opera Event': 103,
-    'The Curator': 104,
-    'Terestian Illhoof': 105,
-    'Shade of Aran': 106,
-    'Netherspite': 107,
-    'Chess Event': 108,
-    'Prince Malchezaar': 109,
-    'Nightbane': 110,
+    'Servant\'s Quarters': 100,
+    'Attumen the Huntsman': 101,
+    'Moroes': 102,
+    'Maiden of Virtue': 103,
+    'Opera Event': 104,
+    'The Curator': 105,
+    'Terestian Illhoof': 106,
+    'Shade of Aran': 107,
+    'Netherspite': 108,
+    'Chess Event': 109,
+    'Prince Malchezaar': 110,
+    'Nightbane': 111,
 
     // Gruul's Lair (Tier 4)
-    'High King Maulgar': 111,
-    'Gruul the Dragonkiller': 112,
+    'High King Maulgar': 112,
+    'Gruul the Dragonkiller': 113,
 
     // Magtheridon's Lair (Tier 4)
-    'Magtheridon': 113,
+    'Magtheridon': 114,
 
     // Serpentshrine Cavern (Tier 5)
     'Hydross the Unstable': 120,
@@ -139,6 +175,7 @@ export function getBossOrder(bossName: string): number {
     'Hex Lord Malacrass': 163,
     'Jan\'alai': 164,
     'Zul\'jin': 165,
+    'Timed Event': 166,
 
     // Sunwell Plateau (Tier 6)
     'Kalecgos': 170,
@@ -149,5 +186,5 @@ export function getBossOrder(bossName: string): number {
     'Kil\'jaeden': 175
   }
 
-  return order[bossName] || 999 // Unknown bosses go to the end
+  return order[normalizedName] || 999 // Unknown bosses go to the end
 }
