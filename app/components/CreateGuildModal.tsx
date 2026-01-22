@@ -388,7 +388,7 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
           </div>
 
           {/* Step Indicator */}
-          <div className="flex items-center justify-between mt-6 px-4">
+          <div className="flex items-center mt-4">
             {(['discord', 'details', 'settings'] as Step[]).map((step, idx) => {
               const stepIndex = idx
               const currentIndex = currentStep === 'discord' ? 0 : currentStep === 'details' ? 1 : 2
@@ -397,8 +397,8 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
               const canAccess = step === 'discord' || (step === 'details' && canProceedFromDiscord()) || (step === 'settings' && canProceedFromDiscord() && canProceedFromDetails())
 
               return (
-                <div key={step} className="flex items-center flex-1 last:flex-none">
-                  {/* Step Circle */}
+                <div key={step} className="flex items-center">
+                  {/* Step Pill */}
                   <button
                     onClick={() => {
                       if (step === 'discord') setCurrentStep('discord')
@@ -406,33 +406,23 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
                       else if (step === 'settings' && canProceedFromDiscord() && canProceedFromDetails()) setCurrentStep('settings')
                     }}
                     disabled={!canAccess}
-                    className="flex flex-col items-center gap-2 group"
-                  >
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${
+                    className={`flex items-center gap-2 px-4 py-2 rounded-full text-[12px] font-medium transition ${
                       isCompleted
                         ? 'bg-[#ff8000] text-white'
                         : isCurrent
-                          ? 'bg-[#ff8000]/20 border-2 border-dashed border-[#ff8000] text-[#ff8000]'
+                          ? 'bg-white text-black'
                           : canAccess
-                            ? 'bg-[#252525] text-[#666] group-hover:bg-[#303030]'
-                            : 'bg-[#1a1a1a] text-[#404040]'
-                    }`}>
-                      {isCompleted ? (
-                        <Check className="w-5 h-5" />
-                      ) : (
-                        <span className="text-[14px] font-medium">{idx + 1}</span>
-                      )}
-                    </div>
-                    <span className={`text-[12px] font-medium transition ${
-                      isCurrent ? 'text-white' : isCompleted ? 'text-[#ff8000]' : 'text-[#666]'
-                    }`}>
-                      {step === 'discord' ? 'Discord' : step === 'details' ? 'Details' : 'Settings'}
-                    </span>
+                            ? 'bg-[#252525] text-white hover:bg-[#303030]'
+                            : 'bg-[#1a1a1a] text-[#505050] cursor-not-allowed'
+                    }`}
+                  >
+                    {isCompleted && <Check className="w-4 h-4" />}
+                    {step === 'discord' ? 'Discord' : step === 'details' ? 'Details' : 'Settings'}
                   </button>
 
                   {/* Connecting Line */}
                   {idx < 2 && (
-                    <div className={`flex-1 h-0.5 mx-3 mt-[-20px] transition ${
+                    <div className={`w-8 h-0.5 transition ${
                       stepIndex < currentIndex ? 'bg-[#ff8000]' : 'bg-[#383838]'
                     }`} />
                   )}
