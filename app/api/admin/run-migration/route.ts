@@ -17,39 +17,90 @@ export async function GET() {
       }
     })
 
-    // Add is_guild_active column to raid_tiers
-    // Using raw query through Supabase's REST API
-    const { error } = await supabase
+    const results: string[] = []
+
+    // Migration 1: Add is_guild_active column to raid_tiers
+    const { error: raidTiersError } = await supabase
       .from('raid_tiers')
       .update({ is_guild_active: true })
       .is('is_guild_active', null)
 
-    // If column doesn't exist, this will fail - that's expected
-    // The column needs to be added via Supabase SQL Editor
-    if (error && error.code === '42703') {
-      return NextResponse.json({
-        message: 'Please run this SQL directly in Supabase SQL Editor:',
-        sql: `
-ALTER TABLE raid_tiers
-ADD COLUMN IF NOT EXISTS is_guild_active BOOLEAN DEFAULT true;
-
-UPDATE raid_tiers SET is_guild_active = true WHERE is_guild_active IS NULL;
-        `,
-        error: 'Column does not exist yet - run the SQL above in Supabase SQL Editor'
-      })
+    if (raidTiersError && raidTiersError.code === '42703') {
+      results.push('is_guild_active column needs to be added via SQL Editor')
+    } else if (raidTiersError) {
+      results.push(`raid_tiers migration: ${raidTiersError.message}`)
+    } else {
+      results.push('raid_tiers is_guild_active: OK')
     }
 
-    if (error) {
-      console.error('Migration error:', error)
-      return NextResponse.json({
-        message: 'Migration may have already been applied or there was an error',
-        error: error.message
-      })
+    // Migration 2: Seed default guild_roles for guilds missing them
+    // First get all guilds
+    const { data: guilds } = await supabase.from('guilds').select('id')
+
+    if (guilds && guilds.length > 0) {
+      let rolesSeeded = 0
+
+      for (const guild of guilds) {
+        // Check if guild has roles
+        const { data: existingRoles } = await supabase
+          .from('guild_roles')
+          .select('name')
+          .eq('guild_id', guild.id)
+
+        const existingRoleNames = new Set(existingRoles?.map(r => r.name) || [])
+
+        const rolesToInsert = []
+
+        if (!existingRoleNames.has('Member')) {
+          rolesToInsert.push({
+            guild_id: guild.id,
+            name: 'Member',
+            color_hex: '#a1a1a1',
+            position: 0,
+            is_default: true
+          })
+        }
+
+        if (!existingRoleNames.has('Officer')) {
+          rolesToInsert.push({
+            guild_id: guild.id,
+            name: 'Officer',
+            color_hex: '#fbbf24',
+            position: 50,
+            is_default: true
+          })
+        }
+
+        if (!existingRoleNames.has('Guild Master')) {
+          rolesToInsert.push({
+            guild_id: guild.id,
+            name: 'Guild Master',
+            color_hex: '#ff8000',
+            position: 100,
+            is_default: true
+          })
+        }
+
+        if (rolesToInsert.length > 0) {
+          const { error: insertError } = await supabase
+            .from('guild_roles')
+            .insert(rolesToInsert)
+
+          if (!insertError) {
+            rolesSeeded += rolesToInsert.length
+          }
+        }
+      }
+
+      results.push(`guild_roles seeded: ${rolesSeeded} roles for ${guilds.length} guilds`)
+    } else {
+      results.push('guild_roles: No guilds found')
     }
 
     return NextResponse.json({
       success: true,
-      message: 'Migration applied successfully'
+      message: 'Migrations applied',
+      results
     })
   } catch (error: any) {
     console.error('Error:', error)

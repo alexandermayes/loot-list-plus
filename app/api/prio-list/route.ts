@@ -157,7 +157,7 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: 'Not a member of this guild' }, { status: 403 })
       }
 
-      // Check if user is an officer (position >= 50)
+      // Check if user is an officer (position >= 50) using guild_roles
       const { data: roleData } = await supabase
         .from('guild_roles')
         .select('position')
@@ -165,7 +165,13 @@ export async function POST(request: Request) {
         .eq('name', membership.role)
         .single()
 
-      if (!roleData || roleData.position < 50) {
+      // Fallback: if no guild_roles entry, check against default positions
+      const position = roleData?.position ?? (
+        membership.role === 'Guild Master' ? 100 :
+        membership.role === 'Officer' ? 50 : 0
+      )
+
+      if (position < 50) {
         return NextResponse.json(
           { error: 'Only officers can update item priorities' },
           { status: 403 }
@@ -286,7 +292,7 @@ export async function DELETE(request: Request) {
         return NextResponse.json({ error: 'Not a member of this guild' }, { status: 403 })
       }
 
-      // Check if user is an officer (position >= 50)
+      // Check if user is an officer (position >= 50) using guild_roles
       const { data: roleData } = await supabase
         .from('guild_roles')
         .select('position')
@@ -294,7 +300,13 @@ export async function DELETE(request: Request) {
         .eq('name', membership.role)
         .single()
 
-      if (!roleData || roleData.position < 50) {
+      // Fallback: if no guild_roles entry, check against default positions
+      const position = roleData?.position ?? (
+        membership.role === 'Guild Master' ? 100 :
+        membership.role === 'Officer' ? 50 : 0
+      )
+
+      if (position < 50) {
         return NextResponse.json(
           { error: 'Only officers can delete item priorities' },
           { status: 403 }

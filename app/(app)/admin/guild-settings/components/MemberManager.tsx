@@ -69,8 +69,8 @@ export default function MemberManager() {
           console.warn('guild_roles table not found, using default roles')
           setRoles([
             { id: '1', name: 'Member', color_hex: '#a1a1a1', position: 0, is_default: true },
-            { id: '2', name: 'Officer', color_hex: '#fbbf24', position: 1, is_default: true },
-            { id: '3', name: 'Guild Master', color_hex: '#ff8000', position: 2, is_default: true }
+            { id: '2', name: 'Officer', color_hex: '#fbbf24', position: 50, is_default: true },
+            { id: '3', name: 'Guild Master', color_hex: '#ff8000', position: 100, is_default: true }
           ] as GuildRole[])
         }
         return
@@ -82,8 +82,8 @@ export default function MemberManager() {
       // Fall back to default roles on any error
       setRoles([
         { id: '1', name: 'Member', color_hex: '#a1a1a1', position: 0, is_default: true },
-        { id: '2', name: 'Officer', color_hex: '#fbbf24', position: 1, is_default: true },
-        { id: '3', name: 'Guild Master', color_hex: '#ff8000', position: 2, is_default: true }
+        { id: '2', name: 'Officer', color_hex: '#fbbf24', position: 50, is_default: true },
+        { id: '3', name: 'Guild Master', color_hex: '#ff8000', position: 100, is_default: true }
       ] as GuildRole[])
     }
   }

@@ -152,6 +152,20 @@ export async function POST(request: NextRequest) {
       // Continue anyway - settings can be created later
     }
 
+    // Create default guild roles
+    const { error: rolesError } = await serviceSupabase
+      .from('guild_roles')
+      .insert([
+        { guild_id: guild.id, name: 'Member', color_hex: '#a1a1a1', position: 0, is_default: true },
+        { guild_id: guild.id, name: 'Officer', color_hex: '#fbbf24', position: 50, is_default: true },
+        { guild_id: guild.id, name: 'Guild Master', color_hex: '#ff8000', position: 100, is_default: true }
+      ])
+
+    if (rolesError) {
+      console.error('Error creating guild roles:', rolesError)
+      // Continue anyway - roles can be created later via trigger or manually
+    }
+
     // Get or create a character for the guild creator
     // First, check if user has any characters (use service role to bypass RLS)
     const { data: existingCharacters, error: checkError } = await serviceSupabase
