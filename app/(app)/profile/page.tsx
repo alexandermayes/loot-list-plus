@@ -472,7 +472,7 @@ export default function ProfilePage() {
               className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl max-w-md w-full p-6"
               onClick={(e) => e.stopPropagation()}
             >
-              <h3 className="text-[20px] font-bold text-white mb-2">Leave Guild?</h3>
+              <h3 className="text-[20px] font-bold text-white mb-2">Leave guild?</h3>
               <p className="text-[#a1a1a1] mb-6">
                 Are you sure you want to leave this guild? This action cannot be undone.
                 {allGuilds.length === 1 && (

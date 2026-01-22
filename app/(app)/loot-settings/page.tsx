@@ -1681,7 +1681,7 @@ export default function AdminLootItems() {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="p-6 border-b border-[#383838] flex items-center justify-between bg-[#141519]">
-              <h3 className="text-[24px] font-bold text-white">Loot System Settings</h3>
+              <h3 className="text-[24px] font-bold text-white">Loot system settings</h3>
               <button
                 onClick={() => setShowSettingsModal(false)}
                 className="text-[#666] hover:text-white transition"

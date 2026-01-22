@@ -193,7 +193,7 @@ export function CreateCharacterModal({ isOpen, onClose, onSuccess }: CreateChara
       >
         {/* Header */}
         <div className="p-6 border-b border-[#383838] flex items-center justify-between bg-[#141519]">
-          <h3 className="text-[24px] font-bold text-white">Create Character</h3>
+          <h3 className="text-[24px] font-bold text-white">Create character</h3>
           <button
             onClick={onClose}
             className="text-[#a1a1a1] hover:text-white transition"

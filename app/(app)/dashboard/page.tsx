@@ -817,7 +817,7 @@ export default function Dashboard() {
               <div className="flex items-center gap-4 mb-6">
                 <CheckCircle2 className="w-8 h-8 text-green-500 flex-shrink-0" />
                 <div>
-                  <h2 className="text-[24px] font-bold text-white">Recently Received</h2>
+                  <h2 className="text-[24px] font-bold text-white">Recently received</h2>
                   <p className="text-sm text-[#a1a1a1] mt-1">Your recent loot awards</p>
                 </div>
               </div>
@@ -865,7 +865,7 @@ export default function Dashboard() {
           {actionsNeeded.filter(submission => !dismissedActions.has(submission.id)).length > 0 && (
             <div className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl p-6">
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-[24px] font-bold text-white">Actions Needed</h2>
+                <h2 className="text-[24px] font-bold text-white">Actions needed</h2>
               </div>
               <div className="space-y-4">
                 {actionsNeeded.filter(submission => !dismissedActions.has(submission.id)).map(submission => (

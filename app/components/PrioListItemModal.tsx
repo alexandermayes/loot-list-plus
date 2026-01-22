@@ -241,7 +241,7 @@ export function PrioListItemModal({
         {/* Header */}
         <div className="p-6 border-b border-[#383838] flex items-start justify-between bg-[#141519]">
           <div>
-            <h3 className="text-[24px] font-bold text-white mb-2">Set Item Priority</h3>
+            <h3 className="text-[24px] font-bold text-white mb-2">Set item priority</h3>
             <div className="flex items-center gap-2">
               <ItemLink name={item.name} wowheadId={item.wowhead_id} />
               <span className="text-[#a1a1a1] text-[13px]">({item.item_slot})</span>

@@ -349,7 +349,7 @@ export default function MasterLootPage() {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="p-6 border-b border-[rgba(255,255,255,0.1)]">
-              <h3 className="text-[24px] font-bold text-white">Submission Details</h3>
+              <h3 className="text-[24px] font-bold text-white">Submission details</h3>
             </div>
             <div className="p-6">
               {submissionDetails.length === 0 ? (

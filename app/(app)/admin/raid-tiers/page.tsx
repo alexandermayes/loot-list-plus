@@ -489,7 +489,7 @@ export default function RaidTiersPage() {
         {/* Raid Tiers List */}
         <div className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl p-6">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-[24px] font-bold text-white">Raid Tiers</h2>
+            <h2 className="text-[24px] font-bold text-white">Raid tiers</h2>
             <button
               onClick={() => {
                 setShowAddForm(true)
@@ -608,7 +608,7 @@ export default function RaidTiersPage() {
 
         {/* Quick Add Common Tiers */}
         <div className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl p-6">
-          <h3 className="text-[18px] font-bold text-white mb-4">Quick Add Common Raids</h3>
+          <h3 className="text-[18px] font-bold text-white mb-4">Quick add common raids</h3>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
             {['Molten Core', 'Onyxia', 'Blackwing Lair', 'ZG', 'AQ20', 'AQ40', 'Naxxramas'].map(raidName => (
               <button

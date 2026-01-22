@@ -886,7 +886,7 @@ export default function RaidTrackingPage() {
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setShowSkipModal(null)}>
           <div className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl max-w-md w-full p-6" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-[20px] font-bold text-white">Skip Raid Day</h3>
+              <h3 className="text-[20px] font-bold text-white">Skip raid day</h3>
               <button onClick={() => setShowSkipModal(null)} className="text-[#666] hover:text-white transition">
                 <X className="w-5 h-5" />
               </button>
@@ -924,7 +924,7 @@ export default function RaidTrackingPage() {
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setShowImportModal(null)}>
           <div className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl max-w-2xl w-full p-6" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-[20px] font-bold text-white">Import Data</h3>
+              <h3 className="text-[20px] font-bold text-white">Import data</h3>
               <button onClick={() => setShowImportModal(null)} className="text-[#666] hover:text-white transition">
                 <X className="w-5 h-5" />
               </button>

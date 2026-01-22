@@ -219,7 +219,7 @@ export default function EditCharacterPage() {
       <div className="min-h-screen bg-[#0d0e11] p-8">
         <div className="max-w-2xl mx-auto">
           <div className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl p-12 text-center">
-            <h2 className="text-[24px] font-bold text-white mb-4">Character Not Found</h2>
+            <h2 className="text-[24px] font-bold text-white mb-4">Character not found</h2>
             <button
               onClick={() => router.push('/characters/manage')}
               className="px-8 py-3 bg-white hover:bg-gray-100 rounded-[52px] text-black font-medium text-[16px] transition"
