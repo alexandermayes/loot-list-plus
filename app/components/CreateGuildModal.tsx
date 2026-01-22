@@ -388,31 +388,57 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
           </div>
 
           {/* Step Indicator */}
-          <div className="flex items-center gap-2 mt-4">
-            {(['discord', 'details', 'settings'] as Step[]).map((step, idx) => (
-              <div key={step} className="flex items-center">
-                <button
-                  onClick={() => {
-                    if (step === 'discord') setCurrentStep('discord')
-                    else if (step === 'details' && canProceedFromDiscord()) setCurrentStep('details')
-                    else if (step === 'settings' && canProceedFromDiscord() && canProceedFromDetails()) setCurrentStep('settings')
-                  }}
-                  className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-[12px] font-medium transition ${
-                    currentStep === step
-                      ? 'bg-white text-black'
-                      : (step === 'discord' || (step === 'details' && canProceedFromDiscord()) || (step === 'settings' && canProceedFromDiscord() && canProceedFromDetails()))
-                        ? 'bg-[#252525] text-white hover:bg-[#303030]'
-                        : 'bg-[#1a1a1a] text-[#505050] cursor-not-allowed'
-                  }`}
-                >
-                  <span className="w-5 h-5 rounded-full bg-current/20 flex items-center justify-center text-[10px]">
-                    {idx + 1}
-                  </span>
-                  {step === 'discord' ? 'Discord' : step === 'details' ? 'Details' : 'Settings'}
-                </button>
-                {idx < 2 && <ChevronRight className="w-4 h-4 text-[#383838] mx-1" />}
-              </div>
-            ))}
+          <div className="flex items-center justify-between mt-6 px-4">
+            {(['discord', 'details', 'settings'] as Step[]).map((step, idx) => {
+              const stepIndex = idx
+              const currentIndex = currentStep === 'discord' ? 0 : currentStep === 'details' ? 1 : 2
+              const isCompleted = stepIndex < currentIndex
+              const isCurrent = stepIndex === currentIndex
+              const canAccess = step === 'discord' || (step === 'details' && canProceedFromDiscord()) || (step === 'settings' && canProceedFromDiscord() && canProceedFromDetails())
+
+              return (
+                <div key={step} className="flex items-center flex-1 last:flex-none">
+                  {/* Step Circle */}
+                  <button
+                    onClick={() => {
+                      if (step === 'discord') setCurrentStep('discord')
+                      else if (step === 'details' && canProceedFromDiscord()) setCurrentStep('details')
+                      else if (step === 'settings' && canProceedFromDiscord() && canProceedFromDetails()) setCurrentStep('settings')
+                    }}
+                    disabled={!canAccess}
+                    className="flex flex-col items-center gap-2 group"
+                  >
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${
+                      isCompleted
+                        ? 'bg-[#ff8000] text-white'
+                        : isCurrent
+                          ? 'bg-[#ff8000]/20 border-2 border-dashed border-[#ff8000] text-[#ff8000]'
+                          : canAccess
+                            ? 'bg-[#252525] text-[#666] group-hover:bg-[#303030]'
+                            : 'bg-[#1a1a1a] text-[#404040]'
+                    }`}>
+                      {isCompleted ? (
+                        <Check className="w-5 h-5" />
+                      ) : (
+                        <span className="text-[14px] font-medium">{idx + 1}</span>
+                      )}
+                    </div>
+                    <span className={`text-[12px] font-medium transition ${
+                      isCurrent ? 'text-white' : isCompleted ? 'text-[#ff8000]' : 'text-[#666]'
+                    }`}>
+                      {step === 'discord' ? 'Discord' : step === 'details' ? 'Details' : 'Settings'}
+                    </span>
+                  </button>
+
+                  {/* Connecting Line */}
+                  {idx < 2 && (
+                    <div className={`flex-1 h-0.5 mx-3 mt-[-20px] transition ${
+                      stepIndex < currentIndex ? 'bg-[#ff8000]' : 'bg-[#383838]'
+                    }`} />
+                  )}
+                </div>
+              )
+            })}
           </div>
         </div>
 
