@@ -85,20 +85,79 @@ export default function ProfilePage() {
       }
       setUser(user)
 
-      // Get all guild memberships
-      const { data: allMemberships } = await supabase
-        .from('guild_members')
-        .select(`
-          *,
-          class:wow_classes(name, color_hex),
-          guild:guilds(id, name, realm, faction, created_by)
-        `)
+      // Get all guild memberships from character-based system (new)
+      const { data: userCharacters } = await supabase
+        .from('characters')
+        .select('id')
         .eq('user_id', user.id)
 
-      if (allMemberships && allMemberships.length > 0) {
-        setAllGuilds(allMemberships)
+      let derivedMemberships: any[] = []
+
+      if (userCharacters && userCharacters.length > 0) {
+        const characterIds = userCharacters.map(c => c.id)
+        const { data: charMemberships } = await supabase
+          .from('character_guild_memberships')
+          .select(`
+            id,
+            role,
+            joined_at,
+            joined_via,
+            character:characters(
+              id,
+              name,
+              is_main,
+              class_id,
+              class:wow_classes(name, color_hex)
+            ),
+            guild:guilds(id, name, realm, faction, created_by)
+          `)
+          .in('character_id', characterIds)
+          .eq('is_active', true)
+
+        if (charMemberships && charMemberships.length > 0) {
+          // Group by guild and pick the main character for each
+          const guildMap = new Map<string, any>()
+          for (const m of charMemberships) {
+            const guild = Array.isArray(m.guild) ? m.guild[0] : m.guild
+            const char = Array.isArray(m.character) ? m.character[0] : m.character
+            if (!guild) continue
+
+            const existing = guildMap.get(guild.id)
+            if (!existing || (char?.is_main && !existing.character?.is_main)) {
+              guildMap.set(guild.id, {
+                ...m,
+                guild,
+                character: char,
+                class: char?.class ? (Array.isArray(char.class) ? char.class[0] : char.class) : null,
+                guild_id: guild.id,
+                user_id: user.id
+              })
+            }
+          }
+          derivedMemberships = Array.from(guildMap.values())
+        }
+      }
+
+      // Fallback to old system if no character memberships found
+      if (derivedMemberships.length === 0) {
+        const { data: allMemberships } = await supabase
+          .from('guild_members')
+          .select(`
+            *,
+            class:wow_classes(name, color_hex),
+            guild:guilds(id, name, realm, faction, created_by)
+          `)
+          .eq('user_id', user.id)
+
+        if (allMemberships) {
+          derivedMemberships = allMemberships
+        }
+      }
+
+      if (derivedMemberships.length > 0) {
+        setAllGuilds(derivedMemberships)
         // Use the first guild for primary display (active guild should be first)
-        const memberData = allMemberships[0]
+        const memberData = derivedMemberships[0]
         setMember(memberData)
 
         // Load all user's characters
