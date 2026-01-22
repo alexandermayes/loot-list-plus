@@ -397,7 +397,7 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
               const canAccess = step === 'discord' || (step === 'details' && canProceedFromDiscord()) || (step === 'settings' && canProceedFromDiscord() && canProceedFromDetails())
 
               return (
-                <div key={step} className="flex items-center">
+                <div key={step} className={`flex items-center ${idx < 2 ? 'flex-1' : ''}`}>
                   {/* Step Pill */}
                   <button
                     onClick={() => {
@@ -406,7 +406,7 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
                       else if (step === 'settings' && canProceedFromDiscord() && canProceedFromDetails()) setCurrentStep('settings')
                     }}
                     disabled={!canAccess}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-full text-[12px] font-medium transition ${
+                    className={`flex items-center gap-2 px-4 py-2 rounded-full text-[12px] font-medium transition shrink-0 ${
                       isCompleted
                         ? 'bg-[#ff8000] text-white'
                         : isCurrent
@@ -422,7 +422,7 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
 
                   {/* Connecting Line */}
                   {idx < 2 && (
-                    <div className={`w-8 h-0.5 transition ${
+                    <div className={`flex-1 h-0.5 mx-2 transition ${
                       stepIndex < currentIndex ? 'bg-[#ff8000]' : 'bg-[#383838]'
                     }`} />
                   )}
