@@ -193,17 +193,8 @@ export function CreateCharacterModal({ isOpen, onClose, onSuccess, suggestedName
         }
       }
 
-      // Refresh character list in context
-      await refreshCharacters()
-
-      // Switch to the newly created character
-      if (data.character?.id) {
-        await switchCharacter(data.character.id)
-      }
-
-      setLoading(false)
-      onClose()
-      onSuccess?.()
+      // Force a full page reload to ensure all state is refreshed
+      window.location.reload()
     } catch (err) {
       console.error('Error creating character:', err)
       setError('An error occurred while creating the character')
