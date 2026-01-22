@@ -139,18 +139,10 @@ export async function GET() {
       )
     }
 
-    // Remove duplicates by keeping only the first guild for each discord_server_id
-    const uniqueGuilds = matchingGuilds.reduce((acc: any[], guild: any) => {
-      const exists = acc.find(g => g.discord_server_id === guild.discord_server_id)
-      if (!exists) {
-        acc.push(guild)
-      }
-      return acc
-    }, [])
+    // Note: We allow multiple guilds per discord_server_id (e.g., different raid teams or game versions)
+    console.log('Total matching guilds:', matchingGuilds.length)
 
-    console.log('After removing duplicates:', uniqueGuilds.length)
-
-    const availableGuilds = uniqueGuilds
+    const availableGuilds = matchingGuilds
       .filter(guild => !existingGuildIds.has(guild.id))
       .map(guild => {
         // Find matching Discord guild for additional info
