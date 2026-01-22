@@ -147,9 +147,6 @@ export function CharacterSelector() {
             <p className="text-[13px] font-medium text-white">Character creation required</p>
             <p className="text-[10px] text-primary">Click here to create</p>
           </div>
-          <svg className="w-4 h-4 text-primary flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-          </svg>
         </button>
         <CreateCharacterModal
           isOpen={showCreateModal}
@@ -175,9 +172,6 @@ export function CharacterSelector() {
             <p className="text-[13px] font-medium text-white truncate">{activeCharacter.name}</p>
             <p className="text-[10px] text-primary">Click here to create</p>
           </div>
-          <svg className="w-4 h-4 text-primary flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-          </svg>
         </button>
         <CreateCharacterModal
           isOpen={showCreateModal}
