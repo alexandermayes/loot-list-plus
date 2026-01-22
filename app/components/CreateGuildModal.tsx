@@ -461,8 +461,9 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
             <>
               {/* Step 1: Discord Server */}
               {currentStep === 'discord' && (
-                <div className="space-y-5">
-                  <div>
+                <div className="flex flex-col h-full">
+                  {/* Scrollable Server Selection */}
+                  <div className="flex-1 overflow-y-auto min-h-0">
                     <label className="block text-[13px] font-medium text-white mb-2">
                       Select Your Discord Server
                     </label>
@@ -480,7 +481,7 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
                         )}
                       </div>
                     ) : discordGuilds.length > 0 ? (
-                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-[240px] overflow-y-auto pr-2">
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 pr-2">
                         {discordGuilds.map((guild) => (
                           <button
                             key={guild.id}
@@ -587,8 +588,9 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
                     )}
                   </div>
 
-                  {/* Bot Status */}
+                  {/* Bot Status - Fixed at bottom */}
                   {getActiveServerId() && (
+                    <div className="shrink-0 pt-4 border-t border-[#383838] mt-4">
                     <div className={`p-4 rounded-xl border ${
                       checkingBot ? 'border-[#383838] bg-[#151515]' :
                       botInstalled ? 'border-green-600/50 bg-green-950/20' :
@@ -640,6 +642,7 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
                         </div>
                       )}
                     </div>
+                  </div>
                   )}
                 </div>
               )}
