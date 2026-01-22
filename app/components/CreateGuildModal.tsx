@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/utils/supabase/client'
-import { Check, ChevronRight, Users2, Swords, Globe, Loader2 } from 'lucide-react'
+import { Check, ChevronRight, Loader2 } from 'lucide-react'
 import Image from 'next/image'
 import RealmSelector from '@/app/components/RealmSelector'
 
@@ -367,9 +367,11 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
         <div className="p-6 border-b border-[#383838] bg-[#141519]">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-[#ff8000] to-[#ff6000] rounded-xl flex items-center justify-center">
-                <Users2 className="w-5 h-5 text-white" />
-              </div>
+              <img
+                src="https://wow.zamimg.com/images/wow/icons/large/inv_scroll_15.jpg"
+                alt="Guild Charter"
+                className="w-10 h-10 rounded-xl border border-[rgba(255,255,255,0.1)]"
+              />
               <div>
                 <h3 className="text-[20px] font-bold text-white">Create Your Guild</h3>
                 <p className="text-[12px] text-[#a1a1a1]">Set up loot tracking for your team</p>
