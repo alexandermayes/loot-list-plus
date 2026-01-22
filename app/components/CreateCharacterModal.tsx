@@ -230,6 +230,12 @@ export function CreateCharacterModal({ isOpen, onClose, onSuccess, suggestedName
         }
       }
 
+      // If user has no guild, redirect to guild selection
+      if (!targetGuildId) {
+        window.location.href = '/guild-select'
+        return
+      }
+
       // Force a full page reload to ensure all state is refreshed
       window.location.reload()
     } catch (err) {
