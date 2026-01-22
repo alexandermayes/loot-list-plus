@@ -1,0 +1,138 @@
+import { createClient } from '@/utils/supabase/server'
+import { NextResponse } from 'next/server'
+
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
+interface BulkPriorityUpdate {
+  item_id: number
+  role_priorities?: Record<string, number | null>
+  class_priorities?: Record<string, number | null>
+  character_priorities?: Record<string, number | null>
+  notes?: string | null
+}
+
+// POST - Bulk update item priorities
+export async function POST(request: Request) {
+  try {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const body = await request.json()
+    const {
+      guild_id,
+      raid_tier_id,
+      priorities, // Array of BulkPriorityUpdate
+      priority_bonuses // Default bonuses for all items
+    } = body
+
+    if (!guild_id || !raid_tier_id || !priorities || !Array.isArray(priorities)) {
+      return NextResponse.json(
+        { error: 'guild_id, raid_tier_id, and priorities array are required' },
+        { status: 400 }
+      )
+    }
+
+    // Verify user is an officer in this guild
+    const { data: userCharacters } = await supabase
+      .from('characters')
+      .select('id')
+      .eq('user_id', user.id)
+
+    if (!userCharacters || userCharacters.length === 0) {
+      return NextResponse.json({ error: 'No characters found' }, { status: 403 })
+    }
+
+    const characterIds = userCharacters.map(c => c.id)
+
+    const { data: membership } = await supabase
+      .from('character_guild_memberships')
+      .select('role')
+      .eq('guild_id', guild_id)
+      .in('character_id', characterIds)
+      .in('role', ['Officer', 'Guild Master'])
+      .limit(1)
+
+    if (!membership || membership.length === 0) {
+      return NextResponse.json(
+        { error: 'Only officers can update item priorities' },
+        { status: 403 }
+      )
+    }
+
+    const defaultBonuses = priority_bonuses || { role: 5, class: 3, character: 2 }
+    const results: any[] = []
+    const errors: any[] = []
+
+    // Process each priority update
+    for (const priority of priorities as BulkPriorityUpdate[]) {
+      try {
+        // Check if priority exists for this item
+        const { data: existingPriority } = await supabase
+          .from('guild_item_priorities')
+          .select('id')
+          .eq('guild_id', guild_id)
+          .eq('item_id', priority.item_id)
+          .eq('raid_tier_id', raid_tier_id)
+          .single()
+
+        const priorityData = {
+          guild_id,
+          item_id: priority.item_id,
+          raid_tier_id,
+          role_priorities: priority.role_priorities || {},
+          class_priorities: priority.class_priorities || {},
+          character_priorities: priority.character_priorities || {},
+          priority_bonuses: defaultBonuses,
+          notes: priority.notes || null
+        }
+
+        if (existingPriority) {
+          // Update existing priority
+          const { data, error } = await supabase
+            .from('guild_item_priorities')
+            .update(priorityData)
+            .eq('id', existingPriority.id)
+            .select()
+            .single()
+
+          if (error) {
+            errors.push({ item_id: priority.item_id, error: error.message })
+          } else {
+            results.push(data)
+          }
+        } else {
+          // Insert new priority
+          const { data, error } = await supabase
+            .from('guild_item_priorities')
+            .insert(priorityData)
+            .select()
+            .single()
+
+          if (error) {
+            errors.push({ item_id: priority.item_id, error: error.message })
+          } else {
+            results.push(data)
+          }
+        }
+      } catch (err: any) {
+        errors.push({ item_id: priority.item_id, error: err.message })
+      }
+    }
+
+    return NextResponse.json({
+      success: errors.length === 0,
+      updated: results.length,
+      failed: errors.length,
+      results,
+      errors: errors.length > 0 ? errors : undefined
+    })
+  } catch (error) {
+    console.error('Error in prio-list bulk POST:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+}
