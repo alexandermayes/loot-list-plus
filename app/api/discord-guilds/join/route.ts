@@ -153,18 +153,55 @@ export async function POST(request: NextRequest) {
       console.log('[DISCORD JOIN] Created character:', characterId)
     }
 
-    // Check if character is already a member of this guild
+    // Check if character has any membership (active or inactive) in this guild
     const { data: existingMembership } = await serviceSupabase
       .from('character_guild_memberships')
-      .select('id')
+      .select('id, is_active')
       .eq('character_id', characterId)
       .eq('guild_id', guild_id)
-      .eq('is_active', true)
       .single()
 
     if (existingMembership) {
-      // Already a member - just set as active guild and return success
-      console.log('[DISCORD JOIN] Already a member, setting as active guild')
+      if (existingMembership.is_active) {
+        // Already an active member - just set as active guild and return success
+        console.log('[DISCORD JOIN] Already a member, setting as active guild')
+        await serviceSupabase
+          .from('user_active_characters')
+          .upsert({
+            user_id: user.id,
+            active_character_id: characterId,
+            active_guild_id: guild_id,
+            updated_at: new Date().toISOString()
+          })
+
+        return NextResponse.json({
+          success: true,
+          guild_id: guild_id,
+          message: 'Already a member - set as active guild'
+        })
+      }
+
+      // Reactivate inactive membership (user rejoining)
+      console.log('[DISCORD JOIN] Reactivating inactive membership:', existingMembership.id)
+      const { error: reactivateError } = await serviceSupabase
+        .from('character_guild_memberships')
+        .update({
+          is_active: true,
+          role: 'Member',
+          joined_at: new Date().toISOString(),
+          joined_via: 'discord_verify'
+        })
+        .eq('id', existingMembership.id)
+
+      if (reactivateError) {
+        console.error('[DISCORD JOIN] Error reactivating membership:', reactivateError)
+        return NextResponse.json(
+          { error: `Failed to rejoin guild: ${reactivateError.message}` },
+          { status: 500 }
+        )
+      }
+
+      // Set as active character and guild for user
       await serviceSupabase
         .from('user_active_characters')
         .upsert({
@@ -174,10 +211,12 @@ export async function POST(request: NextRequest) {
           updated_at: new Date().toISOString()
         })
 
+      console.log('[DISCORD JOIN] Guild rejoin complete!')
+
       return NextResponse.json({
         success: true,
         guild_id: guild_id,
-        message: 'Already a member - set as active guild'
+        message: 'Successfully rejoined guild via Discord'
       })
     }
 

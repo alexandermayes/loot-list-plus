@@ -196,19 +196,65 @@ export async function POST(
       console.log('[INVITE JOIN] Created character:', characterId)
     }
 
-    // Check if character is already a member of this guild
+    // Check if character is already an ACTIVE member of this guild
     const { data: existingMembership } = await serviceSupabase
       .from('character_guild_memberships')
-      .select('id')
+      .select('id, is_active')
       .eq('character_id', characterId)
       .eq('guild_id', inviteCode.guild_id)
       .single()
 
     if (existingMembership) {
-      return NextResponse.json(
-        { error: 'You are already a member of this guild' },
-        { status: 400 }
-      )
+      if (existingMembership.is_active) {
+        return NextResponse.json(
+          { error: 'You are already a member of this guild' },
+          { status: 400 }
+        )
+      }
+
+      // Reactivate inactive membership (user rejoining)
+      console.log('[INVITE JOIN] Reactivating inactive membership:', existingMembership.id)
+      const { error: reactivateError } = await serviceSupabase
+        .from('character_guild_memberships')
+        .update({
+          is_active: true,
+          role: 'Member',
+          joined_at: new Date().toISOString(),
+          joined_via: 'invite_code'
+        })
+        .eq('id', existingMembership.id)
+
+      if (reactivateError) {
+        console.error('[INVITE JOIN] Error reactivating membership:', reactivateError)
+        return NextResponse.json(
+          { error: `Failed to rejoin guild: ${reactivateError.message}` },
+          { status: 500 }
+        )
+      }
+
+      // Set as active character and guild for user
+      await serviceSupabase
+        .from('user_active_characters')
+        .upsert({
+          user_id: user.id,
+          active_character_id: characterId,
+          active_guild_id: inviteCode.guild_id,
+          updated_at: new Date().toISOString()
+        })
+
+      // Increment current_uses
+      await supabase
+        .from('guild_invite_codes')
+        .update({ current_uses: inviteCode.current_uses + 1 })
+        .eq('id', inviteCode.id)
+
+      console.log('[INVITE JOIN] Guild rejoin complete!')
+
+      return NextResponse.json({
+        success: true,
+        guild_id: inviteCode.guild_id,
+        message: 'Successfully rejoined guild'
+      })
     }
 
     // Create character guild membership
