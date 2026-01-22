@@ -4,9 +4,14 @@ import { useRouter, usePathname } from 'next/navigation'
 import { useGuildContext } from '../contexts/GuildContext'
 import Image from 'next/image'
 import { useState, useRef, useEffect } from 'react'
+import dynamic from 'next/dynamic'
 import { createClient } from '@/utils/supabase/client'
 import { CharacterSelector } from './CharacterSelector'
-import { CreateGuildModal } from './CreateGuildModal'
+
+// Lazy load modal to reduce initial bundle size
+const CreateGuildModal = dynamic(() => import('./CreateGuildModal').then(mod => ({ default: mod.CreateGuildModal })), {
+  loading: () => null
+})
 
 interface SidebarProps {
   user?: any

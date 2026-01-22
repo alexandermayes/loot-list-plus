@@ -3,12 +3,17 @@
 import { createClient } from '@/utils/supabase/client'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import dynamic from 'next/dynamic'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import Sidebar from '@/app/components/Sidebar'
 import Image from 'next/image'
-import { CreateGuildModal } from '@/app/components/CreateGuildModal'
+
+// Lazy load modal to reduce initial bundle size
+const CreateGuildModal = dynamic(() => import('@/app/components/CreateGuildModal').then(mod => ({ default: mod.CreateGuildModal })), {
+  loading: () => null
+})
 
 interface AvailableGuild {
   id: string

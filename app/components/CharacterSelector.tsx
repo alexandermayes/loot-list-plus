@@ -5,7 +5,12 @@ import { ChevronDown, Check } from 'lucide-react'
 import { useGuildContext, Character } from '@/app/contexts/GuildContext'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
-import { CreateCharacterModal } from './CreateCharacterModal'
+import dynamic from 'next/dynamic'
+
+// Lazy load modal to reduce initial bundle size
+const CreateCharacterModal = dynamic(() => import('./CreateCharacterModal').then(mod => ({ default: mod.CreateCharacterModal })), {
+  loading: () => null
+})
 
 // Get WoWhead class icon URL
 function getClassIconUrl(className: string | undefined): string {

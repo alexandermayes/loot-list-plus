@@ -3,9 +3,14 @@
 import { createClient } from '@/utils/supabase/client'
 import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
+import dynamic from 'next/dynamic'
 import WelcomeScreen from '@/app/components/WelcomeScreen'
-import { CreateCharacterModal } from '@/app/components/CreateCharacterModal'
 import { User, CheckCircle2, AlertCircle, Trophy, X, Plus } from 'lucide-react'
+
+// Lazy load modal to reduce initial bundle size
+const CreateCharacterModal = dynamic(() => import('@/app/components/CreateCharacterModal').then(mod => ({ default: mod.CreateCharacterModal })), {
+  loading: () => null
+})
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { useGuildContext } from '@/app/contexts/GuildContext'
 import ItemLink from '@/app/components/ItemLink'

@@ -164,40 +164,50 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
       }
       setUser(currentUser)
 
-      // Fetch all guilds user is a member of
-      const { data: memberships, error: membershipsError } = await supabase
-        .from('guild_members')
-        .select(`
-          id,
-          user_id,
-          guild_id,
-          character_name,
-          class_id,
-          role,
-          is_active,
-          joined_at,
-          joined_via,
-          guild:guilds (
+      // Fetch memberships and active guild in parallel
+      const [membershipsResult, activeGuildResult] = await Promise.all([
+        supabase
+          .from('guild_members')
+          .select(`
             id,
-            name,
-            realm,
-            faction,
-            discord_server_id,
-            icon_url,
-            created_by,
+            user_id,
+            guild_id,
+            character_name,
+            class_id,
+            role,
             is_active,
-            require_discord_verification,
-            created_at,
-            active_expansion_id
-          ),
-          class:wow_classes (
-            name,
-            color_hex
-          )
-        `)
-        .eq('user_id', currentUser.id)
-        .eq('is_active', true)
-        .order('joined_at', { ascending: true })
+            joined_at,
+            joined_via,
+            guild:guilds (
+              id,
+              name,
+              realm,
+              faction,
+              discord_server_id,
+              icon_url,
+              created_by,
+              is_active,
+              require_discord_verification,
+              created_at,
+              active_expansion_id
+            ),
+            class:wow_classes (
+              name,
+              color_hex
+            )
+          `)
+          .eq('user_id', currentUser.id)
+          .eq('is_active', true)
+          .order('joined_at', { ascending: true }),
+        supabase
+          .from('user_active_guilds')
+          .select('active_guild_id')
+          .eq('user_id', currentUser.id)
+          .single()
+      ])
+
+      const { data: memberships, error: membershipsError } = membershipsResult
+      const { data: activeGuildData } = activeGuildResult
 
       if (membershipsError) {
         console.error('Error loading guild memberships:', membershipsError)
@@ -237,13 +247,6 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
         // Don't redirect here - let pages handle it
         return
       }
-
-      // Check for saved active guild
-      const { data: activeGuildData } = await supabase
-        .from('user_active_guilds')
-        .select('active_guild_id')
-        .eq('user_id', currentUser.id)
-        .single()
 
       let targetGuildId: string | null = null
 
@@ -323,90 +326,88 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
         return
       }
 
-      // Fetch specs separately for characters that have spec_id
+      // Fetch specs and memberships in parallel for better performance
       let enrichedCharacters: typeof characters = []
+      let transformedMemberships: any[] = []
 
       if (characters && characters.length > 0) {
+        const characterIds = characters.map(c => c.id)
         const specIds = characters
           .map(c => c.spec_id)
           .filter(Boolean) as string[]
 
-        if (specIds.length > 0) {
-          const { data: specs } = await supabase
-            .from('class_specs')
-            .select('id, name')
-            .in('id', specIds)
+        console.log('[GUILD CONTEXT] Fetching memberships for character IDs:', characterIds)
 
-          // Attach specs to characters
+        // Run specs and memberships queries in parallel
+        const [specsResult, membershipsResult] = await Promise.all([
+          specIds.length > 0
+            ? supabase.from('class_specs').select('id, name').in('id', specIds)
+            : Promise.resolve({ data: null, error: null }),
+          supabase
+            .from('character_guild_memberships')
+            .select(`
+              id,
+              character_id,
+              guild_id,
+              role,
+              is_active,
+              joined_at,
+              joined_via,
+              character:characters (
+                id,
+                user_id,
+                name,
+                realm,
+                class_id,
+                spec_id,
+                level,
+                is_main,
+                battle_net_id,
+                region,
+                created_at,
+                updated_at,
+                class:wow_classes (
+                  id,
+                  name,
+                  color_hex
+                ),
+                spec:class_specs (
+                  id,
+                  name
+                )
+              ),
+              guild:guilds (
+                id,
+                name,
+                realm,
+                faction,
+                discord_server_id,
+                icon_url,
+                created_by,
+                is_active,
+                require_discord_verification,
+                created_at,
+                active_expansion_id
+              )
+            `)
+            .in('character_id', characterIds)
+            .eq('is_active', true)
+        ])
+
+        const { data: specs } = specsResult
+        const { data: memberships, error: membershipsError } = membershipsResult
+
+        // Attach specs to characters
+        if (specs && specs.length > 0) {
           enrichedCharacters = characters.map(char => ({
             ...char,
-            spec: specs?.find(s => s.id === char.spec_id) || null
+            spec: specs.find(s => s.id === char.spec_id) || null
           }))
         } else {
           enrichedCharacters = characters
         }
 
         setUserCharacters(enrichedCharacters)
-      } else {
-        setUserCharacters([])
-      }
-
-      // Fetch all character guild memberships
-      // Declare outside if block so we can use it for setting active guild later
-      let transformedMemberships: any[] = []
-
-      if (characters && characters.length > 0) {
-        const characterIds = characters.map(c => c.id)
-        console.log('[GUILD CONTEXT] Fetching memberships for character IDs:', characterIds)
-        const { data: memberships, error: membershipsError } = await supabase
-          .from('character_guild_memberships')
-          .select(`
-            id,
-            character_id,
-            guild_id,
-            role,
-            is_active,
-            joined_at,
-            joined_via,
-            character:characters (
-              id,
-              user_id,
-              name,
-              realm,
-              class_id,
-              spec_id,
-              level,
-              is_main,
-              battle_net_id,
-              region,
-              created_at,
-              updated_at,
-              class:wow_classes (
-                id,
-                name,
-                color_hex
-              ),
-              spec:class_specs (
-                id,
-                name
-              )
-            ),
-            guild:guilds (
-              id,
-              name,
-              realm,
-              faction,
-              discord_server_id,
-              icon_url,
-              created_by,
-              is_active,
-              require_discord_verification,
-              created_at,
-              active_expansion_id
-            )
-          `)
-          .in('character_id', characterIds)
-          .eq('is_active', true)
 
         console.log('[GUILD CONTEXT] Memberships query result:', { memberships, membershipsError })
         console.log('[GUILD CONTEXT] Memberships count:', memberships?.length || 0)
@@ -433,6 +434,9 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
           })
           setCharacterMemberships(transformedMemberships)
         }
+      } else {
+        setUserCharacters([])
+        setCharacterMemberships([])
       }
 
       // Check for saved active character (just get IDs, we already have character data)

@@ -2,11 +2,18 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import dynamic from 'next/dynamic'
 import { useGuildContext, Character } from '@/app/contexts/GuildContext'
 import { CharacterCard } from '@/app/components/CharacterCard'
-import { CreateCharacterModal } from '@/app/components/CreateCharacterModal'
-import { EditCharacterModal } from '@/app/components/EditCharacterModal'
 import { Plus, ArrowLeft } from 'lucide-react'
+
+// Lazy load modals to reduce initial bundle size
+const CreateCharacterModal = dynamic(() => import('@/app/components/CreateCharacterModal').then(mod => ({ default: mod.CreateCharacterModal })), {
+  loading: () => null
+})
+const EditCharacterModal = dynamic(() => import('@/app/components/EditCharacterModal').then(mod => ({ default: mod.EditCharacterModal })), {
+  loading: () => null
+})
 
 export default function ManageCharactersPage() {
   const router = useRouter()

@@ -3,12 +3,17 @@
 import { createClient } from '@/utils/supabase/client'
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
+import dynamic from 'next/dynamic'
 import ItemLink from '@/app/components/ItemLink'
 import { useGuildContext } from '@/app/contexts/GuildContext'
 import { ExpansionGuard } from '@/app/components/ExpansionGuard'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
-import { PrioListItemModal } from '@/app/components/PrioListItemModal'
 import { allRoles, getRoleDisplayName, type Role } from '@/utils/spec-role-mapping'
+
+// Lazy load the modal to reduce initial bundle size
+const PrioListItemModal = dynamic(() => import('@/app/components/PrioListItemModal').then(mod => ({ default: mod.PrioListItemModal })), {
+  loading: () => null
+})
 import { getBossOrder, normalizeBossName } from '@/utils/bossOrder'
 import { getBossImage } from '@/utils/bossImages'
 
