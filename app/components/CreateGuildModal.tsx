@@ -360,7 +360,7 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
       onClick={onClose}
     >
       <div
-        className="bg-[#0d0e11] border border-[#383838] rounded-xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col"
+        className="bg-[#0d0e11] border border-[#383838] rounded-xl max-w-2xl w-full h-[600px] max-h-[90vh] overflow-hidden flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
