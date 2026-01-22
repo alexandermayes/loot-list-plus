@@ -123,7 +123,7 @@ export function CharacterSelector() {
     return (
       <>
         <button
-          onClick={() => router.push(`/characters/${activeCharacter.id}/edit`)}
+          onClick={() => setShowCreateModal(true)}
           className="w-full px-[14px] py-2 bg-primary/10 hover:bg-primary/20 border border-primary/30 rounded-xl text-white text-left transition flex items-center gap-3"
         >
           <div className="w-5 h-5 rounded-full flex items-center justify-center bg-primary/20 text-primary font-bold text-[10px] flex-shrink-0 border border-primary/30">
@@ -140,6 +140,7 @@ export function CharacterSelector() {
         <CreateCharacterModal
           isOpen={showCreateModal}
           onClose={() => setShowCreateModal(false)}
+          suggestedName={activeCharacter.name}
         />
       </>
     )

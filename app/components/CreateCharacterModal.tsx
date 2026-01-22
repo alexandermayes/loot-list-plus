@@ -20,9 +20,10 @@ interface CreateCharacterModalProps {
   isOpen: boolean
   onClose: () => void
   onSuccess?: () => void
+  suggestedName?: string // Discord username to show as placeholder hint
 }
 
-export function CreateCharacterModal({ isOpen, onClose, onSuccess }: CreateCharacterModalProps) {
+export function CreateCharacterModal({ isOpen, onClose, onSuccess, suggestedName }: CreateCharacterModalProps) {
   const { activeGuild, refreshCharacters } = useGuildContext()
   const supabase = createClient()
 
@@ -224,7 +225,7 @@ export function CreateCharacterModal({ isOpen, onClose, onSuccess }: CreateChara
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 className="w-full px-4 py-2.5 bg-[#151515] border border-[#383838] rounded-[52px] text-white text-[13px] focus:outline-none focus:border-[#ff8000] transition"
-                placeholder="Enter character name"
+                placeholder={suggestedName ? `e.g. ${suggestedName}` : "Enter character name"}
                 autoFocus
               />
             </div>

@@ -2,7 +2,7 @@
 
 import { createClient } from '@/utils/supabase/client'
 import { useState, useEffect, useMemo } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import dynamic from 'next/dynamic'
 import WelcomeScreen from '@/app/components/WelcomeScreen'
 import { User, CheckCircle2, AlertCircle, Trophy, X, Plus } from 'lucide-react'
@@ -127,11 +127,21 @@ export default function Dashboard() {
 
   const supabase = createClient()
   const router = useRouter()
+  const searchParams = useSearchParams()
 
   // Set page title
   useEffect(() => {
     document.title = 'LootList+ • Dashboard'
   }, [])
+
+  // Check for create_character query param (from guild join flow)
+  useEffect(() => {
+    if (searchParams.get('create_character') === 'true') {
+      setShowCreateCharacterModal(true)
+      // Clean up the URL
+      router.replace('/dashboard', { scroll: false })
+    }
+  }, [searchParams, router])
 
   // Refresh Wowhead tooltips when loot priority or received items load
   useEffect(() => {
@@ -922,6 +932,7 @@ export default function Dashboard() {
       <CreateCharacterModal
         isOpen={showCreateCharacterModal}
         onClose={() => setShowCreateCharacterModal(false)}
+        suggestedName={activeCharacter?.name}
       />
     </>
   )

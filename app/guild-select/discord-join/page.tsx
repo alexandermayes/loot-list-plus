@@ -120,8 +120,13 @@ export default function DiscordJoinPage() {
       // Success!
       setSuccess(true)
       setTimeout(() => {
-        // Force a full page reload to refresh guild context
-        window.location.href = '/dashboard'
+        // If user needs to set up their character, redirect with a flag
+        if (data.needs_character_setup) {
+          window.location.href = '/dashboard?create_character=true'
+        } else {
+          // Force a full page reload to refresh guild context
+          window.location.href = '/dashboard'
+        }
       }, 1500)
     } catch (err) {
       console.error('Error joining guild:', err)

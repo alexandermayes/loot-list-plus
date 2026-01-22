@@ -254,10 +254,20 @@ export async function POST(request: NextRequest) {
 
     console.log('[DISCORD JOIN] Guild join complete!')
 
+    // Check if character needs setup (no class_id means they need to configure it)
+    const { data: characterData } = await serviceSupabase
+      .from('characters')
+      .select('class_id')
+      .eq('id', characterId)
+      .single()
+
+    const needsCharacterSetup = !characterData?.class_id
+
     return NextResponse.json({
       success: true,
       guild_id: guild_id,
-      message: 'Successfully joined guild via Discord'
+      message: 'Successfully joined guild via Discord',
+      needs_character_setup: needsCharacterSetup
     })
   } catch (error) {
     console.error('Error in POST /api/discord-guilds/join:', error)
