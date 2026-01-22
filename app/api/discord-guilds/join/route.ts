@@ -112,46 +112,27 @@ export async function POST(request: NextRequest) {
     // Use service role client to bypass RLS for character operations
     const serviceSupabase = createServiceRoleClient()
 
-    // Get or create a character for the user
+    // Check if user has any characters
     const { data: existingCharacters } = await serviceSupabase
       .from('characters')
-      .select('id')
+      .select('id, class_id')
       .eq('user_id', user.id)
+      .order('is_main', { ascending: false })
       .limit(1)
 
-    let characterId: string
-
-    if (existingCharacters && existingCharacters.length > 0) {
-      // Use existing character
-      characterId = existingCharacters[0].id
-      console.log('[DISCORD JOIN] Using existing character:', characterId)
-    } else {
-      // Create a default character for the user
-      const characterName = user.user_metadata?.full_name || user.user_metadata?.custom_claims?.global_name || user.user_metadata?.name || 'Discord Member'
-      console.log('[DISCORD JOIN] Creating character with name:', characterName)
-
-      const { data: newCharacter, error: charError } = await serviceSupabase
-        .from('characters')
-        .insert({
-          user_id: user.id,
-          name: characterName,
-          realm: guild.realm || null,
-          is_main: true
-        })
-        .select('id')
-        .single()
-
-      if (charError || !newCharacter) {
-        console.error('[DISCORD JOIN] Error creating character:', charError)
-        return NextResponse.json(
-          { error: `Failed to create character: ${charError?.message || 'Unknown error'}` },
-          { status: 500 }
-        )
-      }
-
-      characterId = newCharacter.id
-      console.log('[DISCORD JOIN] Created character:', characterId)
+    // If user has no characters, they need to create one first
+    if (!existingCharacters || existingCharacters.length === 0) {
+      console.log('[DISCORD JOIN] User has no characters, returning needs_character_creation')
+      return NextResponse.json({
+        success: false,
+        needs_character_creation: true,
+        guild_id: guild_id,
+        message: 'Please create a character first'
+      })
     }
+
+    const characterId = existingCharacters[0].id
+    console.log('[DISCORD JOIN] Using existing character:', characterId)
 
     // Check if character has any membership (active or inactive) in this guild
     const { data: existingMembership } = await serviceSupabase

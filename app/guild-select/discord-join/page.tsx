@@ -111,6 +111,14 @@ export default function DiscordJoinPage() {
 
       const data = await response.json()
 
+      // If user needs to create a character first, redirect to dashboard with modal flag
+      if (data.needs_character_creation) {
+        // Store the guild ID they want to join so we can complete the join after character creation
+        sessionStorage.setItem('pending_guild_join', guildId)
+        window.location.href = '/dashboard?create_character=true'
+        return
+      }
+
       if (!response.ok) {
         setError(data.error || 'Failed to join guild')
         setJoining(false)
@@ -120,7 +128,7 @@ export default function DiscordJoinPage() {
       // Success!
       setSuccess(true)
       setTimeout(() => {
-        // If user needs to set up their character, redirect with a flag
+        // If user needs to set up their character (has character but no class), redirect with a flag
         if (data.needs_character_setup) {
           window.location.href = '/dashboard?create_character=true'
         } else {
