@@ -70,7 +70,8 @@ export function CharacterSelector() {
     characterMemberships,
     activeGuild,
     switchCharacter,
-    refreshCharacters
+    refreshCharacters,
+    loading
   } = useGuildContext()
 
   const [isOpen, setIsOpen] = useState(false)
@@ -133,6 +134,19 @@ export function CharacterSelector() {
     } finally {
       setAddingToGuild(null)
     }
+  }
+
+  // Show loading skeleton while context is loading to prevent flicker
+  if (loading) {
+    return (
+      <div className="w-full px-[14px] py-2 bg-[#141519] border border-[#1a1a1a] rounded-xl flex items-center gap-3 animate-pulse">
+        <div className="w-5 h-5 rounded-full bg-[#383838] flex-shrink-0" />
+        <div className="flex-1 min-w-0 space-y-1.5">
+          <div className="h-3 bg-[#383838] rounded w-24" />
+          <div className="h-2 bg-[#383838] rounded w-16" />
+        </div>
+      </div>
+    )
   }
 
   if (!activeCharacter) {
