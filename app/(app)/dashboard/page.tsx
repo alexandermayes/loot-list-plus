@@ -109,7 +109,6 @@ export default function Dashboard() {
   const [user, setUser] = useState<any>(null)
   const [error, setError] = useState<string | null>(null)
   const [greeting, setGreeting] = useState<string>('')
-  const [redirecting, setRedirecting] = useState(false)
 
   // New dashboard state
   const [allSubmissions, setAllSubmissions] = useState<LootSubmission[]>([]) // For current character
@@ -208,28 +207,7 @@ export default function Dashboard() {
         return
       }
 
-      // Prevent redirect loop
-      if (redirecting) {
-        return
-      }
-
-      // If no active guild and no character memberships, redirect to guild select
-      // Use characterMemberships instead of userGuilds for accurate check
-      if (!activeGuild && characterMemberships.length === 0) {
-        console.log('[DASHBOARD] No guild found, redirecting to guild-select...')
-        setRedirecting(true)
-        router.push('/guild-select')
-        return
-      }
-
-      // If we have guilds but no active guild, show error
-      if (!activeGuild && userGuilds.length > 0) {
-        console.error('Dashboard: Have guilds but no active guild!', userGuilds)
-        setLoading(false)
-        return
-      }
-
-      // Ensure we have an active guild before proceeding
+      // If no active guild, show WelcomeScreen (don't redirect to preserve sidebar)
       if (!activeGuild) {
         setLoading(false)
         return
@@ -588,7 +566,7 @@ export default function Dashboard() {
     }
   }
 
-  if (loading || guildLoading || redirecting) {
+  if (loading || guildLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <LoadingSpinner />

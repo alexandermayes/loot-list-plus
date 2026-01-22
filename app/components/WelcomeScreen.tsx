@@ -223,10 +223,10 @@ export default function WelcomeScreen() {
 
           {/* Join Options */}
           <div className="flex flex-col gap-6 w-full">
-            <div className="flex flex-col lg:flex-row gap-2.5 w-full">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-2.5 w-full">
               {/* Join via Discord */}
-              <div className="flex-1 bg-[#151515] border border-[rgba(255,255,255,0.1)] rounded-[40px] p-6 pt-[43px] pb-6 flex flex-col gap-6 items-center">
-                <div className="flex flex-col gap-6 items-center w-full">
+              <div className="bg-[#151515] border border-[rgba(255,255,255,0.1)] rounded-[40px] p-6 pt-[43px] pb-6 flex flex-col items-center">
+                <div className="flex flex-col gap-6 items-center w-full flex-1">
                   <Image
                     src="/icons/discord-large.svg"
                     alt="Discord"
@@ -244,8 +244,11 @@ export default function WelcomeScreen() {
                   </div>
                 </div>
                 <button
-                  onClick={handleDiscordJoin}
-                  className="w-full bg-[#5865f2] hover:bg-[#4752c4] border border-[#383838] rounded-[52px] px-5 py-3 flex items-center justify-center gap-3 transition"
+                  onClick={() => {
+                    setShowModal(true)
+                    handleOpenDiscordModal()
+                  }}
+                  className="w-full bg-[#5865f2] hover:bg-[#4752c4] border border-[#383838] rounded-[52px] px-5 py-3 flex items-center justify-center gap-3 transition mt-6"
                 >
                   <Image
                     src="/icons/discord-white.svg"
@@ -261,8 +264,8 @@ export default function WelcomeScreen() {
               </div>
 
               {/* Join with Code */}
-              <div className="flex-1 bg-[#151515] border border-[rgba(255,255,255,0.1)] rounded-[40px] p-6 pt-[43px] pb-6 flex flex-col gap-6 items-center">
-                <div className="flex flex-col gap-6 items-center w-full">
+              <div className="bg-[#151515] border border-[rgba(255,255,255,0.1)] rounded-[40px] p-6 pt-[43px] pb-6 flex flex-col items-center">
+                <div className="flex flex-col gap-6 items-center w-full flex-1">
                   <Image
                     src="/icons/password-validation.svg"
                     alt="Code"
@@ -279,28 +282,30 @@ export default function WelcomeScreen() {
                     </p>
                   </div>
                 </div>
-                <div className="flex gap-2.5 w-full">
-                  <input
-                    type="text"
-                    value={inviteCode}
-                    onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
-                    placeholder="ABC123DEF456"
-                    className="flex-1 bg-[#151515] border border-[#383838] rounded-[52px] px-5 py-3 font-poppins font-medium text-base text-white placeholder:text-[#666] focus:outline-none focus:border-[#555]"
-                    disabled={loading}
-                  />
-                  <button
-                    onClick={handleCodeJoin}
-                    disabled={loading || !inviteCode.trim()}
-                    className="bg-white hover:bg-gray-100 disabled:bg-gray-600 disabled:cursor-not-allowed border border-[#383838] rounded-[52px] px-5 py-3 transition"
-                  >
-                    <span className="font-poppins font-medium text-base text-black">
-                      {loading ? 'Joining...' : 'Join'}
-                    </span>
-                  </button>
+                <div className="flex flex-col gap-2.5 w-full mt-6">
+                  <div className="flex gap-2.5 w-full">
+                    <input
+                      type="text"
+                      value={inviteCode}
+                      onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
+                      placeholder="ABC123DEF456"
+                      className="flex-1 min-w-0 bg-[#151515] border border-[#383838] rounded-[52px] px-5 py-3 font-poppins font-medium text-base text-white placeholder:text-[#666] focus:outline-none focus:border-[#555]"
+                      disabled={loading}
+                    />
+                    <button
+                      onClick={handleCodeJoin}
+                      disabled={loading || !inviteCode.trim()}
+                      className="bg-white hover:bg-gray-100 disabled:bg-gray-600 disabled:cursor-not-allowed border border-[#383838] rounded-[52px] px-5 py-3 transition shrink-0"
+                    >
+                      <span className="font-poppins font-medium text-base text-black">
+                        {loading ? 'Joining...' : 'Join'}
+                      </span>
+                    </button>
+                  </div>
+                  {error && (
+                    <p className="text-red-400 text-sm font-poppins text-center">{error}</p>
+                  )}
                 </div>
-                {error && (
-                  <p className="text-red-400 text-sm font-poppins">{error}</p>
-                )}
               </div>
             </div>
 
@@ -498,7 +503,7 @@ export default function WelcomeScreen() {
                     Join via Discord
                   </h2>
                   <p className="font-poppins font-normal text-[16px] leading-[normal] text-[#a1a1a1]">
-                    Automatically join guilds based on your Discord server memberships
+                    Automatically join guilds from your Discord servers.
                   </p>
                 </div>
 
@@ -527,19 +532,19 @@ export default function WelcomeScreen() {
                     </div>
                   ) : availableGuilds.length === 0 ? (
                     <div className="text-center py-8">
-                      <p className="font-poppins font-bold text-[18px] text-white mb-2">No Available Guilds</p>
+                      <p className="font-poppins font-bold text-[18px] text-white mb-2">No guilds found</p>
                       <p className="font-poppins text-[14px] text-[#a1a1a1] mb-4">
-                        We couldn't find any LootList+ guilds that match your Discord servers.
+                        We didn't find any LootList+ guilds linked to your Discord servers.
                       </p>
                       <div className="bg-[#0d0e11] border border-[rgba(255,255,255,0.1)] rounded-[12px] px-[20px] py-[16px] text-left space-y-2">
-                        <p className="font-poppins text-[14px] text-white font-medium">Possible reasons:</p>
+                        <p className="font-poppins text-[14px] text-white font-medium">Why this might happen:</p>
                         <ul className="font-poppins text-[13px] text-[#a1a1a1] space-y-1 list-disc list-inside">
-                          <li>You're not in any Discord servers with LootList+ integration</li>
-                          <li>You're already a member of all matching guilds</li>
-                          <li>Your guild officer hasn't set up Discord integration yet</li>
+                          <li>No servers you're in use LootList+</li>
+                          <li>You're already in all matching guilds</li>
+                          <li>Discord integration isn't set up yet</li>
                         </ul>
                         <p className="font-poppins text-[13px] text-[#a1a1a1] mt-3">
-                          Try using an invite code instead, or ask your guild officer to set up Discord integration.
+                          Use an invite code, or ask a guild officer to enable Discord integration.
                         </p>
                       </div>
                     </div>

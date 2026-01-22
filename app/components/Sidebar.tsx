@@ -204,7 +204,13 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange }
   }
 
   const handleNavClick = (view: string) => {
-    if (!activeGuild) return
+    // If no active guild, clicking logo should go to dashboard (shows WelcomeScreen)
+    if (!activeGuild) {
+      if (view === 'overview') {
+        router.push('/dashboard')
+      }
+      return
+    }
 
     if (onViewChange) {
       // Dashboard mode - use callback
