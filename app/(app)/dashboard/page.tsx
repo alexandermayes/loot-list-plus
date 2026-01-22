@@ -631,7 +631,7 @@ export default function Dashboard() {
               {greeting}
             </h1>
             <p className="text-[#a1a1a1] mt-1 text-base">
-              {activeCharacter ? `Viewing data for ${activeCharacter.name}` : `Welcome back to ${activeGuild?.name}`}
+              {activeCharacter ? `Viewing loot for ${activeCharacter.name}` : `Welcome back to ${activeGuild?.name}`}
             </p>
           </div>
 

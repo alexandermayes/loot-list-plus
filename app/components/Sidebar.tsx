@@ -348,10 +348,10 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange }
                     alt="Guild icon"
                     width={20}
                     height={20}
-                    className="w-5 h-5 rounded-[4px] shrink-0"
+                    className="w-5 h-5 rounded-[4px] shrink-0 border border-[rgba(255,255,255,0.1)]"
                   />
                 ) : (
-                  <div className="w-5 h-5 bg-[#d9d9d9] rounded-[4px] shrink-0" />
+                  <div className="w-5 h-5 bg-[#d9d9d9] rounded-[4px] shrink-0 border border-[rgba(255,255,255,0.1)]" />
                 )}
                 <div className="flex-1 text-left pb-[2px] pt-0 px-0 leading-[normal] min-w-0">
                   <p className="font-poppins font-medium text-[13px] text-white w-full truncate">
@@ -386,10 +386,10 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange }
                         alt="Guild icon"
                         width={20}
                         height={20}
-                        className="w-5 h-5 rounded-[4px] shrink-0"
+                        className="w-5 h-5 rounded-[4px] shrink-0 border border-[rgba(255,255,255,0.1)]"
                       />
                     ) : (
-                      <div className="w-5 h-5 bg-[#d9d9d9] rounded-[4px] shrink-0" />
+                      <div className="w-5 h-5 bg-[#d9d9d9] rounded-[4px] shrink-0 border border-[rgba(255,255,255,0.1)]" />
                     )}
                     <div className="flex-1 pb-[2px] pt-0 px-0 leading-[normal] min-w-0">
                       <p className="font-poppins font-medium text-[13px] text-white w-full truncate">
