@@ -279,6 +279,8 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange }
     </div>
 
     <aside className="fixed left-0 top-0 h-screen w-[208px] bg-[#0d0e11] flex flex-col px-0 pb-0 z-50">
+      {/* Fixed divider line between sidebar and content */}
+      <div className="absolute right-0 top-0 bottom-0 w-px bg-[rgba(255,255,255,0.1)] z-20" />
       {/* Logo with scroll fade gradient - positioned to overlay scroll content */}
       <div
         className="absolute top-0 left-0 right-0 flex flex-col items-start justify-center px-[10px] py-[36px] w-[208px] z-10 pointer-events-none"

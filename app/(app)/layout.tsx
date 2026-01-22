@@ -56,7 +56,7 @@ export default function AppLayout({
       <Sidebar user={user} currentView={getCurrentView()} />
 
       {/* Main Content */}
-      <main className="ml-[208px] min-h-screen bg-[#09090c] border-l border-[rgba(255,255,255,0.1)]">
+      <main className="ml-[208px] min-h-screen bg-[#09090c]">
         {children}
       </main>
     </div>
