@@ -93,123 +93,27 @@ export default function MemberManager() {
 
     setLoading(true)
     try {
-      // Get all character guild memberships with character and user data
-      // This is the source of truth for the new character-based system
-      const { data: charMembershipsData, error: charMemError } = await supabase
-        .from('character_guild_memberships')
-        .select(`
-          id,
-          character_id,
-          role,
-          joined_at,
-          joined_via,
-          character:characters (
-            id,
-            user_id,
-            name,
-            is_main,
-            class:wow_classes (
-              name,
-              color_hex
-            ),
-            spec:class_specs (
-              name
-            )
-          )
-        `)
-        .eq('guild_id', activeGuild.id)
-        .eq('is_active', true)
+      // Use API route that bypasses RLS to get all guild members
+      const response = await fetch(`/api/guild-members?guild_id=${activeGuild.id}`)
 
-      if (charMemError) throw charMemError
-
-      if (!charMembershipsData || charMembershipsData.length === 0) {
-        setMembers([])
-        return
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'Failed to load members')
       }
 
-      // Group characters by user_id
-      const userCharacterMap = new Map<string, {
-        characters: Character[]
-        role: string
-        joined_at: string
-        joined_via: string
-      }>()
-
-      for (const membership of charMembershipsData) {
-        const char = Array.isArray(membership.character) ? membership.character[0] : membership.character
-        if (!char) continue
-
-        const userId = char.user_id
-        const existing = userCharacterMap.get(userId)
-
-        const charData: Character = {
-          id: char.id,
-          name: char.name,
-          is_main: char.is_main,
-          class: Array.isArray(char.class) ? char.class[0] : char.class,
-          spec: Array.isArray(char.spec) ? char.spec[0] : char.spec
-        }
-
-        if (existing) {
-          existing.characters.push(charData)
-          // Use highest role position for the user
-          const existingRoleInfo = roles.find(r => r.name === existing.role)
-          const newRoleInfo = roles.find(r => r.name === membership.role)
-          if ((newRoleInfo?.position || 0) > (existingRoleInfo?.position || 0)) {
-            existing.role = membership.role
-          }
-        } else {
-          userCharacterMap.set(userId, {
-            characters: [charData],
-            role: membership.role,
-            joined_at: membership.joined_at,
-            joined_via: membership.joined_via
-          })
-        }
-      }
-
-      // Get all user IDs
-      const userIds = Array.from(userCharacterMap.keys())
-
-      // Get user metadata for Discord names via API
-      const displayNamesResponse = await fetch('/api/guild-members/display-names', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userIds })
-      })
-
-      let userMetadataMap = new Map<string, string>()
-      if (displayNamesResponse.ok) {
-        const { displayNames } = await displayNamesResponse.json()
-        userMetadataMap = new Map(Object.entries(displayNames))
-      } else {
-        console.error('Failed to fetch display names')
-      }
-
-      // Build members array
-      const membersArray: Member[] = Array.from(userCharacterMap.entries()).map(([userId, data]) => {
-        // Sort characters - main first, then alphabetically
-        data.characters.sort((a, b) => {
-          if (a.is_main && !b.is_main) return -1
-          if (!a.is_main && b.is_main) return 1
-          return a.name.localeCompare(b.name)
-        })
-
-        const mainChar = data.characters.find(c => c.is_main) || data.characters[0] || null
-        const discordName = userMetadataMap.get(userId) || 'Unknown User'
-
-        return {
-          user_id: userId,
-          role: data.role,
-          joined_at: data.joined_at,
-          joined_via: data.joined_via,
-          characters: data.characters,
-          mainCharacter: mainChar,
-          discordName
-        }
-      })
+      const { members: membersData } = await response.json()
 
       // Sort by role hierarchy based on position (higher position = higher rank) then by name
+      const membersArray: Member[] = (membersData || []).map((m: any) => ({
+        user_id: m.user_id,
+        role: m.role,
+        joined_at: m.joined_at,
+        joined_via: m.joined_via,
+        characters: m.characters,
+        mainCharacter: m.mainCharacter,
+        discordName: m.discordName
+      }))
+
       membersArray.sort((a, b) => {
         const aRoleInfo = roles.find(r => r.name === a.role)
         const bRoleInfo = roles.find(r => r.name === b.role)
