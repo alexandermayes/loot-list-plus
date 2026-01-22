@@ -8,8 +8,11 @@ import dynamic from 'next/dynamic'
 import { createClient } from '@/utils/supabase/client'
 import { CharacterSelector } from './CharacterSelector'
 
-// Lazy load modal to reduce initial bundle size
+// Lazy load modals to reduce initial bundle size
 const CreateGuildModal = dynamic(() => import('./CreateGuildModal').then(mod => ({ default: mod.CreateGuildModal })), {
+  loading: () => null
+})
+const FeedbackModal = dynamic(() => import('./FeedbackModal').then(mod => ({ default: mod.FeedbackModal })), {
   loading: () => null
 })
 
@@ -34,6 +37,7 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange }
   const [availableGuilds, setAvailableGuilds] = useState<any[]>([])
   const [discordError, setDiscordError] = useState('')
   const [showCreateGuildModal, setShowCreateGuildModal] = useState(false)
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
   const supabase = createClient()
 
@@ -553,6 +557,26 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange }
           <span>Help</span>
         </button>
 
+        <button
+          onClick={() => setShowFeedbackModal(true)}
+          className="w-full px-3.5 py-2 flex items-center gap-3 rounded-[40px] hover:bg-[#1a1a1a] transition font-poppins font-medium text-[13px] text-white"
+        >
+          <svg
+            className="w-5 h-5"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <circle cx="12" cy="12" r="10" />
+            <line x1="12" y1="8" x2="12" y2="12" />
+            <line x1="12" y1="16" x2="12.01" y2="16" />
+          </svg>
+          <span>Report Bug</span>
+        </button>
+
         <button className="w-full px-3.5 py-2 flex items-center gap-3 rounded-[40px] hover:bg-[#1a1a1a] transition font-poppins font-medium text-[13px] text-white">
           <Image
             src="/icons/moon.svg"
@@ -609,6 +633,12 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange }
     <CreateGuildModal
       isOpen={showCreateGuildModal}
       onClose={() => setShowCreateGuildModal(false)}
+    />
+
+    {/* Feedback Modal */}
+    <FeedbackModal
+      isOpen={showFeedbackModal}
+      onClose={() => setShowFeedbackModal(false)}
     />
 
     {/* Join Guild Modal */}
