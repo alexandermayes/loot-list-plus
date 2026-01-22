@@ -235,7 +235,7 @@ export default function WelcomeScreen() {
                   />
                   <div className="flex flex-col gap-1 text-center w-full">
                     <h2 className="font-poppins font-bold text-2xl text-white">
-                      Join via Discord
+                      Join with Discord
                     </h2>
                     <p className="font-poppins font-normal text-sm text-[#a1a1a1]">
                       If your guild has Discord linked, you're in automatically.
@@ -250,7 +250,7 @@ export default function WelcomeScreen() {
                   className="w-full bg-white hover:bg-gray-100 border border-[#383838] rounded-[52px] px-5 py-3 flex items-center justify-center transition mt-6"
                 >
                   <span className="font-poppins font-medium text-base text-black">
-                    Join with Discord
+                    Select guild
                   </span>
                 </button>
               </div>
@@ -346,7 +346,7 @@ export default function WelcomeScreen() {
                     </svg>
                   </div>
                   <div>
-                    <h3 className="text-[20px] font-bold text-white">Join via Discord</h3>
+                    <h3 className="text-[20px] font-bold text-white">Join with Discord</h3>
                     <p className="text-[12px] text-[#a1a1a1]">Automatically join guilds from your Discord servers</p>
                   </div>
                 </div>
