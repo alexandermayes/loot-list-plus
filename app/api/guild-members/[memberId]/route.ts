@@ -1,13 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/utils/supabase/server'
+import { createServiceRoleClient } from '@/utils/supabase/service-role'
+import { verifyOfficerPermissions } from '@/utils/server-roles'
 
-// PATCH - Update guild member (role, etc)
+// PATCH - Update guild member (role, etc) - LEGACY ENDPOINT for guild_members table
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ memberId: string }> }
 ) {
   try {
     const supabase = await createClient()
+    const serviceSupabase = createServiceRoleClient()
     const { memberId } = await params
 
     // Check if user is authenticated
@@ -27,9 +30,9 @@ export async function PATCH(
     const body = await request.json()
     const { role } = body
 
-    if (!role || !['Officer', 'Member'].includes(role)) {
+    if (!role) {
       return NextResponse.json(
-        { error: 'Valid role is required (Officer or Member)' },
+        { error: 'Role is required' },
         { status: 400 }
       )
     }
@@ -48,15 +51,9 @@ export async function PATCH(
       )
     }
 
-    // Check if requesting user is an officer of the same guild
-    const { data: requestingMember } = await supabase
-      .from('guild_members')
-      .select('role')
-      .eq('user_id', user.id)
-      .eq('guild_id', targetMember.guild_id)
-      .single()
-
-    if (!requestingMember || requestingMember.role !== 'Officer') {
+    // Verify user has officer permissions (position >= 50)
+    const verification = await verifyOfficerPermissions(serviceSupabase, user.id, targetMember.guild_id)
+    if (!verification.hasPermission) {
       return NextResponse.json(
         { error: 'Only officers can change member roles' },
         { status: 403 }
@@ -90,13 +87,14 @@ export async function PATCH(
   }
 }
 
-// DELETE - Remove guild member
+// DELETE - Remove guild member - LEGACY ENDPOINT for guild_members table
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ memberId: string }> }
 ) {
   try {
     const supabase = await createClient()
+    const serviceSupabase = createServiceRoleClient()
     const { memberId } = await params
 
     // Check if user is authenticated
@@ -126,15 +124,9 @@ export async function DELETE(
       )
     }
 
-    // Check if requesting user is an officer of the same guild
-    const { data: requestingMember } = await supabase
-      .from('guild_members')
-      .select('role')
-      .eq('user_id', user.id)
-      .eq('guild_id', targetMember.guild_id)
-      .single()
-
-    if (!requestingMember || requestingMember.role !== 'Officer') {
+    // Verify user has officer permissions (position >= 50)
+    const verification = await verifyOfficerPermissions(serviceSupabase, user.id, targetMember.guild_id)
+    if (!verification.hasPermission) {
       return NextResponse.json(
         { error: 'Only officers can remove members' },
         { status: 403 }
@@ -142,14 +134,33 @@ export async function DELETE(
     }
 
     // Check if this is the last officer (prevent removing last officer)
-    if (targetMember.role === 'Officer') {
+    // Get guild roles to check positions
+    const { data: guildRoles } = await serviceSupabase
+      .from('guild_roles')
+      .select('name, position')
+      .eq('guild_id', targetMember.guild_id)
+
+    const rolePositionMap = new Map<string, number>()
+    if (guildRoles && guildRoles.length > 0) {
+      guildRoles.forEach((r: any) => rolePositionMap.set(r.name, r.position))
+    } else {
+      rolePositionMap.set('Guild Master', 100)
+      rolePositionMap.set('Officer', 50)
+      rolePositionMap.set('Member', 0)
+    }
+
+    const targetPosition = rolePositionMap.get(targetMember.role) || 0
+    if (targetPosition >= 50) {
+      // Target is an officer, check if they're the last one
       const { data: officers } = await supabase
         .from('guild_members')
-        .select('id')
+        .select('id, role')
         .eq('guild_id', targetMember.guild_id)
-        .eq('role', 'Officer')
 
-      if (officers && officers.length === 1) {
+      // Count officers by position
+      const officerCount = (officers || []).filter(o => (rolePositionMap.get(o.role) || 0) >= 50).length
+
+      if (officerCount <= 1) {
         return NextResponse.json(
           { error: 'Cannot remove the last officer. Promote another member first.' },
           { status: 400 }

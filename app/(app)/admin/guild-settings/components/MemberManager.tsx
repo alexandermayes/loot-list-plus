@@ -326,7 +326,10 @@ export default function MemberManager() {
 
       <div className="pt-4 border-t border-[rgba(255,255,255,0.1)]">
         <p className="text-[13px] text-[#a1a1a1]">
-          Total Members: {members.length} (Officers: {members.filter(m => m.role === 'Officer').length})
+          Total Members: {members.length} (Officers: {members.filter(m => {
+            const roleInfo = roles.find(r => r.name === m.role)
+            return (roleInfo?.position || 0) >= 50
+          }).length})
         </p>
       </div>
     </div>

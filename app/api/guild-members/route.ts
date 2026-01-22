@@ -1,38 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
-
-// Helper to verify user is an officer in the guild
-async function verifyOfficer(supabase: any, serviceSupabase: any, userId: string, guildId: string) {
-  // Get user's characters
-  const { data: userCharacters } = await serviceSupabase
-    .from('characters')
-    .select('id')
-    .eq('user_id', userId)
-
-  if (!userCharacters || userCharacters.length === 0) {
-    return { isOfficer: false, error: 'No characters found' }
-  }
-
-  const characterIds = userCharacters.map((c: any) => c.id)
-
-  // Check if user is an officer in this guild
-  const { data: membership } = await serviceSupabase
-    .from('character_guild_memberships')
-    .select('role')
-    .eq('guild_id', guildId)
-    .in('character_id', characterIds)
-    .eq('is_active', true)
-    .in('role', ['Officer', 'Guild Master'])
-    .limit(1)
-    .single()
-
-  if (!membership) {
-    return { isOfficer: false, error: 'Not an officer in this guild' }
-  }
-
-  return { isOfficer: true, characterIds }
-}
+import { verifyOfficerPermissions } from '@/utils/server-roles'
+import { ROLE_POSITIONS } from '@/utils/roles'
 
 // GET - List all members of a guild (uses service role to bypass RLS)
 export async function GET(request: NextRequest) {
@@ -110,6 +80,23 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to load members' }, { status: 500 })
     }
 
+    // Get guild roles for position-based sorting
+    const { data: guildRoles } = await serviceSupabase
+      .from('guild_roles')
+      .select('name, position')
+      .eq('guild_id', guildId)
+
+    // Create role position map (fallback to defaults if no custom roles)
+    const rolePositionMap = new Map<string, number>()
+    if (guildRoles && guildRoles.length > 0) {
+      guildRoles.forEach((r: any) => rolePositionMap.set(r.name, r.position))
+    } else {
+      // Default positions
+      rolePositionMap.set('Guild Master', ROLE_POSITIONS.GUILD_MASTER)
+      rolePositionMap.set('Officer', ROLE_POSITIONS.OFFICER)
+      rolePositionMap.set('Member', ROLE_POSITIONS.MEMBER)
+    }
+
     // Group characters by user_id
     const userCharacterMap = new Map<string, {
       characters: any[]
@@ -135,9 +122,8 @@ export async function GET(request: NextRequest) {
 
       if (existing) {
         existing.characters.push(charData)
-        // Use highest role (simple comparison: Guild Master > Officer > Member)
-        const roleOrder = { 'Guild Master': 3, 'Officer': 2, 'Member': 1 }
-        if ((roleOrder[membership.role as keyof typeof roleOrder] || 0) > (roleOrder[existing.role as keyof typeof roleOrder] || 0)) {
+        // Use highest role based on position from rolePositionMap
+        if ((rolePositionMap.get(membership.role) || 0) > (rolePositionMap.get(existing.role) || 0)) {
           existing.role = membership.role
         }
       } else {
@@ -195,14 +181,13 @@ export async function GET(request: NextRequest) {
       }
     })
 
-    // Sort by role hierarchy then by name
-    const roleOrder = { 'Guild Master': 3, 'Officer': 2, 'Member': 1 }
+    // Sort by role position (higher position = higher rank) then by name
     members.sort((a, b) => {
-      const aOrder = roleOrder[a.role as keyof typeof roleOrder] || 0
-      const bOrder = roleOrder[b.role as keyof typeof roleOrder] || 0
+      const aPosition = rolePositionMap.get(a.role) || 0
+      const bPosition = rolePositionMap.get(b.role) || 0
 
-      if (aOrder !== bOrder) {
-        return bOrder - aOrder // Higher role first
+      if (aPosition !== bPosition) {
+        return bPosition - aPosition // Higher position first
       }
 
       const aName = a.mainCharacter?.name || a.discordName
@@ -236,9 +221,9 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
 
-    // Verify user is an officer
-    const verification = await verifyOfficer(supabase, serviceSupabase, user.id, guild_id)
-    if (!verification.isOfficer) {
+    // Verify user has officer permissions (position >= 50)
+    const verification = await verifyOfficerPermissions(serviceSupabase, user.id, guild_id)
+    if (!verification.hasPermission) {
       return NextResponse.json({ error: verification.error }, { status: 403 })
     }
 
@@ -289,9 +274,9 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
 
-    // Verify user is an officer
-    const verification = await verifyOfficer(supabase, serviceSupabase, user.id, guildId)
-    if (!verification.isOfficer) {
+    // Verify user has officer permissions (position >= 50)
+    const verification = await verifyOfficerPermissions(serviceSupabase, user.id, guildId)
+    if (!verification.hasPermission) {
       return NextResponse.json({ error: verification.error }, { status: 403 })
     }
 

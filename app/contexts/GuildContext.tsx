@@ -435,17 +435,44 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
           setCharacterMemberships(transformedMemberships)
 
           // Derive userGuilds from character memberships (new system)
+          // First, fetch guild_roles for position-based role comparison
+          const uniqueGuildIds = [...new Set(transformedMemberships.map(m => m.guild?.id).filter(Boolean))]
+          const guildRolePositions = new Map<string, Map<string, number>>()
+
+          if (uniqueGuildIds.length > 0) {
+            const { data: allGuildRoles } = await supabase
+              .from('guild_roles')
+              .select('guild_id, name, position')
+              .in('guild_id', uniqueGuildIds)
+
+            if (allGuildRoles) {
+              for (const role of allGuildRoles) {
+                if (!guildRolePositions.has(role.guild_id)) {
+                  guildRolePositions.set(role.guild_id, new Map())
+                }
+                guildRolePositions.get(role.guild_id)!.set(role.name, role.position)
+              }
+            }
+          }
+
+          // Default positions for guilds without custom roles
+          const defaultPositions = new Map([['Guild Master', 100], ['Officer', 50], ['Member', 0]])
+
           // Group by guild and take the highest role for each guild
           const guildMap = new Map<string, { guild: any, role: string, membership: any }>()
           for (const m of transformedMemberships) {
             if (!m.guild) continue
             const existing = guildMap.get(m.guild.id)
+
+            // Get role positions for this guild (or use defaults)
+            const rolePositions = guildRolePositions.get(m.guild.id) || defaultPositions
+            const getPosition = (roleName: string) => rolePositions.get(roleName) ?? defaultPositions.get(roleName) ?? 0
+
             if (!existing) {
               guildMap.set(m.guild.id, { guild: m.guild, role: m.role, membership: m })
             } else {
-              // Keep the higher role (Guild Master > Officer > Member)
-              const roleOrder: Record<string, number> = { 'Guild Master': 100, 'Officer': 50, 'Member': 0 }
-              if ((roleOrder[m.role] || 0) > (roleOrder[existing.role] || 0)) {
+              // Keep the higher role based on position
+              if (getPosition(m.role) > getPosition(existing.role)) {
                 existing.role = m.role
                 existing.membership = m
               }

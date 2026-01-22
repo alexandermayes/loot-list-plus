@@ -134,7 +134,11 @@ export default function AdminLootItems() {
     donation_bonus_type: 'rolling' as 'permanent' | 'rolling' | 'hard-reset'
   })
 
-  const [guildRoles, setGuildRoles] = useState<string[]>(['Guild Master', 'Officer', 'Member'])
+  const [guildRoles, setGuildRoles] = useState<{ name: string; position: number }[]>([
+    { name: 'Guild Master', position: 100 },
+    { name: 'Officer', position: 50 },
+    { name: 'Member', position: 0 }
+  ])
 
   const supabase = createClient()
   const router = useRouter()
@@ -218,7 +222,7 @@ export default function AdminLootItems() {
           // Load roles from the guild_roles table (authoritative source)
           const { data: guildRolesData, error: rolesError } = await supabase
             .from('guild_roles')
-            .select('name')
+            .select('name, position')
             .eq('guild_id', guildId)
             .order('position', { ascending: false })
 
@@ -227,14 +231,14 @@ export default function AdminLootItems() {
           }
 
           const rolesFromGuildRoles = guildRolesData
-            ? guildRolesData.map(r => r.name)
+            ? guildRolesData.map(r => ({ name: r.name, position: r.position }))
             : []
 
           console.log('Roles from guild_roles table:', rolesFromGuildRoles)
 
           // ONLY use guild_roles table if it has data
           // Otherwise fall back to other sources
-          let allRoles: string[] = []
+          let allRoles: { name: string; position: number }[] = []
 
           if (rolesFromGuildRoles.length > 0) {
             // Guild roles table is the authoritative source
@@ -256,7 +260,14 @@ export default function AdminLootItems() {
               ? [...new Set(membershipData.map(d => d.role))].filter(Boolean)
               : []
 
-            allRoles = [...new Set([...rolesFromSettings, ...rolesFromDB])]
+            const uniqueRoleNames = [...new Set([...rolesFromSettings, ...rolesFromDB])]
+            // Assign default positions for fallback roles
+            allRoles = uniqueRoleNames.map(name => {
+              if (name === 'Guild Master') return { name, position: 100 }
+              if (name === 'Officer') return { name, position: 50 }
+              if (name === 'Member') return { name, position: 0 }
+              return { name, position: 25 } // Custom roles
+            })
           }
 
           console.log('Final roles to display:', allRoles)
@@ -269,7 +280,7 @@ export default function AdminLootItems() {
               const newModifiers: Record<string, number> = {}
               allRoles.forEach(role => {
                 // Keep existing value if it exists, otherwise default to 0
-                newModifiers[role] = prev.rank_modifiers?.[role] ?? 0
+                newModifiers[role.name] = prev.rank_modifiers?.[role.name] ?? 0
               })
               return { ...prev, rank_modifiers: newModifiers }
             })
@@ -2088,28 +2099,19 @@ export default function AdminLootItems() {
                       <p className="text-[11px] text-[#8a8d94]">Can be positive or negative. For negative, use - before number (e.g., -1)</p>
                     </div>
                     <div className="grid grid-cols-3 gap-3">
-                      {guildRoles.sort((a, b) => {
-                        // Define role hierarchy positions
-                        const getPosition = (role: string) => {
-                          if (role === 'Guild Master') return 100
-                          if (role === 'Officer') return 50
-                          if (role === 'Member') return 0
-                          return 25 // Custom roles between Officer and Member
-                        }
-                        return getPosition(b) - getPosition(a) // Descending order
-                      }).map((role) => (
-                        <div key={role}>
-                          <label className="block text-[12px] text-[#666] mb-1">{role}</label>
+                      {[...guildRoles].sort((a, b) => b.position - a.position).map((role) => (
+                        <div key={role.name}>
+                          <label className="block text-[12px] text-[#666] mb-1">{role.name}</label>
                           <input
                             type="number"
                             step="0.1"
-                            value={settings.rank_modifiers[role] === 0 || settings.rank_modifiers[role] === undefined ? '' : settings.rank_modifiers[role]}
+                            value={settings.rank_modifiers[role.name] === 0 || settings.rank_modifiers[role.name] === undefined ? '' : settings.rank_modifiers[role.name]}
                             onChange={(e) => {
                               const newModifiers = { ...settings.rank_modifiers }
                               if (e.target.value === '') {
-                                newModifiers[role] = 0
+                                newModifiers[role.name] = 0
                               } else {
-                                newModifiers[role] = Number(e.target.value)
+                                newModifiers[role.name] = Number(e.target.value)
                               }
                               setSettings({
                                 ...settings,

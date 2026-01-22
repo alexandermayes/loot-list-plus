@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { seedExpansionForGuild } from '@/app/services/expansionSeeder'
+import { verifyOfficerPermissions } from '@/utils/server-roles'
 
 /**
  * POST - Change a guild's active expansion
@@ -16,6 +17,7 @@ import { seedExpansionForGuild } from '@/app/services/expansionSeeder'
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient()
+    const serviceSupabase = createServiceRoleClient()
 
     // Check if user is authenticated
     const { data: { user }, error: authError } = await supabase.auth.getUser()
@@ -43,46 +45,14 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Verify user is an officer of this guild (support both old and new system)
-    // Check old system first
-    const { data: oldMember } = await supabase
-      .from('guild_members')
-      .select('role')
-      .eq('user_id', user.id)
-      .eq('guild_id', guild_id)
-      .maybeSingle()
-
-    const isOfficerOldSystem = oldMember && (oldMember.role === 'Officer' || oldMember.role === 'Guild Master')
-
-    // Check new character system
-    const { data: userCharacters } = await supabase
-      .from('characters')
-      .select('id')
-      .eq('user_id', user.id)
-
-    let isOfficerNewSystem = false
-    if (userCharacters && userCharacters.length > 0) {
-      const characterIds = userCharacters.map(c => c.id)
-      const { data: charMemberships } = await supabase
-        .from('character_guild_memberships')
-        .select('role')
-        .eq('guild_id', guild_id)
-        .in('character_id', characterIds)
-        .in('role', ['Officer', 'Guild Master'])
-        .limit(1)
-
-      isOfficerNewSystem = !!(charMemberships && charMemberships.length > 0)
-    }
-
-    if (!isOfficerOldSystem && !isOfficerNewSystem) {
+    // Verify user has officer permissions (position >= 50)
+    const verification = await verifyOfficerPermissions(serviceSupabase, user.id, guild_id)
+    if (!verification.hasPermission) {
       return NextResponse.json(
         { error: 'Only officers can change the guild expansion' },
         { status: 403 }
       )
     }
-
-    // Use service role client for deletion (bypasses RLS)
-    const serviceSupabase = createServiceRoleClient()
 
     // 1. Delete old expansions (cascades to raid_tiers and loot_items)
     const { error: deleteError } = await serviceSupabase

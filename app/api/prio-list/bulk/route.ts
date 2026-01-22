@@ -1,5 +1,7 @@
 import { createClient } from '@/utils/supabase/server'
+import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { NextResponse } from 'next/server'
+import { verifyOfficerPermissions } from '@/utils/server-roles'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -16,6 +18,7 @@ interface BulkPriorityUpdate {
 export async function POST(request: Request) {
   try {
     const supabase = await createClient()
+    const serviceSupabase = createServiceRoleClient()
     const { data: { user } } = await supabase.auth.getUser()
 
     if (!user) {
@@ -37,27 +40,9 @@ export async function POST(request: Request) {
       )
     }
 
-    // Verify user is an officer in this guild
-    const { data: userCharacters } = await supabase
-      .from('characters')
-      .select('id')
-      .eq('user_id', user.id)
-
-    if (!userCharacters || userCharacters.length === 0) {
-      return NextResponse.json({ error: 'No characters found' }, { status: 403 })
-    }
-
-    const characterIds = userCharacters.map(c => c.id)
-
-    const { data: membership } = await supabase
-      .from('character_guild_memberships')
-      .select('role')
-      .eq('guild_id', guild_id)
-      .in('character_id', characterIds)
-      .in('role', ['Officer', 'Guild Master'])
-      .limit(1)
-
-    if (!membership || membership.length === 0) {
+    // Verify user has officer permissions (position >= 50)
+    const verification = await verifyOfficerPermissions(serviceSupabase, user.id, guild_id)
+    if (!verification.hasPermission) {
       return NextResponse.json(
         { error: 'Only officers can update item priorities' },
         { status: 403 }
