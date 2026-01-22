@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/utils/supabase/server'
+import { createServiceRoleClient } from '@/utils/supabase/service-role'
 
 /**
  * GET /api/characters/[id]
@@ -238,8 +239,11 @@ export async function DELETE(
       )
     }
 
+    // Use service role client for deletions to bypass RLS
+    const adminClient = createServiceRoleClient()
+
     // Delete loot submission items first (they reference loot_submissions)
-    const { data: submissions } = await supabase
+    const { data: submissions } = await adminClient
       .from('loot_submissions')
       .select('id')
       .eq('character_id', id)
@@ -248,7 +252,7 @@ export async function DELETE(
       const submissionIds = submissions.map(s => s.id)
 
       // Delete loot submission items
-      const { error: itemsError } = await supabase
+      const { error: itemsError } = await adminClient
         .from('loot_submission_items')
         .delete()
         .in('submission_id', submissionIds)
@@ -262,7 +266,7 @@ export async function DELETE(
       }
 
       // Delete loot submissions
-      const { error: submissionsError } = await supabase
+      const { error: submissionsError } = await adminClient
         .from('loot_submissions')
         .delete()
         .eq('character_id', id)
@@ -277,7 +281,7 @@ export async function DELETE(
     }
 
     // Check if this character is the user's active character
-    const { data: activeCharData } = await supabase
+    const { data: activeCharData } = await adminClient
       .from('user_active_characters')
       .select('active_character_id')
       .eq('user_id', user.id)
@@ -285,7 +289,7 @@ export async function DELETE(
 
     if (activeCharData?.active_character_id === id) {
       // Find another character to set as active, or clear if none
-      const { data: otherCharacters } = await supabase
+      const { data: otherCharacters } = await adminClient
         .from('characters')
         .select('id')
         .eq('user_id', user.id)
@@ -297,7 +301,7 @@ export async function DELETE(
 
       // Update or delete the active character record
       if (newActiveCharId) {
-        await supabase
+        await adminClient
           .from('user_active_characters')
           .update({
             active_character_id: newActiveCharId,
@@ -306,7 +310,7 @@ export async function DELETE(
           .eq('user_id', user.id)
       } else {
         // No other characters, delete the active character record
-        await supabase
+        await adminClient
           .from('user_active_characters')
           .delete()
           .eq('user_id', user.id)
@@ -314,11 +318,10 @@ export async function DELETE(
     }
 
     // Delete character (will cascade to character_guild_memberships)
-    const { error } = await supabase
+    const { error } = await adminClient
       .from('characters')
       .delete()
       .eq('id', id)
-      .eq('user_id', user.id)
 
     if (error) {
       console.error('Error deleting character:', error)
