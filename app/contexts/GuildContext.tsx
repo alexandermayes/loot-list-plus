@@ -433,10 +433,49 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
             }
           })
           setCharacterMemberships(transformedMemberships)
+
+          // Derive userGuilds from character memberships (new system)
+          // Group by guild and take the highest role for each guild
+          const guildMap = new Map<string, { guild: any, role: string, membership: any }>()
+          for (const m of transformedMemberships) {
+            if (!m.guild) continue
+            const existing = guildMap.get(m.guild.id)
+            if (!existing) {
+              guildMap.set(m.guild.id, { guild: m.guild, role: m.role, membership: m })
+            } else {
+              // Keep the higher role (Guild Master > Officer > Member)
+              const roleOrder: Record<string, number> = { 'Guild Master': 100, 'Officer': 50, 'Member': 0 }
+              if ((roleOrder[m.role] || 0) > (roleOrder[existing.role] || 0)) {
+                existing.role = m.role
+                existing.membership = m
+              }
+            }
+          }
+
+          // Build userGuilds array from character memberships
+          const derivedGuilds: GuildMembership[] = Array.from(guildMap.values()).map(({ guild, role, membership }) => ({
+            guild: guild as Guild,
+            member: {
+              id: membership.id,
+              user_id: user.id,
+              guild_id: guild.id,
+              character_name: membership.character?.name || '',
+              class_id: membership.character?.class_id || '',
+              role: role,
+              is_active: true,
+              joined_at: membership.joined_at,
+              joined_via: membership.joined_via
+            } as GuildMember,
+            class: membership.character?.class || { name: 'Unknown', color_hex: '#808080' }
+          }))
+
+          console.log('[GUILD CONTEXT] Derived userGuilds from character memberships:', derivedGuilds.length)
+          setUserGuilds(derivedGuilds)
         }
       } else {
         setUserCharacters([])
         setCharacterMemberships([])
+        setUserGuilds([])
       }
 
       // Check for saved active character (just get IDs, we already have character data)

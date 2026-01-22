@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { ChevronDown, Check } from 'lucide-react'
+import { ChevronDown, Check, Plus } from 'lucide-react'
 import { useGuildContext, Character } from '@/app/contexts/GuildContext'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
@@ -25,11 +25,13 @@ export function CharacterSelector() {
     userCharacters,
     characterMemberships,
     activeGuild,
-    switchCharacter
+    switchCharacter,
+    refreshCharacters
   } = useGuildContext()
 
   const [isOpen, setIsOpen] = useState(false)
   const [showCreateModal, setShowCreateModal] = useState(false)
+  const [addingToGuild, setAddingToGuild] = useState<string | null>(null)
   const router = useRouter()
 
   // Filter characters that are in the active guild
@@ -54,6 +56,39 @@ export function CharacterSelector() {
   const handleManageCharacters = () => {
     setIsOpen(false)
     router.push('/characters/manage')
+  }
+
+  const handleAddToGuild = async (characterId: string, e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (!activeGuild) return
+
+    setAddingToGuild(characterId)
+    try {
+      const response = await fetch(`/api/characters/${characterId}/guilds`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          guild_id: activeGuild.id,
+          role: 'Member',
+          joined_via: 'manual'
+        })
+      })
+
+      if (response.ok) {
+        // Refresh characters to update the memberships list
+        await refreshCharacters()
+        // Switch to the newly added character
+        await switchCharacter(characterId)
+        setIsOpen(false)
+      } else {
+        const data = await response.json()
+        console.error('Error adding character to guild:', data.error)
+      }
+    } catch (err) {
+      console.error('Error adding character to guild:', err)
+    } finally {
+      setAddingToGuild(null)
+    }
   }
 
   if (!activeCharacter) {
@@ -234,7 +269,7 @@ export function CharacterSelector() {
                 <>
                   <div className="border-t border-[#1a1a1a] mt-2 pt-2">
                     <div className="px-3 py-2 text-[10px] font-semibold text-[#a1a1a1] uppercase tracking-wider text-left">
-                      Other Characters
+                      Not in {activeGuild.name}
                     </div>
                     {userCharacters
                       .filter(
@@ -243,12 +278,12 @@ export function CharacterSelector() {
                       )
                       .map(char => {
                         const charColor = char.class?.color_hex || '#808080'
+                        const isAdding = addingToGuild === char.id
 
                         return (
-                          <button
+                          <div
                             key={char.id}
-                            onClick={() => handleCharacterSelect(char.id)}
-                            className="w-full flex items-center justify-between px-3 py-2 rounded-lg hover:bg-[#1a1a1a] transition text-left"
+                            className="w-full flex items-center justify-between px-3 py-2 rounded-lg hover:bg-[#1a1a1a] transition"
                           >
                             <div className="flex items-center gap-3 flex-1 min-w-0">
                               {/* Character Class Icon */}
@@ -290,7 +325,19 @@ export function CharacterSelector() {
                                 )}
                               </div>
                             </div>
-                          </button>
+                            <button
+                              onClick={(e) => handleAddToGuild(char.id, e)}
+                              disabled={isAdding}
+                              className="flex items-center gap-1.5 px-2.5 py-1.5 bg-primary/20 hover:bg-primary/30 border border-primary/50 rounded-lg text-primary text-[11px] font-medium transition disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
+                            >
+                              {isAdding ? (
+                                <div className="w-3 h-3 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+                              ) : (
+                                <Plus className="w-3 h-3" />
+                              )}
+                              <span>{isAdding ? 'Adding...' : 'Add'}</span>
+                            </button>
+                          </div>
                         )
                       })}
                   </div>
