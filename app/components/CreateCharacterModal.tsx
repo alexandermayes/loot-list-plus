@@ -225,7 +225,7 @@ export function CreateCharacterModal({ isOpen, onClose, onSuccess, suggestedName
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 className="w-full px-4 py-2.5 bg-[#151515] border border-[#383838] rounded-[52px] text-white text-[13px] focus:outline-none focus:border-[#ff8000] transition"
-                placeholder={suggestedName ? `e.g. ${suggestedName}` : "Enter character name"}
+                placeholder="e.g. Zevinall"
                 autoFocus
               />
             </div>
