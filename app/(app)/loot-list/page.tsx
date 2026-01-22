@@ -238,7 +238,8 @@ export default function LootList() {
         router.replace(`?${params.toString()}`, { scroll: false })
       }
 
-      setLoading(false)
+      // Don't set loading to false here - let the tier data useEffect handle it
+      // This prevents a flicker where we show content briefly before loading tier data
     }
 
     loadData()
