@@ -255,16 +255,9 @@ export default function WelcomeScreen() {
                     setShowModal(true)
                     handleOpenDiscordModal()
                   }}
-                  className="w-full bg-[#5865f2] hover:bg-[#4752c4] border border-[#383838] rounded-[52px] px-5 py-3 flex items-center justify-center gap-3 transition mt-6"
+                  className="w-full bg-white hover:bg-gray-100 border border-[#383838] rounded-[52px] px-5 py-3 flex items-center justify-center transition mt-6"
                 >
-                  <Image
-                    src="/icons/discord-white.svg"
-                    alt="Discord"
-                    width={24}
-                    height={24}
-                    className="w-6 h-6"
-                  />
-                  <span className="font-poppins font-medium text-base text-white">
+                  <span className="font-poppins font-medium text-base text-black">
                     Join with Discord
                   </span>
                 </button>
