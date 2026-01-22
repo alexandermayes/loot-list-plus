@@ -57,6 +57,18 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange }
     }
   }, [])
 
+  // Lock body scroll when any modal is open
+  useEffect(() => {
+    if (showJoinModal || showCreateGuildModal) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = ''
+    }
+    return () => {
+      document.body.style.overflow = ''
+    }
+  }, [showJoinModal, showCreateGuildModal])
+
   const handleLogout = async () => {
     await supabase.auth.signOut()
     router.push('/')

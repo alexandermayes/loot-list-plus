@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import ItemLink from './ItemLink'
 import MultiSelectDropdown from './MultiSelectDropdown'
 import { allRoles, getRoleDisplayName, type Role } from '@/utils/spec-role-mapping'
@@ -92,6 +92,14 @@ export function PrioListItemModal({
   const selectedRoles = new Set(Object.keys(rolePriorities))
   const selectedSpecs = new Set(Object.keys(classPriorities))
   const selectedCharacters = new Set(Object.keys(characterPriorities))
+
+  // Lock body scroll when modal is open
+  useEffect(() => {
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.body.style.overflow = ''
+    }
+  }, [])
 
   // Helper functions for spec colors/names
   const getSpecColor = useCallback((specId: string) => {

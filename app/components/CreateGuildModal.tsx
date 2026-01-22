@@ -68,6 +68,18 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
   const [error, setError] = useState('')
   const [discordError, setDiscordError] = useState('')
 
+  // Lock body scroll when modal is open
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = ''
+    }
+    return () => {
+      document.body.style.overflow = ''
+    }
+  }, [isOpen])
+
   // Load user and Discord servers on open
   useEffect(() => {
     if (isOpen) {

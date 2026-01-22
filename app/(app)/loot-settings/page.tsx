@@ -147,6 +147,18 @@ export default function AdminLootItems() {
     document.title = 'LootList+ • Master Loot'
   }, [])
 
+  // Lock body scroll when settings modal is open
+  useEffect(() => {
+    if (showSettingsModal) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = ''
+    }
+    return () => {
+      document.body.style.overflow = ''
+    }
+  }, [showSettingsModal])
+
   // Debounce search term for better performance
   useEffect(() => {
     const timer = setTimeout(() => {

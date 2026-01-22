@@ -41,6 +41,18 @@ export function EditCharacterModal({ isOpen, onClose, character, onSuccess }: Ed
   const [deleteConfirmName, setDeleteConfirmName] = useState('')
   const [error, setError] = useState('')
 
+  // Lock body scroll when modal is open
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = ''
+    }
+    return () => {
+      document.body.style.overflow = ''
+    }
+  }, [isOpen])
+
   useEffect(() => {
     if (isOpen && character) {
       loadClasses()
