@@ -4,6 +4,12 @@ import Image from 'next/image'
 import { useState, useEffect } from 'react'
 import { createClient } from '@/utils/supabase/client'
 import { useRouter } from 'next/navigation'
+import dynamic from 'next/dynamic'
+
+// Lazy load modal to reduce initial bundle size
+const CreateGuildModal = dynamic(() => import('@/app/components/CreateGuildModal').then(mod => ({ default: mod.CreateGuildModal })), {
+  loading: () => null
+})
 
 export default function WelcomeScreen() {
   const [inviteCode, setInviteCode] = useState('')
@@ -16,6 +22,7 @@ export default function WelcomeScreen() {
   const [availableGuilds, setAvailableGuilds] = useState<any[]>([])
   const [discordError, setDiscordError] = useState('')
   const [joining, setJoining] = useState(false)
+  const [showCreateGuildModal, setShowCreateGuildModal] = useState(false)
   const router = useRouter()
   const supabase = createClient()
 
@@ -307,6 +314,40 @@ export default function WelcomeScreen() {
                   )}
                 </div>
               </div>
+            </div>
+
+            {/* Create Guild Section */}
+            <div className="w-full">
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-[rgba(255,255,255,0.1)]"></div>
+                </div>
+                <div className="relative flex justify-center">
+                  <span className="px-4 text-[14px] text-[#a1a1a1] bg-[#09090c]">or</span>
+                </div>
+              </div>
+
+              <button
+                onClick={() => setShowCreateGuildModal(true)}
+                className="mt-6 w-full bg-gradient-to-r from-[#ff8000]/10 to-[#ff6000]/10 hover:from-[#ff8000]/20 hover:to-[#ff6000]/20 border border-[#ff8000]/30 hover:border-[#ff8000]/50 rounded-[40px] px-[24px] py-[20px] flex items-center justify-center gap-4 transition group"
+              >
+                <div className="w-12 h-12 bg-gradient-to-br from-[#ff8000] to-[#ff6000] rounded-xl flex items-center justify-center shrink-0 shadow-lg shadow-[#ff8000]/20 group-hover:shadow-[#ff8000]/30 transition">
+                  <svg className="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12 5v14M5 12h14" />
+                  </svg>
+                </div>
+                <div className="text-left">
+                  <p className="font-poppins font-bold text-[18px] text-white leading-[normal]">
+                    Create Your Own Guild
+                  </p>
+                  <p className="font-poppins font-normal text-[14px] text-[#a1a1a1] leading-[normal]">
+                    Start a new guild and become Guild Master
+                  </p>
+                </div>
+                <svg className="w-6 h-6 text-[#ff8000] ml-auto opacity-50 group-hover:opacity-100 group-hover:translate-x-1 transition" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M9 18l6-6-6-6" />
+                </svg>
+              </button>
             </div>
 
             {/* Help Section */}
@@ -607,6 +648,12 @@ export default function WelcomeScreen() {
           </div>
         </div>
       )}
+
+      {/* Create Guild Modal */}
+      <CreateGuildModal
+        isOpen={showCreateGuildModal}
+        onClose={() => setShowCreateGuildModal(false)}
+      />
     </>
   )
 }
