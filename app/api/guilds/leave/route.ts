@@ -153,9 +153,18 @@ export async function POST(request: NextRequest) {
       .eq('user_id', user.id)
       .single()
 
-    if (activeGuild?.active_guild_id === guild_id) {
+    // Also check user_active_characters (new system)
+    const { data: activeCharData } = await supabase
+      .from('user_active_characters')
+      .select('active_guild_id')
+      .eq('user_id', user.id)
+      .single()
+
+    const wasActiveGuild = activeGuild?.active_guild_id === guild_id || activeCharData?.active_guild_id === guild_id
+
+    if (wasActiveGuild) {
       if (newActiveGuildId) {
-        // Set another guild as active
+        // Set another guild as active (old system)
         await supabase
           .from('user_active_guilds')
           .upsert({
@@ -163,11 +172,29 @@ export async function POST(request: NextRequest) {
             active_guild_id: newActiveGuildId,
             updated_at: new Date().toISOString()
           })
+
+        // Set another guild as active (new system)
+        await supabase
+          .from('user_active_characters')
+          .update({
+            active_guild_id: newActiveGuildId,
+            updated_at: new Date().toISOString()
+          })
+          .eq('user_id', user.id)
       } else {
-        // No more guilds, delete active guild entry
+        // No more guilds, delete active guild entries
         await supabase
           .from('user_active_guilds')
           .delete()
+          .eq('user_id', user.id)
+
+        // Clear active guild in user_active_characters (but keep the record for character)
+        await supabase
+          .from('user_active_characters')
+          .update({
+            active_guild_id: null,
+            updated_at: new Date().toISOString()
+          })
           .eq('user_id', user.id)
       }
     }

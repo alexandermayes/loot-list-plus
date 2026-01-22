@@ -535,19 +535,35 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
           console.log('[GUILD CONTEXT] Setting activeGuild from user_active_characters:', membershipWithGuild.guild.name)
           setActiveGuild(membershipWithGuild.guild as Guild)
         } else {
-          // No membership found - user might have deleted their character but still has active_guild_id
-          // Fetch the guild directly to allow them to still see it and create a new character
-          console.log('[GUILD CONTEXT] No membership found for active_guild_id, fetching guild directly:', activeCharData.active_guild_id)
-          const { data: guildData } = await supabase
-            .from('guilds')
-            .select('*')
-            .eq('id', activeCharData.active_guild_id)
-            .eq('is_active', true)
-            .single()
+          // No active membership found for this guild
+          // User may have left the guild - clear the stale active_guild_id and don't set activeGuild
+          console.log('[GUILD CONTEXT] No active membership found for active_guild_id, clearing stale reference:', activeCharData.active_guild_id)
 
-          if (guildData) {
-            console.log('[GUILD CONTEXT] Setting activeGuild from direct fetch:', guildData.name)
-            setActiveGuild(guildData as Guild)
+          // Clear the stale active_guild_id
+          await supabase
+            .from('user_active_characters')
+            .update({
+              active_guild_id: null,
+              updated_at: new Date().toISOString()
+            })
+            .eq('user_id', user.id)
+
+          // If user has other guild memberships, set the first one as active
+          if (transformedMemberships.length > 0 && transformedMemberships[0]?.guild) {
+            console.log('[GUILD CONTEXT] Setting activeGuild to first available membership:', transformedMemberships[0].guild.name)
+            setActiveGuild(transformedMemberships[0].guild as Guild)
+
+            await supabase
+              .from('user_active_characters')
+              .update({
+                active_guild_id: transformedMemberships[0].guild_id,
+                updated_at: new Date().toISOString()
+              })
+              .eq('user_id', user.id)
+          } else {
+            // User has no guild memberships - set activeGuild to null
+            console.log('[GUILD CONTEXT] User has no guild memberships, setting activeGuild to null')
+            setActiveGuild(null)
           }
         }
       } else if (transformedMemberships.length > 0 && transformedMemberships[0]?.guild) {
@@ -564,6 +580,10 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
             active_guild_id: transformedMemberships[0].guild_id,
             updated_at: new Date().toISOString()
           })
+      } else {
+        // No saved active guild and no memberships - explicitly set activeGuild to null
+        console.log('[GUILD CONTEXT] No active guild and no memberships, setting activeGuild to null')
+        setActiveGuild(null)
       }
     } catch (error) {
       console.error('Error in loadCharacters:', error)
