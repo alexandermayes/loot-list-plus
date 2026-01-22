@@ -2,6 +2,38 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 
+// Helper to verify user is an officer in the guild
+async function verifyOfficer(supabase: any, serviceSupabase: any, userId: string, guildId: string) {
+  // Get user's characters
+  const { data: userCharacters } = await serviceSupabase
+    .from('characters')
+    .select('id')
+    .eq('user_id', userId)
+
+  if (!userCharacters || userCharacters.length === 0) {
+    return { isOfficer: false, error: 'No characters found' }
+  }
+
+  const characterIds = userCharacters.map((c: any) => c.id)
+
+  // Check if user is an officer in this guild
+  const { data: membership } = await serviceSupabase
+    .from('character_guild_memberships')
+    .select('role')
+    .eq('guild_id', guildId)
+    .in('character_id', characterIds)
+    .eq('is_active', true)
+    .in('role', ['Officer', 'Guild Master'])
+    .limit(1)
+    .single()
+
+  if (!membership) {
+    return { isOfficer: false, error: 'Not an officer in this guild' }
+  }
+
+  return { isOfficer: true, characterIds }
+}
+
 // GET - List all members of a guild (uses service role to bypass RLS)
 export async function GET(request: NextRequest) {
   try {
@@ -181,6 +213,110 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ members })
   } catch (error) {
     console.error('Error in GET /api/guild-members:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+}
+
+// PUT - Update member role
+export async function PUT(request: NextRequest) {
+  try {
+    const supabase = await createClient()
+    const serviceSupabase = createServiceRoleClient()
+
+    // Check if user is authenticated
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const body = await request.json()
+    const { guild_id, target_user_id, character_ids, new_role } = body
+
+    if (!guild_id || !target_user_id || !character_ids || !new_role) {
+      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
+    }
+
+    // Verify user is an officer
+    const verification = await verifyOfficer(supabase, serviceSupabase, user.id, guild_id)
+    if (!verification.isOfficer) {
+      return NextResponse.json({ error: verification.error }, { status: 403 })
+    }
+
+    // Update character_guild_memberships
+    const { error: updateError } = await serviceSupabase
+      .from('character_guild_memberships')
+      .update({ role: new_role })
+      .eq('guild_id', guild_id)
+      .in('character_id', character_ids)
+
+    if (updateError) {
+      console.error('Error updating role:', updateError)
+      return NextResponse.json({ error: 'Failed to update role' }, { status: 500 })
+    }
+
+    // Also update guild_members for backwards compatibility
+    await serviceSupabase
+      .from('guild_members')
+      .update({ role: new_role })
+      .eq('guild_id', guild_id)
+      .eq('user_id', target_user_id)
+
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    console.error('Error in PUT /api/guild-members:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+}
+
+// DELETE - Remove member from guild
+export async function DELETE(request: NextRequest) {
+  try {
+    const supabase = await createClient()
+    const serviceSupabase = createServiceRoleClient()
+
+    // Check if user is authenticated
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const { searchParams } = new URL(request.url)
+    const guildId = searchParams.get('guild_id')
+    const targetUserId = searchParams.get('target_user_id')
+    const characterIds = searchParams.get('character_ids')?.split(',')
+
+    if (!guildId || !targetUserId || !characterIds) {
+      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
+    }
+
+    // Verify user is an officer
+    const verification = await verifyOfficer(supabase, serviceSupabase, user.id, guildId)
+    if (!verification.isOfficer) {
+      return NextResponse.json({ error: verification.error }, { status: 403 })
+    }
+
+    // Set is_active = false on character_guild_memberships
+    const { error: updateError } = await serviceSupabase
+      .from('character_guild_memberships')
+      .update({ is_active: false })
+      .eq('guild_id', guildId)
+      .in('character_id', characterIds)
+
+    if (updateError) {
+      console.error('Error removing member:', updateError)
+      return NextResponse.json({ error: 'Failed to remove member' }, { status: 500 })
+    }
+
+    // Also update guild_members for backwards compatibility
+    await serviceSupabase
+      .from('guild_members')
+      .update({ is_active: false })
+      .eq('guild_id', guildId)
+      .eq('user_id', targetUserId)
+
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    console.error('Error in DELETE /api/guild-members:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

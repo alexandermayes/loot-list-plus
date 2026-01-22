@@ -139,27 +139,26 @@ export default function MemberManager() {
 
   const handleChangeRole = async (userId: string, newRole: string) => {
     try {
-      // Get all character IDs for this user in this guild
       const member = members.find(m => m.user_id === userId)
       if (!member) throw new Error('Member not found')
 
       const characterIds = member.characters.map(c => c.id)
 
-      // Update all character memberships for this user in this guild
-      const { error } = await supabase
-        .from('character_guild_memberships')
-        .update({ role: newRole })
-        .eq('guild_id', activeGuild!.id)
-        .in('character_id', characterIds)
+      const response = await fetch('/api/guild-members', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          guild_id: activeGuild!.id,
+          target_user_id: userId,
+          character_ids: characterIds,
+          new_role: newRole
+        })
+      })
 
-      if (error) throw error
-
-      // Also update guild_members for backwards compatibility
-      await supabase
-        .from('guild_members')
-        .update({ role: newRole })
-        .eq('guild_id', activeGuild!.id)
-        .eq('user_id', userId)
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'Failed to update role')
+      }
 
       setMessage({ type: 'success', text: `Role updated to ${newRole}` })
       await loadMembers()
@@ -172,27 +171,20 @@ export default function MemberManager() {
     if (!confirm(`Remove ${memberName} from the guild? They can rejoin with an invite code.`)) return
 
     try {
-      // Get all character IDs for this user in this guild
       const member = members.find(m => m.user_id === userId)
       if (!member) throw new Error('Member not found')
 
       const characterIds = member.characters.map(c => c.id)
 
-      // Remove all character memberships for this user in this guild
-      const { error } = await supabase
-        .from('character_guild_memberships')
-        .update({ is_active: false })
-        .eq('guild_id', activeGuild!.id)
-        .in('character_id', characterIds)
+      const response = await fetch(
+        `/api/guild-members?guild_id=${activeGuild!.id}&target_user_id=${userId}&character_ids=${characterIds.join(',')}`,
+        { method: 'DELETE' }
+      )
 
-      if (error) throw error
-
-      // Also update guild_members for backwards compatibility
-      await supabase
-        .from('guild_members')
-        .update({ is_active: false })
-        .eq('guild_id', activeGuild!.id)
-        .eq('user_id', userId)
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'Failed to remove member')
+      }
 
       setMessage({ type: 'success', text: `${memberName} has been removed from the guild` })
       await loadMembers()
