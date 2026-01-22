@@ -109,6 +109,7 @@ export default function MasterLootPage() {
             )
           `)
           .eq('expansion.id', activeGuild.active_expansion_id)
+          .eq('is_guild_active', true)
           .order('name', { ascending: true })
 
         if (tiersResult) {

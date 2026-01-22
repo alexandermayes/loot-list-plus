@@ -235,6 +235,7 @@ export default function MasterSheet() {
             )
           `)
           .eq('expansion.id', activeGuild.active_expansion_id)
+          .eq('is_guild_active', true)
 
         if (tiersData && tiersData.length > 0) {
           // Transform data to ensure expansion is a single object (Supabase returns it as array)
@@ -397,6 +398,18 @@ export default function MasterSheet() {
         }
         setItemPriorities(prioritiesMap)
 
+        // Load loot history to filter out characters who already received items
+        const { data: lootHistoryData } = await supabase
+          .from('loot_history')
+          .select('character_id, loot_item_id')
+          .eq('guild_id', guildId)
+          .in('loot_item_id', itemIds)
+
+        // Create a Set of "characterId-itemId" pairs for fast lookup
+        const receivedItemsSet = new Set<string>(
+          (lootHistoryData || []).map(h => `${h.character_id}-${h.loot_item_id}`)
+        )
+
         // Pre-calculate attendance for all characters in parallel
         const attendanceCache: Record<string, number> = {}
         const attendancePromises = (charactersData || []).map(async (character) => {
@@ -421,6 +434,9 @@ export default function MasterSheet() {
 
             const character = charactersData?.find(c => c.id === sub.character_id)
             if (!character) continue
+
+            // Skip if character has already received this item
+            if (receivedItemsSet.has(`${character.id}-${item.id}`)) continue
 
             const attendance = attendanceCache[character.id] || 0
             const characterRole = (character as any).character_guild_memberships?.[0]?.role || 'Member'

@@ -4,7 +4,8 @@ import { createClient } from '@/utils/supabase/client'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useGuildContext } from '@/app/contexts/GuildContext'
-import { Plus, Calendar } from 'lucide-react'
+import { Plus, Calendar, ChevronRight } from 'lucide-react'
+import Link from 'next/link'
 import { getExpansionVisuals } from '@/utils/expansionVisuals'
 
 interface GuildExpansion {
@@ -343,6 +344,27 @@ export default function ExpansionsManagementPage() {
                         Save Date
                       </button>
                     </div>
+
+                    {/* Manage Raid Tiers Link */}
+                    <Link
+                      href={`/admin/expansions/${exp.expansion_id}`}
+                      className="flex items-center justify-between mt-4 p-3 rounded-xl transition hover:opacity-80"
+                      style={{
+                        backgroundColor: `${visuals.accentColor}15`,
+                        border: `1px solid ${visuals.accentColor}30`
+                      }}
+                    >
+                      <span
+                        className="text-[13px] font-medium"
+                        style={{ color: visuals.accentColor }}
+                      >
+                        Manage Raid Tiers
+                      </span>
+                      <ChevronRight
+                        className="w-4 h-4"
+                        style={{ color: visuals.accentColor }}
+                      />
+                    </Link>
                   </div>
                 </div>
               )

@@ -233,6 +233,7 @@ export default function Dashboard() {
         .from('raid_tiers')
         .select('id, name, is_active')
         .eq('expansion_id', expansionId)
+        .eq('is_guild_active', true)
 
       if (tiersError) {
         console.error('Error loading raid tiers:', tiersError)

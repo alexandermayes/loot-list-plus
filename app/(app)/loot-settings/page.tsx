@@ -2,8 +2,7 @@
 
 import { createClient } from '@/utils/supabase/client'
 import { useState, useEffect, useMemo, useCallback } from 'react'
-import { useRouter, usePathname } from 'next/navigation'
-import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import ItemLink from '@/app/components/ItemLink'
 import { useGuildContext } from '@/app/contexts/GuildContext'
 import { ExpansionGuard } from '@/app/components/ExpansionGuard'
@@ -139,7 +138,6 @@ export default function AdminLootItems() {
 
   const supabase = createClient()
   const router = useRouter()
-  const pathname = usePathname()
   const { activeGuild, activeMember, loading: guildLoading, isOfficer } = useGuildContext()
 
   // Set page title
@@ -456,6 +454,7 @@ export default function AdminLootItems() {
         .from('raid_tiers')
         .select('id, name')
         .eq('expansion_id', activeGuild.active_expansion_id)
+        .eq('is_guild_active', true)
         .order('name')
 
       if (tiersData) {
@@ -1224,11 +1223,6 @@ export default function AdminLootItems() {
     )
   }
 
-  const adminTabs = [
-    { name: 'Master Loot', href: '/loot-settings', icon: '⚙️' },
-    { name: 'Raid Tiers', href: '/admin/raid-tiers', icon: '🏰' },
-  ]
-
   return (
     <ExpansionGuard>
       <div className="p-8 space-y-6 font-poppins">
@@ -1248,24 +1242,6 @@ export default function AdminLootItems() {
             </svg>
             Loot System Settings
           </button>
-        </div>
-
-        {/* Navigation Tabs */}
-        <div className="flex gap-2 border-b border-[rgba(255,255,255,0.1)] pb-2 overflow-x-auto">
-          {adminTabs.map((tab) => (
-            <Link
-              key={tab.href}
-              href={tab.href}
-              className={`px-4 py-2 rounded-t-lg whitespace-nowrap text-[13px] font-medium transition-all ${
-                pathname === tab.href
-                  ? 'bg-[rgba(255,128,0,0.2)] border-[0.5px] border-[rgba(255,128,0,0.2)] text-[#ff8000]'
-                  : 'text-[#666] hover:text-white hover:bg-[#1a1a1a]'
-              }`}
-            >
-              <span className="mr-2">{tab.icon}</span>
-              {tab.name}
-            </Link>
-          ))}
         </div>
 
         {/* Filters */}

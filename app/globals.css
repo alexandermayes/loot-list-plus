@@ -186,6 +186,37 @@
     position: relative;
   }
 
+  /* Fix dark mode date/time picker icons - invert to white */
+  input[type="date"],
+  input[type="time"],
+  input[type="datetime-local"] {
+    color-scheme: dark !important;
+  }
+
+  input[type="date"]::-webkit-calendar-picker-indicator,
+  input[type="time"]::-webkit-calendar-picker-indicator,
+  input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+    filter: invert(0.7) !important;
+    cursor: pointer !important;
+  }
+
+  input[type="date"]::-webkit-calendar-picker-indicator:hover,
+  input[type="time"]::-webkit-calendar-picker-indicator:hover,
+  input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover {
+    filter: invert(1) !important;
+  }
+
+  /* For inputs with custom icon - hide native picker */
+  input.hide-native-picker::-webkit-calendar-picker-indicator {
+    opacity: 0 !important;
+    position: absolute !important;
+    right: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    cursor: pointer !important;
+    filter: none !important;
+  }
+
   .date-picker-input::-webkit-calendar-picker-indicator {
     cursor: pointer;
     position: relative;
@@ -200,6 +231,7 @@
     opacity: 1;
     background-size: 12px 12px;
     background-position: center;
+    filter: invert(1);
   }
 
   .date-picker-input::-webkit-calendar-picker-indicator:hover {

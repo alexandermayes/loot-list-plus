@@ -17,35 +17,32 @@ export async function GET() {
       }
     })
 
-    // Run the migration
-    const { error } = await supabase.rpc('exec_sql', {
-      sql: `
-        -- Add policy to allow users to leave guilds (delete their own membership)
-        DROP POLICY IF EXISTS "Users can leave guilds" ON guild_members;
+    // Add is_guild_active column to raid_tiers
+    // Using raw query through Supabase's REST API
+    const { error } = await supabase
+      .from('raid_tiers')
+      .update({ is_guild_active: true })
+      .is('is_guild_active', null)
 
-        CREATE POLICY "Users can leave guilds"
-        ON guild_members
-        FOR DELETE
-        USING (auth.uid() = user_id);
-      `
-    })
-
-    if (error) {
-      console.error('Migration error:', error)
-      // Try direct query instead
-      const { error: directError } = await supabase.from('guild_members').select('id').limit(1)
-
-      // Since rpc might not work, let's try using raw SQL through a different method
+    // If column doesn't exist, this will fail - that's expected
+    // The column needs to be added via Supabase SQL Editor
+    if (error && error.code === '42703') {
       return NextResponse.json({
         message: 'Please run this SQL directly in Supabase SQL Editor:',
         sql: `
-DROP POLICY IF EXISTS "Users can leave guilds" ON guild_members;
+ALTER TABLE raid_tiers
+ADD COLUMN IF NOT EXISTS is_guild_active BOOLEAN DEFAULT true;
 
-CREATE POLICY "Users can leave guilds"
-ON guild_members
-FOR DELETE
-USING (auth.uid() = user_id);
+UPDATE raid_tiers SET is_guild_active = true WHERE is_guild_active IS NULL;
         `,
+        error: 'Column does not exist yet - run the SQL above in Supabase SQL Editor'
+      })
+    }
+
+    if (error) {
+      console.error('Migration error:', error)
+      return NextResponse.json({
+        message: 'Migration may have already been applied or there was an error',
         error: error.message
       })
     }

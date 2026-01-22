@@ -8,6 +8,7 @@ import { useRouter } from 'next/navigation'
 import { ChevronDown, ChevronUp, Upload, X, SkipForward } from 'lucide-react'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { useGuildContext } from '@/app/contexts/GuildContext'
+import ItemLink from '@/app/components/ItemLink'
 
 interface Member {
   character_id: string
@@ -21,6 +22,15 @@ interface Member {
 interface UnlinkedAttendee {
   character_name: string
   status: AttendanceStatus
+}
+
+interface RaidLootEntry {
+  id: string
+  character_name: string
+  character_class_color: string
+  item_name: string
+  item_wowhead_id: number
+  awarded_date: string
 }
 
 interface RaidEvent {
@@ -46,15 +56,29 @@ export default function RaidTrackingPage() {
   const [raidDates, setRaidDates] = useState<RaidEvent[]>([])
   const [attendance, setAttendance] = useState<Record<string, Record<string, AttendanceStatus>>>({})
   const [unlinkedAttendees, setUnlinkedAttendees] = useState<Record<string, UnlinkedAttendee[]>>({})
+  const [raidLoot, setRaidLoot] = useState<Record<string, RaidLootEntry[]>>({})
   const [expandedRaid, setExpandedRaid] = useState<string | null>(null)
   const [expandedWeeks, setExpandedWeeks] = useState<Set<string>>(new Set())
   const [loading, setLoading] = useState(true)
   const [guildSettings, setGuildSettings] = useState<any>(null)
   const [showSkipModal, setShowSkipModal] = useState<{ raidId: string, date: string } | null>(null)
   const [skipReason, setSkipReason] = useState('')
-  const [showImportModal, setShowImportModal] = useState<{ raidId: string, date: string } | null>(null)
+  const [showImportModal, setShowImportModal] = useState<{ raidId: string, date: string, isEdit: boolean } | null>(null)
+
+  // Unified import form state
+  const [attendanceData, setAttendanceData] = useState('')
+  const [lootData, setLootData] = useState('')
+  const [signupsData, setSignupsData] = useState('')
+
+  const [lootItems, setLootItems] = useState<{ id: string, name: string, wowhead_id: number, boss_name: string }[]>([])
+  const [pendingLootImports, setPendingLootImports] = useState<{ date: string, itemId: number, characterName: string, matchedItem?: any, matchedCharacter?: any, needsItemSelection?: boolean }[]>([])
+  const [showLootSelectionModal, setShowLootSelectionModal] = useState<{ index: number, itemId: number, characterName: string } | null>(null)
+  const [lootSearchQuery, setLootSearchQuery] = useState('')
+  const [importing, setImporting] = useState(false)
+
+  // For legacy compatibility
   const [importData, setImportData] = useState('')
-  const [importType, setImportType] = useState<'signup' | 'attendance'>('signup')
+  const [importType, setImportType] = useState<'attendance' | 'loot' | 'signup'>('attendance')
 
   const supabase = createClient()
   const router = useRouter()
@@ -63,6 +87,47 @@ export default function RaidTrackingPage() {
   useEffect(() => {
     document.title = 'LootList+ • Raid Tracking'
   }, [])
+
+  // Populate form when opening edit modal
+  useEffect(() => {
+    if (showImportModal?.isEdit) {
+      const raidId = showImportModal.raidId
+      const raidDate = showImportModal.date
+      const raidAttendance = attendance[raidId] || {}
+
+      console.log('📝 Pre-filling edit modal for raid:', raidId)
+      console.log('📝 raidLoot state:', raidLoot)
+      console.log('📝 raidLoot[raidId]:', raidLoot[raidId])
+
+      // Pre-fill attendance
+      const attendedNames = members
+        .filter(m => raidAttendance[m.character_id]?.attended)
+        .map(m => m.character_name)
+      const unlinkedNames = (unlinkedAttendees[raidId] || [])
+        .filter(u => u.status.attended)
+        .map(u => u.character_name)
+      setAttendanceData([...attendedNames, ...unlinkedNames].join('\n'))
+
+      // Pre-fill signups
+      const signedUpNames = members
+        .filter(m => raidAttendance[m.character_id]?.signed_up)
+        .map(m => m.character_name)
+      const unlinkedSignups = (unlinkedAttendees[raidId] || [])
+        .filter(u => u.status.signed_up)
+        .map(u => u.character_name)
+      setSignupsData([...signedUpNames, ...unlinkedSignups].join('\n'))
+
+      // Pre-fill loot (convert back to Gargul format: DATE;[ITEM_ID];CHARACTER)
+      const lootEntries = raidLoot[raidId] || []
+      console.log('📝 Loot entries to pre-fill:', lootEntries.length)
+      const formattedDate = raidDate.replace(/-/g, '/').split('/').reverse().join('/')
+      const lootLines = lootEntries.map(entry =>
+        `${formattedDate};[${entry.item_wowhead_id}];${entry.character_name}`
+      )
+      console.log('📝 Formatted loot lines:', lootLines)
+      setLootData(lootLines.join('\n'))
+    }
+  }, [showImportModal, attendance, unlinkedAttendees, members, raidLoot])
 
   useEffect(() => {
     if (guildLoading) return
@@ -305,6 +370,7 @@ export default function RaidTrackingPage() {
   }
 
   const loadRaidAttendance = async (raidId: string) => {
+    // Load attendance records
     const { data: records } = await supabase
       .from('attendance_records')
       .select('character_id, character_name, signed_up, attended, no_call_no_show, was_late, was_benched')
@@ -340,6 +406,75 @@ export default function RaidTrackingPage() {
 
     setAttendance(prev => ({ ...prev, [raidId]: attendanceMap }))
     setUnlinkedAttendees(prev => ({ ...prev, [raidId]: unlinked }))
+
+    // Load loot history for this raid event
+    try {
+      console.log('🎁 Loading loot for raid:', raidId)
+
+      // First query: get loot records with item info (no character join to avoid null FK issues)
+      const { data: lootRecords, error: lootError } = await supabase
+        .from('loot_history')
+        .select(`
+          id,
+          awarded_date,
+          character_name,
+          character_id,
+          loot_items!inner (
+            name,
+            wowhead_id
+          )
+        `)
+        .eq('raid_event_id', raidId)
+        .order('awarded_date', { ascending: false })
+
+      console.log('🎁 Loot query result:', { lootRecords, lootError })
+
+      if (!lootError && lootRecords) {
+        // Get character IDs that are not null
+        const characterIds = lootRecords
+          .map(r => r.character_id)
+          .filter((id): id is string => id !== null)
+
+        // Fetch character info separately if there are linked characters
+        let characterMap: Record<string, { name: string, color_hex: string }> = {}
+        if (characterIds.length > 0) {
+          const { data: characters } = await supabase
+            .from('characters')
+            .select('id, name, wow_classes(color_hex)')
+            .in('id', characterIds)
+
+          if (characters) {
+            characters.forEach((char: any) => {
+              characterMap[char.id] = {
+                name: char.name,
+                color_hex: char.wow_classes?.color_hex || '#888888'
+              }
+            })
+          }
+        }
+
+        const lootEntries: RaidLootEntry[] = lootRecords.map((r: any) => {
+          const charInfo = r.character_id ? characterMap[r.character_id] : null
+          return {
+            id: r.id,
+            // Use linked character name, or fall back to unlinked character_name
+            character_name: charInfo?.name || r.character_name || 'Unknown',
+            character_class_color: charInfo?.color_hex || '#888888',
+            item_name: r.loot_items?.name || 'Unknown Item',
+            item_wowhead_id: r.loot_items?.wowhead_id || 0,
+            awarded_date: r.awarded_date
+          }
+        })
+        console.log('🎁 Processed loot entries:', lootEntries.length)
+        setRaidLoot(prev => ({ ...prev, [raidId]: lootEntries }))
+      } else {
+        console.log('❌ Loot history query error:', lootError)
+        setRaidLoot(prev => ({ ...prev, [raidId]: [] }))
+      }
+    } catch (e) {
+      console.log('❌ Loot history loading exception:', e)
+      setRaidLoot(prev => ({ ...prev, [raidId]: [] }))
+    }
   }
 
   const toggleRaidExpanded = async (raidId: string) => {
@@ -465,6 +600,27 @@ export default function RaidTrackingPage() {
     setSkipReason('')
   }
 
+  const deleteLootEntry = async (lootId: string, raidId: string) => {
+    const confirmed = window.confirm('Are you sure you want to remove this loot entry? This will restore the item to the master sheet.')
+    if (!confirmed) return
+
+    const { error } = await supabase
+      .from('loot_history')
+      .delete()
+      .eq('id', lootId)
+
+    if (error) {
+      alert('Failed to delete loot entry: ' + error.message)
+      return
+    }
+
+    // Update local state
+    setRaidLoot(prev => ({
+      ...prev,
+      [raidId]: prev[raidId]?.filter(l => l.id !== lootId) || []
+    }))
+  }
+
   const importSignups = async () => {
     if (!showImportModal || !activeGuild) return
 
@@ -494,7 +650,6 @@ export default function RaidTrackingPage() {
           raid_event_id: showImportModal.raidId,
           character_id: member.character_id,
           user_id: member.user_id,
-          guild_id: activeGuild.id,
           signed_up: importType === 'signup',
           attended: importType === 'attendance',
           no_call_no_show: false,
@@ -506,10 +661,7 @@ export default function RaidTrackingPage() {
         unmatchedCount++
         unlinkedUpdates.push({
           raid_event_id: showImportModal.raidId,
-          guild_id: activeGuild.id,
           character_name: name,
-          character_id: null,
-          user_id: null,
           signed_up: importType === 'signup',
           attended: importType === 'attendance',
           no_call_no_show: false,
@@ -559,14 +711,708 @@ export default function RaidTrackingPage() {
     }
   }
 
+  // Load all loot items for the current expansion
+  const loadLootItems = async () => {
+    console.log('📦 loadLootItems called', { activeGuild: activeGuild?.id, currentExpansion: currentExpansion?.expansion_id })
+    if (!activeGuild || !currentExpansion) {
+      console.log('❌ Missing guild or expansion')
+      return
+    }
+
+    // Get all raid tiers for this expansion
+    const { data: tiers } = await supabase
+      .from('raid_tiers')
+      .select('id')
+      .eq('expansion_id', currentExpansion.expansion_id)
+
+    console.log('📦 Found tiers:', tiers?.length || 0)
+    if (!tiers || tiers.length === 0) return
+
+    const tierIds = tiers.map(t => t.id)
+
+    // Get all loot items for these tiers
+    const { data: items } = await supabase
+      .from('loot_items')
+      .select('id, name, wowhead_id, boss_name')
+      .in('raid_tier_id', tierIds)
+      .order('name')
+
+    console.log('📦 Loaded loot items:', items?.length || 0)
+    if (items) {
+      setLootItems(items)
+    }
+  }
+
+  // Preview functions to show match counts
+  // Parse MRT/attendance data - handles formats like:
+  // "21/01/2026 01:58:11 - Throne of Thunder6" (header - skipped)
+  // "Alphafold    x" -> "Alphafold"
+  // "Brewenjoyer    x" -> "Brewenjoyer"
+  const parseMRTNames = (data: string): string[] => {
+    return data
+      .trim()
+      .split(/\n/)
+      .map(line => {
+        // Skip header lines (contain date pattern or " - ")
+        if (line.match(/\d{2}\/\d{2}\/\d{4}/) || line.includes(' - ')) {
+          return ''
+        }
+        // Strip the "x" marker and any surrounding whitespace
+        // Handle formats: "Name    x", "Name,", "Name"
+        return line
+          .replace(/\s+x\s*$/i, '')  // Remove trailing "x" with whitespace
+          .replace(/,\s*$/, '')       // Remove trailing comma
+          .trim()
+      })
+      .filter(name => name.length > 0 && name.length <= 50)
+  }
+
+  const parseAttendancePreview = (data: string) => {
+    if (!data.trim()) return { total: 0, matched: 0, unmatched: 0 }
+
+    const names = parseMRTNames(data)
+
+    let matched = 0
+    let unmatched = 0
+
+    names.forEach(name => {
+      const member = members.find(m =>
+        m.character_name.toLowerCase() === name.toLowerCase()
+      )
+      if (member) matched++
+      else unmatched++
+    })
+
+    return { total: names.length, matched, unmatched }
+  }
+
+  const parseLootPreview = (data: string) => {
+    if (!data.trim()) return { total: 0, linked: 0, unlinked: 0, failed: 0, items: [] as string[] }
+
+    const lines = data
+      .trim()
+      .split('\n')
+      .map(line => line.trim())
+      .filter(line => line.length > 0)
+
+    let linked = 0    // Item found, character is guild member
+    let unlinked = 0  // Item found, character not in guild (will import as unlinked)
+    let failed = 0    // Item not found in database
+    const itemNames: string[] = []
+
+    lines.forEach(line => {
+      const parts = line.split(';')
+      if (parts.length !== 3) {
+        failed++
+        return
+      }
+
+      const [, itemIdStr, characterName] = parts
+      const itemIdMatch = itemIdStr.match(/\[(\d+)\]/)
+      if (!itemIdMatch) {
+        failed++
+        return
+      }
+
+      const itemId = parseInt(itemIdMatch[1])
+      const matchedItem = lootItems.find(item => item.wowhead_id === itemId)
+      const charName = characterName.trim()
+
+      if (matchedItem) {
+        // Check if character is a guild member
+        const matchedCharacter = members.find(m =>
+          m.character_name.toLowerCase() === charName.toLowerCase()
+        )
+
+        if (matchedCharacter) {
+          linked++
+          itemNames.push(`${charName} → ${matchedItem.name}`)
+        } else {
+          unlinked++
+          itemNames.push(`${charName} → ${matchedItem.name} (unlinked)`)
+        }
+      } else {
+        failed++
+        itemNames.push(`${charName} → Item #${itemId} (not found)`)
+      }
+    })
+
+    return { total: lines.length, linked, unlinked, failed, items: itemNames }
+  }
+
+  const parseSignupsPreview = (data: string) => {
+    return parseAttendancePreview(data) // Same logic
+  }
+
+  // Unified import function - imports all data at once
+  const importAllRaidData = async () => {
+    console.log('📥 importAllRaidData called', { showImportModal, activeGuild: activeGuild?.id })
+    console.log('📥 Data to import:', {
+      attendance: attendanceData.trim().slice(0, 100),
+      loot: lootData.trim().slice(0, 100),
+      signups: signupsData.trim().slice(0, 100)
+    })
+
+    if (!showImportModal || !activeGuild) {
+      console.log('❌ Import aborted: missing modal or guild')
+      return
+    }
+
+    setImporting(true)
+
+    const results = {
+      attendance: { success: 0, failed: 0 },
+      loot: { success: 0, failed: 0, errors: [] as string[] },
+      signups: { success: 0, failed: 0 }
+    }
+
+    // Import Attendance
+    if (attendanceData.trim() || showImportModal.isEdit) {
+      const names = parseMRTNames(attendanceData)
+      const namesLower = names.map(n => n.toLowerCase())
+
+      console.log('📥 Parsed attendance names:', names)
+      console.log('📥 Is edit mode:', showImportModal.isEdit)
+
+      const linkedUpdates: any[] = []
+      const unlinkedUpdates: any[] = []
+      const linkedCharacterIds: string[] = []
+
+      names.forEach(name => {
+        const member = members.find(m =>
+          m.character_name.toLowerCase() === name.toLowerCase()
+        )
+
+        if (member) {
+          linkedCharacterIds.push(member.character_id)
+          linkedUpdates.push({
+            raid_event_id: showImportModal.raidId,
+            character_id: member.character_id,
+            user_id: member.user_id,
+            signed_up: false,
+            attended: true,
+            no_call_no_show: false,
+            was_late: false,
+            was_benched: false
+          })
+          results.attendance.success++
+        } else {
+          unlinkedUpdates.push({
+            raid_event_id: showImportModal.raidId,
+            character_name: name,
+            signed_up: false,
+            attended: true,
+            no_call_no_show: false,
+            was_late: false,
+            was_benched: false
+          })
+          results.attendance.failed++
+        }
+      })
+
+      // When editing, first remove attendance for members not in the new list
+      if (showImportModal.isEdit) {
+        // Get all current attendance records for this raid
+        const { data: currentRecords } = await supabase
+          .from('attendance_records')
+          .select('id, character_id, character_name')
+          .eq('raid_event_id', showImportModal.raidId)
+
+        if (currentRecords) {
+          // Find linked records to remove (character_id not in new list)
+          const linkedToRemove = currentRecords
+            .filter(r => r.character_id && !linkedCharacterIds.includes(r.character_id))
+            .map(r => r.id)
+
+          // Find unlinked records to remove (character_name not in new list)
+          const unlinkedToRemove = currentRecords
+            .filter(r => !r.character_id && r.character_name && !namesLower.includes(r.character_name.toLowerCase()))
+            .map(r => r.id)
+
+          const idsToRemove = [...linkedToRemove, ...unlinkedToRemove]
+
+          if (idsToRemove.length > 0) {
+            console.log('📥 Removing', idsToRemove.length, 'attendance records no longer in list')
+            const { error: removeError } = await supabase
+              .from('attendance_records')
+              .delete()
+              .in('id', idsToRemove)
+
+            if (removeError) {
+              console.error('❌ Remove attendance error:', removeError)
+            }
+          }
+        }
+      }
+
+      if (linkedUpdates.length > 0) {
+        console.log('📥 Upserting linked attendance:', linkedUpdates.length, 'records')
+        const { error: upsertError } = await supabase
+          .from('attendance_records')
+          .upsert(linkedUpdates, { onConflict: 'raid_event_id,character_id' })
+        if (upsertError) {
+          console.error('❌ Attendance upsert error:', upsertError)
+        } else {
+          console.log('✅ Attendance upsert successful')
+        }
+      }
+
+      // For unlinked attendees, delete existing and re-insert
+      // First delete all unlinked records for this raid
+      const { error: deleteUnlinkedError } = await supabase
+        .from('attendance_records')
+        .delete()
+        .eq('raid_event_id', showImportModal.raidId)
+        .is('character_id', null)
+
+      if (deleteUnlinkedError) {
+        console.error('❌ Delete unlinked error:', deleteUnlinkedError)
+      }
+
+      if (unlinkedUpdates.length > 0) {
+        console.log('📥 Inserting unlinked attendance:', unlinkedUpdates.length, 'records')
+
+        const { error: insertError, data: insertData } = await supabase
+          .from('attendance_records')
+          .insert(unlinkedUpdates)
+          .select()
+
+        if (insertError) {
+          console.error('❌ Unlinked attendance insert error:', insertError.message, insertError.code, insertError.details, insertError.hint)
+        } else {
+          console.log('✅ Unlinked attendance inserted:', insertData?.length, 'records')
+        }
+      }
+    }
+
+    // Import Signups (if enabled and data provided)
+    if (guildSettings?.use_signups && signupsData.trim()) {
+      const names = parseMRTNames(signupsData)
+
+      const linkedUpdates: any[] = []
+      const unlinkedUpdates: any[] = []
+
+      names.forEach(name => {
+        const member = members.find(m =>
+          m.character_name.toLowerCase() === name.toLowerCase()
+        )
+
+        if (member) {
+          linkedUpdates.push({
+            raid_event_id: showImportModal.raidId,
+            character_id: member.character_id,
+            user_id: member.user_id,
+            signed_up: true,
+            attended: false,
+            no_call_no_show: false,
+            was_late: false,
+            was_benched: false
+          })
+          results.signups.success++
+        } else {
+          unlinkedUpdates.push({
+            raid_event_id: showImportModal.raidId,
+            character_name: name,
+            signed_up: true,
+            attended: false,
+            no_call_no_show: false,
+            was_late: false,
+            was_benched: false
+          })
+          results.signups.failed++
+        }
+      })
+
+      // For signups, we need to update existing records or insert new ones
+      for (const update of linkedUpdates) {
+        await supabase
+          .from('attendance_records')
+          .upsert({
+            ...update,
+            // Preserve attended status if record exists
+          }, { onConflict: 'raid_event_id,character_id' })
+      }
+    }
+
+    // Import Loot
+    if (lootData.trim()) {
+      console.log('📥 Starting loot import...')
+      console.log('📥 Available loot items:', lootItems.length)
+
+      const { data: { user } } = await supabase.auth.getUser()
+      const { data: eventData } = await supabase
+        .from('raid_events')
+        .select('raid_tier_id')
+        .eq('id', showImportModal.raidId)
+        .single()
+
+      const lines = lootData
+        .trim()
+        .split('\n')
+        .map(line => line.trim())
+        .filter(line => line.length > 0)
+
+      console.log('📥 Loot lines to process:', lines.length)
+
+      for (const line of lines) {
+        console.log('📥 Processing line:', line)
+        const parts = line.split(';')
+        if (parts.length !== 3) {
+          results.loot.failed++
+          results.loot.errors.push(`Invalid format: ${line}`)
+          console.log('❌ Invalid format (expected 3 parts, got', parts.length, ')')
+          continue
+        }
+
+        const [, itemIdStr, characterName] = parts
+        const itemIdMatch = itemIdStr.match(/\[(\d+)\]/)
+        if (!itemIdMatch) {
+          results.loot.failed++
+          results.loot.errors.push(`Invalid item ID: ${itemIdStr}`)
+          console.log('❌ Invalid item ID format:', itemIdStr)
+          continue
+        }
+
+        const itemId = parseInt(itemIdMatch[1])
+        console.log('📥 Looking for item with wowhead_id:', itemId)
+        const matchedItem = lootItems.find(item => item.wowhead_id === itemId)
+        const matchedCharacter = members.find(m =>
+          m.character_name.toLowerCase() === characterName.trim().toLowerCase()
+        )
+
+        if (!matchedItem) {
+          results.loot.failed++
+          results.loot.errors.push(`Item #${itemId} not found for ${characterName.trim()}`)
+          console.log('❌ Item not found in lootItems')
+          continue
+        }
+
+        const charName = characterName.trim()
+
+        // Build insert object - supports both linked and unlinked characters
+        const insertData: any = {
+          loot_item_id: matchedItem.id,
+          guild_id: activeGuild.id,
+          raid_tier_id: eventData?.raid_tier_id,
+          raid_event_id: showImportModal.raidId,
+          awarded_date: showImportModal.date,
+          awarded_by: user?.id,
+          notes: `Imported from Gargul`
+        }
+
+        if (matchedCharacter) {
+          // Linked character - use character_id
+          insertData.character_id = matchedCharacter.character_id
+          console.log('✅ Matched item:', matchedItem.name, 'to linked character:', matchedCharacter.character_name)
+        } else {
+          // Unlinked character - use character_name
+          insertData.character_name = charName
+          console.log('⚠️ Matched item:', matchedItem.name, 'to unlinked character:', charName)
+        }
+
+        const { error } = await supabase
+          .from('loot_history')
+          .insert(insertData)
+
+        if (error) {
+          console.log('❌ Loot insert error:', error.message, error.code)
+          if (error.code === '23505') {
+            results.loot.errors.push(`${characterName.trim()} already has ${matchedItem.name}`)
+          } else {
+            results.loot.errors.push(`${characterName.trim()}: ${error.message}`)
+          }
+          results.loot.failed++
+        } else {
+          console.log('✅ Loot insert successful')
+          results.loot.success++
+        }
+      }
+    }
+
+    // Reload attendance data
+    console.log('📥 Reloading attendance data...')
+    await loadRaidAttendance(showImportModal.raidId)
+    console.log('📥 Import complete! Results:', results)
+
+    setImporting(false)
+    setShowImportModal(null)
+    setAttendanceData('')
+    setLootData('')
+    setSignupsData('')
+
+    // Show results
+    let message = 'Import complete!\n'
+
+    if (attendanceData.trim()) {
+      message += `\nAttendance: ✓ ${results.attendance.success} matched`
+      if (results.attendance.failed > 0) message += `, ⚠ ${results.attendance.failed} unmatched`
+    }
+
+    if (lootData.trim()) {
+      message += `\nLoot: ✓ ${results.loot.success} recorded`
+      if (results.loot.failed > 0) {
+        message += `, ⚠ ${results.loot.failed} failed`
+        if (results.loot.errors.length > 0) {
+          message += '\n\nLoot errors:'
+          results.loot.errors.slice(0, 5).forEach(e => message += `\n• ${e}`)
+          if (results.loot.errors.length > 5) {
+            message += `\n• ... and ${results.loot.errors.length - 5} more`
+          }
+        }
+      }
+    }
+
+    if (guildSettings?.use_signups && signupsData.trim()) {
+      message += `\nSignups: ✓ ${results.signups.success} matched`
+      if (results.signups.failed > 0) message += `, ⚠ ${results.signups.failed} unmatched`
+    }
+
+    alert(message)
+  }
+
+  // Parse Gargul loot export format: DATE;[ITEM_ID];CHARACTER_NAME
+  const parseLootImportData = () => {
+    if (!showImportModal) return []
+
+    const lines = lootData
+      .trim()
+      .split('\n')
+      .map(line => line.trim())
+      .filter(line => line.length > 0)
+
+    const raidDate = showImportModal.date // e.g., "2024-12-15"
+
+    const parsed: typeof pendingLootImports = []
+
+    lines.forEach((line, index) => {
+      // Format: DATE;[ITEM_ID];CHARACTER_NAME
+      // Example: 12/15/2024;[16859];Lukasdnmd
+      const parts = line.split(';')
+      if (parts.length !== 3) {
+        console.warn(`Line ${index + 1}: Invalid format - expected DATE;[ITEM_ID];CHARACTER_NAME`)
+        return
+      }
+
+      const [dateStr, itemIdStr, characterName] = parts
+
+      // Parse item ID from brackets [16859] -> 16859
+      const itemIdMatch = itemIdStr.match(/\[(\d+)\]/)
+      if (!itemIdMatch) {
+        console.warn(`Line ${index + 1}: Could not parse item ID from "${itemIdStr}"`)
+        return
+      }
+      const itemId = parseInt(itemIdMatch[1])
+
+      // Validate date matches raid day (optional warning)
+      // Convert MM/DD/YYYY to YYYY-MM-DD for comparison
+      const dateParts = dateStr.split('/')
+      if (dateParts.length === 3) {
+        const importDate = `${dateParts[2]}-${dateParts[0].padStart(2, '0')}-${dateParts[1].padStart(2, '0')}`
+        if (importDate !== raidDate) {
+          console.warn(`Line ${index + 1}: Date mismatch - import date ${importDate} vs raid date ${raidDate}`)
+        }
+      }
+
+      // Try to match item by wowhead_id
+      const matchedItem = lootItems.find(item => item.wowhead_id === itemId)
+
+      // Try to match character by name
+      const matchedCharacter = members.find(m =>
+        m.character_name.toLowerCase() === characterName.trim().toLowerCase()
+      )
+
+      parsed.push({
+        date: dateStr,
+        itemId,
+        characterName: characterName.trim(),
+        matchedItem,
+        matchedCharacter,
+        needsItemSelection: !matchedItem
+      })
+    })
+
+    return parsed
+  }
+
+  // Import loot to loot_history
+  const importLoot = async () => {
+    if (!showImportModal || !activeGuild) return
+
+    setImporting(true)
+
+    // Parse the data first
+    const parsedData = parseLootImportData()
+
+    // Check for unmatched items
+    const unmatchedItems = parsedData.filter(p => p.needsItemSelection)
+    if (unmatchedItems.length > 0) {
+      setPendingLootImports(parsedData)
+      setImporting(false)
+      // Show selection modal for first unmatched item
+      const firstUnmatched = unmatchedItems[0]
+      const index = parsedData.findIndex(p => p === firstUnmatched)
+      setShowLootSelectionModal({ index, itemId: firstUnmatched.itemId, characterName: firstUnmatched.characterName })
+      return
+    }
+
+    // All items matched, proceed with import
+    await processLootImport(parsedData)
+  }
+
+  // Process the actual loot import
+  const processLootImport = async (parsedData: typeof pendingLootImports) => {
+    if (!showImportModal || !activeGuild) return
+
+    setImporting(true)
+
+    // Get current user for awarded_by
+    const { data: { user } } = await supabase.auth.getUser()
+
+    // Get the raid event to find the raid_tier_id
+    const raidEvent = raidDates.find(r => r.id === showImportModal.raidId)
+
+    // Get the raid tier ID from the event
+    const { data: eventData } = await supabase
+      .from('raid_events')
+      .select('raid_tier_id')
+      .eq('id', showImportModal.raidId)
+      .single()
+
+    let successCount = 0
+    let errorCount = 0
+    const errors: string[] = []
+
+    for (const entry of parsedData) {
+      if (!entry.matchedItem) {
+        errorCount++
+        errors.push(`${entry.characterName}: Item ID ${entry.itemId} not found`)
+        continue
+      }
+
+      // For characters not in the guild, we still track the loot
+      // but we won't have a character_id - we'll track by name
+      const characterId = entry.matchedCharacter?.character_id
+
+      if (!characterId) {
+        // Character not found - for now skip, but could track by name in notes
+        errorCount++
+        errors.push(`${entry.characterName}: Character not found in guild`)
+        continue
+      }
+
+      // Insert into loot_history
+      const { error } = await supabase
+        .from('loot_history')
+        .insert({
+          character_id: characterId,
+          loot_item_id: entry.matchedItem.id,
+          guild_id: activeGuild.id,
+          raid_tier_id: eventData?.raid_tier_id,
+          raid_event_id: showImportModal.raidId,
+          awarded_date: showImportModal.date,
+          awarded_by: user?.id,
+          notes: `Imported from Gargul - Item ID: ${entry.itemId}`
+        })
+
+      if (error) {
+        // Check if it's a duplicate (item already awarded to this character)
+        if (error.code === '23505') {
+          errors.push(`${entry.characterName}: Already received ${entry.matchedItem.name}`)
+        } else {
+          errors.push(`${entry.characterName}: ${error.message}`)
+        }
+        errorCount++
+      } else {
+        successCount++
+      }
+    }
+
+    setImporting(false)
+    setPendingLootImports([])
+    setShowImportModal(null)
+    setImportData('')
+    setImportType('attendance')
+
+    // Show results
+    let message = `Loot import complete!\n\n✓ ${successCount} items recorded`
+    if (errorCount > 0) {
+      message += `\n\n⚠ ${errorCount} errors:`
+      errors.slice(0, 5).forEach(e => message += `\n• ${e}`)
+      if (errors.length > 5) {
+        message += `\n• ... and ${errors.length - 5} more`
+      }
+    }
+    alert(message)
+  }
+
+  // Handle item selection for unmatched items
+  const handleLootItemSelection = (selectedItem: typeof lootItems[0]) => {
+    if (!showLootSelectionModal) return
+
+    const updatedPending = [...pendingLootImports]
+    updatedPending[showLootSelectionModal.index] = {
+      ...updatedPending[showLootSelectionModal.index],
+      matchedItem: selectedItem,
+      needsItemSelection: false
+    }
+    setPendingLootImports(updatedPending)
+
+    // Check if there are more unmatched items
+    const nextUnmatched = updatedPending.findIndex((p, i) => i > showLootSelectionModal.index && p.needsItemSelection)
+    if (nextUnmatched !== -1) {
+      const next = updatedPending[nextUnmatched]
+      setShowLootSelectionModal({ index: nextUnmatched, itemId: next.itemId, characterName: next.characterName })
+      setLootSearchQuery('')
+    } else {
+      // All items matched, proceed with import
+      setShowLootSelectionModal(null)
+      setLootSearchQuery('')
+      processLootImport(updatedPending)
+    }
+  }
+
+  // Skip unmatched item
+  const skipLootItemSelection = () => {
+    if (!showLootSelectionModal) return
+
+    const updatedPending = pendingLootImports.filter((_, i) => i !== showLootSelectionModal.index)
+    setPendingLootImports(updatedPending)
+
+    // Check if there are more unmatched items
+    const nextUnmatched = updatedPending.findIndex(p => p.needsItemSelection)
+    if (nextUnmatched !== -1) {
+      const next = updatedPending[nextUnmatched]
+      setShowLootSelectionModal({ index: nextUnmatched, itemId: next.itemId, characterName: next.characterName })
+      setLootSearchQuery('')
+    } else if (updatedPending.length > 0) {
+      // All remaining items matched, proceed with import
+      setShowLootSelectionModal(null)
+      setLootSearchQuery('')
+      processLootImport(updatedPending)
+    } else {
+      // No items left
+      setShowLootSelectionModal(null)
+      setLootSearchQuery('')
+      setPendingLootImports([])
+    }
+  }
+
   const getAttendanceCount = (raidId: string) => {
     const raidAttendance = attendance[raidId] || {}
-    return Object.values(raidAttendance).filter(a => a.attended).length
+    const linkedCount = Object.values(raidAttendance).filter(a => a.attended).length
+    const unlinkedCount = (unlinkedAttendees[raidId] || []).filter(u => u.status.attended).length
+    return linkedCount + unlinkedCount
   }
 
   const getSignupCount = (raidId: string) => {
     const raidAttendance = attendance[raidId] || {}
-    return Object.values(raidAttendance).filter(a => a.signed_up).length
+    const linkedCount = Object.values(raidAttendance).filter(a => a.signed_up).length
+    const unlinkedCount = (unlinkedAttendees[raidId] || []).filter(u => u.status.signed_up).length
+    return linkedCount + unlinkedCount
+  }
+
+  const getLootCount = (raidId: string) => {
+    return raidLoot[raidId]?.length || 0
   }
 
   if (loading) {
@@ -730,6 +1576,8 @@ export default function RaidTrackingPage() {
           const isPast = raid.raid_date < today
           const attendedCount = getAttendanceCount(raid.id)
           const signupCount = getSignupCount(raid.id)
+          const lootCount = getLootCount(raid.id)
+          const hasImportedData = attendedCount > 0 || lootCount > 0
 
           return (
             <div
@@ -765,10 +1613,16 @@ export default function RaidTrackingPage() {
                           Today
                         </span>
                       )}
+                      {hasImportedData && !raid.is_skipped && (
+                        <span className="px-3 py-1 rounded-full text-[11px] font-medium bg-green-600/30 text-green-300 border border-green-600/50">
+                          Imported
+                        </span>
+                      )}
                     </div>
                     {!raid.is_skipped && (
                       <p className="text-[#666] text-[13px] mt-1">
                         {attendedCount} attended • {signupCount} signed up
+                        {lootCount > 0 && <span className="text-[#a335ee]"> • {lootCount} loot</span>}
                       </p>
                     )}
                   </div>
@@ -776,11 +1630,36 @@ export default function RaidTrackingPage() {
                 <div className="flex gap-2">
                   {!raid.is_skipped && (
                     <button
-                      onClick={() => setShowImportModal({ raidId: raid.id, date: raid.raid_date })}
-                      className="px-4 py-2 bg-[#151515] hover:bg-[#1a1a1a] border border-[rgba(255,255,255,0.1)] rounded-[52px] text-white text-[13px] font-medium transition flex items-center gap-2"
+                      onClick={async () => {
+                        await loadLootItems() // Load items for loot matching
+
+                        if (hasImportedData) {
+                          // Load attendance data first if not already loaded
+                          if (!attendance[raid.id]) {
+                            await loadRaidAttendance(raid.id)
+                          }
+
+                          // Need to get fresh data after loading
+                          // We'll use a setTimeout to let state update, or we read directly
+                          // For now, just open the modal and let useEffect handle it
+                          setLootData('')
+                          setShowImportModal({ raidId: raid.id, date: raid.raid_date, isEdit: true })
+                        } else {
+                          // Clear all form fields for new import
+                          setAttendanceData('')
+                          setLootData('')
+                          setSignupsData('')
+                          setShowImportModal({ raidId: raid.id, date: raid.raid_date, isEdit: false })
+                        }
+                      }}
+                      className={`px-4 py-2 rounded-[52px] text-[13px] font-medium transition flex items-center gap-2 ${
+                        hasImportedData
+                          ? 'bg-green-600/20 hover:bg-green-600/30 border border-green-600/50 text-green-300'
+                          : 'bg-[#151515] hover:bg-[#1a1a1a] border border-[rgba(255,255,255,0.1)] text-white'
+                      }`}
                     >
                       <Upload className="w-4 h-4" />
-                      Import Data
+                      {hasImportedData ? 'Edit Import' : 'Import Data'}
                     </button>
                   )}
                   <button
@@ -870,6 +1749,46 @@ export default function RaidTrackingPage() {
                     })}
                   </div>
                   )}
+
+                  {/* Loot Section */}
+                  {raidLoot[raid.id] && raidLoot[raid.id].length > 0 && (
+                    <div className="mt-6 pt-6 border-t border-[rgba(255,255,255,0.1)]">
+                      <h4 className="text-[14px] font-semibold text-white mb-3 flex items-center gap-2">
+                        <svg className="w-4 h-4 text-[#ff8000]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        Loot Awarded ({raidLoot[raid.id].length} items)
+                      </h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                        {raidLoot[raid.id].map(loot => (
+                          <div
+                            key={loot.id}
+                            className="flex items-center justify-between px-4 py-2.5 bg-[#1a1a1a] border border-[#383838] rounded-lg group"
+                          >
+                            <div className="flex items-center gap-3 min-w-0">
+                              <span
+                                className="font-medium text-[13px] truncate"
+                                style={{ color: loot.character_class_color }}
+                              >
+                                {loot.character_name}
+                              </span>
+                              <span className="text-[#606060] text-[12px]">→</span>
+                              <span className="text-[13px] truncate">
+                                <ItemLink name={loot.item_name} wowheadId={loot.item_wowhead_id} />
+                              </span>
+                            </div>
+                            <button
+                              onClick={() => deleteLootEntry(loot.id, raid.id)}
+                              className="p-1.5 text-[#666] hover:text-red-400 hover:bg-red-500/10 rounded-md transition opacity-0 group-hover:opacity-100"
+                              title="Remove loot entry"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -884,33 +1803,43 @@ export default function RaidTrackingPage() {
       {/* Skip Day Modal */}
       {showSkipModal && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setShowSkipModal(null)}>
-          <div className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl max-w-md w-full p-6" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-[20px] font-bold text-white">Skip raid day</h3>
+          <div className="bg-[#0d0e11] border border-[#383838] rounded-xl max-w-md w-full overflow-hidden" onClick={e => e.stopPropagation()}>
+            {/* Header */}
+            <div className="p-6 border-b border-[#383838] flex items-center justify-between bg-[#141519]">
+              <div>
+                <h3 className="text-[20px] font-bold text-white">Skip Raid Day</h3>
+                <p className="text-[#a1a1a1] text-[13px] mt-1">
+                  {new Date(showSkipModal.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
+                </p>
+              </div>
               <button onClick={() => setShowSkipModal(null)} className="text-[#666] hover:text-white transition">
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <p className="text-[#a1a1a1] text-[14px] mb-4">
-              Marking raid on <span className="text-white font-medium">{new Date(showSkipModal.date + 'T00:00:00').toLocaleDateString()}</span> as skipped.
-            </p>
-            <input
-              type="text"
-              value={skipReason}
-              onChange={e => setSkipReason(e.target.value)}
-              placeholder="Reason (e.g., Holiday, Cancelled)..."
-              className="w-full px-4 py-2 bg-[#0d0e11] border border-[rgba(255,255,255,0.1)] rounded-lg text-white text-[14px] focus:outline-none focus:border-[#ff8000] mb-4"
-            />
-            <div className="flex gap-2">
+
+            {/* Content */}
+            <div className="p-6">
+              <label className="block text-[13px] text-[#a1a1a1] mb-2">Reason for skipping</label>
+              <input
+                type="text"
+                value={skipReason}
+                onChange={e => setSkipReason(e.target.value)}
+                placeholder="e.g., Holiday, Cancelled, Not enough signups..."
+                className="w-full px-4 py-3 bg-[#151515] border border-[#383838] rounded-xl text-white text-[13px] focus:outline-none focus:border-[#ff8000] transition placeholder-[#606060]"
+              />
+            </div>
+
+            {/* Footer */}
+            <div className="p-6 border-t border-[#383838] flex gap-3">
               <button
                 onClick={() => setShowSkipModal(null)}
-                className="flex-1 px-4 py-2 bg-[#151515] hover:bg-[#1a1a1a] border border-[rgba(255,255,255,0.1)] rounded-[52px] text-white text-[14px] font-medium transition"
+                className="flex-1 px-5 py-3 bg-[#151515] hover:bg-[#1a1a1a] border border-[#383838] rounded-[52px] text-white text-[13px] font-medium transition"
               >
                 Cancel
               </button>
               <button
                 onClick={confirmSkipDay}
-                className="flex-1 px-4 py-2 bg-white hover:bg-gray-100 rounded-[52px] text-black text-[14px] font-medium transition"
+                className="flex-1 px-5 py-3 bg-white hover:bg-gray-100 rounded-[52px] text-black text-[13px] font-medium transition"
               >
                 Skip Day
               </button>
@@ -919,66 +1848,206 @@ export default function RaidTrackingPage() {
         </div>
       )}
 
-      {/* Import Modal */}
+      {/* Import Modal - Unified Form */}
       {showImportModal && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setShowImportModal(null)}>
-          <div className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl max-w-2xl w-full p-6" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-[20px] font-bold text-white">Import data</h3>
+          <div className="bg-[#0d0e11] border border-[#383838] rounded-xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col" onClick={e => e.stopPropagation()}>
+            {/* Header */}
+            <div className="p-6 border-b border-[#383838] flex items-center justify-between bg-[#141519]">
+              <div>
+                <h3 className="text-[20px] font-bold text-white">{showImportModal.isEdit ? 'Edit Raid Data' : 'Import Raid Data'}</h3>
+                <p className="text-[#a1a1a1] text-[13px] mt-1">
+                  {new Date(showImportModal.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
+                </p>
+              </div>
               <button onClick={() => setShowImportModal(null)} className="text-[#666] hover:text-white transition">
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <p className="text-[#a1a1a1] text-[14px] mb-4">
-              Import data for <span className="text-white font-medium">{new Date(showImportModal.date + 'T00:00:00').toLocaleDateString()}</span>
-            </p>
 
-            {/* Import Type Selector */}
-            <div className="flex gap-2 mb-4">
-              <button
-                onClick={() => setImportType('signup')}
-                className={`flex-1 px-4 py-2 rounded-lg text-[14px] font-medium transition ${
-                  importType === 'signup'
-                    ? 'bg-[#ff8000] text-white'
-                    : 'bg-[#151515] text-[#666] hover:bg-[#1a1a1a] border border-[rgba(255,255,255,0.1)]'
-                }`}
-              >
-                Signups
-              </button>
-              <button
-                onClick={() => setImportType('attendance')}
-                className={`flex-1 px-4 py-2 rounded-lg text-[14px] font-medium transition ${
-                  importType === 'attendance'
-                    ? 'bg-[#ff8000] text-white'
-                    : 'bg-[#151515] text-[#666] hover:bg-[#1a1a1a] border border-[rgba(255,255,255,0.1)]'
-                }`}
-              >
-                Attendance
-              </button>
+            {/* Content - Scrollable */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-6">
+              {/* Attendance & Loot Side by Side */}
+              <div className="grid grid-cols-2 gap-6">
+                {/* Attendance Section */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <label className="block text-[14px] font-semibold text-white">
+                        Attendance <span className="text-[#ff8000]">*</span>
+                      </label>
+                      <p className="text-[#606060] text-[12px]">Who attended this raid day</p>
+                    </div>
+                  </div>
+                  {attendanceData.trim() && (() => {
+                    const preview = parseAttendancePreview(attendanceData)
+                    return (
+                      <div className="flex items-center gap-2 text-[12px]">
+                        <span className="text-green-400">{preview.matched} matched</span>
+                        {preview.unmatched > 0 && (
+                          <span className="text-yellow-400">{preview.unmatched} unmatched</span>
+                        )}
+                      </div>
+                    )
+                  })()}
+                  <textarea
+                    value={attendanceData}
+                    onChange={e => setAttendanceData(e.target.value)}
+                    placeholder="Paste character names (comma-separated or one per line)&#10;&#10;Example:&#10;Headjaws&#10;Calonise&#10;Leroyspankin"
+                    className="w-full h-44 px-4 py-3 bg-[#151515] border border-[#383838] rounded-xl text-white text-[13px] focus:outline-none focus:border-[#ff8000] font-mono placeholder-[#606060] resize-none"
+                  />
+                </div>
+
+                {/* Loot Section */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <label className="block text-[14px] font-semibold text-white">
+                        Loot <span className="text-[#ff8000]">*</span>
+                      </label>
+                      <p className="text-[#606060] text-[12px]">Gargul export format</p>
+                    </div>
+                  </div>
+                  {lootData.trim() && (() => {
+                    const preview = parseLootPreview(lootData)
+                    return (
+                      <div className="flex items-center gap-2 text-[12px]">
+                        {preview.linked > 0 && (
+                          <span className="text-green-400">{preview.linked} linked</span>
+                        )}
+                        {preview.unlinked > 0 && (
+                          <span className="text-yellow-400">{preview.unlinked} unlinked</span>
+                        )}
+                        {preview.failed > 0 && (
+                          <span className="text-red-400">{preview.failed} failed</span>
+                        )}
+                      </div>
+                    )
+                  })()}
+                  <textarea
+                    value={lootData}
+                    onChange={e => setLootData(e.target.value)}
+                    placeholder="DATE;[ITEM_ID];CHARACTER&#10;&#10;Example:&#10;12/15/2024;[16859];Lukasdnmd&#10;12/15/2024;[18203];Headjaws"
+                    className="w-full h-44 px-4 py-3 bg-[#151515] border border-[#383838] rounded-xl text-white text-[13px] focus:outline-none focus:border-[#ff8000] font-mono placeholder-[#606060] resize-none"
+                  />
+                </div>
+              </div>
+
+              {/* Signups Section - Only if enabled */}
+              {guildSettings?.use_signups && (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <label className="block text-[14px] font-semibold text-white">
+                        Signups <span className="text-[#606060] text-[12px] font-normal">(optional)</span>
+                      </label>
+                      <p className="text-[#606060] text-[12px]">Who signed up for this raid</p>
+                    </div>
+                    {signupsData.trim() && (() => {
+                      const preview = parseSignupsPreview(signupsData)
+                      return (
+                        <div className="flex items-center gap-2 text-[12px]">
+                          <span className="text-green-400">{preview.matched} matched</span>
+                          {preview.unmatched > 0 && (
+                            <span className="text-yellow-400">{preview.unmatched} unmatched</span>
+                          )}
+                        </div>
+                      )
+                    })()}
+                  </div>
+                  <textarea
+                    value={signupsData}
+                    onChange={e => setSignupsData(e.target.value)}
+                    placeholder="Paste character names (comma-separated or one per line)&#10;&#10;Example: Headjaws, Calonise, Leroyspankin, Nardziz"
+                    className="w-full h-24 px-4 py-3 bg-[#151515] border border-[#383838] rounded-xl text-white text-[13px] focus:outline-none focus:border-[#ff8000] font-mono placeholder-[#606060] resize-none"
+                  />
+                </div>
+              )}
             </div>
 
-            <textarea
-              value={importData}
-              onChange={e => setImportData(e.target.value)}
-              placeholder={
-                importType === 'signup'
-                  ? `Paste signup names (comma-separated or one per line)\n\nExample:\nHeadjaws, Calonise, Leroyspankin, Nardziz\n\nOr:\nHeadjaws\nCalonise\nLeroyspankin\n\nMatched names will be linked to accounts.\nUnmatched names will be tracked and linked if they join later.`
-                  : `Paste attendance names (comma-separated or one per line)\n\nExample:\nHeadjaws, Calonise, Leroyspankin\n\nOr:\nHeadjaws\nCalonise\nLeroyspankin\n\nMatched names will be linked to accounts.\nUnmatched names will be tracked and linked if they join later.`
-              }
-              className="w-full h-64 px-4 py-3 bg-[#0d0e11] border border-[rgba(255,255,255,0.1)] rounded-lg text-white text-[14px] focus:outline-none focus:border-[#ff8000] mb-4 font-mono"
-            />
-            <div className="flex gap-2">
+            {/* Footer */}
+            <div className="p-6 border-t border-[#383838] flex gap-3">
               <button
-                onClick={() => setShowImportModal(null)}
-                className="flex-1 px-4 py-2 bg-[#151515] hover:bg-[#1a1a1a] border border-[rgba(255,255,255,0.1)] rounded-[52px] text-white text-[14px] font-medium transition"
+                onClick={() => {
+                  setShowImportModal(null)
+                  setAttendanceData('')
+                  setLootData('')
+                  setSignupsData('')
+                }}
+                className="flex-1 px-5 py-3 bg-[#151515] hover:bg-[#1a1a1a] border border-[#383838] rounded-[52px] text-white text-[13px] font-medium transition"
               >
                 Cancel
               </button>
               <button
-                onClick={importSignups}
-                className="flex-1 px-4 py-2 bg-white hover:bg-gray-100 rounded-[52px] text-black text-[14px] font-medium transition"
+                onClick={importAllRaidData}
+                disabled={importing || (!attendanceData.trim() && !lootData.trim())}
+                className="flex-1 px-5 py-3 bg-white hover:bg-gray-100 disabled:bg-[#333] disabled:text-[#666] rounded-[52px] text-black text-[13px] font-medium transition"
               >
-                Import {importType === 'signup' ? 'Signups' : 'Attendance'}
+                {importing ? 'Saving...' : (showImportModal.isEdit ? 'Save Changes' : 'Import All')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Loot Item Selection Modal */}
+      {showLootSelectionModal && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[60] flex items-center justify-center p-4" onClick={() => skipLootItemSelection()}>
+          <div className="bg-[#0d0e11] border border-[#383838] rounded-xl max-w-lg w-full overflow-hidden" onClick={e => e.stopPropagation()}>
+            {/* Header */}
+            <div className="p-6 border-b border-[#383838] bg-[#141519]">
+              <h3 className="text-[18px] font-bold text-white">Item Not Found</h3>
+              <p className="text-[#a1a1a1] text-[13px] mt-1">
+                Could not find item ID <span className="text-[#ff8000] font-mono">[{showLootSelectionModal.itemId}]</span> for{' '}
+                <span className="text-white font-medium">{showLootSelectionModal.characterName}</span>
+              </p>
+            </div>
+
+            {/* Content */}
+            <div className="p-6 space-y-4">
+              <input
+                type="text"
+                value={lootSearchQuery}
+                onChange={e => setLootSearchQuery(e.target.value)}
+                placeholder="Search for item by name..."
+                className="w-full px-4 py-3 bg-[#151515] border border-[#383838] rounded-xl text-white text-[13px] focus:outline-none focus:border-[#ff8000] placeholder-[#606060]"
+                autoFocus
+              />
+
+              <div className="max-h-64 overflow-y-auto space-y-1">
+                {lootItems
+                  .filter(item =>
+                    lootSearchQuery.length === 0 ||
+                    item.name.toLowerCase().includes(lootSearchQuery.toLowerCase()) ||
+                    item.boss_name.toLowerCase().includes(lootSearchQuery.toLowerCase())
+                  )
+                  .slice(0, 20)
+                  .map(item => (
+                    <button
+                      key={item.id}
+                      onClick={() => handleLootItemSelection(item)}
+                      className="w-full px-4 py-3 bg-[#151515] hover:bg-[#1a1a1a] border border-[#383838] rounded-xl text-left transition"
+                    >
+                      <p className="text-white text-[13px] font-medium">{item.name}</p>
+                      <p className="text-[#606060] text-[11px]">{item.boss_name} • ID: {item.wowhead_id}</p>
+                    </button>
+                  ))}
+                {lootItems.filter(item =>
+                  lootSearchQuery.length === 0 ||
+                  item.name.toLowerCase().includes(lootSearchQuery.toLowerCase())
+                ).length === 0 && (
+                  <p className="text-[#606060] text-[13px] text-center py-4">No items found</p>
+                )}
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="p-6 border-t border-[#383838] flex gap-3">
+              <button
+                onClick={skipLootItemSelection}
+                className="flex-1 px-5 py-3 bg-[#151515] hover:bg-[#1a1a1a] border border-[#383838] rounded-[52px] text-white text-[13px] font-medium transition"
+              >
+                Skip This Item
               </button>
             </div>
           </div>

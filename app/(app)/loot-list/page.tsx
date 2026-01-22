@@ -137,14 +137,14 @@ export default function LootList() {
     return order[tierName] || 999 // Unknown tiers go to the end
   }
 
-  // Helper to change tier and update URL
+  // Helper to change tier and update URL without page reload
   const changeTier = useCallback((tierId: string) => {
     setSelectedTierId(tierId)
-    // Update URL with tier parameter
+    // Update URL with tier parameter without causing navigation/reload
     const params = new URLSearchParams(searchParams.toString())
     params.set('tier', tierId)
-    router.push(`?${params.toString()}`, { scroll: false })
-  }, [searchParams, router])
+    window.history.replaceState(null, '', `?${params.toString()}`)
+  }, [searchParams])
 
   useEffect(() => {
     const loadData = async () => {
@@ -200,6 +200,7 @@ export default function LootList() {
         .from('raid_tiers')
         .select('id, name, is_active, submission_deadline')
         .eq('expansion_id', targetExpansionId)
+        .eq('is_guild_active', true)
 
       if (!tiersData || tiersData.length === 0) {
         setLoading(false)
@@ -1141,7 +1142,7 @@ export default function LootList() {
 
         {/* Bracket 1 (50-48) */}
         <div className="bg-card border border-border rounded-xl overflow-hidden">
-          <div className="bg-gradient-to-r from-red-900 to-red-700 px-4 py-2">
+          <div className="bg-[#2a1a1a] border-l-4 border-l-red-800/60 px-4 py-2">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <h2 className="text-[15px] font-semibold text-white">Bracket 1 (50-48)</h2>
@@ -1217,7 +1218,7 @@ export default function LootList() {
 
         {/* Bracket 2 (47-45) */}
         <div className="bg-card border border-border rounded-xl overflow-hidden">
-          <div className="bg-gradient-to-r from-orange-900 to-orange-700 px-4 py-2">
+          <div className="bg-[#2a1f1a] border-l-4 border-l-orange-800/60 px-4 py-2">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <h2 className="text-[15px] font-semibold text-white">Bracket 2 (47-45)</h2>
@@ -1293,7 +1294,7 @@ export default function LootList() {
 
         {/* Bracket 3 (44-42) */}
         <div className="bg-card border border-border rounded-xl overflow-hidden">
-          <div className="bg-gradient-to-r from-yellow-900 to-yellow-700 px-4 py-2">
+          <div className="bg-[#2a2a1a] border-l-4 border-l-yellow-800/60 px-4 py-2">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <h2 className="text-[15px] font-semibold text-white">Bracket 3 (44-42)</h2>
@@ -1369,7 +1370,7 @@ export default function LootList() {
 
         {/* Bracket 4 (41-39) */}
         <div className="bg-card border border-border rounded-xl overflow-hidden">
-          <div className="bg-gradient-to-r from-amber-900 to-amber-700 px-4 py-2">
+          <div className="bg-[#2a251a] border-l-4 border-l-amber-800/60 px-4 py-2">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <h2 className="text-[15px] font-semibold text-white">Bracket 4 (41-39)</h2>
@@ -1445,7 +1446,7 @@ export default function LootList() {
 
         {/* No Bracket (38-25) - Main-spec */}
         <div className="bg-card border border-border rounded-xl overflow-hidden">
-          <div className="bg-gradient-to-r from-green-900 to-green-700 px-4 py-2">
+          <div className="bg-[#1a2a1a] border-l-4 border-l-green-800/60 px-4 py-2">
             <h2 className="text-[15px] font-semibold text-white">No Bracket (38-25) - Main-spec</h2>
             <p className="text-green-200 text-[12px]">Still considered main-spec priority</p>
           </div>
@@ -1478,7 +1479,7 @@ export default function LootList() {
 
         {/* Off-spec (24-1) */}
         <div className="bg-card border border-border rounded-xl overflow-hidden">
-          <div className="bg-gradient-to-r from-blue-900 to-blue-700 px-4 py-2">
+          <div className="bg-[#1a1a2a] border-l-4 border-l-blue-800/60 px-4 py-2">
             <h2 className="text-[15px] font-semibold text-white">Off-spec (24-1)</h2>
             <p className="text-blue-200 text-[12px]">Off-spec items to support guild flexibility</p>
           </div>

@@ -131,6 +131,7 @@ export default function AdminPrioList() {
             .from('raid_tiers')
             .select('id, name, is_active')
             .eq('expansion_id', activeGuild.active_expansion_id)
+            .eq('is_guild_active', true)
             .order('name')
 
           if (tiersData && tiersData.length > 0) {
