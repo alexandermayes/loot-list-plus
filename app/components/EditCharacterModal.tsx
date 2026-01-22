@@ -190,10 +190,8 @@ export function EditCharacterModal({ isOpen, onClose, character, onSuccess }: Ed
         return
       }
 
-      await refreshCharacters()
-      setDeleting(false)
-      onClose()
-      onSuccess?.()
+      // Redirect to dashboard to refresh all state
+      window.location.href = '/dashboard'
     } catch (err) {
       console.error('Error deleting character:', err)
       setError('An error occurred while deleting the character')
