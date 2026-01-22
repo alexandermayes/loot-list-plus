@@ -118,28 +118,28 @@ export function CreateCharacterModal({ isOpen, onClose, onSuccess, suggestedName
     setLoading(true)
 
     try {
-      // Check for duplicate character name in the guild
+      // Check for duplicate character name in the guild via API
       if (activeGuild) {
-        const { data: existingChars } = await supabase
-          .from('character_guild_memberships')
-          .select(`
-            character:characters (
-              name
-            )
-          `)
-          .eq('guild_id', activeGuild.id)
-          .eq('is_active', true)
+        try {
+          const checkResponse = await fetch(`/api/guild-members?guild_id=${activeGuild.id}`)
+          if (checkResponse.ok) {
+            const { members } = await checkResponse.json()
+            const existingNames = (members || [])
+              .flatMap((m: any) => m.characters?.map((c: any) => c.name?.toLowerCase()) || [])
+              .filter(Boolean)
 
-        const existingNames = (existingChars || [])
-          .map((m: any) => m.character?.name?.toLowerCase())
-          .filter(Boolean)
-
-        if (existingNames.includes(name.trim().toLowerCase())) {
-          setError('A character with this name already exists in the guild')
-          setLoading(false)
-          return
+            if (existingNames.includes(name.trim().toLowerCase())) {
+              setError('A character with this name already exists in the guild')
+              setLoading(false)
+              return
+            }
+          }
+        } catch (checkErr) {
+          console.error('Error checking for duplicate names:', checkErr)
+          // Continue with creation even if check fails
         }
       }
+
       const response = await fetch('/api/characters', {
         method: 'POST',
         headers: {
