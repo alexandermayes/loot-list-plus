@@ -318,24 +318,26 @@ export async function DELETE(
     }
 
     // Delete character (will cascade to character_guild_memberships)
-    const { error } = await adminClient
+    const { error, data: deletedData } = await adminClient
       .from('characters')
       .delete()
       .eq('id', id)
+      .select()
 
     if (error) {
       console.error('Error deleting character:', error)
       return NextResponse.json(
-        { error: 'Failed to delete character' },
+        { error: 'Failed to delete character', details: error.message, code: error.code },
         { status: 500 }
       )
     }
 
+    console.log('Character deleted successfully:', id, deletedData)
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error('Error in DELETE /api/characters/[id]:', error)
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Internal server error', details: error instanceof Error ? error.message : String(error) },
       { status: 500 }
     )
   }
