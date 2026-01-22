@@ -52,21 +52,43 @@ export async function GET(request) {
         }
 
         // If user has guilds, ensure they have an active guild set
-        const { data: activeGuild } = await supabase
+        const { data: existingActiveGuild } = await supabase
           .from('user_active_guilds')
           .select('active_guild_id')
           .eq('user_id', user.id)
           .single()
 
         // If no active guild is set, set the first guild as active
-        if (!activeGuild) {
-          await supabase
-            .from('user_active_guilds')
-            .upsert({
-              user_id: user.id,
-              active_guild_id: memberships[0].guild_id,
-              updated_at: new Date().toISOString()
-            })
+        if (!existingActiveGuild) {
+          // Determine which guild ID to use
+          let firstGuildId = null
+
+          if (hasCharacterMemberships && userCharacters && userCharacters.length > 0) {
+            // Get the first character's guild membership
+            const { data: firstCharMembership } = await supabase
+              .from('character_guild_memberships')
+              .select('guild_id')
+              .in('character_id', userCharacters.map(c => c.id))
+              .eq('is_active', true)
+              .limit(1)
+              .single()
+
+            if (firstCharMembership) {
+              firstGuildId = firstCharMembership.guild_id
+            }
+          } else if (hasOldMemberships && oldMemberships && oldMemberships.length > 0) {
+            firstGuildId = oldMemberships[0].guild_id
+          }
+
+          if (firstGuildId) {
+            await supabase
+              .from('user_active_guilds')
+              .upsert({
+                user_id: user.id,
+                active_guild_id: firstGuildId,
+                updated_at: new Date().toISOString()
+              })
+          }
         }
       }
 
