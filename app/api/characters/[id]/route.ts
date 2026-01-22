@@ -276,6 +276,43 @@ export async function DELETE(
       }
     }
 
+    // Check if this character is the user's active character
+    const { data: activeCharData } = await supabase
+      .from('user_active_characters')
+      .select('active_character_id')
+      .eq('user_id', user.id)
+      .maybeSingle()
+
+    if (activeCharData?.active_character_id === id) {
+      // Find another character to set as active, or clear if none
+      const { data: otherCharacters } = await supabase
+        .from('characters')
+        .select('id')
+        .eq('user_id', user.id)
+        .neq('id', id)
+        .order('is_main', { ascending: false })
+        .limit(1)
+
+      const newActiveCharId = otherCharacters?.[0]?.id || null
+
+      // Update or delete the active character record
+      if (newActiveCharId) {
+        await supabase
+          .from('user_active_characters')
+          .update({
+            active_character_id: newActiveCharId,
+            updated_at: new Date().toISOString()
+          })
+          .eq('user_id', user.id)
+      } else {
+        // No other characters, delete the active character record
+        await supabase
+          .from('user_active_characters')
+          .delete()
+          .eq('user_id', user.id)
+      }
+    }
+
     // Delete character (will cascade to character_guild_memberships)
     const { error } = await supabase
       .from('characters')
