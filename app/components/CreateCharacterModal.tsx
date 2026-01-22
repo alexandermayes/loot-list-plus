@@ -164,11 +164,13 @@ export function CreateCharacterModal({ isOpen, onClose, onSuccess, suggestedName
         return
       }
 
+      // Get user for setting active character
+      const { data: { user } } = await supabase.auth.getUser()
+
       // If user has an active guild, automatically add character to it
       if (activeGuild && data.character) {
         try {
           // Check if user is the guild creator - they should be Guild Master
-          const { data: { user } } = await supabase.auth.getUser()
           const isGuildCreator = user && activeGuild.created_by === user.id
           const role = isGuildCreator ? 'Guild Master' : 'Member'
 
@@ -190,6 +192,29 @@ export function CreateCharacterModal({ isOpen, onClose, onSuccess, suggestedName
           }
         } catch (membershipErr) {
           console.error('Error adding character to guild:', membershipErr)
+        }
+      }
+
+      // Set the new character as the active character using API (bypasses RLS issues)
+      if (data.character) {
+        try {
+          const activeCharResponse = await fetch('/api/user/active-character', {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              character_id: data.character.id,
+              guild_id: activeGuild?.id || null
+            })
+          })
+
+          if (!activeCharResponse.ok) {
+            const activeCharError = await activeCharResponse.json()
+            console.error('Error setting active character:', activeCharError)
+          }
+        } catch (activeCharErr) {
+          console.error('Error setting active character:', activeCharErr)
         }
       }
 
