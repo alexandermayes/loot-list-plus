@@ -736,7 +736,7 @@ export default function LootList() {
     violations: string[]
   }
 
-  const validateBrackets = (): BracketValidation[] => {
+  const bracketValidations = useMemo((): BracketValidation[] => {
     const brackets: BracketValidation[] = [
       { bracketName: 'Bracket 1 (50-48)', allocationPoints: 0, maxPoints: 3, ranks: [50, 49, 48], violations: [] },
       { bracketName: 'Bracket 2 (47-45)', allocationPoints: 0, maxPoints: 3, ranks: [47, 46, 45], violations: [] },
@@ -833,9 +833,7 @@ export default function LootList() {
     })
 
     return brackets.filter(b => b.violations.length > 0 || b.allocationPoints > 0)
-  }
-
-  const bracketValidations = validateBrackets()
+  }, [rankings, lootItems, enforceSlotRestrictions])
   const hasValidationErrors = bracketValidations.some(b => b.violations.length > 0)
 
   // Get validation for a specific bracket by name

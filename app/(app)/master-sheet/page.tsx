@@ -397,12 +397,16 @@ export default function MasterSheet() {
         }
         setItemPriorities(prioritiesMap)
 
-        // Pre-calculate attendance for all characters (with user fallback)
+        // Pre-calculate attendance for all characters in parallel
         const attendanceCache: Record<string, number> = {}
-        for (const character of charactersData || []) {
-          // Use character ID as cache key
-          attendanceCache[character.id] = await calculateAttendance(character.user_id, character.id)
-        }
+        const attendancePromises = (charactersData || []).map(async (character) => {
+          const attendance = await calculateAttendance(character.user_id, character.id)
+          return { id: character.id, attendance }
+        })
+        const attendanceResults = await Promise.all(attendancePromises)
+        attendanceResults.forEach(({ id, attendance }) => {
+          attendanceCache[id] = attendance
+        })
 
         // Build rankings for each item
         const itemRankingsMap: Record<string, ItemRankings> = {}
