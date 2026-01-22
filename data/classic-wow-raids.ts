@@ -1026,6 +1026,7 @@ export const naxxramas: Raid = {
         { name: 'Wand of the Whispering Dead', slot: 'Wand', wowhead_id: 23009 },
         { name: 'Signet of the Fallen Defender', slot: 'Finger', wowhead_id: 23018 },
         { name: 'Veil of Eclipse', slot: 'Back', wowhead_id: 23017 },
+        { name: 'Girdle of the Mentor', slot: 'Waist', wowhead_id: 23219 },
         { name: 'Idol of Longevity', slot: 'Idol', wowhead_id: 23004 },
       ],
     },
@@ -1103,6 +1104,11 @@ export const naxxramas: Raid = {
         { name: "Sapphiron's Left Eye", slot: 'Off-Hand', wowhead_id: 23049 },
         { name: 'Shroud of Dominion', slot: 'Back', wowhead_id: 23045 },
         { name: 'Cloak of the Necropolis', slot: 'Back', wowhead_id: 23050 },
+        // Shoulder Enchants
+        { name: 'Might of the Scourge', slot: 'Enchant', wowhead_id: 23548 },
+        { name: 'Power of the Scourge', slot: 'Enchant', wowhead_id: 23545 },
+        { name: 'Fortitude of the Scourge', slot: 'Enchant', wowhead_id: 23549 },
+        { name: 'Resilience of the Scourge', slot: 'Enchant', wowhead_id: 23547 },
       ],
     },
     {
@@ -1169,6 +1175,28 @@ export const naxxramas: Raid = {
         { name: 'Desecrated Bindings', slot: 'Token', wowhead_id: 22370 },
         { name: 'Desecrated Wristguards', slot: 'Token', wowhead_id: 22371 },
         { name: 'Desecrated Bracers', slot: 'Token', wowhead_id: 22372 },
+      ],
+    },
+    {
+      name: 'Trash',
+      items: [
+        // Weapons
+        { name: 'Harbinger of Doom', slot: 'Weapon', wowhead_id: 23044 },
+        { name: 'Misplaced Servo Arm', slot: 'Weapon', wowhead_id: 23221 },
+        // Armor
+        { name: 'Stygian Buckler', slot: 'Shield', wowhead_id: 23238 },
+        { name: "Necro-Knight's Garb", slot: 'Chest', wowhead_id: 23069 },
+        { name: 'Ghoul Skin Tunic', slot: 'Chest', wowhead_id: 23226 },
+        // Jewelry
+        { name: 'Ring of the Eternal Flame', slot: 'Finger', wowhead_id: 23237 },
+        // Elemental Fury Set (Shaman)
+        { name: 'Pauldrons of Elemental Fury', slot: 'Shoulder', wowhead_id: 23664 },
+        { name: 'Girdle of Elemental Fury', slot: 'Waist', wowhead_id: 23663 },
+        { name: 'Leggings of Elemental Fury', slot: 'Legs', wowhead_id: 23665 },
+        // Grand Crusader Set (Paladin)
+        { name: 'Belt of the Grand Crusader', slot: 'Waist', wowhead_id: 23666 },
+        { name: 'Spaulders of the Grand Crusader', slot: 'Shoulder', wowhead_id: 23667 },
+        { name: 'Leggings of the Grand Crusader', slot: 'Legs', wowhead_id: 23668 },
       ],
     },
   ],
