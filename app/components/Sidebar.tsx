@@ -261,26 +261,31 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange }
       </div>
     </div>
 
-    <aside className="fixed left-0 top-0 h-screen w-[208px] bg-[#0d0e11] flex flex-col px-0 pt-9 pb-0 z-50">
-      {/* Logo */}
-      <div className="px-6 mb-12">
-        <button
-          onClick={() => handleNavClick('overview')}
-          className="cursor-pointer hover:opacity-80 transition"
-        >
-          <Image
-            src="/logo.svg"
-            alt="LootList+"
-            width={102}
-            height={16}
-            className="h-4 w-auto"
-            priority
-          />
-        </button>
+    <aside className="fixed left-0 top-0 h-screen w-[208px] bg-[#0d0e11] flex flex-col px-0 pb-0 z-50">
+      {/* Logo with scroll fade gradient - positioned to overlay scroll content */}
+      <div
+        className="absolute top-0 left-0 right-0 flex flex-col items-start justify-center px-[10px] py-[36px] w-[208px] z-10 pointer-events-none"
+        style={{ background: 'linear-gradient(to bottom, #0d0e11 69.886%, rgba(13,14,17,0) 100%)' }}
+      >
+        <div className="px-[12px] pointer-events-auto">
+          <button
+            onClick={() => handleNavClick('overview')}
+            className="cursor-pointer hover:opacity-80 transition"
+          >
+            <Image
+              src="/logo.svg"
+              alt="LootList+"
+              width={102}
+              height={16}
+              className="h-4 w-auto"
+              priority
+            />
+          </button>
+        </div>
       </div>
 
       {/* Main Navigation - Scrollable (extends to bottom) */}
-      <div className="flex-1 flex flex-col gap-6 min-h-0 overflow-y-auto sidebar-scrollable px-2.5 pb-[170px]">
+      <div className="flex-1 flex flex-col gap-6 min-h-0 overflow-y-auto sidebar-scrollable px-2.5 pb-[170px] pt-[88px]">
         {/* Guild Selector */}
         <div className="flex flex-col gap-3">
           <div className="flex flex-col gap-[4px]">
