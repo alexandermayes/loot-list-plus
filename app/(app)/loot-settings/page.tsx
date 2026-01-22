@@ -59,6 +59,10 @@ export default function AdminLootItems() {
   const [searchTerm, setSearchTerm] = useState('')
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('')
   const [filterTier, setFilterTier] = useState<string>('all')
+  const [filterSlot, setFilterSlot] = useState<string>('all')
+  const [filterClassification, setFilterClassification] = useState<string>('all')
+  const [sortField, setSortField] = useState<'name' | 'boss' | 'slot' | 'raid' | 'classification' | null>(null)
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc')
   const [raidTiers, setRaidTiers] = useState<any[]>([])
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage, setItemsPerPage] = useState(100)
@@ -155,7 +159,7 @@ export default function AdminLootItems() {
   // Reset to page 1 when filters or items per page change
   useEffect(() => {
     setCurrentPage(1)
-  }, [debouncedSearchTerm, filterTier, itemsPerPage])
+  }, [debouncedSearchTerm, filterTier, filterSlot, filterClassification, sortField, sortDirection, itemsPerPage])
 
   useEffect(() => {
     if (!guildLoading) {
@@ -1135,15 +1139,62 @@ export default function AdminLootItems() {
     return selectedIds.has(roleId)
   }, [classSpecs, getRoleGroupSpecs])
 
+  // Get unique slots for filter dropdown
+  const uniqueSlots = useMemo(() => {
+    const slots = [...new Set(lootItems.map(item => item.item_slot).filter(Boolean))]
+    return slots.sort()
+  }, [lootItems])
+
   // Memoize filtered items to prevent unnecessary recalculations
   const filteredItems = useMemo(() => {
-    return lootItems.filter(item => {
+    let items = lootItems.filter(item => {
       const matchesSearch = item.name.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
                            item.boss_name.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
       const matchesTier = filterTier === 'all' || (item.raid_tier as any)?.name === filterTier
-      return matchesSearch && matchesTier
+      const matchesSlot = filterSlot === 'all' || item.item_slot === filterSlot
+      const matchesClassification = filterClassification === 'all' || item.classification === filterClassification
+      return matchesSearch && matchesTier && matchesSlot && matchesClassification
     })
-  }, [lootItems, debouncedSearchTerm, filterTier])
+
+    // Apply sorting if a sort field is selected
+    if (sortField) {
+      items = [...items].sort((a, b) => {
+        let aValue: string
+        let bValue: string
+
+        switch (sortField) {
+          case 'name':
+            aValue = a.name.toLowerCase()
+            bValue = b.name.toLowerCase()
+            break
+          case 'boss':
+            aValue = a.boss_name.toLowerCase()
+            bValue = b.boss_name.toLowerCase()
+            break
+          case 'slot':
+            aValue = (a.item_slot || '').toLowerCase()
+            bValue = (b.item_slot || '').toLowerCase()
+            break
+          case 'raid':
+            aValue = ((a.raid_tier as any)?.name || '').toLowerCase()
+            bValue = ((b.raid_tier as any)?.name || '').toLowerCase()
+            break
+          case 'classification':
+            aValue = a.classification.toLowerCase()
+            bValue = b.classification.toLowerCase()
+            break
+          default:
+            return 0
+        }
+
+        if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1
+        if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1
+        return 0
+      })
+    }
+
+    return items
+  }, [lootItems, debouncedSearchTerm, filterTier, filterSlot, filterClassification, sortField, sortDirection])
 
   // Pagination calculations
   const totalPages = Math.ceil(filteredItems.length / itemsPerPage)
@@ -1173,7 +1224,7 @@ export default function AdminLootItems() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-[42px] font-bold text-white leading-tight">Master Loot</h1>
-            <p className="text-[#a1a1a1] mt-1 text-[14px]">Manage loot items and configure classifications</p>
+            <p className="text-[#666] mt-1 text-[14px]">Manage loot items and configure classifications</p>
           </div>
           <button
             onClick={() => setShowSettingsModal(true)}
@@ -1196,7 +1247,7 @@ export default function AdminLootItems() {
               className={`px-4 py-2 rounded-t-lg whitespace-nowrap text-[13px] font-medium transition-all ${
                 pathname === tab.href
                   ? 'bg-[rgba(255,128,0,0.2)] border-[0.5px] border-[rgba(255,128,0,0.2)] text-[#ff8000]'
-                  : 'text-[#a1a1a1] hover:text-white hover:bg-[#1a1a1a]'
+                  : 'text-[#666] hover:text-white hover:bg-[#1a1a1a]'
               }`}
             >
               <span className="mr-2">{tab.icon}</span>
@@ -1207,28 +1258,81 @@ export default function AdminLootItems() {
 
         {/* Filters */}
         <div className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl p-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
             <div>
-              <label className="block text-[13px] font-medium text-white mb-2">Search Items</label>
+              <label className="block text-[12px] font-medium text-[#666] mb-2">Search Items</label>
               <input
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="Search by name or boss..."
-                className="w-full px-5 py-3 bg-[#151515] border border-[#383838] rounded-[52px] text-white text-[13px] focus:outline-none focus:border-[#ff8000]"
+                className="w-full px-4 py-2 bg-[#151515] border border-[#383838] rounded-[52px] text-white text-[12px] focus:outline-none focus:border-[#ff8000]"
               />
             </div>
             <div>
-              <label className="block text-[13px] font-medium text-white mb-2">Filter by Raid</label>
+              <label className="block text-[12px] font-medium text-[#666] mb-2">Raid</label>
               <select
                 value={filterTier}
                 onChange={(e) => setFilterTier(e.target.value)}
-                className="w-full px-5 py-3 bg-[#151515] border border-[#383838] rounded-[52px] text-white text-[13px] focus:outline-none focus:border-[#ff8000] cursor-pointer select-custom"
+                className="w-full px-4 py-2 bg-[#151515] border border-[#383838] rounded-[52px] text-white text-[12px] focus:outline-none focus:border-[#ff8000] cursor-pointer select-custom-sm"
               >
                 <option value="all" className="bg-[#151515] text-white">All Raids</option>
                 {raidTiers.map(tier => (
                   <option key={tier.id} value={tier.name} className="bg-[#151515] text-white">{tier.name}</option>
                 ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-[12px] font-medium text-[#666] mb-2">Slot</label>
+              <select
+                value={filterSlot}
+                onChange={(e) => setFilterSlot(e.target.value)}
+                className="w-full px-4 py-2 bg-[#151515] border border-[#383838] rounded-[52px] text-white text-[12px] focus:outline-none focus:border-[#ff8000] cursor-pointer select-custom-sm"
+              >
+                <option value="all" className="bg-[#151515] text-white">All Slots</option>
+                {uniqueSlots.map(slot => (
+                  <option key={slot} value={slot} className="bg-[#151515] text-white">{slot}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-[12px] font-medium text-[#666] mb-2">Classification</label>
+              <select
+                value={filterClassification}
+                onChange={(e) => setFilterClassification(e.target.value)}
+                className="w-full px-4 py-2 bg-[#151515] border border-[#383838] rounded-[52px] text-white text-[12px] focus:outline-none focus:border-[#ff8000] cursor-pointer select-custom-sm"
+              >
+                <option value="all" className="bg-[#151515] text-white">All Classifications</option>
+                <option value="Reserved" className="bg-[#151515]" style={{ color: '#E57373' }}>Reserved</option>
+                <option value="Limited" className="bg-[#151515]" style={{ color: '#64B5F6' }}>Limited</option>
+                <option value="Unlimited" className="bg-[#151515]" style={{ color: '#B0B0B0' }}>Unlimited</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-[12px] font-medium text-[#666] mb-2">Sort By</label>
+              <select
+                value={sortField || ''}
+                onChange={(e) => setSortField(e.target.value as any || null)}
+                className="w-full px-4 py-2 bg-[#151515] border border-[#383838] rounded-[52px] text-white text-[12px] focus:outline-none focus:border-[#ff8000] cursor-pointer select-custom-sm"
+              >
+                <option value="" className="bg-[#151515] text-white">Default</option>
+                <option value="name" className="bg-[#151515] text-white">Item Name</option>
+                <option value="boss" className="bg-[#151515] text-white">Boss</option>
+                <option value="slot" className="bg-[#151515] text-white">Slot</option>
+                <option value="raid" className="bg-[#151515] text-white">Raid</option>
+                <option value="classification" className="bg-[#151515] text-white">Classification</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-[12px] font-medium text-[#666] mb-2">Order</label>
+              <select
+                value={sortDirection}
+                onChange={(e) => setSortDirection(e.target.value as 'asc' | 'desc')}
+                disabled={!sortField}
+                className="w-full px-4 py-2 bg-[#151515] border border-[#383838] rounded-[52px] text-white text-[12px] focus:outline-none focus:border-[#ff8000] cursor-pointer select-custom-sm disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <option value="asc" className="bg-[#151515] text-white">A → Z</option>
+                <option value="desc" className="bg-[#151515] text-white">Z → A</option>
               </select>
             </div>
           </div>
@@ -1237,23 +1341,23 @@ export default function AdminLootItems() {
         {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl p-4">
-            <p className="text-[#a1a1a1] text-sm">Total Items</p>
+            <p className="text-[#666] text-sm">Total Items</p>
             <p className="text-2xl font-bold text-white">{filteredItems.length}</p>
           </div>
           <div className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl p-4">
-            <p className="text-[#a1a1a1] text-sm">Available</p>
+            <p className="text-[#666] text-sm">Available</p>
             <p className="text-2xl font-bold text-green-400">
               {filteredItems.filter(i => i.is_available).length}
             </p>
           </div>
           <div className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl p-4">
-            <p className="text-[#a1a1a1] text-sm">Reserved</p>
+            <p className="text-[#666] text-sm">Reserved</p>
             <p className="text-2xl font-bold text-red-400">
               {filteredItems.filter(i => i.classification === 'Reserved').length}
             </p>
           </div>
           <div className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl p-4">
-            <p className="text-[#a1a1a1] text-sm">Limited</p>
+            <p className="text-[#666] text-sm">Limited</p>
             <p className="text-2xl font-bold text-yellow-400">
               {filteredItems.filter(i => i.classification === 'Limited').length}
             </p>
@@ -1275,62 +1379,61 @@ export default function AdminLootItems() {
                 <col style={{ width: '220px' }} />
               </colgroup>
               <thead>
-                <tr className="bg-[#1a1a1a] border-b border-[rgba(255,255,255,0.1)]">
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-[#a1a1a1]">On</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-[#a1a1a1]">Item Name</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-[#a1a1a1]">Boss</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-[#a1a1a1]">Slot</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-[#a1a1a1]">Raid</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-[#a1a1a1]">Classification</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-[#a1a1a1]">Primary</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-[#a1a1a1]">Secondary</th>
+                <tr className="bg-[#0d0e11] border-b border-[rgba(255,255,255,0.05)]">
+                  <th className="px-4 py-2.5 text-left text-[12px] font-medium text-[#666]">On</th>
+                  <th className="px-4 py-2.5 text-left text-[12px] font-medium text-[#666]">Item Name</th>
+                  <th className="px-4 py-2.5 text-left text-[12px] font-medium text-[#666]">Boss</th>
+                  <th className="px-4 py-2.5 text-left text-[12px] font-medium text-[#666]">Slot</th>
+                  <th className="px-4 py-2.5 text-left text-[12px] font-medium text-[#666]">Raid</th>
+                  <th className="px-4 py-2.5 text-left text-[12px] font-medium text-[#666]">Classification</th>
+                  <th className="px-4 py-2.5 text-left text-[12px] font-medium text-[#666]">Primary</th>
+                  <th className="px-4 py-2.5 text-left text-[12px] font-medium text-[#666]">Secondary</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[rgba(255,255,255,0.1)]">
+              <tbody className="divide-y divide-[rgba(255,255,255,0.05)]">
                 {paginatedItems.map((item) => (
-                  <tr key={item.id} className="hover:bg-[#1a1a1a]">
-                    <td className="px-4 py-3">
+                  <tr key={item.id} className="hover:bg-[#1a1a1a]/50">
+                    <td className="px-4 py-2.5">
                       <button
                         onClick={() => toggleAvailability(item.id, item.is_available)}
-                        className={`w-6 h-6 rounded ${
+                        className={`w-4 h-4 rounded ${
                           item.is_available
                             ? 'bg-green-600 hover:bg-green-700'
                             : 'bg-[#2a2a2a] hover:bg-[#333333]'
                         } flex items-center justify-center`}
                       >
                         {item.is_available && (
-                          <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                           </svg>
                         )}
                       </button>
                     </td>
-                    <td className="px-4 py-3 text-white">
+                    <td className="px-4 py-2.5 text-[13px] text-white">
                       <div className="truncate overflow-hidden">
                         <ItemLink name={item.name} wowheadId={item.wowhead_id} />
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-[#a1a1a1]">
+                    <td className="px-4 py-2.5 text-[12px] text-[#666]">
                       <div className="truncate">{item.boss_name}</div>
                     </td>
-                    <td className="px-4 py-3 text-[#a1a1a1]">
+                    <td className="px-4 py-2.5 text-[12px] text-[#666]">
                       <div className="truncate">{item.item_slot}</div>
                     </td>
-                    <td className="px-4 py-3 text-[#a1a1a1]">
+                    <td className="px-4 py-2.5 text-[12px] text-[#666]">
                       <div className="truncate">{(item.raid_tier as any)?.name}</div>
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-2.5">
                       <select
                         value={item.classification}
                         onChange={(e) => updateClassification(item.id, e.target.value)}
-                        className="w-full px-3 py-2 bg-[#151515] border border-[#383838] rounded-[52px] focus:outline-none focus:border-[#ff8000] transition-colors cursor-pointer appearance-none flex items-center font-medium"
+                        className="w-full px-3 py-2 bg-[#151515] border border-[#383838] rounded-[52px] focus:outline-none focus:border-[#ff8000] transition-colors cursor-pointer appearance-none flex items-center text-[12px] font-medium"
                         style={{
-                          minHeight: '44px',
                           backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23ffffff' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`,
                           backgroundPosition: 'right 0.5rem center',
                           backgroundRepeat: 'no-repeat',
-                          backgroundSize: '1.5em 1.5em',
-                          paddingRight: '2.5rem',
+                          backgroundSize: '1em 1em',
+                          paddingRight: '2rem',
                           color: item.classification === 'Reserved' ? '#E57373' :
                                  item.classification === 'Limited' ? '#64B5F6' :
                                  item.classification === 'Unlimited' ? '#B0B0B0' :
@@ -1342,7 +1445,7 @@ export default function AdminLootItems() {
                         <option value="Unlimited" className="bg-[#151515]" style={{ color: '#B0B0B0' }}>Unlimited</option>
                       </select>
                     </td>
-                    <td className="px-2 py-3">
+                    <td className="px-2 py-2.5">
                       <MultiSelectDropdown
                         placeholder="Primary"
                         selectedIds={itemSpecs[item.id]?.primary || new Set()}
@@ -1377,7 +1480,7 @@ export default function AdminLootItems() {
                         variant="primary"
                       />
                     </td>
-                    <td className="px-2 py-3">
+                    <td className="px-2 py-2.5">
                       <MultiSelectDropdown
                         placeholder="Secondary"
                         selectedIds={itemSpecs[item.id]?.secondary || new Set()}
@@ -1420,9 +1523,9 @@ export default function AdminLootItems() {
 
           {/* Pagination Controls */}
           {filteredItems.length > 0 && (
-            <div className="flex items-center justify-between px-4 py-6 bg-[#0d0e11] border-t border-[rgba(255,255,255,0.1)]">
+            <div className="flex items-center justify-between px-4 py-6 bg-[#0d0e11] border-t border-[rgba(255,255,255,0.05)]">
               {/* Left: Results display */}
-              <div className="text-sm text-[#a1a1a1]">
+              <div className="text-[12px] text-[#666]">
                 Showing {startIndex + 1} to {Math.min(endIndex, filteredItems.length)} of {filteredItems.length} results
               </div>
 
@@ -1455,7 +1558,7 @@ export default function AdminLootItems() {
                           className={`flex items-center justify-center min-w-[36px] h-9 px-3 rounded-md text-sm font-medium transition-colors ${
                             currentPage === 1
                               ? 'bg-[#ff8000] text-white border border-[#ff8000]'
-                              : 'bg-[#151515] text-[#a1a1a1] border border-[#383838] hover:bg-[#1a1a1a] hover:border-[#ff8000] hover:text-white'
+                              : 'bg-[#151515] text-[#666] border border-[#383838] hover:bg-[#1a1a1a] hover:border-[#ff8000] hover:text-white'
                           }`}
                         >
                           1
@@ -1465,7 +1568,7 @@ export default function AdminLootItems() {
                       // Ellipsis after first page
                       if (showEllipsisStart) {
                         pageNumbers.push(
-                          <span key="ellipsis-start" className="text-[#a1a1a1] px-2">...</span>
+                          <span key="ellipsis-start" className="text-[#666] px-2">...</span>
                         )
                       }
 
@@ -1481,7 +1584,7 @@ export default function AdminLootItems() {
                             className={`flex items-center justify-center min-w-[36px] h-9 px-3 rounded-md text-sm font-medium transition-colors ${
                               currentPage === i
                                 ? 'bg-[#ff8000] text-white border border-[#ff8000]'
-                                : 'bg-[#151515] text-[#a1a1a1] border border-[#383838] hover:bg-[#1a1a1a] hover:border-[#ff8000] hover:text-white'
+                                : 'bg-[#151515] text-[#666] border border-[#383838] hover:bg-[#1a1a1a] hover:border-[#ff8000] hover:text-white'
                             }`}
                           >
                             {i}
@@ -1492,7 +1595,7 @@ export default function AdminLootItems() {
                       // Ellipsis before last page
                       if (showEllipsisEnd) {
                         pageNumbers.push(
-                          <span key="ellipsis-end" className="text-[#a1a1a1] px-2">...</span>
+                          <span key="ellipsis-end" className="text-[#666] px-2">...</span>
                         )
                       }
 
@@ -1505,7 +1608,7 @@ export default function AdminLootItems() {
                             className={`flex items-center justify-center min-w-[36px] h-9 px-3 rounded-md text-sm font-medium transition-colors ${
                               currentPage === totalPages
                                 ? 'bg-[#ff8000] text-white border border-[#ff8000]'
-                                : 'bg-[#151515] text-[#a1a1a1] border border-[#383838] hover:bg-[#1a1a1a] hover:border-[#ff8000] hover:text-white'
+                                : 'bg-[#151515] text-[#666] border border-[#383838] hover:bg-[#1a1a1a] hover:border-[#ff8000] hover:text-white'
                             }`}
                           >
                             {totalPages}
@@ -1532,7 +1635,7 @@ export default function AdminLootItems() {
 
               {/* Right: Rows per page */}
               <div className="flex items-center gap-3">
-                <span className="text-sm text-[#a1a1a1]">Rows per page:</span>
+                <span className="text-sm text-[#666]">Rows per page:</span>
                 <select
                   value={itemsPerPage}
                   onChange={(e) => setItemsPerPage(Number(e.target.value))}
@@ -1549,7 +1652,7 @@ export default function AdminLootItems() {
         </div>
 
         {filteredItems.length === 0 && (
-          <div className="text-center py-12 text-[#a1a1a1]">
+          <div className="text-center py-12 text-[#666]">
             No items found matching your filters
           </div>
         )}
@@ -1569,7 +1672,7 @@ export default function AdminLootItems() {
               <h3 className="text-[24px] font-bold text-white">Loot System Settings</h3>
               <button
                 onClick={() => setShowSettingsModal(false)}
-                className="text-[#a1a1a1] hover:text-white transition"
+                className="text-[#666] hover:text-white transition"
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -2008,7 +2111,7 @@ export default function AdminLootItems() {
                         return getPosition(b) - getPosition(a) // Descending order
                       }).map((role) => (
                         <div key={role}>
-                          <label className="block text-[12px] text-[#a1a1a1] mb-1">{role}</label>
+                          <label className="block text-[12px] text-[#666] mb-1">{role}</label>
                           <input
                             type="number"
                             step="0.1"

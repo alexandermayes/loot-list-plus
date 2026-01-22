@@ -174,11 +174,11 @@ const MultiSelectDropdown = memo(function MultiSelectDropdown({
         ref={buttonRef}
         type="button"
         onClick={handleToggleDropdown}
-        className="w-full px-3 py-2 bg-[#151515] border border-[#383838] rounded-[52px] text-white text-left focus:outline-none focus:border-[#ff8000] flex items-center justify-between gap-2 transition-colors"
+        className="w-full px-3 py-2 bg-[#151515] border border-[#383838] rounded-[52px] text-white text-[12px] text-left focus:outline-none focus:border-[#ff8000] flex items-center justify-between gap-2 transition-colors"
       >
         <span className="truncate flex-1 min-w-0 overflow-hidden whitespace-nowrap">{renderButtonContent()}</span>
         <svg
-          className={`w-4 h-4 ml-2 flex-shrink-0 transition-transform ${isOpen ? 'rotate-180' : ''}`}
+          className={`w-3 h-3 ml-2 flex-shrink-0 transition-transform ${isOpen ? 'rotate-180' : ''}`}
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -205,7 +205,7 @@ const MultiSelectDropdown = memo(function MultiSelectDropdown({
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search specs..."
-              className="w-full px-3 py-2 bg-[#0d0e11] border border-[rgba(255,255,255,0.1)] rounded-md text-white text-sm focus:outline-none focus:border-[#ff8000]"
+              className="w-full px-3 py-2 bg-[#0d0e11] border border-[rgba(255,255,255,0.1)] rounded-md text-white text-[12px] focus:outline-none focus:border-[#ff8000]"
             />
           </div>
 
@@ -217,7 +217,7 @@ const MultiSelectDropdown = memo(function MultiSelectDropdown({
                 e.stopPropagation()
                 onClear()
               }}
-              className="w-full px-3 py-2 text-left hover:bg-[#1a1a1a] text-[#a1a1a1] text-sm border-b border-[rgba(255,255,255,0.1)]"
+              className="w-full px-3 py-2 text-left hover:bg-[#1a1a1a] text-[#666] text-[12px] border-b border-[rgba(255,255,255,0.1)]"
             >
               -- Clear All --
             </button>
@@ -233,7 +233,7 @@ const MultiSelectDropdown = memo(function MultiSelectDropdown({
 
               if (allFilteredOptions.length === 0) {
                 return (
-                  <div className="px-3 py-4 text-center text-[#a1a1a1] text-sm">
+                  <div className="px-3 py-4 text-center text-[#666] text-[12px]">
                     No specs found
                   </div>
                 )
@@ -261,7 +261,7 @@ const MultiSelectDropdown = memo(function MultiSelectDropdown({
                       return (
                         <label
                           key={option.id}
-                          className={`flex items-center px-3 py-2 hover:bg-[#1a1a1a] cursor-pointer transition-colors ${
+                          className={`flex items-center px-3 py-1.5 hover:bg-[#1a1a1a] cursor-pointer transition-colors ${
                             option.disabled ? 'opacity-50 cursor-not-allowed' : ''
                           }`}
                         >
@@ -270,10 +270,10 @@ const MultiSelectDropdown = memo(function MultiSelectDropdown({
                             checked={isChecked}
                             onChange={(e) => handleToggle(option.id, e.target.checked)}
                             disabled={option.disabled}
-                            className="w-4 h-4 rounded border-gray-600 bg-[#0f1011] text-[#ff8000] focus:ring-2 focus:ring-[#ff8000]/30 focus:ring-offset-0"
+                            className="w-3.5 h-3.5 rounded border-gray-600 bg-[#0f1011] text-[#ff8000] focus:ring-2 focus:ring-[#ff8000]/30 focus:ring-offset-0"
                           />
                           <span
-                            className="ml-3 text-sm"
+                            className="ml-2.5 text-[12px]"
                             style={{ color: color || '#ffffff' }}
                           >
                             {option.label}
@@ -293,7 +293,7 @@ const MultiSelectDropdown = memo(function MultiSelectDropdown({
                 return (
                   <label
                     key={option.id}
-                    className={`flex items-center px-3 py-2 hover:bg-[#1a1a1a] cursor-pointer transition-colors ${
+                    className={`flex items-center px-3 py-1.5 hover:bg-[#1a1a1a] cursor-pointer transition-colors ${
                       option.disabled ? 'opacity-50 cursor-not-allowed' : ''
                     }`}
                   >
@@ -302,10 +302,10 @@ const MultiSelectDropdown = memo(function MultiSelectDropdown({
                       checked={isChecked}
                       onChange={(e) => handleToggle(option.id, e.target.checked)}
                       disabled={option.disabled}
-                      className="w-4 h-4 rounded border-gray-600 bg-[#0f1011] text-[#ff8000] focus:ring-2 focus:ring-[#ff8000]/30 focus:ring-offset-0"
+                      className="w-3.5 h-3.5 rounded border-gray-600 bg-[#0f1011] text-[#ff8000] focus:ring-2 focus:ring-[#ff8000]/30 focus:ring-offset-0"
                     />
                     <span
-                      className="ml-3 text-sm"
+                      className="ml-2.5 text-[12px]"
                       style={{ color: color || '#ffffff' }}
                     >
                       {option.label}

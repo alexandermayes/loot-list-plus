@@ -892,11 +892,11 @@ export default function LootList() {
     }
 
     return (
-      <tr className={`border-b border-border ${(isDuplicate1 || isDuplicate2) ? 'bg-red-900/20' : ''}`}>
-        <td className={`px-3 py-1.5 font-bold text-sm text-foreground bg-gradient-to-r ${getRankColor(rank)}`} rowSpan={1}>
+      <tr className={`border-b border-[rgba(255,255,255,0.05)] ${(isDuplicate1 || isDuplicate2) ? 'bg-red-900/20' : ''}`}>
+        <td className={`px-3 py-2.5 font-semibold text-[13px] text-white bg-gradient-to-r ${getRankColor(rank)}`} rowSpan={1}>
           {rank}
         </td>
-        <td className="px-3 py-1.5">
+        <td className="px-3 py-2.5">
           <SearchableItemSelect
             items={lootItems}
             value={selectedItemId1 || ''}
@@ -905,15 +905,15 @@ export default function LootList() {
             currentValue={rankings[`${rank}-1`]}
           />
         </td>
-        <td className="px-3 py-1.5">
+        <td className="px-3 py-2.5">
           {selectedItem1 ? (
             <div className="flex items-center gap-2">
-              <p className="text-muted-foreground text-xs">{normalizeBossName(selectedItem1.boss_name)}</p>
+              <p className="text-[#666] text-[12px]">{normalizeBossName(selectedItem1.boss_name)}</p>
               {selectedItem1.classification && getClassificationBadge(selectedItem1.classification)}
             </div>
-          ) : <span className="text-muted-foreground text-xs">-</span>}
+          ) : <span className="text-[#666] text-[12px]">-</span>}
         </td>
-        <td className="px-3 py-1.5">
+        <td className="px-3 py-2.5">
           <SearchableItemSelect
             items={lootItems}
             value={selectedItemId2 || ''}
@@ -922,13 +922,13 @@ export default function LootList() {
             currentValue={rankings[`${rank}-2`]}
           />
         </td>
-        <td className="px-3 py-1.5">
+        <td className="px-3 py-2.5">
           {selectedItem2 ? (
             <div className="flex items-center gap-2">
-              <p className="text-muted-foreground text-xs">{normalizeBossName(selectedItem2.boss_name)}</p>
+              <p className="text-[#666] text-[12px]">{normalizeBossName(selectedItem2.boss_name)}</p>
               {selectedItem2.classification && getClassificationBadge(selectedItem2.classification)}
             </div>
-          ) : <span className="text-muted-foreground text-xs">-</span>}
+          ) : <span className="text-[#666] text-[12px]">-</span>}
         </td>
       </tr>
     )
@@ -1145,15 +1145,15 @@ export default function LootList() {
           <div className="bg-gradient-to-r from-red-900 to-red-700 px-4 py-2">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <h2 className="text-lg font-bold text-foreground">Bracket 1 (50-48)</h2>
+                <h2 className="text-[15px] font-semibold text-white">Bracket 1 (50-48)</h2>
                 {(() => {
                   const validation = getBracketValidation('Bracket 1 (50-48)')
                   return validation ? (
-                    <p className={`text-xs font-semibold mt-1 ${validation.violations.length > 0 ? 'text-red-200' : 'text-red-200'}`}>
+                    <p className={`text-[12px] font-medium mt-1 ${validation.violations.length > 0 ? 'text-red-200' : 'text-red-200'}`}>
                       Allocation Points: {validation.allocationPoints}/{validation.maxPoints}
                     </p>
                   ) : (
-                    <p className="text-red-200 text-xs mt-1">Max 3 allocation points per bracket</p>
+                    <p className="text-red-200 text-[12px] mt-1">Max 3 allocation points per bracket</p>
                   )
                 })()}
               </div>
@@ -1199,12 +1199,12 @@ export default function LootList() {
                 <col style={{ width: '160px' }} />
               </colgroup>
               <thead>
-                <tr className="bg-accent border-b border-border">
-                  <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">Rank</th>
-                  <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">Loot #1</th>
-                  <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">Details</th>
-                  <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">Loot #2</th>
-                  <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">Details</th>
+                <tr className="bg-[#0d0e11] border-b border-[rgba(255,255,255,0.05)]">
+                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-[#666]">Rank</th>
+                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-[#666]">Loot #1</th>
+                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-[#666]">Details</th>
+                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-[#666]">Loot #2</th>
+                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-[#666]">Details</th>
                 </tr>
               </thead>
               <tbody>
@@ -1221,15 +1221,15 @@ export default function LootList() {
           <div className="bg-gradient-to-r from-orange-900 to-orange-700 px-4 py-2">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <h2 className="text-lg font-bold text-foreground">Bracket 2 (47-45)</h2>
+                <h2 className="text-[15px] font-semibold text-white">Bracket 2 (47-45)</h2>
                 {(() => {
                   const validation = getBracketValidation('Bracket 2 (47-45)')
                   return validation ? (
-                    <p className={`text-xs font-semibold mt-1 ${validation.violations.length > 0 ? 'text-orange-200' : 'text-orange-200'}`}>
+                    <p className={`text-[12px] font-medium mt-1 ${validation.violations.length > 0 ? 'text-orange-200' : 'text-orange-200'}`}>
                       Allocation Points: {validation.allocationPoints}/{validation.maxPoints}
                     </p>
                   ) : (
-                    <p className="text-orange-200 text-xs mt-1">Max 3 allocation points per bracket</p>
+                    <p className="text-orange-200 text-[12px] mt-1">Max 3 allocation points per bracket</p>
                   )
                 })()}
               </div>
@@ -1275,12 +1275,12 @@ export default function LootList() {
                 <col style={{ width: '160px' }} />
               </colgroup>
               <thead>
-                <tr className="bg-accent border-b border-border">
-                  <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">Rank</th>
-                  <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">Loot #1</th>
-                  <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">Details</th>
-                  <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">Loot #2</th>
-                  <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">Details</th>
+                <tr className="bg-[#0d0e11] border-b border-[rgba(255,255,255,0.05)]">
+                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-[#666]">Rank</th>
+                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-[#666]">Loot #1</th>
+                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-[#666]">Details</th>
+                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-[#666]">Loot #2</th>
+                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-[#666]">Details</th>
                 </tr>
               </thead>
               <tbody>
@@ -1297,15 +1297,15 @@ export default function LootList() {
           <div className="bg-gradient-to-r from-yellow-900 to-yellow-700 px-4 py-2">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <h2 className="text-lg font-bold text-foreground">Bracket 3 (44-42)</h2>
+                <h2 className="text-[15px] font-semibold text-white">Bracket 3 (44-42)</h2>
                 {(() => {
                   const validation = getBracketValidation('Bracket 3 (44-42)')
                   return validation ? (
-                    <p className={`text-xs font-semibold mt-1 ${validation.violations.length > 0 ? 'text-yellow-200' : 'text-yellow-200'}`}>
+                    <p className={`text-[12px] font-medium mt-1 ${validation.violations.length > 0 ? 'text-yellow-200' : 'text-yellow-200'}`}>
                       Allocation Points: {validation.allocationPoints}/{validation.maxPoints}
                     </p>
                   ) : (
-                    <p className="text-yellow-200 text-xs mt-1">Max 3 allocation points per bracket</p>
+                    <p className="text-yellow-200 text-[12px] mt-1">Max 3 allocation points per bracket</p>
                   )
                 })()}
               </div>
@@ -1351,12 +1351,12 @@ export default function LootList() {
                 <col style={{ width: '160px' }} />
               </colgroup>
               <thead>
-                <tr className="bg-accent border-b border-border">
-                  <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">Rank</th>
-                  <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">Loot #1</th>
-                  <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">Details</th>
-                  <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">Loot #2</th>
-                  <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">Details</th>
+                <tr className="bg-[#0d0e11] border-b border-[rgba(255,255,255,0.05)]">
+                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-[#666]">Rank</th>
+                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-[#666]">Loot #1</th>
+                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-[#666]">Details</th>
+                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-[#666]">Loot #2</th>
+                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-[#666]">Details</th>
                 </tr>
               </thead>
               <tbody>
@@ -1373,15 +1373,15 @@ export default function LootList() {
           <div className="bg-gradient-to-r from-amber-900 to-amber-700 px-4 py-2">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <h2 className="text-lg font-bold text-foreground">Bracket 4 (41-39)</h2>
+                <h2 className="text-[15px] font-semibold text-white">Bracket 4 (41-39)</h2>
                 {(() => {
                   const validation = getBracketValidation('Bracket 4 (41-39)')
                   return validation ? (
-                    <p className={`text-xs font-semibold mt-1 ${validation.violations.length > 0 ? 'text-amber-200' : 'text-amber-200'}`}>
+                    <p className={`text-[12px] font-medium mt-1 ${validation.violations.length > 0 ? 'text-amber-200' : 'text-amber-200'}`}>
                       Allocation Points: {validation.allocationPoints}/{validation.maxPoints}
                     </p>
                   ) : (
-                    <p className="text-amber-200 text-xs mt-1">Max 3 allocation points per bracket</p>
+                    <p className="text-amber-200 text-[12px] mt-1">Max 3 allocation points per bracket</p>
                   )
                 })()}
               </div>
@@ -1427,12 +1427,12 @@ export default function LootList() {
                 <col style={{ width: '160px' }} />
               </colgroup>
               <thead>
-                <tr className="bg-accent border-b border-border">
-                  <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">Rank</th>
-                  <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">Loot #1</th>
-                  <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">Details</th>
-                  <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">Loot #2</th>
-                  <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">Details</th>
+                <tr className="bg-[#0d0e11] border-b border-[rgba(255,255,255,0.05)]">
+                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-[#666]">Rank</th>
+                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-[#666]">Loot #1</th>
+                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-[#666]">Details</th>
+                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-[#666]">Loot #2</th>
+                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-[#666]">Details</th>
                 </tr>
               </thead>
               <tbody>
@@ -1447,8 +1447,8 @@ export default function LootList() {
         {/* No Bracket (38-25) - Main-spec */}
         <div className="bg-card border border-border rounded-xl overflow-hidden">
           <div className="bg-gradient-to-r from-green-900 to-green-700 px-4 py-2">
-            <h2 className="text-lg font-bold text-foreground">No Bracket (38-25) - Main-spec</h2>
-            <p className="text-green-200 text-xs">Still considered main-spec priority</p>
+            <h2 className="text-[15px] font-semibold text-white">No Bracket (38-25) - Main-spec</h2>
+            <p className="text-green-200 text-[12px]">Still considered main-spec priority</p>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full table-fixed">
@@ -1460,12 +1460,12 @@ export default function LootList() {
                 <col style={{ width: '160px' }} />
               </colgroup>
               <thead>
-                <tr className="bg-accent border-b border-border">
-                  <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">Rank</th>
-                  <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">Loot #1</th>
-                  <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">Details</th>
-                  <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">Loot #2</th>
-                  <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">Details</th>
+                <tr className="bg-[#0d0e11] border-b border-[rgba(255,255,255,0.05)]">
+                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-[#666]">Rank</th>
+                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-[#666]">Loot #1</th>
+                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-[#666]">Details</th>
+                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-[#666]">Loot #2</th>
+                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-[#666]">Details</th>
                 </tr>
               </thead>
               <tbody>
@@ -1480,8 +1480,8 @@ export default function LootList() {
         {/* Off-spec (24-1) */}
         <div className="bg-card border border-border rounded-xl overflow-hidden">
           <div className="bg-gradient-to-r from-blue-900 to-blue-700 px-4 py-2">
-            <h2 className="text-lg font-bold text-foreground">Off-spec (24-1)</h2>
-            <p className="text-blue-200 text-xs">Off-spec items to support guild flexibility</p>
+            <h2 className="text-[15px] font-semibold text-white">Off-spec (24-1)</h2>
+            <p className="text-blue-200 text-[12px]">Off-spec items to support guild flexibility</p>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full table-fixed">
@@ -1493,12 +1493,12 @@ export default function LootList() {
                 <col style={{ width: '160px' }} />
               </colgroup>
               <thead>
-                <tr className="bg-accent border-b border-border">
-                  <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">Rank</th>
-                  <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">Loot #1</th>
-                  <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">Details</th>
-                  <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">Loot #2</th>
-                  <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">Details</th>
+                <tr className="bg-[#0d0e11] border-b border-[rgba(255,255,255,0.05)]">
+                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-[#666]">Rank</th>
+                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-[#666]">Loot #1</th>
+                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-[#666]">Details</th>
+                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-[#666]">Loot #2</th>
+                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-[#666]">Details</th>
                 </tr>
               </thead>
               <tbody>
