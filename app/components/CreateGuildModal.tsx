@@ -464,7 +464,7 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
                         )}
                       </div>
                     ) : discordGuilds.length > 0 ? (
-                      <div className="grid grid-cols-1 gap-2 max-h-[200px] overflow-y-auto pr-2">
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-[240px] overflow-y-auto pr-2">
                         {discordGuilds.map((guild) => (
                           <button
                             key={guild.id}
@@ -473,56 +473,87 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
                               setShowManualEntry(false)
                               setManualServerId('')
                             }}
-                            className={`flex items-center gap-3 p-3 rounded-xl border transition text-left ${
+                            className={`relative flex flex-col items-center gap-2 p-3 rounded-xl border transition text-center ${
                               selectedDiscordServer === guild.id
                                 ? 'border-[#ff8000] bg-[#ff8000]/10'
                                 : 'border-[#383838] bg-[#151515] hover:border-[#505050]'
                             }`}
                           >
+                            {selectedDiscordServer === guild.id && (
+                              <div className="absolute top-2 right-2">
+                                <Check className="w-4 h-4 text-[#ff8000]" />
+                              </div>
+                            )}
                             {guild.icon ? (
                               <img
                                 src={`https://cdn.discordapp.com/icons/${guild.id}/${guild.icon}.png`}
                                 alt={guild.name}
-                                className="w-10 h-10 rounded-full"
+                                className="w-12 h-12 rounded-full"
                               />
                             ) : (
-                              <div className="w-10 h-10 rounded-full bg-[#5865F2] flex items-center justify-center text-white font-bold text-[14px]">
+                              <div className="w-12 h-12 rounded-full bg-[#5865F2] flex items-center justify-center text-white font-bold text-[16px]">
                                 {guild.name.charAt(0)}
                               </div>
                             )}
-                            <div className="flex-1 min-w-0">
-                              <p className="text-white font-medium text-[14px] truncate">{guild.name}</p>
+                            <div className="w-full min-w-0">
+                              <p className="text-white font-medium text-[12px] truncate">{guild.name}</p>
                               {guild.owner && (
-                                <p className="text-[11px] text-[#a1a1a1]">Owner</p>
+                                <p className="text-[10px] text-[#a1a1a1]">Owner</p>
                               )}
                             </div>
-                            {selectedDiscordServer === guild.id && (
-                              <Check className="w-5 h-5 text-[#ff8000]" />
-                            )}
                           </button>
                         ))}
+                        {/* Manual Entry Card */}
+                        <button
+                          onClick={() => {
+                            setShowManualEntry(true)
+                            setSelectedDiscordServer('')
+                          }}
+                          className={`relative flex flex-col items-center justify-center gap-2 p-3 rounded-xl border transition text-center ${
+                            showManualEntry
+                              ? 'border-[#ff8000] bg-[#ff8000]/10'
+                              : 'border-[#383838] bg-[#151515] hover:border-[#505050]'
+                          }`}
+                        >
+                          {showManualEntry && (
+                            <div className="absolute top-2 right-2">
+                              <Check className="w-4 h-4 text-[#ff8000]" />
+                            </div>
+                          )}
+                          <div className="w-12 h-12 rounded-full bg-[#252525] flex items-center justify-center text-[#a1a1a1]">
+                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
+                          </div>
+                          <div className="w-full min-w-0">
+                            <p className="text-white font-medium text-[12px]">Enter ID</p>
+                            <p className="text-[10px] text-[#a1a1a1]">Manually</p>
+                          </div>
+                        </button>
                       </div>
                     ) : (
-                      <div className="p-4 bg-[#151515] border border-[#383838] rounded-xl">
-                        <p className="text-white text-[13px] font-medium mb-2">No Discord servers found</p>
-                        <p className="text-[#a1a1a1] text-[12px] mb-3">
-                          We only show servers where you have admin or manage permissions. Enter your Server ID manually below if you don't see your server.
-                        </p>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                        {/* Manual Entry Card - shown when no guilds */}
+                        <button
+                          onClick={() => setShowManualEntry(true)}
+                          className={`relative flex flex-col items-center justify-center gap-2 p-3 rounded-xl border transition text-center ${
+                            showManualEntry
+                              ? 'border-[#ff8000] bg-[#ff8000]/10'
+                              : 'border-[#383838] bg-[#151515] hover:border-[#505050]'
+                          }`}
+                        >
+                          <div className="w-12 h-12 rounded-full bg-[#252525] flex items-center justify-center text-[#a1a1a1]">
+                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
+                          </div>
+                          <div className="w-full min-w-0">
+                            <p className="text-white font-medium text-[12px]">Enter ID</p>
+                            <p className="text-[10px] text-[#a1a1a1]">Manually</p>
+                          </div>
+                        </button>
                       </div>
                     )}
-
-                    {/* Manual Entry Toggle */}
-                    <button
-                      onClick={() => {
-                        setShowManualEntry(!showManualEntry)
-                        if (!showManualEntry) {
-                          setSelectedDiscordServer('')
-                        }
-                      }}
-                      className="mt-3 text-[12px] text-[#ff8000] hover:underline"
-                    >
-                      {showManualEntry ? 'Select from list instead' : 'Enter Server ID manually'}
-                    </button>
 
                     {showManualEntry && (
                       <div className="mt-3">
@@ -531,10 +562,10 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
                           value={manualServerId}
                           onChange={(e) => setManualServerId(e.target.value)}
                           placeholder="Paste your Discord Server ID"
-                          className="w-full px-4 py-2.5 bg-[#151515] border border-[#383838] rounded-[52px] text-white text-[13px] focus:outline-none focus:border-[#ff8000] transition"
+                          className="w-full px-4 py-2.5 bg-[#151515] border border-[#383838] rounded-xl text-white text-[13px] focus:outline-none focus:border-[#ff8000] transition"
                         />
                         <p className="text-[11px] text-[#a1a1a1] mt-2">
-                          Enable Developer Mode in Discord, then right-click your server → Copy Server ID
+                          Enable Developer Mode in Discord, right-click your server → Copy Server ID
                         </p>
                       </div>
                     )}
