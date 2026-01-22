@@ -140,16 +140,16 @@ export function CharacterSelector() {
       <>
         <button
           onClick={handleCreateCharacter}
-          className="w-full px-[14px] py-2.5 bg-white hover:bg-gray-100 rounded-[52px] text-black text-left transition flex items-center gap-3"
+          className="w-full px-[14px] py-2 bg-primary/10 hover:bg-primary/20 border border-primary/30 rounded-xl text-white text-left transition flex items-center gap-3"
         >
-          <Image
-            src="/icons/add-circle.svg"
-            alt="Create"
-            width={20}
-            height={20}
-            className="w-5 h-5 shrink-0"
-          />
-          <span className="text-[13px] font-medium">Create Character</span>
+          <RotatingClassIcon />
+          <div className="flex-1 min-w-0">
+            <p className="text-[13px] font-medium text-white">Create Character</p>
+            <p className="text-[10px] text-primary">Character creation required · Click here to create</p>
+          </div>
+          <svg className="w-4 h-4 text-primary flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          </svg>
         </button>
         <CreateCharacterModal
           isOpen={showCreateModal}
