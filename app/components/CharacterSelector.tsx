@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { ChevronDown, Check, Plus } from 'lucide-react'
 import { useGuildContext, Character } from '@/app/contexts/GuildContext'
 import { useRouter } from 'next/navigation'
@@ -12,11 +12,55 @@ const CreateCharacterModal = dynamic(() => import('./CreateCharacterModal').then
   loading: () => null
 })
 
+// WoW class names for rotating icon
+const CLASS_NAMES = [
+  'warrior',
+  'paladin',
+  'hunter',
+  'rogue',
+  'priest',
+  'shaman',
+  'mage',
+  'warlock',
+  'druid',
+  'deathknight',
+]
+
 // Get WoWhead class icon URL
 function getClassIconUrl(className: string | undefined): string {
   if (!className) return ''
   const classNameLower = className.toLowerCase().replace(' ', '')
   return `https://wow.zamimg.com/images/wow/icons/large/classicon_${classNameLower}.jpg`
+}
+
+// Rotating class icon for character setup prompt
+function RotatingClassIcon() {
+  const [currentIndex, setCurrentIndex] = useState(0)
+  const [isTransitioning, setIsTransitioning] = useState(false)
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setIsTransitioning(true)
+      setTimeout(() => {
+        setCurrentIndex((prev) => (prev + 1) % CLASS_NAMES.length)
+        setIsTransitioning(false)
+      }, 150)
+    }, 1500) // Change every 1.5 seconds
+
+    return () => clearInterval(interval)
+  }, [])
+
+  const iconUrl = `https://wow.zamimg.com/images/wow/icons/large/classicon_${CLASS_NAMES[currentIndex]}.jpg`
+
+  return (
+    <img
+      src={iconUrl}
+      alt="Class icon"
+      className={`w-5 h-5 rounded-full flex-shrink-0 border border-primary/30 transition-all duration-300 ${
+        isTransitioning ? 'opacity-0 scale-75' : 'opacity-100 scale-100'
+      }`}
+    />
+  )
 }
 
 export function CharacterSelector() {
@@ -126,9 +170,7 @@ export function CharacterSelector() {
           onClick={() => setShowCreateModal(true)}
           className="w-full px-[14px] py-2 bg-primary/10 hover:bg-primary/20 border border-primary/30 rounded-xl text-white text-left transition flex items-center gap-3"
         >
-          <div className="w-5 h-5 rounded-full flex items-center justify-center bg-primary/20 text-primary font-bold text-[10px] flex-shrink-0 border border-primary/30">
-            {activeCharacter.name.charAt(0).toUpperCase()}
-          </div>
+          <RotatingClassIcon />
           <div className="flex-1 min-w-0">
             <p className="text-[13px] font-medium text-white truncate">{activeCharacter.name}</p>
             <p className="text-[10px] text-primary">Character creation required · Click here to create</p>

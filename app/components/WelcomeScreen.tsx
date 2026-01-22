@@ -4,6 +4,7 @@ import Image from 'next/image'
 import { useState, useEffect } from 'react'
 import { createClient } from '@/utils/supabase/client'
 import { useRouter } from 'next/navigation'
+
 export default function WelcomeScreen() {
   const [inviteCode, setInviteCode] = useState('')
   const [modalInviteCode, setModalInviteCode] = useState('')
