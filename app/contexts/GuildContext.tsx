@@ -536,34 +536,62 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
           setActiveGuild(membershipWithGuild.guild as Guild)
         } else {
           // No active membership found for this guild
-          // User may have left the guild - clear the stale active_guild_id and don't set activeGuild
-          console.log('[GUILD CONTEXT] No active membership found for active_guild_id, clearing stale reference:', activeCharData.active_guild_id)
+          // This could mean: 1) User left the guild, or 2) User joined guild but hasn't created a character yet
+          // Check if user has NO characters - if so, they're in the "pending character creation" state
+          if (enrichedCharacters.length === 0) {
+            // User has no characters - fetch the guild directly and show it
+            // This is the "joined guild, needs to create character" state
+            console.log('[GUILD CONTEXT] User has no characters but has active_guild_id, fetching guild directly')
+            const { data: pendingGuild } = await supabase
+              .from('guilds')
+              .select('*')
+              .eq('id', activeCharData.active_guild_id)
+              .single()
 
-          // Clear the stale active_guild_id
-          await supabase
-            .from('user_active_characters')
-            .update({
-              active_guild_id: null,
-              updated_at: new Date().toISOString()
-            })
-            .eq('user_id', user.id)
+            if (pendingGuild) {
+              console.log('[GUILD CONTEXT] Setting activeGuild from pending state:', pendingGuild.name)
+              setActiveGuild(pendingGuild as Guild)
+            } else {
+              console.log('[GUILD CONTEXT] Pending guild not found, clearing')
+              setActiveGuild(null)
+              await supabase
+                .from('user_active_characters')
+                .update({
+                  active_guild_id: null,
+                  updated_at: new Date().toISOString()
+                })
+                .eq('user_id', user.id)
+            }
+          } else {
+            // User has characters but no membership in this guild - stale reference
+            console.log('[GUILD CONTEXT] No active membership found for active_guild_id, clearing stale reference:', activeCharData.active_guild_id)
 
-          // If user has other guild memberships, set the first one as active
-          if (transformedMemberships.length > 0 && transformedMemberships[0]?.guild) {
-            console.log('[GUILD CONTEXT] Setting activeGuild to first available membership:', transformedMemberships[0].guild.name)
-            setActiveGuild(transformedMemberships[0].guild as Guild)
-
+            // Clear the stale active_guild_id
             await supabase
               .from('user_active_characters')
               .update({
-                active_guild_id: transformedMemberships[0].guild_id,
+                active_guild_id: null,
                 updated_at: new Date().toISOString()
               })
               .eq('user_id', user.id)
-          } else {
-            // User has no guild memberships - set activeGuild to null
-            console.log('[GUILD CONTEXT] User has no guild memberships, setting activeGuild to null')
-            setActiveGuild(null)
+
+            // If user has other guild memberships, set the first one as active
+            if (transformedMemberships.length > 0 && transformedMemberships[0]?.guild) {
+              console.log('[GUILD CONTEXT] Setting activeGuild to first available membership:', transformedMemberships[0].guild.name)
+              setActiveGuild(transformedMemberships[0].guild as Guild)
+
+              await supabase
+                .from('user_active_characters')
+                .update({
+                  active_guild_id: transformedMemberships[0].guild_id,
+                  updated_at: new Date().toISOString()
+                })
+                .eq('user_id', user.id)
+            } else {
+              // User has no guild memberships - set activeGuild to null
+              console.log('[GUILD CONTEXT] User has no guild memberships, setting activeGuild to null')
+              setActiveGuild(null)
+            }
           }
         }
       } else if (transformedMemberships.length > 0 && transformedMemberships[0]?.guild) {

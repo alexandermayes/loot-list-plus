@@ -112,22 +112,36 @@ export async function POST(request: NextRequest) {
     // Use service role client to bypass RLS for character operations
     const serviceSupabase = createServiceRoleClient()
 
-    // Check if user has any characters
+    // Check if user has any characters with a class set up (fully configured)
     const { data: existingCharacters } = await serviceSupabase
       .from('characters')
       .select('id, class_id')
       .eq('user_id', user.id)
+      .not('class_id', 'is', null)
       .order('is_main', { ascending: false })
       .limit(1)
 
-    // If user has no characters, they need to create one first
+    // If user has no properly set up characters, join them to the guild anyway
+    // but mark that they need to create a character
     if (!existingCharacters || existingCharacters.length === 0) {
-      console.log('[DISCORD JOIN] User has no characters, returning needs_character_creation')
+      console.log('[DISCORD JOIN] User has no characters, joining guild in pending state')
+
+      // Set the guild as their active guild even without a character
+      // This allows the sidebar to show the guild while prompting for character creation
+      await serviceSupabase
+        .from('user_active_characters')
+        .upsert({
+          user_id: user.id,
+          active_character_id: null,
+          active_guild_id: guild_id,
+          updated_at: new Date().toISOString()
+        })
+
       return NextResponse.json({
-        success: false,
-        needs_character_creation: true,
+        success: true,
         guild_id: guild_id,
-        message: 'Please create a character first'
+        needs_character_creation: true,
+        message: 'Joined guild - please create a character'
       })
     }
 
