@@ -299,22 +299,14 @@ export async function DELETE(
 
       const newActiveCharId = otherCharacters?.[0]?.id || null
 
-      // Update or delete the active character record
-      if (newActiveCharId) {
-        await adminClient
-          .from('user_active_characters')
-          .update({
-            active_character_id: newActiveCharId,
-            updated_at: new Date().toISOString()
-          })
-          .eq('user_id', user.id)
-      } else {
-        // No other characters, delete the active character record
-        await adminClient
-          .from('user_active_characters')
-          .delete()
-          .eq('user_id', user.id)
-      }
+      // Update the active character (keep active_guild_id so user stays in guild)
+      await adminClient
+        .from('user_active_characters')
+        .update({
+          active_character_id: newActiveCharId,
+          updated_at: new Date().toISOString()
+        })
+        .eq('user_id', user.id)
     }
 
     // Delete character (will cascade to character_guild_memberships)
