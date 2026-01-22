@@ -118,6 +118,28 @@ export function CreateCharacterModal({ isOpen, onClose, onSuccess, suggestedName
     setLoading(true)
 
     try {
+      // Check for duplicate character name in the guild
+      if (activeGuild) {
+        const { data: existingChars } = await supabase
+          .from('character_guild_memberships')
+          .select(`
+            character:characters (
+              name
+            )
+          `)
+          .eq('guild_id', activeGuild.id)
+          .eq('is_active', true)
+
+        const existingNames = (existingChars || [])
+          .map((m: any) => m.character?.name?.toLowerCase())
+          .filter(Boolean)
+
+        if (existingNames.includes(name.trim().toLowerCase())) {
+          setError('A character with this name already exists in the guild')
+          setLoading(false)
+          return
+        }
+      }
       const response = await fetch('/api/characters', {
         method: 'POST',
         headers: {
