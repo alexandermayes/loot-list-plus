@@ -1,7 +1,7 @@
 'use client'
 
 import { createClient } from '@/utils/supabase/client'
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import ItemLink from '@/app/components/ItemLink'
 import { useGuildContext } from '@/app/contexts/GuildContext'
@@ -72,6 +72,31 @@ export default function AdminPrioList() {
   const [selectedItem, setSelectedItem] = useState<LootItem | null>(null)
   const [showModal, setShowModal] = useState(false)
   const [collapsedBosses, setCollapsedBosses] = useState<Set<string>>(new Set())
+  const [tierScrollState, setTierScrollState] = useState({ left: false, right: true })
+  const tierScrollRef = useRef<HTMLDivElement>(null)
+
+  // Handle tier scroll to show/hide fades
+  const handleTierScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
+    const el = e.currentTarget
+    const scrollLeft = el.scrollLeft
+    const maxScroll = el.scrollWidth - el.clientWidth
+    setTierScrollState({
+      left: scrollLeft > 5,
+      right: scrollLeft < maxScroll - 5
+    })
+  }, [])
+
+  // Check initial tier scroll state
+  useEffect(() => {
+    const el = tierScrollRef.current
+    if (el) {
+      const maxScroll = el.scrollWidth - el.clientWidth
+      setTierScrollState({
+        left: el.scrollLeft > 5,
+        right: maxScroll > 5
+      })
+    }
+  }, [raidTiers])
 
   const supabase = createClient()
   const router = useRouter()
@@ -409,8 +434,16 @@ export default function AdminPrioList() {
 
         {/* Raid Tier Tabs */}
         {raidTiers.length > 0 && (
-          <div className="flex items-center gap-3 overflow-x-auto pb-2">
-            <div className="flex gap-2">
+          <div
+            ref={tierScrollRef}
+            onScroll={handleTierScroll}
+            className="overflow-x-auto pb-2 scrollbar-hide"
+            style={{
+              maskImage: `linear-gradient(to right, ${tierScrollState.left ? 'transparent' : 'black'}, black ${tierScrollState.left ? '24px' : '0px'}, black calc(100% - ${tierScrollState.right ? '24px' : '0px'}), ${tierScrollState.right ? 'transparent' : 'black'})`,
+              WebkitMaskImage: `linear-gradient(to right, ${tierScrollState.left ? 'transparent' : 'black'}, black ${tierScrollState.left ? '24px' : '0px'}, black calc(100% - ${tierScrollState.right ? '24px' : '0px'}), ${tierScrollState.right ? 'transparent' : 'black'})`
+            }}
+          >
+            <div className="flex gap-2 pr-3">
               {raidTiers.map((tier) => (
                 <button
                   key={tier.id}
@@ -469,43 +502,51 @@ export default function AdminPrioList() {
 
         {/* Boss Quick Navigation */}
         {bossNames.length > 0 && (
-          <div className="sticky top-0 z-10 flex gap-3">
-            {/* Boss chips container */}
-            <div className="flex-1 bg-[#0d0e11]/95 backdrop-blur-sm border border-[rgba(255,255,255,0.1)] rounded-xl p-3 overflow-x-auto">
-              <div className="flex items-center gap-3">
-                <div className="flex gap-2">
-                  {bossNames.map((boss) => (
-                    <button
-                      key={boss}
-                      onClick={() => {
-                        const element = document.getElementById(`boss-${boss.replace(/\s+/g, '-')}`)
-                        if (element) {
-                          element.scrollIntoView({ behavior: 'smooth', block: 'start' })
-                        }
-                      }}
-                      className="px-3 py-1.5 bg-[#151515] hover:bg-[#1a1a1a] border border-[rgba(255,255,255,0.1)] rounded-[40px] text-xs font-medium text-white whitespace-nowrap transition"
-                    >
-                      {boss}
-                    </button>
-                  ))}
+          <div className="sticky top-0 z-10">
+            <div className="flex gap-3">
+              {/* Boss chips container with horizontal scroll fade */}
+              <div className="flex-1 min-w-0 bg-[#0d0e11]/95 backdrop-blur-sm border border-[rgba(255,255,255,0.1)] rounded-xl p-3 overflow-hidden">
+                <div
+                  className="overflow-x-auto scrollbar-hide"
+                  style={{
+                    maskImage: 'linear-gradient(to right, transparent, black 24px, black calc(100% - 24px), transparent)',
+                    WebkitMaskImage: 'linear-gradient(to right, transparent, black 24px, black calc(100% - 24px), transparent)'
+                  }}
+                >
+                  <div className="flex gap-2 px-3">
+                    {bossNames.map((boss) => (
+                      <button
+                        key={boss}
+                        onClick={() => {
+                          const element = document.getElementById(`boss-${boss.replace(/\s+/g, '-')}`)
+                          if (element) {
+                            element.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                          }
+                        }}
+                        className="px-3 py-1.5 bg-[#151515] hover:bg-[#1a1a1a] border border-[rgba(255,255,255,0.1)] rounded-[40px] text-xs font-medium text-white whitespace-nowrap transition"
+                      >
+                        {boss}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
-            </div>
-            {/* Expand/Collapse container */}
-            <div className="flex-shrink-0 bg-[#0d0e11]/95 backdrop-blur-sm border border-[rgba(255,255,255,0.1)] rounded-xl p-3">
-              <div className="flex gap-2 h-full items-center">
-                <button
-                  onClick={expandAll}
-                  className="px-3 py-1.5 bg-[#151515] hover:bg-[#1a1a1a] border border-[rgba(255,255,255,0.1)] rounded-[40px] text-xs font-medium text-[#a1a1a1] hover:text-white whitespace-nowrap transition"
-                >
-                  Expand All
-                </button>
-                <button
-                  onClick={collapseAll}
-                  className="px-3 py-1.5 bg-[#151515] hover:bg-[#1a1a1a] border border-[rgba(255,255,255,0.1)] rounded-[40px] text-xs font-medium text-[#a1a1a1] hover:text-white whitespace-nowrap transition"
-                >
-                  Collapse All
-                </button>
+              {/* Expand/Collapse container */}
+              <div className="flex-shrink-0 bg-[#0d0e11]/95 backdrop-blur-sm border border-[rgba(255,255,255,0.1)] rounded-xl p-3">
+                <div className="flex gap-2 h-full items-center">
+                  <button
+                    onClick={expandAll}
+                    className="px-3 py-1.5 bg-[#151515] hover:bg-[#1a1a1a] border border-[rgba(255,255,255,0.1)] rounded-[40px] text-xs font-medium text-[#a1a1a1] hover:text-white whitespace-nowrap transition"
+                  >
+                    Expand All
+                  </button>
+                  <button
+                    onClick={collapseAll}
+                    className="px-3 py-1.5 bg-[#151515] hover:bg-[#1a1a1a] border border-[rgba(255,255,255,0.1)] rounded-[40px] text-xs font-medium text-[#a1a1a1] hover:text-white whitespace-nowrap transition"
+                  >
+                    Collapse All
+                  </button>
+                </div>
               </div>
             </div>
           </div>
