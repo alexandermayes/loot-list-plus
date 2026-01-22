@@ -24,7 +24,7 @@ interface CreateCharacterModalProps {
 }
 
 export function CreateCharacterModal({ isOpen, onClose, onSuccess, suggestedName }: CreateCharacterModalProps) {
-  const { activeGuild, refreshCharacters } = useGuildContext()
+  const { activeGuild, refreshCharacters, switchCharacter } = useGuildContext()
   const supabase = createClient()
 
   const [name, setName] = useState('')
@@ -172,7 +172,7 @@ export function CreateCharacterModal({ isOpen, onClose, onSuccess, suggestedName
           const isGuildCreator = user && activeGuild.created_by === user.id
           const role = isGuildCreator ? 'Guild Master' : 'Member'
 
-          await fetch(`/api/characters/${data.character.id}/guilds`, {
+          const guildResponse = await fetch(`/api/characters/${data.character.id}/guilds`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json'
@@ -183,6 +183,11 @@ export function CreateCharacterModal({ isOpen, onClose, onSuccess, suggestedName
               joined_via: 'manual'
             })
           })
+
+          if (!guildResponse.ok) {
+            const guildError = await guildResponse.json()
+            console.error('Error adding character to guild:', guildError)
+          }
         } catch (membershipErr) {
           console.error('Error adding character to guild:', membershipErr)
         }
@@ -190,6 +195,11 @@ export function CreateCharacterModal({ isOpen, onClose, onSuccess, suggestedName
 
       // Refresh character list in context
       await refreshCharacters()
+
+      // Switch to the newly created character
+      if (data.character?.id) {
+        await switchCharacter(data.character.id)
+      }
 
       setLoading(false)
       onClose()
