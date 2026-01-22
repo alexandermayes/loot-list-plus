@@ -284,7 +284,7 @@ export function PrioListItemModal({
                     </span>
                     <input
                       type="number"
-                      value={points === 0 ? '' : points}
+                      value={points === 0 || points === null ? '' : points}
                       onChange={(e) => handleUpdateRolePriority(role, e.target.value === '' ? 0 : Number(e.target.value))}
                       placeholder="0"
                       step="any"
