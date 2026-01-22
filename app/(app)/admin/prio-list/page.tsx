@@ -10,6 +10,7 @@ import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { PrioListItemModal } from '@/app/components/PrioListItemModal'
 import { allRoles, getRoleDisplayName, type Role } from '@/utils/spec-role-mapping'
 import { getBossOrder, normalizeBossName } from '@/utils/bossOrder'
+import { getBossImage } from '@/utils/bossImages'
 
 interface LootItem {
   id: string
@@ -70,6 +71,7 @@ export default function AdminPrioList() {
   const [selectedTierId, setSelectedTierId] = useState<string | null>(null)
   const [selectedItem, setSelectedItem] = useState<LootItem | null>(null)
   const [showModal, setShowModal] = useState(false)
+  const [collapsedBosses, setCollapsedBosses] = useState<Set<string>>(new Set())
 
   const supabase = createClient()
   const router = useRouter()
@@ -249,6 +251,27 @@ export default function AdminPrioList() {
     return groups
   }, [filteredItems])
 
+  const toggleBossCollapse = (bossName: string) => {
+    setCollapsedBosses(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(bossName)) {
+        newSet.delete(bossName)
+      } else {
+        newSet.add(bossName)
+      }
+      return newSet
+    })
+  }
+
+  const collapseAll = () => {
+    const bossNames = Object.keys(groupedByBoss).sort((a, b) => getBossOrder(a) - getBossOrder(b))
+    setCollapsedBosses(new Set(bossNames))
+  }
+
+  const expandAll = () => {
+    setCollapsedBosses(new Set())
+  }
+
   const handleEditItem = (item: LootItem) => {
     setSelectedItem(item)
     setShowModal(true)
@@ -387,7 +410,6 @@ export default function AdminPrioList() {
         {/* Raid Tier Tabs */}
         {raidTiers.length > 0 && (
           <div className="flex items-center gap-3 overflow-x-auto pb-2">
-            <span className="text-[#a1a1a1] text-sm font-medium whitespace-nowrap">Raid Tier:</span>
             <div className="flex gap-2">
               {raidTiers.map((tier) => (
                 <button
@@ -400,7 +422,7 @@ export default function AdminPrioList() {
                   }`}
                 >
                   {tier.name}
-                  {tier.is_active && ' *'}
+                  {tier.is_active && ' ⭐'}
                 </button>
               ))}
             </div>
@@ -447,24 +469,43 @@ export default function AdminPrioList() {
 
         {/* Boss Quick Navigation */}
         {bossNames.length > 0 && (
-          <div className="sticky top-0 z-10 bg-[#0d0e11]/95 backdrop-blur-sm border border-[rgba(255,255,255,0.1)] rounded-xl p-3">
-            <div className="flex items-center gap-3 overflow-x-auto">
-              <span className="text-[#a1a1a1] text-xs font-medium whitespace-nowrap">Jump to:</span>
-              <div className="flex gap-2">
-                {bossNames.map((boss) => (
-                  <button
-                    key={boss}
-                    onClick={() => {
-                      const element = document.getElementById(`boss-${boss.replace(/\s+/g, '-')}`)
-                      if (element) {
-                        element.scrollIntoView({ behavior: 'smooth', block: 'start' })
-                      }
-                    }}
-                    className="px-3 py-1.5 bg-[#151515] hover:bg-[#1a1a1a] border border-[rgba(255,255,255,0.1)] rounded-[40px] text-xs font-medium text-white whitespace-nowrap transition"
-                  >
-                    {boss}
-                  </button>
-                ))}
+          <div className="sticky top-0 z-10 flex gap-3">
+            {/* Boss chips container */}
+            <div className="flex-1 bg-[#0d0e11]/95 backdrop-blur-sm border border-[rgba(255,255,255,0.1)] rounded-xl p-3 overflow-x-auto">
+              <div className="flex items-center gap-3">
+                <div className="flex gap-2">
+                  {bossNames.map((boss) => (
+                    <button
+                      key={boss}
+                      onClick={() => {
+                        const element = document.getElementById(`boss-${boss.replace(/\s+/g, '-')}`)
+                        if (element) {
+                          element.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                        }
+                      }}
+                      className="px-3 py-1.5 bg-[#151515] hover:bg-[#1a1a1a] border border-[rgba(255,255,255,0.1)] rounded-[40px] text-xs font-medium text-white whitespace-nowrap transition"
+                    >
+                      {boss}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+            {/* Expand/Collapse container */}
+            <div className="flex-shrink-0 bg-[#0d0e11]/95 backdrop-blur-sm border border-[rgba(255,255,255,0.1)] rounded-xl p-3">
+              <div className="flex gap-2 h-full items-center">
+                <button
+                  onClick={expandAll}
+                  className="px-3 py-1.5 bg-[#151515] hover:bg-[#1a1a1a] border border-[rgba(255,255,255,0.1)] rounded-[40px] text-xs font-medium text-[#a1a1a1] hover:text-white whitespace-nowrap transition"
+                >
+                  Expand All
+                </button>
+                <button
+                  onClick={collapseAll}
+                  className="px-3 py-1.5 bg-[#151515] hover:bg-[#1a1a1a] border border-[rgba(255,255,255,0.1)] rounded-[40px] text-xs font-medium text-[#a1a1a1] hover:text-white whitespace-nowrap transition"
+                >
+                  Collapse All
+                </button>
               </div>
             </div>
           </div>
@@ -476,93 +517,127 @@ export default function AdminPrioList() {
             <p className="text-[#a1a1a1]">No items found for this raid tier</p>
           </div>
         ) : (
-          <div className="space-y-4">
-            {bossNames.map((boss) => (
-              <div
-                key={boss}
-                id={`boss-${boss.replace(/\s+/g, '-')}`}
-                className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl overflow-hidden"
-              >
-                {/* Boss Header */}
-                <div className="bg-gradient-to-r from-purple-900 to-purple-700 px-6 py-3">
-                  <h2 className="text-[18px] font-bold text-white">{boss}</h2>
-                </div>
+          <div className="space-y-3">
+            {bossNames.map((boss) => {
+              const isCollapsed = collapsedBosses.has(boss)
+              const bossItems = groupedByBoss[boss]
 
-                {/* Items Table */}
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="bg-[#0d0e11] border-b border-[rgba(255,255,255,0.1)]">
-                        <th className="px-6 py-3 text-left text-[13px] font-semibold text-[#a1a1a1]">Item</th>
-                        <th className="px-6 py-3 text-left text-[13px] font-semibold text-[#a1a1a1]">Slot</th>
-                        <th className="px-6 py-3 text-left text-[13px] font-semibold text-[#a1a1a1]">Priority Summary</th>
-                        <th className="px-6 py-3 text-center text-[13px] font-semibold text-[#a1a1a1]">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-[rgba(255,255,255,0.1)]">
-                      {groupedByBoss[boss].map((item) => {
-                        const hasPriority = !!priorities[item.id]
-                        const summary = getPrioritySummary(item.id)
+              return (
+                <div
+                  key={boss}
+                  id={`boss-${boss.replace(/\s+/g, '-')}`}
+                  className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl overflow-hidden"
+                >
+                  {/* Boss Header - Clickable */}
+                  <button
+                    onClick={() => toggleBossCollapse(boss)}
+                    className="w-full px-5 py-3 flex items-center justify-between hover:bg-[#1a1a1a] transition-colors"
+                  >
+                    <div className="flex items-center gap-3">
+                      {getBossImage(boss) && (
+                        <img
+                          src={getBossImage(boss)!}
+                          alt={boss}
+                          className="w-6 h-6 rounded"
+                        />
+                      )}
+                      <h2 className="text-[15px] font-semibold text-white">{boss}</h2>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="text-[12px] text-[#666] font-medium">
+                        {bossItems.length} item{bossItems.length !== 1 ? 's' : ''}
+                      </span>
+                      <svg
+                        className={`w-4 h-4 text-[#a1a1a1] transition-transform ${isCollapsed ? '' : 'rotate-90'}`}
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </div>
+                  </button>
 
-                        return (
-                          <tr
-                            key={item.id}
-                            className={`hover:bg-[#1a1a1a] ${hasPriority ? 'bg-green-900/10' : ''}`}
-                          >
-                            <td className="px-6 py-3">
-                              <ItemLink
-                                name={item.name}
-                                wowheadId={item.wowhead_id}
-                                className="font-medium text-[14px]"
-                              />
-                            </td>
-                            <td className="px-6 py-3 text-[#a1a1a1] text-[13px]">
-                              {item.item_slot}
-                            </td>
-                            <td className="px-6 py-3">
-                              {summary ? (
-                                <span className="text-[13px] text-green-400">{summary}</span>
-                              ) : (
-                                <span className="text-[13px] text-[#666] italic">No priorities set</span>
-                              )}
-                            </td>
-                            <td className="px-6 py-3 text-center">
-                              <div className="flex items-center justify-center gap-2">
-                                <button
-                                  onClick={() => handleEditItem(item)}
-                                  className="px-3 py-1.5 bg-[#ff8000] hover:bg-[#e67300] text-white text-[12px] font-medium rounded-lg transition"
-                                >
-                                  {hasPriority ? 'Edit' : 'Set Priority'}
-                                </button>
-                                {hasPriority && (
-                                  <button
-                                    onClick={() => handleClearPriority(item.id)}
-                                    className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-[12px] font-medium rounded-lg transition"
-                                  >
-                                    Clear
-                                  </button>
-                                )}
-                              </div>
-                            </td>
+                  {/* Items Table - Collapsible */}
+                  {!isCollapsed && (
+                    <div className="border-t border-[rgba(255,255,255,0.1)]">
+                      <table className="w-full">
+                        <thead>
+                          <tr className="bg-[#0d0e11]">
+                            <th className="px-5 py-2.5 text-left text-[12px] font-medium text-[#666]">Item</th>
+                            <th className="px-3 py-2.5 text-left text-[12px] font-medium text-[#666] w-[100px]">Slot</th>
+                            <th className="px-3 py-2.5 text-left text-[12px] font-medium text-[#666]">Priority Summary</th>
+                            <th className="px-3 py-2.5 text-center text-[12px] font-medium text-[#666] w-[180px]">Actions</th>
                           </tr>
-                        )
-                      })}
-                    </tbody>
-                  </table>
+                        </thead>
+                        <tbody className="divide-y divide-[rgba(255,255,255,0.05)]">
+                          {bossItems.map((item) => {
+                            const hasPriority = !!priorities[item.id]
+                            const summary = getPrioritySummary(item.id)
+
+                            return (
+                              <tr
+                                key={item.id}
+                                className={`transition-all hover:bg-[#1a1a1a] ${hasPriority ? 'bg-green-900/10' : ''}`}
+                              >
+                                <td className="px-5 py-2.5">
+                                  <ItemLink
+                                    name={item.name}
+                                    wowheadId={item.wowhead_id}
+                                    className="font-medium text-[13px]"
+                                  />
+                                </td>
+                                <td className="px-3 py-2.5 text-[12px] text-[#666]">
+                                  {item.item_slot}
+                                </td>
+                                <td className="px-3 py-2.5">
+                                  {summary ? (
+                                    <span className="text-[12px] text-green-400">{summary}</span>
+                                  ) : (
+                                    <span className="text-[12px] text-[#444] italic">No priorities set</span>
+                                  )}
+                                </td>
+                                <td className="px-3 py-2.5 text-center">
+                                  <div className="flex items-center justify-center gap-2">
+                                    <button
+                                      onClick={() => handleEditItem(item)}
+                                      className="px-3 py-1.5 bg-[#151515] hover:bg-[#1a1a1a] border border-[#383838] text-white text-[11px] font-medium rounded-[52px] transition"
+                                    >
+                                      {hasPriority ? 'Edit' : 'Set Priority'}
+                                    </button>
+                                    {hasPriority && (
+                                      <button
+                                        onClick={() => handleClearPriority(item.id)}
+                                        className="px-3 py-1.5 bg-[#151515] hover:bg-red-900/30 border border-[#383838] hover:border-red-600/50 text-[#a1a1a1] hover:text-red-400 text-[11px] font-medium rounded-[52px] transition"
+                                      >
+                                        Clear
+                                      </button>
+                                    )}
+                                  </div>
+                                </td>
+                              </tr>
+                            )
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
                 </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         )}
 
         {/* Legend */}
         <div className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl p-4">
-          <p className="text-[#a1a1a1] text-[13px]">
-            <span className="font-semibold text-white">How it works:</span> Set role, class/spec, and individual raider priorities for each item.
-            Priority 1 = highest priority. These bonuses are added to the loot score on the master sheet.
-            Role priority applies to all specs with that role. Class priority applies to specific specs.
-            Individual raider priority applies to specific characters.
-          </p>
+          <div className="flex items-center justify-between">
+            <p className="text-[#666] text-[12px]">
+              Priority 1 = highest. Bonuses are added to loot scores on the master sheet.
+            </p>
+            <p className="text-[#666] text-[12px]">
+              {Object.keys(priorities).length} items with priorities
+            </p>
+          </div>
         </div>
       </div>
 

@@ -226,7 +226,25 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange }
     { name: 'Raid Tracking', view: 'raid-tracking', icon: '/icons/raid-tracking.svg' },
   ] : []
 
-  const isActive = (view: string) => currentView === view
+  const isActive = (view: string) => {
+    // Check currentView prop first (for dashboard mode)
+    if (currentView === view) return true
+
+    // Also check pathname for standalone page mode
+    const routeMap: Record<string, string> = {
+      'overview': '/dashboard',
+      'master-sheet': '/master-sheet',
+      'loot-list': '/loot-list',
+      'attendance': '/attendance',
+      'guild-settings': '/admin/guild-settings',
+      'expansions': '/admin/expansions',
+      'loot-submissions': '/loot-submissions',
+      'loot-settings': '/loot-settings',
+      'raid-tracking': '/admin/raid-tracking',
+      'prio-list': '/admin/prio-list',
+    }
+    return pathname === routeMap[view]
+  }
 
   const currentMembership = userGuilds.find(g => g.guild.id === activeGuild?.id)
 
