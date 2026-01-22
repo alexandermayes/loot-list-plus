@@ -144,8 +144,8 @@ export function CharacterSelector() {
         >
           <RotatingClassIcon />
           <div className="flex-1 min-w-0">
-            <p className="text-[13px] font-medium text-white">Create Character</p>
-            <p className="text-[10px] text-primary">Character creation required · Click here to create</p>
+            <p className="text-[13px] font-medium text-white">Character creation required</p>
+            <p className="text-[10px] text-primary">Click here to create</p>
           </div>
           <svg className="w-4 h-4 text-primary flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -173,7 +173,7 @@ export function CharacterSelector() {
           <RotatingClassIcon />
           <div className="flex-1 min-w-0">
             <p className="text-[13px] font-medium text-white truncate">{activeCharacter.name}</p>
-            <p className="text-[10px] text-primary">Character creation required · Click here to create</p>
+            <p className="text-[10px] text-primary">Click here to create</p>
           </div>
           <svg className="w-4 h-4 text-primary flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
