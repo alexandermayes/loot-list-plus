@@ -422,7 +422,7 @@ export default function Dashboard() {
           )
         `)
         .eq('submission.character_id', characterId)
-        .in('submission.status', ['approved', 'pending'])
+        .eq('submission.status', 'approved')
 
       if (!submissionItems || submissionItems.length === 0) {
         setLootPriority([])
@@ -470,7 +470,7 @@ export default function Dashboard() {
             `)
             .eq('loot_item_id', item.id)
             .eq('rank', charRanking.rank)
-            .in('submission.status', ['approved', 'pending'])
+            .eq('submission.status', 'approved')
 
           // Filter out current character and build tied characters list
           const tiedCharacters: TiedCharacter[] = (sameRankSubmissions || [])
