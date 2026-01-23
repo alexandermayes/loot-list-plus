@@ -131,7 +131,85 @@ export async function POST(request: Request) {
       )
     }
 
-    return NextResponse.json({ success: true })
+    // Create Linear ticket if configured
+    const linearApiKey = process.env.LINEAR_API_KEY
+    const linearTeamId = process.env.LINEAR_TEAM_ID
+    let linearIssueId = null
+
+    if (linearApiKey && linearTeamId) {
+      try {
+        // Simplify browser/OS for Linear
+        let browserOs = ''
+        if (userAgent) {
+          const browser = userAgent.includes('Chrome') ? 'Chrome' :
+                          userAgent.includes('Firefox') ? 'Firefox' :
+                          userAgent.includes('Safari') ? 'Safari' :
+                          userAgent.includes('Edge') ? 'Edge' : 'Other'
+          const os = userAgent.includes('Windows') ? 'Windows' :
+                     userAgent.includes('Mac') ? 'macOS' :
+                     userAgent.includes('Linux') ? 'Linux' :
+                     userAgent.includes('iPhone') ? 'iOS' :
+                     userAgent.includes('Android') ? 'Android' : 'Other'
+          browserOs = `${browser} / ${os}`
+        }
+
+        // Build markdown description for Linear
+        const linearDescription = [
+          description.trim(),
+          '',
+          '---',
+          `**Submitted by:** ${userInfo}`,
+          `**Page:** ${pageUrl || 'Unknown'}`,
+          browserOs ? `**Browser/OS:** ${browserOs}` : '',
+        ].filter(Boolean).join('\n')
+
+        // Create issue via Linear GraphQL API
+        const linearResponse = await fetch('https://api.linear.app/graphql', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': linearApiKey
+          },
+          body: JSON.stringify({
+            query: `
+              mutation CreateIssue($title: String!, $description: String!, $teamId: String!) {
+                issueCreate(input: {
+                  title: $title,
+                  description: $description,
+                  teamId: $teamId
+                }) {
+                  success
+                  issue {
+                    id
+                    identifier
+                    url
+                  }
+                }
+              }
+            `,
+            variables: {
+              title: `Bug Report: ${description.trim().slice(0, 100)}${description.trim().length > 100 ? '...' : ''}`,
+              description: linearDescription,
+              teamId: linearTeamId
+            }
+          })
+        })
+
+        const linearData = await linearResponse.json()
+
+        if (linearData.data?.issueCreate?.success) {
+          linearIssueId = linearData.data.issueCreate.issue.identifier
+          console.log('Linear issue created:', linearIssueId)
+        } else {
+          console.error('Linear issue creation failed:', linearData.errors || linearData)
+        }
+      } catch (linearError) {
+        console.error('Error creating Linear issue:', linearError)
+        // Continue anyway - Discord was successful
+      }
+    }
+
+    return NextResponse.json({ success: true, linearIssueId })
   } catch (error) {
     console.error('Error in feedback API:', error)
     return NextResponse.json(

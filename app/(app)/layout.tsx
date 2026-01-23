@@ -4,8 +4,14 @@ import { usePathname } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { createClient } from '@/utils/supabase/client'
 import { useRouter } from 'next/navigation'
+import dynamic from 'next/dynamic'
 import Sidebar from '@/app/components/Sidebar'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
+import { Bug } from 'lucide-react'
+
+const FeedbackModal = dynamic(() => import('@/app/components/FeedbackModal').then(mod => ({ default: mod.FeedbackModal })), {
+  loading: () => null
+})
 
 export default function AppLayout({
   children,
@@ -16,6 +22,7 @@ export default function AppLayout({
   const router = useRouter()
   const [user, setUser] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false)
   const supabase = createClient()
 
   // Map pathname to currentView for sidebar highlighting
@@ -59,6 +66,21 @@ export default function AppLayout({
       <main className="ml-[208px] min-h-screen bg-[#09090c]">
         {children}
       </main>
+
+      {/* Floating Bug Report Button */}
+      <button
+        onClick={() => setShowFeedbackModal(true)}
+        className="fixed bottom-6 right-6 w-14 h-14 bg-[#141519] hover:bg-[#1a1a1a] border border-[#383838] rounded-full shadow-lg flex items-center justify-center transition-all hover:scale-105 z-40"
+        title="Report a Bug"
+      >
+        <Bug className="w-6 h-6 text-[#a1a1a1]" />
+      </button>
+
+      {/* Feedback Modal */}
+      <FeedbackModal
+        isOpen={showFeedbackModal}
+        onClose={() => setShowFeedbackModal(false)}
+      />
     </div>
   )
 }
