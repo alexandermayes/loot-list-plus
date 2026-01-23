@@ -44,10 +44,57 @@ interface RaidTier {
   }
 }
 
+// Define raid tier progression order (Classic + TBC)
+const getRaidTierOrder = (tierName: string): number => {
+  const order: Record<string, number> = {
+    // Classic
+    'Molten Core': 1,
+    'MC': 1,
+    'Onyxia\'s Lair': 2,
+    'Onyxia': 2,
+    'Blackwing Lair': 3,
+    'BWL': 3,
+    'Zul\'Gurub': 4,
+    'ZG': 4,
+    'Ruins of Ahn\'Qiraj': 5,
+    'AQ20': 5,
+    'Temple of Ahn\'Qiraj': 6,
+    'AQ40': 6,
+    'Naxxramas': 7,
+    'Naxx': 7,
+    // TBC Tier 4
+    'Karazhan': 10,
+    'Kara': 10,
+    'Gruul\'s Lair': 11,
+    'Gruul': 11,
+    'Magtheridon\'s Lair': 12,
+    'Mag': 12,
+    // TBC Tier 5
+    'Serpentshrine Cavern': 20,
+    'SSC': 20,
+    'Tempest Keep: The Eye': 21,
+    'Tempest Keep': 21,
+    'The Eye': 21,
+    'TK': 21,
+    // TBC Tier 6
+    'Hyjal Summit': 30,
+    'Mount Hyjal': 30,
+    'Hyjal': 30,
+    'Black Temple': 31,
+    'BT': 31,
+    'Zul\'Aman': 32,
+    'ZA': 32,
+    'Sunwell Plateau': 33,
+    'Sunwell': 33,
+    'SWP': 33
+  }
+  return order[tierName] || 999 // Unknown tiers go to the end
+}
+
 export default function MasterLootPage() {
   const [submissions, setSubmissions] = useState<Submission[]>([])
   const [raidTiers, setRaidTiers] = useState<RaidTier[]>([])
-  const [activeTier, setActiveTier] = useState<RaidTier | null>(null)
+  const [activeTier, setActiveTier] = useState<RaidTier | 'all' | null>(null)
   const [loading, setLoading] = useState(true)
   const [reviewing, setReviewing] = useState<string | null>(null)
   const [reviewNotes, setReviewNotes] = useState('')
@@ -122,11 +169,13 @@ export default function MasterLootPage() {
           ...tier,
           expansion: Array.isArray(tier.expansion) ? tier.expansion[0] : tier.expansion
         }))
-        setRaidTiers(transformedData as any)
-        const active = transformedData.find(t => t.is_active) as any
-        if (active) {
-          setActiveTier(active)
-        }
+        // Sort tiers by raid progression order
+        const sortedTiers = transformedData.sort((a: any, b: any) =>
+          getRaidTierOrder(a.name) - getRaidTierOrder(b.name)
+        )
+        setRaidTiers(sortedTiers as any)
+        // Default to "All" view
+        setActiveTier('all')
       }
       setLoading(false)
     }
@@ -136,8 +185,57 @@ export default function MasterLootPage() {
     }
   }, [guildLoading, activeGuild])
 
-  const loadSubmissions = useCallback(async (guildId: string, tierId: string) => {
-    // Use RPC function to bypass RLS and get all submission data with character names
+  const loadSubmissions = useCallback(async (guildId: string, tierId: string | 'all', allTiers?: RaidTier[]) => {
+    if (tierId === 'all' && allTiers && allTiers.length > 0) {
+      // Load submissions for all tiers
+      const allSubmissions: any[] = []
+      for (const tier of allTiers) {
+        const { data: submissionsData, error } = await supabase
+          .rpc('get_guild_submissions', {
+            p_guild_id: guildId,
+            p_raid_tier_id: tier.id
+          })
+
+        if (!error && submissionsData) {
+          // Add tier info to each submission
+          const withTierInfo = submissionsData.map((sub: any) => ({
+            ...sub,
+            tier_name: tier.name,
+            tier_id: tier.id
+          }))
+          allSubmissions.push(...withTierInfo)
+        }
+      }
+
+      // Transform and set submissions
+      const formattedSubmissions = allSubmissions.map((sub: any) => ({
+        id: sub.id,
+        status: sub.status,
+        submitted_at: sub.submitted_at,
+        review_notes: sub.review_notes,
+        character_id: sub.character_id,
+        tier_name: sub.tier_name,
+        tier_id: sub.tier_id,
+        member: sub.character_name ? {
+          character_name: sub.character_name,
+          role: 'Member',
+          class: {
+            name: sub.character_class_name,
+            color_hex: sub.character_class_color
+          }
+        } : null,
+        item_count: sub.item_count || 0,
+        user: {
+          id: sub.user_id || '',
+          user_metadata: {}
+        }
+      }))
+
+      setSubmissions(formattedSubmissions as any)
+      return
+    }
+
+    // Load submissions for a single tier
     const { data: submissionsData, error } = await supabase
       .rpc('get_guild_submissions', {
         p_guild_id: guildId,
@@ -146,13 +244,12 @@ export default function MasterLootPage() {
 
     if (error) {
       console.error('Error loading submissions:', error)
-      console.error('Error details:', JSON.stringify(error, null, 2))
-      console.error('Error message:', error?.message)
-      console.error('Error code:', error?.code)
       return
     }
 
-    if (!submissionsData) return
+    if (!submissionsData) {
+      return
+    }
 
     // Transform data to match expected format
     const formattedSubmissions = submissionsData.map((sub: any) => ({
@@ -181,9 +278,13 @@ export default function MasterLootPage() {
 
   useEffect(() => {
     if (guildId && activeTier) {
-      loadSubmissions(guildId, activeTier.id)
+      if (activeTier === 'all') {
+        loadSubmissions(guildId, 'all', raidTiers)
+      } else {
+        loadSubmissions(guildId, activeTier.id)
+      }
     }
-  }, [activeTier, guildId, loadSubmissions])
+  }, [activeTier, guildId, raidTiers, loadSubmissions])
 
   const handleReview = async (submissionId: string, status: 'approved' | 'rejected') => {
     setReviewing(submissionId)
@@ -297,9 +398,47 @@ export default function MasterLootPage() {
   return (
     <div className="p-8 space-y-6 font-poppins">
       {/* Header */}
-      <div>
-        <h1 className="text-[42px] font-bold text-white leading-tight">Loot Submissions</h1>
-        <p className="text-[#8a8d94] mt-1 text-[14px]">Review and manage character loot submissions</p>
+      <div className="space-y-4">
+        <div>
+          <h1 className="text-[42px] font-bold text-white leading-tight">Loot Submissions</h1>
+          <p className="text-[#8a8d94] mt-1 text-[14px]">Review and manage character loot submissions</p>
+        </div>
+
+        {/* Raid Tier Selector */}
+        {raidTiers.length > 0 && (
+          <div className="flex items-center gap-3 overflow-x-auto pb-2">
+            <span className="text-[#a1a1a1] text-sm font-medium whitespace-nowrap">Raid Tier:</span>
+            <div className="flex gap-2">
+              {/* All Tiers Button */}
+              <button
+                onClick={() => setActiveTier('all')}
+                className={`px-5 py-2.5 rounded-[40px] whitespace-nowrap text-[13px] font-medium transition-all ${
+                  activeTier === 'all'
+                    ? 'bg-[rgba(255,128,0,0.2)] border-[0.5px] border-[rgba(255,128,0,0.2)] text-[#ff8000]'
+                    : 'bg-[#151515] border border-[rgba(255,255,255,0.1)] text-white hover:bg-[#1a1a1a]'
+                }`}
+              >
+                All
+              </button>
+              {raidTiers.map((tier) => (
+                <button
+                  key={tier.id}
+                  onClick={() => setActiveTier(tier)}
+                  className={`px-5 py-2.5 rounded-[40px] whitespace-nowrap text-[13px] font-medium transition-all ${
+                    activeTier !== 'all' && activeTier?.id === tier.id
+                      ? 'bg-[rgba(255,128,0,0.2)] border-[0.5px] border-[rgba(255,128,0,0.2)] text-[#ff8000]'
+                      : 'bg-[#151515] border border-[rgba(255,255,255,0.1)] text-white hover:bg-[#1a1a1a]'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <span>{tier.name}</span>
+                    {tier.is_active && <span className="text-xs">⭐</span>}
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {message && (

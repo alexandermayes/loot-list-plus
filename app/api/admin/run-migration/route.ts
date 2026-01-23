@@ -19,18 +19,19 @@ export async function GET() {
 
     const results: string[] = []
 
-    // Migration 1: Add is_guild_active column to raid_tiers
-    const { error: raidTiersError } = await supabase
+    // Migration 1: Set is_guild_active to true for ALL raid_tiers
+    const { data: updatedTiers, error: raidTiersError } = await supabase
       .from('raid_tiers')
       .update({ is_guild_active: true })
-      .is('is_guild_active', null)
+      .eq('is_guild_active', false)
+      .select('id')
 
     if (raidTiersError && raidTiersError.code === '42703') {
       results.push('is_guild_active column needs to be added via SQL Editor')
     } else if (raidTiersError) {
       results.push(`raid_tiers migration: ${raidTiersError.message}`)
     } else {
-      results.push('raid_tiers is_guild_active: OK')
+      results.push(`raid_tiers is_guild_active: OK (${updatedTiers?.length || 0} updated)`)
     }
 
     // Migration 2: Seed default guild_roles for guilds missing them
