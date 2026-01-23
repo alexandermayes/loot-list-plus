@@ -116,6 +116,20 @@ export default function MasterLootPage() {
     document.title = 'LootList+ • Loot Submissions'
   }, [])
 
+  // Refresh Wowhead tooltips when submission details modal opens
+  useEffect(() => {
+    if (submissionDetails.length > 0 && typeof window !== 'undefined' && (window as any).$WowheadPower) {
+      const timer = setTimeout(() => {
+        try {
+          (window as any).$WowheadPower.refreshLinks()
+        } catch (e) {
+          console.error('Failed to refresh Wowhead links:', e)
+        }
+      }, 100)
+      return () => clearTimeout(timer)
+    }
+  }, [submissionDetails])
+
   useEffect(() => {
     const loadData = async () => {
       // Wait for guild context to finish loading
@@ -323,7 +337,7 @@ export default function MasterLootPage() {
       .from('loot_submission_items')
       .select(`
         rank,
-        loot_item:loot_items(id, name, boss_name, item_slot, wowhead_id)
+        loot_item:loot_items(id, name, boss_name, item_slot, wowhead_id, classification)
       `)
       .eq('submission_id', submissionId)
       .order('rank', { ascending: false })
@@ -401,7 +415,7 @@ export default function MasterLootPage() {
       <div className="space-y-4">
         <div>
           <h1 className="text-[42px] font-bold text-white leading-tight">Loot Submissions</h1>
-          <p className="text-[#8a8d94] mt-1 text-[14px]">Review and manage character loot submissions</p>
+          <p className="text-[#a1a1a1] mt-1 text-base">Review and manage character loot submissions</p>
         </div>
 
         {/* Raid Tier Selector */}
@@ -447,7 +461,7 @@ export default function MasterLootPage() {
             ? 'bg-green-950/50 border border-green-600/50 text-green-200'
             : 'bg-red-950/50 border border-red-600/50 text-red-200'
         }`}>
-          <p className="text-[14px]">{message.text}</p>
+          <p className="text-sm">{message.text}</p>
         </div>
       )}
 
@@ -455,20 +469,23 @@ export default function MasterLootPage() {
       <div className="space-y-4">
           {/* Filters and Delete Actions */}
           <div className="flex items-center justify-between">
-            <div className="flex gap-2">
+            <div className="flex items-center gap-3">
+              <span className="text-[#a1a1a1] text-sm font-medium whitespace-nowrap">Status:</span>
+              <div className="flex gap-2">
               {(['all', 'pending', 'approved', 'rejected'] as const).map((status) => (
                 <button
                   key={status}
                   onClick={() => setFilter(status)}
-                  className={`px-5 py-2.5 rounded-full text-[13px] font-medium transition ${
+                  className={`px-5 py-2.5 rounded-[40px] text-[13px] font-medium transition-all ${
                     filter === status
-                      ? 'bg-[#ff8000] text-white'
-                      : 'bg-[#151515] text-[#a1a1a1] hover:bg-[#1a1a1a] border border-[rgba(255,255,255,0.1)]'
+                      ? 'bg-[rgba(255,128,0,0.2)] border-[0.5px] border-[rgba(255,128,0,0.2)] text-[#ff8000]'
+                      : 'bg-[#151515] text-white hover:bg-[#1a1a1a] border border-[rgba(255,255,255,0.1)]'
                   }`}
                 >
                   {status.charAt(0).toUpperCase() + status.slice(1)}
                 </button>
               ))}
+              </div>
             </div>
             <div className="flex gap-2">
               <button
@@ -476,7 +493,7 @@ export default function MasterLootPage() {
                   setDeleteTarget({ type: 'pending' })
                   setShowDeleteConfirm(true)
                 }}
-                className="px-4 py-2 bg-red-900/30 hover:bg-red-900/50 border border-red-700 rounded-full text-red-400 text-[13px] font-medium transition"
+                className="px-5 py-2.5 bg-red-900/30 hover:bg-red-900/50 border border-red-700/50 rounded-[40px] text-red-400 text-[13px] font-medium transition-all"
               >
                 Delete Pending
               </button>
@@ -485,7 +502,7 @@ export default function MasterLootPage() {
                   setDeleteTarget({ type: 'all' })
                   setShowDeleteConfirm(true)
                 }}
-                className="px-4 py-2 bg-red-900/30 hover:bg-red-900/50 border border-red-700 rounded-full text-red-400 text-[13px] font-medium transition"
+                className="px-5 py-2.5 bg-red-900/30 hover:bg-red-900/50 border border-red-700/50 rounded-[40px] text-red-400 text-[13px] font-medium transition-all"
               >
                 Delete All
               </button>
@@ -502,10 +519,10 @@ export default function MasterLootPage() {
               filteredSubmissions.map((submission) => (
                 <div
                   key={submission.id}
-                  className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl p-5 flex items-center justify-between hover:bg-[#1a1a1a] transition"
+                  className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl p-5 flex items-center justify-between hover:bg-[#18191d] transition-all"
                 >
                   <div className="flex items-center gap-3">
-                    <h3 className="text-[20px] font-semibold text-white">
+                    <h3 className="text-[16px] font-semibold text-white">
                       {submission.member?.character_name || 'Unknown'}
                     </h3>
                     {submission.member?.class && (
@@ -519,18 +536,18 @@ export default function MasterLootPage() {
                     <span className={`px-3 py-1 rounded-full text-[12px] font-medium ${
                       submission.status === 'approved' ? 'bg-green-600/30 text-green-300' :
                       submission.status === 'rejected' ? 'bg-red-600/30 text-red-300' :
-                      'bg-blue-600/30 text-blue-300'
+                      'bg-yellow-600/30 text-yellow-300'
                     }`}>
                       {submission.status}
                     </span>
-                    <span className="text-[#8a8d94] text-[14px]">
+                    <span className="text-[#a1a1a1] text-[13px]">
                       {submission.item_count} items • Submitted {submission.submitted_at ? new Date(submission.submitted_at).toLocaleDateString('en-US', { month: 'numeric', day: 'numeric', year: 'numeric' }) : 'N/A'}
                     </span>
                   </div>
                   <div className="flex gap-2">
                     <button
                       onClick={() => viewSubmissionDetails(submission.id)}
-                      className="px-5 py-2 bg-[#151515] hover:bg-[#1a1a1a] border border-[rgba(255,255,255,0.1)] rounded-[52px] text-white text-[14px] font-medium transition"
+                      className="px-5 py-2.5 bg-[#151515] hover:bg-[#1a1a1a] border border-[rgba(255,255,255,0.1)] rounded-[40px] text-white text-[13px] font-medium transition-all"
                     >
                       View Details
                     </button>
@@ -539,7 +556,7 @@ export default function MasterLootPage() {
                         setDeleteTarget({ type: 'single', id: submission.id })
                         setShowDeleteConfirm(true)
                       }}
-                      className="px-4 py-2 bg-red-900/30 hover:bg-red-900/50 border border-red-700 rounded-[52px] text-red-400 text-[14px] font-medium transition"
+                      className="px-3 py-2.5 bg-red-900/30 hover:bg-red-900/50 border border-red-700/50 rounded-[40px] text-red-400 transition-all"
                       title="Delete this submission"
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -560,37 +577,108 @@ export default function MasterLootPage() {
           onClick={() => setViewingSubmission(null)}
         >
           <div
-            className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl max-w-2xl w-full max-h-[80vh] overflow-y-auto"
+            className="bg-[#0d0e11] border border-[#383838] rounded-xl max-w-2xl w-full max-h-[85vh] overflow-hidden flex flex-col"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="p-6 border-b border-[rgba(255,255,255,0.1)]">
+            {/* Header */}
+            <div className="p-6 border-b border-[#383838] flex items-center justify-between bg-[#141519]">
               <h3 className="text-[24px] font-bold text-white">Submission details</h3>
+              <button
+                onClick={() => setViewingSubmission(null)}
+                className="text-[#a1a1a1] hover:text-white transition"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
             </div>
-            <div className="p-6">
+
+            {/* Content */}
+            <div className="overflow-y-auto flex-1">
               {submissionDetails.length === 0 ? (
                 <p className="text-[#a1a1a1] text-center py-8">No items in this submission</p>
               ) : (
-                <div className="space-y-2">
-                  {submissionDetails.map((detail: any, idx: number) => (
-                    <div key={idx} className="flex items-center justify-between py-2 border-b border-[rgba(255,255,255,0.1)]">
-                      <div>
-                        <ItemLink
-                          name={detail.loot_item?.name || 'Unknown'}
-                          wowheadId={detail.loot_item?.wowhead_id}
-                          className="font-medium text-[14px]"
-                        />
-                        <p className="text-[#a1a1a1] text-[12px]">{detail.loot_item?.boss_name ? normalizeBossName(detail.loot_item.boss_name) : ''}</p>
-                      </div>
-                      <span className="px-3 py-1 bg-[#ff8000] text-white rounded-full text-[13px] font-medium">
-                        Rank {detail.rank}
-                      </span>
-                    </div>
-                  ))}
-                </div>
+                <table className="w-full">
+                  <thead>
+                    <tr className="bg-[#0d0e11] border-b border-[rgba(255,255,255,0.05)]">
+                      <th className="px-3 py-2 text-left text-[11px] font-medium text-[#666] w-12">Rank</th>
+                      <th className="px-3 py-2 text-left text-[11px] font-medium text-[#666]">Item #1</th>
+                      <th className="px-3 py-2 text-left text-[11px] font-medium text-[#666]">Item #2</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {Object.entries(
+                      submissionDetails.reduce((acc: Record<number, any[]>, detail: any) => {
+                        const rank = detail.rank
+                        if (!acc[rank]) acc[rank] = []
+                        acc[rank].push(detail)
+                        return acc
+                      }, {})
+                    )
+                      .sort(([a], [b]) => Number(b) - Number(a))
+                      .map(([rank, items]) => {
+                        const rankNum = Number(rank)
+                        const getRankColor = (r: number) => {
+                          if (r >= 48) return 'from-red-900 to-red-700'
+                          if (r >= 45) return 'from-orange-900 to-orange-700'
+                          if (r >= 42) return 'from-yellow-900 to-yellow-700'
+                          if (r >= 39) return 'from-amber-900 to-amber-700'
+                          if (r >= 25) return 'from-green-900 to-green-700'
+                          return 'from-blue-900 to-blue-700'
+                        }
+                        const getClassificationBadge = (classification?: string) => {
+                          if (!classification || classification === 'Unlimited') return null
+                          const colors: Record<string, string> = {
+                            Reserved: 'bg-red-500/20 text-red-300 border-red-500/30',
+                            Limited: 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30'
+                          }
+                          return (
+                            <span className={`text-[10px] px-1.5 py-0.5 rounded border ${colors[classification] || ''}`}>
+                              {classification}
+                            </span>
+                          )
+                        }
+                        const itemsArr = items as any[]
+                        return (
+                          <tr key={rank} className="border-b border-[rgba(255,255,255,0.05)]">
+                            <td className={`px-3 py-2 font-semibold text-[13px] text-white bg-gradient-to-r ${getRankColor(rankNum)}`}>
+                              {rank}
+                            </td>
+                            <td className="px-3 py-2">
+                              {itemsArr[0] ? (
+                                <div className="flex items-center gap-2">
+                                  <ItemLink
+                                    name={itemsArr[0].loot_item?.name || 'Unknown'}
+                                    wowheadId={itemsArr[0].loot_item?.wowhead_id}
+                                    className="font-medium text-[13px]"
+                                  />
+                                  {getClassificationBadge(itemsArr[0].loot_item?.classification)}
+                                </div>
+                              ) : <span className="text-[#666] text-[12px]">-</span>}
+                            </td>
+                            <td className="px-3 py-2">
+                              {itemsArr[1] ? (
+                                <div className="flex items-center gap-2">
+                                  <ItemLink
+                                    name={itemsArr[1].loot_item?.name || 'Unknown'}
+                                    wowheadId={itemsArr[1].loot_item?.wowhead_id}
+                                    className="font-medium text-[13px]"
+                                  />
+                                  {getClassificationBadge(itemsArr[1].loot_item?.classification)}
+                                </div>
+                              ) : <span className="text-[#666] text-[12px]">-</span>}
+                            </td>
+                          </tr>
+                        )
+                      })}
+                  </tbody>
+                </table>
               )}
             </div>
-            <div className="p-6 border-t border-[rgba(255,255,255,0.1)] flex justify-between items-center">
-              <div className="flex gap-2">
+
+            {/* Footer */}
+            <div className="p-6 border-t border-[#383838] bg-[#141519] flex justify-between items-center">
+              <div className="flex gap-3">
                 {submissions.find(s => s.id === viewingSubmission)?.status === 'pending' && (
                   <>
                     <button
@@ -599,7 +687,7 @@ export default function MasterLootPage() {
                         setViewingSubmission(null)
                       }}
                       disabled={reviewing === viewingSubmission}
-                      className="px-5 py-2.5 bg-green-600 hover:bg-green-700 rounded-[52px] text-white text-[13px] font-medium transition disabled:opacity-50"
+                      className="px-6 py-2.5 bg-green-600 hover:bg-green-700 rounded-[52px] text-white text-[13px] font-medium transition disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {reviewing === viewingSubmission ? 'Processing...' : 'Approve'}
                     </button>
@@ -609,7 +697,7 @@ export default function MasterLootPage() {
                         setViewingSubmission(null)
                       }}
                       disabled={reviewing === viewingSubmission}
-                      className="px-5 py-2.5 bg-red-600 hover:bg-red-700 rounded-[52px] text-white text-[13px] font-medium transition disabled:opacity-50"
+                      className="px-6 py-2.5 bg-red-600 hover:bg-red-700 rounded-[52px] text-white text-[13px] font-medium transition disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       Reject
                     </button>
@@ -618,7 +706,7 @@ export default function MasterLootPage() {
               </div>
               <button
                 onClick={() => setViewingSubmission(null)}
-                className="px-5 py-2.5 bg-[#151515] hover:bg-[#1a1a1a] border border-[rgba(255,255,255,0.1)] rounded-[52px] text-white text-[13px] transition"
+                className="px-6 py-2.5 bg-[#151515] hover:bg-[#1a1a1a] border border-[#383838] rounded-[52px] text-white text-[13px] font-medium transition"
               >
                 Close
               </button>
@@ -673,14 +761,14 @@ export default function MasterLootPage() {
                   setDeleteTarget(null)
                 }}
                 disabled={deleting}
-                className="px-6 py-2.5 bg-[#151515] hover:bg-[#1a1a1a] border border-[#383838] rounded-[52px] text-white text-[13px] transition disabled:opacity-50"
+                className="px-6 py-2.5 bg-[#151515] hover:bg-[#1a1a1a] border border-[rgba(255,255,255,0.1)] rounded-[40px] text-white text-[13px] font-medium transition-all disabled:opacity-50"
               >
                 Cancel
               </button>
               <button
                 onClick={handleDeleteSubmissions}
                 disabled={deleting}
-                className="px-6 py-2.5 bg-red-600 hover:bg-red-700 rounded-[52px] text-white text-[13px] font-medium transition disabled:opacity-50"
+                className="px-6 py-2.5 bg-red-600 hover:bg-red-700 rounded-[40px] text-white text-[13px] font-medium transition-all disabled:opacity-50"
               >
                 {deleting ? 'Deleting...' : 'Delete'}
               </button>
