@@ -134,6 +134,7 @@ export async function POST(request: Request) {
     // Create Linear ticket if configured
     const linearApiKey = process.env.LINEAR_API_KEY
     const linearTeamId = process.env.LINEAR_TEAM_ID
+    const anthropicApiKey = process.env.ANTHROPIC_API_KEY
     let linearIssueId = null
 
     if (linearApiKey && linearTeamId) {
@@ -151,6 +152,41 @@ export async function POST(request: Request) {
                      userAgent.includes('iPhone') ? 'iOS' :
                      userAgent.includes('Android') ? 'Android' : 'Other'
           browserOs = `${browser} / ${os}`
+        }
+
+        // Generate a concise title using Claude
+        let issueTitle = `Bug: ${description.trim().slice(0, 80)}${description.trim().length > 80 ? '...' : ''}`
+
+        if (anthropicApiKey) {
+          try {
+            const claudeResponse = await fetch('https://api.anthropic.com/v1/messages', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'x-api-key': anthropicApiKey,
+                'anthropic-version': '2023-06-01'
+              },
+              body: JSON.stringify({
+                model: 'claude-3-5-haiku-20241022',
+                max_tokens: 100,
+                messages: [{
+                  role: 'user',
+                  content: `Generate a concise bug ticket title (max 10 words) for this bug report. Return ONLY the title, no quotes or extra text.\n\nBug description: ${description.trim()}`
+                }]
+              })
+            })
+
+            if (claudeResponse.ok) {
+              const claudeData = await claudeResponse.json()
+              const generatedTitle = claudeData.content?.[0]?.text?.trim()
+              if (generatedTitle && generatedTitle.length > 0 && generatedTitle.length < 100) {
+                issueTitle = generatedTitle
+              }
+            }
+          } catch (claudeError) {
+            console.error('Error generating title with Claude:', claudeError)
+            // Fall back to default title
+          }
         }
 
         // Build markdown description for Linear
@@ -188,7 +224,7 @@ export async function POST(request: Request) {
               }
             `,
             variables: {
-              title: `Bug Report: ${description.trim().slice(0, 100)}${description.trim().length > 100 ? '...' : ''}`,
+              title: issueTitle,
               description: linearDescription,
               teamId: linearTeamId
             }
