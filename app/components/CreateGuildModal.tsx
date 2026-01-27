@@ -36,11 +36,11 @@ interface CreateGuildModalProps {
 type Step = 'discord' | 'details' | 'settings'
 
 const EXPANSIONS = [
-  { id: 'Classic', name: 'Classic', image: 'https://softres.it/img/editions/classic.big.png', available: true },
-  { id: 'The Burning Crusade', name: 'TBC', image: 'https://softres.it/img/editions/tbc.big.png', available: true },
-  { id: 'Wrath of the Lich King', name: 'WotLK', image: 'https://softres.it/img/editions/wotlk.big.png', available: false },
-  { id: 'Cataclysm', name: 'Cata', image: 'https://softres.it/img/editions/cata.big.png', available: false },
-  { id: 'Mists of Pandaria', name: 'MoP', image: 'https://softres.it/img/editions/mop.big.png', available: false },
+  { id: 'Classic', name: 'Classic', image: 'https://static.wikia.nocookie.net/wowpedia/images/a/af/WoW_Classic_logo.png/revision/latest?cb=20190315120441', available: true },
+  { id: 'The Burning Crusade', name: 'TBC', image: 'https://static.wikia.nocookie.net/wowpedia/images/6/65/TBCLogo.png/revision/latest?cb=20190310110735', available: true },
+  { id: 'Wrath of the Lich King', name: 'WotLK', image: 'https://static.wikia.nocookie.net/wowpedia/images/f/f0/WrathLogo.png/revision/latest?cb=20201223013540', available: false },
+  { id: 'Cataclysm', name: 'Cata', image: 'https://static.wikia.nocookie.net/wowpedia/images/4/4e/Cataclysmlogo.png/revision/latest?cb=20190102163406', available: false },
+  { id: 'Mists of Pandaria', name: 'MoP', image: 'https://static.wikia.nocookie.net/wowpedia/images/5/52/MoPlogo.png/revision/latest?cb=20200616000259', available: false },
 ]
 
 export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModalProps) {
