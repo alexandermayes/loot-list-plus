@@ -1032,6 +1032,119 @@ export default function DesignSystemPage() {
           </div>
         </section>
 
+        {/* Spacing */}
+        <section className="space-y-6">
+          <div>
+            <h2 className="text-2xl font-semibold">Spacing</h2>
+            <p className="text-foreground-secondary">Consistent spacing scale for padding, margins, and gaps</p>
+          </div>
+
+          {/* Spacing Scale */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-medium text-foreground">Spacing Scale</h3>
+            <div className="bg-background-elevated p-6 rounded-xl border border-border">
+              <div className="space-y-3">
+                {[
+                  { name: '1', value: '4px', tailwind: 'p-1, gap-1, space-y-1' },
+                  { name: '2', value: '8px', tailwind: 'p-2, gap-2, space-y-2' },
+                  { name: '3', value: '12px', tailwind: 'p-3, gap-3, space-y-3' },
+                  { name: '4', value: '16px', tailwind: 'p-4, gap-4, space-y-4' },
+                  { name: '5', value: '20px', tailwind: 'p-5, gap-5, space-y-5' },
+                  { name: '6', value: '24px', tailwind: 'p-6, gap-6, space-y-6' },
+                  { name: '8', value: '32px', tailwind: 'p-8, gap-8, space-y-8' },
+                  { name: '10', value: '40px', tailwind: 'p-10, gap-10' },
+                  { name: '12', value: '48px', tailwind: 'p-12, gap-12' },
+                ].map((item) => (
+                  <div key={item.name} className="flex items-center gap-4">
+                    <div
+                      className="bg-accent h-4 rounded"
+                      style={{ width: item.value }}
+                    />
+                    <span className="text-sm font-medium w-8">{item.name}</span>
+                    <span className="text-sm text-muted-foreground w-16">{item.value}</span>
+                    <span className="text-xs text-muted-foreground">{item.tailwind}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Common Patterns */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-medium text-foreground">Common Patterns</h3>
+            <div className="grid grid-cols-2 gap-6">
+              {/* Page Layout */}
+              <div className="space-y-3">
+                <LabelText>Page Layout</LabelText>
+                <div className="border border-border rounded-xl overflow-hidden">
+                  <div className="bg-accent/20 p-8">
+                    <div className="bg-background-elevated rounded-lg p-4 text-center text-sm text-muted-foreground">
+                      Content with p-8 page padding
+                    </div>
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground">Page content: <code className="text-accent">p-8</code> (32px)</p>
+              </div>
+
+              {/* Card Padding */}
+              <div className="space-y-3">
+                <LabelText>Card Padding</LabelText>
+                <div className="border border-border rounded-xl overflow-hidden">
+                  <div className="bg-accent/20 p-6">
+                    <div className="bg-background-elevated rounded-lg p-4 text-center text-sm text-muted-foreground">
+                      Card content with p-6
+                    </div>
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground">Cards/Modals: <code className="text-accent">p-6</code> (24px)</p>
+              </div>
+
+              {/* Section Spacing */}
+              <div className="space-y-3">
+                <LabelText>Section Spacing</LabelText>
+                <div className="border border-border rounded-xl p-4 space-y-4">
+                  <div className="bg-accent/20 rounded p-3 text-center text-xs">Section 1</div>
+                  <div className="bg-accent/20 rounded p-3 text-center text-xs">Section 2</div>
+                  <div className="bg-accent/20 rounded p-3 text-center text-xs">Section 3</div>
+                </div>
+                <p className="text-xs text-muted-foreground">Between sections: <code className="text-accent">space-y-4</code> or <code className="text-accent">space-y-6</code></p>
+              </div>
+
+              {/* Flex Gap */}
+              <div className="space-y-3">
+                <LabelText>Flex/Grid Gap</LabelText>
+                <div className="border border-border rounded-xl p-4">
+                  <div className="flex gap-3">
+                    <div className="bg-accent/20 rounded p-3 text-center text-xs flex-1">Item</div>
+                    <div className="bg-accent/20 rounded p-3 text-center text-xs flex-1">Item</div>
+                    <div className="bg-accent/20 rounded p-3 text-center text-xs flex-1">Item</div>
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground">Flex items: <code className="text-accent">gap-2</code>, <code className="text-accent">gap-3</code>, or <code className="text-accent">gap-4</code></p>
+              </div>
+            </div>
+          </div>
+
+          {/* Spacing Guidelines */}
+          <div className="bg-background-elevated p-4 rounded-lg border border-border">
+            <h3 className="text-sm font-medium text-foreground-secondary mb-3 uppercase tracking-wider">Guidelines</h3>
+            <div className="grid grid-cols-2 gap-4 text-sm">
+              <div className="space-y-2">
+                <p><strong className="text-foreground">Page padding:</strong> <code className="text-accent">p-8</code> (32px)</p>
+                <p><strong className="text-foreground">Card/Modal padding:</strong> <code className="text-accent">p-6</code> (24px)</p>
+                <p><strong className="text-foreground">Compact containers:</strong> <code className="text-accent">p-4</code> (16px)</p>
+                <p><strong className="text-foreground">Inline elements:</strong> <code className="text-accent">p-2</code> or <code className="text-accent">p-3</code></p>
+              </div>
+              <div className="space-y-2">
+                <p><strong className="text-foreground">Page sections:</strong> <code className="text-accent">space-y-6</code> (24px)</p>
+                <p><strong className="text-foreground">Card sections:</strong> <code className="text-accent">space-y-4</code> (16px)</p>
+                <p><strong className="text-foreground">Tight lists:</strong> <code className="text-accent">space-y-2</code> (8px)</p>
+                <p><strong className="text-foreground">Flex items:</strong> <code className="text-accent">gap-2</code> to <code className="text-accent">gap-4</code></p>
+              </div>
+            </div>
+          </div>
+        </section>
+
         {/* Nav Item Example */}
         <section className="space-y-4">
           <h2 className="text-2xl font-semibold">Navigation Items</h2>
