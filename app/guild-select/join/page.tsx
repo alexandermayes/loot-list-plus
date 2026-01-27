@@ -136,7 +136,7 @@ export default function JoinGuildPage() {
             <HugeiconsIcon icon={Tick01Icon} size={40} className="text-green-400" />
           </div>
           <h2 className="text-2xl font-bold text-foreground">Successfully Joined!</h2>
-          <p className="text-muted-foreground">Redirecting to dashboard...</p>
+          <p className="text-muted-foreground">Redirecting...</p>
           <LoadingSpinner />
         </div>
       </div>

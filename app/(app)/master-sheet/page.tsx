@@ -608,7 +608,7 @@ export default function MasterSheet() {
         {/* Header - Always visible */}
         <div className="p-8 pb-4">
           <h1 className="text-[42px] font-bold text-foreground leading-tight">
-            {initialLoading ? 'Loot Rankings' : `${selectedTier?.name}: Loot Rankings`}
+            Loot Rankings{!initialLoading && selectedTier && <span className="text-muted-foreground"> · {selectedTier.name}</span>}
           </h1>
           <p className="text-muted-foreground text-base">
             Top 5 players for each item

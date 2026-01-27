@@ -599,211 +599,184 @@ export default function MasterLootPage() {
         </div>
 
       {/* Submission Details Modal */}
-      {viewingSubmission && (
-        <div
-          className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-          onClick={() => setViewingSubmission(null)}
-        >
-          <div
-            className="bg-background-subtle border border-border-strong rounded-xl max-w-2xl w-full max-h-[85vh] overflow-hidden flex flex-col"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Header */}
-            <div className="p-6 border-b border-border-strong flex items-center justify-between bg-background-elevated">
-              <h3 className="text-[24px] font-bold text-foreground">Submission details</h3>
-              <button
-                onClick={() => setViewingSubmission(null)}
-                className="text-muted-foreground hover:text-foreground transition"
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-
-            {/* Content */}
-            <div className="overflow-y-auto flex-1">
-              {submissionDetails.length === 0 ? (
-                <p className="text-muted-foreground text-center py-8">No items in this submission</p>
-              ) : (
-                <table className="w-full">
-                  <thead>
-                    <tr className="bg-background-subtle border-b border-border">
-                      <th className="px-3 py-2 text-left text-[11px] font-medium text-foreground-muted w-12">Rank</th>
-                      <th className="px-3 py-2 text-left text-[11px] font-medium text-foreground-muted">Item #1</th>
-                      <th className="px-3 py-2 text-left text-[11px] font-medium text-foreground-muted">Item #2</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {Object.entries(
-                      submissionDetails.reduce((acc: Record<number, any[]>, detail: any) => {
-                        const rank = detail.rank
-                        if (!acc[rank]) acc[rank] = []
-                        acc[rank].push(detail)
-                        return acc
-                      }, {})
+      <Modal open={!!viewingSubmission} onClose={() => setViewingSubmission(null)} size="lg">
+        <ModalHeader onClose={() => setViewingSubmission(null)}>
+          <ModalTitle>Submission details</ModalTitle>
+        </ModalHeader>
+        <ModalBody className="p-0">
+          {submissionDetails.length === 0 ? (
+            <p className="text-muted-foreground text-center py-8">No items in this submission</p>
+          ) : (
+            <table className="w-full">
+              <thead>
+                <tr className="bg-background-subtle border-b border-border">
+                  <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground w-12">Rank</th>
+                  <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground">Item #1</th>
+                  <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground">Item #2</th>
+                </tr>
+              </thead>
+              <tbody>
+                {Object.entries(
+                  submissionDetails.reduce((acc: Record<number, any[]>, detail: any) => {
+                    const rank = detail.rank
+                    if (!acc[rank]) acc[rank] = []
+                    acc[rank].push(detail)
+                    return acc
+                  }, {})
+                )
+                  .sort(([a], [b]) => Number(b) - Number(a))
+                  .map(([rank, items]) => {
+                    const rankNum = Number(rank)
+                    const getRankColor = (r: number) => {
+                      if (r >= 48) return 'from-red-900 to-red-700'
+                      if (r >= 45) return 'from-orange-900 to-orange-700'
+                      if (r >= 42) return 'from-yellow-900 to-yellow-700'
+                      if (r >= 39) return 'from-amber-900 to-amber-700'
+                      if (r >= 25) return 'from-green-900 to-green-700'
+                      return 'from-blue-900 to-blue-700'
+                    }
+                    const getClassificationBadge = (classification?: string) => {
+                      if (!classification || classification === 'Unlimited') return null
+                      const colors: Record<string, string> = {
+                        Reserved: 'bg-destructive/20 text-destructive border-destructive/30',
+                        Limited: 'bg-warning/20 text-warning border-warning/30'
+                      }
+                      return (
+                        <span className={`text-xs px-1.5 py-0.5 rounded border ${colors[classification] || ''}`}>
+                          {classification}
+                        </span>
+                      )
+                    }
+                    const itemsArr = items as any[]
+                    return (
+                      <tr key={rank} className="border-b border-border">
+                        <td className={`px-3 py-2 font-semibold text-sm text-foreground bg-gradient-to-r ${getRankColor(rankNum)}`}>
+                          {rank}
+                        </td>
+                        <td className="px-3 py-2">
+                          {itemsArr[0] ? (
+                            <div className="flex items-center gap-2">
+                              <ItemLink
+                                name={itemsArr[0].loot_item?.name || 'Unknown'}
+                                wowheadId={itemsArr[0].loot_item?.wowhead_id}
+                                className="font-medium text-sm"
+                              />
+                              {getClassificationBadge(itemsArr[0].loot_item?.classification)}
+                            </div>
+                          ) : <span className="text-muted-foreground text-sm">-</span>}
+                        </td>
+                        <td className="px-3 py-2">
+                          {itemsArr[1] ? (
+                            <div className="flex items-center gap-2">
+                              <ItemLink
+                                name={itemsArr[1].loot_item?.name || 'Unknown'}
+                                wowheadId={itemsArr[1].loot_item?.wowhead_id}
+                                className="font-medium text-sm"
+                              />
+                              {getClassificationBadge(itemsArr[1].loot_item?.classification)}
+                            </div>
+                          ) : <span className="text-muted-foreground text-sm">-</span>}
+                        </td>
+                      </tr>
                     )
-                      .sort(([a], [b]) => Number(b) - Number(a))
-                      .map(([rank, items]) => {
-                        const rankNum = Number(rank)
-                        const getRankColor = (r: number) => {
-                          if (r >= 48) return 'from-red-900 to-red-700'
-                          if (r >= 45) return 'from-orange-900 to-orange-700'
-                          if (r >= 42) return 'from-yellow-900 to-yellow-700'
-                          if (r >= 39) return 'from-amber-900 to-amber-700'
-                          if (r >= 25) return 'from-green-900 to-green-700'
-                          return 'from-blue-900 to-blue-700'
-                        }
-                        const getClassificationBadge = (classification?: string) => {
-                          if (!classification || classification === 'Unlimited') return null
-                          const colors: Record<string, string> = {
-                            Reserved: 'bg-red-500/20 text-red-300 border-red-500/30',
-                            Limited: 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30'
-                          }
-                          return (
-                            <span className={`text-[10px] px-1.5 py-0.5 rounded border ${colors[classification] || ''}`}>
-                              {classification}
-                            </span>
-                          )
-                        }
-                        const itemsArr = items as any[]
-                        return (
-                          <tr key={rank} className="border-b border-border">
-                            <td className={`px-3 py-2 font-semibold text-[13px] text-foreground bg-gradient-to-r ${getRankColor(rankNum)}`}>
-                              {rank}
-                            </td>
-                            <td className="px-3 py-2">
-                              {itemsArr[0] ? (
-                                <div className="flex items-center gap-2">
-                                  <ItemLink
-                                    name={itemsArr[0].loot_item?.name || 'Unknown'}
-                                    wowheadId={itemsArr[0].loot_item?.wowhead_id}
-                                    className="font-medium text-[13px]"
-                                  />
-                                  {getClassificationBadge(itemsArr[0].loot_item?.classification)}
-                                </div>
-                              ) : <span className="text-foreground-muted text-[12px]">-</span>}
-                            </td>
-                            <td className="px-3 py-2">
-                              {itemsArr[1] ? (
-                                <div className="flex items-center gap-2">
-                                  <ItemLink
-                                    name={itemsArr[1].loot_item?.name || 'Unknown'}
-                                    wowheadId={itemsArr[1].loot_item?.wowhead_id}
-                                    className="font-medium text-[13px]"
-                                  />
-                                  {getClassificationBadge(itemsArr[1].loot_item?.classification)}
-                                </div>
-                              ) : <span className="text-foreground-muted text-[12px]">-</span>}
-                            </td>
-                          </tr>
-                        )
-                      })}
-                  </tbody>
-                </table>
-              )}
-            </div>
-
-            {/* Footer */}
-            <div className="p-6 border-t border-border-strong bg-background-elevated flex justify-between items-center">
-              <div className="flex gap-3">
-                {submissions.find(s => s.id === viewingSubmission)?.status === 'pending' && (
-                  <>
-                    <button
-                      onClick={() => {
-                        handleReview(viewingSubmission, 'approved')
-                        setViewingSubmission(null)
-                      }}
-                      disabled={reviewing === viewingSubmission}
-                      className="px-6 py-2.5 bg-success hover:bg-success/90 rounded-[52px] text-success-foreground text-[13px] font-medium transition disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {reviewing === viewingSubmission ? 'Processing...' : 'Approve'}
-                    </button>
-                    <button
-                      onClick={() => {
-                        handleReview(viewingSubmission, 'rejected')
-                        setViewingSubmission(null)
-                      }}
-                      disabled={reviewing === viewingSubmission}
-                      className="px-6 py-2.5 bg-destructive hover:bg-destructive/90 rounded-[52px] text-destructive-foreground text-[13px] font-medium transition disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      Reject
-                    </button>
-                  </>
-                )}
-              </div>
-              <button
-                onClick={() => setViewingSubmission(null)}
-                className="px-6 py-2.5 bg-background-elevated hover:bg-muted border border-border-strong rounded-[52px] text-foreground text-[13px] font-medium transition"
-              >
-                Close
-              </button>
-            </div>
+                  })}
+              </tbody>
+            </table>
+          )}
+        </ModalBody>
+        <ModalFooter className="justify-between">
+          <div className="flex gap-3">
+            {viewingSubmission && submissions.find(s => s.id === viewingSubmission)?.status === 'pending' && (
+              <>
+                <Button
+                  variant="success"
+                  onClick={() => {
+                    handleReview(viewingSubmission, 'approved')
+                    setViewingSubmission(null)
+                  }}
+                  disabled={reviewing === viewingSubmission}
+                  loading={reviewing === viewingSubmission}
+                >
+                  Approve
+                </Button>
+                <Button
+                  variant="destructive"
+                  onClick={() => {
+                    handleReview(viewingSubmission, 'rejected')
+                    setViewingSubmission(null)
+                  }}
+                  disabled={reviewing === viewingSubmission}
+                >
+                  Reject
+                </Button>
+              </>
+            )}
           </div>
-        </div>
-      )}
+          <Button variant="secondary" onClick={() => setViewingSubmission(null)}>
+            Close
+          </Button>
+        </ModalFooter>
+      </Modal>
 
       {/* Delete Confirmation Modal */}
-      {showDeleteConfirm && (
-        <div
-          className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[60] flex items-center justify-center p-4"
-          onClick={() => {
-            setShowDeleteConfirm(false)
-            setDeleteTarget(null)
-          }}
-        >
-          <div
-            className="bg-background-subtle border border-red-900/50 rounded-xl max-w-md w-full p-6"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-start gap-4 mb-4">
-              <div className="flex-shrink-0 w-12 h-12 bg-red-900/30 rounded-full flex items-center justify-center">
-                <svg className="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                </svg>
-              </div>
-              <div className="flex-1">
-                <h3 className="text-[18px] font-bold text-foreground mb-2">
-                  {deleteTarget?.type === 'single' ? 'Delete Submission?' :
-                   deleteTarget?.type === 'pending' ? 'Delete Pending Lists?' :
-                   'Delete All Lists?'}
-                </h3>
-                <p className="text-[13px] text-muted-foreground mb-4">
-                  {deleteTarget?.type === 'single'
-                    ? 'This will permanently delete this loot submission. The user will need to recreate their list.'
-                    : deleteTarget?.type === 'pending'
-                    ? 'This will permanently delete all pending loot submissions for this guild. Users will need to recreate their lists.'
-                    : 'This will permanently delete ALL loot submissions (pending, approved, and received) for this guild. This action cannot be undone.'}
-                </p>
-                <div className="bg-red-950/20 border border-red-900/50 rounded-lg p-3 mb-4">
-                  <p className="text-[12px] text-red-400 font-medium">
-                    ⚠️ Warning: This action is permanent and cannot be undone.
-                  </p>
-                </div>
-              </div>
+      <Modal
+        open={showDeleteConfirm}
+        onClose={() => {
+          setShowDeleteConfirm(false)
+          setDeleteTarget(null)
+        }}
+        size="sm"
+        zIndex={60}
+      >
+        <ModalHeader>
+          <ModalTitle>
+            {deleteTarget?.type === 'single' ? 'Delete Submission?' :
+             deleteTarget?.type === 'pending' ? 'Delete Pending Lists?' :
+             'Delete All Lists?'}
+          </ModalTitle>
+        </ModalHeader>
+        <ModalBody>
+          <div className="flex items-start gap-4">
+            <div className="flex-shrink-0 w-12 h-12 bg-destructive/20 rounded-full flex items-center justify-center">
+              <HugeiconsIcon icon={AlertCircleIcon} size={24} className="text-destructive" />
             </div>
-            <div className="flex justify-end gap-3">
-              <button
-                onClick={() => {
-                  setShowDeleteConfirm(false)
-                  setDeleteTarget(null)
-                }}
-                disabled={deleting}
-                className="px-6 py-2.5 bg-background-elevated hover:bg-muted border border-border rounded-[40px] text-foreground text-[13px] font-medium transition-all disabled:opacity-50"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleDeleteSubmissions}
-                disabled={deleting}
-                className="px-6 py-2.5 bg-destructive hover:bg-destructive/90 rounded-[40px] text-destructive-foreground text-[13px] font-medium transition-all disabled:opacity-50"
-              >
-                {deleting ? 'Deleting...' : 'Delete'}
-              </button>
+            <div className="flex-1">
+              <p className="text-sm text-muted-foreground mb-4">
+                {deleteTarget?.type === 'single'
+                  ? 'This will permanently delete this loot submission. The user will need to recreate their list.'
+                  : deleteTarget?.type === 'pending'
+                  ? 'This will permanently delete all pending loot submissions for this guild. Users will need to recreate their lists.'
+                  : 'This will permanently delete ALL loot submissions (pending, approved, and received) for this guild. This action cannot be undone.'}
+              </p>
+              <div className="bg-destructive/10 border border-destructive/30 rounded-xl p-3">
+                <p className="text-sm text-destructive font-medium">
+                  Warning: This action is permanent and cannot be undone.
+                </p>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        </ModalBody>
+        <ModalFooter>
+          <Button
+            variant="secondary"
+            onClick={() => {
+              setShowDeleteConfirm(false)
+              setDeleteTarget(null)
+            }}
+            disabled={deleting}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="destructive"
+            onClick={handleDeleteSubmissions}
+            disabled={deleting}
+            loading={deleting}
+          >
+            Delete
+          </Button>
+        </ModalFooter>
+      </Modal>
         </>
       )}
       </div>

@@ -35,8 +35,8 @@ export const metadata: Metadata = {
     description: "The ultimate loot council tool for WoW Classic guilds. Track attendance, manage loot lists, and streamline your raid's loot distribution.",
   },
   icons: {
-    icon: "/lootlist-icon.svg",
-    apple: "/lootlist-icon.svg",
+    icon: "/favicon.png",
+    apple: "/favicon.png",
   },
 };
 

@@ -93,7 +93,7 @@ export async function GET(request) {
       }
 
       // Redirect to specified next page or dashboard
-      const redirectTo = next || '/dashboard'
+      const redirectTo = next || '/overview'
       return NextResponse.redirect(`${origin}${redirectTo}`)
     }
   }
