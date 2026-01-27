@@ -57,49 +57,38 @@ interface RaidTier {
   }
 }
 
-// Define raid tier progression order (Classic + TBC)
+// Define raid tier progression order (Classic + TBC + WotLK)
 const getRaidTierOrder = (tierName: string): number => {
   const order: Record<string, number> = {
     // Classic
-    'Molten Core': 1,
-    'MC': 1,
-    'Onyxia\'s Lair': 2,
-    'Onyxia': 2,
-    'Blackwing Lair': 3,
-    'BWL': 3,
-    'Zul\'Gurub': 4,
-    'ZG': 4,
-    'Ruins of Ahn\'Qiraj': 5,
-    'AQ20': 5,
-    'Temple of Ahn\'Qiraj': 6,
-    'AQ40': 6,
-    'Naxxramas': 7,
-    'Naxx': 7,
-    // TBC Tier 4
-    'Karazhan': 10,
-    'Kara': 10,
-    'Gruul\'s Lair': 11,
-    'Gruul': 11,
-    'Magtheridon\'s Lair': 12,
-    'Mag': 12,
-    // TBC Tier 5
-    'Serpentshrine Cavern': 20,
-    'SSC': 20,
-    'Tempest Keep: The Eye': 21,
-    'Tempest Keep': 21,
-    'The Eye': 21,
-    'TK': 21,
-    // TBC Tier 6
-    'Hyjal Summit': 30,
-    'Mount Hyjal': 30,
-    'Hyjal': 30,
-    'Black Temple': 31,
-    'BT': 31,
-    'Zul\'Aman': 32,
-    'ZA': 32,
-    'Sunwell Plateau': 33,
-    'Sunwell': 33,
-    'SWP': 33
+    'Molten Core': 1, 'MC': 1,
+    'Onyxia\'s Lair': 2, 'Onyxia': 2,
+    'Blackwing Lair': 3, 'BWL': 3,
+    'Zul\'Gurub': 4, 'ZG': 4,
+    'Ruins of Ahn\'Qiraj': 5, 'AQ20': 5,
+    'Temple of Ahn\'Qiraj': 6, 'AQ40': 6,
+    'Naxxramas': 7, 'Naxx': 7,
+    // TBC
+    'Karazhan': 10, 'Kara': 10,
+    'Gruul\'s Lair': 11, 'Gruul': 11,
+    'Magtheridon\'s Lair': 12, 'Magtheridon': 12, 'Mag': 12,
+    'Serpentshrine Cavern': 20, 'SSC': 20,
+    'Tempest Keep: The Eye': 21, 'Tempest Keep': 21, 'The Eye': 21, 'TK': 21,
+    'Hyjal Summit': 30, 'Mount Hyjal': 30, 'Hyjal': 30,
+    'Black Temple': 31, 'BT': 31,
+    'Zul\'Aman': 32, 'ZA': 32,
+    'Sunwell Plateau': 33, 'Sunwell': 33, 'SWP': 33,
+    // WotLK
+    'Vault of Archavon': 40, 'VoA': 40,
+    'Obsidian Sanctum': 41, 'OS': 41,
+    'Eye of Eternity': 42, 'EoE': 42,
+    'Naxxramas (10)': 43, 'Naxxramas (25)': 44,
+    'Ulduar': 50,
+    'Trial of the Crusader': 60, 'ToC': 60,
+    'Trial of the Grand Crusader': 61, 'ToGC': 61,
+    'Onyxia\'s Lair (10)': 62, 'Onyxia\'s Lair (25)': 63,
+    'Icecrown Citadel': 70, 'ICC': 70,
+    'Ruby Sanctum': 80, 'RS': 80
   }
   return order[tierName] || 999 // Unknown tiers go to the end
 }
@@ -482,8 +471,8 @@ export default function MasterLootPage() {
       {message && (
         <div className={`p-4 rounded-xl ${
           message.type === 'success'
-            ? 'bg-green-950/50 border border-green-600/50 text-green-200'
-            : 'bg-red-950/50 border border-red-600/50 text-red-200'
+            ? 'bg-success/10 border border-success/50 text-success'
+            : 'bg-destructive/10 border border-destructive/50 text-destructive'
         }`}>
           <p className="text-sm">{message.text}</p>
         </div>
@@ -512,24 +501,26 @@ export default function MasterLootPage() {
               </div>
             </div>
             <div className="flex gap-2">
-              <button
+              <Button
+                variant="destructive"
+                size="sm"
                 onClick={() => {
                   setDeleteTarget({ type: 'pending' })
                   setShowDeleteConfirm(true)
                 }}
-                className="px-5 py-2.5 bg-red-900/30 hover:bg-red-900/50 border border-red-700/50 rounded-[40px] text-red-400 text-[13px] font-medium transition-all"
               >
                 Delete Pending
-              </button>
-              <button
+              </Button>
+              <Button
+                variant="destructive"
+                size="sm"
                 onClick={() => {
                   setDeleteTarget({ type: 'all' })
                   setShowDeleteConfirm(true)
                 }}
-                className="px-5 py-2.5 bg-red-900/30 hover:bg-red-900/50 border border-red-700/50 rounded-[40px] text-red-400 text-[13px] font-medium transition-all"
               >
                 Delete All
-              </button>
+              </Button>
             </div>
           </div>
 
@@ -573,24 +564,26 @@ export default function MasterLootPage() {
                     </span>
                   </div>
                   <div className="flex gap-2">
-                    <button
+                    <Button
+                      variant="secondary"
+                      size="sm"
                       onClick={() => viewSubmissionDetails(submission.id)}
-                      className="px-5 py-2.5 bg-background-elevated hover:bg-muted border border-border rounded-[40px] text-foreground text-[13px] font-medium transition-all"
                     >
                       View Details
-                    </button>
-                    <button
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      size="sm"
                       onClick={() => {
                         setDeleteTarget({ type: 'single', id: submission.id })
                         setShowDeleteConfirm(true)
                       }}
-                      className="px-3 py-2.5 bg-red-900/30 hover:bg-red-900/50 border border-red-700/50 rounded-[40px] text-red-400 transition-all"
                       title="Delete this submission"
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                       </svg>
-                    </button>
+                    </Button>
                   </div>
                 </div>
               ))

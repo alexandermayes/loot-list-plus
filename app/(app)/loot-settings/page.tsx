@@ -50,6 +50,42 @@ interface ItemClassRelation {
   spec_type: string // 'primary' or 'secondary'
 }
 
+// Define raid tier progression order (Classic + TBC + WotLK)
+const getRaidTierOrder = (tierName: string): number => {
+  const order: Record<string, number> = {
+    // Classic
+    'Molten Core': 1, 'MC': 1,
+    'Onyxia\'s Lair': 2, 'Onyxia': 2,
+    'Blackwing Lair': 3, 'BWL': 3,
+    'Zul\'Gurub': 4, 'ZG': 4,
+    'Ruins of Ahn\'Qiraj': 5, 'AQ20': 5,
+    'Temple of Ahn\'Qiraj': 6, 'AQ40': 6,
+    'Naxxramas': 7, 'Naxx': 7,
+    // TBC
+    'Karazhan': 10, 'Kara': 10,
+    'Gruul\'s Lair': 11, 'Gruul': 11,
+    'Magtheridon\'s Lair': 12, 'Magtheridon': 12, 'Mag': 12,
+    'Serpentshrine Cavern': 20, 'SSC': 20,
+    'Tempest Keep: The Eye': 21, 'Tempest Keep': 21, 'The Eye': 21, 'TK': 21,
+    'Hyjal Summit': 30, 'Mount Hyjal': 30, 'Hyjal': 30,
+    'Black Temple': 31, 'BT': 31,
+    'Zul\'Aman': 32, 'ZA': 32,
+    'Sunwell Plateau': 33, 'Sunwell': 33, 'SWP': 33,
+    // WotLK
+    'Vault of Archavon': 40, 'VoA': 40,
+    'Obsidian Sanctum': 41, 'OS': 41,
+    'Eye of Eternity': 42, 'EoE': 42,
+    'Naxxramas (10)': 43, 'Naxxramas (25)': 44,
+    'Ulduar': 50,
+    'Trial of the Crusader': 60, 'ToC': 60,
+    'Trial of the Grand Crusader': 61, 'ToGC': 61,
+    'Onyxia\'s Lair (10)': 62, 'Onyxia\'s Lair (25)': 63,
+    'Icecrown Citadel': 70, 'ICC': 70,
+    'Ruby Sanctum': 80, 'RS': 80
+  }
+  return order[tierName] || 999
+}
+
 export default function AdminLootItems() {
   const [lootItems, setLootItems] = useState<LootItem[]>([])
   const [classes, setClasses] = useState<WowClass[]>([])
@@ -468,10 +504,13 @@ export default function AdminLootItems() {
         .select('id, name')
         .eq('expansion_id', activeGuild.active_expansion_id)
         .eq('is_guild_active', true)
-        .order('name')
 
       if (tiersData) {
-        setRaidTiers(tiersData)
+        // Sort by progression order
+        const sortedTiers = tiersData.sort((a, b) =>
+          getRaidTierOrder(a.name) - getRaidTierOrder(b.name)
+        )
+        setRaidTiers(sortedTiers)
       }
 
       // Load all loot items

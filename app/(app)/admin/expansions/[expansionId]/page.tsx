@@ -8,6 +8,7 @@ import { HugeiconsIcon } from '@hugeicons/react'
 import { ArrowLeft01Icon, Calendar01Icon, Tick01Icon } from '@hugeicons/core-free-icons'
 import { getExpansionVisuals } from '@/utils/expansionVisuals'
 import { getRaidIcon } from '@/utils/raidIcons'
+import { Button } from '@/components/ui/button'
 
 interface RaidTier {
   id: string
@@ -77,7 +78,18 @@ export default function ExpansionDetailPage({ params }: { params: Promise<{ expa
       'Hyjal Summit': 30, 'Mount Hyjal': 30, 'Hyjal': 30,
       'Black Temple': 31, 'BT': 31,
       'Zul\'Aman': 32, 'ZA': 32,
-      'Sunwell Plateau': 33, 'Sunwell': 33, 'SWP': 33
+      'Sunwell Plateau': 33, 'Sunwell': 33, 'SWP': 33,
+      // WotLK
+      'Vault of Archavon': 40, 'VoA': 40,
+      'Obsidian Sanctum': 41, 'OS': 41,
+      'Eye of Eternity': 42, 'EoE': 42,
+      'Naxxramas (10)': 43, 'Naxxramas (25)': 44,
+      'Ulduar': 50,
+      'Trial of the Crusader': 60, 'ToC': 60,
+      'Trial of the Grand Crusader': 61, 'ToGC': 61,
+      'Onyxia\'s Lair (10)': 62, 'Onyxia\'s Lair (25)': 63,
+      'Icecrown Citadel': 70, 'ICC': 70,
+      'Ruby Sanctum': 80, 'RS': 80
     }
     return order[tierName] || 999
   }
@@ -449,8 +461,8 @@ export default function ExpansionDetailPage({ params }: { params: Promise<{ expa
       {message && (
         <div className={`p-4 rounded-xl ${
           message.type === 'success'
-            ? 'bg-green-950/50 border border-green-600/50 text-green-200'
-            : 'bg-red-950/50 border border-red-600/50 text-red-200'
+            ? 'bg-success/10 border border-success/50 text-success'
+            : 'bg-destructive/10 border border-destructive/50 text-destructive'
         }`}>
           {message.text}
         </div>
@@ -491,13 +503,13 @@ export default function ExpansionDetailPage({ params }: { params: Promise<{ expa
                     )}
                   </div>
                   {tier.is_guild_active && !tier.is_active && (
-                    <button
+                    <Button
+                      size="sm"
                       onClick={() => handleSetActive(tier.id)}
-                      disabled={updating === tier.id}
-                      className="px-4 py-2 bg-primary hover:bg-primary/90 rounded-[40px] text-primary-foreground text-[12px] font-medium transition disabled:opacity-50"
+                      loading={updating === tier.id}
                     >
-                      {updating === tier.id ? 'Setting...' : 'Set as Current'}
-                    </button>
+                      Set as Current
+                    </Button>
                   )}
                 </div>
 
@@ -565,13 +577,14 @@ export default function ExpansionDetailPage({ params }: { params: Promise<{ expa
                           })}
                           className="flex-1 px-3 py-2 bg-background-elevated border border-border rounded-lg text-foreground text-[12px] focus:outline-none focus:border-accent transition"
                         />
-                        <button
+                        <Button
+                          variant="secondary"
+                          size="sm"
                           onClick={() => handleUpdateDeadline(tier.id, deadlineInputs[tier.id] || null)}
                           disabled={updating === tier.id}
-                          className="px-4 py-2 bg-muted hover:bg-muted border border-border rounded-[40px] text-foreground text-[12px] font-medium transition disabled:opacity-50"
                         >
                           {deadlineInputs[tier.id] ? 'Save' : 'Clear'}
-                        </button>
+                        </Button>
                       </div>
                       {tier.submission_deadline && (
                         <p className="text-muted-foreground text-[11px] mt-2">
