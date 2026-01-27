@@ -6,6 +6,8 @@ import { useRouter } from 'next/navigation'
 import type { User } from '@supabase/supabase-js'
 import { useGuildContext } from '@/app/contexts/GuildContext'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
+import { Modal, ModalHeader, ModalTitle, ModalBody, ModalFooter } from '@/components/ui/modal'
+import { Button } from '@/components/ui/button'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { Settings01Icon } from '@hugeicons/core-free-icons'
 import Link from 'next/link'
@@ -266,8 +268,8 @@ export default function MasterLootPage() {
       {message && (
         <div className={`p-4 rounded-xl ${
           message.type === 'success'
-            ? 'bg-green-950/50 border border-green-600/50 text-green-200'
-            : 'bg-red-950/50 border border-red-600/50 text-red-200'
+            ? 'bg-success/10 border border-success/50 text-success'
+            : 'bg-destructive/10 border border-destructive/50 text-destructive'
         }`}>
           <p className="text-[14px]">{message.text}</p>
         </div>
@@ -317,10 +319,10 @@ export default function MasterLootPage() {
                       </span>
                     )}
                     <span className={`px-3 py-1 rounded-full text-[12px] font-medium ${
-                      submission.status === 'approved' ? 'bg-green-600/30 text-green-300' :
-                      submission.status === 'rejected' ? 'bg-red-600/30 text-red-300' :
-                      submission.status === 'draft' ? 'bg-yellow-600/30 text-yellow-300' :
-                      'bg-blue-600/30 text-blue-300'
+                      submission.status === 'approved' ? 'bg-success/30 text-success' :
+                      submission.status === 'rejected' ? 'bg-destructive/30 text-destructive' :
+                      submission.status === 'draft' ? 'bg-warning/30 text-warning' :
+                      'bg-info/30 text-info'
                     }`}>
                       {submission.status}
                     </span>
@@ -341,78 +343,65 @@ export default function MasterLootPage() {
         </div>
 
       {/* Submission Details Modal */}
-      {viewingSubmission && (
-        <div
-          className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-          onClick={() => setViewingSubmission(null)}
-        >
-          <div
-            className="bg-background-elevated border border-border rounded-xl max-w-2xl w-full max-h-[80vh] overflow-y-auto"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="p-6 border-b border-border">
-              <h3 className="text-[24px] font-bold text-foreground">Submission details</h3>
-            </div>
-            <div className="p-6">
-              {submissionDetails.length === 0 ? (
-                <p className="text-muted-foreground text-center py-8">No items in this submission</p>
-              ) : (
-                <div className="space-y-2">
-                  {submissionDetails.map((detail: any, idx: number) => (
-                    <div key={idx} className="flex items-center justify-between py-2 border-b border-border">
-                      <div>
-                        <ItemLink
-                          name={detail.loot_item?.name || 'Unknown'}
-                          wowheadId={detail.loot_item?.wowhead_id}
-                          className="font-medium text-[14px]"
-                        />
-                        <p className="text-muted-foreground text-[12px]">{detail.loot_item?.boss_name}</p>
-                      </div>
-                      <span className="px-3 py-1 bg-accent text-foreground rounded-full text-[13px] font-medium">
-                        Rank {detail.rank}
-                      </span>
-                    </div>
-                  ))}
+      <Modal open={!!viewingSubmission} onClose={() => setViewingSubmission(null)}>
+        <ModalHeader onClose={() => setViewingSubmission(null)}>
+          <ModalTitle>Submission details</ModalTitle>
+        </ModalHeader>
+        <ModalBody>
+          {submissionDetails.length === 0 ? (
+            <p className="text-muted-foreground text-center py-8">No items in this submission</p>
+          ) : (
+            <div className="space-y-2">
+              {submissionDetails.map((detail: any, idx: number) => (
+                <div key={idx} className="flex items-center justify-between py-2 border-b border-border">
+                  <div>
+                    <ItemLink
+                      name={detail.loot_item?.name || 'Unknown'}
+                      wowheadId={detail.loot_item?.wowhead_id}
+                      className="font-medium text-[14px]"
+                    />
+                    <p className="text-muted-foreground text-[12px]">{detail.loot_item?.boss_name}</p>
+                  </div>
+                  <span className="px-3 py-1 bg-accent text-foreground rounded-full text-[13px] font-medium">
+                    Rank {detail.rank}
+                  </span>
                 </div>
-              )}
+              ))}
             </div>
-            <div className="p-6 border-t border-border flex justify-between items-center">
-              <div className="flex gap-2">
-                {submissions.find(s => s.id === viewingSubmission)?.status === 'pending' && (
-                  <>
-                    <button
-                      onClick={() => {
-                        handleReview(viewingSubmission, 'approved')
-                        setViewingSubmission(null)
-                      }}
-                      disabled={reviewing === viewingSubmission}
-                      className="px-5 py-2.5 bg-success hover:bg-success/90 rounded-[52px] text-success-foreground text-[13px] font-medium transition disabled:opacity-50"
-                    >
-                      {reviewing === viewingSubmission ? 'Processing...' : 'Approve'}
-                    </button>
-                    <button
-                      onClick={() => {
-                        handleReview(viewingSubmission, 'rejected')
-                        setViewingSubmission(null)
-                      }}
-                      disabled={reviewing === viewingSubmission}
-                      className="px-5 py-2.5 bg-destructive hover:bg-destructive/90 rounded-[52px] text-destructive-foreground text-[13px] font-medium transition disabled:opacity-50"
-                    >
-                      Reject
-                    </button>
-                  </>
-                )}
-              </div>
-              <button
-                onClick={() => setViewingSubmission(null)}
-                className="px-5 py-2.5 bg-background-elevated hover:bg-muted border border-border rounded-[52px] text-foreground text-[13px] transition"
-              >
-                Close
-              </button>
-            </div>
+          )}
+        </ModalBody>
+        <ModalFooter className="flex justify-between items-center">
+          <div className="flex gap-2">
+            {viewingSubmission && submissions.find(s => s.id === viewingSubmission)?.status === 'pending' && (
+              <>
+                <Button
+                  variant="success"
+                  onClick={() => {
+                    handleReview(viewingSubmission, 'approved')
+                    setViewingSubmission(null)
+                  }}
+                  loading={reviewing === viewingSubmission}
+                >
+                  Approve
+                </Button>
+                <Button
+                  variant="destructive"
+                  onClick={() => {
+                    handleReview(viewingSubmission, 'rejected')
+                    setViewingSubmission(null)
+                  }}
+                  disabled={reviewing === viewingSubmission}
+                >
+                  Reject
+                </Button>
+              </>
+            )}
           </div>
-        </div>
-      )}
+          <Button variant="secondary" onClick={() => setViewingSubmission(null)}>
+            Close
+          </Button>
+        </ModalFooter>
+      </Modal>
     </div>
   )
 }

@@ -124,7 +124,7 @@ export default function DiscordJoinPage() {
         // If user needs to create a character, redirect with the modal flag
         // The guild is already set in their active state, so dashboard will show it
         if (data.needs_character_creation || data.needs_character_setup) {
-          window.location.href = '/dashboard?create_character=true'
+          window.location.href = '/overview?create_character=true'
         } else {
           // Force a full page reload to refresh guild context
           window.location.href = '/overview'
@@ -149,7 +149,7 @@ export default function DiscordJoinPage() {
             <HugeiconsIcon icon={Tick01Icon} size={40} className="text-green-400" />
           </div>
           <h2 className="text-2xl font-bold text-foreground">Successfully Joined!</h2>
-          <p className="text-muted-foreground">Redirecting to dashboard...</p>
+          <p className="text-muted-foreground">Redirecting...</p>
           <LoadingSpinner />
         </div>
       </div>

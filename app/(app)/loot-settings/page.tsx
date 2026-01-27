@@ -7,6 +7,8 @@ import ItemLink from '@/app/components/ItemLink'
 import { useGuildContext } from '@/app/contexts/GuildContext'
 import { ExpansionGuard } from '@/app/components/ExpansionGuard'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
+import { Modal, ModalHeader, ModalTitle, ModalDescription, ModalBody, ModalFooter } from '@/components/ui/modal'
+import { Button } from '@/components/ui/button'
 import StyledSelect from '@/app/components/StyledSelect'
 import MultiSelectDropdown from '@/app/components/MultiSelectDropdown'
 import { specMapping } from '@/utils/spec-role-mapping'
@@ -1658,27 +1660,11 @@ export default function AdminLootItems() {
       </div>
 
       {/* Loot System Settings Modal */}
-      {showSettingsModal && (
-        <div
-          className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-          onClick={() => setShowSettingsModal(false)}
-        >
-          <div
-            className="bg-background-subtle border border-border-strong rounded-xl max-w-3xl w-full max-h-[85vh] overflow-hidden flex flex-col"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="p-6 border-b border-border-strong flex items-center justify-between bg-background-elevated">
-              <h3 className="text-[24px] font-bold text-foreground">Loot system settings</h3>
-              <button
-                onClick={() => setShowSettingsModal(false)}
-                className="text-foreground-muted hover:text-foreground transition"
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-            <div className="p-6 space-y-6 overflow-y-auto">
+      <Modal open={showSettingsModal} onClose={() => setShowSettingsModal(false)} size="xl">
+        <ModalHeader onClose={() => setShowSettingsModal(false)}>
+          <ModalTitle>Loot system settings</ModalTitle>
+        </ModalHeader>
+        <ModalBody className="space-y-6">
               {/* General Settings */}
               <div className="space-y-4 pb-6 border-b border-border-strong">
                 <div>
@@ -2233,26 +2219,16 @@ export default function AdminLootItems() {
                   </div>
                 </div>
               </div>
-            </div>
-            <div className="p-6 border-t border-border-strong bg-background-elevated flex justify-end gap-3">
-              <button
-                onClick={() => setShowSettingsModal(false)}
-                disabled={savingSettings}
-                className="px-6 py-2.5 bg-background-elevated hover:bg-muted border border-border-strong rounded-[52px] text-foreground text-[13px] transition disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={saveSettings}
-                disabled={savingSettings}
-                className="px-6 py-2.5 bg-primary hover:bg-primary/90 rounded-[52px] text-primary-foreground text-[13px] font-medium transition disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {savingSettings ? 'Saving...' : 'Save Settings'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+        </ModalBody>
+        <ModalFooter>
+          <Button variant="secondary" onClick={() => setShowSettingsModal(false)} disabled={savingSettings}>
+            Cancel
+          </Button>
+          <Button onClick={saveSettings} loading={savingSettings}>
+            Save Settings
+          </Button>
+        </ModalFooter>
+      </Modal>
     </ExpansionGuard>
   )
 }
