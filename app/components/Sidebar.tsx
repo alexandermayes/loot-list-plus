@@ -644,7 +644,7 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange }
         </button>
 
         <a
-          href="https://discord.gg/2TaFkNJ4dN"
+          href="https://discord.gg/WWaUQZMz9M"
           target="_blank"
           rel="noopener noreferrer"
           className="w-full px-3.5 py-2 flex items-center gap-3 rounded-[40px] transition font-poppins font-medium text-[13px] text-foreground hover:bg-muted"
