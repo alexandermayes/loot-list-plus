@@ -207,7 +207,7 @@ export function CharacterSelector() {
           <img
             src={getClassIconUrl(activeCharacter.class.name)}
             alt={activeCharacter.class.name}
-            className="w-5 h-5 rounded-full flex-shrink-0 border border-border"
+            className="w-5 h-5 rounded-full flex-shrink-0 border border-border/50 shadow-sm"
           />
         ) : (
           <div
@@ -278,7 +278,7 @@ export function CharacterSelector() {
                         <img
                           src={getClassIconUrl(char.class.name)}
                           alt={char.class.name}
-                          className="w-5 h-5 rounded-full flex-shrink-0 border border-border"
+                          className="w-5 h-5 rounded-full flex-shrink-0 border border-border/50 shadow-sm"
                         />
                       ) : (
                         <div
@@ -346,7 +346,7 @@ export function CharacterSelector() {
                           <img
                             src={getClassIconUrl(char.class.name)}
                             alt={char.class.name}
-                            className="w-5 h-5 rounded-full flex-shrink-0 border border-border"
+                            className="w-5 h-5 rounded-full flex-shrink-0 border border-border/50 shadow-sm"
                           />
                         ) : (
                           <div

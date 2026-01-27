@@ -762,7 +762,7 @@ export default function MasterSheet() {
                         <img
                           src={getBossImage(boss)!}
                           alt={boss}
-                          className="w-6 h-6 rounded"
+                          className="w-6 h-6 rounded border border-border/50 shadow-sm"
                         />
                       )}
                       <h2 className="text-[15px] font-semibold text-foreground">{boss}</h2>

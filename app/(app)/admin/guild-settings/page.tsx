@@ -17,6 +17,8 @@ import {
   ModalDescription,
   ModalBody,
 } from '@/components/ui/modal'
+import { Button } from '@/components/ui/button'
+import { Heading } from '@/components/ui/typography'
 
 export default function GuildSettingsPage() {
   const [loading, setLoading] = useState(true)
@@ -209,7 +211,7 @@ export default function GuildSettingsPage() {
       <div className="p-8 space-y-6 font-poppins">
         {/* Header - Always visible */}
         <div>
-          <h1 className="text-[42px] font-bold text-foreground leading-tight">Guild Settings</h1>
+          <Heading level={1}>Guild Settings</Heading>
           <p className="text-muted-foreground mt-1 text-[14px]">Manage your guild configuration, members, and settings</p>
         </div>
 
@@ -221,8 +223,8 @@ export default function GuildSettingsPage() {
             {message && (
           <div className={`p-4 rounded-xl ${
             message.type === 'success'
-              ? 'bg-green-950/50 border border-green-600/50 text-green-200'
-              : 'bg-red-950/50 border border-red-600/50 text-red-200'
+              ? 'bg-success/10 border border-success/50 text-success'
+              : 'bg-destructive/10 border border-destructive/50 text-destructive'
           }`}>
             {message.text}
           </div>
@@ -275,7 +277,7 @@ export default function GuildSettingsPage() {
                     <img
                       src="https://wow.zamimg.com/images/wow/icons/large/inv_bannerpvp_02.jpg"
                       alt="Alliance"
-                      className={`w-6 h-6 rounded relative z-10 transition-transform duration-300 ${faction === 'Alliance' ? 'scale-110' : 'group-hover:scale-110'}`}
+                      className={`w-6 h-6 rounded border border-border/50 shadow-sm relative z-10 transition-transform duration-300 ${faction === 'Alliance' ? 'scale-110' : 'group-hover:scale-110'}`}
                     />
                     <span className={`font-medium text-[13px] relative z-10 transition-colors duration-300 ${faction === 'Alliance' ? 'text-blue-400' : 'text-foreground group-hover:text-blue-400'}`}>
                       Alliance
@@ -294,7 +296,7 @@ export default function GuildSettingsPage() {
                     <img
                       src="https://wow.zamimg.com/images/wow/icons/large/inv_bannerpvp_01.jpg"
                       alt="Horde"
-                      className={`w-6 h-6 rounded relative z-10 transition-transform duration-300 ${faction === 'Horde' ? 'scale-110' : 'group-hover:scale-110'}`}
+                      className={`w-6 h-6 rounded border border-border/50 shadow-sm relative z-10 transition-transform duration-300 ${faction === 'Horde' ? 'scale-110' : 'group-hover:scale-110'}`}
                     />
                     <span className={`font-medium text-[13px] relative z-10 transition-colors duration-300 ${faction === 'Horde' ? 'text-red-400' : 'text-foreground group-hover:text-red-400'}`}>
                       Horde
@@ -315,13 +317,14 @@ export default function GuildSettingsPage() {
                 `}</style>
               </div>
 
-              <button
+              <Button
                 onClick={handleSaveBasicInfo}
-                disabled={saving || !guildName.trim()}
-                className="w-full px-5 py-3 bg-primary hover:bg-primary/90 disabled:opacity-50 rounded-[40px] text-primary-foreground font-medium text-[16px] transition"
+                disabled={!guildName.trim()}
+                loading={saving}
+                className="w-full"
               >
-                {saving ? 'Saving...' : 'Save Changes'}
-              </button>
+                Save Changes
+              </Button>
             </div>
           </div>
 
@@ -333,12 +336,9 @@ export default function GuildSettingsPage() {
                   <h2 className="text-[24px] font-semibold text-foreground">Current Members</h2>
                   <p className="text-muted-foreground text-[13px] mt-1">Manage guild members and roles</p>
                 </div>
-                <button
-                  onClick={() => setShowRolesModal(true)}
-                  className="px-4 py-2 bg-background-elevated hover:bg-muted border border-border rounded-lg text-foreground text-[13px] font-medium transition"
-                >
+                <Button variant="secondary" size="sm" onClick={() => setShowRolesModal(true)}>
                   Manage Roles
-                </button>
+                </Button>
               </div>
             </div>
             <div className="overflow-y-auto flex-1">
@@ -373,41 +373,38 @@ export default function GuildSettingsPage() {
               </p>
             </div>
 
-            <button
-              onClick={handleSaveBasicInfo}
-              disabled={saving}
-              className="px-5 py-3 bg-background-elevated hover:bg-muted disabled:opacity-50 border border-border rounded-[40px] text-foreground font-medium text-[16px] transition"
-            >
-              {saving ? 'Saving...' : 'Save Changes'}
-            </button>
+            <Button variant="secondary" onClick={handleSaveBasicInfo} loading={saving}>
+              Save Changes
+            </Button>
           </div>
         </div>
 
         {/* Danger Zone - Only visible to guild creator */}
         {isGuildCreator && (
-          <div className="bg-background-elevated border border-red-900/50 rounded-xl overflow-hidden">
-            <div className="p-6 border-b border-red-900/50">
-              <h2 className="text-[24px] font-semibold text-red-400">Danger Zone</h2>
+          <div className="bg-background-elevated border border-destructive/30 rounded-xl overflow-hidden">
+            <div className="p-6 border-b border-destructive/30">
+              <h2 className="text-[24px] font-semibold text-destructive">Danger Zone</h2>
               <p className="text-muted-foreground text-[13px] mt-1">
                 Irreversible and destructive actions
               </p>
             </div>
             <div className="p-6 space-y-4">
-              <div className="rounded-lg border border-red-900/50 bg-red-950/20 p-4">
+              <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-4">
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1">
-                    <h3 className="text-[16px] font-semibold text-red-400 mb-1">Delete this guild</h3>
+                    <h3 className="text-[16px] font-semibold text-destructive mb-1">Delete this guild</h3>
                     <p className="text-[13px] text-muted-foreground">
                       Once you delete a guild, there is no going back. This will permanently delete all guild data including members, loot lists, attendance records, and settings.
                     </p>
                   </div>
-                  <button
+                  <Button
+                    variant="destructive"
                     onClick={handleDeleteGuild}
-                    disabled={deleting}
-                    className="shrink-0 px-5 py-3 bg-destructive hover:bg-destructive/90 disabled:opacity-50 rounded-[40px] text-destructive-foreground font-medium text-[16px] transition"
+                    loading={deleting}
+                    className="shrink-0"
                   >
-                    {deleting ? 'Deleting...' : 'Delete Guild'}
-                  </button>
+                    Delete Guild
+                  </Button>
                 </div>
               </div>
             </div>

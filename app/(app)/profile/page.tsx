@@ -227,7 +227,7 @@ export default function ProfilePage() {
           <img
             src={avatarUrl}
             alt="Avatar"
-            className="w-20 h-20 rounded-full border-4 border-border"
+            className="w-20 h-20 rounded-full border-2 border-border/50 shadow-md"
           />
           <div className="flex-1">
             <h1 className="text-[28px] font-bold text-foreground">{displayName}</h1>
@@ -237,18 +237,15 @@ export default function ProfilePage() {
                 <span>Member since {new Date(user?.created_at).toLocaleDateString()}</span>
               </div>
               <div className="flex items-center gap-1.5">
-                <HugeiconsIcon icon={CheckmarkCircle01Icon} size={14} className="text-green-400" />
+                <HugeiconsIcon icon={CheckmarkCircle01Icon} size={14} className="text-success" />
                 <span>Discord Connected</span>
               </div>
             </div>
           </div>
-          <button
-            onClick={handleLogout}
-            className="px-6 py-3 bg-background-elevated hover:bg-muted border border-border rounded-[52px] text-foreground font-medium text-base transition whitespace-nowrap flex items-center gap-2"
-          >
+          <Button variant="secondary" onClick={handleLogout}>
             <HugeiconsIcon icon={Logout01Icon} size={16} />
             Log Out
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -322,53 +319,55 @@ export default function ProfilePage() {
           </div>
 
           {/* Danger Zone */}
-          <div className="bg-background-elevated border border-red-900/50 rounded-xl overflow-hidden">
-            <div className="px-6 py-4 border-b border-red-900/50">
-              <h2 className="text-[18px] font-semibold text-red-400">Danger Zone</h2>
+          <div className="bg-background-elevated border border-destructive/30 rounded-xl overflow-hidden">
+            <div className="px-6 py-4 border-b border-destructive/30">
+              <h2 className="text-[18px] font-semibold text-destructive">Danger Zone</h2>
               <p className="text-muted-foreground text-[13px] mt-1">Irreversible and destructive actions</p>
             </div>
             <div className="p-6 space-y-4">
               {/* Disconnect Discord */}
-              <div className="rounded-lg border border-red-900/50 bg-red-950/20 p-4">
+              <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-4">
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
-                      <HugeiconsIcon icon={LinkSquare02Icon} size={18} className="text-red-400" />
-                      <h3 className="text-[16px] font-semibold text-red-400">Disconnect Discord</h3>
+                      <HugeiconsIcon icon={LinkSquare02Icon} size={18} className="text-destructive" />
+                      <h3 className="text-[16px] font-semibold text-destructive">Disconnect Discord</h3>
                     </div>
                     <p className="text-[13px] text-muted-foreground">
                       Disconnect your Discord account from LootList+. You will be logged out and can sign in again with a different Discord account.
                     </p>
                   </div>
-                  <button
+                  <Button
+                    variant="destructive"
                     onClick={handleDisconnectDiscord}
-                    disabled={disconnecting}
-                    className="shrink-0 px-5 py-2.5 bg-red-900/30 hover:bg-red-900/50 border border-red-600 disabled:opacity-50 rounded-[40px] text-red-200 font-medium text-[14px] transition"
+                    loading={disconnecting}
+                    className="shrink-0"
                   >
-                    {disconnecting ? 'Disconnecting...' : 'Disconnect'}
-                  </button>
+                    Disconnect
+                  </Button>
                 </div>
               </div>
 
               {/* Delete Account */}
-              <div className="rounded-lg border border-red-900/50 bg-red-950/20 p-4">
+              <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-4">
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
-                      <HugeiconsIcon icon={Delete02Icon} size={18} className="text-red-400" />
-                      <h3 className="text-[16px] font-semibold text-red-400">Delete Account</h3>
+                      <HugeiconsIcon icon={Delete02Icon} size={18} className="text-destructive" />
+                      <h3 className="text-[16px] font-semibold text-destructive">Delete Account</h3>
                     </div>
                     <p className="text-[13px] text-muted-foreground">
                       Permanently delete your account and all associated data. This includes your characters, loot lists, attendance records, and guild memberships. This action cannot be undone.
                     </p>
                   </div>
-                  <button
+                  <Button
+                    variant="destructive"
                     onClick={handleDeleteAccount}
-                    disabled={deleting}
-                    className="shrink-0 px-5 py-2.5 bg-destructive hover:bg-destructive/90 disabled:opacity-50 rounded-[40px] text-destructive-foreground font-medium text-[14px] transition"
+                    loading={deleting}
+                    className="shrink-0"
                   >
-                    {deleting ? 'Deleting...' : 'Delete Account'}
-                  </button>
+                    Delete Account
+                  </Button>
                 </div>
               </div>
             </div>
@@ -503,10 +502,10 @@ export default function ProfilePage() {
                             <img
                               src={membership.guild.icon_url}
                               alt={membership.guild.name}
-                              className="w-12 h-12 rounded-full border border-border"
+                              className="w-12 h-12 rounded-full border border-border/50 shadow-sm"
                             />
                           ) : (
-                            <div className="w-12 h-12 bg-gradient-to-br from-accent/30 to-accent/10 rounded-full flex items-center justify-center border border-border">
+                            <div className="w-12 h-12 bg-gradient-to-br from-accent/30 to-accent/10 rounded-full flex items-center justify-center border border-border/50 shadow-sm">
                               <span className="text-accent font-bold text-lg">{membership.guild.name.charAt(0)}</span>
                             </div>
                           )}
@@ -541,14 +540,15 @@ export default function ProfilePage() {
                             </button>
                           </div>
                         ) : (
-                          <button
+                          <Button
+                            variant="destructive"
+                            size="sm"
                             onClick={() => setLeaveGuildId(membership.guild.id)}
                             disabled={leaving}
-                            className="px-4 py-2 bg-red-900/20 hover:bg-red-900/30 border border-red-600 rounded-[52px] text-red-200 text-[13px] font-medium transition flex items-center gap-2 disabled:opacity-50"
                           >
                             <HugeiconsIcon icon={Logout01Icon} size={16} />
                             Leave Guild
-                          </button>
+                          </Button>
                         )}
                       </div>
                     )
@@ -561,12 +561,9 @@ export default function ProfilePage() {
                   </div>
                   <h3 className="text-lg font-semibold text-foreground mb-1">No guilds</h3>
                   <p className="text-sm text-muted-foreground max-w-sm mb-4">You're not a member of any guilds yet.</p>
-                  <button
-                    onClick={() => router.push('/guild-select')}
-                    className="px-5 py-2.5 bg-background-elevated hover:bg-muted border border-border rounded-[52px] text-foreground text-[13px] font-medium transition"
-                  >
+                  <Button variant="secondary" onClick={() => router.push('/guild-select')}>
                     Join a Guild
-                  </button>
+                  </Button>
                 </div>
               )}
             </div>

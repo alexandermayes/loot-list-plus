@@ -9,6 +9,7 @@ import { useGuildContext } from '@/app/contexts/GuildContext'
 import { ExpansionGuard } from '@/app/components/ExpansionGuard'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { Button } from '@/components/ui/button'
+import { Heading } from '@/components/ui/typography'
 import { allRoles, getRoleDisplayName, type Role } from '@/utils/spec-role-mapping'
 
 // Lazy load the modal to reduce initial bundle size
@@ -474,7 +475,7 @@ export default function AdminPrioList() {
       <div className="font-poppins">
         {/* Header */}
         <div className="p-8 pb-4">
-          <h1 className="text-[42px] font-bold text-foreground leading-tight">Priority List</h1>
+          <Heading level={1}>Priority List</Heading>
           <p className="text-muted-foreground mt-1 text-[14px]">
             Set role, class, and individual raider priorities for each item
           </p>
@@ -638,7 +639,7 @@ export default function AdminPrioList() {
                         <img
                           src={getBossImage(boss)!}
                           alt={boss}
-                          className="w-6 h-6 rounded"
+                          className="w-6 h-6 rounded border border-border/50 shadow-sm"
                         />
                       )}
                       <h2 className="text-[15px] font-semibold text-foreground">{boss}</h2>

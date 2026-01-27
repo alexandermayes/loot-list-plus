@@ -13,10 +13,12 @@ const CreateCharacterModal = dynamic(() => import('@/app/components/CreateCharac
   loading: () => null
 })
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
+import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
 import { DashboardContentSkeleton } from '@/components/ui/skeletons'
 import { ScrollIcon, StarIcon } from '@hugeicons/core-free-icons'
 import { StatusBadge, type SubmissionStatus } from '@/components/ui/status-badge'
+import { Heading } from '@/components/ui/typography'
 import { useGuildContext } from '@/app/contexts/GuildContext'
 import ItemLink from '@/app/components/ItemLink'
 import { calculateAttendanceScore, getRankModifier, calculateLootScore } from '@/utils/calculations'
@@ -598,9 +600,9 @@ export default function Dashboard() {
     <div className="p-8 space-y-6 font-poppins">
       {/* Header - Always visible but stable during loading */}
       <div>
-        <h1 className="text-[42px] font-bold text-foreground leading-tight">
+        <Heading level={1}>
           {isLoading ? 'Welcome back!' : (greeting || 'Welcome back!')}
-        </h1>
+        </Heading>
         <p className="text-muted-foreground mt-1 text-base">
           {isLoading
             ? 'Loading your dashboard...'
@@ -626,12 +628,9 @@ export default function Dashboard() {
                   <p className="text-foreground font-semibold text-base">Action Required</p>
                   <p className="text-muted-foreground text-sm mt-1">{error}</p>
                   {isOfficer && (
-                    <button
-                      onClick={() => router.push('/admin/expansions')}
-                      className="mt-3 px-5 py-3 text-base bg-primary hover:bg-primary/90 text-primary-foreground rounded-[52px] font-medium transition"
-                    >
+                    <Button className="mt-3" onClick={() => router.push('/admin/expansions')}>
                       Go to Manage Expansions
-                    </button>
+                    </Button>
                   )}
                 </div>
               </div>
@@ -656,9 +655,9 @@ export default function Dashboard() {
                     Add a character to start submitting loot lists and tracking your priority
                   </p>
                 </div>
-                <button className="px-6 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground rounded-[52px] text-[13px] font-medium transition">
+                <Button>
                   Create Character
-                </button>
+                </Button>
               </div>
             </div>
           )}
@@ -673,10 +672,10 @@ export default function Dashboard() {
                     <img
                       src={getClassIconUrl(activeCharacter.class.name)}
                       alt={activeCharacter.class.name}
-                      className="w-16 h-16 rounded-full border border-border"
+                      className="w-16 h-16 rounded-full border-2 border-border/50 shadow-md"
                     />
                   ) : (
-                    <div className="w-16 h-16 bg-gradient-to-br from-[#ff8000] to-[#ff6000] rounded-full flex items-center justify-center border border-border">
+                    <div className="w-16 h-16 bg-gradient-to-br from-[#ff8000] to-[#ff6000] rounded-full flex items-center justify-center border-2 border-border/50 shadow-md">
                       <HugeiconsIcon icon={UserIcon} size={32} className="text-foreground" />
                     </div>
                   )}
@@ -718,8 +717,8 @@ export default function Dashboard() {
                       <p className="text-sm text-muted-foreground">Completed Lists</p>
                       <p className="text-[42px] font-bold text-foreground mt-2 leading-none">{stats.completedLists}</p>
                     </div>
-                    <div className="w-12 h-12 bg-green-500/20 rounded-full flex items-center justify-center">
-                      <HugeiconsIcon icon={CheckmarkCircle01Icon} size={24} className="text-green-500" />
+                    <div className="w-12 h-12 bg-success/20 rounded-full flex items-center justify-center">
+                      <HugeiconsIcon icon={CheckmarkCircle01Icon} size={24} className="text-success" />
                     </div>
                   </div>
                 </div>
@@ -731,8 +730,8 @@ export default function Dashboard() {
                       <p className="text-sm text-muted-foreground">Pending Reviews</p>
                       <p className="text-[42px] font-bold text-foreground mt-2 leading-none">{stats.pendingReviews}</p>
                     </div>
-                    <div className="w-12 h-12 bg-yellow-500/20 rounded-full flex items-center justify-center">
-                      <HugeiconsIcon icon={AlertCircleIcon} size={24} className="text-yellow-500" />
+                    <div className="w-12 h-12 bg-warning/20 rounded-full flex items-center justify-center">
+                      <HugeiconsIcon icon={AlertCircleIcon} size={24} className="text-warning" />
                     </div>
                   </div>
                 </div>
@@ -822,7 +821,7 @@ export default function Dashboard() {
             {/* Recently Received Items */}
             <div className="bg-background-elevated border border-border rounded-xl p-6">
               <div className="flex items-center gap-4 mb-6">
-                <HugeiconsIcon icon={CheckmarkCircle01Icon} size={32} className="text-green-500 flex-shrink-0" />
+                <HugeiconsIcon icon={CheckmarkCircle01Icon} size={32} className="text-success flex-shrink-0" />
                 <div>
                   <h2 className="text-[24px] font-bold text-foreground">Recently received</h2>
                   <p className="text-sm text-muted-foreground mt-1">Your recent loot awards</p>
@@ -843,14 +842,14 @@ export default function Dashboard() {
                       className="bg-background-elevated border border-border rounded-xl p-4"
                     >
                       <div className="flex items-center gap-4">
-                        <div className="flex-shrink-0 w-10 h-10 bg-green-500/20 rounded-full flex items-center justify-center">
-                          <HugeiconsIcon icon={CheckmarkCircle01Icon} size={20} className="text-green-500" />
+                        <div className="flex-shrink-0 w-10 h-10 bg-success/20 rounded-full flex items-center justify-center">
+                          <HugeiconsIcon icon={CheckmarkCircle01Icon} size={20} className="text-success" />
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1">
                             <ItemLink name={item.item_name} wowheadId={item.wowhead_id} clickable={true} showIcon={true} />
                             {item.classification && item.classification !== 'Unlimited' && (
-                              <span className="text-xs px-2 py-0.5 bg-green-500/20 text-green-400 rounded-full border border-green-500/30">
+                              <span className="text-xs px-2 py-0.5 bg-success/20 text-success rounded-full border border-success/30">
                                 {item.classification}
                               </span>
                             )}
@@ -904,16 +903,18 @@ export default function Dashboard() {
                         </p>
                       </div>
                       <div className="ml-4 flex items-center gap-2">
-                        <button
+                        <Button
+                          variant="ghost"
+                          size="sm"
                           onClick={(e) => handleDismissAction(e, submission.id)}
-                          className="p-2 bg-background-elevated hover:bg-red-950/50 border border-border hover:border-red-600/30 rounded-lg text-muted-foreground hover:text-red-400 transition"
                           title="Dismiss"
+                          className="hover:bg-destructive/10 hover:text-destructive"
                         >
                           <HugeiconsIcon icon={Cancel01Icon} size={16} />
-                        </button>
-                        <button className="px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-[52px] text-sm font-medium transition">
+                        </Button>
+                        <Button size="sm">
                           {submission.status === 'draft' ? 'Continue' : 'Revise'}
-                        </button>
+                        </Button>
                       </div>
                     </div>
                   </div>

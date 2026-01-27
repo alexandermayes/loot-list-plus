@@ -360,7 +360,7 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
           <img
             src="https://wow.zamimg.com/images/wow/icons/large/inv_scroll_15.jpg"
             alt="Guild Charter"
-            className="w-10 h-10 rounded-xl border border-border"
+            className="w-10 h-10 rounded-lg border-2 border-border/50 shadow-md"
           />
           <div>
             <ModalTitle>Create a guild</ModalTitle>
@@ -436,15 +436,14 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
               <p className="text-muted-foreground text-[14px] mb-4">
                 You need to verify your Discord account before creating a guild.
               </p>
-              <button
+              <Button
                 onClick={() => {
                   onClose()
                   router.push('/profile/settings')
                 }}
-                className="px-6 py-2.5 bg-primary hover:bg-primary/90 rounded-[52px] text-primary-foreground text-[13px] font-medium transition"
               >
                 Verify Discord
-              </button>
+              </Button>
             </div>
           ) : (
             <div className="flex flex-col flex-1 min-h-0">
@@ -456,10 +455,10 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
                     <Label className="mb-3">Select Your Discord Server</Label>
 
                     {discordError ? (
-                      <div className="p-4 bg-yellow-900/20 border border-yellow-600/50 rounded-xl">
-                        <p className="text-yellow-200 text-[13px] mb-2">{discordError}</p>
+                      <div className="p-4 bg-warning/10 border border-warning/50 rounded-xl">
+                        <p className="text-warning text-[13px] mb-2">{discordError}</p>
                         {discordError.includes('log out') && (
-                          <p className="text-yellow-200/70 text-[12px]">
+                          <p className="text-warning/70 text-[12px]">
                             Your Discord session may have expired. Try logging out and back in, or use the manual entry below.
                           </p>
                         )}
@@ -576,7 +575,7 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
                       <div className="bg-gradient-to-t from-background-subtle via-background-subtle/95 to-transparent pt-8">
                         <div className={`pointer-events-auto p-4 rounded-xl border backdrop-blur-sm ${
                           checkingBot ? 'border-border-strong bg-background-elevated/90' :
-                          botInstalled ? 'border-green-600/50 bg-background-elevated/90' :
+                          botInstalled ? 'border-success/50 bg-background-elevated/90' :
                           'border-accent/50 bg-background-elevated/90'
                         }`}>
                           {checkingBot ? (
@@ -586,12 +585,12 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
                             </div>
                           ) : botInstalled ? (
                             <div className="flex items-center gap-3">
-                              <div className="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center">
-                                <HugeiconsIcon icon={Tick01Icon} size={20} className="text-green-400" />
+                              <div className="w-8 h-8 rounded-full bg-success/20 flex items-center justify-center">
+                                <HugeiconsIcon icon={Tick01Icon} size={20} className="text-success" />
                               </div>
                               <div>
-                                <p className="text-[14px] font-medium text-green-400">Bot Connected!</p>
-                                <p className="text-[12px] text-green-400/70">LootList+ bot is in your server</p>
+                                <p className="text-[14px] font-medium text-success">Bot Connected!</p>
+                                <p className="text-[12px] text-success/70">LootList+ bot is in your server</p>
                               </div>
                             </div>
                           ) : (
@@ -615,12 +614,9 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
                                   </svg>
                                   Add Bot
                                 </button>
-                                <button
-                                  onClick={checkBotInstallation}
-                                  className="px-4 py-2 bg-muted hover:bg-border border border-border-strong rounded-[52px] text-foreground text-[13px] font-medium transition"
-                                >
+                                <Button variant="secondary" size="sm" onClick={checkBotInstallation}>
                                   Recheck
-                                </button>
+                                </Button>
                               </div>
                             </div>
                           )}
@@ -739,7 +735,7 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
                         <img
                           src="https://wow.zamimg.com/images/wow/icons/large/inv_bannerpvp_02.jpg"
                           alt="Alliance"
-                          className={`w-6 h-6 rounded relative z-10 transition-transform duration-300 ${faction === 'Alliance' ? 'scale-110' : 'group-hover:scale-110'}`}
+                          className={`w-6 h-6 rounded border border-border/50 shadow-sm relative z-10 transition-transform duration-300 ${faction === 'Alliance' ? 'scale-110' : 'group-hover:scale-110'}`}
                         />
                         <span className={`font-medium text-[13px] relative z-10 transition-colors duration-300 ${faction === 'Alliance' ? 'text-blue-400' : 'text-foreground group-hover:text-blue-400'}`}>
                           Alliance
@@ -756,7 +752,7 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
                         <img
                           src="https://wow.zamimg.com/images/wow/icons/large/inv_bannerpvp_01.jpg"
                           alt="Horde"
-                          className={`w-6 h-6 rounded relative z-10 transition-transform duration-300 ${faction === 'Horde' ? 'scale-110' : 'group-hover:scale-110'}`}
+                          className={`w-6 h-6 rounded border border-border/50 shadow-sm relative z-10 transition-transform duration-300 ${faction === 'Horde' ? 'scale-110' : 'group-hover:scale-110'}`}
                         />
                         <span className={`font-medium text-[13px] relative z-10 transition-colors duration-300 ${faction === 'Horde' ? 'text-red-400' : 'text-foreground group-hover:text-red-400'}`}>
                           Horde
