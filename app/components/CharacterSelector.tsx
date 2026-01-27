@@ -6,6 +6,7 @@ import { useGuildContext, Character } from '@/app/contexts/GuildContext'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import dynamic from 'next/dynamic'
+import { Spinner } from '@/components/ui/loading-spinner'
 
 // Lazy load modal to reduce initial bundle size
 const CreateCharacterModal = dynamic(() => import('./CreateCharacterModal').then(mod => ({ default: mod.CreateCharacterModal })), {
@@ -379,7 +380,7 @@ export function CharacterSelector() {
                           className="shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           {isAdding ? (
-                            <div className="w-5 h-5 border-2 border-muted-foreground/30 border-t-muted-foreground rounded-full animate-spin" />
+                            <Spinner size="lg" className="text-muted-foreground" />
                           ) : (
                             <Image
                               src="/icons/add-circle.svg"

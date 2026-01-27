@@ -10,6 +10,7 @@ import { CharacterSelector } from './CharacterSelector'
 import { useSidebar } from '../contexts/SidebarContext'
 import { Modal, ModalHeader, ModalBody } from '@/components/ui/modal'
 import { Button } from '@/components/ui/button'
+import { LoadingSpinner } from '@/components/ui/loading-spinner'
 
 // Lazy load modal to reduce initial bundle size
 const CreateGuildModal = dynamic(() => import('./CreateGuildModal').then(mod => ({ default: mod.CreateGuildModal })), {
@@ -898,9 +899,8 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange }
 
           <ModalBody>
             {discordLoading ? (
-              <div className="flex flex-col items-center justify-center py-12">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-foreground"></div>
-                <p className="text-[14px] text-muted-foreground mt-4">Loading available guilds...</p>
+              <div className="flex items-center justify-center py-12">
+                <LoadingSpinner text="Loading available guilds..." />
               </div>
             ) : discordError ? (
               <div className="flex flex-col gap-4 p-4 rounded-xl bg-destructive/10 border border-destructive/50">
