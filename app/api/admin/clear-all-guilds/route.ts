@@ -1,8 +1,31 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/utils/supabase/admin'
+import { createClient } from '@/utils/supabase/server'
+
+// List of user IDs that are allowed to perform super-admin operations
+const SUPER_ADMIN_IDS = process.env.SUPER_ADMIN_IDS?.split(',') || []
 
 export async function POST(request: NextRequest) {
   try {
+    // SECURITY: Require authentication
+    const authClient = await createClient()
+    const { data: { user } } = await authClient.auth.getUser()
+
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    // SECURITY: Only allow in development OR if user is a super-admin
+    const isDevelopment = process.env.NODE_ENV === 'development'
+    const isSuperAdmin = SUPER_ADMIN_IDS.includes(user.id)
+
+    if (!isDevelopment && !isSuperAdmin) {
+      return NextResponse.json(
+        { error: 'This operation is only allowed in development or by super-admins' },
+        { status: 403 }
+      )
+    }
+
     const supabase = createAdminClient()
 
     // Check for guild name to keep

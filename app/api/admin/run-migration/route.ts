@@ -1,8 +1,31 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { createClient as createServerClient } from '@/utils/supabase/server'
+
+// List of user IDs that are allowed to perform super-admin operations
+const SUPER_ADMIN_IDS = process.env.SUPER_ADMIN_IDS?.split(',') || []
 
 export async function GET() {
   try {
+    // SECURITY: Require authentication
+    const authClient = await createServerClient()
+    const { data: { user } } = await authClient.auth.getUser()
+
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    // SECURITY: Only allow in development OR if user is a super-admin
+    const isDevelopment = process.env.NODE_ENV === 'development'
+    const isSuperAdmin = SUPER_ADMIN_IDS.includes(user.id)
+
+    if (!isDevelopment && !isSuperAdmin) {
+      return NextResponse.json(
+        { error: 'This operation is only allowed in development or by super-admins' },
+        { status: 403 }
+      )
+    }
+
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
     const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
