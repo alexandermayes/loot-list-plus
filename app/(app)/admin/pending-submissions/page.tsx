@@ -7,6 +7,8 @@ import { useGuildContext } from '@/app/contexts/GuildContext'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { Tick01Icon, Cancel01Icon, Clock01Icon, UserIcon, CheckmarkCircle01Icon } from '@hugeicons/core-free-icons'
 import { EmptyState } from '@/components/ui/empty-state'
+import { Button } from '@/components/ui/button'
+import { Heading } from '@/components/ui/typography'
 import { PendingSubmissionsListSkeleton } from '@/components/ui/skeletons'
 
 interface PendingSubmission {
@@ -190,7 +192,7 @@ export default function PendingSubmissionsPage() {
       <div className="max-w-6xl mx-auto">
         {/* Header - Always visible */}
         <div className="mb-8">
-          <h1 className="text-[42px] font-bold text-foreground mb-2">Pending Submissions</h1>
+          <Heading level={1} className="mb-2">Pending Submissions</Heading>
           <p className="text-[16px] text-muted-foreground">
             Review and approve loot list submissions from your guild members
           </p>
@@ -205,8 +207,8 @@ export default function PendingSubmissionsPage() {
             {message && (
           <div className={`mb-6 p-4 rounded-xl ${
             message.type === 'success'
-              ? 'bg-green-950/50 border border-green-600/50 text-green-200'
-              : 'bg-red-950/50 border border-red-600/50 text-red-200'
+              ? 'bg-success/10 border border-success/50 text-success'
+              : 'bg-destructive/10 border border-destructive/50 text-destructive'
           }`}>
             {message.text}
           </div>
@@ -280,22 +282,22 @@ export default function PendingSubmissionsPage() {
 
                   {/* Action Buttons */}
                   <div className="flex items-center gap-3">
-                    <button
+                    <Button
+                      variant="success"
                       onClick={() => handleApprove(submission.id)}
-                      disabled={processing === submission.id}
-                      className="px-6 py-3 bg-success hover:bg-success/90 rounded-[52px] text-success-foreground font-medium text-[14px] transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                      loading={processing === submission.id}
                     >
                       <HugeiconsIcon icon={Tick01Icon} size={16} />
-                      {processing === submission.id ? 'Approving...' : 'Approve'}
-                    </button>
-                    <button
+                      Approve
+                    </Button>
+                    <Button
+                      variant="destructive"
                       onClick={() => handleReject(submission.id)}
                       disabled={processing === submission.id}
-                      className="px-6 py-3 bg-destructive hover:bg-destructive/90 rounded-[52px] text-destructive-foreground font-medium text-[14px] transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                     >
                       <HugeiconsIcon icon={Cancel01Icon} size={16} />
                       Reject
-                    </button>
+                    </Button>
                   </div>
                 </div>
               </div>

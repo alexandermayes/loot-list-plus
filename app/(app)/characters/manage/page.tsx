@@ -6,6 +6,7 @@ import { useGuildContext, Character } from '@/app/contexts/GuildContext'
 import { CharacterCard } from '@/app/components/CharacterCard'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { Add01Icon } from '@hugeicons/core-free-icons'
+import { Heading } from '@/components/ui/typography'
 
 // Lazy load modals to reduce initial bundle size
 const CreateCharacterModal = dynamic(() => import('@/app/components/CreateCharacterModal').then(mod => ({ default: mod.CreateCharacterModal })), {
@@ -41,7 +42,7 @@ export default function ManageCharactersPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-[42px] font-bold text-foreground mb-2">My Characters</h1>
+          <Heading level={1} className="mb-2">My Characters</Heading>
           <p className="text-[16px] text-foreground-muted">
             Manage your characters and their guild memberships
           </p>

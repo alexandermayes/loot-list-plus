@@ -8,6 +8,7 @@ import { ArrowLeft01Icon, Tick01Icon, UserGroupIcon } from '@hugeicons/core-free
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { Heading } from '@/components/ui/typography'
 
 interface AvailableGuild {
   id: string
@@ -145,8 +146,8 @@ export default function DiscordJoinPage() {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
         <div className="text-center space-y-4">
-          <div className="flex items-center justify-center w-20 h-20 rounded-full bg-green-600/20 mx-auto">
-            <HugeiconsIcon icon={Tick01Icon} size={40} className="text-green-400" />
+          <div className="flex items-center justify-center w-20 h-20 rounded-full bg-success/20 mx-auto">
+            <HugeiconsIcon icon={Tick01Icon} size={40} className="text-success" />
           </div>
           <h2 className="text-2xl font-bold text-foreground">Successfully Joined!</h2>
           <p className="text-muted-foreground">Redirecting...</p>
@@ -173,10 +174,10 @@ export default function DiscordJoinPage() {
         {/* Main Content */}
         <div className="max-w-xl w-full space-y-6">
           <div className="text-center space-y-2">
-            <div className="flex items-center justify-center w-16 h-16 rounded-full bg-yellow-600/20 mx-auto mb-4">
-              <HugeiconsIcon icon={UserGroupIcon} size={32} className="text-yellow-400" />
+            <div className="flex items-center justify-center w-16 h-16 rounded-full bg-warning/20 mx-auto mb-4">
+              <HugeiconsIcon icon={UserGroupIcon} size={32} className="text-warning" />
             </div>
-            <h1 className="text-3xl font-bold text-primary">Discord Verification Required</h1>
+            <Heading level={1} className="text-3xl text-primary">Discord Verification Required</Heading>
             <p className="text-muted-foreground">
               You need to verify your Discord account to join guilds automatically
             </p>
@@ -220,7 +221,7 @@ export default function DiscordJoinPage() {
           <div className="flex items-center justify-center w-16 h-16 rounded-full bg-blue-600/20 mx-auto mb-4">
             <HugeiconsIcon icon={UserGroupIcon} size={32} className="text-blue-400" />
           </div>
-          <h1 className="text-3xl font-bold text-primary">Join via Discord</h1>
+          <Heading level={1} className="text-3xl text-primary">Join via Discord</Heading>
           <p className="text-muted-foreground">
             Automatically join guilds based on your Discord server memberships
           </p>
@@ -228,8 +229,8 @@ export default function DiscordJoinPage() {
 
         {/* Error Message */}
         {error && (
-          <div className="p-3 rounded-lg bg-red-950/50 border border-red-600/50">
-            <p className="text-sm text-red-200">{error}</p>
+          <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/50">
+            <p className="text-sm text-destructive">{error}</p>
           </div>
         )}
 

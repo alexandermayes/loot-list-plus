@@ -8,6 +8,7 @@ import { useRouter } from 'next/navigation'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { ArrowDown01Icon, ArrowUp01Icon, Upload01Icon, Cancel01Icon, NextIcon } from '@hugeicons/core-free-icons'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
+import { Heading } from '@/components/ui/typography'
 import { useGuildContext } from '@/app/contexts/GuildContext'
 import ItemLink from '@/app/components/ItemLink'
 import {
@@ -1493,7 +1494,7 @@ export default function RaidTrackingPage() {
     <div className="p-8 space-y-6 font-poppins">
       {/* Header */}
       <div>
-        <h1 className="text-[42px] font-bold text-foreground leading-tight">Raid Tracking</h1>
+        <Heading level={1}>Raid Tracking</Heading>
         <p className="text-muted-foreground mt-1 text-[14px]">
           Manage attendance and signups for each raid day
           {currentExpansion && (
@@ -1789,7 +1790,7 @@ export default function RaidTrackingPage() {
                             </div>
                             <button
                               onClick={() => deleteLootEntry(loot.id, raid.id)}
-                              className="p-1.5 text-foreground-muted hover:text-red-400 hover:bg-red-500/10 rounded-md transition opacity-0 group-hover:opacity-100"
+                              className="p-1.5 text-foreground-muted hover:text-destructive hover:bg-destructive/10 rounded-md transition opacity-0 group-hover:opacity-100"
                               title="Remove loot entry"
                             >
                               <HugeiconsIcon icon={Cancel01Icon} size={16} />

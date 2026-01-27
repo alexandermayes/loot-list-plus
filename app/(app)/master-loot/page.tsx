@@ -8,6 +8,7 @@ import { useGuildContext } from '@/app/contexts/GuildContext'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { Modal, ModalHeader, ModalTitle, ModalBody, ModalFooter } from '@/components/ui/modal'
 import { Button } from '@/components/ui/button'
+import { Heading } from '@/components/ui/typography'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { Settings01Icon } from '@hugeicons/core-free-icons'
 import Link from 'next/link'
@@ -253,7 +254,7 @@ export default function MasterLootPage() {
       {/* Header with Settings Button */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-[42px] font-bold text-foreground leading-tight">Master Loot</h1>
+          <Heading level={1}>Master Loot</Heading>
           <p className="text-muted-foreground mt-1 text-[14px]">Manage loot submissions and available items</p>
         </div>
         <Link

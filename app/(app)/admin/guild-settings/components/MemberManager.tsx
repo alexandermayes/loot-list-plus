@@ -221,8 +221,8 @@ export default function MemberManager() {
       {message && (
         <div className={`p-3 rounded-lg ${
           message.type === 'success'
-            ? 'bg-green-950/50 border border-green-600/50 text-green-200'
-            : 'bg-red-950/50 border border-red-600/50 text-red-200'
+            ? 'bg-success/10 border border-success/50 text-success'
+            : 'bg-destructive/10 border border-destructive/50 text-destructive'
         }`}>
           {message.text}
         </div>
@@ -322,7 +322,7 @@ export default function MemberManager() {
                     </select>
                     <button
                       onClick={() => handleRemoveMember(member.user_id, displayName)}
-                      className="p-2 bg-background-elevated hover:bg-red-950/50 border border-border hover:border-red-600/30 rounded-lg text-red-400 hover:text-red-300 transition"
+                      className="p-2 bg-background-elevated hover:bg-destructive/10 border border-border hover:border-destructive/30 rounded-lg text-destructive hover:text-destructive transition"
                     >
                       <HugeiconsIcon icon={UserBlock01Icon} size={16} />
                     </button>

@@ -34,7 +34,7 @@ export function ExpansionGuard({ children }: { children: React.ReactNode }) {
         <Card className="max-w-md">
           <CardContent className="pt-6">
             <div className="text-center space-y-4">
-              <HugeiconsIcon icon={AlertCircleIcon} size={48} className="text-yellow-400 mx-auto" />
+              <HugeiconsIcon icon={AlertCircleIcon} size={48} className="text-warning mx-auto" />
               <h2 className="text-xl font-semibold text-foreground">
                 No Expansion Set
               </h2>

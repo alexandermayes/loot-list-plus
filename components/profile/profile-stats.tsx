@@ -27,11 +27,11 @@ export function ProfileStats({
 
   const getAttendanceScoreBadge = (score: number) => {
     if (score >= 6) {
-      return 'px-3 py-1 bg-green-900/20 border border-green-600 rounded-full text-green-200 text-[13px]'
+      return 'px-3 py-1 bg-success/20 border border-success rounded-full text-success text-[13px]'
     } else if (score >= 4) {
-      return 'px-3 py-1 bg-yellow-900/20 border border-yellow-600 rounded-full text-yellow-200 text-[13px]'
+      return 'px-3 py-1 bg-warning/20 border border-warning rounded-full text-warning text-[13px]'
     } else {
-      return 'px-3 py-1 bg-red-900/20 border border-red-600 rounded-full text-red-200 text-[13px]'
+      return 'px-3 py-1 bg-destructive/20 border border-destructive rounded-full text-destructive text-[13px]'
     }
   }
 
@@ -65,9 +65,9 @@ export function ProfileStats({
             <div className="w-full bg-background-subtle rounded-full h-2 mt-2">
               <div
                 className={`h-2 rounded-full transition-all ${
-                  attendancePercentage >= 80 ? 'bg-green-500' :
-                  attendancePercentage >= 60 ? 'bg-yellow-500' :
-                  'bg-red-500'
+                  attendancePercentage >= 80 ? 'bg-success' :
+                  attendancePercentage >= 60 ? 'bg-warning' :
+                  'bg-destructive'
                 }`}
                 style={{ width: `${attendancePercentage}%` }}
               />

@@ -6,6 +6,7 @@ import { useGuildContext } from '@/app/contexts/GuildContext'
 import { createClient } from '@/utils/supabase/client'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { ArrowLeft01Icon } from '@hugeicons/core-free-icons'
+import { Heading } from '@/components/ui/typography'
 
 interface WowClass {
   id: string
@@ -167,7 +168,7 @@ export default function CreateCharacterPage() {
             <span className="text-[14px]">Back</span>
           </button>
 
-          <h1 className="text-[42px] font-bold text-foreground mb-2">Create Character</h1>
+          <Heading level={1} className="mb-2">Create Character</Heading>
           <p className="text-[16px] text-muted-foreground">
             Add a new character to your account
           </p>
@@ -175,8 +176,8 @@ export default function CreateCharacterPage() {
 
         {/* Error Message */}
         {error && (
-          <div className="mb-6 p-4 bg-red-900/20 border border-red-600 rounded-xl">
-            <p className="text-red-200 text-[14px]">{error}</p>
+          <div className="mb-6 p-4 bg-destructive/10 border border-destructive rounded-xl">
+            <p className="text-destructive text-[14px]">{error}</p>
           </div>
         )}
 
@@ -186,7 +187,7 @@ export default function CreateCharacterPage() {
             {/* Character Name */}
             <div>
               <label className="block text-foreground text-[14px] font-medium mb-2">
-                Character Name <span className="text-red-500">*</span>
+                Character Name <span className="text-destructive">*</span>
               </label>
               <input
                 type="text"
@@ -201,7 +202,7 @@ export default function CreateCharacterPage() {
             {/* Class */}
             <div>
               <label className="block text-foreground text-[14px] font-medium mb-2">
-                Class <span className="text-red-500">*</span>
+                Class <span className="text-destructive">*</span>
               </label>
               <select
                 value={classId}

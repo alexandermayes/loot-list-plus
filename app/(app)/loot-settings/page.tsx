@@ -9,6 +9,7 @@ import { ExpansionGuard } from '@/app/components/ExpansionGuard'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { Modal, ModalHeader, ModalTitle, ModalDescription, ModalBody, ModalFooter } from '@/components/ui/modal'
 import { Button } from '@/components/ui/button'
+import { Heading } from '@/components/ui/typography'
 import StyledSelect from '@/app/components/StyledSelect'
 import MultiSelectDropdown from '@/app/components/MultiSelectDropdown'
 import { specMapping } from '@/utils/spec-role-mapping'
@@ -1281,7 +1282,7 @@ export default function AdminLootItems() {
         {/* Header with Settings Button */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-[42px] font-bold text-foreground leading-tight">Master Loot</h1>
+            <Heading level={1}>Master Loot</Heading>
             <p className="text-foreground-muted mt-1 text-[14px]">Manage loot items and configure classifications</p>
           </div>
           <button

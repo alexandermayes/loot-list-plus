@@ -6,6 +6,7 @@ import { useGuildContext, Character } from '@/app/contexts/GuildContext'
 import { createClient } from '@/utils/supabase/client'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { ArrowLeft01Icon, Delete01Icon } from '@hugeicons/core-free-icons'
+import { Heading } from '@/components/ui/typography'
 
 interface WowClass {
   id: string
@@ -246,7 +247,7 @@ export default function EditCharacterPage() {
             <span className="text-[14px]">Back to Characters</span>
           </button>
 
-          <h1 className="text-[42px] font-bold text-foreground mb-2">Edit Character</h1>
+          <Heading level={1} className="mb-2">Edit Character</Heading>
           <p className="text-[16px] text-muted-foreground">
             Update character details and settings
           </p>
@@ -254,8 +255,8 @@ export default function EditCharacterPage() {
 
         {/* Error Message */}
         {error && (
-          <div className="mb-6 p-4 bg-red-900/20 border border-red-600 rounded-xl">
-            <p className="text-red-200 text-[14px]">{error}</p>
+          <div className="mb-6 p-4 bg-destructive/10 border border-destructive rounded-xl">
+            <p className="text-destructive text-[14px]">{error}</p>
           </div>
         )}
 
@@ -265,7 +266,7 @@ export default function EditCharacterPage() {
             {/* Character Name */}
             <div>
               <label className="block text-foreground text-[14px] font-medium mb-2">
-                Character Name <span className="text-red-500">*</span>
+                Character Name <span className="text-destructive">*</span>
               </label>
               <input
                 type="text"
@@ -280,7 +281,7 @@ export default function EditCharacterPage() {
             {/* Class */}
             <div>
               <label className="block text-foreground text-[14px] font-medium mb-2">
-                Class <span className="text-red-500">*</span>
+                Class <span className="text-destructive">*</span>
               </label>
               <select
                 value={classId}
@@ -384,8 +385,8 @@ export default function EditCharacterPage() {
         </form>
 
         {/* Delete Character Section */}
-        <div className="bg-background-elevated border border-red-900/50 rounded-xl p-6">
-          <h2 className="text-[18px] font-semibold text-red-400 mb-2">Danger Zone</h2>
+        <div className="bg-background-elevated border border-destructive/30 rounded-xl p-6">
+          <h2 className="text-[18px] font-semibold text-destructive mb-2">Danger Zone</h2>
           <p className="text-[14px] text-muted-foreground mb-4">
             Deleting a character is permanent and cannot be undone. This will delete all loot submissions and remove the character from all guilds.
           </p>
@@ -393,15 +394,15 @@ export default function EditCharacterPage() {
           {!showDeleteConfirm ? (
             <button
               onClick={() => setShowDeleteConfirm(true)}
-              className="px-6 py-3 bg-red-900/20 hover:bg-red-900/30 border border-red-600 rounded-[52px] text-red-400 font-medium text-[14px] transition flex items-center gap-2"
+              className="px-6 py-3 bg-destructive/10 hover:bg-destructive/20 border border-destructive rounded-[52px] text-destructive font-medium text-[14px] transition flex items-center gap-2"
             >
               <HugeiconsIcon icon={Delete01Icon} size={16} />
               Delete Character
             </button>
           ) : (
             <div className="space-y-4">
-              <div className="p-4 bg-red-900/20 border border-red-600/50 rounded-xl">
-                <p className="text-red-200 text-[14px] mb-3">
+              <div className="p-4 bg-destructive/10 border border-destructive/50 rounded-xl">
+                <p className="text-destructive text-[14px] mb-3">
                   To confirm deletion, type <span className="font-bold text-foreground">{character?.name}</span> below:
                 </p>
                 <input
@@ -409,7 +410,7 @@ export default function EditCharacterPage() {
                   value={deleteConfirmName}
                   onChange={(e) => setDeleteConfirmName(e.target.value)}
                   placeholder="Type character name to confirm"
-                  className="w-full px-4 py-3 bg-background-subtle border border-red-600/50 rounded-xl text-foreground text-[14px] focus:outline-none focus:border-red-500 transition"
+                  className="w-full px-4 py-3 bg-background-subtle border border-destructive/50 rounded-xl text-foreground text-[14px] focus:outline-none focus:border-destructive transition"
                   autoFocus
                 />
               </div>

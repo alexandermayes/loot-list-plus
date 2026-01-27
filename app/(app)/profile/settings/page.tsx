@@ -163,8 +163,8 @@ export default function SettingsPage() {
 
       <main className="max-w-4xl mx-auto p-6 space-y-6">
         {message && (
-          <Alert className={message.type === 'success' ? 'border-green-500 bg-green-500/10' : 'border-red-500 bg-red-500/10'}>
-            <AlertDescription className={message.type === 'success' ? 'text-green-500' : 'text-red-500'}>
+          <Alert className={message.type === 'success' ? 'border-success bg-success/10' : 'border-destructive bg-destructive/10'}>
+            <AlertDescription className={message.type === 'success' ? 'text-success' : 'text-destructive'}>
               {message.text}
             </AlertDescription>
           </Alert>
@@ -331,7 +331,7 @@ export default function SettingsPage() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <HugeiconsIcon icon={CheckmarkCircle01Icon} size={20} className="text-green-500" />
+              <HugeiconsIcon icon={CheckmarkCircle01Icon} size={20} className="text-success" />
               Discord Server Verification
             </CardTitle>
             <CardDescription>
