@@ -30,7 +30,7 @@ export default function LandingCTA({ onLogin }: LandingCTAProps) {
   }
 
   return (
-    <section id="cta" className="relative py-24 md:py-32 overflow-hidden">
+    <section id="cta" className="relative py-32 md:py-40 overflow-hidden">
       {/* Background with image */}
       <div className="absolute inset-0">
         <Image

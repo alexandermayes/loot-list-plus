@@ -5,6 +5,7 @@ import { useState } from 'react'
 import { createClient } from '@/utils/supabase/client'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
+import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import {
   Modal,
   ModalHeader,
@@ -348,9 +349,8 @@ export default function WelcomeScreen() {
 
         <ModalBody>
           {discordLoading ? (
-            <div className="flex flex-col items-center justify-center py-12">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-foreground"></div>
-              <p className="text-[14px] text-muted-foreground mt-4">Loading available guilds...</p>
+            <div className="flex items-center justify-center py-12">
+              <LoadingSpinner text="Loading available guilds..." />
             </div>
           ) : discordError ? (
             <div className="flex flex-col gap-4 p-4 rounded-xl bg-destructive/10 border border-destructive/50">

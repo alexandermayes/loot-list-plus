@@ -78,7 +78,7 @@ export default function LandingHowItWorks() {
   const isInView = useInView(ref, { once: true, margin: '-100px' })
 
   return (
-    <section id="how-it-works" className="relative py-24 md:py-32 bg-background-subtle">
+    <section id="how-it-works" className="relative py-32 md:py-40 bg-background-subtle">
       {/* Background pattern */}
       <div className="absolute inset-0 opacity-50">
         <div className="absolute inset-0" style={{

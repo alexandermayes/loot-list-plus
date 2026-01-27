@@ -91,7 +91,7 @@ export default function LandingFeatures() {
   const isInView = useInView(ref, { once: true, margin: '-100px' })
 
   return (
-    <section id="features" className="relative py-24 md:py-32 bg-background">
+    <section id="features" className="relative py-32 md:py-40 bg-background">
       {/* Subtle gradient background */}
       <div className="absolute inset-0 bg-gradient-to-b from-transparent via-accent/[0.02] to-transparent" />
 

@@ -80,7 +80,7 @@ export default function LandingValueProps() {
   const isInView = useInView(ref, { once: true, margin: '-100px' })
 
   return (
-    <section id="value-props" className="relative py-24 md:py-32 bg-background-subtle">
+    <section id="value-props" className="relative py-32 md:py-40 bg-background-subtle">
       <div className="relative z-10 max-w-5xl mx-auto px-6 md:px-12 lg:px-20">
         {/* Section Header */}
         <motion.div
