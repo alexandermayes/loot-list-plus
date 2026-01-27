@@ -3,7 +3,8 @@
 import { createClient } from '@/utils/supabase/client'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Loading01Icon } from 'hugeicons-react'
+import { HugeiconsIcon } from '@hugeicons/react'
+import { Loading01Icon } from '@hugeicons/core-free-icons'
 import Image from 'next/image'
 
 export default function Home() {
@@ -37,7 +38,7 @@ export default function Home() {
   if (loading) {
     return (
       <div className="min-h-screen bg-[#151515] flex items-center justify-center">
-        <Loading01Icon className="w-8 h-8 animate-spin text-primary" />
+        <HugeiconsIcon icon={Loading01Icon} size={32} className="animate-spin text-primary" />
       </div>
     )
   }

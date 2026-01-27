@@ -1,4 +1,5 @@
-import { ArrowLeft01Icon } from 'hugeicons-react'
+import { HugeiconsIcon } from '@hugeicons/react'
+import { ArrowLeft01Icon } from '@hugeicons/core-free-icons'
 import { Button } from './button'
 import { useRouter } from 'next/navigation'
 
@@ -34,7 +35,7 @@ export function PageHeader({
               onClick={() => router.push(backUrl)}
               className="text-muted-foreground hover:text-foreground"
             >
-              <ArrowLeft01Icon className="w-4 h-4 mr-2" />
+              <HugeiconsIcon icon={ArrowLeft01Icon} size={16} className="mr-2" />
               Back
             </Button>
           )}

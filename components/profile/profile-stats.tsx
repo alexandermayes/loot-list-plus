@@ -1,4 +1,5 @@
-import { Award01Icon, Calendar01Icon, CheckListIcon, StarIcon } from 'hugeicons-react'
+import { HugeiconsIcon } from '@hugeicons/react'
+import { Award01Icon, Calendar01Icon, CheckListIcon, StarIcon } from '@hugeicons/core-free-icons'
 
 interface ProfileStatsProps {
   attendanceScore: number
@@ -50,7 +51,7 @@ export function ProfileStats({
         <div className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl overflow-hidden">
           <div className="px-6 py-4 border-b border-[rgba(255,255,255,0.1)]">
             <h3 className="text-[18px] font-semibold text-white flex items-center gap-2">
-              <Calendar01Icon className="w-5 h-5" />
+              <HugeiconsIcon icon={Calendar01Icon} size={20} />
               Raid Attendance
             </h3>
           </div>
@@ -88,7 +89,7 @@ export function ProfileStats({
         <div className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl overflow-hidden">
           <div className="px-6 py-4 border-b border-[rgba(255,255,255,0.1)]">
             <h3 className="text-[18px] font-semibold text-white flex items-center gap-2">
-              <Award01Icon className="w-5 h-5" />
+              <HugeiconsIcon icon={Award01Icon} size={20} />
               Loot & Submissions
             </h3>
           </div>
@@ -96,7 +97,7 @@ export function ProfileStats({
             <div className="flex items-center justify-between">
               <span className="text-[13px] text-[#a1a1a1]">Items Received</span>
               <span className="text-white font-medium flex items-center gap-1">
-                <StarIcon className="w-4 h-4 text-[#ff8000]" />
+                <HugeiconsIcon icon={StarIcon} size={16} className="text-[#ff8000]" />
                 {lootReceived}
               </span>
             </div>
@@ -108,7 +109,7 @@ export function ProfileStats({
             </div>
             <div className="flex items-center justify-between">
               <span className="text-[13px] text-[#a1a1a1] flex items-center gap-1">
-                <CheckListIcon className="w-4 h-4" />
+                <HugeiconsIcon icon={CheckListIcon} size={16} />
                 List Complete
               </span>
               <span className={submissionStatus === 'approved' ? 'px-3 py-1 bg-green-900/20 border border-green-600 rounded-full text-green-200 text-[13px]' : 'px-3 py-1 bg-[#151515] border border-[rgba(255,255,255,0.1)] rounded-full text-[#a1a1a1] text-[13px]'}>

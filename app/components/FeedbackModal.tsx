@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { Bug01Icon, Camera01Icon, SentIcon, Cancel01Icon, Loading03Icon } from 'hugeicons-react'
+import { HugeiconsIcon } from '@hugeicons/react'
+import { Bug01Icon, Camera01Icon, SentIcon, Cancel01Icon, Loading03Icon } from '@hugeicons/core-free-icons'
 import html2canvas from 'html2canvas'
 
 interface FeedbackModalProps {
@@ -142,7 +143,7 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
         <div className="p-6 border-b border-[#383838] flex items-center justify-between bg-[#141519]">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-[#ff8000]/20 flex items-center justify-center">
-              <Bug01Icon className="w-5 h-5 text-[#ff8000]" />
+              <HugeiconsIcon icon={Bug01Icon} size={20} className="text-[#ff8000]" />
             </div>
             <div>
               <h3 className="text-[20px] font-bold text-white">Report a Bug</h3>
@@ -153,7 +154,7 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
             onClick={onClose}
             className="text-[#a1a1a1] hover:text-white transition"
           >
-            <Cancel01Icon className="w-6 h-6" />
+            <HugeiconsIcon icon={Cancel01Icon} size={24} />
           </button>
         </div>
 
@@ -161,7 +162,7 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
         {success ? (
           <div className="p-8 text-center">
             <div className="w-16 h-16 rounded-full bg-green-600/20 flex items-center justify-center mx-auto mb-4">
-              <SentIcon className="w-8 h-8 text-green-400" />
+              <HugeiconsIcon icon={SentIcon} size={32} className="text-green-400" />
             </div>
             <h4 className="text-[18px] font-semibold text-white mb-2">Thanks for your feedback!</h4>
             <p className="text-[14px] text-[#a1a1a1]">We'll look into this and get back to you if needed.</p>
@@ -180,7 +181,7 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <label className="text-[13px] font-medium text-white flex items-center gap-2">
-                    <Camera01Icon className="w-4 h-4 text-[#a1a1a1]" />
+                    <HugeiconsIcon icon={Camera01Icon} size={16} className="text-[#a1a1a1]" />
                     Screenshot
                   </label>
                   <button
@@ -195,7 +196,7 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
                 <div className="relative bg-[#151515] border border-[#383838] rounded-xl overflow-hidden aspect-video">
                   {capturing ? (
                     <div className="absolute inset-0 flex items-center justify-center">
-                      <Loading03Icon className="w-8 h-8 text-[#a1a1a1] animate-spin" />
+                      <HugeiconsIcon icon={Loading03Icon} size={32} className="text-[#a1a1a1] animate-spin" />
                     </div>
                   ) : screenshot ? (
                     <img
@@ -247,12 +248,12 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
               >
                 {submitting ? (
                   <>
-                    <Loading03Icon className="w-4 h-4 animate-spin" />
+                    <HugeiconsIcon icon={Loading03Icon} size={16} className="animate-spin" />
                     Sending...
                   </>
                 ) : (
                   <>
-                    <SentIcon className="w-4 h-4" />
+                    <HugeiconsIcon icon={SentIcon} size={16} />
                     Submit Feedback
                   </>
                 )}

@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react'
 import { useGuildContext, Character } from '@/app/contexts/GuildContext'
 import { createClient } from '@/utils/supabase/client'
-import { Delete01Icon } from 'hugeicons-react'
+import { HugeiconsIcon } from '@hugeicons/react'
+import { Delete01Icon } from '@hugeicons/core-free-icons'
 
 interface WowClass {
   id: string
@@ -355,7 +356,7 @@ export function EditCharacterModal({ isOpen, onClose, character, onSuccess }: Ed
                   onClick={() => setShowDeleteConfirm(true)}
                   className="px-4 py-2 bg-red-900/20 hover:bg-red-900/30 border border-red-600/50 rounded-[52px] text-red-400 text-[13px] font-medium transition flex items-center gap-2"
                 >
-                  <Delete01Icon className="w-4 h-4" />
+                  <HugeiconsIcon icon={Delete01Icon} size={16} />
                   Delete Character
                 </button>
               ) : (
@@ -380,7 +381,7 @@ export function EditCharacterModal({ isOpen, onClose, character, onSuccess }: Ed
                       disabled={deleting || deleteConfirmName.toLowerCase() !== character.name.toLowerCase()}
                       className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-[52px] text-white text-[13px] font-medium transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                     >
-                      <Delete01Icon className="w-4 h-4" />
+                      <HugeiconsIcon icon={Delete01Icon} size={16} />
                       {deleting ? 'Deleting...' : 'Delete Forever'}
                     </button>
                     <button

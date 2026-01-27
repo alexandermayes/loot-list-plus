@@ -8,6 +8,7 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 // HugeIcons - Standard Stroke (matching Figma designs)
+import { HugeiconsIcon } from '@hugeicons/react';
 import {
   Settings01Icon,
   Add01Icon,
@@ -50,7 +51,7 @@ import {
   RefreshIcon,
   Logout01Icon,
   Login01Icon,
-} from "hugeicons-react";
+} from "@hugeicons/core-free-icons";
 import { useState } from "react";
 
 export default function DesignSystemPage() {
@@ -71,9 +72,9 @@ export default function DesignSystemPage() {
             <p className="text-foreground-secondary mt-2">LootList+ component library preview</p>
           </div>
           <div className="flex items-center gap-3">
-            <Sun01Icon className="w-4 h-4 text-foreground-secondary" />
+            <HugeiconsIcon icon={Sun01Icon} size={16} className="text-foreground-secondary" />
             <Switch checked={darkMode} onCheckedChange={toggleTheme} />
-            <Moon02Icon className="w-4 h-4 text-foreground-secondary" />
+            <HugeiconsIcon icon={Moon02Icon} size={16} className="text-foreground-secondary" />
           </div>
         </div>
 
@@ -98,7 +99,7 @@ export default function DesignSystemPage() {
                   { icon: HelpCircleIcon, name: 'HelpCircleIcon', label: 'Help' },
                 ].map(({ icon: Icon, name, label }) => (
                   <div key={name} className="flex flex-col items-center gap-2 p-3 rounded-lg bg-background-elevated border border-border min-w-[100px]">
-                    <Icon className="w-5 h-5 text-foreground" />
+                    <HugeiconsIcon icon={Icon} size={20} className="text-foreground" />
                     <span className="text-xs text-foreground-secondary text-center">{label}</span>
                   </div>
                 ))}
@@ -123,7 +124,7 @@ export default function DesignSystemPage() {
                   { icon: RefreshIcon, name: 'RefreshIcon' },
                 ].map(({ icon: Icon, name }) => (
                   <div key={name} className="flex flex-col items-center gap-2 p-3 rounded-lg bg-background-elevated border border-border min-w-[80px]">
-                    <Icon className="w-5 h-5 text-foreground" />
+                    <HugeiconsIcon icon={Icon} size={20} className="text-foreground" />
                     <span className="text-[10px] text-foreground-muted text-center">{name.replace('Icon', '')}</span>
                   </div>
                 ))}
@@ -150,7 +151,7 @@ export default function DesignSystemPage() {
                   { icon: Folder01Icon, name: 'Folder01Icon' },
                 ].map(({ icon: Icon, name }) => (
                   <div key={name} className="flex flex-col items-center gap-2 p-3 rounded-lg bg-background-elevated border border-border min-w-[80px]">
-                    <Icon className="w-5 h-5 text-foreground" />
+                    <HugeiconsIcon icon={Icon} size={20} className="text-foreground" />
                     <span className="text-[10px] text-foreground-muted text-center">{name.replace('Icon', '')}</span>
                   </div>
                 ))}
@@ -162,23 +163,23 @@ export default function DesignSystemPage() {
               <h3 className="text-sm font-medium text-foreground-secondary mb-3 uppercase tracking-wider">Status & Feedback</h3>
               <div className="flex flex-wrap gap-4">
                 <div className="flex flex-col items-center gap-2 p-3 rounded-lg bg-background-elevated border border-border min-w-[80px]">
-                  <CheckmarkCircle01Icon className="w-5 h-5 text-success" />
+                  <HugeiconsIcon icon={CheckmarkCircle01Icon} size={20} className="text-success" />
                   <span className="text-[10px] text-foreground-muted">Success</span>
                 </div>
                 <div className="flex flex-col items-center gap-2 p-3 rounded-lg bg-background-elevated border border-border min-w-[80px]">
-                  <AlertCircleIcon className="w-5 h-5 text-warning" />
+                  <HugeiconsIcon icon={AlertCircleIcon} size={20} className="text-warning" />
                   <span className="text-[10px] text-foreground-muted">Warning</span>
                 </div>
                 <div className="flex flex-col items-center gap-2 p-3 rounded-lg bg-background-elevated border border-border min-w-[80px]">
-                  <Cancel01Icon className="w-5 h-5 text-error" />
+                  <HugeiconsIcon icon={Cancel01Icon} size={20} className="text-error" />
                   <span className="text-[10px] text-foreground-muted">Error</span>
                 </div>
                 <div className="flex flex-col items-center gap-2 p-3 rounded-lg bg-background-elevated border border-border min-w-[80px]">
-                  <InformationCircleIcon className="w-5 h-5 text-info" />
+                  <HugeiconsIcon icon={InformationCircleIcon} size={20} className="text-info" />
                   <span className="text-[10px] text-foreground-muted">Info</span>
                 </div>
                 <div className="flex flex-col items-center gap-2 p-3 rounded-lg bg-background-elevated border border-border min-w-[80px]">
-                  <Loading01Icon className="w-5 h-5 text-foreground-secondary animate-spin" />
+                  <HugeiconsIcon icon={Loading01Icon} size={20} className="text-foreground-secondary animate-spin" />
                   <span className="text-[10px] text-foreground-muted">Loading</span>
                 </div>
               </div>
@@ -189,19 +190,19 @@ export default function DesignSystemPage() {
               <h3 className="text-sm font-medium text-foreground-secondary mb-3 uppercase tracking-wider">Icon Sizes</h3>
               <div className="flex items-end gap-6">
                 <div className="flex flex-col items-center gap-2">
-                  <Settings01Icon className="w-4 h-4 text-foreground" />
+                  <HugeiconsIcon icon={Settings01Icon} size={16} className="text-foreground" />
                   <span className="text-xs text-foreground-muted">16px (w-4)</span>
                 </div>
                 <div className="flex flex-col items-center gap-2">
-                  <Settings01Icon className="w-5 h-5 text-foreground" />
+                  <HugeiconsIcon icon={Settings01Icon} size={20} className="text-foreground" />
                   <span className="text-xs text-foreground-muted">20px (w-5) ★</span>
                 </div>
                 <div className="flex flex-col items-center gap-2">
-                  <Settings01Icon className="w-6 h-6 text-foreground" />
+                  <HugeiconsIcon icon={Settings01Icon} size={24} className="text-foreground" />
                   <span className="text-xs text-foreground-muted">24px (w-6)</span>
                 </div>
                 <div className="flex flex-col items-center gap-2">
-                  <Settings01Icon className="w-8 h-8 text-foreground" />
+                  <HugeiconsIcon icon={Settings01Icon} size={32} className="text-foreground" />
                   <span className="text-xs text-foreground-muted">32px (w-8)</span>
                 </div>
               </div>
@@ -373,7 +374,7 @@ export default function DesignSystemPage() {
                 <Button size="sm">Small</Button>
                 <Button size="default">Default</Button>
                 <Button size="lg">Large</Button>
-                <Button size="icon"><Settings01Icon className="w-4 h-4" /></Button>
+                <Button size="icon"><HugeiconsIcon icon={Settings01Icon} size={16} /></Button>
               </div>
             </div>
 
@@ -381,10 +382,10 @@ export default function DesignSystemPage() {
             <div>
               <h3 className="text-sm font-medium text-foreground-secondary mb-3 uppercase tracking-wider">With Icons</h3>
               <div className="flex flex-wrap gap-4 items-center">
-                <Button variant="primary"><Add01Icon className="w-4 h-4" /> Create New</Button>
-                <Button variant="secondary"><Settings01Icon className="w-4 h-4" /> Settings</Button>
-                <Button variant="destructive"><Delete01Icon className="w-4 h-4" /> Delete</Button>
-                <Button variant="accent"><Tick01Icon className="w-4 h-4" /> Approve</Button>
+                <Button variant="primary"><HugeiconsIcon icon={Add01Icon} size={16} /> Create New</Button>
+                <Button variant="secondary"><HugeiconsIcon icon={Settings01Icon} size={16} /> Settings</Button>
+                <Button variant="destructive"><HugeiconsIcon icon={Delete01Icon} size={16} /> Delete</Button>
+                <Button variant="accent"><HugeiconsIcon icon={Tick01Icon} size={16} /> Approve</Button>
               </div>
             </div>
 
@@ -414,7 +415,7 @@ export default function DesignSystemPage() {
               <div className="space-y-2">
                 <Label htmlFor="search">With Icon (using wrapper)</Label>
                 <div className="relative">
-                  <Search01Icon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-foreground-muted" />
+                  <HugeiconsIcon icon={Search01Icon} size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-foreground-muted" />
                   <Input id="search" className="pl-10" placeholder="Search..." />
                 </div>
               </div>
@@ -521,19 +522,19 @@ export default function DesignSystemPage() {
 
           <div className="bg-background-subtle p-4 rounded-lg max-w-xs space-y-2">
             <div className="nav-item-active flex items-center gap-3 px-3.5 py-2.5 rounded-full">
-              <DashboardSquare02Icon className="w-5 h-5" />
+              <HugeiconsIcon icon={DashboardSquare02Icon} size={20} />
               <span className="text-base font-medium">Overview</span>
             </div>
             <div className="flex items-center gap-3 px-3.5 py-2.5 rounded-full text-foreground hover:bg-background-elevated transition-colors cursor-pointer">
-              <GoogleSheetIcon className="w-5 h-5" />
+              <HugeiconsIcon icon={GoogleSheetIcon} size={20} />
               <span className="text-base font-medium">Master Sheet</span>
             </div>
             <div className="flex items-center gap-3 px-3.5 py-2.5 rounded-full text-foreground hover:bg-background-elevated transition-colors cursor-pointer">
-              <Task01Icon className="w-5 h-5" />
+              <HugeiconsIcon icon={Task01Icon} size={20} />
               <span className="text-base font-medium">Loot Lists</span>
             </div>
             <div className="flex items-center gap-3 px-3.5 py-2.5 rounded-full text-foreground hover:bg-background-elevated transition-colors cursor-pointer">
-              <ScrollIcon className="w-5 h-5" />
+              <HugeiconsIcon icon={ScrollIcon} size={20} />
               <span className="text-base font-medium">Attendance</span>
             </div>
           </div>
@@ -553,7 +554,7 @@ export default function DesignSystemPage() {
                   <p className="text-base font-medium text-foreground truncate">Big Yikes</p>
                   <p className="text-xs text-foreground-secondary">Pagle • Alliance</p>
                 </div>
-                <ArrowDown01Icon className="w-5 h-5 text-foreground-secondary" />
+                <HugeiconsIcon icon={ArrowDown01Icon} size={20} className="text-foreground-secondary" />
               </div>
             </div>
 
@@ -565,7 +566,7 @@ export default function DesignSystemPage() {
                   <p className="text-base font-medium text-class-warrior truncate">Zevinall</p>
                   <p className="text-xs text-foreground-secondary">Protection Warrior</p>
                 </div>
-                <ArrowDown01Icon className="w-5 h-5 text-foreground-secondary" />
+                <HugeiconsIcon icon={ArrowDown01Icon} size={20} className="text-foreground-secondary" />
               </div>
             </div>
           </div>

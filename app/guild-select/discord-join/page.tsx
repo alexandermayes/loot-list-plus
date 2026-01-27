@@ -3,7 +3,8 @@
 import { createClient } from '@/utils/supabase/client'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft01Icon, Tick01Icon, UserGroupIcon } from 'hugeicons-react'
+import { HugeiconsIcon } from '@hugeicons/react'
+import { ArrowLeft01Icon, Tick01Icon, UserGroupIcon } from '@hugeicons/core-free-icons'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -145,7 +146,7 @@ export default function DiscordJoinPage() {
       <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
         <div className="text-center space-y-4">
           <div className="flex items-center justify-center w-20 h-20 rounded-full bg-green-600/20 mx-auto">
-            <Tick01Icon className="w-10 h-10 text-green-400" />
+            <HugeiconsIcon icon={Tick01Icon} size={40} className="text-green-400" />
           </div>
           <h2 className="text-2xl font-bold text-foreground">Successfully Joined!</h2>
           <p className="text-muted-foreground">Redirecting to dashboard...</p>
@@ -164,7 +165,7 @@ export default function DiscordJoinPage() {
             onClick={() => router.push('/guild-select')}
             className="text-muted-foreground hover:text-foreground transition flex items-center gap-2"
           >
-            <ArrowLeft01Icon className="w-4 h-4" />
+            <HugeiconsIcon icon={ArrowLeft01Icon} size={16} />
             Back
           </button>
         </div>
@@ -173,7 +174,7 @@ export default function DiscordJoinPage() {
         <div className="max-w-xl w-full space-y-6">
           <div className="text-center space-y-2">
             <div className="flex items-center justify-center w-16 h-16 rounded-full bg-yellow-600/20 mx-auto mb-4">
-              <UserGroupIcon className="w-8 h-8 text-yellow-400" />
+              <HugeiconsIcon icon={UserGroupIcon} size={32} className="text-yellow-400" />
             </div>
             <h1 className="text-3xl font-bold text-primary">Discord Verification Required</h1>
             <p className="text-muted-foreground">
@@ -207,7 +208,7 @@ export default function DiscordJoinPage() {
           onClick={() => router.push('/guild-select')}
           className="text-muted-foreground hover:text-foreground transition flex items-center gap-2"
         >
-          <ArrowLeft01Icon className="w-4 h-4" />
+          <HugeiconsIcon icon={ArrowLeft01Icon} size={16} />
           Back
         </button>
       </div>
@@ -217,7 +218,7 @@ export default function DiscordJoinPage() {
         {/* Header */}
         <div className="text-center space-y-2">
           <div className="flex items-center justify-center w-16 h-16 rounded-full bg-blue-600/20 mx-auto mb-4">
-            <UserGroupIcon className="w-8 h-8 text-blue-400" />
+            <HugeiconsIcon icon={UserGroupIcon} size={32} className="text-blue-400" />
           </div>
           <h1 className="text-3xl font-bold text-primary">Join via Discord</h1>
           <p className="text-muted-foreground">

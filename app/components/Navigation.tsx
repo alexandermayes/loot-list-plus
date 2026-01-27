@@ -3,7 +3,8 @@
 import { createClient } from '@/utils/supabase/client'
 import { useRouter } from 'next/navigation'
 import type { User } from '@supabase/supabase-js'
-import { ArrowLeft01Icon, Logout01Icon, ArrowDown01Icon, Tick01Icon } from 'hugeicons-react'
+import { HugeiconsIcon } from '@hugeicons/react'
+import { ArrowLeft01Icon, Logout01Icon, ArrowDown01Icon, Tick01Icon } from '@hugeicons/core-free-icons'
 import { useGuildContext } from '../contexts/GuildContext'
 import { useState, useRef, useEffect } from 'react'
 import Image from 'next/image'
@@ -69,7 +70,7 @@ export default function Navigation({
               onClick={() => router.push(backUrl)}
               className="text-muted-foreground hover:text-foreground transition flex items-center gap-2"
             >
-              <ArrowLeft01Icon className="w-4 h-4" />
+              <HugeiconsIcon icon={ArrowLeft01Icon} size={16} />
               Back
             </button>
           )}
@@ -98,7 +99,7 @@ export default function Navigation({
               className="flex items-center gap-2 px-4 py-2 rounded-[52px] bg-[#151515] border border-[#383838] hover:bg-[#1a1a1a] focus:outline-none focus:border-[#ff8000] transition"
             >
               <span className="text-sm font-medium text-white">{activeGuild.name}</span>
-              <ArrowDown01Icon className="w-4 h-4 text-[#a1a1a1]" />
+              <HugeiconsIcon icon={ArrowDown01Icon} size={16} className="text-[#a1a1a1]" />
             </button>
 
             {dropdownOpen && (
@@ -120,7 +121,7 @@ export default function Navigation({
                         )}
                       </div>
                       {activeGuild.id === guild.guild.id && (
-                        <Tick01Icon className="w-4 h-4 text-green-400" />
+                        <HugeiconsIcon icon={Tick01Icon} size={16} className="text-green-400" />
                       )}
                     </button>
                   ))}
@@ -188,7 +189,7 @@ export default function Navigation({
             onClick={handleLogout}
             className="text-muted-foreground hover:text-foreground transition flex items-center gap-2"
           >
-            <Logout01Icon className="w-4 h-4" />
+            <HugeiconsIcon icon={Logout01Icon} size={16} />
             Sign Out
           </button>
         </div>

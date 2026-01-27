@@ -2,7 +2,8 @@
 
 import { useGuildContext } from '@/app/contexts/GuildContext'
 import { Card, CardContent } from '@/components/ui/card'
-import { AlertCircleIcon } from 'hugeicons-react'
+import { HugeiconsIcon } from '@hugeicons/react'
+import { AlertCircleIcon } from '@hugeicons/core-free-icons'
 import { Button } from '@/components/ui/button'
 import { useRouter } from 'next/navigation'
 
@@ -33,7 +34,7 @@ export function ExpansionGuard({ children }: { children: React.ReactNode }) {
         <Card className="max-w-md">
           <CardContent className="pt-6">
             <div className="text-center space-y-4">
-              <AlertCircleIcon className="w-12 h-12 text-yellow-400 mx-auto" />
+              <HugeiconsIcon icon={AlertCircleIcon} size={48} className="text-yellow-400 mx-auto" />
               <h2 className="text-xl font-semibold text-foreground">
                 No Expansion Set
               </h2>

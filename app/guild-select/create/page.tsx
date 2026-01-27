@@ -3,7 +3,8 @@
 import { createClient } from '@/utils/supabase/client'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft01Icon, UserGroupIcon } from 'hugeicons-react'
+import { HugeiconsIcon } from '@hugeicons/react'
+import { ArrowLeft01Icon, UserGroupIcon } from '@hugeicons/core-free-icons'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
@@ -382,7 +383,7 @@ export default function CreateGuildPage() {
           onClick={() => router.push('/guild-select')}
           className="text-muted-foreground hover:text-foreground transition flex items-center gap-2 mb-4"
         >
-          <ArrowLeft01Icon className="w-4 h-4" />
+          <HugeiconsIcon icon={ArrowLeft01Icon} size={16} />
           Back
         </button>
       </div>
@@ -392,7 +393,7 @@ export default function CreateGuildPage() {
         {/* Title */}
         <div className="text-center">
           <div className="flex items-center justify-center gap-3 mb-4">
-            <UserGroupIcon className="w-10 h-10 text-primary" />
+            <HugeiconsIcon icon={UserGroupIcon} size={40} className="text-primary" />
             <h1 className="text-4xl font-bold text-foreground">Register a Guild</h1>
           </div>
         </div>
@@ -444,7 +445,7 @@ export default function CreateGuildPage() {
           {/* Guild Name */}
           <div className="space-y-2">
             <Label htmlFor="guildName" className="flex items-center gap-2 text-base">
-              <UserGroupIcon className="w-5 h-5" />
+              <HugeiconsIcon icon={UserGroupIcon} size={20} />
               Guild Name <span className="text-red-500">*</span>
             </Label>
             <div className="relative">

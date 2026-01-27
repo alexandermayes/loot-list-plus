@@ -7,7 +7,8 @@ import { useRouter } from 'next/navigation'
 import dynamic from 'next/dynamic'
 import Sidebar from '@/app/components/Sidebar'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
-import { Bug01Icon } from 'hugeicons-react'
+import { HugeiconsIcon } from '@hugeicons/react'
+import { Bug01Icon } from '@hugeicons/core-free-icons'
 import { SidebarProvider, useSidebar } from '@/app/contexts/SidebarContext'
 
 const FeedbackModal = dynamic(() => import('@/app/components/FeedbackModal').then(mod => ({ default: mod.FeedbackModal })), {
@@ -78,7 +79,7 @@ function AppLayoutContent({
         className="fixed bottom-6 right-6 w-14 h-14 bg-[#141519] hover:bg-[#1a1a1a] border border-[#383838] rounded-full shadow-lg flex items-center justify-center transition-all hover:scale-105 z-40"
         title="Report a Bug"
       >
-        <Bug01Icon className="w-6 h-6 text-[#a1a1a1]" />
+        <HugeiconsIcon icon={Bug01Icon} size={24} className="text-[#a1a1a1]" />
       </button>
 
       {/* Feedback Modal */}
