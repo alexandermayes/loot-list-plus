@@ -9,7 +9,16 @@ import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { TierTabsSkeleton, SubmissionsListSkeleton } from '@/components/ui/skeletons'
 import { StatusBadge, type SubmissionStatus } from '@/components/ui/status-badge'
 import { EmptyState } from '@/components/ui/empty-state'
-import { ScrollIcon } from '@hugeicons/core-free-icons'
+import { ScrollIcon, AlertCircleIcon } from '@hugeicons/core-free-icons'
+import { HugeiconsIcon } from '@hugeicons/react'
+import {
+  Modal,
+  ModalHeader,
+  ModalTitle,
+  ModalBody,
+  ModalFooter,
+} from '@/components/ui/modal'
+import { Button } from '@/components/ui/button'
 import { StarFilledIcon } from '@/components/ui/icons'
 import Link from 'next/link'
 import ItemLink from '@/app/components/ItemLink'
