@@ -1,4 +1,4 @@
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft01Icon } from 'hugeicons-react'
 import { Button } from './button'
 import { useRouter } from 'next/navigation'
 
@@ -34,7 +34,7 @@ export function PageHeader({
               onClick={() => router.push(backUrl)}
               className="text-muted-foreground hover:text-foreground"
             >
-              <ArrowLeft className="w-4 h-4 mr-2" />
+              <ArrowLeft01Icon className="w-4 h-4 mr-2" />
               Back
             </Button>
           )}

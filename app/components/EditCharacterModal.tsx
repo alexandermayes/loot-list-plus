@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useGuildContext, Character } from '@/app/contexts/GuildContext'
 import { createClient } from '@/utils/supabase/client'
-import { Trash2 } from 'lucide-react'
+import { Delete01Icon } from 'hugeicons-react'
 
 interface WowClass {
   id: string
@@ -355,7 +355,7 @@ export function EditCharacterModal({ isOpen, onClose, character, onSuccess }: Ed
                   onClick={() => setShowDeleteConfirm(true)}
                   className="px-4 py-2 bg-red-900/20 hover:bg-red-900/30 border border-red-600/50 rounded-[52px] text-red-400 text-[13px] font-medium transition flex items-center gap-2"
                 >
-                  <Trash2 className="w-4 h-4" />
+                  <Delete01Icon className="w-4 h-4" />
                   Delete Character
                 </button>
               ) : (
@@ -380,7 +380,7 @@ export function EditCharacterModal({ isOpen, onClose, character, onSuccess }: Ed
                       disabled={deleting || deleteConfirmName.toLowerCase() !== character.name.toLowerCase()}
                       className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-[52px] text-white text-[13px] font-medium transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                     >
-                      <Trash2 className="w-4 h-4" />
+                      <Delete01Icon className="w-4 h-4" />
                       {deleting ? 'Deleting...' : 'Delete Forever'}
                     </button>
                     <button

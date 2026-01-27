@@ -1,9 +1,9 @@
-import { LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from './button'
+import { ComponentType } from 'react'
 
 interface EmptyStateProps {
-  icon?: LucideIcon
+  icon?: ComponentType<{ className?: string }>
   title: string
   description?: string
   action?: {

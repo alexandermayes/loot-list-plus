@@ -43,7 +43,8 @@ export default function LootList() {
   const [lootItems, setLootItems] = useState<LootItem[]>([])
   const [submission, setSubmission] = useState<Submission | null>(null)
   const [rankings, setRankings] = useState<Record<string, string>>({}) // "rank-slot" -> item_id (e.g., "50-1", "50-2")
-  const [loading, setLoading] = useState(true)
+  const [initialLoading, setInitialLoading] = useState(true)
+  const [contentLoading, setContentLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [raidTiers, setRaidTiers] = useState<any[]>([])
   const [selectedTierDeadline, setSelectedTierDeadline] = useState<string | null>(null)
@@ -161,12 +162,12 @@ export default function LootList() {
       setUser(user)
 
       if (!activeGuild) {
-        setLoading(false)
+        setInitialLoading(false)
         return
       }
 
       if (!activeCharacter) {
-        setLoading(false)
+        setInitialLoading(false)
         return
       }
 
@@ -192,7 +193,7 @@ export default function LootList() {
       const targetExpansionId = viewingExpansionId || currentExpansion?.expansion_id
 
       if (!targetExpansionId) {
-        setLoading(false)
+        setInitialLoading(false)
         return
       }
 
@@ -203,7 +204,7 @@ export default function LootList() {
         .eq('is_guild_active', true)
 
       if (!tiersData || tiersData.length === 0) {
-        setLoading(false)
+        setInitialLoading(false)
         return
       }
 
@@ -287,7 +288,7 @@ export default function LootList() {
       }
 
       setInitialLoadComplete(false)
-      setLoading(true)
+      setContentLoading(true)
 
       try {
         // Load selected tier's deadline
@@ -364,7 +365,8 @@ export default function LootList() {
         console.error('Error loading tier data:', error)
       }
 
-      setLoading(false)
+      setContentLoading(false)
+      setInitialLoading(false)
       setInitialLoadComplete(true)
     }
 
@@ -373,7 +375,7 @@ export default function LootList() {
 
   // Refresh Wowhead tooltips after items are loaded and loading is complete
   useEffect(() => {
-    if (!loading && lootItems.length > 0 && typeof window !== 'undefined' && (window as any).$WowheadPower) {
+    if (!contentLoading && lootItems.length > 0 && typeof window !== 'undefined' && (window as any).$WowheadPower) {
       // Use longer delay to ensure DOM is fully settled and reduce flickering
       const timer = setTimeout(() => {
         (window as any).$WowheadPower.refreshLinks()
@@ -381,7 +383,7 @@ export default function LootList() {
 
       return () => clearTimeout(timer)
     }
-  }, [loading, lootItems.length]) // Only trigger on loading state change and item count change, not on lootItems content change
+  }, [contentLoading, lootItems.length]) // Only trigger on loading state change and item count change, not on lootItems content change
 
   // Helper to check if we're past the submission deadline
   const isPastDeadline = (): boolean => {
@@ -934,7 +936,7 @@ export default function LootList() {
     )
   })
 
-  if (loading) {
+  if (initialLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <LoadingSpinner />
@@ -944,9 +946,9 @@ export default function LootList() {
 
   return (
     <ExpansionGuard>
-        <div className="p-8 space-y-6 font-poppins">
+      <div className="font-poppins">
         {/* Header */}
-        <div className="space-y-4">
+        <div className="p-8 pb-4">
           <div className="flex items-start justify-between gap-4">
             <div>
               <h1 className="text-[42px] font-bold text-white leading-tight">Loot Lists</h1>
@@ -982,7 +984,7 @@ export default function LootList() {
 
           {/* Expansion Selector */}
           {guildExpansions.length > 1 && (
-            <div className="flex items-center gap-3 overflow-x-auto pb-2">
+            <div className="flex items-center gap-3 overflow-x-auto pb-2 mt-4">
               <span className="text-[#a1a1a1] text-sm font-medium whitespace-nowrap">Expansion:</span>
               <div className="flex gap-2">
                 {guildExpansions.map((expansion) => {
@@ -1009,10 +1011,12 @@ export default function LootList() {
               </div>
             </div>
           )}
+        </div>
 
-          {/* Raid Tier Tabs - At Top */}
-          {raidTiers.length > 0 && (
-            <div className="flex items-center gap-3 overflow-x-auto pb-2">
+        {/* Raid Tier Tabs - Sticky */}
+        {raidTiers.length > 0 && (
+          <div className="sticky top-0 z-20 px-8 py-3 bg-[#09090c]">
+            <div className="flex items-center gap-3 overflow-x-auto">
               <span className="text-[#a1a1a1] text-sm font-medium whitespace-nowrap">Raid Tier:</span>
               <div className="flex gap-2">
                 {raidTiers.map((tier: any) => {
@@ -1057,9 +1061,21 @@ export default function LootList() {
                 })}
               </div>
             </div>
-          )}
-        </div>
+          </div>
+        )}
 
+        {/* Main Content */}
+        <div className="px-8 pb-8 space-y-6">
+        {/* Content Loading State */}
+        {contentLoading ? (
+          <div className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl p-12">
+            <div className="flex flex-col items-center justify-center gap-4">
+              <LoadingSpinner />
+              <p className="text-[#a1a1a1] text-sm">Loading loot items...</p>
+            </div>
+          </div>
+        ) : (
+        <>
         {/* Status Banner */}
         {selectedTierId && (
           <div className={`rounded-xl p-6 border ${submission ? getStatusColor(submission.status) : getStatusColor('draft')}`}>
@@ -1604,8 +1620,10 @@ export default function LootList() {
             </div>
           </div>
         )}
-
+        </>
+        )}
         </div>
+      </div>
     </ExpansionGuard>
   )
 }

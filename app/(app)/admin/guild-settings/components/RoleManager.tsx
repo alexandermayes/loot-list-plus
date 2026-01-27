@@ -3,7 +3,7 @@
 import { createClient } from '@/utils/supabase/client'
 import { useState, useEffect } from 'react'
 import { useGuildContext } from '@/app/contexts/GuildContext'
-import { Plus, Trash2, Shield, User, Edit2, Check, X, Crown, ChevronUp, ChevronDown } from 'lucide-react'
+import { Add01Icon, Delete01Icon, Shield01Icon, UserIcon, Edit01Icon, Tick01Icon, Cancel01Icon, CrownIcon, ArrowUp01Icon, ArrowDown01Icon } from 'hugeicons-react'
 
 interface GuildRole {
   id: string
@@ -197,9 +197,9 @@ export default function RoleManager() {
   }
 
   const getRoleIcon = (position: number) => {
-    if (position === 100) return <Crown className="w-4 h-4" />
-    if (position === 50) return <Shield className="w-4 h-4" />
-    return <User className="w-4 h-4" />
+    if (position === 100) return <CrownIcon className="w-4 h-4" />
+    if (position === 50) return <Shield01Icon className="w-4 h-4" />
+    return <UserIcon className="w-4 h-4" />
   }
 
   return (
@@ -243,14 +243,14 @@ export default function RoleManager() {
                           onClick={() => handleSaveEditRole(role.id)}
                           className="flex-1 px-3 py-2 bg-white text-black rounded-lg text-[13px] font-medium hover:bg-gray-100 transition flex items-center justify-center gap-2"
                         >
-                          <Check className="w-4 h-4" />
+                          <Tick01Icon className="w-4 h-4" />
                           Save
                         </button>
                         <button
                           onClick={handleCancelEdit}
                           className="flex-1 px-3 py-2 bg-[#151515] text-white rounded-lg text-[13px] font-medium hover:bg-[#1a1a1a] border border-[rgba(255,255,255,0.1)] transition flex items-center justify-center gap-2"
                         >
-                          <X className="w-4 h-4" />
+                          <Cancel01Icon className="w-4 h-4" />
                           Cancel
                         </button>
                       </div>
@@ -281,14 +281,14 @@ export default function RoleManager() {
                               disabled={roles.filter(r => r.position !== 100 && r.position !== 50).findIndex(r => r.id === role.id) === 0}
                               className="p-2 bg-[#151515] hover:bg-[#1a1a1a] border border-[rgba(255,255,255,0.1)] rounded-lg text-white hover:text-white transition disabled:opacity-30 disabled:cursor-not-allowed"
                             >
-                              <ChevronUp className="w-4 h-4" />
+                              <ArrowUp01Icon className="w-4 h-4" />
                             </button>
                             <button
                               onClick={() => handleMoveRole(role, 'down')}
                               disabled={roles.filter(r => r.position !== 100 && r.position !== 50).findIndex(r => r.id === role.id) === roles.filter(r => r.position !== 100 && r.position !== 50).length - 1}
                               className="p-2 bg-[#151515] hover:bg-[#1a1a1a] border border-[rgba(255,255,255,0.1)] rounded-lg text-white hover:text-white transition disabled:opacity-30 disabled:cursor-not-allowed"
                             >
-                              <ChevronDown className="w-4 h-4" />
+                              <ArrowDown01Icon className="w-4 h-4" />
                             </button>
                           </div>
                         )}
@@ -296,14 +296,14 @@ export default function RoleManager() {
                           onClick={() => handleStartEditRole(role)}
                           className="p-2 bg-[#151515] hover:bg-[#1a1a1a] border border-[rgba(255,255,255,0.1)] rounded-lg text-white hover:text-white transition"
                         >
-                          <Edit2 className="w-4 h-4" />
+                          <Edit01Icon className="w-4 h-4" />
                         </button>
                         {!role.is_default && (
                           <button
                             onClick={() => handleDeleteRole(role.id, role.name)}
                             className="p-2 bg-[#151515] hover:bg-red-950/50 border border-[rgba(255,255,255,0.1)] hover:border-red-600/30 rounded-lg text-red-400 hover:text-red-300 transition"
                           >
-                            <Trash2 className="w-4 h-4" />
+                            <Delete01Icon className="w-4 h-4" />
                           </button>
                         )}
                       </div>
@@ -319,7 +319,7 @@ export default function RoleManager() {
               onClick={() => setIsAddingRole(true)}
               className="w-full p-3 bg-[#151515] hover:bg-[#1a1a1a] border border-[rgba(255,255,255,0.1)] rounded-lg text-white text-[13px] font-medium transition flex items-center justify-center gap-2"
             >
-              <Plus className="w-4 h-4" />
+              <Add01Icon className="w-4 h-4" />
               Add Custom Role
             </button>
           )}

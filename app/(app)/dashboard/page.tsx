@@ -5,7 +5,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import dynamic from 'next/dynamic'
 import WelcomeScreen from '@/app/components/WelcomeScreen'
-import { User, CheckCircle2, AlertCircle, Trophy, X, Plus } from 'lucide-react'
+import { UserIcon, CheckmarkCircle01Icon, AlertCircleIcon, Award01Icon, Cancel01Icon, Add01Icon } from 'hugeicons-react'
 
 // Lazy load modal to reduce initial bundle size
 const CreateCharacterModal = dynamic(() => import('@/app/components/CreateCharacterModal').then(mod => ({ default: mod.CreateCharacterModal })), {
@@ -653,7 +653,7 @@ export default function Dashboard() {
             >
               <div className="flex items-center gap-4">
                 <div className="w-16 h-16 bg-[#252525] border border-[#383838] rounded-full flex items-center justify-center">
-                  <Plus className="w-8 h-8 text-[#a1a1a1]" />
+                  <Add01Icon className="w-8 h-8 text-[#a1a1a1]" />
                 </div>
                 <div className="flex-1">
                   <h2 className="text-[24px] font-bold text-white">
@@ -684,7 +684,7 @@ export default function Dashboard() {
                     />
                   ) : (
                     <div className="w-16 h-16 bg-gradient-to-br from-[#ff8000] to-[#ff6000] rounded-full flex items-center justify-center border border-border">
-                      <User className="w-8 h-8 text-white" />
+                      <UserIcon className="w-8 h-8 text-white" />
                     </div>
                   )}
                   <div className="flex-1">
@@ -726,7 +726,7 @@ export default function Dashboard() {
                       <p className="text-[42px] font-bold text-white mt-2 leading-none">{stats.completedLists}</p>
                     </div>
                     <div className="w-12 h-12 bg-green-500/20 rounded-full flex items-center justify-center">
-                      <CheckCircle2 className="w-6 h-6 text-green-500" />
+                      <CheckmarkCircle01Icon className="w-6 h-6 text-green-500" />
                     </div>
                   </div>
                 </div>
@@ -739,7 +739,7 @@ export default function Dashboard() {
                       <p className="text-[42px] font-bold text-white mt-2 leading-none">{stats.pendingReviews}</p>
                     </div>
                     <div className="w-12 h-12 bg-yellow-500/20 rounded-full flex items-center justify-center">
-                      <AlertCircle className="w-6 h-6 text-yellow-500" />
+                      <AlertCircleIcon className="w-6 h-6 text-yellow-500" />
                     </div>
                   </div>
                 </div>
@@ -752,7 +752,7 @@ export default function Dashboard() {
                       <p className="text-[42px] font-bold text-white mt-2 leading-none">{visibleActionsCount}</p>
                     </div>
                     <div className="w-12 h-12 bg-orange-500/20 rounded-full flex items-center justify-center">
-                      <AlertCircle className="w-6 h-6 text-orange-500" />
+                      <AlertCircleIcon className="w-6 h-6 text-orange-500" />
                     </div>
                   </div>
                 </div>
@@ -765,7 +765,7 @@ export default function Dashboard() {
             {/* Next in Line - Top Items */}
             <div className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl p-6">
               <div className="flex items-center gap-4 mb-6">
-                <Trophy className="w-8 h-8 text-[#ff8000] flex-shrink-0" />
+                <Award01Icon className="w-8 h-8 text-[#ff8000] flex-shrink-0" />
                 <div>
                   <h2 className="text-[24px] font-bold text-white">Next in Line</h2>
                   <p className="text-sm text-[#a1a1a1] mt-1">Your highest priority items</p>
@@ -826,7 +826,7 @@ export default function Dashboard() {
             {/* Recently Received Items */}
             <div className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl p-6">
               <div className="flex items-center gap-4 mb-6">
-                <CheckCircle2 className="w-8 h-8 text-green-500 flex-shrink-0" />
+                <CheckmarkCircle01Icon className="w-8 h-8 text-green-500 flex-shrink-0" />
                 <div>
                   <h2 className="text-[24px] font-bold text-white">Recently received</h2>
                   <p className="text-sm text-[#a1a1a1] mt-1">Your recent loot awards</p>
@@ -845,7 +845,7 @@ export default function Dashboard() {
                     >
                       <div className="flex items-center gap-4">
                         <div className="flex-shrink-0 w-10 h-10 bg-green-500/20 rounded-full flex items-center justify-center">
-                          <CheckCircle2 className="w-5 h-5 text-green-500" />
+                          <CheckmarkCircle01Icon className="w-5 h-5 text-green-500" />
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1">
@@ -912,7 +912,7 @@ export default function Dashboard() {
                           className="p-2 bg-[#151515] hover:bg-red-950/50 border border-[rgba(255,255,255,0.1)] hover:border-red-600/30 rounded-lg text-[#a1a1a1] hover:text-red-400 transition"
                           title="Dismiss"
                         >
-                          <X className="w-4 h-4" />
+                          <Cancel01Icon className="w-4 h-4" />
                         </button>
                         <button className="px-4 py-2 bg-white hover:bg-gray-100 text-black rounded-[52px] text-sm font-medium transition">
                           {submission.status === 'draft' ? 'Continue' : 'Revise'}

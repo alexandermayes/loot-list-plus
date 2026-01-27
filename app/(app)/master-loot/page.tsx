@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation'
 import type { User } from '@supabase/supabase-js'
 import { useGuildContext } from '@/app/contexts/GuildContext'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
-import { Settings } from 'lucide-react'
+import { Settings01Icon } from 'hugeicons-react'
 import Link from 'next/link'
 import ItemLink from '@/app/components/ItemLink'
 
@@ -257,7 +257,7 @@ export default function MasterLootPage() {
           href="/loot-settings"
           className="flex items-center gap-2 px-5 py-2.5 bg-[#2a2d35] hover:bg-[#34373f] border border-[rgba(255,255,255,0.1)] rounded-lg text-white text-[14px] font-medium transition"
         >
-          <Settings className="w-4 h-4" />
+          <Settings01Icon className="w-4 h-4" />
           Loot Settings
         </Link>
       </div>

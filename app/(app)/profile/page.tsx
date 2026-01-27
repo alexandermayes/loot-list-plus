@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { PageHeader } from '@/components/ui/page-header'
 import { ProfileStats } from '@/components/profile/profile-stats'
-import { User, Mail, Shield, Calendar, Trophy, Settings, CheckCircle, XCircle, LogOut } from 'lucide-react'
+import { UserIcon, Mail01Icon, Shield01Icon, Calendar01Icon, Award01Icon, Settings01Icon, CheckmarkCircle01Icon, CancelCircleIcon, Logout01Icon } from 'hugeicons-react'
 
 // Get WoWhead class icon URL
 function getClassIconUrl(className: string | undefined): string {
@@ -309,12 +309,12 @@ export default function ProfilePage() {
               )}
               <div className="flex items-center gap-4 text-[13px] text-[#a1a1a1]">
                 <div className="flex items-center gap-1">
-                  <Shield className="w-4 h-4" />
+                  <Shield01Icon className="w-4 h-4" />
                   <span>{member?.guild?.name || 'No guild'}</span>
                 </div>
                 {member?.guild?.realm && (
                   <div className="flex items-center gap-1">
-                    <Trophy className="w-4 h-4" />
+                    <Award01Icon className="w-4 h-4" />
                     <span>{member.guild.realm}</span>
                   </div>
                 )}
@@ -324,7 +324,7 @@ export default function ProfilePage() {
               onClick={handleLogout}
               className="px-6 py-3 bg-[#151515] hover:bg-[#1a1a1a] border border-[rgba(255,255,255,0.1)] rounded-[52px] text-white font-medium text-base transition whitespace-nowrap flex items-center gap-2"
             >
-              <LogOut className="w-4 h-4" />
+              <Logout01Icon className="w-4 h-4" />
               Log Out
             </button>
           </div>
@@ -354,11 +354,11 @@ export default function ProfilePage() {
         <div className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl overflow-hidden">
           <div className="px-6 py-4 border-b border-[rgba(255,255,255,0.1)]">
             <div className="flex items-center gap-2">
-              <User className="w-5 h-5 text-white" />
+              <UserIcon className="w-5 h-5 text-white" />
               <h3 className="text-[18px] font-semibold text-white">Discord Information</h3>
               {preferences?.discord_guild_member && (
                 <span className="ml-auto px-3 py-1 bg-green-900/20 border border-green-600 rounded-full text-green-200 text-[13px] flex items-center gap-1">
-                  <CheckCircle className="w-3 h-3" />
+                  <CheckmarkCircle01Icon className="w-3 h-3" />
                   Guild Verified
                 </span>
               )}
@@ -384,7 +384,7 @@ export default function ProfilePage() {
                 <div>
                   <p className="text-[13px] text-[#a1a1a1] mb-1">Email</p>
                   <p className="text-white font-medium flex items-center gap-2">
-                    <Mail className="w-4 h-4" />
+                    <Mail01Icon className="w-4 h-4" />
                     {user.email}
                   </p>
                 </div>
@@ -392,7 +392,7 @@ export default function ProfilePage() {
               <div>
                 <p className="text-[13px] text-[#a1a1a1] mb-1">Member Since</p>
                 <p className="text-white font-medium flex items-center gap-2">
-                  <Calendar className="w-4 h-4" />
+                  <Calendar01Icon className="w-4 h-4" />
                   {new Date(user?.created_at).toLocaleDateString()}
                 </p>
               </div>
@@ -444,7 +444,7 @@ export default function ProfilePage() {
                           disabled={leaving}
                           className="px-4 py-2 bg-red-900/20 hover:bg-red-900/30 border border-red-600 rounded-[52px] text-red-200 text-[13px] font-medium transition flex items-center gap-2 disabled:opacity-50"
                         >
-                          <LogOut className="w-4 h-4" />
+                          <Logout01Icon className="w-4 h-4" />
                           Leave Guild
                         </button>
                       )}

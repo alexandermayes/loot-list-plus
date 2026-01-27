@@ -1,11 +1,11 @@
-import { LucideIcon } from 'lucide-react'
 import { Card } from './card'
 import { cn } from '@/lib/utils'
+import { ComponentType } from 'react'
 
 interface ActionCardProps {
   title: string
   description: string
-  icon: LucideIcon
+  icon: ComponentType<{ className?: string }>
   iconColor?: string
   onClick: () => void
   className?: string

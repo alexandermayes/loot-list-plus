@@ -4,7 +4,7 @@ import { createClient } from '@/utils/supabase/client'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useGuildContext } from '@/app/contexts/GuildContext'
-import { Plus, Calendar, ChevronRight } from 'lucide-react'
+import { Add01Icon, Calendar01Icon, ArrowRight01Icon } from 'hugeicons-react'
 import Link from 'next/link'
 import { getExpansionVisuals } from '@/utils/expansionVisuals'
 
@@ -313,7 +313,7 @@ export default function ExpansionsManagementPage() {
                           className="block text-[13px] font-medium mb-2"
                           style={{ color: visuals.textColor }}
                         >
-                          <Calendar className="w-4 h-4 inline mr-2" style={{ color: visuals.accentColor }} />
+                          <Calendar01Icon className="w-4 h-4 inline mr-2" style={{ color: visuals.accentColor }} />
                           Raid Start Date
                         </label>
                         <input
@@ -360,7 +360,7 @@ export default function ExpansionsManagementPage() {
                       >
                         Manage Raid Tiers
                       </span>
-                      <ChevronRight
+                      <ArrowRight01Icon
                         className="w-4 h-4"
                         style={{ color: visuals.accentColor }}
                       />
@@ -442,7 +442,7 @@ export default function ExpansionsManagementPage() {
                         border: `1px solid ${visuals.accentColor}40`
                       }}
                     >
-                      <Plus className="w-5 h-5" style={{ color: visuals.accentColor }} />
+                      <Add01Icon className="w-5 h-5" style={{ color: visuals.accentColor }} />
                     </div>
                   </div>
                 </div>

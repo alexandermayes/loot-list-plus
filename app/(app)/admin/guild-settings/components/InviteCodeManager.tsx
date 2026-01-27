@@ -3,7 +3,7 @@
 import { createClient } from '@/utils/supabase/client'
 import { useState, useEffect } from 'react'
 import { useGuildContext } from '@/app/contexts/GuildContext'
-import { Copy, X, Plus } from 'lucide-react'
+import { Copy01Icon, Cancel01Icon, Add01Icon } from 'hugeicons-react'
 
 interface InviteCode {
   id: string
@@ -128,7 +128,7 @@ export default function InviteCodeManager() {
             onClick={() => setShowGenerateForm(!showGenerateForm)}
             className="px-4 py-2 bg-white hover:bg-gray-100 rounded-[40px] text-black font-medium text-[13px] transition flex items-center gap-2"
           >
-            <Plus className="w-4 h-4" />
+            <Add01Icon className="w-4 h-4" />
             Generate Code
           </button>
         </div>
@@ -255,7 +255,7 @@ export default function InviteCodeManager() {
                           onClick={() => copyToClipboard(code.share_url)}
                           className="p-2 bg-[#151515] hover:bg-[#1a1a1a] border border-[rgba(255,255,255,0.1)] rounded-lg text-white transition"
                         >
-                          <Copy className="w-4 h-4" />
+                          <Copy01Icon className="w-4 h-4" />
                         </button>
                       </div>
                     </div>
@@ -265,7 +265,7 @@ export default function InviteCodeManager() {
                         onClick={() => handleDeactivateCode(code.id)}
                         className="ml-4 p-2 bg-[#151515] hover:bg-red-950/50 border border-[rgba(255,255,255,0.1)] hover:border-red-600/30 rounded-lg text-red-400 hover:text-red-300 transition"
                       >
-                        <X className="w-4 h-4" />
+                        <Cancel01Icon className="w-4 h-4" />
                       </button>
                     )}
                   </div>

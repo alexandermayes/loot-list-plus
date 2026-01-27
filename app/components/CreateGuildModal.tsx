@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/utils/supabase/client'
-import { Check, ChevronRight, Loader2, Link2, FileText, Settings } from 'lucide-react'
+import { Tick01Icon, ArrowRight01Icon, Loading01Icon, Link01Icon, File01Icon, Settings01Icon } from 'hugeicons-react'
 import Image from 'next/image'
 import RealmSelector from '@/app/components/RealmSelector'
 
@@ -24,11 +24,11 @@ interface CreateGuildModalProps {
 type Step = 'discord' | 'details' | 'settings'
 
 const EXPANSIONS = [
-  { id: 'Classic', name: 'Classic', image: 'https://beta.softres.it/img/editions/classic.big.png' },
-  { id: 'The Burning Crusade', name: 'TBC', image: 'https://beta.softres.it/img/editions/tbc.big.png' },
-  { id: 'Wrath of the Lich King', name: 'WotLK', image: 'https://beta.softres.it/img/editions/wotlk.big.png' },
-  { id: 'Cataclysm', name: 'Cata', image: 'https://beta.softres.it/img/editions/cata.big.png' },
-  { id: 'Mists of Pandaria', name: 'MoP', image: 'https://beta.softres.it/img/editions/mop.big.png' },
+  { id: 'Classic', name: 'Classic', image: 'https://beta.softres.it/img/editions/classic.big.png', available: true },
+  { id: 'The Burning Crusade', name: 'TBC', image: 'https://beta.softres.it/img/editions/tbc.big.png', available: true },
+  { id: 'Wrath of the Lich King', name: 'WotLK', image: 'https://beta.softres.it/img/editions/wotlk.big.png', available: false },
+  { id: 'Cataclysm', name: 'Cata', image: 'https://beta.softres.it/img/editions/cata.big.png', available: false },
+  { id: 'Mists of Pandaria', name: 'MoP', image: 'https://beta.softres.it/img/editions/mop.big.png', available: false },
 ]
 
 export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModalProps) {
@@ -417,13 +417,13 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
                     }`}
                   >
                     {isCompleted ? (
-                      <Check className="w-4 h-4" />
+                      <Tick01Icon className="w-4 h-4" />
                     ) : step === 'discord' ? (
-                      <Link2 className="w-4 h-4" />
+                      <Link01Icon className="w-4 h-4" />
                     ) : step === 'details' ? (
-                      <FileText className="w-4 h-4" />
+                      <File01Icon className="w-4 h-4" />
                     ) : (
-                      <Settings className="w-4 h-4" />
+                      <Settings01Icon className="w-4 h-4" />
                     )}
                     {step === 'discord' ? 'Connect Discord' : step === 'details' ? 'Add guild details' : 'Finalize settings'}
                   </button>
@@ -444,7 +444,7 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
         <div className="p-6 flex-1 flex flex-col min-h-0">
           {loading ? (
             <div className="flex items-center justify-center py-12">
-              <Loader2 className="w-8 h-8 animate-spin text-[#ff8000]" />
+              <Loading01Icon className="w-8 h-8 animate-spin text-[#ff8000]" />
             </div>
           ) : !discordVerified ? (
             <div className="text-center py-8">
@@ -503,7 +503,7 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
                           >
                             {selectedDiscordServer === guild.id && (
                               <div className="absolute top-2 right-2">
-                                <Check className="w-4 h-4 text-[#ff8000]" />
+                                <Tick01Icon className="w-4 h-4 text-[#ff8000]" />
                               </div>
                             )}
                             {guild.icon ? (
@@ -537,7 +537,7 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
                         >
                           {showManualEntry && (
                             <div className="absolute top-2 right-2">
-                              <Check className="w-4 h-4 text-[#ff8000]" />
+                              <Tick01Icon className="w-4 h-4 text-[#ff8000]" />
                             </div>
                           )}
                           <div className="w-12 h-12 rounded-full bg-[#252525] flex items-center justify-center text-[#a1a1a1]">
@@ -602,13 +602,13 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
                         }`}>
                           {checkingBot ? (
                             <div className="flex items-center gap-3">
-                              <Loader2 className="w-5 h-5 animate-spin text-[#a1a1a1]" />
+                              <Loading01Icon className="w-5 h-5 animate-spin text-[#a1a1a1]" />
                               <p className="text-[13px] text-[#a1a1a1]">Checking bot installation...</p>
                             </div>
                           ) : botInstalled ? (
                             <div className="flex items-center gap-3">
                               <div className="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center">
-                                <Check className="w-5 h-5 text-green-400" />
+                                <Tick01Icon className="w-5 h-5 text-green-400" />
                               </div>
                               <div>
                                 <p className="text-[14px] font-medium text-green-400">Bot Connected!</p>
@@ -673,10 +673,10 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
                         }`}
                       />
                       {checkingName && (
-                        <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 animate-spin text-[#a1a1a1]" />
+                        <Loading01Icon className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 animate-spin text-[#a1a1a1]" />
                       )}
                       {!checkingName && nameAvailable === true && (
-                        <Check className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-green-500" />
+                        <Tick01Icon className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-green-500" />
                       )}
                     </div>
                     {nameError && <p className="text-[12px] text-red-400 mt-1">{nameError}</p>}
@@ -690,24 +690,37 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
                     </label>
                     <div className="grid grid-cols-5 gap-2">
                       {EXPANSIONS.map((exp) => (
-                        <button
-                          key={exp.id}
-                          onClick={() => setExpansion(exp.id)}
-                          className="flex flex-col items-center gap-1"
-                        >
-                          <div className={`relative aspect-square w-full rounded-lg overflow-hidden border-2 transition ${
-                            expansion === exp.id
-                              ? 'border-[#ff8000] ring-2 ring-[#ff8000]/30'
-                              : 'border-[#383838] hover:border-[#505050]'
-                          }`}>
-                            <img src={exp.image} alt={exp.name} className="w-full h-full object-contain p-2" />
-                          </div>
-                          <span className={`text-[10px] font-medium transition ${
-                            expansion === exp.id ? 'text-[#ff8000]' : 'text-[#a1a1a1]'
-                          }`}>
-                            {exp.name}
-                          </span>
-                        </button>
+                        <div key={exp.id} className="relative group">
+                          <button
+                            onClick={() => exp.available && setExpansion(exp.id)}
+                            disabled={!exp.available}
+                            className={`flex flex-col items-center gap-1 w-full ${!exp.available ? 'cursor-not-allowed' : ''}`}
+                          >
+                            <div className={`relative aspect-square w-full rounded-lg overflow-hidden border-2 transition ${
+                              !exp.available
+                                ? 'border-[#2a2a2a] opacity-40'
+                                : expansion === exp.id
+                                  ? 'border-[#ff8000] ring-2 ring-[#ff8000]/30'
+                                  : 'border-[#383838] hover:border-[#505050]'
+                            }`}>
+                              <img src={exp.image} alt={exp.name} className="w-full h-full object-contain p-2" />
+                            </div>
+                            <span className={`text-[10px] font-medium transition ${
+                              !exp.available
+                                ? 'text-[#505050]'
+                                : expansion === exp.id ? 'text-[#ff8000]' : 'text-[#a1a1a1]'
+                            }`}>
+                              {exp.name}
+                            </span>
+                          </button>
+                          {/* Coming Soon Tooltip */}
+                          {!exp.available && (
+                            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-[#252525] border border-[#383838] rounded-lg text-[10px] text-[#a1a1a1] whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+                              Coming Soon
+                              <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-[#383838]" />
+                            </div>
+                          )}
+                        </div>
                       ))}
                     </div>
                     <p className="text-[11px] text-[#a1a1a1] mt-2">
@@ -839,7 +852,7 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
               >
                 {creating ? (
                   <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <Loading01Icon className="w-4 h-4 animate-spin" />
                     Creating...
                   </>
                 ) : (
@@ -859,7 +872,7 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
                 className="px-6 py-2.5 bg-white hover:bg-gray-100 rounded-[52px] text-black text-[13px] font-medium transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
               >
                 Continue
-                <ChevronRight className="w-4 h-4" />
+                <ArrowRight01Icon className="w-4 h-4" />
               </button>
             )}
           </div>

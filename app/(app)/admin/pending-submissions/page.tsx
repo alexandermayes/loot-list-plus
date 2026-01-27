@@ -4,7 +4,7 @@ import { createClient } from '@/utils/supabase/client'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useGuildContext } from '@/app/contexts/GuildContext'
-import { Check, X, Clock, User } from 'lucide-react'
+import { Tick01Icon, Cancel01Icon, Clock01Icon, UserIcon } from 'hugeicons-react'
 
 interface PendingSubmission {
   id: string
@@ -215,7 +215,7 @@ export default function PendingSubmissionsPage() {
         {/* Submissions List */}
         {submissions.length === 0 ? (
           <div className="p-12 bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl text-center">
-            <Clock className="w-12 h-12 text-[#a1a1a1] mx-auto mb-4" />
+            <Clock01Icon className="w-12 h-12 text-[#a1a1a1] mx-auto mb-4" />
             <p className="text-[#a1a1a1] text-[16px]">No pending submissions</p>
             <p className="text-[#666] text-[14px] mt-2">
               All submissions have been reviewed!
@@ -232,7 +232,7 @@ export default function PendingSubmissionsPage() {
                   {/* Submission Info */}
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-3">
-                      <User className="w-5 h-5 text-[#a1a1a1]" />
+                      <UserIcon className="w-5 h-5 text-[#a1a1a1]" />
                       <div>
                         <p
                           className="text-[16px] font-semibold"
@@ -285,7 +285,7 @@ export default function PendingSubmissionsPage() {
                       disabled={processing === submission.id}
                       className="px-6 py-3 bg-green-600 hover:bg-green-700 rounded-[52px] text-white font-medium text-[14px] transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                     >
-                      <Check className="w-4 h-4" />
+                      <Tick01Icon className="w-4 h-4" />
                       {processing === submission.id ? 'Approving...' : 'Approve'}
                     </button>
                     <button
@@ -293,7 +293,7 @@ export default function PendingSubmissionsPage() {
                       disabled={processing === submission.id}
                       className="px-6 py-3 bg-red-600 hover:bg-red-700 rounded-[52px] text-white font-medium text-[14px] transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                     >
-                      <X className="w-4 h-4" />
+                      <Cancel01Icon className="w-4 h-4" />
                       Reject
                     </button>
                   </div>

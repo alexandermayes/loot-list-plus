@@ -8,7 +8,7 @@ import { calculateAttendanceScore, getRankModifier, calculateLootScore, calculat
 import { getSpecRoles } from '@/utils/spec-role-mapping'
 import { getBossOrder, normalizeBossName } from '@/utils/bossOrder'
 import { getBossImage } from '@/utils/bossImages'
-import { ExternalLink } from 'lucide-react'
+import { LinkSquare01Icon } from 'hugeicons-react'
 import { useGuildContext } from '@/app/contexts/GuildContext'
 import { ExpansionGuard } from '@/app/components/ExpansionGuard'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
@@ -37,7 +37,8 @@ interface ItemRankings {
 export default function MasterSheet() {
   const { activeGuild, activeCharacter, loading: guildLoading, isOfficer } = useGuildContext()
   const [allItemRankings, setAllItemRankings] = useState<ItemRankings[]>([])
-  const [loading, setLoading] = useState(true)
+  const [initialLoading, setInitialLoading] = useState(true)
+  const [contentLoading, setContentLoading] = useState(false)
   const [guildId, setGuildId] = useState<string | null>(null)
   const [user, setUser] = useState<any>(null)
   const [member, setMember] = useState<any>(null)
@@ -193,12 +194,12 @@ export default function MasterSheet() {
       setUser(user)
 
       if (!activeGuild) {
-        setLoading(false)
+        setInitialLoading(false)
         return
       }
 
       if (!activeCharacter) {
-        setLoading(false)
+        setInitialLoading(false)
         return
       }
 
@@ -266,7 +267,7 @@ export default function MasterSheet() {
         }
       }
 
-      setLoading(false)
+      setInitialLoading(false)
     }
 
     loadData()
@@ -291,11 +292,11 @@ export default function MasterSheet() {
       // Only load rankings if master sheet is visible OR user is an officer
       if (!masterSheetVisible && !isOfficer) {
         setAllItemRankings([])
-        setLoading(false)
+        setContentLoading(false)
         return
       }
 
-      setLoading(true)
+      setContentLoading(true)
 
       try {
         // Get all loot items for this tier
@@ -309,7 +310,7 @@ export default function MasterSheet() {
 
         if (!itemsData || itemsData.length === 0) {
           setAllItemRankings([])
-          setLoading(false)
+          setContentLoading(false)
           return
         }
 
@@ -323,13 +324,13 @@ export default function MasterSheet() {
         if (rankingsError) {
           console.error('Error loading rankings:', rankingsError)
           setAllItemRankings(itemsData.map(item => ({ item, rankings: [] })))
-          setLoading(false)
+          setContentLoading(false)
           return
         }
 
         if (!allRankingsData || allRankingsData.length === 0) {
           setAllItemRankings(itemsData.map(item => ({ item, rankings: [] })))
-          setLoading(false)
+          setContentLoading(false)
           return
         }
 
@@ -347,7 +348,7 @@ export default function MasterSheet() {
 
         if (!subsData || subsData.length === 0) {
           setAllItemRankings(itemsData.map(item => ({ item, rankings: [] })))
-          setLoading(false)
+          setContentLoading(false)
           return
         }
 
@@ -356,7 +357,7 @@ export default function MasterSheet() {
 
         if (characterIds.length === 0) {
           setAllItemRankings(itemsData.map(item => ({ item, rankings: [] })))
-          setLoading(false)
+          setContentLoading(false)
           return
         }
 
@@ -377,7 +378,7 @@ export default function MasterSheet() {
         if (charError) {
           console.error('Error loading characters:', charError)
           setAllItemRankings(itemsData.map(item => ({ item, rankings: [] })))
-          setLoading(false)
+          setContentLoading(false)
           return
         }
 
@@ -488,7 +489,7 @@ export default function MasterSheet() {
         setAllItemRankings([])
       }
 
-      setLoading(false)
+      setContentLoading(false)
     }
 
     loadAllRankings()
@@ -569,7 +570,7 @@ export default function MasterSheet() {
 
   const selectedTier = raidTiers.find(t => t.id === selectedTierId)
 
-  if (loading) {
+  if (initialLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <LoadingSpinner />
@@ -608,24 +609,24 @@ export default function MasterSheet() {
 
   return (
     <ExpansionGuard>
-      <div className="p-8 space-y-6 font-poppins">
-        {/* Header with Raid Tier Navigation */}
-        <div className="space-y-4">
-          <div>
-            <h1 className="text-[42px] font-bold text-white leading-tight">
-              {selectedTier?.name}: Loot Rankings
-            </h1>
-            <p className="text-[#a1a1a1] text-base">
-              Top 5 players for each item
-            </p>
-          </div>
+      <div className="font-poppins">
+        {/* Header */}
+        <div className="p-8 pb-4">
+          <h1 className="text-[42px] font-bold text-white leading-tight">
+            {selectedTier?.name}: Loot Rankings
+          </h1>
+          <p className="text-[#a1a1a1] text-base">
+            Top 5 players for each item
+          </p>
+        </div>
 
-          {/* Raid Tier Tabs - At Top */}
-          {raidTiers.length > 0 && (
+        {/* Raid Tier Tabs - Sticky */}
+        {raidTiers.length > 0 && (
+          <div className="sticky top-0 z-20 px-8 py-3 bg-[#09090c]">
             <div
               ref={tierScrollRef}
               onScroll={handleTierScroll}
-              className="overflow-x-auto pb-2 scrollbar-hide"
+              className="overflow-x-auto scrollbar-hide"
               style={{
                 maskImage: `linear-gradient(to right, ${tierScrollState.left ? 'transparent' : 'black'}, black ${tierScrollState.left ? '24px' : '0px'}, black calc(100% - ${tierScrollState.right ? '24px' : '0px'}), ${tierScrollState.right ? 'transparent' : 'black'})`,
                 WebkitMaskImage: `linear-gradient(to right, ${tierScrollState.left ? 'transparent' : 'black'}, black ${tierScrollState.left ? '24px' : '0px'}, black calc(100% - ${tierScrollState.right ? '24px' : '0px'}), ${tierScrollState.right ? 'transparent' : 'black'})`
@@ -648,56 +649,69 @@ export default function MasterSheet() {
                 ))}
               </div>
             </div>
-          )}
+          </div>
+        )}
 
-          {/* Boss Quick Navigation - Sticky */}
-          {bossNames.length > 0 && (
-            <div className="sticky top-0 z-10">
-              <div className="flex gap-3">
-                {/* Boss chips container with horizontal scroll fade */}
-                <div className="flex-1 min-w-0 bg-[#0d0e11]/95 backdrop-blur-sm border border-[rgba(255,255,255,0.1)] rounded-xl p-3 overflow-hidden">
-                  <div
-                    className="overflow-x-auto scrollbar-hide"
-                    style={{
-                      maskImage: 'linear-gradient(to right, transparent, black 24px, black calc(100% - 24px), transparent)',
-                      WebkitMaskImage: 'linear-gradient(to right, transparent, black 24px, black calc(100% - 24px), transparent)'
-                    }}
-                  >
-                    <div className="flex gap-2 px-3">
-                      {bossNames.map((boss) => (
-                        <button
-                          key={boss}
-                          onClick={() => scrollToBoss(boss)}
-                          className="px-3 py-1.5 bg-[#151515] hover:bg-[#1a1a1a] border border-[rgba(255,255,255,0.1)] rounded-[40px] text-xs font-medium text-white whitespace-nowrap transition"
-                        >
-                          {boss}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-                {/* Expand/Collapse container */}
-                <div className="flex-shrink-0 bg-[#0d0e11]/95 backdrop-blur-sm border border-[rgba(255,255,255,0.1)] rounded-xl p-3">
-                  <div className="flex gap-2 h-full items-center">
-                    <button
-                      onClick={expandAll}
-                      className="px-3 py-1.5 bg-[#151515] hover:bg-[#1a1a1a] border border-[rgba(255,255,255,0.1)] rounded-[40px] text-xs font-medium text-[#a1a1a1] hover:text-white whitespace-nowrap transition"
-                    >
-                      Expand All
-                    </button>
-                    <button
-                      onClick={collapseAll}
-                      className="px-3 py-1.5 bg-[#151515] hover:bg-[#1a1a1a] border border-[rgba(255,255,255,0.1)] rounded-[40px] text-xs font-medium text-[#a1a1a1] hover:text-white whitespace-nowrap transition"
-                    >
-                      Collapse All
-                    </button>
+        {/* Boss Quick Navigation - Sticky below tier tabs */}
+        {!contentLoading && bossNames.length > 0 && (
+          <div className="sticky top-[64px] z-10 px-8 pt-3 pb-2 bg-[#09090c]">
+            <div className="flex gap-3">
+              {/* Boss chips container with horizontal scroll fade */}
+              <div className="flex-1 min-w-0 bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl p-3 overflow-hidden">
+                <div
+                  className="overflow-x-auto scrollbar-hide"
+                  style={{
+                    maskImage: 'linear-gradient(to right, transparent, black 24px, black calc(100% - 24px), transparent)',
+                    WebkitMaskImage: 'linear-gradient(to right, transparent, black 24px, black calc(100% - 24px), transparent)'
+                  }}
+                >
+                  <div className="flex gap-2 px-3">
+                    {bossNames.map((boss) => (
+                      <button
+                        key={boss}
+                        onClick={() => scrollToBoss(boss)}
+                        className="px-3 py-1.5 bg-[#151515] hover:bg-[#1a1a1a] border border-[rgba(255,255,255,0.1)] rounded-[40px] text-xs font-medium text-white whitespace-nowrap transition"
+                      >
+                        {boss}
+                      </button>
+                    ))}
                   </div>
                 </div>
               </div>
+              {/* Expand/Collapse container */}
+              <div className="flex-shrink-0 bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl p-3">
+                <div className="flex gap-2 h-full items-center">
+                  <button
+                    onClick={expandAll}
+                    className="px-3 py-1.5 bg-[#151515] hover:bg-[#1a1a1a] border border-[rgba(255,255,255,0.1)] rounded-[40px] text-xs font-medium text-[#a1a1a1] hover:text-white whitespace-nowrap transition"
+                  >
+                    Expand All
+                  </button>
+                  <button
+                    onClick={collapseAll}
+                    className="px-3 py-1.5 bg-[#151515] hover:bg-[#1a1a1a] border border-[rgba(255,255,255,0.1)] rounded-[40px] text-xs font-medium text-[#a1a1a1] hover:text-white whitespace-nowrap transition"
+                  >
+                    Collapse All
+                  </button>
+                </div>
+              </div>
             </div>
-          )}
-        </div>
+          </div>
+        )}
 
+        {/* Main Content */}
+        <div className="px-8 pt-2 pb-8 space-y-6">
+
+        {/* Content Loading State */}
+        {contentLoading ? (
+          <div className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl p-12">
+            <div className="flex flex-col items-center justify-center gap-4">
+              <LoadingSpinner />
+              <p className="text-[#a1a1a1] text-sm">Loading loot rankings...</p>
+            </div>
+          </div>
+        ) : (
+        <>
         {/* Master Sheet Hidden Warning */}
         {!masterSheetVisible && !isOfficer ? (
           <div className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl p-12 text-center">
@@ -840,6 +854,8 @@ export default function MasterSheet() {
             )}
           </>
         )}
+        </>
+        )}
 
         {/* Legend */}
         <div className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl p-4">
@@ -853,6 +869,7 @@ export default function MasterSheet() {
               </p>
             )}
           </div>
+        </div>
         </div>
       </div>
     </ExpansionGuard>

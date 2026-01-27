@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { ChevronDown, Check, Plus } from 'lucide-react'
+// Icons imported via Next.js Image component (SVG files)
 import { useGuildContext, Character } from '@/app/contexts/GuildContext'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'

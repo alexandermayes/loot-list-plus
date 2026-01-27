@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { Eye, EyeOff, Bell, Shield, Save, CheckCircle, RefreshCw } from 'lucide-react'
+import { EyeIcon, ViewOffIcon, Notification01Icon, Shield01Icon, FloppyDiskIcon, CheckmarkCircle01Icon, RefreshIcon } from 'hugeicons-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 
 interface UserPreferences {
@@ -173,7 +173,7 @@ export default function SettingsPage() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Eye className="w-5 h-5" />
+              <EyeIcon className="w-5 h-5" />
               Privacy Settings
             </CardTitle>
             <CardDescription>Control what information is visible to other members</CardDescription>
@@ -189,7 +189,7 @@ export default function SettingsPage() {
                 size="sm"
                 onClick={() => updatePreference('show_email', !preferences?.show_email)}
               >
-                {preferences?.show_email ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                {preferences?.show_email ? <EyeIcon className="w-4 h-4" /> : <ViewOffIcon className="w-4 h-4" />}
               </Button>
             </div>
 
@@ -203,7 +203,7 @@ export default function SettingsPage() {
                 size="sm"
                 onClick={() => updatePreference('show_discord_username', !preferences?.show_discord_username)}
               >
-                {preferences?.show_discord_username ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                {preferences?.show_discord_username ? <EyeIcon className="w-4 h-4" /> : <ViewOffIcon className="w-4 h-4" />}
               </Button>
             </div>
 
@@ -217,7 +217,7 @@ export default function SettingsPage() {
                 size="sm"
                 onClick={() => updatePreference('show_attendance_stats', !preferences?.show_attendance_stats)}
               >
-                {preferences?.show_attendance_stats ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                {preferences?.show_attendance_stats ? <EyeIcon className="w-4 h-4" /> : <ViewOffIcon className="w-4 h-4" />}
               </Button>
             </div>
 
@@ -231,7 +231,7 @@ export default function SettingsPage() {
                 size="sm"
                 onClick={() => updatePreference('show_loot_history', !preferences?.show_loot_history)}
               >
-                {preferences?.show_loot_history ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                {preferences?.show_loot_history ? <EyeIcon className="w-4 h-4" /> : <ViewOffIcon className="w-4 h-4" />}
               </Button>
             </div>
           </CardContent>
@@ -241,7 +241,7 @@ export default function SettingsPage() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Bell className="w-5 h-5" />
+              <Notification01Icon className="w-5 h-5" />
               Notification Preferences
             </CardTitle>
             <CardDescription>Choose what notifications you want to receive</CardDescription>
@@ -257,7 +257,7 @@ export default function SettingsPage() {
                 size="sm"
                 onClick={() => updatePreference('notify_loot_deadline', !preferences?.notify_loot_deadline)}
               >
-                {preferences?.notify_loot_deadline ? <Bell className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                {preferences?.notify_loot_deadline ? <Notification01Icon className="w-4 h-4" /> : <ViewOffIcon className="w-4 h-4" />}
               </Button>
             </div>
 
@@ -271,7 +271,7 @@ export default function SettingsPage() {
                 size="sm"
                 onClick={() => updatePreference('notify_submission_status', !preferences?.notify_submission_status)}
               >
-                {preferences?.notify_submission_status ? <Bell className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                {preferences?.notify_submission_status ? <Notification01Icon className="w-4 h-4" /> : <ViewOffIcon className="w-4 h-4" />}
               </Button>
             </div>
 
@@ -285,7 +285,7 @@ export default function SettingsPage() {
                 size="sm"
                 onClick={() => updatePreference('notify_new_raids', !preferences?.notify_new_raids)}
               >
-                {preferences?.notify_new_raids ? <Bell className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                {preferences?.notify_new_raids ? <Notification01Icon className="w-4 h-4" /> : <ViewOffIcon className="w-4 h-4" />}
               </Button>
             </div>
           </CardContent>
@@ -295,7 +295,7 @@ export default function SettingsPage() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Shield className="w-5 h-5" />
+              <Shield01Icon className="w-5 h-5" />
               Profile Customization
             </CardTitle>
             <CardDescription>Personalize your profile</CardDescription>
@@ -330,7 +330,7 @@ export default function SettingsPage() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <CheckCircle className="w-5 h-5 text-green-500" />
+              <CheckmarkCircle01Icon className="w-5 h-5 text-green-500" />
               Discord Server Verification
             </CardTitle>
             <CardDescription>
@@ -342,7 +342,7 @@ export default function SettingsPage() {
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
                   <Badge variant="default">
-                    <CheckCircle className="w-3 h-3 mr-1" />
+                    <CheckmarkCircle01Icon className="w-3 h-3 mr-1" />
                     Guild Member Verified
                   </Badge>
                   {preferences.last_verified_at && (
@@ -368,7 +368,7 @@ export default function SettingsPage() {
               disabled={verifying}
               variant="outline"
             >
-              <RefreshCw className={`w-4 h-4 mr-2 ${verifying ? 'animate-spin' : ''}`} />
+              <RefreshIcon className={`w-4 h-4 mr-2 ${verifying ? 'animate-spin' : ''}`} />
               {verifying ? 'Verifying...' : 'Verify Discord Server Membership'}
             </Button>
           </CardContent>
@@ -381,7 +381,7 @@ export default function SettingsPage() {
             disabled={saving}
             size="lg"
           >
-            <Save className="w-4 h-4 mr-2" />
+            <FloppyDiskIcon className="w-4 h-4 mr-2" />
             {saving ? 'Saving...' : 'Save Preferences'}
           </Button>
         </div>

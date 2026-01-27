@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { useGuildContext, Character } from '@/app/contexts/GuildContext'
 import { createClient } from '@/utils/supabase/client'
-import { ArrowLeft, Trash2 } from 'lucide-react'
+import { ArrowLeft01Icon, Delete01Icon } from 'hugeicons-react'
 
 interface WowClass {
   id: string
@@ -241,7 +241,7 @@ export default function EditCharacterPage() {
             onClick={() => router.push('/characters/manage')}
             className="mb-4 flex items-center gap-2 text-[#a1a1a1] hover:text-white transition"
           >
-            <ArrowLeft className="w-4 h-4" />
+            <ArrowLeft01Icon className="w-4 h-4" />
             <span className="text-[14px]">Back to Characters</span>
           </button>
 
@@ -394,7 +394,7 @@ export default function EditCharacterPage() {
               onClick={() => setShowDeleteConfirm(true)}
               className="px-6 py-3 bg-red-900/20 hover:bg-red-900/30 border border-red-600 rounded-[52px] text-red-400 font-medium text-[14px] transition flex items-center gap-2"
             >
-              <Trash2 className="w-4 h-4" />
+              <Delete01Icon className="w-4 h-4" />
               Delete Character
             </button>
           ) : (
@@ -418,7 +418,7 @@ export default function EditCharacterPage() {
                   disabled={deleting || deleteConfirmName.toLowerCase() !== character?.name.toLowerCase()}
                   className="px-6 py-3 bg-red-600 hover:bg-red-700 rounded-[52px] text-white font-medium text-[14px] transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                 >
-                  <Trash2 className="w-4 h-4" />
+                  <Delete01Icon className="w-4 h-4" />
                   {deleting ? 'Deleting...' : 'Delete Forever'}
                 </button>
                 <button

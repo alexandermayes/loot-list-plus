@@ -3,7 +3,7 @@
 import { createClient } from '@/utils/supabase/client'
 import { useState, useEffect } from 'react'
 import { useGuildContext } from '@/app/contexts/GuildContext'
-import { UserX, Shield, User, Crown } from 'lucide-react'
+import { UserBlock01Icon, Shield01Icon, UserIcon, CrownIcon } from 'hugeicons-react'
 
 interface Character {
   id: string
@@ -235,9 +235,9 @@ export default function MemberManager() {
 
             // Determine icon based on position (not name)
             const getRoleIcon = () => {
-              if (rolePosition === 100) return <Crown className="w-5 h-5 text-[#ff8000]" />
-              if (rolePosition === 50) return <Shield className="w-5 h-5 text-yellow-400" />
-              return <User className="w-5 h-5 text-[#a1a1a1]" />
+              if (rolePosition === 100) return <CrownIcon className="w-5 h-5 text-[#ff8000]" />
+              if (rolePosition === 50) return <Shield01Icon className="w-5 h-5 text-yellow-400" />
+              return <UserIcon className="w-5 h-5 text-[#a1a1a1]" />
             }
 
             return (
@@ -314,7 +314,7 @@ export default function MemberManager() {
                       onClick={() => handleRemoveMember(member.user_id, displayName)}
                       className="p-2 bg-[#151515] hover:bg-red-950/50 border border-[rgba(255,255,255,0.1)] hover:border-red-600/30 rounded-lg text-red-400 hover:text-red-300 transition"
                     >
-                      <UserX className="w-4 h-4" />
+                      <UserBlock01Icon className="w-4 h-4" />
                     </button>
                   </div>
                 </div>

@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import dynamic from 'next/dynamic'
 import { useGuildContext, Character } from '@/app/contexts/GuildContext'
 import { CharacterCard } from '@/app/components/CharacterCard'
-import { Plus } from 'lucide-react'
+import { Add01Icon } from 'hugeicons-react'
 
 // Lazy load modals to reduce initial bundle size
 const CreateCharacterModal = dynamic(() => import('@/app/components/CreateCharacterModal').then(mod => ({ default: mod.CreateCharacterModal })), {
@@ -50,7 +50,7 @@ export default function ManageCharactersPage() {
           onClick={() => setShowCreateModal(true)}
           className="px-6 py-3 bg-white hover:bg-gray-100 rounded-[52px] text-black font-medium text-[16px] transition flex items-center gap-2"
         >
-          <Plus className="w-5 h-5" />
+          <Add01Icon className="w-5 h-5" />
           Create Character
         </button>
       </div>
@@ -60,7 +60,7 @@ export default function ManageCharactersPage() {
         <div className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl p-12 text-center">
           <div className="max-w-md mx-auto">
             <div className="w-16 h-16 bg-[#1a1a1f] rounded-full flex items-center justify-center mx-auto mb-4">
-              <Plus className="w-8 h-8 text-[#666]" />
+              <Add01Icon className="w-8 h-8 text-[#666]" />
             </div>
             <h3 className="text-[24px] font-bold text-white mb-2">
               No Characters Yet

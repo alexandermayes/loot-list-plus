@@ -69,7 +69,8 @@ export default function AdminPrioList() {
   const [characters, setCharacters] = useState<Character[]>([])
   const [classSpecs, setClassSpecs] = useState<ClassSpec[]>([])
   const [wowClasses, setWowClasses] = useState<WowClass[]>([])
-  const [loading, setLoading] = useState(true)
+  const [initialLoading, setInitialLoading] = useState(true)
+  const [contentLoading, setContentLoading] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   const [filterTier, setFilterTier] = useState<string>('all')
   const [raidTiers, setRaidTiers] = useState<any[]>([])
@@ -122,7 +123,7 @@ export default function AdminPrioList() {
         return
       }
 
-      setLoading(true)
+      setInitialLoading(true)
 
       try {
         // Load raid tiers for active expansion
@@ -202,7 +203,7 @@ export default function AdminPrioList() {
         console.error('Error loading data:', error)
       }
 
-      setLoading(false)
+      setInitialLoading(false)
     }
 
     loadData()
@@ -213,7 +214,7 @@ export default function AdminPrioList() {
     const loadItemsAndPriorities = async () => {
       if (!selectedTierId || !activeGuild) return
 
-      setLoading(true)
+      setContentLoading(true)
 
       try {
         // Load loot items for this tier
@@ -246,7 +247,7 @@ export default function AdminPrioList() {
         console.error('Error loading items and priorities:', error)
       }
 
-      setLoading(false)
+      setContentLoading(false)
     }
 
     loadItemsAndPriorities()
@@ -417,7 +418,7 @@ export default function AdminPrioList() {
     return parts.join(' | ')
   }
 
-  if (loading && lootItems.length === 0) {
+  if (initialLoading && lootItems.length === 0) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <LoadingSpinner />
@@ -429,89 +430,91 @@ export default function AdminPrioList() {
 
   return (
     <ExpansionGuard>
-      <div className="p-8 space-y-6 font-poppins">
+      <div className="font-poppins">
         {/* Header */}
-        <div>
+        <div className="p-8 pb-4">
           <h1 className="text-[42px] font-bold text-white leading-tight">Priority List</h1>
           <p className="text-[#a1a1a1] mt-1 text-[14px]">
             Set role, class, and individual raider priorities for each item
           </p>
         </div>
 
-        {/* Raid Tier Tabs */}
+        {/* Raid Tier Tabs - Sticky */}
         {raidTiers.length > 0 && (
-          <div
-            ref={tierScrollRef}
-            onScroll={handleTierScroll}
-            className="overflow-x-auto pb-2 scrollbar-hide"
-            style={{
-              maskImage: `linear-gradient(to right, ${tierScrollState.left ? 'transparent' : 'black'}, black ${tierScrollState.left ? '24px' : '0px'}, black calc(100% - ${tierScrollState.right ? '24px' : '0px'}), ${tierScrollState.right ? 'transparent' : 'black'})`,
-              WebkitMaskImage: `linear-gradient(to right, ${tierScrollState.left ? 'transparent' : 'black'}, black ${tierScrollState.left ? '24px' : '0px'}, black calc(100% - ${tierScrollState.right ? '24px' : '0px'}), ${tierScrollState.right ? 'transparent' : 'black'})`
-            }}
-          >
-            <div className="flex gap-2 pr-3">
-              {raidTiers.map((tier) => (
-                <button
-                  key={tier.id}
-                  onClick={() => setSelectedTierId(tier.id)}
-                  className={`px-5 py-2.5 rounded-[40px] whitespace-nowrap text-[13px] font-medium transition-all ${
-                    selectedTierId === tier.id
-                      ? 'bg-[rgba(255,128,0,0.2)] border-[0.5px] border-[rgba(255,128,0,0.2)] text-[#ff8000]'
-                      : 'bg-[#151515] border border-[rgba(255,255,255,0.1)] text-white hover:bg-[#1a1a1a]'
-                  }`}
-                >
-                  {tier.name}
-                  {tier.is_active && ' ⭐'}
-                </button>
-              ))}
+          <div className="sticky top-0 z-20 px-8 py-3 bg-[#09090c]">
+            <div
+              ref={tierScrollRef}
+              onScroll={handleTierScroll}
+              className="overflow-x-auto scrollbar-hide"
+              style={{
+                maskImage: `linear-gradient(to right, ${tierScrollState.left ? 'transparent' : 'black'}, black ${tierScrollState.left ? '24px' : '0px'}, black calc(100% - ${tierScrollState.right ? '24px' : '0px'}), ${tierScrollState.right ? 'transparent' : 'black'})`,
+                WebkitMaskImage: `linear-gradient(to right, ${tierScrollState.left ? 'transparent' : 'black'}, black ${tierScrollState.left ? '24px' : '0px'}, black calc(100% - ${tierScrollState.right ? '24px' : '0px'}), ${tierScrollState.right ? 'transparent' : 'black'})`
+              }}
+            >
+              <div className="flex gap-2 pr-3">
+                {raidTiers.map((tier) => (
+                  <button
+                    key={tier.id}
+                    onClick={() => setSelectedTierId(tier.id)}
+                    className={`px-5 py-2.5 rounded-[40px] whitespace-nowrap text-[13px] font-medium transition-all ${
+                      selectedTierId === tier.id
+                        ? 'bg-[rgba(255,128,0,0.2)] border-[0.5px] border-[rgba(255,128,0,0.2)] text-[#ff8000]'
+                        : 'bg-[#151515] border border-[rgba(255,255,255,0.1)] text-white hover:bg-[#1a1a1a]'
+                    }`}
+                  >
+                    {tier.name}
+                    {tier.is_active && ' ⭐'}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         )}
 
-        {/* Search */}
-        <div className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl p-4">
-          <label className="block text-[13px] font-medium text-white mb-2">Search Items</label>
-          <input
-            type="text"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Search by name or boss..."
-            className="w-full md:w-1/2 px-5 py-3 bg-[#151515] border border-[#383838] rounded-[52px] text-white text-[13px] focus:outline-none focus:border-[#ff8000]"
-          />
-        </div>
-
         {/* Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl p-4">
-            <p className="text-[#a1a1a1] text-sm">Total Items</p>
-            <p className="text-2xl font-bold text-white">{filteredItems.length}</p>
-          </div>
-          <div className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl p-4">
-            <p className="text-[#a1a1a1] text-sm">With Priorities</p>
-            <p className="text-2xl font-bold text-green-400">
-              {Object.keys(priorities).length}
-            </p>
-          </div>
-          <div className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl p-4">
-            <p className="text-[#a1a1a1] text-sm">No Priorities</p>
-            <p className="text-2xl font-bold text-yellow-400">
-              {filteredItems.length - Object.keys(priorities).filter(id =>
-                filteredItems.some(item => item.id === id)
-              ).length}
-            </p>
-          </div>
-          <div className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl p-4">
-            <p className="text-[#a1a1a1] text-sm">Guild Raiders</p>
-            <p className="text-2xl font-bold text-blue-400">{characters.length}</p>
+        <div className="px-8 pb-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl p-4">
+              <p className="text-[#a1a1a1] text-sm">Total Items</p>
+              <p className="text-2xl font-bold text-white">{filteredItems.length}</p>
+            </div>
+            <div className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl p-4">
+              <p className="text-[#a1a1a1] text-sm">With Priorities</p>
+              <p className="text-2xl font-bold text-green-400">
+                {Object.keys(priorities).length}
+              </p>
+            </div>
+            <div className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl p-4">
+              <p className="text-[#a1a1a1] text-sm">No Priorities</p>
+              <p className="text-2xl font-bold text-yellow-400">
+                {filteredItems.length - Object.keys(priorities).filter(id =>
+                  filteredItems.some(item => item.id === id)
+                ).length}
+              </p>
+            </div>
+            <div className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl p-4">
+              <p className="text-[#a1a1a1] text-sm">Guild Raiders</p>
+              <p className="text-2xl font-bold text-blue-400">{characters.length}</p>
+            </div>
           </div>
         </div>
 
-        {/* Boss Quick Navigation */}
-        {bossNames.length > 0 && (
-          <div className="sticky top-0 z-10">
+        {/* Boss Quick Navigation - Sticky below tier tabs */}
+        {!contentLoading && bossNames.length > 0 && (
+          <div className="sticky top-[64px] z-10 px-8 pt-3 pb-2 bg-[#09090c]">
             <div className="flex gap-3">
+              {/* Search input */}
+              <div className="flex-shrink-0 bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl p-3 flex items-center">
+                <input
+                  type="text"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  placeholder="Search items..."
+                  className="w-[160px] px-3 py-1.5 bg-[#151515] border border-[rgba(255,255,255,0.1)] rounded-[40px] text-white text-xs focus:outline-none focus:border-[#ff8000] placeholder:text-[#666]"
+                />
+              </div>
               {/* Boss chips container with horizontal scroll fade */}
-              <div className="flex-1 min-w-0 bg-[#0d0e11]/95 backdrop-blur-sm border border-[rgba(255,255,255,0.1)] rounded-xl p-3 overflow-hidden">
+              <div className="flex-1 min-w-0 bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl p-3 overflow-hidden">
                 <div
                   className="overflow-x-auto scrollbar-hide"
                   style={{
@@ -538,7 +541,7 @@ export default function AdminPrioList() {
                 </div>
               </div>
               {/* Expand/Collapse container */}
-              <div className="flex-shrink-0 bg-[#0d0e11]/95 backdrop-blur-sm border border-[rgba(255,255,255,0.1)] rounded-xl p-3">
+              <div className="flex-shrink-0 bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl p-3">
                 <div className="flex gap-2 h-full items-center">
                   <button
                     onClick={expandAll}
@@ -558,6 +561,19 @@ export default function AdminPrioList() {
           </div>
         )}
 
+        {/* Main Content */}
+        <div className="px-8 pt-2 pb-8 space-y-6">
+
+        {/* Content Loading State */}
+        {contentLoading ? (
+          <div className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl p-12">
+            <div className="flex flex-col items-center justify-center gap-4">
+              <LoadingSpinner />
+              <p className="text-[#a1a1a1] text-sm">Loading items...</p>
+            </div>
+          </div>
+        ) : (
+        <>
         {/* Items by Boss */}
         {bossNames.length === 0 ? (
           <div className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl p-8 text-center">
@@ -685,6 +701,9 @@ export default function AdminPrioList() {
               {Object.keys(priorities).length} items with priorities
             </p>
           </div>
+        </div>
+        </>
+        )}
         </div>
       </div>
 

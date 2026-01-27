@@ -5,7 +5,7 @@ export const dynamic = 'force-dynamic'
 import { createClient } from '@/utils/supabase/client'
 import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
-import { Calendar, ChevronDown, ChevronUp } from 'lucide-react'
+import { Calendar01Icon, ArrowDown01Icon, ArrowUp01Icon } from 'hugeicons-react'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { calculateAttendanceScore, getRankModifier } from '@/utils/calculations'
 
@@ -50,7 +50,7 @@ interface AttendanceStatus {
 interface WeekGroup {
   weekStart: string
   label: string
-  isCurrent: boolean
+  isMostRecent: boolean
   raids: RaidEvent[]
 }
 
@@ -91,10 +91,17 @@ export default function AttendancePage() {
     return weekStart.toISOString().split('T')[0]
   }
 
-  // Calculate current week start
-  const currentWeekStart = useMemo(() => {
-    const today = new Date().toISOString().split('T')[0]
-    return getWeekStart(today, guildSettings?.first_raid_day ?? 0)
+  // Calculate the most recent tracked week (the week just before current week)
+  const mostRecentTrackedWeek = useMemo(() => {
+    const firstRaidDay = guildSettings?.first_raid_day ?? 0
+    const today = new Date()
+    const currentDay = today.getDay()
+    const daysToSubtract = (currentDay - firstRaidDay + 7) % 7
+    const currentWeekStartDate = new Date(today)
+    currentWeekStartDate.setDate(currentWeekStartDate.getDate() - daysToSubtract)
+    // Go back one week to get the most recent completed/tracked week
+    currentWeekStartDate.setDate(currentWeekStartDate.getDate() - 7)
+    return currentWeekStartDate.toISOString().split('T')[0]
   }, [guildSettings])
 
   // Group raid events by week
@@ -118,10 +125,10 @@ export default function AttendancePage() {
       .map(([weekStart, raids]) => ({
         weekStart,
         label: new Date(weekStart + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-        isCurrent: weekStart === currentWeekStart,
+        isMostRecent: weekStart === mostRecentTrackedWeek,
         raids: raids.sort((a, b) => a.raid_date.localeCompare(b.raid_date))
       }))
-  }, [guildRaidEvents, guildSettings, currentWeekStart])
+  }, [guildRaidEvents, guildSettings, mostRecentTrackedWeek])
 
   // Sort raiders
   const sortedRaiders = useMemo(() => {
@@ -219,8 +226,24 @@ export default function AttendancePage() {
       setRoleModifier(modifier)
 
       // Calculate rolling attendance window
+      // The window is the X PREVIOUS completed weeks, NOT including the current week
       const weeks = settingsData?.rolling_attendance_weeks || 4
-      const periodStart = new Date()
+      const firstRaidDay = settingsData?.first_raid_day ?? 0
+
+      // Calculate the start of the current week
+      const today = new Date()
+      const currentDay = today.getDay()
+      const daysToSubtract = (currentDay - firstRaidDay + 7) % 7
+      const currentWeekStartDate = new Date(today)
+      currentWeekStartDate.setDate(currentWeekStartDate.getDate() - daysToSubtract)
+      currentWeekStartDate.setHours(0, 0, 0, 0)
+
+      // Period ends at the start of current week (exclusive - last day of previous week)
+      const periodEnd = new Date(currentWeekStartDate)
+      periodEnd.setDate(periodEnd.getDate() - 1) // Last day of previous week
+
+      // Period starts X weeks before the current week
+      const periodStart = new Date(currentWeekStartDate)
       periodStart.setDate(periodStart.getDate() - (weeks * 7))
 
       // Use expansion start date as lower bound if set
@@ -228,13 +251,13 @@ export default function AttendancePage() {
         ? new Date(Math.max(new Date(raidStartDate).getTime(), periodStart.getTime()))
         : periodStart
 
-      // Get raid events in the rolling window
+      // Get raid events in the rolling window (previous X completed weeks only)
       const { data: raidEventsData } = await supabase
         .from('raid_events')
         .select('id, raid_date, is_skipped, notes')
         .eq('guild_id', activeCharData.active_guild_id)
         .gte('raid_date', lowerBound.toISOString().split('T')[0])
-        .lte('raid_date', new Date().toISOString().split('T')[0])
+        .lte('raid_date', periodEnd.toISOString().split('T')[0])
         .eq('is_skipped', false)
         .order('raid_date', { ascending: true })
 
@@ -255,13 +278,7 @@ export default function AttendancePage() {
 
       setGuildRaidEvents(filteredRaidEvents)
 
-      // Get attendance records for personal view (last 8 weeks)
-      const eightWeeksAgo = new Date()
-      eightWeeksAgo.setDate(eightWeeksAgo.getDate() - 56)
-      const personalLowerBound = raidStartDate
-        ? new Date(Math.max(new Date(raidStartDate).getTime(), eightWeeksAgo.getTime()))
-        : eightWeeksAgo
-
+      // Get attendance records for personal view (use same tracked window)
       const { data: recordsData } = await supabase
         .from('attendance_records')
         .select(`
@@ -277,7 +294,8 @@ export default function AttendancePage() {
         `)
         .eq('character_id', characterData.id)
         .eq('raid_event.guild_id', activeCharData.active_guild_id)
-        .gte('raid_event.raid_date', personalLowerBound.toISOString().split('T')[0])
+        .gte('raid_event.raid_date', lowerBound.toISOString().split('T')[0])
+        .lte('raid_event.raid_date', periodEnd.toISOString().split('T')[0])
         .order('raid_event.raid_date', { ascending: false })
 
       if (recordsData) {
@@ -472,7 +490,7 @@ export default function AttendancePage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl p-6">
               <p className="text-[#a1a1a1] text-sm mb-1">
-                {guildSettings?.rolling_attendance_weeks || 4}-Week Attendance Credit
+                Attendance Credit (Previous {guildSettings?.rolling_attendance_weeks || 4} Weeks)
               </p>
               <p className={`text-[42px] font-bold leading-none ${
                 attendanceScore >= (guildSettings?.max_attendance_bonus || 8) * 0.75 ? 'text-green-400' :
@@ -492,11 +510,11 @@ export default function AttendancePage() {
             </div>
 
             <div className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl p-6">
-              <p className="text-[#a1a1a1] text-sm mb-1">Raids in Window</p>
+              <p className="text-[#a1a1a1] text-sm mb-1">Tracked Raids</p>
               <p className="text-[42px] font-bold text-white leading-none">
                 {guildRaidEvents.length}
               </p>
-              <p className="text-[#a1a1a1] text-sm mt-2">Last {guildSettings?.rolling_attendance_weeks || 4} weeks</p>
+              <p className="text-[#a1a1a1] text-sm mt-2">Previous {guildSettings?.rolling_attendance_weeks || 4} completed weeks</p>
             </div>
           </div>
         </>
@@ -515,7 +533,7 @@ export default function AttendancePage() {
               }`}
             >
               Credit
-              {sortBy === 'score' && (sortDirection === 'desc' ? <ChevronDown className="w-3 h-3" /> : <ChevronUp className="w-3 h-3" />)}
+              {sortBy === 'score' && (sortDirection === 'desc' ? <ArrowDown01Icon className="w-3 h-3" /> : <ArrowUp01Icon className="w-3 h-3" />)}
             </button>
             <button
               onClick={() => toggleSort('name')}
@@ -524,20 +542,20 @@ export default function AttendancePage() {
               }`}
             >
               Name
-              {sortBy === 'name' && (sortDirection === 'desc' ? <ChevronDown className="w-3 h-3" /> : <ChevronUp className="w-3 h-3" />)}
+              {sortBy === 'name' && (sortDirection === 'desc' ? <ArrowDown01Icon className="w-3 h-3" /> : <ArrowUp01Icon className="w-3 h-3" />)}
             </button>
           </div>
         </div>
 
         {guildRaiders.length === 0 ? (
           <div className="p-8 text-center">
-            <Calendar className="w-12 h-12 text-[#505050] mx-auto mb-3" />
+            <Calendar01Icon className="w-12 h-12 text-[#505050] mx-auto mb-3" />
             <p className="text-[#666]">No active raiders found</p>
             <p className="text-[#505050] text-sm mt-1">Raiders need approved loot submissions to appear here</p>
           </div>
         ) : guildRaidEvents.length === 0 ? (
           <div className="p-8 text-center">
-            <Calendar className="w-12 h-12 text-[#505050] mx-auto mb-3" />
+            <Calendar01Icon className="w-12 h-12 text-[#505050] mx-auto mb-3" />
             <p className="text-[#666]">No raid events in the attendance window</p>
           </div>
         ) : (
@@ -561,7 +579,7 @@ export default function AttendancePage() {
                       key={week.weekStart}
                       colSpan={week.raids.length}
                       className={`px-2 py-2 text-center text-[11px] font-medium border-l border-[rgba(255,255,255,0.05)] ${
-                        week.isCurrent ? 'bg-green-900/20 text-green-400' : 'bg-blue-900/10 text-blue-300'
+                        week.isMostRecent ? 'bg-green-900/20 text-green-400' : 'bg-blue-900/10 text-blue-300'
                       }`}
                     >
                       Week of {week.label}
@@ -578,7 +596,7 @@ export default function AttendancePage() {
                       <th
                         key={raid.id}
                         className={`px-2 py-1.5 text-center text-[10px] font-normal min-w-[50px] border-l border-[rgba(255,255,255,0.05)] ${
-                          week.isCurrent ? 'bg-green-900/10 text-green-300/70' : 'bg-blue-900/5 text-blue-200/50'
+                          week.isMostRecent ? 'bg-green-900/10 text-green-300/70' : 'bg-blue-900/5 text-blue-200/50'
                         }`}
                       >
                         {formatShortDate(raid.raid_date)}
@@ -615,7 +633,7 @@ export default function AttendancePage() {
                           <td
                             key={raid.id}
                             className={`px-2 py-2.5 text-center border-l border-[rgba(255,255,255,0.05)] ${
-                              week.isCurrent ? 'bg-green-900/5' : 'bg-blue-900/5'
+                              week.isMostRecent ? 'bg-green-900/5' : 'bg-blue-900/5'
                             }`}
                           >
                             <span
@@ -669,11 +687,11 @@ export default function AttendancePage() {
       <div className="flex items-center gap-4 text-[12px] text-[#666]">
         <div className="flex items-center gap-2">
           <div className="w-4 h-4 rounded bg-green-900/20 border border-green-600/30" />
-          <span>Current week</span>
+          <span>Most recent tracked week</span>
         </div>
         <div className="flex items-center gap-2">
           <div className="w-4 h-4 rounded bg-blue-900/10 border border-blue-600/20" />
-          <span>Past weeks</span>
+          <span>Previous tracked weeks</span>
         </div>
       </div>
     </div>

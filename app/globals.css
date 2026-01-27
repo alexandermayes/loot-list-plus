@@ -2,106 +2,192 @@
 @tailwind components;
 @tailwind utilities;
 
+/**
+ * LootList+ Design System - CSS Variables
+ *
+ * Color values derived from Figma designs and tokens.ts
+ * Using HSL format for Tailwind compatibility with opacity modifiers.
+ *
+ * Naming Convention:
+ * - background-*: Surface colors (base, subtle, elevated)
+ * - foreground: Text colors
+ * - border-*: Border colors
+ * - accent: Orange brand color (#ff8000)
+ * - primary: Main action color (white in dark mode)
+ * - secondary: Secondary action color (dark elevated)
+ * - destructive: Error/danger states
+ * - muted: Subdued elements
+ */
+
 @layer base {
+  /* ==========================================================================
+     LIGHT MODE (Warm Off-White Theme)
+     ========================================================================== */
   :root {
-    --background: 0 0% 100%;
-    --foreground: 20 14.3% 4.1%;
+    /* Backgrounds - Warm off-white scale */
+    --background: 35 33% 97%;           /* #faf8f5 - Base */
+    --background-subtle: 35 25% 95%;    /* #f5f2ed - Subtle */
+    --background-elevated: 0 0% 100%;   /* #ffffff - Cards/elevated */
+
+    /* Foreground/Text */
+    --foreground: 220 20% 4%;           /* #09090c - Primary text */
+    --foreground-secondary: 25 6% 40%;  /* #6b6560 - Secondary text */
+    --foreground-muted: 25 5% 58%;      /* #9a958e - Muted text */
+
+    /* Cards & Popovers */
     --card: 0 0% 100%;
-    --card-foreground: 20 14.3% 4.1%;
+    --card-foreground: 220 20% 4%;
     --popover: 0 0% 100%;
-    --popover-foreground: 20 14.3% 4.1%;
-    --primary: 47.9 95.8% 53.1%;
-    --primary-foreground: 26 83.3% 14.1%;
-    --secondary: 60 4.8% 95.9%;
-    --secondary-foreground: 24 9.8% 10%;
-    --muted: 60 4.8% 95.9%;
-    --muted-foreground: 25 5.3% 44.7%;
-    --accent: 60 4.8% 95.9%;
-    --accent-foreground: 24 9.8% 10%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 60 9.1% 97.8%;
-    --border: 20 5.9% 90%;
-    --input: 20 5.9% 90%;
-    --ring: 20 14.3% 4.1%;
-    --radius: 1rem;
+    --popover-foreground: 220 20% 4%;
+
+    /* Primary Action (Dark on light) */
+    --primary: 220 20% 4%;              /* Dark button */
+    --primary-foreground: 0 0% 100%;    /* White text */
+
+    /* Secondary Action */
+    --secondary: 35 20% 92%;            /* Light warm gray */
+    --secondary-foreground: 220 20% 4%;
+
+    /* Accent (Orange - #ff8000) */
+    --accent: 30 100% 50%;              /* #ff8000 */
+    --accent-foreground: 0 0% 100%;
+    --accent-subtle: 30 100% 50% / 0.1;
+
+    /* Muted */
+    --muted: 35 20% 92%;
+    --muted-foreground: 25 6% 40%;
+
+    /* Destructive (Red) */
+    --destructive: 0 72% 51%;           /* #dc2626 */
+    --destructive-foreground: 0 0% 100%;
+
+    /* Borders */
+    --border: 35 15% 88%;               /* #e8e4de - Subtle */
+    --border-strong: 35 10% 80%;        /* #ccc7be - Strong */
+    --input: 35 15% 88%;
+    --ring: 30 100% 50%;                /* Orange focus ring */
+
+    /* Radius */
+    --radius: 12px;
+
+    /* Status Colors */
+    --success: 142 71% 45%;
+    --success-foreground: 0 0% 100%;
+    --warning: 45 93% 47%;
+    --warning-foreground: 220 20% 4%;
+    --error: 0 72% 51%;
+    --error-foreground: 0 0% 100%;
+    --info: 217 91% 60%;
+    --info-foreground: 0 0% 100%;
+
+    /* Discord */
+    --discord: 235 86% 65%;
+    --discord-foreground: 0 0% 100%;
+
+    /* Chart Colors */
     --chart-1: 12 76% 61%;
     --chart-2: 173 58% 39%;
     --chart-3: 197 37% 24%;
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
-    --success: 142 76% 36%;
-    --success-foreground: 138 76% 97%;
-    --warning: 48 96% 53%;
-    --warning-foreground: 48 96% 10%;
-    --error: 0 84% 60%;
-    --error-foreground: 0 0% 98%;
-    --info: 199 89% 48%;
-    --info-foreground: 0 0% 98%;
-    --discord: 235 86% 65%;
-    --discord-foreground: 0 0% 100%;
   }
 
+  /* ==========================================================================
+     DARK MODE (Primary Theme - from Figma)
+     ========================================================================== */
   .dark {
-    --background: 20 14.3% 4.1%;
-    --foreground: 60 9.1% 97.8%;
-    --card: 20 14.3% 4.1%;
-    --card-foreground: 60 9.1% 97.8%;
-    --popover: 20 14.3% 4.1%;
-    --popover-foreground: 60 9.1% 97.8%;
-    --primary: 47.9 95.8% 53.1%;
-    --primary-foreground: 26 83.3% 14.1%;
-    --secondary: 12 6.5% 15.1%;
-    --secondary-foreground: 60 9.1% 97.8%;
-    --muted: 12 6.5% 15.1%;
-    --muted-foreground: 24 5.4% 63.9%;
-    --accent: 12 6.5% 15.1%;
-    --accent-foreground: 60 9.1% 97.8%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 60 9.1% 97.8%;
-    --border: 12 6.5% 15.1%;
-    --input: 12 6.5% 15.1%;
-    --ring: 35.5 91.7% 32.9%;
+    /* Backgrounds - Dark scale from Figma */
+    --background: 230 18% 3%;           /* #09090c - Base/deepest */
+    --background-subtle: 225 15% 5%;    /* #0d0e11 - Sidebar */
+    --background-elevated: 228 12% 8%;  /* #141519 - Cards/inputs */
+
+    /* Foreground/Text */
+    --foreground: 0 0% 100%;            /* #ffffff - Primary */
+    --foreground-secondary: 0 0% 63%;   /* #a1a1a1 - Secondary */
+    --foreground-muted: 0 0% 40%;       /* #666666 - Muted */
+
+    /* Cards & Popovers */
+    --card: 228 12% 8%;                 /* #141519 */
+    --card-foreground: 0 0% 100%;
+    --popover: 228 12% 8%;
+    --popover-foreground: 0 0% 100%;
+
+    /* Primary Action (White button) */
+    --primary: 0 0% 100%;               /* White */
+    --primary-foreground: 0 0% 4%;      /* #0a0a0a */
+
+    /* Secondary Action (Dark elevated) */
+    --secondary: 228 12% 8%;            /* #141519 */
+    --secondary-foreground: 0 0% 100%;
+
+    /* Accent (Orange - #ff8000) */
+    --accent: 30 100% 50%;              /* #ff8000 */
+    --accent-foreground: 0 0% 100%;
+    --accent-subtle: 30 100% 50% / 0.2;
+
+    /* Muted */
+    --muted: 228 12% 8%;
+    --muted-foreground: 0 0% 63%;
+
+    /* Destructive (Red) */
+    --destructive: 0 84% 60%;           /* #ef4444 */
+    --destructive-foreground: 0 0% 100%;
+
+    /* Borders - from Figma */
+    --border: 0 0% 10%;                 /* #1a1a1a - Default */
+    --border-strong: 0 0% 22%;          /* #383838 - Strong */
+    --input: 0 0% 10%;
+    --ring: 30 100% 50%;                /* Orange focus ring */
+
+    /* Status Colors */
+    --success: 142 71% 45%;
+    --success-foreground: 0 0% 100%;
+    --warning: 45 93% 47%;
+    --warning-foreground: 220 20% 4%;
+    --error: 0 84% 60%;
+    --error-foreground: 0 0% 100%;
+    --info: 217 91% 60%;
+    --info-foreground: 0 0% 100%;
+
+    /* Discord */
+    --discord: 235 86% 65%;
+    --discord-foreground: 0 0% 100%;
+
+    /* Chart Colors */
     --chart-1: 220 70% 50%;
     --chart-2: 160 60% 45%;
     --chart-3: 30 80% 55%;
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
-    --success: 142 72% 29%;
-    --success-foreground: 138 76% 97%;
-    --warning: 48 96% 53%;
-    --warning-foreground: 48 96% 10%;
-    --error: 0 63% 31%;
-    --error-foreground: 0 86% 97%;
-    --info: 199 89% 48%;
-    --info-foreground: 0 0% 98%;
-    --discord: 235 86% 65%;
-    --discord-foreground: 0 0% 100%;
   }
 }
+
+/* ==========================================================================
+   BASE STYLES
+   ========================================================================== */
 
 @layer base {
   * {
     @apply border-border;
   }
+
   body {
     @apply bg-background text-foreground;
     font-feature-settings: "rlig" 1, "calt" 1;
   }
 
-  /* Style Wowhead item links - reserve space for icon to prevent layout shift */
+  /* Wowhead item links - reserve space for icon to prevent layout shift */
   a[data-wowhead] {
     display: inline-block !important;
     padding-left: 26px !important;
     position: relative !important;
     min-height: 18px;
-    /* Question mark placeholder icon until real icon loads */
     background-image: url('https://wow.zamimg.com/images/wow/icons/small/inv_misc_questionmark.jpg');
     background-size: 18px 18px;
     background-position: left center;
     background-repeat: no-repeat;
   }
 
-  /* Position Wowhead icons absolutely over the reserved space */
   a[data-wowhead] .iconsmall,
   a[data-wowhead] > img {
     position: absolute !important;
@@ -128,29 +214,33 @@
   }
 
   .sidebar-scrollable::-webkit-scrollbar-thumb {
-    background: #2a2d35;
+    background: hsl(var(--border));
     border-radius: 3px;
   }
 
   .sidebar-scrollable::-webkit-scrollbar-thumb:hover {
-    background: #34373f;
+    background: hsl(var(--border-strong));
   }
 
   /* Firefox scrollbar */
   .sidebar-scrollable {
     scrollbar-width: thin;
-    scrollbar-color: #2a2d35 transparent;
+    scrollbar-color: hsl(var(--border)) transparent;
   }
 }
+
+/* ==========================================================================
+   UTILITIES
+   ========================================================================== */
 
 @layer utilities {
   /* Hide scrollbar utility */
   .scrollbar-hide {
-    -ms-overflow-style: none;  /* IE and Edge */
-    scrollbar-width: none;  /* Firefox */
+    -ms-overflow-style: none;
+    scrollbar-width: none;
   }
   .scrollbar-hide::-webkit-scrollbar {
-    display: none;  /* Chrome, Safari, Opera */
+    display: none;
   }
 
   /* Custom select dropdown with chevron */
@@ -181,12 +271,12 @@
     padding-right: 1.5rem;
   }
 
-  /* Date picker calendar icon button styling - circular icon button */
+  /* Date picker styling */
   .date-picker-wrapper {
     position: relative;
   }
 
-  /* Fix dark mode date/time picker icons - invert to white */
+  /* Dark mode date/time picker icons */
   input[type="date"],
   input[type="time"],
   input[type="datetime-local"] {
@@ -220,8 +310,8 @@
   .date-picker-input::-webkit-calendar-picker-indicator {
     cursor: pointer;
     position: relative;
-    background-color: #151515;
-    border: 1px solid #383838;
+    background-color: hsl(var(--background-elevated));
+    border: 1px solid hsl(var(--border-strong));
     border-radius: 50%;
     padding: 6px;
     width: 24px;
@@ -235,17 +325,16 @@
   }
 
   .date-picker-input::-webkit-calendar-picker-indicator:hover {
-    background-color: #1a1a1a;
-    border-color: #ff8000;
+    background-color: hsl(var(--background));
+    border-color: hsl(var(--accent));
     transform: scale(1.1);
   }
 
   .date-picker-input::-webkit-calendar-picker-indicator:active {
-    background-color: #0d0e11;
+    background-color: hsl(var(--background-subtle));
     transform: scale(0.95);
   }
 
-  /* Hide spin buttons and clear button */
   .date-picker-input::-webkit-inner-spin-button,
   .date-picker-input::-webkit-clear-button {
     display: none;
@@ -255,8 +344,8 @@
   .date-picker-input::-moz-calendar-picker-indicator {
     cursor: pointer;
     position: relative;
-    background-color: #151515;
-    border: 1px solid #383838;
+    background-color: hsl(var(--background-elevated));
+    border: 1px solid hsl(var(--border-strong));
     border-radius: 50%;
     padding: 6px;
     width: 24px;
@@ -269,13 +358,71 @@
   }
 
   .date-picker-input::-moz-calendar-picker-indicator:hover {
-    background-color: #1a1a1a;
-    border-color: #ff8000;
+    background-color: hsl(var(--background));
+    border-color: hsl(var(--accent));
     transform: scale(1.1);
   }
 
   .date-picker-input::-moz-calendar-picker-indicator:active {
-    background-color: #0d0e11;
+    background-color: hsl(var(--background-subtle));
     transform: scale(0.95);
+  }
+
+  /* Light mode adjustments for select chevrons */
+  :root .select-custom,
+  :root .select-custom-sm,
+  :root .select-custom-xs {
+    background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L6 6L11 1' stroke='%2309090c' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  }
+
+  .dark .select-custom,
+  .dark .select-custom-sm,
+  .dark .select-custom-xs {
+    background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L6 6L11 1' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  }
+
+  /* Light mode date picker adjustments */
+  :root input[type="date"],
+  :root input[type="time"],
+  :root input[type="datetime-local"] {
+    color-scheme: light !important;
+  }
+
+  :root input[type="date"]::-webkit-calendar-picker-indicator,
+  :root input[type="time"]::-webkit-calendar-picker-indicator,
+  :root input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+    filter: none !important;
+  }
+
+  :root .date-picker-input::-webkit-calendar-picker-indicator {
+    filter: none;
+    background-color: hsl(var(--background));
+    border-color: hsl(var(--border));
+  }
+}
+
+/* ==========================================================================
+   COMPONENT STYLES
+   ========================================================================== */
+
+@layer components {
+  /* Section Label - uppercase small labels */
+  .section-label {
+    @apply text-[10px] font-medium uppercase tracking-wider;
+    color: hsl(var(--foreground-secondary));
+  }
+
+  /* Nav item active state */
+  .nav-item-active {
+    background-color: hsl(var(--accent) / 0.2);
+    border: 0.5px solid hsl(var(--accent) / 0.2);
+    color: hsl(var(--accent));
+  }
+
+  /* Card with gradient (from Figma - guild/character selectors) */
+  .card-gradient {
+    background: linear-gradient(90deg, hsl(var(--background-elevated)) 0%, hsl(var(--background-elevated)) 100%);
+    border: 1px solid hsl(var(--border));
+    border-radius: var(--radius);
   }
 }

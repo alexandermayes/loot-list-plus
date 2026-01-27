@@ -3,7 +3,7 @@
 import { createClient } from '@/utils/supabase/client'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Loader2 } from 'lucide-react'
+import { Loading01Icon } from 'hugeicons-react'
 import Image from 'next/image'
 
 export default function Home() {
@@ -37,7 +37,7 @@ export default function Home() {
   if (loading) {
     return (
       <div className="min-h-screen bg-[#151515] flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        <Loading01Icon className="w-8 h-8 animate-spin text-primary" />
       </div>
     )
   }

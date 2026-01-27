@@ -2,7 +2,7 @@
 
 import { useGuildContext } from '@/app/contexts/GuildContext'
 import { Card, CardContent } from '@/components/ui/card'
-import { AlertCircle } from 'lucide-react'
+import { AlertCircleIcon } from 'hugeicons-react'
 import { Button } from '@/components/ui/button'
 import { useRouter } from 'next/navigation'
 
@@ -33,7 +33,7 @@ export function ExpansionGuard({ children }: { children: React.ReactNode }) {
         <Card className="max-w-md">
           <CardContent className="pt-6">
             <div className="text-center space-y-4">
-              <AlertCircle className="w-12 h-12 text-yellow-400 mx-auto" />
+              <AlertCircleIcon className="w-12 h-12 text-yellow-400 mx-auto" />
               <h2 className="text-xl font-semibold text-foreground">
                 No Expansion Set
               </h2>

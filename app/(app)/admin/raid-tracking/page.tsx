@@ -5,7 +5,7 @@ export const dynamic = 'force-dynamic'
 import { createClient } from '@/utils/supabase/client'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { ChevronDown, ChevronUp, Upload, X, SkipForward } from 'lucide-react'
+import { ArrowDown01Icon, ArrowUp01Icon, Upload01Icon, Cancel01Icon, NextIcon } from 'hugeicons-react'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { useGuildContext } from '@/app/contexts/GuildContext'
 import ItemLink from '@/app/components/ItemLink'
@@ -1562,9 +1562,9 @@ export default function RaidTrackingPage() {
                 className="flex items-center gap-3 w-full group"
               >
                 {isWeekExpanded ? (
-                  <ChevronUp className="w-6 h-6 text-white group-hover:text-[#ff8000] transition flex-shrink-0" />
+                  <ArrowUp01Icon className="w-6 h-6 text-white group-hover:text-[#ff8000] transition flex-shrink-0" />
                 ) : (
-                  <ChevronDown className="w-6 h-6 text-white group-hover:text-[#ff8000] transition flex-shrink-0" />
+                  <ArrowDown01Icon className="w-6 h-6 text-white group-hover:text-[#ff8000] transition flex-shrink-0" />
                 )}
                 <h2 className="text-[24px] font-bold text-white group-hover:text-[#ff8000] transition">{getWeekLabel(weekStart)}</h2>
                 <div className="flex-1 h-[1px] bg-[rgba(255,255,255,0.1)]"></div>
@@ -1591,7 +1591,7 @@ export default function RaidTrackingPage() {
                     onClick={() => toggleRaidExpanded(raid.id)}
                     className="text-white hover:text-[#ff8000] transition"
                   >
-                    {isExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                    {isExpanded ? <ArrowUp01Icon className="w-5 h-5" /> : <ArrowDown01Icon className="w-5 h-5" />}
                   </button>
                   <div>
                     <div className="flex items-center gap-3">
@@ -1658,7 +1658,7 @@ export default function RaidTrackingPage() {
                           : 'bg-[#151515] hover:bg-[#1a1a1a] border border-[rgba(255,255,255,0.1)] text-white'
                       }`}
                     >
-                      <Upload className="w-4 h-4" />
+                      <Upload01Icon className="w-4 h-4" />
                       {hasImportedData ? 'Edit Import' : 'Import Data'}
                     </button>
                   )}
@@ -1782,7 +1782,7 @@ export default function RaidTrackingPage() {
                               className="p-1.5 text-[#666] hover:text-red-400 hover:bg-red-500/10 rounded-md transition opacity-0 group-hover:opacity-100"
                               title="Remove loot entry"
                             >
-                              <X className="w-4 h-4" />
+                              <Cancel01Icon className="w-4 h-4" />
                             </button>
                           </div>
                         ))}
@@ -1813,7 +1813,7 @@ export default function RaidTrackingPage() {
                 </p>
               </div>
               <button onClick={() => setShowSkipModal(null)} className="text-[#666] hover:text-white transition">
-                <X className="w-5 h-5" />
+                <Cancel01Icon className="w-5 h-5" />
               </button>
             </div>
 
@@ -1861,7 +1861,7 @@ export default function RaidTrackingPage() {
                 </p>
               </div>
               <button onClick={() => setShowImportModal(null)} className="text-[#666] hover:text-white transition">
-                <X className="w-5 h-5" />
+                <Cancel01Icon className="w-5 h-5" />
               </button>
             </div>
 

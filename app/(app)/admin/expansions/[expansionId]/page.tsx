@@ -4,7 +4,7 @@ import { createClient } from '@/utils/supabase/client'
 import { useState, useEffect, use } from 'react'
 import { useRouter } from 'next/navigation'
 import { useGuildContext } from '@/app/contexts/GuildContext'
-import { ArrowLeft, Calendar, Check } from 'lucide-react'
+import { ArrowLeft01Icon, Calendar01Icon, Tick01Icon } from 'hugeicons-react'
 import { getExpansionVisuals } from '@/utils/expansionVisuals'
 import { getRaidIcon } from '@/utils/raidIcons'
 
@@ -330,7 +330,7 @@ export default function ExpansionDetailPage({ params }: { params: Promise<{ expa
           onClick={() => router.push('/admin/expansions')}
           className="flex items-center gap-2 text-[#a1a1a1] hover:text-white transition mb-6"
         >
-          <ArrowLeft className="w-4 h-4" />
+          <ArrowLeft01Icon className="w-4 h-4" />
           Back to Expansions
         </button>
         <p className="text-[#666]">Expansion not found</p>
@@ -348,7 +348,7 @@ export default function ExpansionDetailPage({ params }: { params: Promise<{ expa
         onClick={() => router.push('/admin/expansions')}
         className="flex items-center gap-2 text-[#a1a1a1] hover:text-white transition"
       >
-        <ArrowLeft className="w-4 h-4" />
+        <ArrowLeft01Icon className="w-4 h-4" />
         Back to Expansions
       </button>
 
@@ -414,7 +414,7 @@ export default function ExpansionDetailPage({ params }: { params: Promise<{ expa
               className="block text-[13px] font-medium mb-2"
               style={{ color: visuals.textColor }}
             >
-              <Calendar className="w-4 h-4 inline mr-2" style={{ color: visuals.accentColor }} />
+              <Calendar01Icon className="w-4 h-4 inline mr-2" style={{ color: visuals.accentColor }} />
               Raid Start Date
             </label>
             <input

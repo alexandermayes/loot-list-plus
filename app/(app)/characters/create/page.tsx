@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useGuildContext } from '@/app/contexts/GuildContext'
 import { createClient } from '@/utils/supabase/client'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft01Icon } from 'hugeicons-react'
 
 interface WowClass {
   id: string
@@ -162,7 +162,7 @@ export default function CreateCharacterPage() {
             onClick={() => router.back()}
             className="mb-4 flex items-center gap-2 text-[#a1a1a1] hover:text-white transition"
           >
-            <ArrowLeft className="w-4 h-4" />
+            <ArrowLeft01Icon className="w-4 h-4" />
             <span className="text-[14px]">Back</span>
           </button>
 

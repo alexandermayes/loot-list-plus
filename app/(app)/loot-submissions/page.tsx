@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation'
 import type { User } from '@supabase/supabase-js'
 import { useGuildContext } from '@/app/contexts/GuildContext'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
-import { Settings } from 'lucide-react'
+import { Settings01Icon } from 'hugeicons-react'
 import Link from 'next/link'
 import ItemLink from '@/app/components/ItemLink'
 import { normalizeBossName } from '@/utils/bossOrder'
@@ -95,7 +95,8 @@ export default function MasterLootPage() {
   const [submissions, setSubmissions] = useState<Submission[]>([])
   const [raidTiers, setRaidTiers] = useState<RaidTier[]>([])
   const [activeTier, setActiveTier] = useState<RaidTier | 'all' | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [initialLoading, setInitialLoading] = useState(true)
+  const [contentLoading, setContentLoading] = useState(false)
   const [reviewing, setReviewing] = useState<string | null>(null)
   const [reviewNotes, setReviewNotes] = useState('')
   const [filter, setFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all')
@@ -150,7 +151,7 @@ export default function MasterLootPage() {
       }
 
       if (!activeGuild) {
-        setLoading(false)
+        setInitialLoading(false)
         return
       }
 
@@ -191,7 +192,7 @@ export default function MasterLootPage() {
         // Default to "All" view
         setActiveTier('all')
       }
-      setLoading(false)
+      setInitialLoading(false)
     }
 
     if (!guildLoading) {
@@ -200,6 +201,7 @@ export default function MasterLootPage() {
   }, [guildLoading, activeGuild])
 
   const loadSubmissions = useCallback(async (guildId: string, tierId: string | 'all', allTiers?: RaidTier[]) => {
+    setContentLoading(true)
     if (tierId === 'all' && allTiers && allTiers.length > 0) {
       // Load submissions for all tiers
       const allSubmissions: any[] = []
@@ -246,6 +248,7 @@ export default function MasterLootPage() {
       }))
 
       setSubmissions(formattedSubmissions as any)
+      setContentLoading(false)
       return
     }
 
@@ -258,10 +261,12 @@ export default function MasterLootPage() {
 
     if (error) {
       console.error('Error loading submissions:', error)
+      setContentLoading(false)
       return
     }
 
     if (!submissionsData) {
+      setContentLoading(false)
       return
     }
 
@@ -288,6 +293,7 @@ export default function MasterLootPage() {
     }))
 
     setSubmissions(formattedSubmissions as any)
+    setContentLoading(false)
   }, [supabase])
 
   useEffect(() => {
@@ -322,7 +328,8 @@ export default function MasterLootPage() {
       setReviewing(null)
 
       if (guildId && activeTier) {
-        await loadSubmissions(guildId, activeTier.id)
+        const tierId = activeTier === 'all' ? 'all' : activeTier.id
+        await loadSubmissions(guildId, tierId, activeTier === 'all' ? raidTiers : undefined)
       }
     } catch (error: any) {
       setMessage({ type: 'error', text: error.message || 'Failed to update submission' })
@@ -362,7 +369,8 @@ export default function MasterLootPage() {
         if (error) throw error
 
         setMessage({ type: 'success', text: 'Submission deleted successfully' })
-        await loadSubmissions(guildId, activeTier.id)
+        const tierId = activeTier === 'all' ? 'all' : activeTier.id
+        await loadSubmissions(guildId, tierId, activeTier === 'all' ? raidTiers : undefined)
       } else {
         // Bulk delete (pending or all)
         const response = await fetch('/api/loot-submissions/delete', {
@@ -383,7 +391,8 @@ export default function MasterLootPage() {
 
         const result = await response.json()
         setMessage({ type: 'success', text: `Deleted ${result.count} submission${result.count !== 1 ? 's' : ''}` })
-        await loadSubmissions(guildId, activeTier.id)
+        const tierId = activeTier === 'all' ? 'all' : activeTier.id
+        await loadSubmissions(guildId, tierId, activeTier === 'all' ? raidTiers : undefined)
       }
 
       setShowDeleteConfirm(false)
@@ -401,7 +410,7 @@ export default function MasterLootPage() {
     return sub.status === filter
   })
 
-  if (loading) {
+  if (initialLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <LoadingSpinner />
@@ -410,17 +419,17 @@ export default function MasterLootPage() {
   }
 
   return (
-    <div className="p-8 space-y-6 font-poppins">
+    <div className="font-poppins">
       {/* Header */}
-      <div className="space-y-4">
-        <div>
-          <h1 className="text-[42px] font-bold text-white leading-tight">Loot Submissions</h1>
-          <p className="text-[#a1a1a1] mt-1 text-base">Review and manage character loot submissions</p>
-        </div>
+      <div className="p-8 pb-4">
+        <h1 className="text-[42px] font-bold text-white leading-tight">Loot Submissions</h1>
+        <p className="text-[#a1a1a1] mt-1 text-base">Review and manage character loot submissions</p>
+      </div>
 
-        {/* Raid Tier Selector */}
-        {raidTiers.length > 0 && (
-          <div className="flex items-center gap-3 overflow-x-auto pb-2">
+      {/* Raid Tier Selector - Sticky */}
+      {raidTiers.length > 0 && (
+        <div className="sticky top-0 z-20 px-8 py-3 bg-[#09090c]">
+          <div className="flex items-center gap-3 overflow-x-auto">
             <span className="text-[#a1a1a1] text-sm font-medium whitespace-nowrap">Raid Tier:</span>
             <div className="flex gap-2">
               {/* All Tiers Button */}
@@ -452,9 +461,11 @@ export default function MasterLootPage() {
               ))}
             </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
+      {/* Main Content */}
+      <div className="px-8 pb-8 space-y-6">
       {message && (
         <div className={`p-4 rounded-xl ${
           message.type === 'success'
@@ -511,7 +522,14 @@ export default function MasterLootPage() {
 
           {/* Submissions List */}
           <div className="space-y-3">
-            {filteredSubmissions.length === 0 ? (
+            {contentLoading ? (
+              <div className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl p-12">
+                <div className="flex flex-col items-center justify-center gap-4">
+                  <LoadingSpinner />
+                  <p className="text-[#a1a1a1] text-sm">Loading submissions...</p>
+                </div>
+              </div>
+            ) : filteredSubmissions.length === 0 ? (
               <div className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl p-8 text-center">
                 <p className="text-[#a1a1a1]">No submissions found</p>
               </div>
@@ -776,6 +794,7 @@ export default function MasterLootPage() {
           </div>
         </div>
       )}
+      </div>
     </div>
   )
 }
