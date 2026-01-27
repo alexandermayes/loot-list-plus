@@ -12,6 +12,8 @@ import { StarFilledIcon } from '@/components/ui/icons'
 import { useGuildContext } from '@/app/contexts/GuildContext'
 import { ExpansionGuard } from '@/app/components/ExpansionGuard'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
+import { EmptyState } from '@/components/ui/empty-state'
+import { ScrollIcon } from '@hugeicons/core-free-icons'
 
 interface LootItem {
   id: string
@@ -746,9 +748,12 @@ export default function MasterSheet() {
 
             {/* Loot Table */}
             {Object.keys(groupedByBoss).length === 0 ? (
-              <div className="bg-background-elevated border border-border rounded-xl p-8 text-center">
-                <p className="text-muted-foreground">No loot items found for this raid tier</p>
-              </div>
+              <EmptyState
+                icon={ScrollIcon}
+                title="No loot items found"
+                description="No items found for this raid tier"
+                variant="card"
+              />
             ) : (
           <div className="space-y-3">
             {Object.entries(groupedByBoss).sort(([bossA], [bossB]) => getBossOrder(bossA) - getBossOrder(bossB)).map(([boss, items]) => {

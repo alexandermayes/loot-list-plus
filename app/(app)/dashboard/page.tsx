@@ -13,6 +13,8 @@ const CreateCharacterModal = dynamic(() => import('@/app/components/CreateCharac
   loading: () => null
 })
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
+import { EmptyState } from '@/components/ui/empty-state'
+import { ScrollIcon, StarIcon } from '@hugeicons/core-free-icons'
 import { StatusBadge, type SubmissionStatus } from '@/components/ui/status-badge'
 import { useGuildContext } from '@/app/contexts/GuildContext'
 import ItemLink from '@/app/components/ItemLink'
@@ -756,9 +758,12 @@ export default function Dashboard() {
                 </div>
               </div>
               {lootPriority.length === 0 ? (
-                <div className="text-center py-8">
-                  <p className="text-muted-foreground text-sm">No priority items yet</p>
-                </div>
+                <EmptyState
+                  icon={ScrollIcon}
+                  title="No priority items yet"
+                  description="Submit your loot list to see your priorities here"
+                  size="compact"
+                />
               ) : (
                 <div className="space-y-3">
                   {lootPriority.map((item, index) => (
@@ -817,9 +822,12 @@ export default function Dashboard() {
                 </div>
               </div>
               {receivedItems.length === 0 ? (
-                <div className="text-center py-8">
-                  <p className="text-muted-foreground text-sm">No loot received yet</p>
-                </div>
+                <EmptyState
+                  icon={StarIcon}
+                  title="No loot received yet"
+                  description="Your awarded items will appear here"
+                  size="compact"
+                />
               ) : (
                 <div className="space-y-3">
                   {receivedItems.map((item) => (

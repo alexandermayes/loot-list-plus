@@ -7,6 +7,8 @@ import type { User } from '@supabase/supabase-js'
 import { useGuildContext } from '@/app/contexts/GuildContext'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { StatusBadge, type SubmissionStatus } from '@/components/ui/status-badge'
+import { EmptyState } from '@/components/ui/empty-state'
+import { ScrollIcon } from '@hugeicons/core-free-icons'
 import { StarFilledIcon } from '@/components/ui/icons'
 import Link from 'next/link'
 import ItemLink from '@/app/components/ItemLink'
@@ -531,9 +533,12 @@ export default function MasterLootPage() {
                 </div>
               </div>
             ) : filteredSubmissions.length === 0 ? (
-              <div className="bg-background-elevated border border-border rounded-xl p-8 text-center">
-                <p className="text-muted-foreground">No submissions found</p>
-              </div>
+              <EmptyState
+                icon={ScrollIcon}
+                title="No submissions found"
+                description="No loot list submissions match your current filters"
+                variant="card"
+              />
             ) : (
               filteredSubmissions.map((submission) => (
                 <div

@@ -11,6 +11,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { LoadingSpinner, Spinner } from "@/components/ui/loading-spinner";
 import { Skeleton } from "@/components/ui/skeleton";
+import { EmptyState } from "@/components/ui/empty-state";
 import {
   Modal,
   ModalHeader,
@@ -818,6 +819,89 @@ export default function DesignSystemPage() {
               <p><code className="text-accent">{'<Button loading>Save</Button>'}</code> - Button with spinner</p>
               <p><code className="text-accent">{'<Skeleton className="h-4 w-48" />'}</code> - Text placeholder</p>
               <p><code className="text-accent">{'<Skeleton className="h-10 w-10 rounded-full" />'}</code> - Avatar placeholder</p>
+            </div>
+          </div>
+        </section>
+
+        {/* Empty States */}
+        <section className="space-y-6">
+          <div>
+            <h2 className="text-2xl font-semibold">Empty States</h2>
+            <p className="text-foreground-secondary">Consistent messaging for empty data and no results</p>
+          </div>
+
+          {/* Size Variants */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-medium text-foreground">Size Variants</h3>
+            <div className="grid grid-cols-3 gap-4">
+              <div className="border border-border rounded-xl overflow-hidden">
+                <div className="p-2 bg-background-subtle text-xs text-muted-foreground text-center border-b border-border">compact</div>
+                <EmptyState
+                  icon={ScrollIcon}
+                  title="No items yet"
+                  description="Items will appear here"
+                  size="compact"
+                />
+              </div>
+              <div className="border border-border rounded-xl overflow-hidden">
+                <div className="p-2 bg-background-subtle text-xs text-muted-foreground text-center border-b border-border">default</div>
+                <EmptyState
+                  icon={ScrollIcon}
+                  title="No items found"
+                  description="Try adjusting your filters"
+                  size="default"
+                />
+              </div>
+              <div className="border border-border rounded-xl overflow-hidden">
+                <div className="p-2 bg-background-subtle text-xs text-muted-foreground text-center border-b border-border">lg</div>
+                <EmptyState
+                  icon={ScrollIcon}
+                  title="No results"
+                  description="We couldn't find what you're looking for"
+                  size="lg"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Card Variant */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-medium text-foreground">Card Variant</h3>
+            <p className="text-sm text-foreground-secondary">Use <code className="text-accent">variant="card"</code> for elevated background with border</p>
+            <EmptyState
+              icon={CheckmarkCircle01Icon}
+              title="All caught up!"
+              description="No pending items to review"
+              size="lg"
+              variant="card"
+            />
+          </div>
+
+          {/* With Action */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-medium text-foreground">With Action Button</h3>
+            <EmptyState
+              icon={Add01Icon}
+              title="No characters yet"
+              description="Create your first character to get started"
+              action={{
+                label: "Create Character",
+                onClick: () => {},
+                variant: "primary"
+              }}
+              variant="card"
+            />
+          </div>
+
+          {/* Usage Patterns */}
+          <div className="bg-background-elevated p-4 rounded-lg border border-border">
+            <h3 className="text-sm font-medium text-foreground-secondary mb-3 uppercase tracking-wider">Usage Patterns</h3>
+            <div className="space-y-2 text-sm">
+              <p><code className="text-accent">{'<EmptyState icon={Icon} title="Title" />'}</code> - Basic empty state</p>
+              <p><code className="text-accent">{'<EmptyState ... description="..." />'}</code> - With description</p>
+              <p><code className="text-accent">{'<EmptyState ... size="compact" />'}</code> - For inline/table contexts</p>
+              <p><code className="text-accent">{'<EmptyState ... variant="card" />'}</code> - With card background</p>
+              <p><code className="text-accent">{'<EmptyState ... action={{ label, onClick }} />'}</code> - With CTA button</p>
             </div>
           </div>
         </section>

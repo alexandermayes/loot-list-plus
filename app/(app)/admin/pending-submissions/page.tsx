@@ -5,7 +5,8 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useGuildContext } from '@/app/contexts/GuildContext'
 import { HugeiconsIcon } from '@hugeicons/react'
-import { Tick01Icon, Cancel01Icon, Clock01Icon, UserIcon } from '@hugeicons/core-free-icons'
+import { Tick01Icon, Cancel01Icon, Clock01Icon, UserIcon, CheckmarkCircle01Icon } from '@hugeicons/core-free-icons'
+import { EmptyState } from '@/components/ui/empty-state'
 
 interface PendingSubmission {
   id: string
@@ -215,13 +216,13 @@ export default function PendingSubmissionsPage() {
 
         {/* Submissions List */}
         {submissions.length === 0 ? (
-          <div className="p-12 bg-background-elevated border border-border rounded-xl text-center">
-            <HugeiconsIcon icon={Clock01Icon} size={48} className="text-muted-foreground mx-auto mb-4" />
-            <p className="text-muted-foreground text-[16px]">No pending submissions</p>
-            <p className="text-foreground-muted text-[14px] mt-2">
-              All submissions have been reviewed!
-            </p>
-          </div>
+          <EmptyState
+            icon={CheckmarkCircle01Icon}
+            title="No pending submissions"
+            description="All submissions have been reviewed!"
+            size="lg"
+            variant="card"
+          />
         ) : (
           <div className="space-y-4">
             {submissions.map((submission) => (
