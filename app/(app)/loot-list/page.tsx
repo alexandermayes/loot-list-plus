@@ -944,16 +944,14 @@ export default function LootList() {
           <div className="flex items-start justify-between gap-4">
             <div>
               <Heading level={1}>Loot Lists</Heading>
-              <div className="mt-1">
-                <p className="text-muted-foreground text-base inline">
-                  {initialLoading ? 'Loading raid tiers...' : `Rank your preferred items for ${raidTiers.find(t => t.id === selectedTierId)?.name || 'this raid tier'}`}
-                </p>
+              <p className="text-muted-foreground mt-1 text-base">
+                {initialLoading ? 'Loading raid tiers...' : `Rank your preferred items for ${raidTiers.find(t => t.id === selectedTierId)?.name || 'this raid tier'}`}
                 {viewingExpansionId && (
                   <span className="ml-2 px-3 py-1 bg-blue-950/50 border border-blue-600/50 text-blue-300 text-xs font-medium rounded-full">
                     Viewing Past: {guildExpansions.find(e => e.expansion_id === viewingExpansionId)?.expansion_name}
                   </span>
                 )}
-              </div>
+              </p>
             </div>
             <div className="flex items-center gap-3">
               {/* Auto-save status */}

@@ -15,6 +15,7 @@ import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { TierTabsSkeleton, BossSectionSkeleton, TableSkeleton } from '@/components/ui/skeletons'
 import { EmptyState } from '@/components/ui/empty-state'
 import { ScrollIcon } from '@hugeicons/core-free-icons'
+import { Heading } from '@/components/ui/typography'
 
 interface LootItem {
   id: string
@@ -596,12 +597,14 @@ export default function MasterSheet() {
       <div className="font-poppins">
         {/* Header - Always visible */}
         <div className="p-8 pb-4">
-          <h1 className="text-[42px] font-bold text-foreground leading-tight">
-            Loot Rankings{!initialLoading && selectedTier && <span className="text-muted-foreground"> · {selectedTier.name}</span>}
-          </h1>
-          <p className="text-muted-foreground text-base">
-            Top 5 players for each item
-          </p>
+          <div>
+            <Heading level={1}>
+              Loot Rankings{!initialLoading && selectedTier && <span className="text-muted-foreground"> · {selectedTier.name}</span>}
+            </Heading>
+            <p className="text-muted-foreground mt-1 text-base">
+              Top 5 players for each item
+            </p>
+          </div>
         </div>
 
         {/* Raid Tier Tabs - Sticky */}
