@@ -16,7 +16,9 @@ import {
   ModalBody,
 } from '@/components/ui/modal'
 import { Button } from '@/components/ui/button'
+import { Heading } from '@/components/ui/typography'
 import { normalizeBossName } from '@/utils/bossOrder'
+import { getRaidIcon } from '@/utils/raidIcons'
 import { StarFilledIcon, CheckFilledIcon, ClockFilledIcon, AlertFilledIcon, CancelFilledIcon } from '@/components/ui/icons'
 
 interface LootItem {
@@ -941,7 +943,7 @@ export default function LootList() {
         <div className="p-8 pb-4">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <h1 className="text-[42px] font-bold text-foreground leading-tight">Loot Lists</h1>
+              <Heading level={1}>Loot Lists</Heading>
               <div className="mt-1">
                 <p className="text-muted-foreground text-base inline">
                   {initialLoading ? 'Loading raid tiers...' : `Rank your preferred items for ${raidTiers.find(t => t.id === selectedTierId)?.name || 'this raid tier'}`}
@@ -1069,18 +1071,24 @@ export default function LootList() {
         {selectedTierId && (
           <div className={`rounded-xl p-6 border ${submission ? getStatusColor(submission.status) : getStatusColor('draft')}`}>
             <div className="flex items-center justify-between">
-              <div>
-                <p className="font-semibold text-base">{raidTiers.find(t => t.id === selectedTierId)?.name || 'Raid Tier'}: {submission ? getStatusLabel(submission.status) : 'Draft'}</p>
-                {submission?.submitted_at && (
-                  <p className="text-sm opacity-75 mt-1">
-                    Submitted: {new Date(submission.submitted_at).toLocaleDateString()}
+              <div className="flex items-center gap-3">
+                <img
+                  src={getRaidIcon(raidTiers.find(t => t.id === selectedTierId)?.name || '')}
+                  alt=""
+                  className="w-10 h-10 rounded-lg border-2 border-border/50 shadow-md"
+                />
+                <div>
+                  <h2 className="font-semibold text-lg text-foreground">{raidTiers.find(t => t.id === selectedTierId)?.name || 'Raid Tier'}</h2>
+                  <p className="text-sm text-muted-foreground mt-0.5">
+                    {submission ? getStatusLabel(submission.status) : 'Draft'}
+                    {submission?.submitted_at && (
+                      <span> · Submitted {new Date(submission.submitted_at).toLocaleDateString()}</span>
+                    )}
+                    {selectedTierDeadline && !isPastDeadline() && (
+                      <span> · Due {new Date(selectedTierDeadline).toLocaleString()}</span>
+                    )}
                   </p>
-                )}
-                {selectedTierDeadline && !isPastDeadline() && (
-                  <p className="text-sm opacity-75 mt-1">
-                    Deadline: {new Date(selectedTierDeadline).toLocaleString()}
-                  </p>
-                )}
+                </div>
               </div>
               <div className="flex items-center gap-4">
                 <span className="text-sm opacity-75">{rankedCount} items ranked</span>

@@ -493,7 +493,7 @@ export default function ExpansionDetailPage({ params }: { params: Promise<{ expa
                     <img
                       src={getRaidIcon(tier.name)}
                       alt={tier.name}
-                      className="w-8 h-8 rounded border border-border"
+                      className="w-8 h-8 rounded-lg border-2 border-border/50 shadow-md"
                     />
                     <h3 className="text-foreground font-semibold text-[16px]">{tier.name}</h3>
                     {tier.is_active && (
