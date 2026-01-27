@@ -260,10 +260,10 @@ export function CreateCharacterModal({ isOpen, onClose, onSuccess, suggestedName
       >
         {/* Header */}
         <div className="p-6 border-b border-border-strong flex items-center justify-between bg-background-elevated">
-          <h3 className="text-[24px] font-bold text-white">Create character</h3>
+          <h3 className="text-[24px] font-bold text-foreground">Create character</h3>
           <button
             onClick={onClose}
-            className="text-muted-foreground hover:text-white transition"
+            className="text-muted-foreground hover:text-foreground transition"
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -283,14 +283,14 @@ export function CreateCharacterModal({ isOpen, onClose, onSuccess, suggestedName
 
             {/* Character Name */}
             <div>
-              <label className="block text-[13px] font-medium text-white mb-2">
+              <label className="block text-[13px] font-medium text-foreground mb-2">
                 Character Name <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full px-4 py-2.5 bg-background-elevated border border-border-strong rounded-[52px] text-white text-[13px] focus:outline-none focus:border-accent transition"
+                className="w-full px-4 py-2.5 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[13px] focus:outline-none focus:border-accent transition"
                 placeholder="e.g. Zevinall"
                 autoFocus
               />
@@ -298,16 +298,16 @@ export function CreateCharacterModal({ isOpen, onClose, onSuccess, suggestedName
 
             {/* Class */}
             <div>
-              <label className="block text-[13px] font-medium text-white mb-2">
+              <label className="block text-[13px] font-medium text-foreground mb-2">
                 Class <span className="text-red-500">*</span>
               </label>
               <select
                 value={classId}
                 onChange={(e) => handleClassChange(e.target.value)}
-                className="w-full pl-4 pr-12 py-2.5 bg-background-elevated border border-border-strong rounded-[52px] text-white text-[13px] focus:outline-none focus:border-accent transition select-custom-sm cursor-pointer"
+                className="w-full pl-4 pr-12 py-2.5 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[13px] focus:outline-none focus:border-accent transition select-custom-sm cursor-pointer"
                 style={selectedClass ? { color: selectedClass.color_hex } : undefined}
               >
-                <option value="" className="text-white bg-background-elevated">Select a class</option>
+                <option value="" className="text-foreground bg-background-elevated">Select a class</option>
                 {classes.map((cls) => (
                   <option
                     key={cls.id}
@@ -324,13 +324,13 @@ export function CreateCharacterModal({ isOpen, onClose, onSuccess, suggestedName
             {/* Spec */}
             {classId && getAvailableSpecs().length > 0 && (
               <div>
-                <label className="block text-[13px] font-medium text-white mb-2">
+                <label className="block text-[13px] font-medium text-foreground mb-2">
                   Specialization <span className="text-red-500">*</span>
                 </label>
                 <select
                   value={specId}
                   onChange={(e) => setSpecId(e.target.value)}
-                  className="w-full pl-4 pr-12 py-2.5 bg-background-elevated border border-border-strong rounded-[52px] text-white text-[13px] focus:outline-none focus:border-accent transition select-custom-sm cursor-pointer"
+                  className="w-full pl-4 pr-12 py-2.5 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[13px] focus:outline-none focus:border-accent transition select-custom-sm cursor-pointer"
                 >
                   <option value="">Select a specialization</option>
                   {getAvailableSpecs().map((spec) => (
@@ -344,7 +344,7 @@ export function CreateCharacterModal({ isOpen, onClose, onSuccess, suggestedName
 
             {/* Main/Alt Toggle */}
             <div>
-              <label className="block text-[13px] font-medium text-white mb-3">
+              <label className="block text-[13px] font-medium text-foreground mb-3">
                 Character Type
               </label>
               <div className="relative flex bg-background-subtle border border-border-strong rounded-[52px] p-1">
@@ -358,7 +358,7 @@ export function CreateCharacterModal({ isOpen, onClose, onSuccess, suggestedName
                   type="button"
                   onClick={() => setIsMain(true)}
                   className={`relative z-10 flex-1 px-6 py-2 rounded-[44px] text-[13px] font-medium transition-colors duration-200 ${
-                    isMain ? 'text-white' : 'text-foreground-muted'
+                    isMain ? 'text-foreground' : 'text-foreground-muted'
                   }`}
                 >
                   Main
@@ -367,7 +367,7 @@ export function CreateCharacterModal({ isOpen, onClose, onSuccess, suggestedName
                   type="button"
                   onClick={() => setIsMain(false)}
                   className={`relative z-10 flex-1 px-6 py-2 rounded-[44px] text-[13px] font-medium transition-colors duration-200 ${
-                    !isMain ? 'text-white' : 'text-foreground-muted'
+                    !isMain ? 'text-foreground' : 'text-foreground-muted'
                   }`}
                 >
                   Alt
@@ -382,14 +382,14 @@ export function CreateCharacterModal({ isOpen, onClose, onSuccess, suggestedName
               type="button"
               onClick={onClose}
               disabled={loading}
-              className="px-6 py-2.5 bg-background-elevated hover:bg-muted border border-border-strong rounded-[52px] text-white text-[13px] transition disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-6 py-2.5 bg-background-elevated hover:bg-muted border border-border-strong rounded-[52px] text-foreground text-[13px] transition disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="px-6 py-2.5 bg-white hover:bg-gray-100 rounded-[52px] text-black text-[13px] font-medium transition disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-6 py-2.5 bg-primary hover:bg-primary/90 rounded-[52px] text-primary-foreground text-[13px] font-medium transition disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? 'Creating...' : 'Create Character'}
             </button>

@@ -123,7 +123,7 @@ export default function Home() {
                 {/* Continue with Discord */}
                 <button
                   onClick={handleDiscordLogin}
-                  className="w-full px-5 py-3 bg-white hover:bg-gray-100 transition border border-border-strong rounded-[52px] flex items-center justify-center gap-3"
+                  className="w-full px-5 py-3 bg-primary hover:bg-primary/90 transition border border-border-strong rounded-[52px] flex items-center justify-center gap-3"
                 >
                   <Image
                     src="/discord-icon.svg"
@@ -132,7 +132,7 @@ export default function Home() {
                     height={24}
                     className="w-6 h-6"
                   />
-                  <span className="font-poppins font-medium text-base text-black">
+                  <span className="font-poppins font-medium text-base text-primary-foreground">
                     Continue with Discord
                   </span>
                 </button>
@@ -190,7 +190,7 @@ export default function Home() {
                 {/* Continue with Discord */}
                 <button
                   onClick={handleDiscordLogin}
-                  className="px-[60px] py-3 bg-white hover:bg-gray-100 transition border border-border-strong rounded-[52px] flex items-center justify-center gap-3 w-max"
+                  className="px-[60px] py-3 bg-primary hover:bg-primary/90 transition border border-border-strong rounded-[52px] flex items-center justify-center gap-3 w-max"
                 >
                   <Image
                     src="/discord-icon.svg"
@@ -199,7 +199,7 @@ export default function Home() {
                     height={24}
                     className="w-6 h-6"
                   />
-                  <span className="font-poppins font-medium text-base text-black">
+                  <span className="font-poppins font-medium text-base text-primary-foreground">
                     Continue with Discord
                   </span>
                 </button>

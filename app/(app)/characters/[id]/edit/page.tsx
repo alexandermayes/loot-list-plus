@@ -219,11 +219,11 @@ export default function EditCharacterPage() {
     return (
       <div className="min-h-screen bg-background-subtle p-8">
         <div className="max-w-2xl mx-auto">
-          <div className="bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-xl p-12 text-center">
-            <h2 className="text-[24px] font-bold text-white mb-4">Character not found</h2>
+          <div className="bg-background-elevated border border-border rounded-xl p-12 text-center">
+            <h2 className="text-[24px] font-bold text-foreground mb-4">Character not found</h2>
             <button
               onClick={() => router.push('/characters/manage')}
-              className="px-8 py-3 bg-white hover:bg-gray-100 rounded-[52px] text-black font-medium text-[16px] transition"
+              className="px-8 py-3 bg-primary hover:bg-primary/90 rounded-[52px] text-primary-foreground font-medium text-[16px] transition"
             >
               Back to Characters
             </button>
@@ -240,13 +240,13 @@ export default function EditCharacterPage() {
         <div className="mb-8">
           <button
             onClick={() => router.push('/characters/manage')}
-            className="mb-4 flex items-center gap-2 text-muted-foreground hover:text-white transition"
+            className="mb-4 flex items-center gap-2 text-muted-foreground hover:text-foreground transition"
           >
             <HugeiconsIcon icon={ArrowLeft01Icon} size={16} />
             <span className="text-[14px]">Back to Characters</span>
           </button>
 
-          <h1 className="text-[42px] font-bold text-white mb-2">Edit Character</h1>
+          <h1 className="text-[42px] font-bold text-foreground mb-2">Edit Character</h1>
           <p className="text-[16px] text-muted-foreground">
             Update character details and settings
           </p>
@@ -260,18 +260,18 @@ export default function EditCharacterPage() {
         )}
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-xl p-6 mb-6">
+        <form onSubmit={handleSubmit} className="bg-background-elevated border border-border rounded-xl p-6 mb-6">
           <div className="space-y-6">
             {/* Character Name */}
             <div>
-              <label className="block text-white text-[14px] font-medium mb-2">
+              <label className="block text-foreground text-[14px] font-medium mb-2">
                 Character Name <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full px-4 py-3 bg-background-subtle border border-[rgba(255,255,255,0.1)] rounded-xl text-white text-[14px] focus:outline-none focus:border-accent transition"
+                className="w-full px-4 py-3 bg-background-subtle border border-border rounded-xl text-foreground text-[14px] focus:outline-none focus:border-accent transition"
                 placeholder="Enter character name"
                 required
               />
@@ -279,13 +279,13 @@ export default function EditCharacterPage() {
 
             {/* Class */}
             <div>
-              <label className="block text-white text-[14px] font-medium mb-2">
+              <label className="block text-foreground text-[14px] font-medium mb-2">
                 Class <span className="text-red-500">*</span>
               </label>
               <select
                 value={classId}
                 onChange={(e) => handleClassChange(e.target.value)}
-                className="w-full px-4 py-3 bg-background-subtle border border-[rgba(255,255,255,0.1)] rounded-xl text-white text-[14px] focus:outline-none focus:border-accent transition"
+                className="w-full px-4 py-3 bg-background-subtle border border-border rounded-xl text-foreground text-[14px] focus:outline-none focus:border-accent transition"
                 required
               >
                 <option value="">Select a class</option>
@@ -300,13 +300,13 @@ export default function EditCharacterPage() {
             {/* Spec */}
             {classId && getAvailableSpecs().length > 0 && (
               <div>
-                <label className="block text-white text-[14px] font-medium mb-2">
+                <label className="block text-foreground text-[14px] font-medium mb-2">
                   Specialization (Optional)
                 </label>
                 <select
                   value={specId}
                   onChange={(e) => setSpecId(e.target.value)}
-                  className="w-full px-4 py-3 bg-background-subtle border border-[rgba(255,255,255,0.1)] rounded-xl text-white text-[14px] focus:outline-none focus:border-accent transition"
+                  className="w-full px-4 py-3 bg-background-subtle border border-border rounded-xl text-foreground text-[14px] focus:outline-none focus:border-accent transition"
                 >
                   <option value="">Select a specialization</option>
                   {getAvailableSpecs().map((spec) => (
@@ -320,7 +320,7 @@ export default function EditCharacterPage() {
 
             {/* Main/Alt Toggle */}
             <div>
-              <label className="block text-white text-[14px] font-medium mb-3">
+              <label className="block text-foreground text-[14px] font-medium mb-3">
                 Character Type
               </label>
               <div className="flex gap-3">
@@ -329,8 +329,8 @@ export default function EditCharacterPage() {
                   onClick={() => setIsMain(true)}
                   className={`flex-1 px-6 py-3 rounded-xl text-[14px] font-medium transition ${
                     isMain
-                      ? 'bg-accent text-white'
-                      : 'bg-background-subtle border border-[rgba(255,255,255,0.1)] text-muted-foreground hover:border-[rgba(255,255,255,0.2)]'
+                      ? 'bg-accent text-foreground'
+                      : 'bg-background-subtle border border-border text-muted-foreground hover:border-border-strong'
                   }`}
                 >
                   Main
@@ -340,8 +340,8 @@ export default function EditCharacterPage() {
                   onClick={() => setIsMain(false)}
                   className={`flex-1 px-6 py-3 rounded-xl text-[14px] font-medium transition ${
                     !isMain
-                      ? 'bg-accent text-white'
-                      : 'bg-background-subtle border border-[rgba(255,255,255,0.1)] text-muted-foreground hover:border-[rgba(255,255,255,0.2)]'
+                      ? 'bg-accent text-foreground'
+                      : 'bg-background-subtle border border-border text-muted-foreground hover:border-border-strong'
                   }`}
                 >
                   Alt
@@ -354,8 +354,8 @@ export default function EditCharacterPage() {
 
             {/* Guild Info */}
             {guildCount > 0 && (
-              <div className="text-[13px] text-muted-foreground bg-background-subtle border border-[rgba(255,255,255,0.1)] rounded-lg p-4">
-                <p className="font-medium text-white mb-1">Guild Memberships</p>
+              <div className="text-[13px] text-muted-foreground bg-background-subtle border border-border rounded-lg p-4">
+                <p className="font-medium text-foreground mb-1">Guild Memberships</p>
                 <p>This character is a member of {guildCount} guild{guildCount !== 1 ? 's' : ''}</p>
               </div>
             )}
@@ -367,7 +367,7 @@ export default function EditCharacterPage() {
               <button
                 type="submit"
                 disabled={saving}
-                className="px-8 py-3 bg-white hover:bg-gray-100 rounded-[52px] text-black font-medium text-[16px] transition disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-8 py-3 bg-primary hover:bg-primary/90 rounded-[52px] text-primary-foreground font-medium text-[16px] transition disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {saving ? 'Saving...' : 'Save Changes'}
               </button>
@@ -375,7 +375,7 @@ export default function EditCharacterPage() {
               <button
                 type="button"
                 onClick={() => router.push('/characters/manage')}
-                className="px-8 py-3 bg-background-elevated hover:bg-muted border border-[rgba(255,255,255,0.1)] rounded-[52px] text-white font-medium text-[16px] transition"
+                className="px-8 py-3 bg-background-elevated hover:bg-muted border border-border rounded-[52px] text-foreground font-medium text-[16px] transition"
               >
                 Cancel
               </button>
@@ -402,14 +402,14 @@ export default function EditCharacterPage() {
             <div className="space-y-4">
               <div className="p-4 bg-red-900/20 border border-red-600/50 rounded-xl">
                 <p className="text-red-200 text-[14px] mb-3">
-                  To confirm deletion, type <span className="font-bold text-white">{character?.name}</span> below:
+                  To confirm deletion, type <span className="font-bold text-foreground">{character?.name}</span> below:
                 </p>
                 <input
                   type="text"
                   value={deleteConfirmName}
                   onChange={(e) => setDeleteConfirmName(e.target.value)}
                   placeholder="Type character name to confirm"
-                  className="w-full px-4 py-3 bg-background-subtle border border-red-600/50 rounded-xl text-white text-[14px] focus:outline-none focus:border-red-500 transition"
+                  className="w-full px-4 py-3 bg-background-subtle border border-red-600/50 rounded-xl text-foreground text-[14px] focus:outline-none focus:border-red-500 transition"
                   autoFocus
                 />
               </div>
@@ -417,7 +417,7 @@ export default function EditCharacterPage() {
                 <button
                   onClick={handleDelete}
                   disabled={deleting || deleteConfirmName.toLowerCase() !== character?.name.toLowerCase()}
-                  className="px-6 py-3 bg-red-600 hover:bg-red-700 rounded-[52px] text-white font-medium text-[14px] transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                  className="px-6 py-3 bg-destructive hover:bg-destructive/90 rounded-[52px] text-destructive-foreground font-medium text-[14px] transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                 >
                   <HugeiconsIcon icon={Delete01Icon} size={16} />
                   {deleting ? 'Deleting...' : 'Delete Forever'}
@@ -425,7 +425,7 @@ export default function EditCharacterPage() {
                 <button
                   onClick={handleCancelDelete}
                   disabled={deleting}
-                  className="px-6 py-3 bg-background-elevated hover:bg-muted border border-[rgba(255,255,255,0.1)] rounded-[52px] text-white font-medium text-[14px] transition"
+                  className="px-6 py-3 bg-background-elevated hover:bg-muted border border-border rounded-[52px] text-foreground font-medium text-[14px] transition"
                 >
                   Cancel
                 </button>

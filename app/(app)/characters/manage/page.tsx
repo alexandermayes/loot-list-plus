@@ -41,7 +41,7 @@ export default function ManageCharactersPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-[42px] font-bold text-white mb-2">My Characters</h1>
+          <h1 className="text-[42px] font-bold text-foreground mb-2">My Characters</h1>
           <p className="text-[16px] text-foreground-muted">
             Manage your characters and their guild memberships
           </p>
@@ -49,7 +49,7 @@ export default function ManageCharactersPage() {
 
         <button
           onClick={() => setShowCreateModal(true)}
-          className="px-6 py-3 bg-white hover:bg-gray-100 rounded-[52px] text-black font-medium text-[16px] transition flex items-center gap-2"
+          className="px-6 py-3 bg-primary hover:bg-primary/90 rounded-[52px] text-primary-foreground font-medium text-[16px] transition flex items-center gap-2"
         >
           <HugeiconsIcon icon={Add01Icon} size={20} />
           Create Character
@@ -58,12 +58,12 @@ export default function ManageCharactersPage() {
 
       {/* Characters List */}
       {userCharacters.length === 0 ? (
-        <div className="bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-xl p-12 text-center">
+        <div className="bg-background-elevated border border-border rounded-xl p-12 text-center">
           <div className="max-w-md mx-auto">
-            <div className="w-16 h-16 bg-[#1a1a1f] rounded-full flex items-center justify-center mx-auto mb-4">
+            <div className="w-16 h-16 bg-background-elevated rounded-full flex items-center justify-center mx-auto mb-4">
               <HugeiconsIcon icon={Add01Icon} size={32} className="text-foreground-muted" />
             </div>
-            <h3 className="text-[24px] font-bold text-white mb-2">
+            <h3 className="text-[24px] font-bold text-foreground mb-2">
               No Characters Yet
             </h3>
             <p className="text-[14px] text-foreground-muted mb-6">
@@ -71,7 +71,7 @@ export default function ManageCharactersPage() {
             </p>
             <button
               onClick={() => setShowCreateModal(true)}
-              className="px-8 py-3 bg-white hover:bg-gray-100 rounded-[52px] text-black font-medium text-[16px] transition"
+              className="px-8 py-3 bg-primary hover:bg-primary/90 rounded-[52px] text-primary-foreground font-medium text-[16px] transition"
             >
               Create Your First Character
             </button>
@@ -82,7 +82,7 @@ export default function ManageCharactersPage() {
           {/* Main Characters */}
           {userCharacters.some(c => c.is_main) && (
             <div>
-              <h2 className="text-[18px] font-semibold text-white mb-4 px-2">
+              <h2 className="text-[18px] font-semibold text-foreground mb-4 px-2">
                 Main Characters
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -104,7 +104,7 @@ export default function ManageCharactersPage() {
           {/* Alt Characters */}
           {userCharacters.some(c => !c.is_main) && (
             <div>
-              <h2 className="text-[18px] font-semibold text-white mb-4 px-2">
+              <h2 className="text-[18px] font-semibold text-foreground mb-4 px-2">
                 Alt Characters
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -127,8 +127,8 @@ export default function ManageCharactersPage() {
 
       {/* Info Box */}
       {userCharacters.length > 0 && (
-        <div className="bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-xl p-6">
-          <h3 className="text-[16px] font-semibold text-white mb-3">
+        <div className="bg-background-elevated border border-border rounded-xl p-6">
+          <h3 className="text-[16px] font-semibold text-foreground mb-3">
             Character Management Tips
           </h3>
           <ul className="space-y-2 text-[14px] text-foreground-muted">

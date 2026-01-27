@@ -388,10 +388,10 @@ export default function ProfilePage() {
                   {/* Animated background indicator */}
                   {mounted && (
                     <div
-                      className="absolute top-1 h-8 w-10 bg-accent/20 rounded-full"
+                      className="absolute top-1 left-1 h-8 w-10 bg-accent/20 rounded-full will-change-transform"
                       style={{
-                        left: selectedTheme === 'light' ? '44px' : selectedTheme === 'dark' ? '84px' : '4px',
-                        transition: 'left 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
+                        transform: `translateX(${selectedTheme === 'light' ? '40px' : selectedTheme === 'dark' ? '80px' : '0px'})`,
+                        transition: 'transform 300ms ease-out'
                       }}
                     />
                   )}

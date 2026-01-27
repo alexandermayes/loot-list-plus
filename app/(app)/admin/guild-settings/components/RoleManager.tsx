@@ -242,7 +242,7 @@ export default function RoleManager() {
                       <div className="flex gap-2">
                         <button
                           onClick={() => handleSaveEditRole(role.id)}
-                          className="flex-1 px-3 py-2 bg-white text-black rounded-lg text-[13px] font-medium hover:bg-gray-100 transition flex items-center justify-center gap-2"
+                          className="flex-1 px-3 py-2 bg-primary text-primary-foreground rounded-lg text-[13px] font-medium hover:bg-primary/90 transition flex items-center justify-center gap-2"
                         >
                           <HugeiconsIcon icon={Tick01Icon} size={16} />
                           Save
@@ -342,7 +342,7 @@ export default function RoleManager() {
               <div className="flex gap-2">
                 <button
                   onClick={handleAddRole}
-                  className="flex-1 px-4 py-2 bg-white text-black rounded-lg text-[13px] font-medium hover:bg-gray-100 transition"
+                  className="flex-1 px-4 py-2 bg-primary text-primary-foreground rounded-lg text-[13px] font-medium hover:bg-primary/90 transition"
                 >
                   Create Role
                 </button>

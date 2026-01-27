@@ -329,7 +329,7 @@ export default function ExpansionDetailPage({ params }: { params: Promise<{ expa
       <div className="p-8">
         <button
           onClick={() => router.push('/admin/expansions')}
-          className="flex items-center gap-2 text-muted-foreground hover:text-white transition mb-6"
+          className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition mb-6"
         >
           <HugeiconsIcon icon={ArrowLeft01Icon} size={16} />
           Back to Expansions
@@ -347,7 +347,7 @@ export default function ExpansionDetailPage({ params }: { params: Promise<{ expa
       {/* Back Button */}
       <button
         onClick={() => router.push('/admin/expansions')}
-        className="flex items-center gap-2 text-muted-foreground hover:text-white transition"
+        className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition"
       >
         <HugeiconsIcon icon={ArrowLeft01Icon} size={16} />
         Back to Expansions
@@ -458,10 +458,10 @@ export default function ExpansionDetailPage({ params }: { params: Promise<{ expa
 
       {/* Raid Tiers Section */}
       <div>
-        <h2 className="text-[20px] font-semibold text-white mb-4">Raid Tiers</h2>
+        <h2 className="text-[20px] font-semibold text-foreground mb-4">Raid Tiers</h2>
 
         {raidTiers.length === 0 ? (
-          <div className="p-8 bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-xl text-center">
+          <div className="p-8 bg-background-elevated border border-border rounded-xl text-center">
             <p className="text-foreground-muted">No raid tiers found for this expansion</p>
           </div>
         ) : (
@@ -471,8 +471,8 @@ export default function ExpansionDetailPage({ params }: { params: Promise<{ expa
                 key={tier.id}
                 className={`bg-background-elevated border rounded-xl p-5 transition ${
                   tier.is_guild_active
-                    ? 'border-[rgba(255,255,255,0.1)]'
-                    : 'border-[rgba(255,255,255,0.05)] opacity-60'
+                    ? 'border-border'
+                    : 'border-border opacity-60'
                 }`}
               >
                 {/* Header */}
@@ -481,9 +481,9 @@ export default function ExpansionDetailPage({ params }: { params: Promise<{ expa
                     <img
                       src={getRaidIcon(tier.name)}
                       alt={tier.name}
-                      className="w-8 h-8 rounded border border-[rgba(255,255,255,0.1)]"
+                      className="w-8 h-8 rounded border border-border"
                     />
-                    <h3 className="text-white font-semibold text-[16px]">{tier.name}</h3>
+                    <h3 className="text-foreground font-semibold text-[16px]">{tier.name}</h3>
                     {tier.is_active && (
                       <span className="px-2 py-0.5 bg-green-950/50 text-green-200 text-[10px] rounded-full border border-green-600/50 font-medium">
                         Current
@@ -494,7 +494,7 @@ export default function ExpansionDetailPage({ params }: { params: Promise<{ expa
                     <button
                       onClick={() => handleSetActive(tier.id)}
                       disabled={updating === tier.id}
-                      className="px-4 py-2 bg-white hover:bg-gray-100 rounded-[40px] text-black text-[12px] font-medium transition disabled:opacity-50"
+                      className="px-4 py-2 bg-primary hover:bg-primary/90 rounded-[40px] text-primary-foreground text-[12px] font-medium transition disabled:opacity-50"
                     >
                       {updating === tier.id ? 'Setting...' : 'Set as Current'}
                     </button>
@@ -504,7 +504,7 @@ export default function ExpansionDetailPage({ params }: { params: Promise<{ expa
                 {/* Active for Guild Toggle */}
                 <div className="flex items-center justify-between p-3 bg-background-subtle rounded-lg mb-3">
                   <div>
-                    <p className="text-white text-[13px] font-medium mb-0.5">Active for guild</p>
+                    <p className="text-foreground text-[13px] font-medium mb-0.5">Active for guild</p>
                     <p className="text-muted-foreground text-[11px]">
                       {tier.is_guild_active
                         ? 'Appears in raid dropdowns'
@@ -515,7 +515,7 @@ export default function ExpansionDetailPage({ params }: { params: Promise<{ expa
                     onClick={() => handleToggleGuildActive(tier.id, tier.is_guild_active)}
                     disabled={updating === tier.id}
                     className={`relative w-12 h-6 rounded-full transition ${
-                      tier.is_guild_active ? 'bg-accent' : 'bg-[#383838]'
+                      tier.is_guild_active ? 'bg-accent' : 'bg-border-strong'
                     } disabled:opacity-50`}
                   >
                     <div
@@ -532,7 +532,7 @@ export default function ExpansionDetailPage({ params }: { params: Promise<{ expa
                     {/* Master Sheet Visibility Toggle */}
                     <div className="flex items-center justify-between p-3 bg-background-subtle rounded-lg mb-3">
                       <div>
-                        <p className="text-white text-[13px] font-medium mb-0.5">Show rankings to players</p>
+                        <p className="text-foreground text-[13px] font-medium mb-0.5">Show rankings to players</p>
                         <p className="text-muted-foreground text-[11px]">
                           {tier.master_sheet_visible
                             ? 'Players can see loot rankings'
@@ -545,7 +545,7 @@ export default function ExpansionDetailPage({ params }: { params: Promise<{ expa
                         className={`px-3 py-1.5 rounded-[40px] text-[12px] font-medium transition ${
                           tier.master_sheet_visible
                             ? 'bg-green-950/50 text-green-200 border border-green-600/50'
-                            : 'bg-muted text-muted-foreground border border-[rgba(255,255,255,0.1)]'
+                            : 'bg-muted text-muted-foreground border border-border'
                         } disabled:opacity-50`}
                       >
                         {tier.master_sheet_visible ? 'Visible' : 'Hidden'}
@@ -554,7 +554,7 @@ export default function ExpansionDetailPage({ params }: { params: Promise<{ expa
 
                     {/* Submission Deadline */}
                     <div className="p-3 bg-background-subtle rounded-lg">
-                      <p className="text-white text-[13px] font-medium mb-2">Submission deadline</p>
+                      <p className="text-foreground text-[13px] font-medium mb-2">Submission deadline</p>
                       <div className="flex items-center gap-2">
                         <input
                           type="datetime-local"
@@ -563,12 +563,12 @@ export default function ExpansionDetailPage({ params }: { params: Promise<{ expa
                             ...deadlineInputs,
                             [tier.id]: e.target.value
                           })}
-                          className="flex-1 px-3 py-2 bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-lg text-white text-[12px] focus:outline-none focus:border-accent transition"
+                          className="flex-1 px-3 py-2 bg-background-elevated border border-border rounded-lg text-foreground text-[12px] focus:outline-none focus:border-accent transition"
                         />
                         <button
                           onClick={() => handleUpdateDeadline(tier.id, deadlineInputs[tier.id] || null)}
                           disabled={updating === tier.id}
-                          className="px-4 py-2 bg-muted hover:bg-muted border border-[rgba(255,255,255,0.1)] rounded-[40px] text-white text-[12px] font-medium transition disabled:opacity-50"
+                          className="px-4 py-2 bg-muted hover:bg-muted border border-border rounded-[40px] text-foreground text-[12px] font-medium transition disabled:opacity-50"
                         >
                           {deadlineInputs[tier.id] ? 'Save' : 'Clear'}
                         </button>

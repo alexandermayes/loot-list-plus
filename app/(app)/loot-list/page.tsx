@@ -1119,7 +1119,7 @@ export default function LootList() {
                   className={`px-6 py-3 rounded-[52px] font-medium text-base transition whitespace-nowrap shadow-lg
                     ${(!hasChanges && (submission?.status === 'approved' || submission?.status === 'pending')) || saving || rankedCount === 0 || duplicateItems.length > 0 || hasValidationErrors
                       ? 'bg-muted text-foreground-muted cursor-not-allowed border-border border-2'
-                      : 'bg-white hover:bg-gray-100 text-black border-2 border-white'
+                      : 'bg-primary hover:bg-primary/90 text-primary-foreground border-2 border-primary'
                     }`}
                 >
                   {saving ? 'Submitting...' : 'Submit for Review'}

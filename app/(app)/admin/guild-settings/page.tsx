@@ -208,7 +208,7 @@ export default function GuildSettingsPage() {
       <div className="p-8 space-y-6 font-poppins">
         {/* Header */}
         <div>
-          <h1 className="text-[42px] font-bold text-white leading-tight">Guild Settings</h1>
+          <h1 className="text-[42px] font-bold text-foreground leading-tight">Guild Settings</h1>
           <p className="text-muted-foreground mt-1 text-[14px]">Manage your guild configuration, members, and settings</p>
         </div>
         {message && (
@@ -224,25 +224,25 @@ export default function GuildSettingsPage() {
         {/* Guild Information and Members - Side by Side */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Basic Information */}
-          <div className="bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-xl overflow-hidden">
-            <div className="p-6 border-b border-[rgba(255,255,255,0.1)]">
-              <h2 className="text-[24px] font-semibold text-white">Guild Information</h2>
+          <div className="bg-background-elevated border border-border rounded-xl overflow-hidden">
+            <div className="p-6 border-b border-border">
+              <h2 className="text-[24px] font-semibold text-foreground">Guild Information</h2>
               <p className="text-muted-foreground text-[13px] mt-1">Update your guild's basic details</p>
             </div>
             <div className="p-6 space-y-4">
               <div className="space-y-2">
-                <label htmlFor="guildName" className="block text-[13px] font-medium text-white">Guild Name</label>
+                <label htmlFor="guildName" className="block text-[13px] font-medium text-foreground">Guild Name</label>
                 <input
                   id="guildName"
                   value={guildName}
                   onChange={(e) => setGuildName(e.target.value)}
                   placeholder="Enter guild name"
-                  className="w-full px-5 py-3 bg-background-elevated border border-border-strong rounded-[52px] text-white text-[13px] focus:outline-none focus:border-accent"
+                  className="w-full px-5 py-3 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[13px] focus:outline-none focus:border-accent"
                 />
               </div>
 
               <div className="space-y-2">
-                <label className="block text-[13px] font-medium text-white">Realm</label>
+                <label className="block text-[13px] font-medium text-foreground">Realm</label>
                 <RealmSelector
                   region={realmRegion}
                   realm={realm}
@@ -253,7 +253,7 @@ export default function GuildSettingsPage() {
               </div>
 
               <div className="space-y-2">
-                <label htmlFor="faction" className="block text-[13px] font-medium text-white">Faction</label>
+                <label htmlFor="faction" className="block text-[13px] font-medium text-foreground">Faction</label>
                 <div className="grid grid-cols-2 gap-2">
                   <button
                     type="button"
@@ -262,7 +262,7 @@ export default function GuildSettingsPage() {
                     className={`alliance-btn group relative px-3 py-2.5 rounded-lg border transition-all duration-300 flex items-center justify-center gap-2 overflow-hidden ${
                       faction === 'Alliance'
                         ? 'border-blue-500 bg-blue-500/20'
-                        : 'border-[rgba(255,255,255,0.1)] bg-background-elevated'
+                        : 'border-border bg-background-elevated'
                     }`}
                   >
                     <img
@@ -270,7 +270,7 @@ export default function GuildSettingsPage() {
                       alt="Alliance"
                       className={`w-6 h-6 rounded relative z-10 transition-transform duration-300 ${faction === 'Alliance' ? 'scale-110' : 'group-hover:scale-110'}`}
                     />
-                    <span className={`font-medium text-[13px] relative z-10 transition-colors duration-300 ${faction === 'Alliance' ? 'text-blue-400' : 'text-white group-hover:text-blue-400'}`}>
+                    <span className={`font-medium text-[13px] relative z-10 transition-colors duration-300 ${faction === 'Alliance' ? 'text-blue-400' : 'text-foreground group-hover:text-blue-400'}`}>
                       Alliance
                     </span>
                   </button>
@@ -281,7 +281,7 @@ export default function GuildSettingsPage() {
                     className={`horde-btn group relative px-3 py-2.5 rounded-lg border transition-all duration-300 flex items-center justify-center gap-2 overflow-hidden ${
                       faction === 'Horde'
                         ? 'border-red-500 bg-red-500/20'
-                        : 'border-[rgba(255,255,255,0.1)] bg-background-elevated'
+                        : 'border-border bg-background-elevated'
                     }`}
                   >
                     <img
@@ -289,7 +289,7 @@ export default function GuildSettingsPage() {
                       alt="Horde"
                       className={`w-6 h-6 rounded relative z-10 transition-transform duration-300 ${faction === 'Horde' ? 'scale-110' : 'group-hover:scale-110'}`}
                     />
-                    <span className={`font-medium text-[13px] relative z-10 transition-colors duration-300 ${faction === 'Horde' ? 'text-red-400' : 'text-white group-hover:text-red-400'}`}>
+                    <span className={`font-medium text-[13px] relative z-10 transition-colors duration-300 ${faction === 'Horde' ? 'text-red-400' : 'text-foreground group-hover:text-red-400'}`}>
                       Horde
                     </span>
                   </button>
@@ -311,7 +311,7 @@ export default function GuildSettingsPage() {
               <button
                 onClick={handleSaveBasicInfo}
                 disabled={saving || !guildName.trim()}
-                className="w-full px-5 py-3 bg-white hover:bg-gray-100 disabled:opacity-50 rounded-[40px] text-black font-medium text-[16px] transition"
+                className="w-full px-5 py-3 bg-primary hover:bg-primary/90 disabled:opacity-50 rounded-[40px] text-primary-foreground font-medium text-[16px] transition"
               >
                 {saving ? 'Saving...' : 'Save Changes'}
               </button>
@@ -319,16 +319,16 @@ export default function GuildSettingsPage() {
           </div>
 
           {/* Current Members - with fixed scroll */}
-          <div className="bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-xl overflow-hidden flex flex-col" style={{ maxHeight: '600px' }}>
-            <div className="p-6 border-b border-[rgba(255,255,255,0.1)] flex-shrink-0">
+          <div className="bg-background-elevated border border-border rounded-xl overflow-hidden flex flex-col" style={{ maxHeight: '600px' }}>
+            <div className="p-6 border-b border-border flex-shrink-0">
               <div className="flex items-start justify-between">
                 <div>
-                  <h2 className="text-[24px] font-semibold text-white">Current Members</h2>
+                  <h2 className="text-[24px] font-semibold text-foreground">Current Members</h2>
                   <p className="text-muted-foreground text-[13px] mt-1">Manage guild members and roles</p>
                 </div>
                 <button
                   onClick={() => setShowRolesModal(true)}
-                  className="px-4 py-2 bg-background-elevated hover:bg-muted border border-[rgba(255,255,255,0.1)] rounded-lg text-white text-[13px] font-medium transition"
+                  className="px-4 py-2 bg-background-elevated hover:bg-muted border border-border rounded-lg text-foreground text-[13px] font-medium transition"
                 >
                   Manage Roles
                 </button>
@@ -344,22 +344,22 @@ export default function GuildSettingsPage() {
         <InviteCodeManager />
 
         {/* Discord Integration */}
-        <div className="bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-xl overflow-hidden">
-          <div className="p-6 border-b border-[rgba(255,255,255,0.1)]">
-            <h2 className="text-[24px] font-semibold text-white">Discord Integration</h2>
+        <div className="bg-background-elevated border border-border rounded-xl overflow-hidden">
+          <div className="p-6 border-b border-border">
+            <h2 className="text-[24px] font-semibold text-foreground">Discord Integration</h2>
             <p className="text-muted-foreground text-[13px] mt-1">
               Connect your Discord server to allow automatic guild joins
             </p>
           </div>
           <div className="p-6 space-y-4">
             <div className="space-y-2">
-              <label htmlFor="discordServerId" className="block text-[13px] font-medium text-white">Discord Server ID</label>
+              <label htmlFor="discordServerId" className="block text-[13px] font-medium text-foreground">Discord Server ID</label>
               <input
                 id="discordServerId"
                 value={discordServerId}
                 onChange={(e) => setDiscordServerId(e.target.value)}
                 placeholder="Enter Discord server ID"
-                className="w-full px-5 py-3 bg-background-elevated border border-border-strong rounded-[52px] text-white text-[13px] focus:outline-none focus:border-accent"
+                className="w-full px-5 py-3 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[13px] focus:outline-none focus:border-accent"
               />
               <p className="text-xs text-muted-foreground">
                 Enable Developer Mode in Discord, right-click your server, and select "Copy Server ID"
@@ -369,7 +369,7 @@ export default function GuildSettingsPage() {
             <button
               onClick={handleSaveBasicInfo}
               disabled={saving}
-              className="px-5 py-3 bg-background-elevated hover:bg-muted disabled:opacity-50 border border-[rgba(255,255,255,0.1)] rounded-[40px] text-white font-medium text-[16px] transition"
+              className="px-5 py-3 bg-background-elevated hover:bg-muted disabled:opacity-50 border border-border rounded-[40px] text-foreground font-medium text-[16px] transition"
             >
               {saving ? 'Saving...' : 'Save Changes'}
             </button>
@@ -397,7 +397,7 @@ export default function GuildSettingsPage() {
                   <button
                     onClick={handleDeleteGuild}
                     disabled={deleting}
-                    className="shrink-0 px-5 py-3 bg-red-600 hover:bg-red-700 disabled:opacity-50 rounded-[40px] text-white font-medium text-[16px] transition"
+                    className="shrink-0 px-5 py-3 bg-destructive hover:bg-destructive/90 disabled:opacity-50 rounded-[40px] text-destructive-foreground font-medium text-[16px] transition"
                   >
                     {deleting ? 'Deleting...' : 'Delete Guild'}
                   </button>
@@ -411,17 +411,17 @@ export default function GuildSettingsPage() {
         {showRolesModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70" onClick={() => setShowRolesModal(false)}>
             <div
-              className="bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-xl w-full max-w-2xl max-h-[80vh] overflow-hidden flex flex-col"
+              className="bg-background-elevated border border-border rounded-xl w-full max-w-2xl max-h-[80vh] overflow-hidden flex flex-col"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="p-6 border-b border-[rgba(255,255,255,0.1)] flex items-center justify-between flex-shrink-0">
+              <div className="p-6 border-b border-border flex items-center justify-between flex-shrink-0">
                 <div>
-                  <h2 className="text-[24px] font-semibold text-white">Guild Roles</h2>
+                  <h2 className="text-[24px] font-semibold text-foreground">Guild Roles</h2>
                   <p className="text-muted-foreground text-[13px] mt-1">Create and manage custom roles for your guild members</p>
                 </div>
                 <button
                   onClick={() => setShowRolesModal(false)}
-                  className="p-2 hover:bg-[rgba(255,255,255,0.1)] rounded-lg text-muted-foreground hover:text-white transition"
+                  className="p-2 hover:bg-foreground/10 rounded-lg text-muted-foreground hover:text-foreground transition"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <line x1="18" y1="6" x2="6" y2="18"></line>

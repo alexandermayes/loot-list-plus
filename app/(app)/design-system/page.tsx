@@ -401,45 +401,92 @@ export default function DesignSystemPage() {
         </section>
 
         {/* Form Inputs */}
-        <section className="space-y-4">
-          <h2 className="text-2xl font-semibold">Form Inputs</h2>
-          <p className="text-foreground-secondary">Elevated background style matching sidebar cards</p>
+        <section className="space-y-6">
+          <div>
+            <h2 className="text-2xl font-semibold">Form Inputs</h2>
+            <p className="text-foreground-secondary">Consistent input styling with pill and rounded variants</p>
+          </div>
 
-          <div className="grid grid-cols-2 gap-6">
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="default">Default Input</Label>
-                <Input id="default" placeholder="Enter text..." />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="search">With Icon (using wrapper)</Label>
-                <div className="relative">
-                  <HugeiconsIcon icon={Search01Icon} size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-foreground-muted" />
-                  <Input id="search" className="pl-10" placeholder="Search..." />
+          {/* Input Variants */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-medium text-foreground">Input Variants</h3>
+            <div className="grid grid-cols-2 gap-6">
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Pill (Default)</Label>
+                  <Input placeholder="Pill shaped input..." />
+                </div>
+                <div className="space-y-2">
+                  <Label>Rounded</Label>
+                  <Input variant="rounded" placeholder="Rounded corners..." />
                 </div>
               </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="disabled">Disabled</Label>
-                <Input id="disabled" placeholder="Disabled input" disabled />
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Disabled</Label>
+                  <Input placeholder="Disabled input" disabled />
+                </div>
+                <div className="space-y-2">
+                  <Label>With Value</Label>
+                  <Input defaultValue="Big Yikes" />
+                </div>
               </div>
             </div>
+          </div>
 
-            <div className="space-y-4">
+          {/* Input Sizes */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-medium text-foreground">Input Sizes</h3>
+            <div className="grid grid-cols-3 gap-6">
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input id="email" type="email" placeholder="you@example.com" />
+                <Label size="sm">Small (sm)</Label>
+                <Input size="sm" placeholder="Small input..." />
               </div>
-
               <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
-                <Input id="password" type="password" placeholder="••••••••" />
+                <Label>Default</Label>
+                <Input placeholder="Default input..." />
               </div>
-
               <div className="space-y-2">
-                <Label htmlFor="filled">With Value</Label>
-                <Input id="filled" defaultValue="Big Yikes" />
+                <Label size="lg">Large (lg)</Label>
+                <Input size="lg" placeholder="Large input..." />
+              </div>
+            </div>
+          </div>
+
+          {/* Select */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-medium text-foreground">Select</h3>
+            <div className="grid grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <Label>Pill Select (Default)</Label>
+                <select className="flex w-full h-11 px-4 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[13px] cursor-pointer focus:outline-none focus:border-accent transition-colors">
+                  <option>Select an option...</option>
+                  <option>Option 1</option>
+                  <option>Option 2</option>
+                </select>
+              </div>
+              <div className="space-y-2">
+                <Label>Rounded Select</Label>
+                <select className="flex w-full h-11 px-4 bg-background-elevated border border-border rounded-xl text-foreground text-[13px] cursor-pointer focus:outline-none focus:border-accent transition-colors">
+                  <option>Select an option...</option>
+                  <option>Option 1</option>
+                  <option>Option 2</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          {/* Textarea */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-medium text-foreground">Textarea</h3>
+            <div className="grid grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <Label>Pill Textarea (Default)</Label>
+                <textarea className="flex w-full min-h-[100px] px-5 py-4 bg-background-elevated border border-border-strong rounded-3xl text-foreground text-[13px] resize-none focus:outline-none focus:border-accent transition-colors placeholder:text-muted-foreground" placeholder="Enter your message..." />
+              </div>
+              <div className="space-y-2">
+                <Label>Rounded Textarea</Label>
+                <textarea className="flex w-full min-h-[100px] px-5 py-4 bg-background-elevated border border-border rounded-xl text-foreground text-[13px] resize-none focus:outline-none focus:border-accent transition-colors placeholder:text-muted-foreground" placeholder="Enter your message..." />
               </div>
             </div>
           </div>

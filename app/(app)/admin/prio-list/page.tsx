@@ -535,7 +535,7 @@ export default function AdminPrioList() {
                             element.scrollIntoView({ behavior: 'smooth', block: 'start' })
                           }
                         }}
-                        className="px-3 py-1.5 bg-background-inset hover:bg-muted border border-border rounded-[40px] text-xs font-medium text-foreground whitespace-nowrap transition"
+                        className="px-4 py-2 bg-background-inset hover:bg-muted border border-border rounded-[40px] text-sm font-medium text-foreground whitespace-nowrap transition"
                       >
                         {boss}
                       </button>
@@ -548,13 +548,13 @@ export default function AdminPrioList() {
                 <div className="flex gap-2 h-full items-center">
                   <button
                     onClick={expandAll}
-                    className="px-3 py-1.5 bg-background-inset hover:bg-muted border border-border rounded-[40px] text-xs font-medium text-muted-foreground hover:text-foreground whitespace-nowrap transition"
+                    className="px-4 py-2 bg-background-inset hover:bg-muted border border-border rounded-[40px] text-sm font-medium text-muted-foreground hover:text-foreground whitespace-nowrap transition"
                   >
                     Expand All
                   </button>
                   <button
                     onClick={collapseAll}
-                    className="px-3 py-1.5 bg-background-inset hover:bg-muted border border-border rounded-[40px] text-xs font-medium text-muted-foreground hover:text-foreground whitespace-nowrap transition"
+                    className="px-4 py-2 bg-background-inset hover:bg-muted border border-border rounded-[40px] text-sm font-medium text-muted-foreground hover:text-foreground whitespace-nowrap transition"
                   >
                     Collapse All
                   </button>

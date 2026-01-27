@@ -196,7 +196,7 @@ export default function PendingSubmissionsPage() {
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-[42px] font-bold text-white mb-2">Pending Submissions</h1>
+          <h1 className="text-[42px] font-bold text-foreground mb-2">Pending Submissions</h1>
           <p className="text-[16px] text-muted-foreground">
             Review and approve loot list submissions from your guild members
           </p>
@@ -215,7 +215,7 @@ export default function PendingSubmissionsPage() {
 
         {/* Submissions List */}
         {submissions.length === 0 ? (
-          <div className="p-12 bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-xl text-center">
+          <div className="p-12 bg-background-elevated border border-border rounded-xl text-center">
             <HugeiconsIcon icon={Clock01Icon} size={48} className="text-muted-foreground mx-auto mb-4" />
             <p className="text-muted-foreground text-[16px]">No pending submissions</p>
             <p className="text-foreground-muted text-[14px] mt-2">
@@ -227,7 +227,7 @@ export default function PendingSubmissionsPage() {
             {submissions.map((submission) => (
               <div
                 key={submission.id}
-                className="p-6 bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-xl"
+                className="p-6 bg-background-elevated border border-border rounded-xl"
               >
                 <div className="flex items-start justify-between gap-4">
                   {/* Submission Info */}
@@ -252,26 +252,26 @@ export default function PendingSubmissionsPage() {
                     <div className="space-y-2">
                       <div className="flex items-center gap-2">
                         <span className="text-[13px] text-muted-foreground">Raid Tier:</span>
-                        <span className="text-[13px] text-white font-medium">
+                        <span className="text-[13px] text-foreground font-medium">
                           {submission.raid_tier.name}
                         </span>
                       </div>
                       <div className="flex items-center gap-2">
                         <span className="text-[13px] text-muted-foreground">Items:</span>
-                        <span className="text-[13px] text-white font-medium">
+                        <span className="text-[13px] text-foreground font-medium">
                           {submission.item_count} items
                         </span>
                       </div>
                       <div className="flex items-center gap-2">
                         <span className="text-[13px] text-muted-foreground">Submitted:</span>
-                        <span className="text-[13px] text-white">
+                        <span className="text-[13px] text-foreground">
                           {new Date(submission.created_at).toLocaleString()}
                         </span>
                       </div>
                       {submission.updated_at !== submission.created_at && (
                         <div className="flex items-center gap-2">
                           <span className="text-[13px] text-muted-foreground">Last Updated:</span>
-                          <span className="text-[13px] text-white">
+                          <span className="text-[13px] text-foreground">
                             {new Date(submission.updated_at).toLocaleString()}
                           </span>
                         </div>
@@ -284,7 +284,7 @@ export default function PendingSubmissionsPage() {
                     <button
                       onClick={() => handleApprove(submission.id)}
                       disabled={processing === submission.id}
-                      className="px-6 py-3 bg-green-600 hover:bg-green-700 rounded-[52px] text-white font-medium text-[14px] transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                      className="px-6 py-3 bg-success hover:bg-success/90 rounded-[52px] text-success-foreground font-medium text-[14px] transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                     >
                       <HugeiconsIcon icon={Tick01Icon} size={16} />
                       {processing === submission.id ? 'Approving...' : 'Approve'}
@@ -292,7 +292,7 @@ export default function PendingSubmissionsPage() {
                     <button
                       onClick={() => handleReject(submission.id)}
                       disabled={processing === submission.id}
-                      className="px-6 py-3 bg-red-600 hover:bg-red-700 rounded-[52px] text-white font-medium text-[14px] transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                      className="px-6 py-3 bg-destructive hover:bg-destructive/90 rounded-[52px] text-destructive-foreground font-medium text-[14px] transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                     >
                       <HugeiconsIcon icon={Cancel01Icon} size={16} />
                       Reject
@@ -306,9 +306,9 @@ export default function PendingSubmissionsPage() {
 
         {/* Summary */}
         {submissions.length > 0 && (
-          <div className="mt-6 p-4 bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-xl">
+          <div className="mt-6 p-4 bg-background-elevated border border-border rounded-xl">
             <p className="text-[13px] text-muted-foreground">
-              Total Pending: <span className="text-white font-medium">{submissions.length}</span>
+              Total Pending: <span className="text-foreground font-medium">{submissions.length}</span>
             </p>
           </div>
         )}

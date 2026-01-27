@@ -1,7 +1,7 @@
 'use client'
 
 import { createClient } from '@/utils/supabase/client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useGuildContext } from '@/app/contexts/GuildContext'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { UserBlock01Icon, Shield01Icon, UserIcon, CrownIcon } from '@hugeicons/core-free-icons'
@@ -46,12 +46,19 @@ export default function MemberManager() {
   const supabase = createClient()
   const { activeGuild } = useGuildContext()
 
+  // Load roles first
   useEffect(() => {
     if (activeGuild) {
       loadRoles()
-      loadMembers()
     }
   }, [activeGuild])
+
+  // Load members after roles are available
+  useEffect(() => {
+    if (activeGuild && roles.length > 0) {
+      loadMembers()
+    }
+  }, [activeGuild, roles])
 
   const loadRoles = async () => {
     if (!activeGuild) return
@@ -104,7 +111,6 @@ export default function MemberManager() {
 
       const { members: membersData } = await response.json()
 
-      // Sort by role hierarchy based on position (higher position = higher rank) then by name
       const membersArray: Member[] = (membersData || []).map((m: any) => ({
         user_id: m.user_id,
         role: m.role,
@@ -115,21 +121,6 @@ export default function MemberManager() {
         discordName: m.discordName
       }))
 
-      membersArray.sort((a, b) => {
-        const aRoleInfo = roles.find(r => r.name === a.role)
-        const bRoleInfo = roles.find(r => r.name === b.role)
-        const aPosition = aRoleInfo?.position || 0
-        const bPosition = bRoleInfo?.position || 0
-
-        if (aPosition !== bPosition) {
-          return bPosition - aPosition // Higher positions first (100 > 50 > 0)
-        }
-
-        const aName = a.mainCharacter?.name || a.discordName
-        const bName = b.mainCharacter?.name || b.discordName
-        return aName.localeCompare(bName)
-      })
-
       setMembers(membersArray)
     } catch (error) {
       console.error('Error loading members:', error)
@@ -137,6 +128,24 @@ export default function MemberManager() {
       setLoading(false)
     }
   }
+
+  // Sort members by role position (highest first), then by name
+  const sortedMembers = useMemo(() => {
+    return [...members].sort((a, b) => {
+      const aRoleInfo = roles.find(r => r.name === a.role)
+      const bRoleInfo = roles.find(r => r.name === b.role)
+      const aPosition = aRoleInfo?.position || 0
+      const bPosition = bRoleInfo?.position || 0
+
+      if (aPosition !== bPosition) {
+        return bPosition - aPosition // Higher positions first (100 > 50 > 0)
+      }
+
+      const aName = a.mainCharacter?.name || a.discordName
+      const bName = b.mainCharacter?.name || b.discordName
+      return aName.localeCompare(bName)
+    })
+  }, [members, roles])
 
   const handleChangeRole = async (userId: string, newRole: string) => {
     try {
@@ -225,7 +234,7 @@ export default function MemberManager() {
         <p className="text-muted-foreground text-center py-4">No members found</p>
       ) : (
         <div className="space-y-3">
-          {members.map((member) => {
+          {sortedMembers.map((member) => {
             const mainChar = member.mainCharacter
             const hasCharacters = member.characters.length > 0
             const displayName = mainChar?.name || member.discordName
@@ -244,17 +253,17 @@ export default function MemberManager() {
             return (
               <div
                 key={member.user_id}
-                className="p-4 bg-background-subtle border border-[rgba(255,255,255,0.1)] rounded-lg hover:bg-[#151519] transition"
+                className="p-4 bg-background-inset border border-border rounded-xl hover:border-border-strong transition"
               >
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex items-start gap-4 flex-1 min-w-0">
-                    <div className="flex items-center justify-center w-10 h-10 rounded-full bg-background-elevated border border-[rgba(255,255,255,0.1)] flex-shrink-0">
+                    <div className="flex items-center justify-center w-10 h-10 rounded-full bg-background-elevated border border-border flex-shrink-0">
                       {getRoleIcon()}
                     </div>
 
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1 flex-wrap">
-                        <p className="font-semibold text-white text-[15px] whitespace-nowrap" style={{ color: mainChar?.class?.color_hex || '#fff' }}>
+                        <p className="font-semibold text-foreground text-[15px] whitespace-nowrap" style={{ color: mainChar?.class?.color_hex || '#fff' }}>
                           {displayName}
                           {mainChar?.spec && mainChar?.class && (
                             <span className="text-muted-foreground text-[13px] font-normal ml-2">
@@ -303,7 +312,7 @@ export default function MemberManager() {
                     <select
                       value={member.role}
                       onChange={(e) => handleChangeRole(member.user_id, e.target.value)}
-                      className="px-5 py-2.5 bg-background-elevated border border-border-strong rounded-[52px] text-white text-[13px] font-medium focus:outline-none focus:border-accent cursor-pointer select-custom transition"
+                      className="px-5 py-2.5 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[13px] font-medium focus:outline-none focus:border-accent cursor-pointer select-custom transition"
                     >
                       {roles.map((role) => (
                         <option key={role.id} value={role.name} className="bg-background-elevated">
@@ -313,7 +322,7 @@ export default function MemberManager() {
                     </select>
                     <button
                       onClick={() => handleRemoveMember(member.user_id, displayName)}
-                      className="p-2 bg-background-elevated hover:bg-red-950/50 border border-[rgba(255,255,255,0.1)] hover:border-red-600/30 rounded-lg text-red-400 hover:text-red-300 transition"
+                      className="p-2 bg-background-elevated hover:bg-red-950/50 border border-border hover:border-red-600/30 rounded-lg text-red-400 hover:text-red-300 transition"
                     >
                       <HugeiconsIcon icon={UserBlock01Icon} size={16} />
                     </button>
@@ -325,7 +334,7 @@ export default function MemberManager() {
         </div>
       )}
 
-      <div className="pt-4 border-t border-[rgba(255,255,255,0.1)]">
+      <div className="pt-4 border-t border-border">
         <p className="text-[13px] text-muted-foreground">
           Total Members: {members.length} (Officers: {members.filter(m => {
             const roleInfo = roles.find(r => r.name === m.role)

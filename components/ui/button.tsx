@@ -8,10 +8,11 @@ import { cn } from "@/lib/utils"
  * Button Component - LootList+ Design System
  *
  * Variants:
- * - primary: White button with dark text, subtle shadow (main CTAs)
- * - secondary: Dark elevated button with white text
- * - destructive: Red button for dangerous actions
- * - outline: Bordered button with transparent background
+ * - primary: Main CTA - dark in light mode, white in dark mode
+ * - secondary: Subtle elevated button with border
+ * - destructive: Red for dangerous/delete actions
+ * - success: Green for approve/confirm actions
+ * - outline: Bordered with transparent background
  * - ghost: No background, subtle hover state
  * - link: Text-only with underline on hover
  * - accent: Orange accent button for special actions
@@ -23,41 +24,45 @@ import { cn } from "@/lib/utils"
  * - icon: Square icon button (40px)
  */
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 active:scale-[0.98]",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 active:scale-[0.98]",
   {
     variants: {
       variant: {
-        // Primary: White button with depth (shadow + subtle gradient)
+        // Primary: Main CTA button - inverts between light/dark mode
         primary:
-          "bg-primary text-primary-foreground border border-border-strong shadow-sm hover:shadow-md hover:brightness-95 dark:hover:brightness-110",
+          "bg-primary text-primary-foreground hover:bg-primary/90 disabled:bg-muted disabled:text-muted-foreground",
 
-        // Secondary: Dark elevated surface
+        // Secondary: Elevated surface with border
         secondary:
-          "bg-secondary text-secondary-foreground border border-border hover:bg-background-elevated hover:border-border-strong",
+          "bg-background-elevated text-foreground border border-border hover:bg-muted hover:border-border-strong disabled:opacity-50",
 
         // Destructive: Red for dangerous actions
         destructive:
-          "bg-destructive text-destructive-foreground hover:bg-destructive/90 shadow-sm",
+          "bg-destructive text-destructive-foreground hover:bg-destructive/90 disabled:opacity-50",
+
+        // Success: Green for approve/confirm actions
+        success:
+          "bg-success text-success-foreground hover:bg-success/90 disabled:opacity-50",
 
         // Outline: Bordered, transparent background
         outline:
-          "border border-border bg-transparent hover:bg-background-elevated hover:border-border-strong",
+          "border border-border bg-transparent text-foreground hover:bg-background-elevated hover:border-border-strong disabled:opacity-50",
 
         // Ghost: No border, subtle hover
         ghost:
-          "hover:bg-background-elevated hover:text-foreground",
+          "text-foreground hover:bg-background-elevated disabled:opacity-50",
 
         // Link: Text only with underline
         link:
-          "text-accent underline-offset-4 hover:underline p-0 h-auto",
+          "text-accent underline-offset-4 hover:underline p-0 h-auto disabled:opacity-50",
 
         // Accent: Orange accent button
         accent:
-          "bg-accent text-accent-foreground hover:bg-accent/90 shadow-sm shadow-accent/20",
+          "bg-accent text-accent-foreground hover:bg-accent/90 disabled:opacity-50",
 
         // Default (legacy support - maps to primary)
         default:
-          "bg-primary text-primary-foreground border border-border-strong shadow-sm hover:shadow-md hover:brightness-95 dark:hover:brightness-110",
+          "bg-primary text-primary-foreground hover:bg-primary/90 disabled:bg-muted disabled:text-muted-foreground",
       },
       size: {
         // Small: Compact buttons, nav items

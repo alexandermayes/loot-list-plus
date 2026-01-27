@@ -409,7 +409,7 @@ export default function Dashboard() {
         // Attendance system not set up yet, use rank only
       }
 
-      // Get all loot submission items for this character
+      // Get all loot submission items for this character in the active guild
       const { data: submissionItems } = await supabase
         .from('loot_submission_items')
         .select(`
@@ -419,10 +419,12 @@ export default function Dashboard() {
           submission:loot_submissions!inner (
             id,
             character_id,
+            guild_id,
             status
           )
         `)
         .eq('submission.character_id', characterId)
+        .eq('submission.guild_id', activeGuild.id)
         .eq('submission.status', 'approved')
 
       if (!submissionItems || submissionItems.length === 0) {
@@ -452,13 +454,14 @@ export default function Dashboard() {
         const charRanking = submissionItems.find(si => si.loot_item_id === item.id)
 
         if (charRanking) {
-          // Get characters with the same rank (for tie detection)
+          // Get characters with the same rank (for tie detection) within this guild
           const { data: sameRankSubmissions } = await supabase
             .from('loot_submission_items')
             .select(`
               submission:loot_submissions!inner (
                 id,
                 character_id,
+                guild_id,
                 status,
                 character:characters (
                   id,
@@ -471,6 +474,7 @@ export default function Dashboard() {
             `)
             .eq('loot_item_id', item.id)
             .eq('rank', charRanking.rank)
+            .eq('submission.guild_id', activeGuild.id)
             .eq('submission.status', 'approved')
 
           // Filter out current character and build tied characters list
@@ -636,7 +640,7 @@ export default function Dashboard() {
                   {isOfficer && (
                     <button
                       onClick={() => router.push('/admin/expansions')}
-                      className="mt-3 px-5 py-3 text-base bg-white hover:bg-gray-100 text-black rounded-[52px] font-medium transition"
+                      className="mt-3 px-5 py-3 text-base bg-primary hover:bg-primary/90 text-primary-foreground rounded-[52px] font-medium transition"
                     >
                       Go to Manage Expansions
                     </button>
@@ -664,7 +668,7 @@ export default function Dashboard() {
                     Add a character to start submitting loot lists and tracking your priority
                   </p>
                 </div>
-                <button className="px-6 py-2.5 bg-white hover:bg-gray-100 text-black rounded-[52px] text-[13px] font-medium transition">
+                <button className="px-6 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground rounded-[52px] text-[13px] font-medium transition">
                   Create Character
                 </button>
               </div>
@@ -915,7 +919,7 @@ export default function Dashboard() {
                         >
                           <HugeiconsIcon icon={Cancel01Icon} size={16} />
                         </button>
-                        <button className="px-4 py-2 bg-white hover:bg-gray-100 text-black rounded-[52px] text-sm font-medium transition">
+                        <button className="px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-[52px] text-sm font-medium transition">
                           {submission.status === 'draft' ? 'Continue' : 'Revise'}
                         </button>
                       </div>

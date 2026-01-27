@@ -705,7 +705,7 @@ export default function MasterLootPage() {
                         setViewingSubmission(null)
                       }}
                       disabled={reviewing === viewingSubmission}
-                      className="px-6 py-2.5 bg-green-600 hover:bg-green-700 rounded-[52px] text-foreground text-[13px] font-medium transition disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="px-6 py-2.5 bg-success hover:bg-success/90 rounded-[52px] text-success-foreground text-[13px] font-medium transition disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {reviewing === viewingSubmission ? 'Processing...' : 'Approve'}
                     </button>
@@ -715,7 +715,7 @@ export default function MasterLootPage() {
                         setViewingSubmission(null)
                       }}
                       disabled={reviewing === viewingSubmission}
-                      className="px-6 py-2.5 bg-red-600 hover:bg-red-700 rounded-[52px] text-foreground text-[13px] font-medium transition disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="px-6 py-2.5 bg-destructive hover:bg-destructive/90 rounded-[52px] text-destructive-foreground text-[13px] font-medium transition disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       Reject
                     </button>
@@ -786,7 +786,7 @@ export default function MasterLootPage() {
               <button
                 onClick={handleDeleteSubmissions}
                 disabled={deleting}
-                className="px-6 py-2.5 bg-red-600 hover:bg-red-700 rounded-[40px] text-foreground text-[13px] font-medium transition-all disabled:opacity-50"
+                className="px-6 py-2.5 bg-destructive hover:bg-destructive/90 rounded-[40px] text-destructive-foreground text-[13px] font-medium transition-all disabled:opacity-50"
               >
                 {deleting ? 'Deleting...' : 'Delete'}
               </button>

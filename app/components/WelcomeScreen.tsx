@@ -248,9 +248,9 @@ export default function WelcomeScreen() {
                     setShowModal(true)
                     handleOpenDiscordModal()
                   }}
-                  className="w-full bg-white hover:bg-gray-100 border border-border-strong rounded-[52px] px-5 py-3 flex items-center justify-center transition mt-6"
+                  className="w-full bg-primary hover:bg-primary/90 border border-border-strong rounded-[52px] px-5 py-3 flex items-center justify-center transition mt-6"
                 >
-                  <span className="font-poppins font-medium text-base text-black">
+                  <span className="font-poppins font-medium text-base text-primary-foreground">
                     Select guild
                   </span>
                 </button>
@@ -288,9 +288,9 @@ export default function WelcomeScreen() {
                     <button
                       onClick={handleCodeJoin}
                       disabled={loading || !inviteCode.trim()}
-                      className="bg-white hover:bg-gray-100 disabled:bg-gray-600 disabled:cursor-not-allowed border border-border-strong rounded-[52px] px-5 py-3 transition shrink-0"
+                      className="bg-primary hover:bg-primary/90 disabled:bg-muted disabled:cursor-not-allowed border border-border-strong rounded-[52px] px-5 py-3 transition shrink-0"
                     >
-                      <span className="font-poppins font-medium text-base text-black">
+                      <span className="font-poppins font-medium text-base text-primary-foreground">
                         {loading ? 'Joining...' : 'Join'}
                       </span>
                     </button>
@@ -382,7 +382,7 @@ export default function WelcomeScreen() {
                         setModalView('main')
                         router.push('/profile')
                       }}
-                      className="bg-white hover:bg-gray-100 rounded-[52px] px-5 py-2.5 text-[14px] font-medium text-black transition"
+                      className="bg-primary hover:bg-primary/90 rounded-[52px] px-5 py-2.5 text-[14px] font-medium text-primary-foreground transition"
                     >
                       Go to Profile to Verify Discord
                     </button>
@@ -436,7 +436,7 @@ export default function WelcomeScreen() {
                           <button
                             onClick={() => handleJoinDiscordGuild(guild.id)}
                             disabled={joining}
-                            className="bg-white hover:bg-gray-100 rounded-[52px] px-5 py-2 text-[13px] font-medium text-black transition disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
+                            className="bg-primary hover:bg-primary/90 rounded-[52px] px-5 py-2 text-[13px] font-medium text-primary-foreground transition disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
                           >
                             {joining ? 'Joining...' : 'Join'}
                           </button>

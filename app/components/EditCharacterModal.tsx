@@ -379,7 +379,7 @@ export function EditCharacterModal({ isOpen, onClose, character, onSuccess }: Ed
                       type="button"
                       onClick={handleDelete}
                       disabled={deleting || deleteConfirmName.toLowerCase() !== character.name.toLowerCase()}
-                      className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-[52px] text-foreground text-[13px] font-medium transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                      className="px-4 py-2 bg-destructive hover:bg-destructive/90 rounded-[52px] text-destructive-foreground text-[13px] font-medium transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                     >
                       <HugeiconsIcon icon={Delete01Icon} size={16} />
                       {deleting ? 'Deleting...' : 'Delete Forever'}
@@ -411,7 +411,7 @@ export function EditCharacterModal({ isOpen, onClose, character, onSuccess }: Ed
             <button
               type="submit"
               disabled={saving}
-              className="px-6 py-2.5 bg-white hover:bg-gray-100 rounded-[52px] text-black text-[13px] font-medium transition disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-6 py-2.5 bg-primary hover:bg-primary/90 rounded-[52px] text-primary-foreground text-[13px] font-medium transition disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {saving ? 'Saving...' : 'Save Changes'}
             </button>

@@ -259,7 +259,7 @@ export default function ImportPage() {
       <div className="p-8 space-y-6 font-poppins">
         {/* Header */}
         <div>
-          <h1 className="text-[42px] font-bold text-white leading-tight">Import Raid Data</h1>
+          <h1 className="text-[42px] font-bold text-foreground leading-tight">Import Raid Data</h1>
           <p className="text-muted-foreground mt-1 text-[14px]">Import raid tracking data from CSV files</p>
         </div>
 
@@ -273,39 +273,39 @@ export default function ImportPage() {
           </div>
         )}
 
-        <div className="bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-xl p-6">
-          <h2 className="text-[24px] font-semibold text-white mb-4">Import Data from CSV</h2>
+        <div className="bg-background-elevated border border-border rounded-xl p-6">
+          <h2 className="text-[24px] font-semibold text-foreground mb-4">Import Data from CSV</h2>
 
           <div className="space-y-4">
             <div>
-              <label className="block text-[13px] font-medium text-white mb-2">Import Type</label>
+              <label className="block text-[13px] font-medium text-foreground mb-2">Import Type</label>
               <select
                 value={importType}
                 onChange={(e) => setImportType(e.target.value as any)}
-                className="w-full px-5 py-3 bg-background-elevated border border-border-strong rounded-[52px] text-white text-[13px] focus:outline-none focus:border-accent cursor-pointer select-custom"
+                className="w-full px-5 py-3 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[13px] focus:outline-none focus:border-accent cursor-pointer select-custom"
               >
-                <option value="attendance" className="bg-background-elevated text-white">Attendance Records</option>
-                <option value="loot_items" className="bg-background-elevated text-white">Loot Items</option>
-                <option value="members" className="bg-background-elevated text-white">Guild Members (Not Available)</option>
+                <option value="attendance" className="bg-background-elevated text-foreground">Attendance Records</option>
+                <option value="loot_items" className="bg-background-elevated text-foreground">Loot Items</option>
+                <option value="members" className="bg-background-elevated text-foreground">Guild Members (Not Available)</option>
               </select>
             </div>
 
             <div>
-              <label className="block text-[13px] font-medium text-white mb-2">CSV File</label>
+              <label className="block text-[13px] font-medium text-foreground mb-2">CSV File</label>
               <input
                 type="file"
                 accept=".csv"
                 onChange={handleFileChange}
-                className="w-full px-5 py-3 bg-background-elevated border border-border-strong rounded-[52px] text-white text-[13px] focus:outline-none focus:border-accent"
+                className="w-full px-5 py-3 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[13px] focus:outline-none focus:border-accent"
               />
             </div>
 
             <div className="bg-background-elevated rounded-xl p-4">
-              <h3 className="text-white font-medium mb-2 text-[14px]">Expected CSV Format:</h3>
+              <h3 className="text-foreground font-medium mb-2 text-[14px]">Expected CSV Format:</h3>
               {importType === 'attendance' && (
                 <div className="text-muted-foreground text-[13px] space-y-1">
-                  <p><strong className="text-white">Headers:</strong> date, character_name, signed_up, attended, no_call_no_show</p>
-                  <p><strong className="text-white">Example:</strong></p>
+                  <p><strong className="text-foreground">Headers:</strong> date, character_name, signed_up, attended, no_call_no_show</p>
+                  <p><strong className="text-foreground">Example:</strong></p>
                   <pre className="bg-background-subtle p-2 rounded text-xs mt-2">
 {`date,character_name,signed_up,attended,no_call_no_show
 2025-01-14,PlayerName,true,true,false`}
@@ -314,8 +314,8 @@ export default function ImportPage() {
               )}
               {importType === 'loot_items' && (
                 <div className="text-muted-foreground text-[13px] space-y-1">
-                  <p><strong className="text-white">Headers:</strong> name, boss_name, item_slot, wowhead_id</p>
-                  <p><strong className="text-white">Example:</strong></p>
+                  <p><strong className="text-foreground">Headers:</strong> name, boss_name, item_slot, wowhead_id</p>
+                  <p><strong className="text-foreground">Example:</strong></p>
                   <pre className="bg-background-subtle p-2 rounded text-xs mt-2">
 {`name,boss_name,item_slot,wowhead_id
 Thunderfury,Prince,Weapon,19019`}
@@ -327,7 +327,7 @@ Thunderfury,Prince,Weapon,19019`}
             <button
               onClick={handleImport}
               disabled={!file || loading}
-              className="w-full px-5 py-3 bg-white hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed rounded-[40px] text-black font-medium text-[16px] transition"
+              className="w-full px-5 py-3 bg-primary hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed rounded-[40px] text-primary-foreground font-medium text-[16px] transition"
             >
               {loading ? 'Importing...' : 'Import Data'}
             </button>

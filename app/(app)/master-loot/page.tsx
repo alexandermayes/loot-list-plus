@@ -251,12 +251,12 @@ export default function MasterLootPage() {
       {/* Header with Settings Button */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-[42px] font-bold text-white leading-tight">Master Loot</h1>
+          <h1 className="text-[42px] font-bold text-foreground leading-tight">Master Loot</h1>
           <p className="text-muted-foreground mt-1 text-[14px]">Manage loot submissions and available items</p>
         </div>
         <Link
           href="/loot-settings"
-          className="flex items-center gap-2 px-5 py-2.5 bg-[#2a2d35] hover:bg-[#34373f] border border-[rgba(255,255,255,0.1)] rounded-lg text-white text-[14px] font-medium transition"
+          className="flex items-center gap-2 px-5 py-2.5 bg-muted hover:bg-muted border border-border rounded-lg text-foreground text-[14px] font-medium transition"
         >
           <HugeiconsIcon icon={Settings01Icon} size={16} />
           Loot Settings
@@ -283,8 +283,8 @@ export default function MasterLootPage() {
                 onClick={() => setFilter(status)}
                 className={`px-5 py-2.5 rounded-full text-[13px] font-medium transition ${
                   filter === status
-                    ? 'bg-accent text-white'
-                    : 'bg-[#2a2d35] text-muted-foreground hover:bg-[#34373f] border border-[rgba(255,255,255,0.05)]'
+                    ? 'bg-accent text-foreground'
+                    : 'bg-muted text-muted-foreground hover:bg-muted border border-border'
                 }`}
               >
                 {status.charAt(0).toUpperCase() + status.slice(1)}
@@ -295,17 +295,17 @@ export default function MasterLootPage() {
           {/* Submissions List */}
           <div className="space-y-3">
             {filteredSubmissions.length === 0 ? (
-              <div className="bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-xl p-8 text-center">
+              <div className="bg-background-elevated border border-border rounded-xl p-8 text-center">
                 <p className="text-muted-foreground">No submissions found</p>
               </div>
             ) : (
               filteredSubmissions.map((submission) => (
                 <div
                   key={submission.id}
-                  className="bg-[#1a1d24] border border-[rgba(255,255,255,0.1)] rounded-xl p-5 flex items-center justify-between hover:bg-[#1f2229] transition"
+                  className="bg-background-elevated border border-border rounded-xl p-5 flex items-center justify-between hover:bg-muted transition"
                 >
                   <div className="flex items-center gap-3">
-                    <h3 className="text-[20px] font-semibold text-white">
+                    <h3 className="text-[20px] font-semibold text-foreground">
                       {submission.member?.character_name || 'Unknown'}
                     </h3>
                     {submission.member?.class && (
@@ -330,7 +330,7 @@ export default function MasterLootPage() {
                   </div>
                   <button
                     onClick={() => viewSubmissionDetails(submission.id)}
-                    className="px-5 py-2 bg-[#2a2d35] hover:bg-[#34373f] border border-[rgba(255,255,255,0.1)] rounded-lg text-white text-[14px] font-medium transition"
+                    className="px-5 py-2 bg-muted hover:bg-muted border border-border rounded-lg text-foreground text-[14px] font-medium transition"
                   >
                     View Details
                   </button>
@@ -347,11 +347,11 @@ export default function MasterLootPage() {
           onClick={() => setViewingSubmission(null)}
         >
           <div
-            className="bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-xl max-w-2xl w-full max-h-[80vh] overflow-y-auto"
+            className="bg-background-elevated border border-border rounded-xl max-w-2xl w-full max-h-[80vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="p-6 border-b border-[rgba(255,255,255,0.1)]">
-              <h3 className="text-[24px] font-bold text-white">Submission details</h3>
+            <div className="p-6 border-b border-border">
+              <h3 className="text-[24px] font-bold text-foreground">Submission details</h3>
             </div>
             <div className="p-6">
               {submissionDetails.length === 0 ? (
@@ -359,7 +359,7 @@ export default function MasterLootPage() {
               ) : (
                 <div className="space-y-2">
                   {submissionDetails.map((detail: any, idx: number) => (
-                    <div key={idx} className="flex items-center justify-between py-2 border-b border-[rgba(255,255,255,0.1)]">
+                    <div key={idx} className="flex items-center justify-between py-2 border-b border-border">
                       <div>
                         <ItemLink
                           name={detail.loot_item?.name || 'Unknown'}
@@ -368,7 +368,7 @@ export default function MasterLootPage() {
                         />
                         <p className="text-muted-foreground text-[12px]">{detail.loot_item?.boss_name}</p>
                       </div>
-                      <span className="px-3 py-1 bg-accent text-white rounded-full text-[13px] font-medium">
+                      <span className="px-3 py-1 bg-accent text-foreground rounded-full text-[13px] font-medium">
                         Rank {detail.rank}
                       </span>
                     </div>
@@ -376,7 +376,7 @@ export default function MasterLootPage() {
                 </div>
               )}
             </div>
-            <div className="p-6 border-t border-[rgba(255,255,255,0.1)] flex justify-between items-center">
+            <div className="p-6 border-t border-border flex justify-between items-center">
               <div className="flex gap-2">
                 {submissions.find(s => s.id === viewingSubmission)?.status === 'pending' && (
                   <>
@@ -386,7 +386,7 @@ export default function MasterLootPage() {
                         setViewingSubmission(null)
                       }}
                       disabled={reviewing === viewingSubmission}
-                      className="px-5 py-2.5 bg-green-600 hover:bg-green-700 rounded-[52px] text-white text-[13px] font-medium transition disabled:opacity-50"
+                      className="px-5 py-2.5 bg-success hover:bg-success/90 rounded-[52px] text-success-foreground text-[13px] font-medium transition disabled:opacity-50"
                     >
                       {reviewing === viewingSubmission ? 'Processing...' : 'Approve'}
                     </button>
@@ -396,7 +396,7 @@ export default function MasterLootPage() {
                         setViewingSubmission(null)
                       }}
                       disabled={reviewing === viewingSubmission}
-                      className="px-5 py-2.5 bg-red-600 hover:bg-red-700 rounded-[52px] text-white text-[13px] font-medium transition disabled:opacity-50"
+                      className="px-5 py-2.5 bg-destructive hover:bg-destructive/90 rounded-[52px] text-destructive-foreground text-[13px] font-medium transition disabled:opacity-50"
                     >
                       Reject
                     </button>
@@ -405,7 +405,7 @@ export default function MasterLootPage() {
               </div>
               <button
                 onClick={() => setViewingSubmission(null)}
-                className="px-5 py-2.5 bg-background-elevated hover:bg-muted border border-[rgba(255,255,255,0.1)] rounded-[52px] text-white text-[13px] transition"
+                className="px-5 py-2.5 bg-background-elevated hover:bg-muted border border-border rounded-[52px] text-foreground text-[13px] transition"
               >
                 Close
               </button>

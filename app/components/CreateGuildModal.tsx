@@ -411,7 +411,7 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
                       isCompleted
                         ? 'bg-accent text-foreground'
                         : isCurrent
-                          ? 'bg-white text-black'
+                          ? 'bg-primary text-primary-foreground'
                           : canAccess
                             ? 'bg-muted text-foreground hover:bg-border'
                             : 'bg-border text-foreground-muted cursor-not-allowed'
@@ -461,7 +461,7 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
                   onClose()
                   router.push('/profile/settings')
                 }}
-                className="px-6 py-2.5 bg-white hover:bg-gray-100 rounded-[52px] text-black text-[13px] font-medium transition"
+                className="px-6 py-2.5 bg-primary hover:bg-primary/90 rounded-[52px] text-primary-foreground text-[13px] font-medium transition"
               >
                 Verify Discord
               </button>
@@ -849,7 +849,7 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
               <button
                 onClick={handleSubmit}
                 disabled={!canSubmit()}
-                className="px-6 py-2.5 bg-white hover:bg-gray-100 rounded-[52px] text-black text-[13px] font-medium transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                className="px-6 py-2.5 bg-primary hover:bg-primary/90 rounded-[52px] text-primary-foreground text-[13px] font-medium transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
               >
                 {creating ? (
                   <>
@@ -870,7 +870,7 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
                   (currentStep === 'discord' && !canProceedFromDiscord()) ||
                   (currentStep === 'details' && !canProceedFromDetails())
                 }
-                className="px-6 py-2.5 bg-white hover:bg-gray-100 rounded-[52px] text-black text-[13px] font-medium transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                className="px-6 py-2.5 bg-primary hover:bg-primary/90 rounded-[52px] text-primary-foreground text-[13px] font-medium transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
               >
                 Continue
                 <HugeiconsIcon icon={ArrowRight01Icon} size={16} />

@@ -443,12 +443,12 @@ export default function AdminLootItems() {
                         onClick={() => toggleAvailability(item.id, item.is_available)}
                         className={`w-6 h-6 rounded ${
                           item.is_available
-                            ? 'bg-green-600 hover:bg-green-700'
+                            ? 'bg-success hover:bg-success/90'
                             : 'bg-muted hover:bg-border-strong'
                         } flex items-center justify-center`}
                       >
                         {item.is_available && (
-                          <svg className="w-4 h-4 text-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <svg className="w-4 h-4 text-success-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                           </svg>
                         )}
