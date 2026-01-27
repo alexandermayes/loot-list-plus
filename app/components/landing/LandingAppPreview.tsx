@@ -112,7 +112,7 @@ export default function LandingAppPreview() {
   const isInView = useInView(ref, { once: true, margin: '-100px' })
 
   return (
-    <section id="preview" className="relative py-24 md:py-32 bg-background overflow-hidden">
+    <section id="preview" className="relative py-32 md:py-40 bg-background overflow-hidden">
       {/* Orange glow effect */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-accent/5 rounded-full blur-[100px]" />
 

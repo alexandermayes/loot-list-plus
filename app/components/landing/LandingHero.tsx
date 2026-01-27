@@ -24,18 +24,6 @@ export default function LandingHero() {
         <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent" />
       </div>
 
-      {/* Logo - Fixed position */}
-      <div className="absolute top-[40px] left-[40px] md:top-[60px] md:left-[60px] z-30">
-        <Image
-          src="/logo.svg"
-          alt="LootList+"
-          width={179}
-          height={28}
-          className="h-6 md:h-7 w-auto"
-          priority
-        />
-      </div>
-
       {/* Hero Content */}
       <motion.div
         className="relative z-20 min-h-screen flex items-center"
