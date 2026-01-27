@@ -314,8 +314,8 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange }
         showToast ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4 pointer-events-none'
       }`}
     >
-      <div className="bg-red-950/95 border border-red-600/50 rounded-[12px] px-[24px] py-[16px] shadow-lg backdrop-blur-sm">
-        <p className="font-poppins text-[14px] text-red-200">{toastMessage}</p>
+      <div className="bg-destructive/95 border border-destructive/50 rounded-[12px] px-[24px] py-[16px] shadow-lg backdrop-blur-sm">
+        <p className="font-poppins text-[14px] text-destructive-foreground">{toastMessage}</p>
       </div>
     </div>
 
@@ -624,16 +624,40 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange }
         className="absolute bottom-0 left-0 right-0 flex flex-col gap-0 z-10 bg-background-subtle border-t border-border p-[10px]"
         style={{ width: sidebarWidth }}
       >
-        <button className="w-full px-3.5 py-2 flex items-center gap-3 rounded-[40px] hover:bg-muted transition font-poppins font-medium text-[13px] text-foreground">
+        <button
+          onClick={() => router.push('/help')}
+          className={`w-full px-3.5 py-2 flex items-center gap-3 rounded-[40px] transition font-poppins font-medium text-[13px] ${
+            pathname?.startsWith('/help')
+              ? 'bg-accent/20 border-[0.5px] border-accent/20 text-accent'
+              : 'text-foreground hover:bg-muted'
+          }`}
+        >
           <Image
             src="/icons/help.svg"
             alt="Help"
             width={20}
             height={20}
-            className="icon-adaptive w-5 h-5"
+            className={`w-5 h-5 ${pathname?.startsWith('/help') ? '' : 'icon-adaptive'}`}
+            style={pathname?.startsWith('/help') ? { filter: 'invert(55%) sepia(89%) saturate(2274%) hue-rotate(1deg) brightness(101%) contrast(105%)' } : undefined}
           />
           <span className="whitespace-nowrap">Help</span>
         </button>
+
+        <a
+          href="https://discord.gg/2TaFkNJ4dN"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="w-full px-3.5 py-2 flex items-center gap-3 rounded-[40px] transition font-poppins font-medium text-[13px] text-foreground hover:bg-muted"
+        >
+          <Image
+            src="/icons/discord-large.svg"
+            alt="Discord"
+            width={20}
+            height={20}
+            className="icon-adaptive w-5 h-5"
+          />
+          <span className="whitespace-nowrap">Join Discord</span>
+        </a>
 
         {/* User Profile Card */}
         {loading ? (
@@ -876,8 +900,8 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange }
                     <p className="text-[14px] text-muted-foreground mt-4">Loading available guilds...</p>
                   </div>
                 ) : discordError ? (
-                  <div className="flex flex-col gap-4 p-4 rounded-xl bg-red-950/50 border border-red-600/50">
-                    <p className="text-[14px] text-red-200">{discordError}</p>
+                  <div className="flex flex-col gap-4 p-4 rounded-xl bg-destructive/10 border border-destructive/50">
+                    <p className="text-[14px] text-destructive">{discordError}</p>
                     {discordError.includes('verification required') && (
                       <button
                         onClick={() => {
