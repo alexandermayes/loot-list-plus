@@ -3,6 +3,17 @@
 import { useState, useEffect } from 'react'
 import { useGuildContext } from '@/app/contexts/GuildContext'
 import { createClient } from '@/utils/supabase/client'
+import {
+  Modal,
+  ModalHeader,
+  ModalTitle,
+  ModalBody,
+  ModalFooter,
+} from '@/components/ui/modal'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Select } from '@/components/ui/select'
+import { Label } from '@/components/ui/label'
 
 interface WowClass {
   id: string
@@ -36,18 +47,6 @@ export function CreateCharacterModal({ isOpen, onClose, onSuccess, suggestedName
   const [classSpecs, setClassSpecs] = useState<ClassSpec[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-
-  // Lock body scroll when modal is open
-  useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden'
-    } else {
-      document.body.style.overflow = ''
-    }
-    return () => {
-      document.body.style.overflow = ''
-    }
-  }, [isOpen])
 
   useEffect(() => {
     if (isOpen) {
@@ -245,157 +244,131 @@ export function CreateCharacterModal({ isOpen, onClose, onSuccess, suggestedName
     }
   }
 
-  if (!isOpen) return null
-
   const selectedClass = classes.find(c => c.id === classId)
 
   return (
-    <div
-      className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-      onClick={onClose}
-    >
-      <div
-        className="bg-background-subtle border border-border-strong rounded-xl max-w-lg w-full max-h-[85vh] overflow-hidden flex flex-col"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Header */}
-        <div className="p-6 border-b border-border-strong flex items-center justify-between bg-background-elevated">
-          <h3 className="text-[24px] font-bold text-foreground">Create character</h3>
-          <button
-            onClick={onClose}
-            className="text-muted-foreground hover:text-foreground transition"
-          >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
+    <Modal open={isOpen} onClose={onClose} size="default">
+      <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
+        <ModalHeader onClose={onClose}>
+          <ModalTitle>Create character</ModalTitle>
+        </ModalHeader>
 
-        {/* Content */}
-        <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
-          <div className="p-6 space-y-5 overflow-y-auto">
-            {/* Error Message */}
-            {error && (
-              <div className="p-4 bg-red-900/20 border border-red-600 rounded-xl">
-                <p className="text-red-200 text-[13px]">{error}</p>
-              </div>
-            )}
-
-            {/* Character Name */}
-            <div>
-              <label className="block text-[13px] font-medium text-foreground mb-2">
-                Character Name <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="w-full px-4 py-2.5 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[13px] focus:outline-none focus:border-accent transition"
-                placeholder="e.g. Zevinall"
-                autoFocus
-              />
+        <ModalBody className="space-y-5">
+          {/* Error Message */}
+          {error && (
+            <div className="p-4 bg-destructive/10 border border-destructive rounded-xl">
+              <p className="text-destructive text-[13px]">{error}</p>
             </div>
+          )}
 
-            {/* Class */}
+          {/* Character Name */}
+          <div>
+            <Label className="mb-2">
+              Character Name <span className="text-destructive">*</span>
+            </Label>
+            <Input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="e.g. Zevinall"
+              autoFocus
+            />
+          </div>
+
+          {/* Class */}
+          <div>
+            <Label className="mb-2">
+              Class <span className="text-destructive">*</span>
+            </Label>
+            <Select
+              value={classId}
+              onChange={(e) => handleClassChange(e.target.value)}
+              style={selectedClass ? { color: selectedClass.color_hex } : undefined}
+            >
+              <option value="" className="text-foreground bg-background-elevated">Select a class</option>
+              {classes.map((cls) => (
+                <option
+                  key={cls.id}
+                  value={cls.id}
+                  style={{ color: cls.color_hex }}
+                  className="bg-background-elevated"
+                >
+                  {cls.name}
+                </option>
+              ))}
+            </Select>
+          </div>
+
+          {/* Spec */}
+          {classId && getAvailableSpecs().length > 0 && (
             <div>
-              <label className="block text-[13px] font-medium text-foreground mb-2">
-                Class <span className="text-red-500">*</span>
-              </label>
-              <select
-                value={classId}
-                onChange={(e) => handleClassChange(e.target.value)}
-                className="w-full pl-4 pr-12 py-2.5 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[13px] focus:outline-none focus:border-accent transition select-custom-sm cursor-pointer"
-                style={selectedClass ? { color: selectedClass.color_hex } : undefined}
+              <Label className="mb-2">
+                Specialization <span className="text-destructive">*</span>
+              </Label>
+              <Select
+                value={specId}
+                onChange={(e) => setSpecId(e.target.value)}
               >
-                <option value="" className="text-foreground bg-background-elevated">Select a class</option>
-                {classes.map((cls) => (
-                  <option
-                    key={cls.id}
-                    value={cls.id}
-                    style={{ color: cls.color_hex }}
-                    className="bg-background-elevated"
-                  >
-                    {cls.name}
+                <option value="">Select a specialization</option>
+                {getAvailableSpecs().map((spec) => (
+                  <option key={spec.id} value={spec.id}>
+                    {spec.name}
                   </option>
                 ))}
-              </select>
+              </Select>
             </div>
+          )}
 
-            {/* Spec */}
-            {classId && getAvailableSpecs().length > 0 && (
-              <div>
-                <label className="block text-[13px] font-medium text-foreground mb-2">
-                  Specialization <span className="text-red-500">*</span>
-                </label>
-                <select
-                  value={specId}
-                  onChange={(e) => setSpecId(e.target.value)}
-                  className="w-full pl-4 pr-12 py-2.5 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[13px] focus:outline-none focus:border-accent transition select-custom-sm cursor-pointer"
-                >
-                  <option value="">Select a specialization</option>
-                  {getAvailableSpecs().map((spec) => (
-                    <option key={spec.id} value={spec.id}>
-                      {spec.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
-
-            {/* Main/Alt Toggle */}
-            <div>
-              <label className="block text-[13px] font-medium text-foreground mb-3">
-                Character Type
-              </label>
-              <div className="relative flex bg-background-subtle border border-border-strong rounded-[52px] p-1">
-                {/* Sliding indicator */}
-                <div
-                  className={`absolute top-1 bottom-1 w-[calc(50%-4px)] bg-muted border border-border-strong rounded-[44px] transition-all duration-200 ease-out ${
-                    isMain ? 'left-1' : 'left-[calc(50%+2px)]'
-                  }`}
-                />
-                <button
-                  type="button"
-                  onClick={() => setIsMain(true)}
-                  className={`relative z-10 flex-1 px-6 py-2 rounded-[44px] text-[13px] font-medium transition-colors duration-200 ${
-                    isMain ? 'text-foreground' : 'text-foreground-muted'
-                  }`}
-                >
-                  Main
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setIsMain(false)}
-                  className={`relative z-10 flex-1 px-6 py-2 rounded-[44px] text-[13px] font-medium transition-colors duration-200 ${
-                    !isMain ? 'text-foreground' : 'text-foreground-muted'
-                  }`}
-                >
-                  Alt
-                </button>
-              </div>
+          {/* Main/Alt Toggle */}
+          <div>
+            <Label className="mb-3">Character Type</Label>
+            <div className="relative flex bg-background-subtle border border-border-strong rounded-[52px] p-1">
+              {/* Sliding indicator */}
+              <div
+                className={`absolute top-1 bottom-1 w-[calc(50%-4px)] bg-muted border border-border-strong rounded-[44px] transition-all duration-200 ease-out ${
+                  isMain ? 'left-1' : 'left-[calc(50%+2px)]'
+                }`}
+              />
+              <button
+                type="button"
+                onClick={() => setIsMain(true)}
+                className={`relative z-10 flex-1 px-6 py-2 rounded-[44px] text-[13px] font-medium transition-colors duration-200 ${
+                  isMain ? 'text-foreground' : 'text-foreground-muted'
+                }`}
+              >
+                Main
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsMain(false)}
+                className={`relative z-10 flex-1 px-6 py-2 rounded-[44px] text-[13px] font-medium transition-colors duration-200 ${
+                  !isMain ? 'text-foreground' : 'text-foreground-muted'
+                }`}
+              >
+                Alt
+              </button>
             </div>
           </div>
+        </ModalBody>
 
-          {/* Footer */}
-          <div className="p-6 border-t border-border-strong bg-background-elevated flex justify-end gap-3">
-            <button
-              type="button"
-              onClick={onClose}
-              disabled={loading}
-              className="px-6 py-2.5 bg-background-elevated hover:bg-muted border border-border-strong rounded-[52px] text-foreground text-[13px] transition disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={loading}
-              className="px-6 py-2.5 bg-primary hover:bg-primary/90 rounded-[52px] text-primary-foreground text-[13px] font-medium transition disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {loading ? 'Creating...' : 'Create Character'}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+        <ModalFooter>
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={onClose}
+            disabled={loading}
+          >
+            Cancel
+          </Button>
+          <Button
+            type="submit"
+            variant="primary"
+            disabled={loading}
+          >
+            {loading ? 'Creating...' : 'Create Character'}
+          </Button>
+        </ModalFooter>
+      </form>
+    </Modal>
   )
 }

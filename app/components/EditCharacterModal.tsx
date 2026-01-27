@@ -5,6 +5,17 @@ import { useGuildContext, Character } from '@/app/contexts/GuildContext'
 import { createClient } from '@/utils/supabase/client'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { Delete01Icon } from '@hugeicons/core-free-icons'
+import {
+  Modal,
+  ModalHeader,
+  ModalTitle,
+  ModalBody,
+  ModalFooter,
+} from '@/components/ui/modal'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Select } from '@/components/ui/select'
+import { Label } from '@/components/ui/label'
 
 interface WowClass {
   id: string
@@ -41,18 +52,6 @@ export function EditCharacterModal({ isOpen, onClose, character, onSuccess }: Ed
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deleteConfirmName, setDeleteConfirmName] = useState('')
   const [error, setError] = useState('')
-
-  // Lock body scroll when modal is open
-  useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden'
-    } else {
-      document.body.style.overflow = ''
-    }
-    return () => {
-      document.body.style.overflow = ''
-    }
-  }, [isOpen])
 
   useEffect(() => {
     if (isOpen && character) {
@@ -205,219 +204,201 @@ export function EditCharacterModal({ isOpen, onClose, character, onSuccess }: Ed
     setDeleteConfirmName('')
   }
 
-  if (!isOpen || !character) return null
+  if (!character) return null
 
   const selectedClass = classes.find(c => c.id === classId)
   const guildCount = characterMemberships.filter(m => m.character_id === character.id).length
 
   return (
-    <div
-      className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-      onClick={onClose}
-    >
-      <div
-        className="bg-background-subtle border border-border-strong rounded-xl max-w-lg w-full max-h-[85vh] overflow-hidden flex flex-col"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Header */}
-        <div className="p-6 border-b border-border-strong flex items-center justify-between bg-background-elevated">
-          <h3 className="text-[24px] font-bold text-foreground">Edit character</h3>
-          <button
-            onClick={onClose}
-            className="text-muted-foreground hover:text-foreground transition"
-          >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
+    <Modal open={isOpen} onClose={onClose} size="default">
+      <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
+        <ModalHeader onClose={onClose}>
+          <ModalTitle>Edit character</ModalTitle>
+        </ModalHeader>
 
-        {/* Content */}
-        <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
-          <div className="p-6 space-y-5 overflow-y-auto">
-            {/* Error Message */}
-            {error && (
-              <div className="p-4 bg-red-900/20 border border-red-600 rounded-xl">
-                <p className="text-red-200 text-[13px]">{error}</p>
-              </div>
-            )}
-
-            {/* Character Name */}
-            <div>
-              <label className="block text-[13px] font-medium text-foreground mb-2">
-                Character Name <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="w-full px-4 py-2.5 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[13px] focus:outline-none focus:border-accent transition"
-                placeholder="Enter character name"
-              />
+        <ModalBody className="space-y-5">
+          {/* Error Message */}
+          {error && (
+            <div className="p-4 bg-destructive/10 border border-destructive rounded-xl">
+              <p className="text-destructive text-[13px]">{error}</p>
             </div>
+          )}
 
-            {/* Class */}
+          {/* Character Name */}
+          <div>
+            <Label className="mb-2">
+              Character Name <span className="text-destructive">*</span>
+            </Label>
+            <Input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Enter character name"
+            />
+          </div>
+
+          {/* Class */}
+          <div>
+            <Label className="mb-2">
+              Class <span className="text-destructive">*</span>
+            </Label>
+            <Select
+              value={classId}
+              onChange={(e) => handleClassChange(e.target.value)}
+              style={selectedClass ? { color: selectedClass.color_hex } : undefined}
+            >
+              <option value="" className="text-foreground bg-background-elevated">Select a class</option>
+              {classes.map((cls) => (
+                <option
+                  key={cls.id}
+                  value={cls.id}
+                  style={{ color: cls.color_hex }}
+                  className="bg-background-elevated"
+                >
+                  {cls.name}
+                </option>
+              ))}
+            </Select>
+          </div>
+
+          {/* Spec */}
+          {classId && getAvailableSpecs().length > 0 && (
             <div>
-              <label className="block text-[13px] font-medium text-foreground mb-2">
-                Class <span className="text-red-500">*</span>
-              </label>
-              <select
-                value={classId}
-                onChange={(e) => handleClassChange(e.target.value)}
-                className="w-full pl-4 pr-12 py-2.5 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[13px] focus:outline-none focus:border-accent transition select-custom-sm cursor-pointer"
-                style={selectedClass ? { color: selectedClass.color_hex } : undefined}
+              <Label className="mb-2">
+                Specialization <span className="text-destructive">*</span>
+              </Label>
+              <Select
+                value={specId}
+                onChange={(e) => setSpecId(e.target.value)}
               >
-                <option value="" className="text-foreground bg-background-elevated">Select a class</option>
-                {classes.map((cls) => (
-                  <option
-                    key={cls.id}
-                    value={cls.id}
-                    style={{ color: cls.color_hex }}
-                    className="bg-background-elevated"
-                  >
-                    {cls.name}
+                <option value="">Select a specialization</option>
+                {getAvailableSpecs().map((spec) => (
+                  <option key={spec.id} value={spec.id}>
+                    {spec.name}
                   </option>
                 ))}
-              </select>
+              </Select>
             </div>
+          )}
 
-            {/* Spec */}
-            {classId && getAvailableSpecs().length > 0 && (
-              <div>
-                <label className="block text-[13px] font-medium text-foreground mb-2">
-                  Specialization <span className="text-red-500">*</span>
-                </label>
-                <select
-                  value={specId}
-                  onChange={(e) => setSpecId(e.target.value)}
-                  className="w-full pl-4 pr-12 py-2.5 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[13px] focus:outline-none focus:border-accent transition select-custom-sm cursor-pointer"
-                >
-                  <option value="">Select a specialization</option>
-                  {getAvailableSpecs().map((spec) => (
-                    <option key={spec.id} value={spec.id}>
-                      {spec.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
-
-            {/* Main/Alt Toggle */}
-            <div>
-              <label className="block text-[13px] font-medium text-foreground mb-3">
-                Character Type
-              </label>
-              <div className="relative flex bg-background-subtle border border-border-strong rounded-[52px] p-1">
-                {/* Sliding indicator */}
-                <div
-                  className={`absolute top-1 bottom-1 w-[calc(50%-4px)] bg-muted border border-border-strong rounded-[44px] transition-all duration-200 ease-out ${
-                    isMain ? 'left-1' : 'left-[calc(50%+2px)]'
-                  }`}
-                />
-                <button
-                  type="button"
-                  onClick={() => setIsMain(true)}
-                  className={`relative z-10 flex-1 px-6 py-2 rounded-[44px] text-[13px] font-medium transition-colors duration-200 ${
-                    isMain ? 'text-foreground' : 'text-foreground-muted'
-                  }`}
-                >
-                  Main
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setIsMain(false)}
-                  className={`relative z-10 flex-1 px-6 py-2 rounded-[44px] text-[13px] font-medium transition-colors duration-200 ${
-                    !isMain ? 'text-foreground' : 'text-foreground-muted'
-                  }`}
-                >
-                  Alt
-                </button>
-              </div>
+          {/* Main/Alt Toggle */}
+          <div>
+            <Label className="mb-3">Character Type</Label>
+            <div className="relative flex bg-background-subtle border border-border-strong rounded-[52px] p-1">
+              {/* Sliding indicator */}
+              <div
+                className={`absolute top-1 bottom-1 w-[calc(50%-4px)] bg-muted border border-border-strong rounded-[44px] transition-all duration-200 ease-out ${
+                  isMain ? 'left-1' : 'left-[calc(50%+2px)]'
+                }`}
+              />
+              <button
+                type="button"
+                onClick={() => setIsMain(true)}
+                className={`relative z-10 flex-1 px-6 py-2 rounded-[44px] text-[13px] font-medium transition-colors duration-200 ${
+                  isMain ? 'text-foreground' : 'text-foreground-muted'
+                }`}
+              >
+                Main
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsMain(false)}
+                className={`relative z-10 flex-1 px-6 py-2 rounded-[44px] text-[13px] font-medium transition-colors duration-200 ${
+                  !isMain ? 'text-foreground' : 'text-foreground-muted'
+                }`}
+              >
+                Alt
+              </button>
             </div>
+          </div>
 
-            {/* Guild Info */}
-            {guildCount > 0 && (
-              <div className="text-[13px] text-muted-foreground bg-background-elevated border border-border-strong rounded-xl p-4">
-                <p className="font-medium text-foreground mb-1">Guild Memberships</p>
-                <p>This character is a member of {guildCount} guild{guildCount !== 1 ? 's' : ''}</p>
-              </div>
-            )}
+          {/* Guild Info */}
+          {guildCount > 0 && (
+            <div className="text-[13px] text-muted-foreground bg-background-elevated border border-border-strong rounded-xl p-4">
+              <p className="font-medium text-foreground mb-1">Guild Memberships</p>
+              <p>This character is a member of {guildCount} guild{guildCount !== 1 ? 's' : ''}</p>
+            </div>
+          )}
 
-            {/* Delete Section */}
-            <div className="border-t border-border-strong pt-5">
-              <p className="text-[13px] font-medium text-red-400 mb-2">Danger Zone</p>
-              <p className="text-[12px] text-muted-foreground mb-3">
-                Deleting a character will remove all loot submissions and guild memberships.
-              </p>
+          {/* Delete Section */}
+          <div className="border-t border-border-strong pt-5">
+            <p className="text-[13px] font-medium text-destructive mb-2">Danger Zone</p>
+            <p className="text-[12px] text-muted-foreground mb-3">
+              Deleting a character will remove all loot submissions and guild memberships.
+            </p>
 
-              {!showDeleteConfirm ? (
-                <button
-                  type="button"
-                  onClick={() => setShowDeleteConfirm(true)}
-                  className="px-4 py-2 bg-red-900/20 hover:bg-red-900/30 border border-red-600/50 rounded-[52px] text-red-400 text-[13px] font-medium transition flex items-center gap-2"
-                >
-                  <HugeiconsIcon icon={Delete01Icon} size={16} />
-                  Delete Character
-                </button>
-              ) : (
-                <div className="space-y-3">
-                  <div className="p-3 bg-red-900/20 border border-red-600/50 rounded-xl">
-                    <p className="text-red-200 text-[12px] mb-2">
-                      Type <span className="font-bold text-foreground">{character.name}</span> to confirm:
-                    </p>
-                    <input
-                      type="text"
-                      value={deleteConfirmName}
-                      onChange={(e) => setDeleteConfirmName(e.target.value)}
-                      placeholder="Type character name"
-                      className="w-full px-3 py-2 bg-background-subtle border border-red-600/50 rounded-lg text-foreground text-[13px] focus:outline-none focus:border-red-500 transition"
-                      autoFocus
-                    />
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={handleDelete}
-                      disabled={deleting || deleteConfirmName.toLowerCase() !== character.name.toLowerCase()}
-                      className="px-4 py-2 bg-destructive hover:bg-destructive/90 rounded-[52px] text-destructive-foreground text-[13px] font-medium transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                    >
-                      <HugeiconsIcon icon={Delete01Icon} size={16} />
-                      {deleting ? 'Deleting...' : 'Delete Forever'}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleCancelDelete}
-                      disabled={deleting}
-                      className="px-4 py-2 bg-background-elevated hover:bg-muted border border-border-strong rounded-[52px] text-foreground text-[13px] font-medium transition"
-                    >
-                      Cancel
-                    </button>
-                  </div>
+            {!showDeleteConfirm ? (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setShowDeleteConfirm(true)}
+                className="border-destructive/50 text-destructive hover:bg-destructive/10"
+              >
+                <HugeiconsIcon icon={Delete01Icon} size={16} />
+                Delete Character
+              </Button>
+            ) : (
+              <div className="space-y-3">
+                <div className="p-3 bg-destructive/10 border border-destructive/50 rounded-xl">
+                  <p className="text-destructive text-[12px] mb-2">
+                    Type <span className="font-bold text-foreground">{character.name}</span> to confirm:
+                  </p>
+                  <Input
+                    type="text"
+                    value={deleteConfirmName}
+                    onChange={(e) => setDeleteConfirmName(e.target.value)}
+                    placeholder="Type character name"
+                    variant="rounded"
+                    size="sm"
+                    className="border-destructive/50 focus:border-destructive"
+                    autoFocus
+                  />
                 </div>
-              )}
-            </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="sm"
+                    onClick={handleDelete}
+                    disabled={deleting || deleteConfirmName.toLowerCase() !== character.name.toLowerCase()}
+                  >
+                    <HugeiconsIcon icon={Delete01Icon} size={16} />
+                    {deleting ? 'Deleting...' : 'Delete Forever'}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    onClick={handleCancelDelete}
+                    disabled={deleting}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
+        </ModalBody>
 
-          {/* Footer */}
-          <div className="p-6 border-t border-border-strong bg-background-elevated flex justify-end gap-3">
-            <button
-              type="button"
-              onClick={onClose}
-              disabled={saving}
-              className="px-6 py-2.5 bg-background-elevated hover:bg-muted border border-border-strong rounded-[52px] text-foreground text-[13px] transition disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={saving}
-              className="px-6 py-2.5 bg-primary hover:bg-primary/90 rounded-[52px] text-primary-foreground text-[13px] font-medium transition disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {saving ? 'Saving...' : 'Save Changes'}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+        <ModalFooter>
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={onClose}
+            disabled={saving}
+          >
+            Cancel
+          </Button>
+          <Button
+            type="submit"
+            variant="primary"
+            disabled={saving}
+          >
+            {saving ? 'Saving...' : 'Save Changes'}
+          </Button>
+        </ModalFooter>
+      </form>
+    </Modal>
   )
 }

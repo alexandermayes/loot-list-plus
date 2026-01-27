@@ -7,6 +7,17 @@ import { HugeiconsIcon } from '@hugeicons/react'
 import { Tick01Icon, ArrowRight01Icon, Loading01Icon, Link01Icon, File01Icon, Settings01Icon } from '@hugeicons/core-free-icons'
 import Image from 'next/image'
 import RealmSelector from '@/app/components/RealmSelector'
+import {
+  Modal,
+  ModalHeader,
+  ModalTitle,
+  ModalDescription,
+  ModalBody,
+  ModalFooter,
+} from '@/components/ui/modal'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 
 interface DiscordGuild {
   id: string
@@ -68,18 +79,6 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
   const [nameError, setNameError] = useState('')
   const [error, setError] = useState('')
   const [discordError, setDiscordError] = useState('')
-
-  // Lock body scroll when modal is open
-  useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden'
-    } else {
-      document.body.style.overflow = ''
-    }
-    return () => {
-      document.body.style.overflow = ''
-    }
-  }, [isOpen])
 
   // Load user and Discord servers on open
   useEffect(() => {
@@ -351,45 +350,26 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
     return canProceedFromDiscord() && canProceedFromDetails() && realm.trim() && !creating
   }
 
-  if (!isOpen) return null
-
   const selectedGuild = discordGuilds.find(g => g.id === selectedDiscordServer)
 
   return (
-    <div
-      className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-      onClick={onClose}
-    >
-      <div
-        className="bg-background-subtle border border-border-strong rounded-xl max-w-2xl w-full h-[600px] max-h-[90vh] overflow-hidden flex flex-col"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Header */}
-        <div className="p-6 border-b border-border-strong bg-background-elevated">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <img
-                src="https://wow.zamimg.com/images/wow/icons/large/inv_scroll_15.jpg"
-                alt="Guild Charter"
-                className="w-10 h-10 rounded-xl border border-border"
-              />
-              <div>
-                <h3 className="text-[20px] font-bold text-foreground">Create a guild</h3>
-                <p className="text-[12px] text-muted-foreground">Link your Discord server to get started</p>
-              </div>
-            </div>
-            <button
-              onClick={onClose}
-              className="text-muted-foreground hover:text-foreground transition"
-            >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
+    <Modal open={isOpen} onClose={onClose} size="lg" maxHeight="90vh" className="h-[600px]">
+      {/* Header */}
+      <ModalHeader onClose={onClose} className="pb-4">
+        <div className="flex items-center gap-3">
+          <img
+            src="https://wow.zamimg.com/images/wow/icons/large/inv_scroll_15.jpg"
+            alt="Guild Charter"
+            className="w-10 h-10 rounded-xl border border-border"
+          />
+          <div>
+            <ModalTitle>Create a guild</ModalTitle>
+            <ModalDescription>Link your Discord server to get started</ModalDescription>
           </div>
+        </div>
 
-          {/* Step Indicator */}
-          <div className="flex items-center mt-4">
+        {/* Step Indicator */}
+        <div className="flex items-center mt-4">
             {(['discord', 'details', 'settings'] as Step[]).map((step, idx) => {
               const stepIndex = idx
               const currentIndex = currentStep === 'discord' ? 0 : currentStep === 'details' ? 1 : 2
@@ -439,10 +419,10 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
               )
             })}
           </div>
-        </div>
+        </ModalHeader>
 
         {/* Content */}
-        <div className="p-6 flex-1 flex flex-col min-h-0">
+        <ModalBody className="flex-1 flex flex-col min-h-0">
           {loading ? (
             <div className="flex items-center justify-center py-12">
               <HugeiconsIcon icon={Loading01Icon} size={32} className="animate-spin text-accent" />
@@ -473,9 +453,7 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
                 <div className="relative flex flex-col flex-1 min-h-0 -mt-6 -mx-6">
                   {/* Scrollable Server Selection */}
                   <div className={`flex-1 overflow-y-auto min-h-0 px-6 pt-6 ${getActiveServerId() ? (botInstalled ? 'pb-24' : 'pb-36') : 'pb-6'}`}>
-                    <label className="block text-[13px] font-medium text-foreground mb-3">
-                      Select Your Discord Server
-                    </label>
+                    <Label className="mb-3">Select Your Discord Server</Label>
 
                     {discordError ? (
                       <div className="p-4 bg-yellow-900/20 border border-yellow-600/50 rounded-xl">
@@ -578,12 +556,12 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
 
                     {showManualEntry && (
                       <div className="mt-3">
-                        <input
+                        <Input
                           type="text"
                           value={manualServerId}
                           onChange={(e) => setManualServerId(e.target.value)}
                           placeholder="Paste your Discord Server ID"
-                          className="w-full px-4 py-2.5 bg-background-elevated border border-border-strong rounded-xl text-foreground text-[13px] focus:outline-none focus:border-accent transition"
+                          variant="rounded"
                         />
                         <p className="text-[11px] text-muted-foreground mt-2">
                           Enable Developer Mode in Discord, right-click your server → Copy Server ID
@@ -658,37 +636,35 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
                 <div className="space-y-5">
                   {/* Guild Name */}
                   <div>
-                    <label className="block text-[13px] font-medium text-foreground mb-2">
-                      Guild Name <span className="text-red-500">*</span>
-                    </label>
+                    <Label className="mb-2">
+                      Guild Name <span className="text-destructive">*</span>
+                    </Label>
                     <div className="relative">
-                      <input
+                      <Input
                         type="text"
                         value={guildName}
                         onChange={(e) => setGuildName(e.target.value)}
                         placeholder="Enter your guild name"
-                        className={`w-full px-4 py-2.5 bg-background-elevated border rounded-[52px] text-foreground text-[13px] focus:outline-none transition pr-10 ${
-                          nameAvailable === false ? 'border-red-500' :
-                          nameAvailable === true ? 'border-green-500' :
-                          'border-border-strong focus:border-accent'
+                        className={`pr-10 ${
+                          nameAvailable === false ? 'border-destructive' :
+                          nameAvailable === true ? 'border-success' :
+                          ''
                         }`}
                       />
                       {checkingName && (
-                        <HugeiconsIcon icon={Loading01Icon} size={20} className="absolute right-3 top-1/2 -translate-y-1/2 animate-spin text-muted-foreground" />
+                        <HugeiconsIcon icon={Loading01Icon} size={20} className="absolute right-4 top-1/2 -translate-y-1/2 animate-spin text-muted-foreground" />
                       )}
                       {!checkingName && nameAvailable === true && (
-                        <HugeiconsIcon icon={Tick01Icon} size={20} className="absolute right-3 top-1/2 -translate-y-1/2 text-green-500" />
+                        <HugeiconsIcon icon={Tick01Icon} size={20} className="absolute right-4 top-1/2 -translate-y-1/2 text-success" />
                       )}
                     </div>
-                    {nameError && <p className="text-[12px] text-red-400 mt-1">{nameError}</p>}
-                    {nameAvailable === true && <p className="text-[12px] text-green-400 mt-1">Name is available!</p>}
+                    {nameError && <p className="text-[12px] text-destructive mt-1">{nameError}</p>}
+                    {nameAvailable === true && <p className="text-[12px] text-success mt-1">Name is available!</p>}
                   </div>
 
                   {/* Expansion */}
                   <div>
-                    <label className="block text-[13px] font-medium text-foreground mb-2">
-                      Starting Expansion
-                    </label>
+                    <Label className="mb-2">Starting Expansion</Label>
                     <div className="grid grid-cols-5 gap-2">
                       {EXPANSIONS.map((exp) => (
                         <div key={exp.id} className="relative group">
@@ -736,9 +712,9 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
                 <div className="space-y-5">
                   {/* Realm */}
                   <div>
-                    <label className="block text-[13px] font-medium text-foreground mb-2">
-                      Realm <span className="text-red-500">*</span>
-                    </label>
+                    <Label className="mb-2">
+                      Realm <span className="text-destructive">*</span>
+                    </Label>
                     <RealmSelector
                       region={realmRegion}
                       realm={realm}
@@ -750,9 +726,7 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
 
                   {/* Faction */}
                   <div>
-                    <label className="block text-[13px] font-medium text-foreground mb-2">
-                      Faction
-                    </label>
+                    <Label className="mb-2">Faction</Label>
                     <div className="grid grid-cols-2 gap-2">
                       <button
                         onClick={() => setFaction('Alliance')}
@@ -823,33 +797,33 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
 
               {/* Error */}
               {error && (
-                <div className="mt-4 p-3 bg-red-900/20 border border-red-600/50 rounded-xl">
-                  <p className="text-[13px] text-red-400">{error}</p>
+                <div className="mt-4 p-3 bg-destructive/10 border border-destructive/50 rounded-xl">
+                  <p className="text-[13px] text-destructive">{error}</p>
                 </div>
               )}
             </div>
           )}
-        </div>
+        </ModalBody>
 
         {/* Footer */}
         {discordVerified && !loading && (
-          <div className="p-6 border-t border-border-strong bg-background-elevated flex justify-between">
-            <button
+          <ModalFooter className="justify-between">
+            <Button
+              variant="secondary"
               onClick={() => {
                 if (currentStep === 'details') setCurrentStep('discord')
                 else if (currentStep === 'settings') setCurrentStep('details')
                 else onClose()
               }}
-              className="px-6 py-2.5 bg-background-elevated hover:bg-muted border border-border-strong rounded-[52px] text-foreground text-[13px] transition"
             >
               {currentStep === 'discord' ? 'Cancel' : 'Back'}
-            </button>
+            </Button>
 
             {currentStep === 'settings' ? (
-              <button
+              <Button
+                variant="primary"
                 onClick={handleSubmit}
                 disabled={!canSubmit()}
-                className="px-6 py-2.5 bg-primary hover:bg-primary/90 rounded-[52px] text-primary-foreground text-[13px] font-medium transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
               >
                 {creating ? (
                   <>
@@ -859,9 +833,10 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
                 ) : (
                   'Create Guild'
                 )}
-              </button>
+              </Button>
             ) : (
-              <button
+              <Button
+                variant="primary"
                 onClick={() => {
                   if (currentStep === 'discord' && canProceedFromDiscord()) setCurrentStep('details')
                   else if (currentStep === 'details' && canProceedFromDetails()) setCurrentStep('settings')
@@ -870,15 +845,13 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
                   (currentStep === 'discord' && !canProceedFromDiscord()) ||
                   (currentStep === 'details' && !canProceedFromDetails())
                 }
-                className="px-6 py-2.5 bg-primary hover:bg-primary/90 rounded-[52px] text-primary-foreground text-[13px] font-medium transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
               >
                 Continue
                 <HugeiconsIcon icon={ArrowRight01Icon} size={16} />
-              </button>
+              </Button>
             )}
-          </div>
+          </ModalFooter>
         )}
-      </div>
-    </div>
+    </Modal>
   )
 }

@@ -1,9 +1,20 @@
 'use client'
 
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback } from 'react'
 import ItemLink from './ItemLink'
 import MultiSelectDropdown from './MultiSelectDropdown'
 import { allRoles, getRoleDisplayName, type Role } from '@/utils/spec-role-mapping'
+import {
+  Modal,
+  ModalHeader,
+  ModalTitle,
+  ModalDescription,
+  ModalBody,
+  ModalFooter,
+} from '@/components/ui/modal'
+import { Button } from '@/components/ui/button'
+import { Textarea } from '@/components/ui/textarea'
+import { Label } from '@/components/ui/label'
 
 interface LootItem {
   id: string
@@ -92,14 +103,6 @@ export function PrioListItemModal({
   const selectedRoles = new Set(Object.keys(rolePriorities))
   const selectedSpecs = new Set(Object.keys(classPriorities))
   const selectedCharacters = new Set(Object.keys(characterPriorities))
-
-  // Lock body scroll when modal is open
-  useEffect(() => {
-    document.body.style.overflow = 'hidden'
-    return () => {
-      document.body.style.overflow = ''
-    }
-  }, [])
 
   // Helper functions for spec colors/names
   const getSpecColor = useCallback((specId: string) => {
@@ -230,220 +233,185 @@ export function PrioListItemModal({
   const sortedCharacters = Object.entries(characterPriorities).sort(([, a], [, b]) => (b || 0) - (a || 0))
 
   return (
-    <div
-      className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-      onClick={onClose}
-    >
-      <div
-        className="bg-background-subtle border border-border-strong rounded-xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Header */}
-        <div className="p-6 border-b border-border-strong flex items-start justify-between bg-background-elevated">
+    <Modal open={true} onClose={onClose} size="lg" maxHeight="90vh">
+      <ModalHeader onClose={onClose}>
+        <ModalTitle>Set item priority</ModalTitle>
+        <div className="flex items-center gap-2 mt-2">
+          <ItemLink name={item.name} wowheadId={item.wowhead_id} />
+          <span className="text-muted-foreground text-[13px]">({item.item_slot})</span>
+        </div>
+        <ModalDescription>{item.boss_name}</ModalDescription>
+      </ModalHeader>
+
+      <ModalBody className="space-y-6">
+        {/* Role Priority */}
+        <div className="space-y-3">
           <div>
-            <h3 className="text-[24px] font-bold text-foreground mb-2">Set item priority</h3>
-            <div className="flex items-center gap-2">
-              <ItemLink name={item.name} wowheadId={item.wowhead_id} />
-              <span className="text-muted-foreground text-[13px]">({item.item_slot})</span>
-            </div>
-            <p className="text-foreground-muted text-[13px] mt-1">{item.boss_name}</p>
+            <Label className="mb-1">Role Priority</Label>
+            <p className="text-foreground-muted text-[12px]">
+              Select roles and set point values for this item
+            </p>
           </div>
-          <button
-            onClick={onClose}
-            className="text-muted-foreground hover:text-foreground transition"
-          >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
+          <MultiSelectDropdown
+            placeholder="Select roles..."
+            selectedIds={selectedRoles}
+            options={roleOptions}
+            onAdd={handleAddRole}
+            onRemove={handleRemoveRole}
+            onClear={handleClearRoles}
+            getDisplayName={(id) => getRoleDisplayName(id as Role)}
+          />
+          {/* Selected roles with point values */}
+          {sortedRoles.length > 0 && (
+            <div className="space-y-2 mt-3">
+              {sortedRoles.map(([role, points]) => (
+                <div
+                  key={role}
+                  className="flex items-center gap-3 p-3 bg-background-elevated border border-border-strong rounded-xl"
+                >
+                  <span className="flex-1 text-foreground font-medium text-[13px]">
+                    {getRoleDisplayName(role as Role)}
+                  </span>
+                  <input
+                    type="number"
+                    value={points === 0 || points === null ? '' : points}
+                    onChange={(e) => handleUpdateRolePriority(role, e.target.value === '' ? 0 : Number(e.target.value))}
+                    placeholder="0"
+                    step="any"
+                    className="w-20 px-3 py-1.5 bg-background-subtle border border-border-strong rounded-lg text-foreground text-[13px] text-center focus:outline-none focus:border-accent transition"
+                  />
+                  <span className="text-foreground-muted text-[12px]">pts</span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
-        {/* Content */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-6">
-          {/* Role Priority */}
-          <div className="space-y-3">
-            <div>
-              <label className="block text-[13px] font-medium text-foreground mb-1">
-                Role Priority
-              </label>
-              <p className="text-foreground-muted text-[12px]">
-                Select roles and set point values for this item
-              </p>
-            </div>
-            <MultiSelectDropdown
-              placeholder="Select roles..."
-              selectedIds={selectedRoles}
-              options={roleOptions}
-              onAdd={handleAddRole}
-              onRemove={handleRemoveRole}
-              onClear={handleClearRoles}
-              getDisplayName={(id) => getRoleDisplayName(id as Role)}
-            />
-            {/* Selected roles with point values */}
-            {sortedRoles.length > 0 && (
-              <div className="space-y-2 mt-3">
-                {sortedRoles.map(([role, points]) => (
-                  <div
-                    key={role}
-                    className="flex items-center gap-3 p-3 bg-background-elevated border border-border-strong rounded-xl"
-                  >
-                    <span className="flex-1 text-foreground font-medium text-[13px]">
-                      {getRoleDisplayName(role as Role)}
-                    </span>
-                    <input
-                      type="number"
-                      value={points === 0 || points === null ? '' : points}
-                      onChange={(e) => handleUpdateRolePriority(role, e.target.value === '' ? 0 : Number(e.target.value))}
-                      placeholder="0"
-                      step="any"
-                      className="w-20 px-3 py-1.5 bg-background-subtle border border-border-strong rounded-lg text-foreground text-[13px] text-center focus:outline-none focus:border-accent transition"
-                    />
-                    <span className="text-foreground-muted text-[12px]">pts</span>
-                  </div>
-                ))}
-              </div>
-            )}
+        {/* Class/Spec Priority */}
+        <div className="space-y-3">
+          <div>
+            <Label className="mb-1">Class/Spec Priority</Label>
+            <p className="text-foreground-muted text-[12px]">
+              Select specs and set point values for this item
+            </p>
           </div>
-
-          {/* Class/Spec Priority */}
-          <div className="space-y-3">
-            <div>
-              <label className="block text-[13px] font-medium text-foreground mb-1">
-                Class/Spec Priority
-              </label>
-              <p className="text-foreground-muted text-[12px]">
-                Select specs and set point values for this item
-              </p>
-            </div>
-            <MultiSelectDropdown
-              placeholder="Select specs..."
-              selectedIds={selectedSpecs}
-              options={[]}
-              optionGroups={specOptionGroups}
-              onAdd={handleAddSpec}
-              onRemove={handleRemoveSpec}
-              onClear={handleClearSpecs}
-              getDisplayName={getSpecName}
-              getClassColor={getSpecColor}
-            />
-            {/* Selected specs with point values */}
-            {sortedSpecs.length > 0 && (
-              <div className="space-y-2 mt-3">
-                {sortedSpecs.map(([specId, points]) => (
+          <MultiSelectDropdown
+            placeholder="Select specs..."
+            selectedIds={selectedSpecs}
+            options={[]}
+            optionGroups={specOptionGroups}
+            onAdd={handleAddSpec}
+            onRemove={handleRemoveSpec}
+            onClear={handleClearSpecs}
+            getDisplayName={getSpecName}
+            getClassColor={getSpecColor}
+          />
+          {/* Selected specs with point values */}
+          {sortedSpecs.length > 0 && (
+            <div className="space-y-2 mt-3">
+              {sortedSpecs.map(([specId, points]) => (
+                <div
+                  key={specId}
+                  className="flex items-center gap-3 p-3 bg-background-elevated border border-border-strong rounded-xl"
+                >
                   <div
-                    key={specId}
+                    className="w-2 h-2 rounded-full flex-shrink-0"
+                    style={{ backgroundColor: getSpecColor(specId) }}
+                  />
+                  <span className="flex-1 text-foreground font-medium text-[13px]">
+                    {getSpecName(specId)}
+                  </span>
+                  <input
+                    type="number"
+                    value={points === 0 || points === null ? '' : points}
+                    onChange={(e) => handleUpdateClassPriority(specId, e.target.value === '' ? 0 : Number(e.target.value))}
+                    placeholder="0"
+                    step="any"
+                    className="w-20 px-3 py-1.5 bg-background-subtle border border-border-strong rounded-lg text-foreground text-[13px] text-center focus:outline-none focus:border-accent transition"
+                  />
+                  <span className="text-foreground-muted text-[12px]">pts</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Individual Raiders */}
+        <div className="space-y-3">
+          <div>
+            <Label className="mb-1">Individual Raiders</Label>
+            <p className="text-foreground-muted text-[12px]">
+              Select specific raiders and set point values for this item
+            </p>
+          </div>
+          <MultiSelectDropdown
+            placeholder="Select raiders..."
+            selectedIds={selectedCharacters}
+            options={characterOptions}
+            onAdd={handleAddCharacter}
+            onRemove={handleRemoveCharacter}
+            onClear={handleClearCharacters}
+            getDisplayName={getCharacterName}
+            getClassColor={getCharacterColor}
+          />
+          {/* Selected characters with point values */}
+          {sortedCharacters.length > 0 && (
+            <div className="space-y-2 mt-3">
+              {sortedCharacters.map(([charId, points]) => {
+                const char = characters.find(c => c.id === charId)
+                return (
+                  <div
+                    key={charId}
                     className="flex items-center gap-3 p-3 bg-background-elevated border border-border-strong rounded-xl"
                   >
                     <div
                       className="w-2 h-2 rounded-full flex-shrink-0"
-                      style={{ backgroundColor: getSpecColor(specId) }}
+                      style={{ backgroundColor: getCharacterColor(charId) }}
                     />
                     <span className="flex-1 text-foreground font-medium text-[13px]">
-                      {getSpecName(specId)}
+                      {char?.name || charId}
+                      <span className="text-foreground-muted ml-2">
+                        ({char?.class?.name || 'Unknown'})
+                      </span>
                     </span>
                     <input
                       type="number"
                       value={points === 0 || points === null ? '' : points}
-                      onChange={(e) => handleUpdateClassPriority(specId, e.target.value === '' ? 0 : Number(e.target.value))}
+                      onChange={(e) => handleUpdateCharacterPriority(charId, e.target.value === '' ? 0 : Number(e.target.value))}
                       placeholder="0"
                       step="any"
                       className="w-20 px-3 py-1.5 bg-background-subtle border border-border-strong rounded-lg text-foreground text-[13px] text-center focus:outline-none focus:border-accent transition"
                     />
                     <span className="text-foreground-muted text-[12px]">pts</span>
                   </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Individual Raiders */}
-          <div className="space-y-3">
-            <div>
-              <label className="block text-[13px] font-medium text-foreground mb-1">
-                Individual Raiders
-              </label>
-              <p className="text-foreground-muted text-[12px]">
-                Select specific raiders and set point values for this item
-              </p>
+                )
+              })}
             </div>
-            <MultiSelectDropdown
-              placeholder="Select raiders..."
-              selectedIds={selectedCharacters}
-              options={characterOptions}
-              onAdd={handleAddCharacter}
-              onRemove={handleRemoveCharacter}
-              onClear={handleClearCharacters}
-              getDisplayName={getCharacterName}
-              getClassColor={getCharacterColor}
-            />
-            {/* Selected characters with point values */}
-            {sortedCharacters.length > 0 && (
-              <div className="space-y-2 mt-3">
-                {sortedCharacters.map(([charId, points]) => {
-                  const char = characters.find(c => c.id === charId)
-                  return (
-                    <div
-                      key={charId}
-                      className="flex items-center gap-3 p-3 bg-background-elevated border border-border-strong rounded-xl"
-                    >
-                      <div
-                        className="w-2 h-2 rounded-full flex-shrink-0"
-                        style={{ backgroundColor: getCharacterColor(charId) }}
-                      />
-                      <span className="flex-1 text-foreground font-medium text-[13px]">
-                        {char?.name || charId}
-                        <span className="text-foreground-muted ml-2">
-                          ({char?.class?.name || 'Unknown'})
-                        </span>
-                      </span>
-                      <input
-                        type="number"
-                        value={points === 0 || points === null ? '' : points}
-                        onChange={(e) => handleUpdateCharacterPriority(charId, e.target.value === '' ? 0 : Number(e.target.value))}
-                        placeholder="0"
-                        step="any"
-                        className="w-20 px-3 py-1.5 bg-background-subtle border border-border-strong rounded-lg text-foreground text-[13px] text-center focus:outline-none focus:border-accent transition"
-                      />
-                      <span className="text-foreground-muted text-[12px]">pts</span>
-                    </div>
-                  )
-                })}
-              </div>
-            )}
-          </div>
-
-          {/* Notes */}
-          <div className="space-y-3 pt-4 border-t border-border-strong">
-            <label className="block text-[13px] font-medium text-foreground">
-              Notes (optional)
-            </label>
-            <textarea
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder="Add any notes for loot council..."
-              rows={2}
-              className="w-full px-5 py-3 bg-background-elevated border border-border-strong rounded-xl text-foreground text-[13px] focus:outline-none focus:border-accent transition resize-none placeholder-[#606060]"
-            />
-          </div>
+          )}
         </div>
 
-        {/* Footer */}
-        <div className="p-6 border-t border-border-strong flex justify-end gap-3">
-          <button
-            onClick={onClose}
-            className="px-5 py-3 bg-background-elevated hover:bg-muted border border-border-strong text-foreground text-[13px] font-medium rounded-[52px] transition"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            className="px-5 py-3 bg-primary hover:bg-primary/90 disabled:bg-muted disabled:text-foreground-muted text-primary-foreground text-[13px] font-medium rounded-[52px] transition"
-          >
-            {saving ? 'Saving...' : 'Save Priority'}
-          </button>
+        {/* Notes */}
+        <div className="space-y-3 pt-4 border-t border-border-strong">
+          <Label>Notes (optional)</Label>
+          <Textarea
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            placeholder="Add any notes for loot council..."
+            rows={2}
+            variant="rounded"
+            size="sm"
+          />
         </div>
-      </div>
-    </div>
+      </ModalBody>
+
+      <ModalFooter>
+        <Button variant="secondary" onClick={onClose}>
+          Cancel
+        </Button>
+        <Button variant="primary" onClick={handleSave} disabled={saving}>
+          {saving ? 'Saving...' : 'Save Priority'}
+        </Button>
+      </ModalFooter>
+    </Modal>
   )
 }

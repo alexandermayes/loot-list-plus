@@ -2,11 +2,21 @@
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Select } from "@/components/ui/select";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import {
+  Modal,
+  ModalHeader,
+  ModalTitle,
+  ModalDescription,
+  ModalBody,
+  ModalFooter,
+} from "@/components/ui/modal";
 // HugeIcons - Standard Stroke (matching Figma designs)
 import { HugeiconsIcon } from '@hugeicons/react';
 import {
@@ -56,6 +66,8 @@ import { useState } from "react";
 
 export default function DesignSystemPage() {
   const [darkMode, setDarkMode] = useState(true);
+  const [demoModalOpen, setDemoModalOpen] = useState(false);
+  const [modalSize, setModalSize] = useState<'sm' | 'default' | 'lg' | 'xl' | 'full'>('default');
 
   const toggleTheme = () => {
     setDarkMode(!darkMode);
@@ -459,19 +471,19 @@ export default function DesignSystemPage() {
             <div className="grid grid-cols-2 gap-6">
               <div className="space-y-2">
                 <Label>Pill Select (Default)</Label>
-                <select className="flex w-full h-11 px-4 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[13px] cursor-pointer focus:outline-none focus:border-accent transition-colors">
+                <Select>
                   <option>Select an option...</option>
                   <option>Option 1</option>
                   <option>Option 2</option>
-                </select>
+                </Select>
               </div>
               <div className="space-y-2">
                 <Label>Rounded Select</Label>
-                <select className="flex w-full h-11 px-4 bg-background-elevated border border-border rounded-xl text-foreground text-[13px] cursor-pointer focus:outline-none focus:border-accent transition-colors">
+                <Select variant="rounded">
                   <option>Select an option...</option>
                   <option>Option 1</option>
                   <option>Option 2</option>
-                </select>
+                </Select>
               </div>
             </div>
           </div>
@@ -482,14 +494,95 @@ export default function DesignSystemPage() {
             <div className="grid grid-cols-2 gap-6">
               <div className="space-y-2">
                 <Label>Pill Textarea (Default)</Label>
-                <textarea className="flex w-full min-h-[100px] px-5 py-4 bg-background-elevated border border-border-strong rounded-3xl text-foreground text-[13px] resize-none focus:outline-none focus:border-accent transition-colors placeholder:text-muted-foreground" placeholder="Enter your message..." />
+                <Textarea placeholder="Enter your message..." />
               </div>
               <div className="space-y-2">
                 <Label>Rounded Textarea</Label>
-                <textarea className="flex w-full min-h-[100px] px-5 py-4 bg-background-elevated border border-border rounded-xl text-foreground text-[13px] resize-none focus:outline-none focus:border-accent transition-colors placeholder:text-muted-foreground" placeholder="Enter your message..." />
+                <Textarea variant="rounded" placeholder="Enter your message..." />
               </div>
             </div>
           </div>
+        </section>
+
+        {/* Modals */}
+        <section className="space-y-6">
+          <div>
+            <h2 className="text-2xl font-semibold">Modals</h2>
+            <p className="text-foreground-secondary">Composable modal system with consistent styling</p>
+          </div>
+
+          {/* Modal Sizes */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-medium text-foreground">Modal Sizes</h3>
+            <div className="flex flex-wrap gap-3">
+              {(['sm', 'default', 'lg', 'xl', 'full'] as const).map((size) => (
+                <Button
+                  key={size}
+                  variant={modalSize === size ? 'primary' : 'secondary'}
+                  size="sm"
+                  onClick={() => {
+                    setModalSize(size);
+                    setDemoModalOpen(true);
+                  }}
+                >
+                  {size === 'sm' ? 'Small (max-w-md)' :
+                   size === 'default' ? 'Default (max-w-lg)' :
+                   size === 'lg' ? 'Large (max-w-2xl)' :
+                   size === 'xl' ? 'XL (max-w-3xl)' :
+                   'Full (max-w-4xl)'}
+                </Button>
+              ))}
+            </div>
+          </div>
+
+          {/* Modal Components */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-medium text-foreground">Modal Components</h3>
+            <div className="bg-background-elevated border border-border-strong rounded-xl overflow-hidden">
+              <div className="p-4 border-b border-border-strong bg-background-subtle">
+                <code className="text-sm text-accent">{'<Modal open={} onClose={} size="default">'}</code>
+              </div>
+              <div className="p-4 space-y-2 text-sm">
+                <p><code className="text-accent">ModalHeader</code> - Header with title, description, and close button</p>
+                <p><code className="text-accent">ModalTitle</code> - Styled h2 heading</p>
+                <p><code className="text-accent">ModalDescription</code> - Muted description text</p>
+                <p><code className="text-accent">ModalBody</code> - Scrollable content area</p>
+                <p><code className="text-accent">ModalFooter</code> - Footer with action buttons</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Demo Modal */}
+          <Modal open={demoModalOpen} onClose={() => setDemoModalOpen(false)} size={modalSize}>
+            <ModalHeader onClose={() => setDemoModalOpen(false)}>
+              <ModalTitle>Demo Modal ({modalSize})</ModalTitle>
+              <ModalDescription>This is a demonstration of the modal component</ModalDescription>
+            </ModalHeader>
+            <ModalBody className="space-y-4">
+              <p className="text-foreground-secondary">
+                This modal uses the standardized Modal component system. It includes:
+              </p>
+              <ul className="list-disc list-inside text-foreground-secondary space-y-1">
+                <li>Backdrop click to close</li>
+                <li>Escape key to close</li>
+                <li>Body scroll prevention</li>
+                <li>Consistent header/body/footer styling</li>
+                <li>Size variants (sm, default, lg, xl, full)</li>
+              </ul>
+              <div className="space-y-2">
+                <Label>Example Input</Label>
+                <Input placeholder="Type something..." />
+              </div>
+            </ModalBody>
+            <ModalFooter>
+              <Button variant="secondary" onClick={() => setDemoModalOpen(false)}>
+                Cancel
+              </Button>
+              <Button variant="primary" onClick={() => setDemoModalOpen(false)}>
+                Confirm
+              </Button>
+            </ModalFooter>
+          </Modal>
         </section>
 
         {/* Cards */}

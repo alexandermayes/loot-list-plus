@@ -2,8 +2,19 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { HugeiconsIcon } from '@hugeicons/react'
-import { Bug01Icon, Camera01Icon, SentIcon, Cancel01Icon, Loading03Icon } from '@hugeicons/core-free-icons'
+import { Bug01Icon, Camera01Icon, SentIcon, Loading03Icon } from '@hugeicons/core-free-icons'
 import html2canvas from 'html2canvas'
+import {
+  Modal,
+  ModalHeader,
+  ModalTitle,
+  ModalDescription,
+  ModalBody,
+  ModalFooter,
+} from '@/components/ui/modal'
+import { Button } from '@/components/ui/button'
+import { Textarea } from '@/components/ui/textarea'
+import { Label } from '@/components/ui/label'
 
 interface FeedbackModalProps {
   isOpen: boolean
@@ -18,18 +29,6 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
   const modalRef = useRef<HTMLDivElement>(null)
-
-  // Lock body scroll when modal is open
-  useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden'
-    } else {
-      document.body.style.overflow = ''
-    }
-    return () => {
-      document.body.style.overflow = ''
-    }
-  }, [isOpen])
 
   // Capture screenshot when modal opens
   useEffect(() => {
@@ -127,63 +126,59 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
     }
   }
 
-  if (!isOpen) return null
-
   return (
-    <div
-      className="feedback-modal-backdrop fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-      onClick={onClose}
-    >
-      <div
-        ref={modalRef}
-        className="bg-background-subtle border border-border-strong rounded-xl max-w-lg w-full max-h-[85vh] overflow-hidden flex flex-col"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Header */}
-        <div className="p-6 border-b border-border-strong flex items-center justify-between bg-background-elevated">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center">
-              <HugeiconsIcon icon={Bug01Icon} size={20} className="text-accent" />
-            </div>
-            <div>
-              <h3 className="text-[20px] font-bold text-foreground">Report a Bug</h3>
-              <p className="text-[12px] text-muted-foreground">Help us improve LootList+</p>
-            </div>
-          </div>
-          <button
-            onClick={onClose}
-            className="text-muted-foreground hover:text-foreground transition"
-          >
-            <HugeiconsIcon icon={Cancel01Icon} size={24} />
-          </button>
-        </div>
-
-        {/* Content */}
+    <Modal open={isOpen} onClose={onClose} size="default">
+      <div ref={modalRef}>
         {success ? (
-          <div className="p-8 text-center">
-            <div className="w-16 h-16 rounded-full bg-green-600/20 flex items-center justify-center mx-auto mb-4">
-              <HugeiconsIcon icon={SentIcon} size={32} className="text-green-400" />
-            </div>
-            <h4 className="text-[18px] font-semibold text-foreground mb-2">Thanks for your feedback!</h4>
-            <p className="text-[14px] text-muted-foreground">We'll look into this and get back to you if needed.</p>
-          </div>
+          <>
+            <ModalHeader onClose={onClose} showCloseButton={false}>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center">
+                  <HugeiconsIcon icon={Bug01Icon} size={20} className="text-accent" />
+                </div>
+                <div>
+                  <ModalTitle>Report a Bug</ModalTitle>
+                  <ModalDescription>Help us improve LootList+</ModalDescription>
+                </div>
+              </div>
+            </ModalHeader>
+            <ModalBody className="text-center py-8">
+              <div className="w-16 h-16 rounded-full bg-success/20 flex items-center justify-center mx-auto mb-4">
+                <HugeiconsIcon icon={SentIcon} size={32} className="text-success" />
+              </div>
+              <h4 className="text-[18px] font-semibold text-foreground mb-2">Thanks for your feedback!</h4>
+              <p className="text-[14px] text-muted-foreground">We'll look into this and get back to you if needed.</p>
+            </ModalBody>
+          </>
         ) : (
           <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
-            <div className="p-6 space-y-5 overflow-y-auto">
+            <ModalHeader onClose={onClose}>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center">
+                  <HugeiconsIcon icon={Bug01Icon} size={20} className="text-accent" />
+                </div>
+                <div>
+                  <ModalTitle>Report a Bug</ModalTitle>
+                  <ModalDescription>Help us improve LootList+</ModalDescription>
+                </div>
+              </div>
+            </ModalHeader>
+
+            <ModalBody className="space-y-5">
               {/* Error Message */}
               {error && (
-                <div className="p-4 bg-red-900/20 border border-red-600 rounded-xl">
-                  <p className="text-red-200 text-[13px]">{error}</p>
+                <div className="p-4 bg-destructive/10 border border-destructive rounded-xl">
+                  <p className="text-destructive text-[13px]">{error}</p>
                 </div>
               )}
 
               {/* Screenshot Preview */}
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <label className="text-[13px] font-medium text-foreground flex items-center gap-2">
+                  <Label className="flex items-center gap-2">
                     <HugeiconsIcon icon={Camera01Icon} size={16} className="text-muted-foreground" />
                     Screenshot
-                  </label>
+                  </Label>
                   <button
                     type="button"
                     onClick={captureScreenshot}
@@ -217,34 +212,33 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
 
               {/* Description */}
               <div>
-                <label className="block text-[13px] font-medium text-foreground mb-2">
-                  What went wrong? <span className="text-red-500">*</span>
-                </label>
-                <textarea
+                <Label className="mb-2">
+                  What went wrong? <span className="text-destructive">*</span>
+                </Label>
+                <Textarea
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   rows={4}
-                  className="w-full px-4 py-3 bg-background-elevated border border-border-strong rounded-xl text-foreground text-[14px] focus:outline-none focus:border-accent transition resize-none placeholder:text-foreground-muted"
+                  variant="rounded"
                   placeholder="Describe the bug or issue you encountered..."
                   autoFocus
                 />
               </div>
-            </div>
+            </ModalBody>
 
-            {/* Footer */}
-            <div className="p-6 border-t border-border-strong bg-background-elevated flex justify-end gap-3">
-              <button
+            <ModalFooter>
+              <Button
                 type="button"
+                variant="secondary"
                 onClick={onClose}
                 disabled={submitting}
-                className="px-6 py-2.5 bg-background-elevated hover:bg-muted border border-border-strong rounded-[52px] text-foreground text-[13px] transition disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
                 type="submit"
+                variant="accent"
                 disabled={submitting || !description.trim()}
-                className="px-6 py-2.5 bg-accent hover:bg-accent/80 rounded-[52px] text-foreground text-[13px] font-medium transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
               >
                 {submitting ? (
                   <>
@@ -257,11 +251,11 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
                     Submit Feedback
                   </>
                 )}
-              </button>
-            </div>
+              </Button>
+            </ModalFooter>
           </form>
         )}
       </div>
-    </div>
+    </Modal>
   )
 }

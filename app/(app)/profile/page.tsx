@@ -23,7 +23,6 @@ import {
   CheckmarkCircle01Icon
 } from '@hugeicons/core-free-icons'
 import { useTheme } from 'next-themes'
-import { motion } from 'framer-motion'
 
 type TabId = 'account' | 'preferences' | 'guilds'
 
@@ -389,15 +388,15 @@ export default function ProfilePage() {
                 </div>
                 <div className="relative flex items-center bg-background-subtle border border-border rounded-full p-1">
                   {/* Animated background indicator */}
-                  {mounted && (
-                    <motion.div
-                      className="absolute top-1 left-1 h-8 w-10 bg-accent/20 rounded-full"
-                      animate={{
-                        x: (selectedTheme || theme) === 'light' ? 40 : (selectedTheme || theme) === 'dark' ? 80 : 0
-                      }}
-                      transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-                    />
-                  )}
+                  <div
+                    className={`absolute top-1 left-1 h-8 w-10 bg-accent/20 rounded-full ${mounted ? 'opacity-100' : 'opacity-0'}`}
+                    style={{
+                      transform: `translateX(${(selectedTheme || theme) === 'light' ? '40px' : (selectedTheme || theme) === 'dark' ? '80px' : '0px'})`,
+                      transitionProperty: 'transform',
+                      transitionDuration: '300ms',
+                      transitionTimingFunction: 'ease-out'
+                    }}
+                  />
                   <button
                     onClick={() => {
                       setSelectedTheme('system')
