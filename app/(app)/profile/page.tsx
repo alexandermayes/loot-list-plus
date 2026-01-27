@@ -379,7 +379,7 @@ export default function ProfilePage() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-background-subtle border border-border rounded-lg flex items-center justify-center">
-                    <HugeiconsIcon icon={selectedTheme === 'dark' ? Moon02Icon : selectedTheme === 'light' ? Sun03Icon : ComputerIcon} size={20} />
+                    <HugeiconsIcon icon={(selectedTheme || theme) === 'dark' ? Moon02Icon : (selectedTheme || theme) === 'light' ? Sun03Icon : ComputerIcon} size={20} />
                   </div>
                   <div>
                     <p className="text-foreground font-medium">Theme</p>
