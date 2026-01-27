@@ -42,7 +42,7 @@ export async function GET() {
       }
 
       return NextResponse.json(
-        { error: 'Failed to fetch Discord servers', details: errorText },
+        { error: 'Failed to fetch Discord servers' },
         { status: 500 }
       )
     }

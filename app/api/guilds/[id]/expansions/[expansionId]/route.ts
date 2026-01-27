@@ -130,10 +130,10 @@ export async function PATCH(
         ? `${expansion.name} is now your current expansion`
         : 'Expansion updated successfully'
     })
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error in PATCH /api/guilds/[id]/expansions/[expansionId]:', error)
     return NextResponse.json(
-      { error: error.message || 'Internal server error' },
+      { error: 'Internal server error' },
       { status: 500 }
     )
   }

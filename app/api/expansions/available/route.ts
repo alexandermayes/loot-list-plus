@@ -10,10 +10,10 @@ export async function GET() {
     const available = getAvailableExpansions()
 
     return NextResponse.json({ expansions: available })
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error in GET /api/expansions/available:', error)
     return NextResponse.json(
-      { error: error.message || 'Internal server error' },
+      { error: 'Internal server error' },
       { status: 500 }
     )
   }

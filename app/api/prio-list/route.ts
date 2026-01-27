@@ -68,7 +68,11 @@ export async function GET(request: Request) {
     }
 
     if (itemId) {
-      query = query.eq('item_id', parseInt(itemId))
+      const parsedItemId = parseInt(itemId, 10)
+      if (isNaN(parsedItemId)) {
+        return NextResponse.json({ error: 'Invalid item_id format' }, { status: 400 })
+      }
+      query = query.eq('item_id', parsedItemId)
     }
 
     const { data: priorities, error } = await query

@@ -319,17 +319,17 @@ export async function DELETE(
     if (error) {
       console.error('Error deleting character:', error)
       return NextResponse.json(
-        { error: 'Failed to delete character', details: error.message, code: error.code },
+        { error: 'Failed to delete character' },
         { status: 500 }
       )
     }
 
-    console.log('Character deleted successfully:', id, deletedData)
+    console.log('Character deleted successfully:', id)
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error('Error in DELETE /api/characters/[id]:', error)
     return NextResponse.json(
-      { error: 'Internal server error', details: error instanceof Error ? error.message : String(error) },
+      { error: 'Internal server error' },
       { status: 500 }
     )
   }

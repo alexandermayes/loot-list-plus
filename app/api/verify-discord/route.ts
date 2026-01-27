@@ -53,8 +53,7 @@ export async function POST(request: Request) {
     if (updateError) {
       console.error('Error updating preferences:', updateError)
       return NextResponse.json({
-        error: 'Failed to update verification status',
-        details: updateError.message
+        error: 'Failed to update verification status'
       }, { status: 500 })
     }
 
@@ -66,8 +65,7 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error('Verification error:', error)
     return NextResponse.json({
-      error: 'Verification failed',
-      details: error instanceof Error ? error.message : 'Unknown error'
+      error: 'Verification failed'
     }, { status: 500 })
   }
 }

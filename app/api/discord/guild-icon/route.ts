@@ -66,10 +66,10 @@ export async function GET(request: NextRequest) {
       iconUrl,
       name: guildData.name
     })
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error fetching Discord guild icon:', error)
     return NextResponse.json(
-      { error: error.message || 'Failed to fetch Discord server icon' },
+      { error: 'Failed to fetch Discord server icon' },
       { status: 500 }
     )
   }

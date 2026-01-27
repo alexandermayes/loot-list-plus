@@ -21,16 +21,28 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Verify user is a member of this guild
+    // Get user's characters first
+    const { data: userCharacters } = await supabase
+      .from('characters')
+      .select('id')
+      .eq('user_id', user.id)
+
+    if (!userCharacters || userCharacters.length === 0) {
+      return NextResponse.json({ error: 'No characters found' }, { status: 403 })
+    }
+
+    const characterIds = userCharacters.map(c => c.id)
+
+    // Verify user is a member of this guild via their characters
     const { data: membership } = await supabase
       .from('character_guild_memberships')
       .select('id')
       .eq('guild_id', guildId)
+      .in('character_id', characterIds)
       .eq('is_active', true)
       .limit(1)
-      .single()
 
-    if (!membership) {
+    if (!membership || membership.length === 0) {
       return NextResponse.json({ error: 'Not a member of this guild' }, { status: 403 })
     }
 
@@ -44,10 +56,10 @@ export async function GET(
     }
 
     return NextResponse.json({ expansions })
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error in GET /api/guilds/[id]/expansions:', error)
     return NextResponse.json(
-      { error: error.message || 'Internal server error' },
+      { error: 'Internal server error' },
       { status: 500 }
     )
   }
@@ -164,10 +176,10 @@ export async function POST(
       expansionId: result.expansionId,
       message: `${expansionName} has been added to your guild!`
     })
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error in POST /api/guilds/[id]/expansions:', error)
     return NextResponse.json(
-      { error: error.message || 'Internal server error' },
+      { error: 'Internal server error' },
       { status: 500 }
     )
   }
