@@ -386,15 +386,12 @@ export default function ProfilePage() {
                 </div>
                 <div className="relative flex items-center bg-background-subtle border border-border rounded-full p-1">
                   {/* Animated background indicator */}
-                  {mounted && (
-                    <div
-                      className="absolute top-1 left-1 h-8 w-10 bg-accent/20 rounded-full will-change-transform"
-                      style={{
-                        transform: `translateX(${selectedTheme === 'light' ? '40px' : selectedTheme === 'dark' ? '80px' : '0px'})`,
-                        transition: 'transform 300ms ease-out'
-                      }}
-                    />
-                  )}
+                  <div
+                    className={`absolute top-1 left-1 h-8 w-10 bg-accent/20 rounded-full transition-transform duration-300 ease-out ${mounted ? 'opacity-100' : 'opacity-0'}`}
+                    style={{
+                      transform: `translateX(${selectedTheme === 'light' ? '40px' : selectedTheme === 'dark' ? '80px' : '0px'})`
+                    }}
+                  />
                   <button
                     onClick={() => {
                       setSelectedTheme('system')
