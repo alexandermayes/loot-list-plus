@@ -13,6 +13,8 @@ import { LoadingSpinner, Spinner } from "@/components/ui/loading-spinner";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Heading, Text, LabelText } from "@/components/ui/typography";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useNotification } from "@/app/contexts/NotificationContext";
 import {
   Modal,
   ModalHeader,
@@ -73,6 +75,7 @@ export default function DesignSystemPage() {
   const [demoModalOpen, setDemoModalOpen] = useState(false);
   const [modalSize, setModalSize] = useState<'sm' | 'default' | 'lg' | 'xl' | 'full'>('default');
   const [buttonLoading, setButtonLoading] = useState(false);
+  const { showNotification } = useNotification();
 
   const toggleTheme = () => {
     setDarkMode(!darkMode);
@@ -1283,6 +1286,94 @@ export default function DesignSystemPage() {
             <div className="text-center space-y-2">
               <div className="w-16 h-16 bg-background-elevated border border-border rounded-full" />
               <p className="text-xs text-foreground-muted">full</p>
+            </div>
+          </div>
+        </section>
+
+        {/* Toast & Notifications */}
+        <section className="space-y-6">
+          <div>
+            <h2 className="text-2xl font-semibold">Toast & Notifications</h2>
+            <p className="text-foreground-secondary">Feedback messages for user actions</p>
+          </div>
+
+          {/* Toast Notifications */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-medium text-foreground">Toast Notifications</h3>
+            <p className="text-sm text-muted-foreground">
+              Use <code className="text-accent">useNotification()</code> hook for global toast messages
+            </p>
+            <div className="flex flex-wrap gap-3">
+              <Button
+                variant="success"
+                size="sm"
+                onClick={() => showNotification('success', 'Changes saved successfully!')}
+              >
+                Show Success
+              </Button>
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={() => showNotification('error', 'Something went wrong. Please try again.')}
+              >
+                Show Error
+              </Button>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => showNotification('warning', 'Your session will expire soon.')}
+              >
+                Show Warning
+              </Button>
+              <Button
+                variant="accent"
+                size="sm"
+                onClick={() => showNotification('info', 'New features are available!')}
+              >
+                Show Info
+              </Button>
+            </div>
+          </div>
+
+          {/* Inline Alerts */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-medium text-foreground">Inline Alerts</h3>
+            <p className="text-sm text-muted-foreground">
+              Use <code className="text-accent">Alert</code> component for persistent inline messages
+            </p>
+            <div className="space-y-3">
+              <Alert variant="success">
+                <AlertDescription>Your loot list has been submitted for review.</AlertDescription>
+              </Alert>
+              <Alert variant="destructive">
+                <AlertDescription>Failed to save changes. Please check your connection.</AlertDescription>
+              </Alert>
+              <Alert variant="warning">
+                <AlertDescription>This action cannot be undone.</AlertDescription>
+              </Alert>
+              <Alert variant="info">
+                <AlertDescription>Tip: You can drag items to reorder your priority list.</AlertDescription>
+              </Alert>
+              <Alert variant="default">
+                <AlertDescription>No pending submissions to review.</AlertDescription>
+              </Alert>
+            </div>
+          </div>
+
+          {/* Usage Patterns */}
+          <div className="bg-background-elevated p-4 rounded-lg border border-border">
+            <h3 className="text-sm font-medium text-foreground-secondary mb-3 uppercase tracking-wider">Usage Patterns</h3>
+            <div className="space-y-3 text-sm">
+              <div>
+                <p className="font-medium text-foreground mb-1">Toast (temporary, auto-dismiss):</p>
+                <code className="text-accent text-xs">{"const { showNotification } = useNotification()"}</code>
+                <br />
+                <code className="text-accent text-xs">{"showNotification('success', 'Saved!')"}</code>
+              </div>
+              <div>
+                <p className="font-medium text-foreground mb-1">Alert (persistent, inline):</p>
+                <code className="text-accent text-xs">{'<Alert variant="success"><AlertDescription>Message</AlertDescription></Alert>'}</code>
+              </div>
             </div>
           </div>
         </section>

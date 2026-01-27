@@ -2,46 +2,35 @@
 
 import { useNotification, NotificationType } from '@/app/contexts/NotificationContext'
 import { useEffect, useState } from 'react'
+import { HugeiconsIcon } from '@hugeicons/react'
+import { CheckmarkCircle01Icon, Cancel01Icon, AlertCircleIcon, InformationCircleIcon } from '@hugeicons/core-free-icons'
 
+/**
+ * Toast notification styles using design tokens
+ */
 const getNotificationStyles = (type: NotificationType) => {
   switch (type) {
     case 'success':
-      return 'bg-green-900/95 border-green-500 text-green-100'
+      return 'bg-success/95 border-success text-success-foreground'
     case 'error':
-      return 'bg-red-900/95 border-red-500 text-red-100'
+      return 'bg-destructive/95 border-destructive text-destructive-foreground'
     case 'warning':
-      return 'bg-yellow-900/95 border-yellow-500 text-yellow-100'
+      return 'bg-yellow-500/95 border-yellow-500 text-white'
     case 'info':
-      return 'bg-blue-900/95 border-blue-500 text-blue-100'
+      return 'bg-accent/95 border-accent text-accent-foreground'
   }
 }
 
 const getNotificationIcon = (type: NotificationType) => {
   switch (type) {
     case 'success':
-      return (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-        </svg>
-      )
+      return <HugeiconsIcon icon={CheckmarkCircle01Icon} size={20} />
     case 'error':
-      return (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-        </svg>
-      )
+      return <HugeiconsIcon icon={Cancel01Icon} size={20} />
     case 'warning':
-      return (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-        </svg>
-      )
+      return <HugeiconsIcon icon={AlertCircleIcon} size={20} />
     case 'info':
-      return (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-      )
+      return <HugeiconsIcon icon={InformationCircleIcon} size={20} />
   }
 }
 

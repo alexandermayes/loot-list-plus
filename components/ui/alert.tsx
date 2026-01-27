@@ -3,14 +3,26 @@ import { cva, type VariantProps } from "class-variance-authority"
 
 import { cn } from "@/lib/utils"
 
+/**
+ * Alert Component - Inline notification/message styling
+ *
+ * Variants:
+ * - default: Neutral background for general information
+ * - success: Green styling for success messages
+ * - destructive: Red styling for errors
+ * - warning: Yellow/orange styling for warnings
+ * - info: Blue/accent styling for informational messages
+ */
 const alertVariants = cva(
-  "relative w-full rounded-lg border p-4 [&>svg~*]:pl-7 [&>svg+div]:translate-y-[-3px] [&>svg]:absolute [&>svg]:left-4 [&>svg]:top-4 [&>svg]:text-foreground",
+  "relative w-full rounded-xl border p-4 text-sm [&>svg~*]:pl-7 [&>svg+div]:translate-y-[-3px] [&>svg]:absolute [&>svg]:left-4 [&>svg]:top-4",
   {
     variants: {
       variant: {
-        default: "bg-background text-foreground",
-        destructive:
-          "border-destructive/50 text-destructive dark:border-destructive [&>svg]:text-destructive",
+        default: "bg-background-elevated border-border text-foreground [&>svg]:text-foreground",
+        success: "bg-success/10 border-success/30 text-success [&>svg]:text-success",
+        destructive: "bg-destructive/10 border-destructive/30 text-destructive [&>svg]:text-destructive",
+        warning: "bg-yellow-500/10 border-yellow-500/30 text-yellow-500 [&>svg]:text-yellow-500",
+        info: "bg-accent/10 border-accent/30 text-accent [&>svg]:text-accent",
       },
     },
     defaultVariants: {
