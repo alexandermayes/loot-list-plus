@@ -389,9 +389,12 @@ export default function ProfilePage() {
                 <div className="relative flex items-center bg-background-subtle border border-border rounded-full p-1">
                   {/* Animated background indicator */}
                   <div
-                    className={`absolute top-1 left-1 h-8 w-10 bg-accent/20 rounded-full transition-transform duration-300 ease-out ${mounted ? 'opacity-100' : 'opacity-0'}`}
+                    className={`absolute top-1 left-1 h-8 w-10 bg-accent/20 rounded-full ${mounted ? 'opacity-100' : 'opacity-0'}`}
                     style={{
-                      transform: `translateX(${selectedTheme === 'light' ? '40px' : selectedTheme === 'dark' ? '80px' : '0px'})`
+                      transform: `translateX(${(selectedTheme || theme) === 'light' ? '40px' : (selectedTheme || theme) === 'dark' ? '80px' : '0px'})`,
+                      transitionProperty: 'transform',
+                      transitionDuration: '300ms',
+                      transitionTimingFunction: 'ease-out'
                     }}
                   />
                   <button
@@ -400,7 +403,7 @@ export default function ProfilePage() {
                       setTheme('system')
                     }}
                     className={`relative z-10 w-10 h-8 flex items-center justify-center rounded-full text-[13px] font-medium transition-colors duration-200 ${
-                      selectedTheme === 'system'
+                      (selectedTheme || theme) === 'system'
                         ? 'text-accent'
                         : 'text-muted-foreground hover:text-foreground'
                     }`}
@@ -414,7 +417,7 @@ export default function ProfilePage() {
                       setTheme('light')
                     }}
                     className={`relative z-10 w-10 h-8 flex items-center justify-center rounded-full text-[13px] font-medium transition-colors duration-200 ${
-                      selectedTheme === 'light'
+                      (selectedTheme || theme) === 'light'
                         ? 'text-accent'
                         : 'text-muted-foreground hover:text-foreground'
                     }`}
@@ -428,7 +431,7 @@ export default function ProfilePage() {
                       setTheme('dark')
                     }}
                     className={`relative z-10 w-10 h-8 flex items-center justify-center rounded-full text-[13px] font-medium transition-colors duration-200 ${
-                      selectedTheme === 'dark'
+                      (selectedTheme || theme) === 'dark'
                         ? 'text-accent'
                         : 'text-muted-foreground hover:text-foreground'
                     }`}
