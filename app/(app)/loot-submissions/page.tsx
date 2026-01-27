@@ -5,7 +5,6 @@ import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import type { User } from '@supabase/supabase-js'
 import { useGuildContext } from '@/app/contexts/GuildContext'
-import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { TierTabsSkeleton, SubmissionsListSkeleton } from '@/components/ui/skeletons'
 import { StatusBadge, type SubmissionStatus } from '@/components/ui/status-badge'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -528,12 +527,7 @@ export default function MasterLootPage() {
           {/* Submissions List */}
           <div className="space-y-3">
             {contentLoading ? (
-              <div className="bg-background-elevated border border-border rounded-xl p-12">
-                <div className="flex flex-col items-center justify-center gap-4">
-                  <LoadingSpinner />
-                  <p className="text-muted-foreground text-sm">Loading submissions...</p>
-                </div>
-              </div>
+              <SubmissionsListSkeleton count={4} />
             ) : filteredSubmissions.length === 0 ? (
               <EmptyState
                 icon={ScrollIcon}

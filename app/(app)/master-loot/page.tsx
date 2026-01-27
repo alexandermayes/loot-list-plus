@@ -5,7 +5,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import type { User } from '@supabase/supabase-js'
 import { useGuildContext } from '@/app/contexts/GuildContext'
-import { LoadingSpinner } from '@/components/ui/loading-spinner'
+import { SubmissionsListSkeleton, TierTabsSkeleton } from '@/components/ui/skeletons'
 import { Modal, ModalHeader, ModalTitle, ModalBody, ModalFooter } from '@/components/ui/modal'
 import { Button } from '@/components/ui/button'
 import { Heading } from '@/components/ui/typography'
@@ -241,17 +241,9 @@ export default function MasterLootPage() {
     return sub.status === filter
   })
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <LoadingSpinner />
-      </div>
-    )
-  }
-
   return (
     <div className="p-8 space-y-6 font-poppins">
-      {/* Header with Settings Button */}
+      {/* Header with Settings Button - Always visible */}
       <div className="flex items-center justify-between">
         <div>
           <Heading level={1}>Master Loot</Heading>
@@ -266,7 +258,15 @@ export default function MasterLootPage() {
         </Link>
       </div>
 
-      {message && (
+      {/* Show skeleton while loading */}
+      {loading ? (
+        <div className="space-y-6">
+          <TierTabsSkeleton />
+          <SubmissionsListSkeleton count={4} />
+        </div>
+      ) : (
+        <>
+          {message && (
         <div className={`p-4 rounded-xl ${
           message.type === 'success'
             ? 'bg-success/10 border border-success/50 text-success'
@@ -403,6 +403,8 @@ export default function MasterLootPage() {
           </Button>
         </ModalFooter>
       </Modal>
+        </>
+      )}
     </div>
   )
 }
