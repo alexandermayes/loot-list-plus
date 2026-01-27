@@ -10,6 +10,11 @@ export async function POST() {
 }
 
 async function handleRequest() {
+  // SECURITY: Restrict debug endpoint to development only
+  if (process.env.NODE_ENV !== 'development') {
+    return NextResponse.json({ error: 'Not available in production' }, { status: 404 })
+  }
+
   const supabase = await createClient()
 
   try {

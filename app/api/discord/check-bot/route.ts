@@ -54,16 +54,14 @@ export async function GET(request: NextRequest) {
       console.log(`Bot is NOT installed in server ${serverId} (status: ${response.status})`)
       return NextResponse.json({
         installed: false,
-        message: 'Bot is not installed in this server',
-        debug: { status: response.status, response: responseText }
+        message: 'Bot is not installed in this server'
       })
     } else {
       // Some other error
       console.error('Discord API error:', response.status, responseText)
       return NextResponse.json({
         installed: false,
-        message: 'Unable to verify bot installation',
-        debug: { status: response.status, response: responseText }
+        message: 'Unable to verify bot installation'
       })
     }
   } catch (error) {

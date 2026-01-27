@@ -2,6 +2,11 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/utils/supabase/server'
 
 export async function GET() {
+  // SECURITY: Restrict debug endpoint to development only
+  if (process.env.NODE_ENV !== 'development') {
+    return NextResponse.json({ error: 'Not available in production' }, { status: 404 })
+  }
+
   const supabase = await createClient()
 
   try {

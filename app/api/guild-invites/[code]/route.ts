@@ -11,6 +11,12 @@ export async function GET(
     const supabase = await createClient()
     const { code } = await params
 
+    // SECURITY: Require authentication to validate invite codes
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     if (!code) {
       return NextResponse.json(
         { error: 'Invite code is required' },
