@@ -321,7 +321,7 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange }
 
     <aside
       ref={sidebarRef}
-      className={`fixed left-0 top-0 h-screen bg-[#0d0e11] flex flex-col px-0 pb-0 z-50 ${isResizing ? '' : 'transition-[width] duration-150'}`}
+      className={`fixed left-0 top-0 h-screen bg-background-subtle flex flex-col px-0 pb-0 z-50 ${isResizing ? '' : 'transition-[width] duration-150'}`}
       style={{ width: sidebarWidth }}
     >
       {/* Resize Handle */}
@@ -330,14 +330,14 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange }
         className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize z-30 group"
       >
         {/* Visible line */}
-        <div className={`absolute right-0 top-0 bottom-0 w-px transition-colors ${isResizing ? 'bg-primary' : 'bg-[rgba(255,255,255,0.1)] group-hover:bg-[rgba(255,255,255,0.3)]'}`} />
+        <div className={`absolute right-0 top-0 bottom-0 w-px transition-colors ${isResizing ? 'bg-primary' : 'bg-border group-hover:bg-[rgba(255,255,255,0.3)]'}`} />
         {/* Wider hit area */}
         <div className="absolute right-[-2px] top-0 bottom-0 w-[5px]" />
       </div>
       {/* Logo with scroll fade gradient - positioned to overlay scroll content */}
       <div
         className="absolute top-0 left-0 right-0 flex flex-col items-start justify-center px-[10px] py-[36px] z-10 pointer-events-none"
-        style={{ background: 'linear-gradient(to bottom, #0d0e11 69.886%, rgba(13,14,17,0) 100%)', width: sidebarWidth }}
+        style={{ background: 'linear-gradient(to bottom, hsl(var(--background-subtle)) 69.886%, hsl(var(--background-subtle) / 0) 100%)', width: sidebarWidth }}
       >
         <div className="px-[12px] pointer-events-auto">
           <button
@@ -361,7 +361,7 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange }
         {/* Guild Selector */}
         <div className="flex flex-col gap-[4px]">
           <div className="px-3">
-            <p className="font-poppins font-medium text-[10px] text-[#a1a1a1] uppercase tracking-wide">
+            <p className="font-poppins font-medium text-[10px] text-muted-foreground uppercase tracking-wide">
               GUILD
             </p>
           </div>
@@ -369,17 +369,17 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange }
           <div className="relative" ref={dropdownRef}>
           {loading ? (
             /* Loading skeleton for guild selector */
-            <div className="w-full bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-[12px] px-[14px] py-2 flex items-center gap-3 animate-pulse">
-              <div className="w-5 h-5 rounded-[4px] bg-[#383838] shrink-0" />
+            <div className="w-full bg-background-elevated border border-border rounded-[12px] px-[14px] py-2 flex items-center gap-3 animate-pulse">
+              <div className="w-5 h-5 rounded-[4px] bg-border-strong shrink-0 border border-border" />
               <div className="flex-1 min-w-0 space-y-1.5">
-                <div className="h-3 bg-[#383838] rounded w-24" />
-                <div className="h-2 bg-[#383838] rounded w-16" />
+                <div className="h-3 bg-border-strong rounded w-24" />
+                <div className="h-2 bg-border-strong rounded w-16" />
               </div>
             </div>
           ) : !activeGuild ? (
             <button
               onClick={() => setShowCreateGuildModal(true)}
-              className="w-full border-[#ff8000] border-[0.5px] rounded-[12px] px-[14px] py-2 flex items-center gap-3 hover:opacity-90 transition"
+              className="w-full border-accent border-[0.5px] rounded-[12px] px-[14px] py-2 flex items-center gap-3 hover:opacity-90 transition"
               style={{ background: 'linear-gradient(179.949deg, rgb(255, 128, 0) 0.15%, rgb(153, 77, 0) 113.91%)' }}
             >
               <Image
@@ -401,7 +401,7 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange }
           ) : (
             <button
               onClick={() => setGuildDropdownOpen(!guildDropdownOpen)}
-              className="w-full bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-[12px] px-[14px] py-2 flex items-center gap-3 hover:bg-[#1a1a1a] transition"
+              className="w-full bg-background-elevated border border-border rounded-[12px] px-[14px] py-2 flex items-center gap-3 hover:bg-muted transition"
             >
               {activeGuild.icon_url ? (
                 <Image
@@ -409,16 +409,16 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange }
                   alt="Guild icon"
                   width={20}
                   height={20}
-                  className="w-5 h-5 rounded-[4px] shrink-0"
+                  className="w-5 h-5 rounded-[4px] shrink-0 border border-border"
                 />
               ) : (
-                <div className="w-5 h-5 bg-[#d9d9d9] rounded-[4px] shrink-0" />
+                <div className="w-5 h-5 bg-muted-foreground rounded-[4px] shrink-0 border border-border" />
               )}
               <div className="flex-1 text-left leading-[normal] min-w-0">
                 <p className="font-poppins font-medium text-[13px] text-white w-full truncate">
                   {activeGuild.name}
                 </p>
-                <p className="font-poppins font-normal text-[10px] text-[#a1a1a1] w-full truncate">
+                <p className="font-poppins font-normal text-[10px] text-muted-foreground w-full truncate">
                   {activeGuild.realm ? `${activeGuild.realm} • ${activeGuild.faction}` : ''}
                 </p>
               </div>
@@ -434,10 +434,10 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange }
 
           {/* Guild Dropdown */}
           {guildDropdownOpen && (
-            <div className="absolute top-full mt-2 left-0 w-full bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-[12px] shadow-lg overflow-hidden z-50 py-2">
+            <div className="absolute top-full mt-2 left-0 w-full bg-background-elevated border border-border rounded-[12px] shadow-lg overflow-hidden z-50 py-2">
               {/* Guilds Section */}
               <div className="px-3 pt-2 pb-1">
-                <p className="font-poppins font-medium text-[10px] text-[#a1a1a1] uppercase tracking-wide">
+                <p className="font-poppins font-medium text-[10px] text-muted-foreground uppercase tracking-wide">
                   GUILDS
                 </p>
               </div>
@@ -447,7 +447,7 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange }
                   <button
                     key={g.guild.id}
                     onClick={() => handleSwitchGuild(g.guild.id)}
-                    className="w-full px-[14px] py-2 flex items-center gap-3 hover:bg-[#1a1a1a] transition text-left"
+                    className="w-full px-[14px] py-2 flex items-center gap-3 hover:bg-muted transition text-left"
                   >
                     {g.guild.icon_url ? (
                       <Image
@@ -455,16 +455,16 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange }
                         alt="Guild icon"
                         width={20}
                         height={20}
-                        className="w-5 h-5 rounded-[4px] shrink-0"
+                        className="w-5 h-5 rounded-[4px] shrink-0 border border-border"
                       />
                     ) : (
-                      <div className="w-5 h-5 bg-[#d9d9d9] rounded-[4px] shrink-0" />
+                      <div className="w-5 h-5 bg-muted-foreground rounded-[4px] shrink-0 border border-border" />
                     )}
                     <div className="flex-1 leading-[normal] min-w-0">
                       <p className="font-poppins font-medium text-[13px] text-white w-full truncate">
                         {g.guild.name}
                       </p>
-                      <p className="font-poppins font-normal text-[10px] text-[#a1a1a1] w-full truncate">
+                      <p className="font-poppins font-normal text-[10px] text-muted-foreground w-full truncate">
                         {g.guild.realm ? `${g.guild.realm} • ${g.guild.faction}` : ''}
                       </p>
                     </div>
@@ -482,7 +482,7 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange }
               })}
 
               {/* Divider */}
-              <div className="h-px bg-[rgba(255,255,255,0.1)] my-1" />
+              <div className="h-px bg-border my-1" />
 
               {/* Join Guild Option */}
               <button
@@ -493,7 +493,7 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange }
                   setInviteCode('')
                   setDiscordError('')
                 }}
-                className="w-full px-[14px] py-2 flex items-center gap-3 hover:bg-[#1a1a1a] transition text-left"
+                className="w-full px-[14px] py-2 flex items-center gap-3 hover:bg-muted transition text-left"
               >
                 <Image
                   src="/icons/user-multiple.svg"
@@ -513,7 +513,7 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange }
                   setGuildDropdownOpen(false)
                   setShowCreateGuildModal(true)
                 }}
-                className="w-full px-[14px] py-2 flex items-center gap-3 hover:bg-[#1a1a1a] transition text-left"
+                className="w-full px-[14px] py-2 flex items-center gap-3 hover:bg-muted transition text-left"
               >
                 <Image
                   src="/icons/add-circle.svg"
@@ -535,17 +535,17 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange }
         {(loading || activeGuild) && (
           <div className="flex flex-col gap-[4px]">
             <div className="px-3">
-              <p className="font-poppins font-medium text-[10px] text-[#a1a1a1] uppercase tracking-wide">
+              <p className="font-poppins font-medium text-[10px] text-muted-foreground uppercase tracking-wide">
                 CHARACTER
               </p>
             </div>
             {loading ? (
               /* Loading skeleton for character selector */
-              <div className="w-full px-[14px] py-2 bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-[12px] flex items-center gap-3 animate-pulse">
-                <div className="w-5 h-5 rounded-full bg-[#383838] flex-shrink-0" />
+              <div className="w-full px-[14px] py-2 bg-background-elevated border border-border rounded-[12px] flex items-center gap-3 animate-pulse">
+                <div className="w-5 h-5 rounded-full bg-border-strong flex-shrink-0 border border-border" />
                 <div className="flex-1 min-w-0 space-y-1.5">
-                  <div className="h-3 bg-[#383838] rounded w-24" />
-                  <div className="h-2 bg-[#383838] rounded w-16" />
+                  <div className="h-3 bg-border-strong rounded w-24" />
+                  <div className="h-2 bg-border-strong rounded w-16" />
                 </div>
               </div>
             ) : (
@@ -565,8 +565,8 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange }
                 !activeGuild
                   ? 'opacity-20 cursor-not-allowed text-white'
                   : isActive(item.view)
-                  ? 'bg-[rgba(255,128,0,0.2)] border-[0.5px] border-[rgba(255,128,0,0.2)] text-[#ff8000]'
-                  : 'text-white hover:bg-[#1a1a1a]'
+                  ? 'bg-accent/20 border-[0.5px] border-accent/20 text-accent'
+                  : 'text-white hover:bg-muted'
               }`}
             >
               <Image
@@ -579,7 +579,7 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange }
                 }`}
                 style={activeGuild && isActive(item.view) ? { filter: 'invert(55%) sepia(89%) saturate(2274%) hue-rotate(1deg) brightness(101%) contrast(105%)' } : undefined}
               />
-              <span>{item.name}</span>
+              <span className="whitespace-nowrap">{item.name}</span>
             </button>
           ))}
         </div>
@@ -588,7 +588,7 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange }
         {adminItems.length > 0 && (
           <div className="flex flex-col gap-[8px]">
             <div className="px-3">
-              <p className="font-poppins font-medium text-[10px] text-[#a1a1a1] uppercase tracking-wide">
+              <p className="font-poppins font-medium text-[10px] text-muted-foreground uppercase tracking-wide">
                 ADMIN SETTINGS
               </p>
             </div>
@@ -598,8 +598,8 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange }
                 onClick={() => handleNavClick(item.view)}
                 className={`w-full px-3.5 py-[10px] flex items-center gap-3 rounded-[40px] transition font-poppins font-medium text-[13px] text-left ${
                   isActive(item.view)
-                    ? 'bg-[rgba(255,128,0,0.2)] border-[0.5px] border-[rgba(255,128,0,0.2)] text-[#ff8000]'
-                    : 'text-white hover:bg-[#1a1a1a]'
+                    ? 'bg-accent/20 border-[0.5px] border-accent/20 text-accent'
+                    : 'text-white hover:bg-muted'
                 }`}
               >
                 <Image
@@ -621,10 +621,10 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange }
 
       {/* Bottom Section - Fixed at bottom, overlays scrollable area */}
       <div
-        className="absolute bottom-0 left-0 right-0 flex flex-col gap-0 z-10 bg-[#0d0e11] border-t border-[#222224] p-[10px]"
+        className="absolute bottom-0 left-0 right-0 flex flex-col gap-0 z-10 bg-background-subtle border-t border-border p-[10px]"
         style={{ width: sidebarWidth }}
       >
-        <button className="w-full px-3.5 py-2 flex items-center gap-3 rounded-[40px] hover:bg-[#1a1a1a] transition font-poppins font-medium text-[13px] text-white">
+        <button className="w-full px-3.5 py-2 flex items-center gap-3 rounded-[40px] hover:bg-muted transition font-poppins font-medium text-[13px] text-white">
           <Image
             src="/icons/help.svg"
             alt="Help"
@@ -632,10 +632,10 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange }
             height={20}
             className="w-5 h-5"
           />
-          <span>Help</span>
+          <span className="whitespace-nowrap">Help</span>
         </button>
 
-        <button className="w-full px-3.5 py-2 flex items-center gap-3 rounded-[40px] hover:bg-[#1a1a1a] transition font-poppins font-medium text-[13px] text-white">
+        <button className="w-full px-3.5 py-2 flex items-center gap-3 rounded-[40px] hover:bg-muted transition font-poppins font-medium text-[13px] text-white">
           <Image
             src="/icons/moon.svg"
             alt="Dark mode"
@@ -643,23 +643,23 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange }
             height={20}
             className="w-5 h-5"
           />
-          <span>Dark mode</span>
+          <span className="whitespace-nowrap">Dark mode</span>
         </button>
 
         {/* User Profile Card */}
         {loading ? (
           /* Loading skeleton for user profile */
-          <div className="w-full bg-[#141519] border border-[#1a1a1a] rounded-xl px-3.5 py-2 flex items-center gap-3 mt-2 animate-pulse">
-            <div className="w-5 h-5 rounded-full bg-[#383838] shrink-0" />
+          <div className="w-full bg-background-elevated border border-muted rounded-xl px-3.5 py-2 flex items-center gap-3 mt-2 animate-pulse">
+            <div className="w-5 h-5 rounded-full bg-border-strong shrink-0 border border-border" />
             <div className="flex-1 min-w-0 space-y-1.5">
-              <div className="h-3 bg-[#383838] rounded w-20" />
-              <div className="h-2 bg-[#383838] rounded w-12" />
+              <div className="h-3 bg-border-strong rounded w-20" />
+              <div className="h-2 bg-border-strong rounded w-12" />
             </div>
           </div>
         ) : (
           <button
             onClick={() => router.push('/profile')}
-            className="w-full bg-[#141519] border border-[#1a1a1a] rounded-xl px-3.5 py-2 flex items-center gap-3 hover:bg-[#1a1a1a] transition mt-2"
+            className="w-full bg-background-elevated border border-muted rounded-xl px-3.5 py-2 flex items-center gap-3 hover:bg-muted transition mt-2"
           >
             {user?.user_metadata?.avatar_url ? (
               <Image
@@ -669,20 +669,20 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange }
                 alt="Avatar"
                 width={20}
                 height={20}
-                className="w-5 h-5 rounded-full shrink-0 border border-[rgba(255,255,255,0.1)]"
+                className="w-5 h-5 rounded-full shrink-0 border border-border"
                 onError={(e) => {
                   const target = e.target as HTMLImageElement
                   target.src = 'https://cdn.discordapp.com/embed/avatars/0.png'
                 }}
               />
             ) : (
-              <div className="w-5 h-5 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 shrink-0 border border-[rgba(255,255,255,0.1)]" />
+              <div className="w-5 h-5 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 shrink-0 border border-border" />
             )}
             <div className="flex-1 text-left pb-[2px] pt-0 px-0 leading-[normal] min-w-0">
               <p className="font-poppins font-medium text-[13px] text-white w-full truncate">
                 {user?.user_metadata?.custom_claims?.global_name || user?.user_metadata?.full_name || activeMember?.character_name || 'User'}
               </p>
-              <p className="font-poppins font-normal text-[10px] text-[#a1a1a1] w-full truncate">
+              <p className="font-poppins font-normal text-[10px] text-muted-foreground w-full truncate">
                 {activeMember?.role || 'Member'}
               </p>
             </div>
@@ -714,24 +714,24 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange }
         }}
       >
         <div
-          className="bg-[#0d0e11] border border-[#383838] rounded-xl w-full max-w-2xl max-h-[90vh] h-[480px] overflow-hidden flex flex-col"
+          className="bg-background-subtle border border-border-strong rounded-xl w-full max-w-2xl max-h-[90vh] h-[480px] overflow-hidden flex flex-col"
           onClick={(e) => e.stopPropagation()}
         >
           {modalView === 'main' ? (
             /* Main View - Choose Discord or Code */
             <>
               {/* Header */}
-              <div className="p-6 border-b border-[#383838] bg-[#141519]">
+              <div className="p-6 border-b border-border-strong bg-background-elevated">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <img
                       src="https://wow.zamimg.com/images/wow/icons/large/inv_shirt_guildtabard_01.jpg"
                       alt="Guild Tabard"
-                      className="w-10 h-10 rounded-xl border border-[rgba(255,255,255,0.1)]"
+                      className="w-10 h-10 rounded-xl border border-border"
                     />
                     <div>
                       <h3 className="text-[20px] font-bold text-white">Join a guild</h3>
-                      <p className="text-[12px] text-[#a1a1a1]">Choose how you'd like to join</p>
+                      <p className="text-[12px] text-muted-foreground">Choose how you'd like to join</p>
                     </div>
                   </div>
                   <button
@@ -739,7 +739,7 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange }
                       setShowJoinModal(false)
                       setModalView('main')
                     }}
-                    className="text-[#a1a1a1] hover:text-white transition"
+                    className="text-muted-foreground hover:text-white transition"
                   >
                     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -752,7 +752,7 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange }
               <div className="p-6 flex-1 flex flex-col justify-center">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
                   {/* Join via Discord */}
-                  <div className="bg-[#141519] border border-[#383838] rounded-[24px] p-5 pt-8 flex flex-col items-center">
+                  <div className="bg-background-elevated border border-border-strong rounded-[24px] p-5 pt-8 flex flex-col items-center">
                     <div className="flex flex-col gap-5 items-center w-full flex-1">
                       <Image
                         src="/icons/discord-large.svg"
@@ -765,7 +765,7 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange }
                         <h2 className="font-poppins font-bold text-lg text-white">
                           Join with Discord
                         </h2>
-                        <p className="font-poppins font-normal text-sm text-[#a1a1a1]">
+                        <p className="font-poppins font-normal text-sm text-muted-foreground">
                           If your guild has Discord linked, you're in automatically.
                         </p>
                       </div>
@@ -774,7 +774,7 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange }
                       onClick={() => {
                         handleOpenDiscordModal()
                       }}
-                      className="w-full bg-white hover:bg-gray-100 border border-[#383838] rounded-[52px] px-5 py-3 flex items-center justify-center transition mt-5"
+                      className="w-full bg-white hover:bg-gray-100 border border-border-strong rounded-[52px] px-5 py-3 flex items-center justify-center transition mt-5"
                     >
                       <span className="font-poppins font-medium text-base text-black">
                         Select guild
@@ -783,7 +783,7 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange }
                   </div>
 
                   {/* Join with Code */}
-                  <div className="bg-[#141519] border border-[#383838] rounded-[24px] p-5 pt-8 flex flex-col items-center">
+                  <div className="bg-background-elevated border border-border-strong rounded-[24px] p-5 pt-8 flex flex-col items-center">
                     <div className="flex flex-col gap-5 items-center w-full flex-1">
                       <Image
                         src="/icons/password-validation.svg"
@@ -796,7 +796,7 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange }
                         <h2 className="font-poppins font-bold text-lg text-white">
                           Join with Code
                         </h2>
-                        <p className="font-poppins font-normal text-sm text-[#a1a1a1]">
+                        <p className="font-poppins font-normal text-sm text-muted-foreground">
                           Paste the code from your guild officer.
                         </p>
                       </div>
@@ -808,13 +808,13 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange }
                           value={inviteCode}
                           onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
                           placeholder="ABC123DEF456"
-                          className="flex-1 min-w-0 bg-[#0d0e11] border border-[#383838] rounded-[52px] px-5 py-3 font-poppins font-medium text-base text-white placeholder:text-[#666] focus:outline-none focus:border-[#555]"
+                          className="flex-1 min-w-0 bg-background-subtle border border-border-strong rounded-[52px] px-5 py-3 font-poppins font-medium text-base text-white placeholder:text-muted-foreground/60 focus:outline-none focus:border-border-strong"
                           disabled={joining}
                         />
                         <button
                           onClick={handleJoinWithCode}
                           disabled={joining || !inviteCode.trim()}
-                          className="bg-white hover:bg-gray-100 disabled:bg-gray-600 disabled:cursor-not-allowed border border-[#383838] rounded-[52px] px-5 py-3 transition shrink-0"
+                          className="bg-white hover:bg-gray-100 disabled:bg-gray-600 disabled:cursor-not-allowed border border-border-strong rounded-[52px] px-5 py-3 transition shrink-0"
                         >
                           <span className="font-poppins font-medium text-base text-black">
                             {joining ? '...' : 'Join'}
@@ -839,7 +839,7 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange }
                       Need Help?
                     </p>
                   </div>
-                  <p className="font-poppins font-normal text-xs text-[#a1a1a1] text-center">
+                  <p className="font-poppins font-normal text-xs text-muted-foreground text-center">
                     Ask your guild officer for an invite code or Discord link.
                   </p>
                 </div>
@@ -849,12 +849,12 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange }
             /* Discord View - Guild List */
             <>
               {/* Header */}
-              <div className="p-6 border-b border-[#383838] bg-[#141519]">
+              <div className="p-6 border-b border-border-strong bg-background-elevated">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <button
                       onClick={() => setModalView('main')}
-                      className="text-[#a1a1a1] hover:text-white transition"
+                      className="text-muted-foreground hover:text-white transition"
                     >
                       <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -862,7 +862,7 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange }
                     </button>
                     <div>
                       <h3 className="text-[20px] font-bold text-white">Select guild</h3>
-                      <p className="text-[12px] text-[#a1a1a1]">Automatically join guilds from your Discord servers</p>
+                      <p className="text-[12px] text-muted-foreground">Automatically join guilds from your Discord servers</p>
                     </div>
                   </div>
                   <button
@@ -870,7 +870,7 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange }
                       setShowJoinModal(false)
                       setModalView('main')
                     }}
-                    className="text-[#a1a1a1] hover:text-white transition"
+                    className="text-muted-foreground hover:text-white transition"
                   >
                     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -884,7 +884,7 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange }
                 {discordLoading ? (
                   <div className="flex flex-col items-center justify-center py-12">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white"></div>
-                    <p className="text-[14px] text-[#a1a1a1] mt-4">Loading available guilds...</p>
+                    <p className="text-[14px] text-muted-foreground mt-4">Loading available guilds...</p>
                   </div>
                 ) : discordError ? (
                   <div className="flex flex-col gap-4 p-4 rounded-xl bg-red-950/50 border border-red-600/50">
@@ -905,17 +905,17 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange }
                 ) : availableGuilds.length === 0 ? (
                   <div className="text-center py-8">
                     <p className="font-bold text-[18px] text-white mb-2">No guilds found</p>
-                    <p className="text-[14px] text-[#a1a1a1] mb-4">
+                    <p className="text-[14px] text-muted-foreground mb-4">
                       We didn't find any LootList+ guilds linked to your Discord servers.
                     </p>
-                    <div className="bg-[#141519] border border-[#383838] rounded-xl p-4 text-left space-y-2">
+                    <div className="bg-background-elevated border border-border-strong rounded-xl p-4 text-left space-y-2">
                       <p className="text-[14px] text-white font-medium">Why this might happen:</p>
-                      <ul className="text-[13px] text-[#a1a1a1] space-y-1 list-disc list-inside">
+                      <ul className="text-[13px] text-muted-foreground space-y-1 list-disc list-inside">
                         <li>No servers you're in use LootList+</li>
                         <li>You're already in all matching guilds</li>
                         <li>Discord integration isn't set up yet</li>
                       </ul>
-                      <p className="text-[13px] text-[#a1a1a1] mt-3">
+                      <p className="text-[13px] text-muted-foreground mt-3">
                         Use an invite code, or ask a guild officer to enable Discord integration.
                       </p>
                     </div>
@@ -927,7 +927,7 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange }
                       {availableGuilds.map((guild) => (
                         <div
                           key={guild.id}
-                          className="bg-[#141519] border border-[#383838] rounded-xl p-4 hover:border-[#505050] transition"
+                          className="bg-background-elevated border border-border-strong rounded-xl p-4 hover:border-border-strong transition"
                         >
                           <div className="flex items-center justify-between gap-4">
                             <div className="flex items-center gap-3 flex-1">
@@ -940,7 +940,7 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange }
                               )}
                               <div className="flex-1 min-w-0">
                                 <h4 className="font-bold text-[14px] text-white truncate">{guild.name}</h4>
-                                <div className="flex gap-2 text-[12px] text-[#a1a1a1] mt-0.5">
+                                <div className="flex gap-2 text-[12px] text-muted-foreground mt-0.5">
                                   {guild.realm && <span>{guild.realm}</span>}
                                   {guild.realm && <span>•</span>}
                                   <span>{guild.faction}</span>
@@ -963,13 +963,13 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange }
               </div>
 
               {/* Footer */}
-              <div className="p-4 border-t border-[#383838] bg-[#0d0e11]">
+              <div className="p-4 border-t border-border-strong bg-background-subtle">
                 <div className="flex items-start gap-2">
-                  <svg className="w-4 h-4 text-[#a1a1a1] shrink-0 mt-0.5" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5">
+                  <svg className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5">
                     <circle cx="10" cy="10" r="9" />
                     <path d="M10 6v4M10 14h.01" strokeLinecap="round" />
                   </svg>
-                  <p className="text-[12px] text-[#a1a1a1]">
+                  <p className="text-[12px] text-muted-foreground">
                     We check which Discord servers you're a member of and match them with LootList+ guilds that have Discord integration enabled.
                   </p>
                 </div>

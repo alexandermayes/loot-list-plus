@@ -125,8 +125,8 @@
     --accent-foreground: 0 0% 100%;
     --accent-subtle: 30 100% 50% / 0.2;
 
-    /* Muted */
-    --muted: 228 12% 8%;
+    /* Muted (hover states) */
+    --muted: 0 0% 12%;                    /* #1f1f1f - Hover background */
     --muted-foreground: 0 0% 63%;
 
     /* Destructive (Red) */

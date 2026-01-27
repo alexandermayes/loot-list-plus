@@ -255,15 +255,15 @@ export function CreateCharacterModal({ isOpen, onClose, onSuccess, suggestedName
       onClick={onClose}
     >
       <div
-        className="bg-[#0d0e11] border border-[#383838] rounded-xl max-w-lg w-full max-h-[85vh] overflow-hidden flex flex-col"
+        className="bg-background-subtle border border-border-strong rounded-xl max-w-lg w-full max-h-[85vh] overflow-hidden flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="p-6 border-b border-[#383838] flex items-center justify-between bg-[#141519]">
+        <div className="p-6 border-b border-border-strong flex items-center justify-between bg-background-elevated">
           <h3 className="text-[24px] font-bold text-white">Create character</h3>
           <button
             onClick={onClose}
-            className="text-[#a1a1a1] hover:text-white transition"
+            className="text-muted-foreground hover:text-white transition"
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -290,7 +290,7 @@ export function CreateCharacterModal({ isOpen, onClose, onSuccess, suggestedName
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full px-4 py-2.5 bg-[#151515] border border-[#383838] rounded-[52px] text-white text-[13px] focus:outline-none focus:border-[#ff8000] transition"
+                className="w-full px-4 py-2.5 bg-background-elevated border border-border-strong rounded-[52px] text-white text-[13px] focus:outline-none focus:border-accent transition"
                 placeholder="e.g. Zevinall"
                 autoFocus
               />
@@ -304,16 +304,16 @@ export function CreateCharacterModal({ isOpen, onClose, onSuccess, suggestedName
               <select
                 value={classId}
                 onChange={(e) => handleClassChange(e.target.value)}
-                className="w-full pl-4 pr-12 py-2.5 bg-[#151515] border border-[#383838] rounded-[52px] text-white text-[13px] focus:outline-none focus:border-[#ff8000] transition select-custom-sm cursor-pointer"
+                className="w-full pl-4 pr-12 py-2.5 bg-background-elevated border border-border-strong rounded-[52px] text-white text-[13px] focus:outline-none focus:border-accent transition select-custom-sm cursor-pointer"
                 style={selectedClass ? { color: selectedClass.color_hex } : undefined}
               >
-                <option value="" className="text-white bg-[#151515]">Select a class</option>
+                <option value="" className="text-white bg-background-elevated">Select a class</option>
                 {classes.map((cls) => (
                   <option
                     key={cls.id}
                     value={cls.id}
                     style={{ color: cls.color_hex }}
-                    className="bg-[#151515]"
+                    className="bg-background-elevated"
                   >
                     {cls.name}
                   </option>
@@ -330,7 +330,7 @@ export function CreateCharacterModal({ isOpen, onClose, onSuccess, suggestedName
                 <select
                   value={specId}
                   onChange={(e) => setSpecId(e.target.value)}
-                  className="w-full pl-4 pr-12 py-2.5 bg-[#151515] border border-[#383838] rounded-[52px] text-white text-[13px] focus:outline-none focus:border-[#ff8000] transition select-custom-sm cursor-pointer"
+                  className="w-full pl-4 pr-12 py-2.5 bg-background-elevated border border-border-strong rounded-[52px] text-white text-[13px] focus:outline-none focus:border-accent transition select-custom-sm cursor-pointer"
                 >
                   <option value="">Select a specialization</option>
                   {getAvailableSpecs().map((spec) => (
@@ -347,10 +347,10 @@ export function CreateCharacterModal({ isOpen, onClose, onSuccess, suggestedName
               <label className="block text-[13px] font-medium text-white mb-3">
                 Character Type
               </label>
-              <div className="relative flex bg-[#0d0e11] border border-[#383838] rounded-[52px] p-1">
+              <div className="relative flex bg-background-subtle border border-border-strong rounded-[52px] p-1">
                 {/* Sliding indicator */}
                 <div
-                  className={`absolute top-1 bottom-1 w-[calc(50%-4px)] bg-[#252525] border border-[#404040] rounded-[44px] transition-all duration-200 ease-out ${
+                  className={`absolute top-1 bottom-1 w-[calc(50%-4px)] bg-muted border border-border-strong rounded-[44px] transition-all duration-200 ease-out ${
                     isMain ? 'left-1' : 'left-[calc(50%+2px)]'
                   }`}
                 />
@@ -358,7 +358,7 @@ export function CreateCharacterModal({ isOpen, onClose, onSuccess, suggestedName
                   type="button"
                   onClick={() => setIsMain(true)}
                   className={`relative z-10 flex-1 px-6 py-2 rounded-[44px] text-[13px] font-medium transition-colors duration-200 ${
-                    isMain ? 'text-white' : 'text-[#606060]'
+                    isMain ? 'text-white' : 'text-foreground-muted'
                   }`}
                 >
                   Main
@@ -367,7 +367,7 @@ export function CreateCharacterModal({ isOpen, onClose, onSuccess, suggestedName
                   type="button"
                   onClick={() => setIsMain(false)}
                   className={`relative z-10 flex-1 px-6 py-2 rounded-[44px] text-[13px] font-medium transition-colors duration-200 ${
-                    !isMain ? 'text-white' : 'text-[#606060]'
+                    !isMain ? 'text-white' : 'text-foreground-muted'
                   }`}
                 >
                   Alt
@@ -377,12 +377,12 @@ export function CreateCharacterModal({ isOpen, onClose, onSuccess, suggestedName
           </div>
 
           {/* Footer */}
-          <div className="p-6 border-t border-[#383838] bg-[#141519] flex justify-end gap-3">
+          <div className="p-6 border-t border-border-strong bg-background-elevated flex justify-end gap-3">
             <button
               type="button"
               onClick={onClose}
               disabled={loading}
-              className="px-6 py-2.5 bg-[#151515] hover:bg-[#1a1a1a] border border-[#383838] rounded-[52px] text-white text-[13px] transition disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-6 py-2.5 bg-background-elevated hover:bg-muted border border-border-strong rounded-[52px] text-white text-[13px] transition disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Cancel
             </button>

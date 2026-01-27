@@ -139,11 +139,11 @@ export function CharacterSelector() {
   // Show loading skeleton while context is loading to prevent flicker
   if (loading) {
     return (
-      <div className="w-full px-[14px] py-2 bg-[#141519] border border-[#1a1a1a] rounded-xl flex items-center gap-3 animate-pulse">
-        <div className="w-5 h-5 rounded-full bg-[#383838] flex-shrink-0" />
+      <div className="w-full px-[14px] py-2 bg-background-elevated border border-border rounded-[12px] flex items-center gap-3 animate-pulse">
+        <div className="w-5 h-5 rounded-full bg-border-strong flex-shrink-0 border border-border" />
         <div className="flex-1 min-w-0 space-y-1.5">
-          <div className="h-3 bg-[#383838] rounded w-24" />
-          <div className="h-2 bg-[#383838] rounded w-16" />
+          <div className="h-3 bg-border-strong rounded w-24" />
+          <div className="h-2 bg-border-strong rounded w-16" />
         </div>
       </div>
     )
@@ -154,7 +154,7 @@ export function CharacterSelector() {
       <>
         <button
           onClick={handleCreateCharacter}
-          className="w-full px-[14px] py-2 bg-primary/10 hover:bg-primary/20 border border-primary/30 rounded-xl text-white text-left transition flex items-center gap-3"
+          className="w-full px-[14px] py-2 bg-primary/10 hover:bg-primary/20 border border-primary/30 rounded-[12px] text-white text-left transition flex items-center gap-3"
         >
           <RotatingClassIcon />
           <div className="flex-1 min-w-0">
@@ -179,7 +179,7 @@ export function CharacterSelector() {
       <>
         <button
           onClick={() => setShowCreateModal(true)}
-          className="w-full px-[14px] py-2 bg-primary/10 hover:bg-primary/20 border border-primary/30 rounded-xl text-white text-left transition flex items-center gap-3"
+          className="w-full px-[14px] py-2 bg-primary/10 hover:bg-primary/20 border border-primary/30 rounded-[12px] text-white text-left transition flex items-center gap-3"
         >
           <RotatingClassIcon />
           <div className="flex-1 min-w-0">
@@ -200,18 +200,18 @@ export function CharacterSelector() {
     <div className="relative">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex items-center gap-3 px-[14px] py-2 rounded-[12px] bg-[#141519] border border-[rgba(255,255,255,0.1)] hover:bg-[#1a1a1a] transition"
+        className="w-full flex items-center gap-3 px-[14px] py-2 rounded-[12px] bg-background-elevated border border-border hover:bg-muted transition"
       >
         {/* Character Class Icon */}
         {activeCharacter.class?.name ? (
           <img
             src={getClassIconUrl(activeCharacter.class.name)}
             alt={activeCharacter.class.name}
-            className="w-5 h-5 rounded-full flex-shrink-0"
+            className="w-5 h-5 rounded-full flex-shrink-0 border border-border"
           />
         ) : (
           <div
-            className="w-5 h-5 rounded-full flex items-center justify-center text-white font-bold text-[10px] flex-shrink-0"
+            className="w-5 h-5 rounded-full flex items-center justify-center text-white font-bold text-[10px] flex-shrink-0 border border-border"
             style={{ backgroundColor: classColor }}
           >
             {activeCharacter.name.charAt(0).toUpperCase()}
@@ -227,7 +227,7 @@ export function CharacterSelector() {
             {activeCharacter.name}
           </p>
           {(activeCharacter.spec?.name || activeCharacter.class?.name) && (
-            <p className="font-poppins font-normal text-[10px] text-[#a1a1a1] truncate text-left">
+            <p className="font-poppins font-normal text-[10px] text-muted-foreground truncate text-left">
               {activeCharacter.spec?.name && activeCharacter.class?.name
                 ? `${activeCharacter.spec.name} ${activeCharacter.class.name}`
                 : activeCharacter.spec?.name || activeCharacter.class?.name}
@@ -254,12 +254,12 @@ export function CharacterSelector() {
           />
 
           {/* Dropdown Content */}
-          <div className="absolute top-full mt-2 left-0 right-0 bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-[12px] shadow-lg z-50 py-2 overflow-hidden">
+          <div className="absolute top-full mt-2 left-0 right-0 bg-background-elevated border border-border rounded-[12px] shadow-lg z-50 py-2 overflow-hidden">
             {/* Current Guild Characters */}
             {activeGuild && charactersInGuild.length > 0 && (
               <div>
                 <div className="px-3 pt-2 pb-1">
-                  <p className="font-poppins font-medium text-[10px] text-[#a1a1a1] uppercase tracking-wide truncate">
+                  <p className="font-poppins font-medium text-[10px] text-muted-foreground uppercase tracking-wide truncate">
                     {activeGuild.name}
                   </p>
                 </div>
@@ -271,18 +271,18 @@ export function CharacterSelector() {
                     <button
                       key={char.id}
                       onClick={() => handleCharacterSelect(char.id)}
-                      className="w-full flex items-center gap-3 px-[14px] py-2 hover:bg-[#1a1a1a] transition text-left"
+                      className="w-full flex items-center gap-3 px-[14px] py-2 hover:bg-muted transition text-left"
                     >
                       {/* Character Class Icon */}
                       {char.class?.name ? (
                         <img
                           src={getClassIconUrl(char.class.name)}
                           alt={char.class.name}
-                          className="w-5 h-5 rounded-full flex-shrink-0"
+                          className="w-5 h-5 rounded-full flex-shrink-0 border border-border"
                         />
                       ) : (
                         <div
-                          className="w-5 h-5 rounded-full flex items-center justify-center text-white font-bold text-[10px] flex-shrink-0"
+                          className="w-5 h-5 rounded-full flex items-center justify-center text-white font-bold text-[10px] flex-shrink-0 border border-border"
                           style={{ backgroundColor: charColor }}
                         >
                           {char.name.charAt(0).toUpperCase()}
@@ -297,7 +297,7 @@ export function CharacterSelector() {
                           {char.name}
                         </p>
                         {(char.spec?.name || char.class?.name) && (
-                          <p className="font-poppins font-normal text-[10px] text-[#a1a1a1] truncate">
+                          <p className="font-poppins font-normal text-[10px] text-muted-foreground truncate">
                             {char.spec?.name && char.class?.name
                               ? `${char.spec.name} ${char.class.name}`
                               : char.spec?.name || char.class?.name}
@@ -323,7 +323,7 @@ export function CharacterSelector() {
             {activeGuild && charactersInGuild.length < userCharacters.length && (
               <div>
                 <div className="px-3 pt-2 pb-1">
-                  <p className="font-poppins font-medium text-[10px] text-[#a1a1a1] uppercase tracking-wide truncate">
+                  <p className="font-poppins font-medium text-[10px] text-muted-foreground uppercase tracking-wide truncate">
                     Not in {activeGuild.name}
                   </p>
                 </div>
@@ -339,18 +339,18 @@ export function CharacterSelector() {
                     return (
                       <div
                         key={char.id}
-                        className="w-full flex items-center gap-3 px-[14px] py-2 hover:bg-[#1a1a1a] transition"
+                        className="w-full flex items-center gap-3 px-[14px] py-2 hover:bg-muted transition"
                       >
                         {/* Character Class Icon */}
                         {char.class?.name ? (
                           <img
                             src={getClassIconUrl(char.class.name)}
                             alt={char.class.name}
-                            className="w-5 h-5 rounded-full flex-shrink-0"
+                            className="w-5 h-5 rounded-full flex-shrink-0 border border-border"
                           />
                         ) : (
                           <div
-                            className="w-5 h-5 rounded-full flex items-center justify-center text-white font-bold text-[10px] flex-shrink-0"
+                            className="w-5 h-5 rounded-full flex items-center justify-center text-white font-bold text-[10px] flex-shrink-0 border border-border"
                             style={{ backgroundColor: charColor }}
                           >
                             {char.name.charAt(0).toUpperCase()}
@@ -364,7 +364,7 @@ export function CharacterSelector() {
                           >
                             {char.name}
                           </p>
-                          <p className="font-poppins font-normal text-[10px] text-[#a1a1a1] truncate">
+                          <p className="font-poppins font-normal text-[10px] text-muted-foreground truncate">
                             {char.is_main && <span className="text-white">Main</span>}
                             {char.is_main && (char.spec?.name || char.class?.name) && ' • '}
                             {char.spec?.name && char.class?.name
@@ -379,7 +379,7 @@ export function CharacterSelector() {
                           className="shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           {isAdding ? (
-                            <div className="w-5 h-5 border-2 border-[#a1a1a1]/30 border-t-[#a1a1a1] rounded-full animate-spin" />
+                            <div className="w-5 h-5 border-2 border-muted-foreground/30 border-t-muted-foreground rounded-full animate-spin" />
                           ) : (
                             <Image
                               src="/icons/add-circle.svg"
@@ -397,13 +397,13 @@ export function CharacterSelector() {
             )}
 
             {/* Divider */}
-            <div className="h-px bg-[rgba(255,255,255,0.1)] my-1" />
+            <div className="h-px bg-border my-1" />
 
             {/* Create Character & Manage */}
             <div>
               <button
                 onClick={handleCreateCharacter}
-                className="w-full px-[14px] py-2 flex items-center gap-3 hover:bg-[#1a1a1a] transition text-left"
+                className="w-full px-[14px] py-2 flex items-center gap-3 hover:bg-muted transition text-left"
               >
                 <Image
                   src="/icons/user-add.svg"
@@ -418,7 +418,7 @@ export function CharacterSelector() {
               </button>
               <button
                 onClick={handleManageCharacters}
-                className="w-full px-[14px] py-2 flex items-center gap-3 hover:bg-[#1a1a1a] transition text-left"
+                className="w-full px-[14px] py-2 flex items-center gap-3 hover:bg-muted transition text-left"
               >
                 <Image
                   src="/icons/user-settings.svg"

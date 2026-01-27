@@ -360,26 +360,26 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
       onClick={onClose}
     >
       <div
-        className="bg-[#0d0e11] border border-[#383838] rounded-xl max-w-2xl w-full h-[600px] max-h-[90vh] overflow-hidden flex flex-col"
+        className="bg-background-subtle border border-border-strong rounded-xl max-w-2xl w-full h-[600px] max-h-[90vh] overflow-hidden flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="p-6 border-b border-[#383838] bg-[#141519]">
+        <div className="p-6 border-b border-border-strong bg-background-elevated">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <img
                 src="https://wow.zamimg.com/images/wow/icons/large/inv_scroll_15.jpg"
                 alt="Guild Charter"
-                className="w-10 h-10 rounded-xl border border-[rgba(255,255,255,0.1)]"
+                className="w-10 h-10 rounded-xl border border-border"
               />
               <div>
                 <h3 className="text-[20px] font-bold text-white">Create a guild</h3>
-                <p className="text-[12px] text-[#a1a1a1]">Link your Discord server to get started</p>
+                <p className="text-[12px] text-muted-foreground">Link your Discord server to get started</p>
               </div>
             </div>
             <button
               onClick={onClose}
-              className="text-[#a1a1a1] hover:text-white transition"
+              className="text-muted-foreground hover:text-white transition"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -408,12 +408,12 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
                     disabled={!canAccess}
                     className={`flex items-center gap-2 px-4 py-2 rounded-full text-[12px] font-medium transition shrink-0 ${
                       isCompleted
-                        ? 'bg-[#ff8000] text-white'
+                        ? 'bg-accent text-white'
                         : isCurrent
                           ? 'bg-white text-black'
                           : canAccess
-                            ? 'bg-[#252525] text-white hover:bg-[#303030]'
-                            : 'bg-[#1a1a1a] text-[#505050] cursor-not-allowed'
+                            ? 'bg-muted text-white hover:bg-border'
+                            : 'bg-border text-foreground-muted cursor-not-allowed'
                     }`}
                   >
                     {isCompleted ? (
@@ -431,7 +431,7 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
                   {/* Connecting Line */}
                   {idx < 2 && (
                     <div className={`flex-1 h-0.5 mx-2 transition ${
-                      stepIndex < currentIndex ? 'bg-[#ff8000]' : 'bg-[#383838]'
+                      stepIndex < currentIndex ? 'bg-accent' : 'bg-border-strong'
                     }`} />
                   )}
                 </div>
@@ -444,7 +444,7 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
         <div className="p-6 flex-1 flex flex-col min-h-0">
           {loading ? (
             <div className="flex items-center justify-center py-12">
-              <Loading01Icon className="w-8 h-8 animate-spin text-[#ff8000]" />
+              <Loading01Icon className="w-8 h-8 animate-spin text-accent" />
             </div>
           ) : !discordVerified ? (
             <div className="text-center py-8">
@@ -452,7 +452,7 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
                 <span className="text-3xl">⚠️</span>
               </div>
               <h4 className="text-[18px] font-bold text-white mb-2">Discord verification required</h4>
-              <p className="text-[#a1a1a1] text-[14px] mb-4">
+              <p className="text-muted-foreground text-[14px] mb-4">
                 You need to verify your Discord account before creating a guild.
               </p>
               <button
@@ -497,13 +497,13 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
                             }}
                             className={`relative flex flex-col items-center gap-2 p-3 rounded-xl border transition text-center ${
                               selectedDiscordServer === guild.id
-                                ? 'border-[#ff8000] bg-[#ff8000]/10'
-                                : 'border-[#383838] bg-[#151515] hover:border-[#505050]'
+                                ? 'border-accent bg-accent/10'
+                                : 'border-border-strong bg-background-elevated hover:border-foreground-muted'
                             }`}
                           >
                             {selectedDiscordServer === guild.id && (
                               <div className="absolute top-2 right-2">
-                                <Tick01Icon className="w-4 h-4 text-[#ff8000]" />
+                                <Tick01Icon className="w-4 h-4 text-accent" />
                               </div>
                             )}
                             {guild.icon ? (
@@ -519,7 +519,7 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
                             )}
                             <div className="w-full min-w-0">
                               <p className="text-white font-medium text-[12px] truncate">{guild.name}</p>
-                              <p className="text-[10px] text-[#a1a1a1]">{guild.owner ? 'Owner' : 'Admin'}</p>
+                              <p className="text-[10px] text-muted-foreground">{guild.owner ? 'Owner' : 'Admin'}</p>
                             </div>
                           </button>
                         ))}
@@ -531,23 +531,23 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
                           }}
                           className={`relative flex flex-col items-center justify-center gap-2 p-3 rounded-xl border transition text-center ${
                             showManualEntry
-                              ? 'border-[#ff8000] bg-[#ff8000]/10'
-                              : 'border-[#383838] bg-[#151515] hover:border-[#505050]'
+                              ? 'border-accent bg-accent/10'
+                              : 'border-border-strong bg-background-elevated hover:border-foreground-muted'
                           }`}
                         >
                           {showManualEntry && (
                             <div className="absolute top-2 right-2">
-                              <Tick01Icon className="w-4 h-4 text-[#ff8000]" />
+                              <Tick01Icon className="w-4 h-4 text-accent" />
                             </div>
                           )}
-                          <div className="w-12 h-12 rounded-full bg-[#252525] flex items-center justify-center text-[#a1a1a1]">
+                          <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center text-muted-foreground">
                             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                             </svg>
                           </div>
                           <div className="w-full min-w-0">
                             <p className="text-white font-medium text-[12px]">Enter ID</p>
-                            <p className="text-[10px] text-[#a1a1a1]">Manually</p>
+                            <p className="text-[10px] text-muted-foreground">Manually</p>
                           </div>
                         </button>
                       </div>
@@ -558,18 +558,18 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
                           onClick={() => setShowManualEntry(true)}
                           className={`relative flex flex-col items-center justify-center gap-2 p-3 rounded-xl border transition text-center ${
                             showManualEntry
-                              ? 'border-[#ff8000] bg-[#ff8000]/10'
-                              : 'border-[#383838] bg-[#151515] hover:border-[#505050]'
+                              ? 'border-accent bg-accent/10'
+                              : 'border-border-strong bg-background-elevated hover:border-foreground-muted'
                           }`}
                         >
-                          <div className="w-12 h-12 rounded-full bg-[#252525] flex items-center justify-center text-[#a1a1a1]">
+                          <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center text-muted-foreground">
                             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                             </svg>
                           </div>
                           <div className="w-full min-w-0">
                             <p className="text-white font-medium text-[12px]">Enter ID</p>
-                            <p className="text-[10px] text-[#a1a1a1]">Manually</p>
+                            <p className="text-[10px] text-muted-foreground">Manually</p>
                           </div>
                         </button>
                       </div>
@@ -582,9 +582,9 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
                           value={manualServerId}
                           onChange={(e) => setManualServerId(e.target.value)}
                           placeholder="Paste your Discord Server ID"
-                          className="w-full px-4 py-2.5 bg-[#151515] border border-[#383838] rounded-xl text-white text-[13px] focus:outline-none focus:border-[#ff8000] transition"
+                          className="w-full px-4 py-2.5 bg-background-elevated border border-border-strong rounded-xl text-white text-[13px] focus:outline-none focus:border-accent transition"
                         />
-                        <p className="text-[11px] text-[#a1a1a1] mt-2">
+                        <p className="text-[11px] text-muted-foreground mt-2">
                           Enable Developer Mode in Discord, right-click your server → Copy Server ID
                         </p>
                       </div>
@@ -594,16 +594,16 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
                   {/* Bot Status - Floating toast at bottom */}
                   {getActiveServerId() && (
                     <div className="absolute bottom-0 left-0 right-0 pointer-events-none px-6 pt-0">
-                      <div className="bg-gradient-to-t from-[#0d0e11] via-[#0d0e11]/95 to-transparent pt-8">
+                      <div className="bg-gradient-to-t from-background-subtle via-background-subtle/95 to-transparent pt-8">
                         <div className={`pointer-events-auto p-4 rounded-xl border backdrop-blur-sm ${
-                          checkingBot ? 'border-[#383838] bg-[#151515]/90' :
-                          botInstalled ? 'border-green-600/50 bg-[#151515]/90' :
-                          'border-[#ff8000]/50 bg-[#151515]/90'
+                          checkingBot ? 'border-border-strong bg-background-elevated/90' :
+                          botInstalled ? 'border-green-600/50 bg-background-elevated/90' :
+                          'border-accent/50 bg-background-elevated/90'
                         }`}>
                           {checkingBot ? (
                             <div className="flex items-center gap-3">
-                              <Loading01Icon className="w-5 h-5 animate-spin text-[#a1a1a1]" />
-                              <p className="text-[13px] text-[#a1a1a1]">Checking bot installation...</p>
+                              <Loading01Icon className="w-5 h-5 animate-spin text-muted-foreground" />
+                              <p className="text-[13px] text-muted-foreground">Checking bot installation...</p>
                             </div>
                           ) : botInstalled ? (
                             <div className="flex items-center gap-3">
@@ -618,12 +618,12 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
                           ) : (
                             <div className="space-y-3">
                               <div className="flex items-start gap-3">
-                                <div className="w-8 h-8 rounded-full bg-[#ff8000]/20 flex items-center justify-center flex-shrink-0">
+                                <div className="w-8 h-8 rounded-full bg-accent/20 flex items-center justify-center flex-shrink-0">
                                   <span className="text-[16px]">🤖</span>
                                 </div>
                                 <div>
                                   <p className="text-[14px] font-medium text-white">Add LootList+ Bot</p>
-                                  <p className="text-[12px] text-[#a1a1a1]">Required for Discord integration</p>
+                                  <p className="text-[12px] text-muted-foreground">Required for Discord integration</p>
                                 </div>
                               </div>
                               <div className="flex gap-2">
@@ -638,7 +638,7 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
                                 </button>
                                 <button
                                   onClick={checkBotInstallation}
-                                  className="px-4 py-2 bg-[#252525] hover:bg-[#303030] border border-[#383838] rounded-[52px] text-white text-[13px] font-medium transition"
+                                  className="px-4 py-2 bg-muted hover:bg-border border border-border-strong rounded-[52px] text-white text-[13px] font-medium transition"
                                 >
                                   Recheck
                                 </button>
@@ -666,14 +666,14 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
                         value={guildName}
                         onChange={(e) => setGuildName(e.target.value)}
                         placeholder="Enter your guild name"
-                        className={`w-full px-4 py-2.5 bg-[#151515] border rounded-[52px] text-white text-[13px] focus:outline-none transition pr-10 ${
+                        className={`w-full px-4 py-2.5 bg-background-elevated border rounded-[52px] text-white text-[13px] focus:outline-none transition pr-10 ${
                           nameAvailable === false ? 'border-red-500' :
                           nameAvailable === true ? 'border-green-500' :
-                          'border-[#383838] focus:border-[#ff8000]'
+                          'border-border-strong focus:border-accent'
                         }`}
                       />
                       {checkingName && (
-                        <Loading01Icon className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 animate-spin text-[#a1a1a1]" />
+                        <Loading01Icon className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 animate-spin text-muted-foreground" />
                       )}
                       {!checkingName && nameAvailable === true && (
                         <Tick01Icon className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-green-500" />
@@ -698,32 +698,32 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
                           >
                             <div className={`relative aspect-square w-full rounded-lg overflow-hidden border-2 transition ${
                               !exp.available
-                                ? 'border-[#2a2a2a] opacity-40'
+                                ? 'border-border opacity-40'
                                 : expansion === exp.id
-                                  ? 'border-[#ff8000] ring-2 ring-[#ff8000]/30'
-                                  : 'border-[#383838] hover:border-[#505050]'
+                                  ? 'border-accent ring-2 ring-accent/30'
+                                  : 'border-border-strong hover:border-foreground-muted'
                             }`}>
                               <img src={exp.image} alt={exp.name} className="w-full h-full object-contain p-2" />
                             </div>
                             <span className={`text-[10px] font-medium transition ${
                               !exp.available
-                                ? 'text-[#505050]'
-                                : expansion === exp.id ? 'text-[#ff8000]' : 'text-[#a1a1a1]'
+                                ? 'text-foreground-muted'
+                                : expansion === exp.id ? 'text-accent' : 'text-muted-foreground'
                             }`}>
                               {exp.name}
                             </span>
                           </button>
                           {/* Coming Soon Tooltip */}
                           {!exp.available && (
-                            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-[#252525] border border-[#383838] rounded-lg text-[10px] text-[#a1a1a1] whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+                            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-muted border border-border-strong rounded-lg text-[10px] text-muted-foreground whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
                               Coming Soon
-                              <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-[#383838]" />
+                              <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-border-strong" />
                             </div>
                           )}
                         </div>
                       ))}
                     </div>
-                    <p className="text-[11px] text-[#a1a1a1] mt-2">
+                    <p className="text-[11px] text-muted-foreground mt-2">
                       You can add more expansions from Admin settings later
                     </p>
                   </div>
@@ -758,7 +758,7 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
                         className={`alliance-btn group relative px-3 py-2.5 rounded-lg border transition-all duration-300 flex items-center justify-center gap-2 overflow-hidden ${
                           faction === 'Alliance'
                             ? 'border-blue-500 bg-blue-500/20'
-                            : 'border-[#383838] bg-[#151515]'
+                            : 'border-border-strong bg-background-elevated'
                         }`}
                       >
                         <img
@@ -775,7 +775,7 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
                         className={`horde-btn group relative px-3 py-2.5 rounded-lg border transition-all duration-300 flex items-center justify-center gap-2 overflow-hidden ${
                           faction === 'Horde'
                             ? 'border-red-500 bg-red-500/20'
-                            : 'border-[#383838] bg-[#151515]'
+                            : 'border-border-strong bg-background-elevated'
                         }`}
                       >
                         <img
@@ -803,15 +803,15 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
                   </div>
 
                   {/* Summary */}
-                  <div className="p-4 bg-[#151515] border border-[#383838] rounded-xl">
-                    <p className="text-[12px] text-[#a1a1a1] mb-2">Summary</p>
+                  <div className="p-4 bg-background-elevated border border-border-strong rounded-xl">
+                    <p className="text-[12px] text-muted-foreground mb-2">Summary</p>
                     <div className="space-y-1">
                       <p className="text-[14px] text-white font-medium">{guildName}</p>
-                      <p className="text-[12px] text-[#a1a1a1]">
+                      <p className="text-[12px] text-muted-foreground">
                         {expansion} • {realm || 'No realm selected'} • {faction}
                       </p>
                       {selectedGuild && (
-                        <p className="text-[12px] text-[#a1a1a1]">
+                        <p className="text-[12px] text-muted-foreground">
                           Discord: {selectedGuild.name}
                         </p>
                       )}
@@ -832,14 +832,14 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
 
         {/* Footer */}
         {discordVerified && !loading && (
-          <div className="p-6 border-t border-[#383838] bg-[#141519] flex justify-between">
+          <div className="p-6 border-t border-border-strong bg-background-elevated flex justify-between">
             <button
               onClick={() => {
                 if (currentStep === 'details') setCurrentStep('discord')
                 else if (currentStep === 'settings') setCurrentStep('details')
                 else onClose()
               }}
-              className="px-6 py-2.5 bg-[#151515] hover:bg-[#1a1a1a] border border-[#383838] rounded-[52px] text-white text-[13px] transition"
+              className="px-6 py-2.5 bg-background-elevated hover:bg-muted border border-border-strong rounded-[52px] text-white text-[13px] transition"
             >
               {currentStep === 'discord' ? 'Cancel' : 'Back'}
             </button>
