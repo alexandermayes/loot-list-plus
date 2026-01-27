@@ -36,13 +36,15 @@ export default function ProfilePage() {
   const [disconnecting, setDisconnecting] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [mounted, setMounted] = useState(false)
+  const [selectedTheme, setSelectedTheme] = useState<string>('system')
 
   const { theme, setTheme } = useTheme()
 
   // Handle hydration mismatch for theme
   useEffect(() => {
     setMounted(true)
-  }, [])
+    if (theme) setSelectedTheme(theme)
+  }, [theme])
   const { switchGuild } = useGuildContext()
   const supabase = createClient()
   const router = useRouter()
@@ -375,7 +377,7 @@ export default function ProfilePage() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-background-subtle border border-border rounded-lg flex items-center justify-center">
-                    <HugeiconsIcon icon={theme === 'dark' ? Moon02Icon : theme === 'light' ? Sun03Icon : ComputerIcon} size={20} />
+                    <HugeiconsIcon icon={selectedTheme === 'dark' ? Moon02Icon : selectedTheme === 'light' ? Sun03Icon : ComputerIcon} size={20} />
                   </div>
                   <div>
                     <p className="text-foreground font-medium">Theme</p>
@@ -384,16 +386,22 @@ export default function ProfilePage() {
                 </div>
                 <div className="relative flex items-center bg-background-subtle border border-border rounded-full p-1">
                   {/* Animated background indicator */}
-                  <div
-                    className={`absolute top-1 h-8 w-10 bg-accent/20 rounded-full transition-[left] duration-300 ease-out ${mounted ? 'opacity-100' : 'opacity-0'}`}
-                    style={{
-                      left: mounted ? (theme === 'light' ? '44px' : theme === 'dark' ? '84px' : '4px') : '4px'
-                    }}
-                  />
+                  {mounted && (
+                    <div
+                      className="absolute top-1 h-8 w-10 bg-accent/20 rounded-full"
+                      style={{
+                        left: selectedTheme === 'light' ? '44px' : selectedTheme === 'dark' ? '84px' : '4px',
+                        transition: 'left 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
+                      }}
+                    />
+                  )}
                   <button
-                    onClick={() => setTheme('system')}
+                    onClick={() => {
+                      setSelectedTheme('system')
+                      setTheme('system')
+                    }}
                     className={`relative z-10 w-10 h-8 flex items-center justify-center rounded-full text-[13px] font-medium transition-colors duration-200 ${
-                      theme === 'system' || (!mounted && theme === undefined)
+                      selectedTheme === 'system'
                         ? 'text-accent'
                         : 'text-muted-foreground hover:text-foreground'
                     }`}
@@ -402,9 +410,12 @@ export default function ProfilePage() {
                     <HugeiconsIcon icon={ComputerIcon} size={16} />
                   </button>
                   <button
-                    onClick={() => setTheme('light')}
+                    onClick={() => {
+                      setSelectedTheme('light')
+                      setTheme('light')
+                    }}
                     className={`relative z-10 w-10 h-8 flex items-center justify-center rounded-full text-[13px] font-medium transition-colors duration-200 ${
-                      theme === 'light'
+                      selectedTheme === 'light'
                         ? 'text-accent'
                         : 'text-muted-foreground hover:text-foreground'
                     }`}
@@ -413,9 +424,12 @@ export default function ProfilePage() {
                     <HugeiconsIcon icon={Sun03Icon} size={16} />
                   </button>
                   <button
-                    onClick={() => setTheme('dark')}
+                    onClick={() => {
+                      setSelectedTheme('dark')
+                      setTheme('dark')
+                    }}
                     className={`relative z-10 w-10 h-8 flex items-center justify-center rounded-full text-[13px] font-medium transition-colors duration-200 ${
-                      theme === 'dark'
+                      selectedTheme === 'dark'
                         ? 'text-accent'
                         : 'text-muted-foreground hover:text-foreground'
                     }`}
