@@ -379,11 +379,11 @@ export default function SettingsPage() {
         <div className="flex justify-end">
           <Button
             onClick={savePreferences}
-            disabled={saving}
+            loading={saving}
             size="lg"
           >
-            <HugeiconsIcon icon={FloppyDiskIcon} size={16} className="mr-2" />
-            {saving ? 'Saving...' : 'Save Preferences'}
+            <HugeiconsIcon icon={FloppyDiskIcon} size={16} />
+            Save Preferences
           </Button>
         </div>
       </main>

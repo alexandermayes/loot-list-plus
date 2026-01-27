@@ -9,6 +9,8 @@ import { Badge } from "@/components/ui/badge";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { LoadingSpinner, Spinner } from "@/components/ui/loading-spinner";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Modal,
   ModalHeader,
@@ -68,6 +70,7 @@ export default function DesignSystemPage() {
   const [darkMode, setDarkMode] = useState(true);
   const [demoModalOpen, setDemoModalOpen] = useState(false);
   const [modalSize, setModalSize] = useState<'sm' | 'default' | 'lg' | 'xl' | 'full'>('default');
+  const [buttonLoading, setButtonLoading] = useState(false);
 
   const toggleTheme = () => {
     setDarkMode(!darkMode);
@@ -663,6 +666,158 @@ export default function DesignSystemPage() {
                 <StatusBadge status="no_show" />
                 <StatusBadge status="excused" />
               </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Loading States */}
+        <section className="space-y-6">
+          <div>
+            <h2 className="text-2xl font-semibold">Loading States</h2>
+            <p className="text-foreground-secondary">Consistent loading indicators and skeleton placeholders</p>
+          </div>
+
+          {/* Spinners */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-medium text-foreground">Inline Spinner</h3>
+            <p className="text-sm text-foreground-secondary">Simple SVG spinner for buttons and small contexts</p>
+            <div className="flex items-center gap-8">
+              <div className="flex flex-col items-center gap-2">
+                <Spinner size="sm" />
+                <span className="text-xs text-foreground-muted">sm (14px)</span>
+              </div>
+              <div className="flex flex-col items-center gap-2">
+                <Spinner size="default" />
+                <span className="text-xs text-foreground-muted">default (16px)</span>
+              </div>
+              <div className="flex flex-col items-center gap-2">
+                <Spinner size="lg" />
+                <span className="text-xs text-foreground-muted">lg (20px)</span>
+              </div>
+            </div>
+          </div>
+
+          {/* LoadingSpinner with Icon */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-medium text-foreground">Loading Spinner (Branded)</h3>
+            <p className="text-sm text-foreground-secondary">Pulsing loot icon for page and content loading</p>
+            <div className="flex items-end gap-12">
+              <div className="flex flex-col items-center gap-2">
+                <LoadingSpinner size="sm" />
+                <span className="text-xs text-foreground-muted">sm (24px)</span>
+              </div>
+              <div className="flex flex-col items-center gap-2">
+                <LoadingSpinner size="default" />
+                <span className="text-xs text-foreground-muted">default (48px)</span>
+              </div>
+              <div className="flex flex-col items-center gap-2">
+                <LoadingSpinner size="lg" />
+                <span className="text-xs text-foreground-muted">lg (64px)</span>
+              </div>
+            </div>
+            <div className="mt-4">
+              <LoadingSpinner size="sm" text="Loading items..." />
+            </div>
+          </div>
+
+          {/* Button Loading States */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-medium text-foreground">Button Loading States</h3>
+            <p className="text-sm text-foreground-secondary">Use the <code className="text-accent">loading</code> prop to show a spinner and disable the button</p>
+            <div className="flex flex-wrap gap-4 items-center">
+              <Button
+                variant="primary"
+                loading={buttonLoading}
+                onClick={() => {
+                  setButtonLoading(true);
+                  setTimeout(() => setButtonLoading(false), 2000);
+                }}
+              >
+                {buttonLoading ? 'Saving...' : 'Save Changes'}
+              </Button>
+              <Button variant="secondary" loading>Processing</Button>
+              <Button variant="destructive" loading>Deleting</Button>
+              <Button variant="accent" loading>Approving</Button>
+            </div>
+            <div className="flex flex-wrap gap-4 items-center">
+              <Button size="sm" loading>Small</Button>
+              <Button size="default" loading>Default</Button>
+              <Button size="lg" loading>Large</Button>
+            </div>
+          </div>
+
+          {/* Skeleton Loaders */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-medium text-foreground">Skeleton Loaders</h3>
+            <p className="text-sm text-foreground-secondary">Placeholder shapes with shimmer animation for content loading</p>
+            <div className="grid grid-cols-2 gap-6">
+              {/* Text Skeletons */}
+              <div className="space-y-3">
+                <h4 className="text-sm font-medium text-foreground-secondary">Text Placeholders</h4>
+                <div className="space-y-2">
+                  <Skeleton className="h-4 w-3/4" />
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-5/6" />
+                  <Skeleton className="h-4 w-2/3" />
+                </div>
+              </div>
+
+              {/* Card Skeleton */}
+              <div className="space-y-3">
+                <h4 className="text-sm font-medium text-foreground-secondary">Card Placeholder</h4>
+                <div className="p-4 border border-border rounded-lg space-y-3">
+                  <div className="flex items-center gap-3">
+                    <Skeleton className="h-10 w-10 rounded-full" />
+                    <div className="space-y-2 flex-1">
+                      <Skeleton className="h-4 w-1/3" />
+                      <Skeleton className="h-3 w-1/4" />
+                    </div>
+                  </div>
+                  <Skeleton className="h-20 w-full" />
+                  <div className="flex gap-2">
+                    <Skeleton className="h-8 w-20 rounded-full" />
+                    <Skeleton className="h-8 w-20 rounded-full" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Table Row Skeleton */}
+              <div className="space-y-3">
+                <h4 className="text-sm font-medium text-foreground-secondary">Table Row Placeholder</h4>
+                <div className="border border-border rounded-lg overflow-hidden">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="flex items-center gap-4 p-3 border-b border-border last:border-b-0">
+                      <Skeleton className="h-8 w-8 rounded" />
+                      <Skeleton className="h-4 w-32" />
+                      <Skeleton className="h-4 w-24" />
+                      <Skeleton className="h-6 w-16 rounded-full ml-auto" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Avatar Group */}
+              <div className="space-y-3">
+                <h4 className="text-sm font-medium text-foreground-secondary">Avatar Placeholders</h4>
+                <div className="flex gap-3">
+                  <Skeleton className="h-10 w-10 rounded-full" />
+                  <Skeleton className="h-10 w-10 rounded-full" />
+                  <Skeleton className="h-10 w-10 rounded-full" />
+                  <Skeleton className="h-10 w-10 rounded-full" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Usage Patterns */}
+          <div className="bg-background-elevated p-4 rounded-lg border border-border">
+            <h3 className="text-sm font-medium text-foreground-secondary mb-3 uppercase tracking-wider">Usage Patterns</h3>
+            <div className="space-y-2 text-sm">
+              <p><code className="text-accent">{'<LoadingSpinner />'}</code> - Full page or content area loading</p>
+              <p><code className="text-accent">{'<LoadingSpinner size="sm" text="Loading..." />'}</code> - Smaller context with message</p>
+              <p><code className="text-accent">{'<Button loading>Save</Button>'}</code> - Button with spinner</p>
+              <p><code className="text-accent">{'<Skeleton className="h-4 w-48" />'}</code> - Text placeholder</p>
+              <p><code className="text-accent">{'<Skeleton className="h-10 w-10 rounded-full" />'}</code> - Avatar placeholder</p>
             </div>
           </div>
         </section>

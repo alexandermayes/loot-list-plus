@@ -363,9 +363,9 @@ export function CreateCharacterModal({ isOpen, onClose, onSuccess, suggestedName
           <Button
             type="submit"
             variant="primary"
-            disabled={loading}
+            loading={loading}
           >
-            {loading ? 'Creating...' : 'Create Character'}
+            Create Character
           </Button>
         </ModalFooter>
       </form>

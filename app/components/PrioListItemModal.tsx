@@ -408,8 +408,8 @@ export function PrioListItemModal({
         <Button variant="secondary" onClick={onClose}>
           Cancel
         </Button>
-        <Button variant="primary" onClick={handleSave} disabled={saving}>
-          {saving ? 'Saving...' : 'Save Priority'}
+        <Button variant="primary" onClick={handleSave} loading={saving}>
+          Save Priority
         </Button>
       </ModalFooter>
     </Modal>

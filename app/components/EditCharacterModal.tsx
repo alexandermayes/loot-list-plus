@@ -393,9 +393,9 @@ export function EditCharacterModal({ isOpen, onClose, character, onSuccess }: Ed
           <Button
             type="submit"
             variant="primary"
-            disabled={saving}
+            loading={saving}
           >
-            {saving ? 'Saving...' : 'Save Changes'}
+            Save Changes
           </Button>
         </ModalFooter>
       </form>

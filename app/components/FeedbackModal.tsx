@@ -238,19 +238,11 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
               <Button
                 type="submit"
                 variant="accent"
-                disabled={submitting || !description.trim()}
+                loading={submitting}
+                disabled={!description.trim()}
               >
-                {submitting ? (
-                  <>
-                    <HugeiconsIcon icon={Loading03Icon} size={16} className="animate-spin" />
-                    Sending...
-                  </>
-                ) : (
-                  <>
-                    <HugeiconsIcon icon={SentIcon} size={16} />
-                    Submit Feedback
-                  </>
-                )}
+                <HugeiconsIcon icon={SentIcon} size={16} />
+                Submit Feedback
               </Button>
             </ModalFooter>
           </form>

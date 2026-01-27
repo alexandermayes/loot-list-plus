@@ -3,6 +3,7 @@ import { Slot } from "@radix-ui/react-slot"
 import { cva, type VariantProps } from "class-variance-authority"
 
 import { cn } from "@/lib/utils"
+import { Spinner } from "@/components/ui/loading-spinner"
 
 /**
  * Button Component - LootList+ Design System
@@ -89,17 +90,35 @@ export interface ButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement>,
     VariantProps<typeof buttonVariants> {
   asChild?: boolean
+  /** Shows a spinner and disables the button */
+  loading?: boolean
+  /** Text to show while loading (replaces children) */
+  loadingText?: string
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant, size, asChild = false, ...props }, ref) => {
+  ({ className, variant, size, asChild = false, loading = false, loadingText, children, disabled, ...props }, ref) => {
     const Comp = asChild ? Slot : "button"
+
+    // Determine spinner size based on button size
+    const spinnerSize = size === 'sm' ? 'sm' : size === 'lg' ? 'lg' : 'default'
+
     return (
       <Comp
         className={cn(buttonVariants({ variant, size, className }))}
         ref={ref}
+        disabled={disabled || loading}
         {...props}
-      />
+      >
+        {loading ? (
+          <>
+            <Spinner size={spinnerSize} className="shrink-0" />
+            {loadingText || children}
+          </>
+        ) : (
+          children
+        )}
+      </Comp>
     )
   }
 )
