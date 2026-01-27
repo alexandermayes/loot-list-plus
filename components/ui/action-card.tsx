@@ -31,7 +31,7 @@ export function ActionCard({
         "w-12 h-12 rounded-lg flex items-center justify-center mb-4",
         iconColor
       )}>
-        <Icon className="w-6 h-6 text-white" />
+        <Icon className="w-6 h-6 text-foreground" />
       </div>
       <h3 className="text-foreground font-semibold mb-1">{title}</h3>
       <p className="text-muted-foreground text-sm">{description}</p>

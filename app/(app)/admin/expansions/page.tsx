@@ -205,7 +205,7 @@ export default function ExpansionsManagementPage() {
     <div className="p-8 space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-[42px] font-bold text-white mb-2">Manage Expansions</h1>
+        <h1 className="text-[42px] font-bold text-foreground mb-2">Manage Expansions</h1>
         <p className="text-[16px] text-foreground-muted">
           Add and manage expansions for your guild. Each expansion maintains its own loot lists and raid data.
         </p>
@@ -225,7 +225,7 @@ export default function ExpansionsManagementPage() {
       {/* Guild Expansions */}
       {guildExpansions.length > 0 && (
         <div>
-          <h2 className="text-[20px] font-semibold text-white mb-4">Your Expansions</h2>
+          <h2 className="text-[20px] font-semibold text-foreground mb-4">Your Expansions</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Sort so current expansion is first */}
             {[...guildExpansions].sort((a, b) => {
@@ -376,7 +376,7 @@ export default function ExpansionsManagementPage() {
       {/* Add New Expansion */}
       {addableExpansions.length > 0 && (
         <div>
-          <h2 className="text-[20px] font-semibold text-white mb-4">Add Expansion</h2>
+          <h2 className="text-[20px] font-semibold text-foreground mb-4">Add Expansion</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {addableExpansions.map((exp) => {
               const visuals = getExpansionVisuals(exp.name)
@@ -450,7 +450,7 @@ export default function ExpansionsManagementPage() {
             })}
           </div>
           {adding && (
-            <div className="mt-4 p-4 bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-xl text-center">
+            <div className="mt-4 p-4 bg-background-elevated border border-border rounded-xl text-center">
               <p className="text-foreground-muted">Adding expansion... This may take a moment.</p>
             </div>
           )}
@@ -458,7 +458,7 @@ export default function ExpansionsManagementPage() {
       )}
 
       {guildExpansions.length === 0 && addableExpansions.length === 0 && (
-        <div className="p-12 bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-xl text-center">
+        <div className="p-12 bg-background-elevated border border-border rounded-xl text-center">
           <p className="text-foreground-muted text-[16px]">No expansions available to add</p>
         </div>
       )}

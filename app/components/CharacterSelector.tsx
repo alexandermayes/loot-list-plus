@@ -154,11 +154,11 @@ export function CharacterSelector() {
       <>
         <button
           onClick={handleCreateCharacter}
-          className="w-full px-[14px] py-2 bg-primary/10 hover:bg-primary/20 border border-primary/30 rounded-[12px] text-white text-left transition flex items-center gap-3"
+          className="w-full px-[14px] py-2 bg-primary/10 hover:bg-primary/20 border border-primary/30 rounded-[12px] text-foreground text-left transition flex items-center gap-3"
         >
           <RotatingClassIcon />
           <div className="flex-1 min-w-0">
-            <p className="text-[13px] font-medium text-white">Character creation required</p>
+            <p className="text-[13px] font-medium text-foreground">Character creation required</p>
             <p className="text-[10px] text-primary">Click here to create</p>
           </div>
         </button>
@@ -179,11 +179,11 @@ export function CharacterSelector() {
       <>
         <button
           onClick={() => setShowCreateModal(true)}
-          className="w-full px-[14px] py-2 bg-primary/10 hover:bg-primary/20 border border-primary/30 rounded-[12px] text-white text-left transition flex items-center gap-3"
+          className="w-full px-[14px] py-2 bg-primary/10 hover:bg-primary/20 border border-primary/30 rounded-[12px] text-foreground text-left transition flex items-center gap-3"
         >
           <RotatingClassIcon />
           <div className="flex-1 min-w-0">
-            <p className="text-[13px] font-medium text-white truncate">{activeCharacter.name}</p>
+            <p className="text-[13px] font-medium text-foreground truncate">{activeCharacter.name}</p>
             <p className="text-[10px] text-primary">Click here to create</p>
           </div>
         </button>
@@ -211,7 +211,7 @@ export function CharacterSelector() {
           />
         ) : (
           <div
-            className="w-5 h-5 rounded-full flex items-center justify-center text-white font-bold text-[10px] flex-shrink-0 border border-border"
+            className="w-5 h-5 rounded-full flex items-center justify-center text-foreground font-bold text-[10px] flex-shrink-0 border border-border"
             style={{ backgroundColor: classColor }}
           >
             {activeCharacter.name.charAt(0).toUpperCase()}
@@ -240,7 +240,7 @@ export function CharacterSelector() {
           alt="Toggle"
           width={20}
           height={20}
-          className={`w-5 h-5 shrink-0 transition-transform ${isOpen ? 'rotate-180' : ''}`}
+          className={`icon-adaptive w-5 h-5 shrink-0 transition-transform ${isOpen ? 'rotate-180' : ''}`}
         />
       </button>
 
@@ -282,7 +282,7 @@ export function CharacterSelector() {
                         />
                       ) : (
                         <div
-                          className="w-5 h-5 rounded-full flex items-center justify-center text-white font-bold text-[10px] flex-shrink-0 border border-border"
+                          className="w-5 h-5 rounded-full flex items-center justify-center text-foreground font-bold text-[10px] flex-shrink-0 border border-border"
                           style={{ backgroundColor: charColor }}
                         >
                           {char.name.charAt(0).toUpperCase()}
@@ -310,7 +310,7 @@ export function CharacterSelector() {
                           alt="Selected"
                           width={20}
                           height={20}
-                          className="w-5 h-5 shrink-0"
+                          className="icon-adaptive w-5 h-5 shrink-0"
                         />
                       )}
                     </button>
@@ -350,7 +350,7 @@ export function CharacterSelector() {
                           />
                         ) : (
                           <div
-                            className="w-5 h-5 rounded-full flex items-center justify-center text-white font-bold text-[10px] flex-shrink-0 border border-border"
+                            className="w-5 h-5 rounded-full flex items-center justify-center text-foreground font-bold text-[10px] flex-shrink-0 border border-border"
                             style={{ backgroundColor: charColor }}
                           >
                             {char.name.charAt(0).toUpperCase()}
@@ -365,7 +365,7 @@ export function CharacterSelector() {
                             {char.name}
                           </p>
                           <p className="font-poppins font-normal text-[10px] text-muted-foreground truncate">
-                            {char.is_main && <span className="text-white">Main</span>}
+                            {char.is_main && <span className="text-foreground">Main</span>}
                             {char.is_main && (char.spec?.name || char.class?.name) && ' • '}
                             {char.spec?.name && char.class?.name
                               ? `${char.spec.name} ${char.class.name}`
@@ -386,7 +386,7 @@ export function CharacterSelector() {
                               alt="Add to guild"
                               width={20}
                               height={20}
-                              className="w-5 h-5"
+                              className="icon-adaptive w-5 h-5"
                             />
                           )}
                         </button>
@@ -410,9 +410,9 @@ export function CharacterSelector() {
                   alt="Create"
                   width={20}
                   height={20}
-                  className="w-5 h-5 shrink-0"
+                  className="icon-adaptive w-5 h-5 shrink-0"
                 />
-                <p className="font-poppins font-medium text-[13px] text-white">
+                <p className="font-poppins font-medium text-[13px] text-foreground">
                   Create character
                 </p>
               </button>
@@ -425,9 +425,9 @@ export function CharacterSelector() {
                   alt="Manage"
                   width={20}
                   height={20}
-                  className="w-5 h-5 shrink-0"
+                  className="icon-adaptive w-5 h-5 shrink-0"
                 />
-                <p className="font-poppins font-medium text-[13px] text-white">
+                <p className="font-poppins font-medium text-[13px] text-foreground">
                   Manage characters
                 </p>
               </button>

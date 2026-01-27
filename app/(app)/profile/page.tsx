@@ -36,15 +36,17 @@ export default function ProfilePage() {
   const [disconnecting, setDisconnecting] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [mounted, setMounted] = useState(false)
-  const [selectedTheme, setSelectedTheme] = useState<string>('system')
+  const [selectedTheme, setSelectedTheme] = useState<string | null>(null)
 
   const { theme, setTheme } = useTheme()
 
-  // Handle hydration mismatch for theme
+  // Only sync theme on initial mount, not on every theme change
   useEffect(() => {
     setMounted(true)
-    if (theme) setSelectedTheme(theme)
-  }, [theme])
+    if (theme && selectedTheme === null) {
+      setSelectedTheme(theme)
+    }
+  }, [theme, selectedTheme])
   const { switchGuild } = useGuildContext()
   const supabase = createClient()
   const router = useRouter()

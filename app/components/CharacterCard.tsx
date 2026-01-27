@@ -31,9 +31,9 @@ export function CharacterCard({
   return (
     <div
       className={`
-        bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-xl p-4
+        bg-background-elevated border border-border rounded-xl p-4
         transition-all duration-200
-        ${onClick ? 'cursor-pointer hover:bg-[#1a1a1f] hover:border-[rgba(255,255,255,0.2)]' : ''}
+        ${onClick ? 'cursor-pointer hover:bg-background-elevated hover:border-border-strong' : ''}
         ${isActive ? 'ring-2 ring-accent' : ''}
         ${className}
       `}
@@ -49,7 +49,7 @@ export function CharacterCard({
           />
         ) : (
           <div
-            className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-lg border border-border flex-shrink-0"
+            className="w-12 h-12 rounded-full flex items-center justify-center text-foreground font-bold text-lg border border-border flex-shrink-0"
             style={{ backgroundColor: classColor }}
           >
             {character.name.charAt(0).toUpperCase()}

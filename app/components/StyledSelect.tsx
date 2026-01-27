@@ -11,7 +11,7 @@ export default function StyledSelect({
   variant = 'default',
   ...props
 }: StyledSelectProps) {
-  const baseClasses = 'bg-background-elevated border border-border-strong rounded-[52px] text-white focus:outline-none focus:border-accent transition-colors cursor-pointer'
+  const baseClasses = 'bg-background-elevated border border-border-strong rounded-[52px] text-foreground focus:outline-none focus:border-accent transition-colors cursor-pointer'
 
   const variantClasses = {
     default: 'w-full pl-4 pr-12 py-2 text-[13px] select-custom-sm',

@@ -175,7 +175,7 @@ export default function SearchableItemSelect({
         ref={buttonRef}
         type="button"
         onClick={() => isOpen ? setIsOpen(false) : handleOpen()}
-        className="w-full px-3 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-white text-left focus:outline-none focus:border-accent flex items-center justify-between gap-2"
+        className="w-full px-3 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-left focus:outline-none focus:border-accent flex items-center justify-between gap-2"
       >
         <span className="truncate flex items-center gap-2 min-w-0">
           {selectedItem ? (
@@ -215,14 +215,14 @@ export default function SearchableItemSelect({
           }}
         >
           {/* Search Input */}
-          <div className="p-2 border-b border-[rgba(255,255,255,0.1)] sticky top-0 bg-background-elevated">
+          <div className="p-2 border-b border-border sticky top-0 bg-background-elevated">
             <input
               ref={searchInputRef}
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search items..."
-              className="w-full px-3 py-2 bg-background-subtle border border-[rgba(255,255,255,0.1)] rounded-md text-white text-sm focus:outline-none focus:border-accent"
+              className="w-full px-3 py-2 bg-background-subtle border border-border rounded-md text-foreground text-sm focus:outline-none focus:border-accent"
             />
           </div>
 
@@ -234,7 +234,7 @@ export default function SearchableItemSelect({
                 e.stopPropagation()
                 handleClear()
               }}
-              className="w-full px-3 py-2 text-left hover:bg-muted text-muted-foreground text-sm border-b border-[rgba(255,255,255,0.1)]"
+              className="w-full px-3 py-2 text-left hover:bg-muted text-muted-foreground text-sm border-b border-border"
             >
               -- Clear Selection --
             </button>
@@ -250,8 +250,8 @@ export default function SearchableItemSelect({
               bossNames.map(boss => (
                 <div key={boss}>
                   {/* Boss Header */}
-                  <div className="px-3 py-2 bg-muted border-b border-[rgba(255,255,255,0.1)]">
-                    <p className="text-xs font-semibold text-white uppercase tracking-wide">
+                  <div className="px-3 py-2 bg-muted border-b border-border">
+                    <p className="text-xs font-semibold text-foreground uppercase tracking-wide">
                       {boss}
                     </p>
                   </div>

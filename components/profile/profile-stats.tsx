@@ -50,7 +50,7 @@ export function ProfileStats({
       {showAttendance && (
         <div className="bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-xl overflow-hidden">
           <div className="px-6 py-4 border-b border-[rgba(255,255,255,0.1)]">
-            <h3 className="text-[18px] font-semibold text-white flex items-center gap-2">
+            <h3 className="text-[18px] font-semibold text-foreground flex items-center gap-2">
               <HugeiconsIcon icon={Calendar01Icon} size={20} />
               Raid Attendance
             </h3>
@@ -64,11 +64,11 @@ export function ProfileStats({
             </div>
             <div className="flex items-center justify-between">
               <span className="text-[13px] text-muted-foreground">Raids Attended (4 weeks)</span>
-              <span className="text-white font-medium">{raidsAttended} / {totalRaids}</span>
+              <span className="text-foreground font-medium">{raidsAttended} / {totalRaids}</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-[13px] text-muted-foreground">Attendance Rate</span>
-              <span className="text-white font-medium">{attendancePercentage}%</span>
+              <span className="text-foreground font-medium">{attendancePercentage}%</span>
             </div>
             <div className="w-full bg-background-subtle rounded-full h-2 mt-2">
               <div
@@ -88,7 +88,7 @@ export function ProfileStats({
       {showLootHistory && (
         <div className="bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-xl overflow-hidden">
           <div className="px-6 py-4 border-b border-[rgba(255,255,255,0.1)]">
-            <h3 className="text-[18px] font-semibold text-white flex items-center gap-2">
+            <h3 className="text-[18px] font-semibold text-foreground flex items-center gap-2">
               <HugeiconsIcon icon={Award01Icon} size={20} />
               Loot & Submissions
             </h3>
@@ -96,7 +96,7 @@ export function ProfileStats({
           <div className="p-6 space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-[13px] text-muted-foreground">Items Received</span>
-              <span className="text-white font-medium flex items-center gap-1">
+              <span className="text-foreground font-medium flex items-center gap-1">
                 <HugeiconsIcon icon={StarIcon} size={16} className="text-accent" />
                 {lootReceived}
               </span>

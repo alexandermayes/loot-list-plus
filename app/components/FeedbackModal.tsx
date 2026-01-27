@@ -146,13 +146,13 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
               <HugeiconsIcon icon={Bug01Icon} size={20} className="text-accent" />
             </div>
             <div>
-              <h3 className="text-[20px] font-bold text-white">Report a Bug</h3>
+              <h3 className="text-[20px] font-bold text-foreground">Report a Bug</h3>
               <p className="text-[12px] text-muted-foreground">Help us improve LootList+</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="text-muted-foreground hover:text-white transition"
+            className="text-muted-foreground hover:text-foreground transition"
           >
             <HugeiconsIcon icon={Cancel01Icon} size={24} />
           </button>
@@ -164,7 +164,7 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
             <div className="w-16 h-16 rounded-full bg-green-600/20 flex items-center justify-center mx-auto mb-4">
               <HugeiconsIcon icon={SentIcon} size={32} className="text-green-400" />
             </div>
-            <h4 className="text-[18px] font-semibold text-white mb-2">Thanks for your feedback!</h4>
+            <h4 className="text-[18px] font-semibold text-foreground mb-2">Thanks for your feedback!</h4>
             <p className="text-[14px] text-muted-foreground">We'll look into this and get back to you if needed.</p>
           </div>
         ) : (
@@ -180,7 +180,7 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
               {/* Screenshot Preview */}
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <label className="text-[13px] font-medium text-white flex items-center gap-2">
+                  <label className="text-[13px] font-medium text-foreground flex items-center gap-2">
                     <HugeiconsIcon icon={Camera01Icon} size={16} className="text-muted-foreground" />
                     Screenshot
                   </label>
@@ -188,7 +188,7 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
                     type="button"
                     onClick={captureScreenshot}
                     disabled={capturing}
-                    className="text-[12px] text-accent hover:text-[#ff9933] transition disabled:opacity-50"
+                    className="text-[12px] text-accent hover:text-accent/80 transition disabled:opacity-50"
                   >
                     {capturing ? 'Capturing...' : 'Retake'}
                   </button>
@@ -217,14 +217,14 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
 
               {/* Description */}
               <div>
-                <label className="block text-[13px] font-medium text-white mb-2">
+                <label className="block text-[13px] font-medium text-foreground mb-2">
                   What went wrong? <span className="text-red-500">*</span>
                 </label>
                 <textarea
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   rows={4}
-                  className="w-full px-4 py-3 bg-background-elevated border border-border-strong rounded-xl text-white text-[14px] focus:outline-none focus:border-accent transition resize-none placeholder:text-foreground-muted"
+                  className="w-full px-4 py-3 bg-background-elevated border border-border-strong rounded-xl text-foreground text-[14px] focus:outline-none focus:border-accent transition resize-none placeholder:text-foreground-muted"
                   placeholder="Describe the bug or issue you encountered..."
                   autoFocus
                 />
@@ -237,14 +237,14 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
                 type="button"
                 onClick={onClose}
                 disabled={submitting}
-                className="px-6 py-2.5 bg-background-elevated hover:bg-muted border border-border-strong rounded-[52px] text-white text-[13px] transition disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-6 py-2.5 bg-background-elevated hover:bg-muted border border-border-strong rounded-[52px] text-foreground text-[13px] transition disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={submitting || !description.trim()}
-                className="px-6 py-2.5 bg-accent hover:bg-[#ff9933] rounded-[52px] text-white text-[13px] font-medium transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                className="px-6 py-2.5 bg-accent hover:bg-accent/80 rounded-[52px] text-foreground text-[13px] font-medium transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
               >
                 {submitting ? (
                   <>

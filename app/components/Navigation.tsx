@@ -98,7 +98,7 @@ export default function Navigation({
               onClick={() => setDropdownOpen(!dropdownOpen)}
               className="flex items-center gap-2 px-4 py-2 rounded-[52px] bg-background-elevated border border-border-strong hover:bg-muted focus:outline-none focus:border-accent transition"
             >
-              <span className="text-sm font-medium text-white">{activeGuild.name}</span>
+              <span className="text-sm font-medium text-foreground">{activeGuild.name}</span>
               <HugeiconsIcon icon={ArrowDown01Icon} size={16} className="text-muted-foreground" />
             </button>
 
@@ -115,7 +115,7 @@ export default function Navigation({
                       className="w-full flex items-center justify-between px-3 py-2 rounded hover:bg-muted transition text-left"
                     >
                       <div className="flex flex-col">
-                        <span className="text-sm font-medium text-white">{guild.guild.name}</span>
+                        <span className="text-sm font-medium text-foreground">{guild.guild.name}</span>
                         {guild.guild.realm && (
                           <span className="text-xs text-muted-foreground">{guild.guild.realm}</span>
                         )}
@@ -125,7 +125,7 @@ export default function Navigation({
                       )}
                     </button>
                   ))}
-                  <div className="border-t border-[rgba(255,255,255,0.1)] mt-2 pt-2">
+                  <div className="border-t border-border mt-2 pt-2">
                     <button
                       onClick={() => {
                         setDropdownOpen(false)

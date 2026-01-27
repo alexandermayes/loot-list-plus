@@ -522,15 +522,15 @@ export default function CreateGuildPage() {
                 }
               }}
               disabled={creating}
-              className="w-full px-5 py-3 bg-background-elevated border border-border-strong rounded-[52px] text-white text-[13px] focus:outline-none focus:border-accent cursor-pointer select-custom disabled:opacity-50"
+              className="w-full px-5 py-3 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[13px] focus:outline-none focus:border-accent cursor-pointer select-custom disabled:opacity-50"
             >
-              <option value="" className="bg-background-elevated text-white">Select a server...</option>
+              <option value="" className="bg-background-elevated text-foreground">Select a server...</option>
               {discordGuilds.length > 0 && discordGuilds.map((guild) => (
-                <option key={guild.id} value={guild.id} className="bg-background-elevated text-white">
+                <option key={guild.id} value={guild.id} className="bg-background-elevated text-foreground">
                   {guild.name}
                 </option>
               ))}
-              <option value="manual" className="bg-background-elevated text-white">Manually enter Server ID</option>
+              <option value="manual" className="bg-background-elevated text-foreground">Manually enter Server ID</option>
             </select>
           </div>
 

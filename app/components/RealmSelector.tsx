@@ -152,7 +152,7 @@ export default function RealmSelector({
           type="button"
           onClick={() => !disabled && setRegionDropdownOpen(!regionDropdownOpen)}
           disabled={disabled}
-          className="h-11 px-4 bg-background-elevated border border-border-strong rounded-l-[52px] border-r-0 text-white font-medium flex items-center gap-2 hover:bg-muted disabled:opacity-50 min-w-[100px] justify-between focus:outline-none focus:border-accent transition-colors"
+          className="h-11 px-4 bg-background-elevated border border-border-strong rounded-l-[52px] border-r-0 text-foreground font-medium flex items-center gap-2 hover:bg-muted disabled:opacity-50 min-w-[100px] justify-between focus:outline-none focus:border-accent transition-colors"
         >
           <span>{regionCode}</span>
           <svg
@@ -178,7 +178,7 @@ export default function RealmSelector({
                 region === 'All' ? 'bg-muted' : ''
               }`}
             >
-              <div className="font-medium text-white">All</div>
+              <div className="font-medium text-foreground">All</div>
             </button>
             {REALM_REGIONS.map((r) => (
               <button
@@ -189,7 +189,7 @@ export default function RealmSelector({
                   region === r ? 'bg-muted' : ''
                 }`}
               >
-                <div className="font-medium text-white">{REGION_CODES[r]}</div>
+                <div className="font-medium text-foreground">{REGION_CODES[r]}</div>
               </button>
             ))}
           </div>
@@ -203,7 +203,7 @@ export default function RealmSelector({
           type="button"
           onClick={() => !disabled && region && setRealmDropdownOpen(!realmDropdownOpen)}
           disabled={disabled || !region}
-          className="w-full h-11 px-4 bg-background-elevated border border-border-strong rounded-r-[52px] text-white text-left flex items-center justify-between disabled:opacity-50 disabled:cursor-not-allowed hover:bg-muted focus:outline-none focus:border-accent transition-colors"
+          className="w-full h-11 px-4 bg-background-elevated border border-border-strong rounded-r-[52px] text-foreground text-left flex items-center justify-between disabled:opacity-50 disabled:cursor-not-allowed hover:bg-muted focus:outline-none focus:border-accent transition-colors"
         >
           <span className={realm ? '' : 'text-muted-foreground'}>
             {realm || 'Realm'}
@@ -230,14 +230,14 @@ export default function RealmSelector({
             }}
           >
             {/* Search Input */}
-            <div className="p-2 border-b border-[rgba(255,255,255,0.1)] sticky top-0 bg-background-elevated">
+            <div className="p-2 border-b border-border sticky top-0 bg-background-elevated">
               <input
                 ref={searchInputRef}
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search realms..."
-                className="w-full px-3 py-2 bg-background-subtle border border-[rgba(255,255,255,0.1)] rounded-md text-white text-sm focus:outline-none focus:border-accent"
+                className="w-full px-3 py-2 bg-background-subtle border border-border rounded-md text-foreground text-sm focus:outline-none focus:border-accent"
               />
             </div>
 
@@ -249,7 +249,7 @@ export default function RealmSelector({
                   setRealmDropdownOpen(false)
                   setSearch('')
                 }}
-                className="w-full px-3 py-2 text-left hover:bg-muted text-muted-foreground text-sm border-b border-[rgba(255,255,255,0.1)]"
+                className="w-full px-3 py-2 text-left hover:bg-muted text-muted-foreground text-sm border-b border-border"
               >
                 -- Clear Selection --
               </button>
@@ -267,8 +267,8 @@ export default function RealmSelector({
                   return (
                     <div key={version}>
                       {/* Version Header */}
-                      <div className="px-3 py-2 bg-muted border-b border-[rgba(255,255,255,0.1)]">
-                        <p className="text-xs font-semibold text-white uppercase tracking-wide">
+                      <div className="px-3 py-2 bg-muted border-b border-border">
+                        <p className="text-xs font-semibold text-foreground uppercase tracking-wide">
                           {version}
                         </p>
                       </div>
@@ -282,7 +282,7 @@ export default function RealmSelector({
                             realm === realmInfo.name ? 'bg-muted' : ''
                           }`}
                         >
-                          <div className="font-medium text-white">{realmInfo.name}</div>
+                          <div className="font-medium text-foreground">{realmInfo.name}</div>
                         </button>
                       ))}
                     </div>
