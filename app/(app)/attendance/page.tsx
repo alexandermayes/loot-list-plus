@@ -5,7 +5,8 @@ export const dynamic = 'force-dynamic'
 import { createClient } from '@/utils/supabase/client'
 import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
-import { Calendar01Icon, ArrowDown01Icon, ArrowUp01Icon } from 'hugeicons-react'
+import { HugeiconsIcon } from '@hugeicons/react'
+import { Calendar01Icon, ArrowDown01Icon, ArrowUp01Icon } from '@hugeicons/core-free-icons'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { calculateAttendanceScore, getRankModifier } from '@/utils/calculations'
 
@@ -533,7 +534,7 @@ export default function AttendancePage() {
               }`}
             >
               Credit
-              {sortBy === 'score' && (sortDirection === 'desc' ? <ArrowDown01Icon className="w-3 h-3" /> : <ArrowUp01Icon className="w-3 h-3" />)}
+              {sortBy === 'score' && (sortDirection === 'desc' ? <HugeiconsIcon icon={ArrowDown01Icon} size={12} /> : <HugeiconsIcon icon={ArrowUp01Icon} size={12} />)}
             </button>
             <button
               onClick={() => toggleSort('name')}
@@ -542,20 +543,20 @@ export default function AttendancePage() {
               }`}
             >
               Name
-              {sortBy === 'name' && (sortDirection === 'desc' ? <ArrowDown01Icon className="w-3 h-3" /> : <ArrowUp01Icon className="w-3 h-3" />)}
+              {sortBy === 'name' && (sortDirection === 'desc' ? <HugeiconsIcon icon={ArrowDown01Icon} size={12} /> : <HugeiconsIcon icon={ArrowUp01Icon} size={12} />)}
             </button>
           </div>
         </div>
 
         {guildRaiders.length === 0 ? (
           <div className="p-8 text-center">
-            <Calendar01Icon className="w-12 h-12 text-[#505050] mx-auto mb-3" />
+            <HugeiconsIcon icon={Calendar01Icon} size={48} className="text-[#505050] mx-auto mb-3" />
             <p className="text-[#666]">No active raiders found</p>
             <p className="text-[#505050] text-sm mt-1">Raiders need approved loot submissions to appear here</p>
           </div>
         ) : guildRaidEvents.length === 0 ? (
           <div className="p-8 text-center">
-            <Calendar01Icon className="w-12 h-12 text-[#505050] mx-auto mb-3" />
+            <HugeiconsIcon icon={Calendar01Icon} size={48} className="text-[#505050] mx-auto mb-3" />
             <p className="text-[#666]">No raid events in the attendance window</p>
           </div>
         ) : (

@@ -8,7 +8,7 @@ import { calculateAttendanceScore, getRankModifier, calculateLootScore, calculat
 import { getSpecRoles } from '@/utils/spec-role-mapping'
 import { getBossOrder, normalizeBossName } from '@/utils/bossOrder'
 import { getBossImage } from '@/utils/bossImages'
-import { LinkSquare01Icon } from 'hugeicons-react'
+import { StarFilledIcon } from '@/components/ui/icons'
 import { useGuildContext } from '@/app/contexts/GuildContext'
 import { ExpansionGuard } from '@/app/components/ExpansionGuard'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
@@ -643,8 +643,10 @@ export default function MasterSheet() {
                         : 'bg-[#151515] border border-[rgba(255,255,255,0.1)] text-white hover:bg-[#1a1a1a]'
                     }`}
                   >
-                    {tier.name}
-                    {tier.is_active && ' ⭐'}
+                    <span className="flex items-center gap-2">
+                      {tier.name}
+                      {tier.is_active && <StarFilledIcon size={14} />}
+                    </span>
                   </button>
                 ))}
               </div>
@@ -755,7 +757,7 @@ export default function MasterSheet() {
                 <div
                   key={boss}
                   id={`boss-${boss.replace(/\s+/g, '-')}`}
-                  className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl overflow-hidden"
+                  className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl overflow-hidden scroll-mt-[140px]"
                 >
                   {/* Boss Header - Clickable */}
                   <button

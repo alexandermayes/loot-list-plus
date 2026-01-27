@@ -9,6 +9,7 @@ import { ExpansionGuard } from '@/app/components/ExpansionGuard'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { useNotification } from '@/app/contexts/NotificationContext'
 import { normalizeBossName } from '@/utils/bossOrder'
+import { StarFilledIcon, CheckFilledIcon, ClockFilledIcon, AlertFilledIcon, CancelFilledIcon } from '@/components/ui/icons'
 
 interface LootItem {
   id: string
@@ -1003,7 +1004,7 @@ export default function LootList() {
                     >
                       <div className="flex items-center gap-2">
                         <span>{expansion.expansion_name}</span>
-                        {expansion.is_current && <span className="text-xs">⭐</span>}
+                        {expansion.is_current && <StarFilledIcon size={14} />}
                       </div>
                     </button>
                   )
@@ -1046,13 +1047,14 @@ export default function LootList() {
                     >
                       <div className="flex items-center gap-2">
                         <span>{tier.name}</span>
-                        {tier.is_active && <span className="text-xs">⭐</span>}
+                        {tier.is_active && <StarFilledIcon size={14} />}
                         {hasSubmission && (
-                          <span className={`text-xs ${statusColor}`}>
-                            {status.status === 'approved' ? '✓' :
-                             status.status === 'pending' ? '⏳' :
-                             status.status === 'needs_revision' ? '⚠' :
-                             status.status === 'rejected' ? '✗' : '○'}
+                          <span className={statusColor}>
+                            {status.status === 'approved' ? <CheckFilledIcon size={14} /> :
+                             status.status === 'pending' ? <ClockFilledIcon size={14} /> :
+                             status.status === 'needs_revision' ? <AlertFilledIcon size={14} /> :
+                             status.status === 'rejected' ? <CancelFilledIcon size={14} /> :
+                             <span className="w-2 h-2 rounded-full bg-current inline-block" />}
                           </span>
                         )}
                       </div>

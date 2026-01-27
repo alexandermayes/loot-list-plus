@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation'
 import type { User } from '@supabase/supabase-js'
 import { useGuildContext } from '@/app/contexts/GuildContext'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
-import { Settings01Icon } from 'hugeicons-react'
+import { StarFilledIcon } from '@/components/ui/icons'
 import Link from 'next/link'
 import ItemLink from '@/app/components/ItemLink'
 import { normalizeBossName } from '@/utils/bossOrder'
@@ -455,7 +455,7 @@ export default function MasterLootPage() {
                 >
                   <div className="flex items-center gap-2">
                     <span>{tier.name}</span>
-                    {tier.is_active && <span className="text-xs">⭐</span>}
+                    {tier.is_active && <StarFilledIcon size={14} />}
                   </div>
                 </button>
               ))}
