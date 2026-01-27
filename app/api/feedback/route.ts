@@ -1,8 +1,20 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/utils/supabase/server'
 
+// LOW-04: Maximum request body size (5MB to accommodate screenshots)
+const MAX_BODY_SIZE = 5 * 1024 * 1024 // 5MB
+
 export async function POST(request: Request) {
   try {
+    // Check content-length header for body size limit
+    const contentLength = request.headers.get('content-length')
+    if (contentLength && parseInt(contentLength, 10) > MAX_BODY_SIZE) {
+      return NextResponse.json(
+        { error: 'Request body too large. Maximum size is 5MB.' },
+        { status: 413 }
+      )
+    }
+
     const webhookUrl = process.env.DISCORD_FEEDBACK_WEBHOOK_URL
 
     if (!webhookUrl) {
@@ -15,6 +27,14 @@ export async function POST(request: Request) {
 
     const body = await request.json()
     const { description, screenshot, pageUrl, userAgent } = body
+
+    // Validate screenshot size if present
+    if (screenshot && screenshot.length > MAX_BODY_SIZE) {
+      return NextResponse.json(
+        { error: 'Screenshot too large. Maximum size is 5MB.' },
+        { status: 413 }
+      )
+    }
 
     if (!description?.trim()) {
       return NextResponse.json(

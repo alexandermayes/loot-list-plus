@@ -3,7 +3,15 @@ import { createClient } from '@supabase/supabase-js'
 import { createClient as createServerClient } from '@/utils/supabase/server'
 
 // List of user IDs that are allowed to perform super-admin operations
-const SUPER_ADMIN_IDS = process.env.SUPER_ADMIN_IDS?.split(',') || []
+// LOW-05: Filter empty strings and log warning if not configured
+const SUPER_ADMIN_IDS = process.env.SUPER_ADMIN_IDS?.split(',').filter(Boolean) || []
+
+if (SUPER_ADMIN_IDS.length === 0 && process.env.NODE_ENV === 'production') {
+  console.warn(
+    '[SECURITY] No SUPER_ADMIN_IDS configured. ' +
+    'Admin endpoints will only work in development mode.'
+  )
+}
 
 export async function GET() {
   try {
@@ -126,10 +134,10 @@ export async function GET() {
       message: 'Migrations applied',
       results
     })
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error:', error)
     return NextResponse.json(
-      { error: error.message },
+      { error: 'Internal server error' },
       { status: 500 }
     )
   }

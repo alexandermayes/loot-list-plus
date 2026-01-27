@@ -8,6 +8,15 @@ const hasUpstashConfig = !!(
   process.env.UPSTASH_REDIS_REST_TOKEN
 )
 
+// LOW-01: Log warning if using in-memory fallback in production
+if (!hasUpstashConfig && process.env.NODE_ENV === 'production') {
+  console.warn(
+    '[SECURITY WARNING] Rate limiting using in-memory fallback. ' +
+    'This is not suitable for production as it does not persist across serverless invocations. ' +
+    'Configure UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN for proper rate limiting.'
+  )
+}
+
 // Create rate limiters only if Redis is configured
 const redis = hasUpstashConfig
   ? new Redis({
@@ -72,6 +81,20 @@ function getInMemoryRateLimit(
   return { success: true, remaining: limit - record.count }
 }
 
+/**
+ * Extract client IP address from request headers.
+ *
+ * LOW-02: IP Extraction Trust Chain
+ * This function trusts the x-forwarded-for and x-real-ip headers which are set
+ * by Vercel's edge network. Vercel strips any client-provided values and sets
+ * the true client IP. This is safe because:
+ * 1. Vercel is our trusted reverse proxy
+ * 2. Vercel overwrites these headers with the actual client IP
+ * 3. Direct requests to the origin are not possible (Vercel handles all traffic)
+ *
+ * If deploying to a different platform, verify that the platform properly
+ * sanitizes these headers to prevent IP spoofing.
+ */
 function getClientIp(request: NextRequest): string {
   const forwarded = request.headers.get('x-forwarded-for')
   const ip = forwarded?.split(',')[0]?.trim() ||
