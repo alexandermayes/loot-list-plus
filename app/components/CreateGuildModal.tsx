@@ -36,11 +36,11 @@ interface CreateGuildModalProps {
 type Step = 'discord' | 'details' | 'settings'
 
 const EXPANSIONS = [
-  { id: 'Classic', name: 'Classic', image: 'https://wow.zamimg.com/images/wow/icons/large/achievement_boss_ragnaros.jpg', available: true },
-  { id: 'The Burning Crusade', name: 'TBC', image: 'https://wow.zamimg.com/images/wow/icons/large/achievement_boss_illidan.jpg', available: true },
-  { id: 'Wrath of the Lich King', name: 'WotLK', image: 'https://wow.zamimg.com/images/wow/icons/large/achievement_dungeon_icecrown.jpg', available: false },
-  { id: 'Cataclysm', name: 'Cata', image: 'https://wow.zamimg.com/images/wow/icons/large/achievement_boss_cthun.jpg', available: false },
-  { id: 'Mists of Pandaria', name: 'MoP', image: 'https://wow.zamimg.com/images/wow/icons/large/inv_helmet_leather_panda_b_02.jpg', available: false },
+  { id: 'Classic', name: 'Classic', image: 'https://softres.it/img/editions/classic.big.png', available: true },
+  { id: 'The Burning Crusade', name: 'TBC', image: 'https://softres.it/img/editions/tbc.big.png', available: true },
+  { id: 'Wrath of the Lich King', name: 'WotLK', image: 'https://softres.it/img/editions/wotlk.big.png', available: false },
+  { id: 'Cataclysm', name: 'Cata', image: 'https://softres.it/img/editions/cata.big.png', available: false },
+  { id: 'Mists of Pandaria', name: 'MoP', image: 'https://softres.it/img/editions/mop.big.png', available: false },
 ]
 
 export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModalProps) {
@@ -676,7 +676,7 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
                                   ? 'border-accent ring-2 ring-accent/30'
                                   : 'border-border-strong hover:border-foreground-muted'
                             }`}>
-                              <img src={exp.image} alt={exp.name} className="w-full h-full object-cover rounded-md" />
+                              <img src={exp.image} alt={exp.name} className="w-full h-full object-contain p-2" />
                             </div>
                             <span className={`text-[10px] font-medium transition ${
                               !exp.available
