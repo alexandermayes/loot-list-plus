@@ -3,8 +3,7 @@
 import { createClient } from '@/utils/supabase/client'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { HugeiconsIcon } from '@hugeicons/react'
-import { Loading01Icon } from '@hugeicons/core-free-icons'
+import { LoadingSpinner } from '@/components/ui/loading-spinner'
 
 // Landing sections
 import LandingNav from '@/app/components/landing/LandingNav'
@@ -35,11 +34,7 @@ export default function Home() {
   }, [])
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <HugeiconsIcon icon={Loading01Icon} size={32} className="animate-spin text-accent" />
-      </div>
-    )
+    return <LoadingSpinner fullScreen />
   }
 
   return (

@@ -247,8 +247,8 @@ export default function EditCharacterPage() {
             <span className="text-[14px]">Back to Characters</span>
           </button>
 
-          <Heading level={1} className="mb-2">Edit Character</Heading>
-          <p className="text-[16px] text-muted-foreground">
+          <Heading level={1}>Edit Character</Heading>
+          <p className="text-muted-foreground mt-1 text-base">
             Update character details and settings
           </p>
         </div>

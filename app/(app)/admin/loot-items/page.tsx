@@ -401,7 +401,7 @@ export default function AdminLootItems() {
         {/* Header */}
         <div>
           <Heading level={1}>Loot Items</Heading>
-          <p className="text-muted-foreground mt-1 text-[14px]">Manage loot items for your guild</p>
+          <p className="text-muted-foreground mt-1 text-base">Manage loot items for your guild</p>
         </div>
 
         {/* Filters */}

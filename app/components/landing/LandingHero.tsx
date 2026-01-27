@@ -20,8 +20,8 @@ export default function LandingHero() {
           quality={100}
         />
         {/* Gradient overlay for better text readability */}
-        <div className="absolute inset-0 bg-gradient-to-r from-background/90 via-background/70 to-transparent" />
-        <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent" />
+        <div className="absolute inset-0 bg-background/60" />
+        <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-background/50" />
       </div>
 
       {/* Hero Content */}
@@ -32,22 +32,22 @@ export default function LandingHero() {
         variants={staggerContainer}
       >
         <div className="w-full max-w-7xl mx-auto px-6 md:px-12 lg:px-20">
-          <div className="max-w-2xl">
+          <div className="max-w-3xl mx-auto text-center flex flex-col items-center">
             {/* Icon */}
             <motion.div variants={heroFadeIn} className="mb-6">
               <Image
                 src="/lootlist-icon.svg"
                 alt="LootList+ Icon"
-                width={40}
-                height={53}
-                className="w-10 h-auto"
+                width={48}
+                height={64}
+                className="w-12 h-auto"
               />
             </motion.div>
 
             {/* Headline */}
             <motion.h1
               variants={heroFadeIn}
-              className="font-poppins font-bold text-[32px] md:text-[42px] lg:text-[52px] leading-[1.05] text-foreground mb-6"
+              className="font-poppins font-bold text-[32px] md:text-[42px] lg:text-[56px] leading-[1.05] text-foreground mb-6"
             >
               Epic loot deserves an epic system.
             </motion.h1>
@@ -55,14 +55,14 @@ export default function LandingHero() {
             {/* Subheadline */}
             <motion.p
               variants={heroFadeIn}
-              className="font-poppins text-base md:text-lg text-foreground-secondary mb-10 max-w-xl"
+              className="font-poppins text-base md:text-lg text-foreground-secondary mb-10 max-w-2xl"
             >
               LootList+ is a transparent loot management system for WoW guilds.
               Fair distribution, attendance tracking, and complete visibility — all in one place.
             </motion.p>
 
             {/* CTA Buttons */}
-            <motion.div variants={heroFadeIn} className="flex flex-col sm:flex-row gap-4">
+            <motion.div variants={heroFadeIn} className="flex flex-col sm:flex-row gap-4 justify-center">
               <button
                 onClick={() => scrollToSection('cta')}
                 className="px-8 py-4 bg-primary hover:bg-primary/90 text-primary-foreground font-poppins font-semibold text-base rounded-[52px] transition-all duration-200 active:scale-[0.98] shadow-lg hover:shadow-xl"

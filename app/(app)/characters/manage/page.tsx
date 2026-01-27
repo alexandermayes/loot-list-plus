@@ -42,8 +42,8 @@ export default function ManageCharactersPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <Heading level={1} className="mb-2">My Characters</Heading>
-          <p className="text-[16px] text-foreground-muted">
+          <Heading level={1}>My Characters</Heading>
+          <p className="text-muted-foreground mt-1 text-base">
             Manage your characters and their guild memberships
           </p>
         </div>

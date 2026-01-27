@@ -476,7 +476,7 @@ export default function AdminPrioList() {
         {/* Header */}
         <div className="p-8 pb-4">
           <Heading level={1}>Priority List</Heading>
-          <p className="text-muted-foreground mt-1 text-[14px]">
+          <p className="text-muted-foreground mt-1 text-base">
             Set role, class, and individual raider priorities for each item
           </p>
         </div>

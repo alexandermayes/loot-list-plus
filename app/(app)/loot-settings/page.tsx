@@ -1283,7 +1283,7 @@ export default function AdminLootItems() {
         <div className="flex items-center justify-between">
           <div>
             <Heading level={1}>Master Loot</Heading>
-            <p className="text-foreground-muted mt-1 text-[14px]">Manage loot items and configure classifications</p>
+            <p className="text-muted-foreground mt-1 text-base">Manage loot items and configure classifications</p>
           </div>
           <button
             onClick={() => setShowSettingsModal(true)}

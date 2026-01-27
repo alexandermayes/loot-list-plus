@@ -261,7 +261,7 @@ export default function ImportPage() {
         {/* Header */}
         <div>
           <Heading level={1}>Import Raid Data</Heading>
-          <p className="text-muted-foreground mt-1 text-[14px]">Import raid tracking data from CSV files</p>
+          <p className="text-muted-foreground mt-1 text-base">Import raid tracking data from CSV files</p>
         </div>
 
         {message && (

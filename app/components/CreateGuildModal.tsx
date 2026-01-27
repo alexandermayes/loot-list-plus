@@ -4,7 +4,8 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/utils/supabase/client'
 import { HugeiconsIcon } from '@hugeicons/react'
-import { Tick01Icon, ArrowRight01Icon, Loading01Icon, Link01Icon, File01Icon, Settings01Icon } from '@hugeicons/core-free-icons'
+import { Tick01Icon, ArrowRight01Icon, Link01Icon, File01Icon, Settings01Icon } from '@hugeicons/core-free-icons'
+import { Spinner, LoadingSpinner } from '@/components/ui/loading-spinner'
 import Image from 'next/image'
 import RealmSelector from '@/app/components/RealmSelector'
 import {
@@ -425,7 +426,7 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
         <ModalBody className="flex-1 flex flex-col min-h-0">
           {loading ? (
             <div className="flex items-center justify-center py-12">
-              <HugeiconsIcon icon={Loading01Icon} size={32} className="animate-spin text-accent" />
+              <LoadingSpinner size="sm" />
             </div>
           ) : !discordVerified ? (
             <div className="text-center py-8">
@@ -580,7 +581,7 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
                         }`}>
                           {checkingBot ? (
                             <div className="flex items-center gap-3">
-                              <HugeiconsIcon icon={Loading01Icon} size={20} className="animate-spin text-muted-foreground" />
+                              <Spinner size="lg" className="text-muted-foreground" />
                               <p className="text-[13px] text-muted-foreground">Checking bot installation...</p>
                             </div>
                           ) : botInstalled ? (
@@ -648,7 +649,7 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
                         }`}
                       />
                       {checkingName && (
-                        <HugeiconsIcon icon={Loading01Icon} size={20} className="absolute right-4 top-1/2 -translate-y-1/2 animate-spin text-muted-foreground" />
+                        <Spinner size="lg" className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground" />
                       )}
                       {!checkingName && nameAvailable === true && (
                         <HugeiconsIcon icon={Tick01Icon} size={20} className="absolute right-4 top-1/2 -translate-y-1/2 text-success" />
@@ -823,7 +824,7 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
               >
                 {creating ? (
                   <>
-                    <HugeiconsIcon icon={Loading01Icon} size={16} className="animate-spin" />
+                    <Spinner />
                     Creating...
                   </>
                 ) : (

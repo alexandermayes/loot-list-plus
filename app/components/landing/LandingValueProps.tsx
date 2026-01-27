@@ -67,7 +67,7 @@ function ValuePropCard({ prop, index }: { prop: typeof valueProps[0], index: num
         <h3 className="font-poppins font-semibold text-xl md:text-2xl text-foreground mb-3">
           {prop.title}
         </h3>
-        <p className="font-poppins text-sm md:text-base text-foreground-secondary leading-relaxed max-w-lg mx-auto md:mx-0">
+        <p className={`font-poppins text-sm md:text-base text-foreground-secondary leading-relaxed max-w-lg ${isEven ? 'mx-auto md:mx-0' : 'mx-auto md:ml-auto md:mr-0'}`}>
           {prop.description}
         </p>
       </div>
