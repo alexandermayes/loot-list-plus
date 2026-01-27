@@ -192,8 +192,8 @@ export default function PendingSubmissionsPage() {
       <div className="max-w-6xl mx-auto">
         {/* Header - Always visible */}
         <div className="mb-8">
-          <Heading level={1} className="mb-2">Pending Submissions</Heading>
-          <p className="text-[16px] text-muted-foreground">
+          <Heading level={1}>Pending Submissions</Heading>
+          <p className="text-muted-foreground mt-1 text-base">
             Review and approve loot list submissions from your guild members
           </p>
         </div>

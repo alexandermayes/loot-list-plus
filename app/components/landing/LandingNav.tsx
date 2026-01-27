@@ -63,22 +63,22 @@ export default function LandingNav() {
           </button>
 
           {/* Nav Links - Hidden on mobile */}
-          <div className="hidden md:flex items-center gap-8">
+          <div className="hidden md:flex items-center gap-10">
             <button
               onClick={() => scrollToSection('features')}
-              className="text-sm text-foreground-secondary hover:text-foreground transition-colors"
+              className="text-base font-medium text-foreground hover:text-accent transition-colors"
             >
               Features
             </button>
             <button
               onClick={() => scrollToSection('how-it-works')}
-              className="text-sm text-foreground-secondary hover:text-foreground transition-colors"
+              className="text-base font-medium text-foreground hover:text-accent transition-colors"
             >
               How It Works
             </button>
             <button
               onClick={() => scrollToSection('testimonials')}
-              className="text-sm text-foreground-secondary hover:text-foreground transition-colors"
+              className="text-base font-medium text-foreground hover:text-accent transition-colors"
             >
               Testimonials
             </button>
@@ -87,7 +87,7 @@ export default function LandingNav() {
           {/* CTA Button */}
           <button
             onClick={handleDiscordLogin}
-            className="inline-flex items-center gap-2 px-4 py-2 md:px-5 md:py-2.5 bg-accent hover:bg-accent/90 text-background font-poppins font-semibold text-sm rounded-full transition-all duration-200 active:scale-[0.98]"
+            className="inline-flex items-center gap-2 px-5 py-2.5 md:px-6 md:py-3 bg-white hover:bg-white/90 text-background font-poppins font-semibold text-sm rounded-full transition-all duration-200 active:scale-[0.98] shadow-md"
           >
             <Image
               src="/discord-icon.svg"

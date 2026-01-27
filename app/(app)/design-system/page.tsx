@@ -62,7 +62,6 @@ import {
   InformationCircleIcon,
   AlertCircleIcon,
   CheckmarkCircle01Icon,
-  Loading01Icon,
   RefreshIcon,
   Logout01Icon,
   Login01Icon,
@@ -613,7 +612,7 @@ export default function DesignSystemPage() {
                     <span className="text-xs text-muted-foreground">Info</span>
                   </div>
                   <div className="flex flex-col items-center gap-2 p-3 rounded-xl bg-background-elevated border border-border">
-                    <HugeiconsIcon icon={Loading01Icon} size={20} className="text-foreground-secondary animate-spin" />
+                    <Spinner size="lg" className="text-foreground-secondary" />
                     <span className="text-xs text-muted-foreground">Loading</span>
                   </div>
                 </div>

@@ -207,8 +207,8 @@ export default function ExpansionsManagementPage() {
     <div className="p-8 space-y-6">
       {/* Header */}
       <div>
-        <Heading level={1} className="mb-2">Manage Expansions</Heading>
-        <p className="text-[16px] text-foreground-muted">
+        <Heading level={1}>Manage Expansions</Heading>
+        <p className="text-muted-foreground mt-1 text-base">
           Add and manage expansions for your guild. Each expansion maintains its own loot lists and raid data.
         </p>
       </div>

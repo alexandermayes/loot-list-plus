@@ -255,7 +255,7 @@ export default function MasterLootPage() {
       <div className="flex items-center justify-between">
         <div>
           <Heading level={1}>Master Loot</Heading>
-          <p className="text-muted-foreground mt-1 text-[14px]">Manage loot submissions and available items</p>
+          <p className="text-muted-foreground mt-1 text-base">Manage loot submissions and available items</p>
         </div>
         <Link
           href="/loot-settings"

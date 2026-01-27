@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { HugeiconsIcon } from '@hugeicons/react'
-import { Bug01Icon, Camera01Icon, SentIcon, Loading03Icon } from '@hugeicons/core-free-icons'
+import { Bug01Icon, Camera01Icon, SentIcon } from '@hugeicons/core-free-icons'
+import { Spinner } from '@/components/ui/loading-spinner'
 import html2canvas from 'html2canvas'
 import {
   Modal,
@@ -191,7 +192,7 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
                 <div className="relative bg-background-elevated border border-border-strong rounded-xl overflow-hidden aspect-video">
                   {capturing ? (
                     <div className="absolute inset-0 flex items-center justify-center">
-                      <HugeiconsIcon icon={Loading03Icon} size={32} className="text-muted-foreground animate-spin" />
+                      <Spinner size="lg" className="text-muted-foreground" />
                     </div>
                   ) : screenshot ? (
                     <img

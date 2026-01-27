@@ -9,12 +9,17 @@
     "start": "next start",
     "lint": "eslint",
     "seed:classic": "tsx scripts/seed-classic-raids.ts",
+    "seed:test": "tsx scripts/seed-test-data.ts",
+    "seed:test:clean": "tsx scripts/seed-test-data.ts --clean",
     "migrate:profile": "tsx scripts/run-profile-migrations.ts",
     "setup:loot": "tsx scripts/setup-loot-database.ts",
     "fix:items": "tsx scripts/ensure-items-available.ts",
     "reseed:bwl": "tsx scripts/reseed-bwl.ts",
     "reseed:all": "tsx scripts/clean-and-reseed-all-raids.ts",
-    "consolidate:items": "tsx scripts/consolidate-multi-boss-items.ts"
+    "consolidate:items": "tsx scripts/consolidate-multi-boss-items.ts",
+    "loadtest": "k6 run loadtest/k6-loadtest.js",
+    "loadtest:smoke": "k6 run --vus 1 --duration 10s loadtest/k6-loadtest.js",
+    "loadtest:artillery": "artillery run loadtest/artillery.yml"
   },
   "dependencies": {
     "@hugeicons-pro/core-solid-rounded": "^3.1.0",

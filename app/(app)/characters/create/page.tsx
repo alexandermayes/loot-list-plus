@@ -168,8 +168,8 @@ export default function CreateCharacterPage() {
             <span className="text-[14px]">Back</span>
           </button>
 
-          <Heading level={1} className="mb-2">Create Character</Heading>
-          <p className="text-[16px] text-muted-foreground">
+          <Heading level={1}>Create Character</Heading>
+          <p className="text-muted-foreground mt-1 text-base">
             Add a new character to your account
           </p>
         </div>

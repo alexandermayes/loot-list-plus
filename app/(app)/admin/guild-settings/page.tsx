@@ -212,7 +212,7 @@ export default function GuildSettingsPage() {
         {/* Header - Always visible */}
         <div>
           <Heading level={1}>Guild Settings</Heading>
-          <p className="text-muted-foreground mt-1 text-[14px]">Manage your guild configuration, members, and settings</p>
+          <p className="text-muted-foreground mt-1 text-base">Manage your guild configuration, members, and settings</p>
         </div>
 
         {/* Show skeleton while loading */}

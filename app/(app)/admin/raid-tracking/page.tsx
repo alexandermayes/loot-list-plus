@@ -1495,7 +1495,7 @@ export default function RaidTrackingPage() {
       {/* Header */}
       <div>
         <Heading level={1}>Raid Tracking</Heading>
-        <p className="text-muted-foreground mt-1 text-[14px]">
+        <p className="text-muted-foreground mt-1 text-base">
           Manage attendance and signups for each raid day
           {currentExpansion && (
             <span className="text-accent ml-2">• {currentExpansion.expansion_name}</span>

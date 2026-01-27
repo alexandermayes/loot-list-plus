@@ -1,0 +1,132 @@
+# Artillery Load Test Configuration for LootList+
+#
+# Installation:
+#   npm install -g artillery
+#
+# Usage:
+#   # Run load test
+#   artillery run loadtest/artillery.yml
+#
+#   # Run with custom target
+#   artillery run -t http://localhost:3000 loadtest/artillery.yml
+#
+#   # Generate HTML report
+#   artillery run --output results.json loadtest/artillery.yml
+#   artillery report results.json
+
+config:
+  target: "http://localhost:3000"
+  phases:
+    # Warm-up phase
+    - duration: 30
+      arrivalRate: 5
+      name: "Warm-up"
+    # Ramp-up phase
+    - duration: 60
+      arrivalRate: 5
+      rampTo: 20
+      name: "Ramp-up"
+    # Sustained load
+    - duration: 120
+      arrivalRate: 20
+      name: "Sustained load"
+    # Ramp-down
+    - duration: 30
+      arrivalRate: 20
+      rampTo: 0
+      name: "Ramp-down"
+
+  defaults:
+    headers:
+      Content-Type: "application/json"
+      Accept: "application/json"
+
+  # Environment variables
+  variables:
+    guildId: "{{ $env.GUILD_ID }}"
+
+  # Plugins for reporting
+  plugins:
+    expect: {}
+
+  # Performance thresholds
+  ensure:
+    p95: 500   # 95th percentile < 500ms
+    p99: 1000  # 99th percentile < 1s
+    maxErrorRate: 5  # Max 5% error rate
+
+scenarios:
+  # Scenario 1: Anonymous browsing
+  - name: "Anonymous User Flow"
+    weight: 3
+    flow:
+      - get:
+          url: "/"
+          capture:
+            - json: "$"
+              as: "homepage"
+      - think: 2
+      - get:
+          url: "/auth/signin"
+
+  # Scenario 2: Authenticated user viewing data
+  - name: "Member View Flow"
+    weight: 5
+    flow:
+      - get:
+          url: "/api/characters"
+          expect:
+            - statusCode:
+                - 200
+                - 401
+      - think: 1
+      - get:
+          url: "/api/guilds"
+          expect:
+            - statusCode:
+                - 200
+                - 401
+      - think: 2
+      - get:
+          url: "/overview"
+      - think: 3
+      - get:
+          url: "/loot-list"
+      - think: 2
+      - get:
+          url: "/profile"
+
+  # Scenario 3: Heavy API usage
+  - name: "API Heavy User"
+    weight: 2
+    flow:
+      - loop:
+          - get:
+              url: "/api/characters"
+          - think: 0.5
+          - get:
+              url: "/api/guilds"
+          - think: 0.5
+        count: 5
+      - get:
+          url: "/api/prio-list?guild_id={{ guildId }}"
+          ifTrue: "guildId"
+
+  # Scenario 4: Page navigation simulation
+  - name: "Page Navigation"
+    weight: 4
+    flow:
+      - get:
+          url: "/overview"
+      - think: 3
+      - get:
+          url: "/loot-list"
+      - think: 5
+      - get:
+          url: "/loot-submissions"
+      - think: 4
+      - get:
+          url: "/profile"
+      - think: 2
+      - get:
+          url: "/overview"
