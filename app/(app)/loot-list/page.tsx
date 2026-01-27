@@ -7,7 +7,14 @@ import SearchableItemSelect from '@/app/components/SearchableItemSelect'
 import { useGuildContext } from '@/app/contexts/GuildContext'
 import { ExpansionGuard } from '@/app/components/ExpansionGuard'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
+import { TierTabsSkeleton, TableSkeleton } from '@/components/ui/skeletons'
 import { useNotification } from '@/app/contexts/NotificationContext'
+import {
+  Modal,
+  ModalHeader,
+  ModalTitle,
+  ModalBody,
+} from '@/components/ui/modal'
 import { normalizeBossName } from '@/utils/bossOrder'
 import { StarFilledIcon, CheckFilledIcon, ClockFilledIcon, AlertFilledIcon, CancelFilledIcon } from '@/components/ui/icons'
 
@@ -937,25 +944,17 @@ export default function LootList() {
     )
   })
 
-  if (initialLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <LoadingSpinner />
-      </div>
-    )
-  }
-
   return (
     <ExpansionGuard>
       <div className="font-poppins">
-        {/* Header */}
+        {/* Header - Always visible */}
         <div className="p-8 pb-4">
           <div className="flex items-start justify-between gap-4">
             <div>
               <h1 className="text-[42px] font-bold text-foreground leading-tight">Loot Lists</h1>
               <div className="mt-1">
                 <p className="text-muted-foreground text-base inline">
-                  Rank your preferred items for {raidTiers.find(t => t.id === selectedTierId)?.name || 'this raid tier'}
+                  {initialLoading ? 'Loading raid tiers...' : `Rank your preferred items for ${raidTiers.find(t => t.id === selectedTierId)?.name || 'this raid tier'}`}
                 </p>
                 {viewingExpansionId && (
                   <span className="ml-2 px-3 py-1 bg-blue-950/50 border border-blue-600/50 text-blue-300 text-xs font-medium rounded-full">
@@ -1015,7 +1014,11 @@ export default function LootList() {
         </div>
 
         {/* Raid Tier Tabs - Sticky */}
-        {raidTiers.length > 0 && (
+        {initialLoading ? (
+          <div className="sticky top-0 z-20 px-8 py-3 bg-background">
+            <TierTabsSkeleton />
+          </div>
+        ) : raidTiers.length > 0 && (
           <div className="sticky top-0 z-20 px-8 py-3 bg-background">
             <div className="flex items-center gap-3 overflow-x-auto">
               <span className="text-muted-foreground text-sm font-medium whitespace-nowrap">Raid Tier:</span>
@@ -1069,12 +1072,9 @@ export default function LootList() {
         {/* Main Content */}
         <div className="px-8 pb-8 space-y-6">
         {/* Content Loading State */}
-        {contentLoading ? (
-          <div className="bg-background-elevated border border-border rounded-xl p-12">
-            <div className="flex flex-col items-center justify-center gap-4">
-              <LoadingSpinner />
-              <p className="text-muted-foreground text-sm">Loading loot items...</p>
-            </div>
+        {(initialLoading || contentLoading) ? (
+          <div className="space-y-6">
+            <TableSkeleton rows={10} cols={3} />
           </div>
         ) : (
         <>
@@ -1529,99 +1529,78 @@ export default function LootList() {
         </div>
 
         {/* How to Rank Modal */}
-        {showInstructionsModal && (
-          <div
-            className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-            onClick={() => setShowInstructionsModal(false)}
-          >
-            <div
-              className="bg-background-elevated border border-border rounded-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto"
-              onClick={(e) => e.stopPropagation()}
-            >
-              {/* Modal Header */}
-              <div className="sticky top-0 bg-background-elevated border-b border-border px-6 py-4 flex items-center justify-between">
-                <h2 className="text-foreground font-bold text-[24px]">How to Rank</h2>
-                <button
-                  onClick={() => setShowInstructionsModal(false)}
-                  className="text-muted-foreground hover:text-foreground transition"
-                >
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-
-              {/* Modal Content */}
-              <div className="p-6 space-y-4">
-                {/* Core Structure */}
-                <div>
-                  <h4 className="text-foreground font-semibold text-sm mb-2">Core Structure</h4>
-                  <p className="text-muted-foreground text-sm">
-                    The system uses <span className="font-semibold text-foreground">50 desirability levels</span> (Level 50 being most desirable),
-                    with each level containing <span className="font-semibold text-foreground">2 item slots</span> divided into 6 brackets.
-                  </p>
-                </div>
-
-                {/* Brackets */}
-                <div>
-                  <h4 className="text-foreground font-semibold text-sm mb-2">Bracket Framework</h4>
-                  <ul className="text-muted-foreground text-sm space-y-1">
-                    <li>• <span className="font-semibold text-red-300">Bracket 1:</span> Levels 50, 49, 48</li>
-                    <li>• <span className="font-semibold text-orange-300">Bracket 2:</span> Levels 47, 46, 45</li>
-                    <li>• <span className="font-semibold text-yellow-300">Bracket 3:</span> Levels 44, 43, 42</li>
-                    <li>• <span className="font-semibold text-amber-300">Bracket 4:</span> Levels 41, 40, 39</li>
-                    <li>• <span className="font-semibold text-green-300">No Bracket:</span> Levels 38-25 (Still main-spec priority)</li>
-                    <li>• <span className="font-semibold text-blue-300">Off-spec:</span> Levels 24-1 (Enhances guild flexibility)</li>
-                  </ul>
-                </div>
-
-                {/* Key Rules */}
-                <div>
-                  <h4 className="text-foreground font-semibold text-sm mb-2">Key Rules (Brackets 1-4)</h4>
-                  <ul className="text-muted-foreground text-sm space-y-2">
-                    <li>
-                      <span className="font-semibold text-foreground">1. Allocation Point Limit:</span> Maximum 3 points per bracket.
-                      <ul className="ml-4 mt-1 space-y-0.5">
-                        <li>- <span className="text-red-300">Reserved items</span> cost 1 point</li>
-                        <li>- <span className="text-yellow-300">Limited items</span> cost 1 point</li>
-                        <li>- <span className="text-green-300">Unlimited items</span> cost 0 points</li>
-                      </ul>
-                    </li>
-                    <li>
-                      <span className="font-semibold text-foreground">2. Type Restriction:</span> Brackets 1-4 may only contain 1 item of a type
-                      (no duplicate weapon types in same bracket).
-                    </li>
-                    <li>
-                      <span className="font-semibold text-foreground">3. Reserved Items:</span> Must be the sole entry at that desirability level
-                      (cannot have another item in the same rank).
-                    </li>
-                    <li>
-                      <span className="font-semibold text-foreground">4. Equal Priority:</span> Both item slots per level receive equal priority when filled.
-                    </li>
-                    <li>
-                      <span className="font-semibold text-foreground">5. Dual Weapons:</span> Two identical non-unique weapons are permitted if not hand-specific
-                      (e.g., two of the same dagger).
-                    </li>
-                    <li>
-                      <span className="font-semibold text-foreground">6. Off-spec Importance:</span> Completing off-spec selections enhances guild flexibility
-                      and is encouraged.
-                    </li>
-                  </ul>
-                </div>
-
-                {/* Important Notes */}
-                <div className="bg-blue-900/20 border border-blue-700 rounded-lg p-3">
-                  <h4 className="text-blue-200 font-semibold text-sm mb-2">Important Notes</h4>
-                  <ul className="text-blue-200 text-sm space-y-1">
-                    <li>• Each item can only be selected once across all ranks</li>
-                    <li>• Items in "No Bracket" don't guarantee unavailability - they indicate other classes receive priority</li>
-                    <li>• <span className="text-red-300 font-semibold">If your rank number is tied, you will roll</span></li>
-                  </ul>
-                </div>
-              </div>
+        <Modal open={showInstructionsModal} onClose={() => setShowInstructionsModal(false)} size="lg">
+          <ModalHeader onClose={() => setShowInstructionsModal(false)}>
+            <ModalTitle>How to Rank</ModalTitle>
+          </ModalHeader>
+          <ModalBody className="space-y-4">
+            {/* Core Structure */}
+            <div>
+              <h4 className="text-foreground font-semibold text-sm mb-2">Core Structure</h4>
+              <p className="text-muted-foreground text-sm">
+                The system uses <span className="font-semibold text-foreground">50 desirability levels</span> (Level 50 being most desirable),
+                with each level containing <span className="font-semibold text-foreground">2 item slots</span> divided into 6 brackets.
+              </p>
             </div>
-          </div>
-        )}
+
+            {/* Brackets */}
+            <div>
+              <h4 className="text-foreground font-semibold text-sm mb-2">Bracket Framework</h4>
+              <ul className="text-muted-foreground text-sm space-y-1">
+                <li>• <span className="font-semibold text-destructive">Bracket 1:</span> Levels 50, 49, 48</li>
+                <li>• <span className="font-semibold text-accent">Bracket 2:</span> Levels 47, 46, 45</li>
+                <li>• <span className="font-semibold text-warning">Bracket 3:</span> Levels 44, 43, 42</li>
+                <li>• <span className="font-semibold text-yellow-400">Bracket 4:</span> Levels 41, 40, 39</li>
+                <li>• <span className="font-semibold text-success">No Bracket:</span> Levels 38-25 (Still main-spec priority)</li>
+                <li>• <span className="font-semibold text-info">Off-spec:</span> Levels 24-1 (Enhances guild flexibility)</li>
+              </ul>
+            </div>
+
+            {/* Key Rules */}
+            <div>
+              <h4 className="text-foreground font-semibold text-sm mb-2">Key Rules (Brackets 1-4)</h4>
+              <ul className="text-muted-foreground text-sm space-y-2">
+                <li>
+                  <span className="font-semibold text-foreground">1. Allocation Point Limit:</span> Maximum 3 points per bracket.
+                  <ul className="ml-4 mt-1 space-y-0.5">
+                    <li>- <span className="text-destructive">Reserved items</span> cost 1 point</li>
+                    <li>- <span className="text-warning">Limited items</span> cost 1 point</li>
+                    <li>- <span className="text-success">Unlimited items</span> cost 0 points</li>
+                  </ul>
+                </li>
+                <li>
+                  <span className="font-semibold text-foreground">2. Type Restriction:</span> Brackets 1-4 may only contain 1 item of a type
+                  (no duplicate weapon types in same bracket).
+                </li>
+                <li>
+                  <span className="font-semibold text-foreground">3. Reserved Items:</span> Must be the sole entry at that desirability level
+                  (cannot have another item in the same rank).
+                </li>
+                <li>
+                  <span className="font-semibold text-foreground">4. Equal Priority:</span> Both item slots per level receive equal priority when filled.
+                </li>
+                <li>
+                  <span className="font-semibold text-foreground">5. Dual Weapons:</span> Two identical non-unique weapons are permitted if not hand-specific
+                  (e.g., two of the same dagger).
+                </li>
+                <li>
+                  <span className="font-semibold text-foreground">6. Off-spec Importance:</span> Completing off-spec selections enhances guild flexibility
+                  and is encouraged.
+                </li>
+              </ul>
+            </div>
+
+            {/* Important Notes */}
+            <div className="bg-info/10 border border-info/30 rounded-xl p-4">
+              <h4 className="text-info font-semibold text-sm mb-2">Important Notes</h4>
+              <ul className="text-info text-sm space-y-1">
+                <li>• Each item can only be selected once across all ranks</li>
+                <li>• Items in "No Bracket" don't guarantee unavailability - they indicate other classes receive priority</li>
+                <li>• <span className="text-destructive font-semibold">If your rank number is tied, you will roll</span></li>
+              </ul>
+            </div>
+          </ModalBody>
+        </Modal>
         </>
         )}
         </div>

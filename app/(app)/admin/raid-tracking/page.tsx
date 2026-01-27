@@ -10,6 +10,15 @@ import { ArrowDown01Icon, ArrowUp01Icon, Upload01Icon, Cancel01Icon, NextIcon } 
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { useGuildContext } from '@/app/contexts/GuildContext'
 import ItemLink from '@/app/components/ItemLink'
+import {
+  Modal,
+  ModalHeader,
+  ModalTitle,
+  ModalDescription,
+  ModalBody,
+  ModalFooter,
+} from '@/components/ui/modal'
+import { Button } from '@/components/ui/button'
 
 interface Member {
   character_id: string
@@ -141,7 +150,7 @@ export default function RaidTrackingPage() {
       }
 
       if (!isOfficer) {
-        router.push('/dashboard')
+        router.push('/overview')
         return
       }
 
@@ -1802,258 +1811,224 @@ export default function RaidTrackingPage() {
       )}
 
       {/* Skip Day Modal */}
-      {showSkipModal && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setShowSkipModal(null)}>
-          <div className="bg-background-subtle border border-border-strong rounded-xl max-w-md w-full overflow-hidden" onClick={e => e.stopPropagation()}>
-            {/* Header */}
-            <div className="p-6 border-b border-border-strong flex items-center justify-between bg-background-elevated">
-              <div>
-                <h3 className="text-[20px] font-bold text-foreground">Skip Raid Day</h3>
-                <p className="text-muted-foreground text-[13px] mt-1">
-                  {new Date(showSkipModal.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
-                </p>
-              </div>
-              <button onClick={() => setShowSkipModal(null)} className="text-foreground-muted hover:text-foreground transition">
-                <HugeiconsIcon icon={Cancel01Icon} size={20} />
-              </button>
-            </div>
-
-            {/* Content */}
-            <div className="p-6">
-              <label className="block text-[13px] text-muted-foreground mb-2">Reason for skipping</label>
-              <input
-                type="text"
-                value={skipReason}
-                onChange={e => setSkipReason(e.target.value)}
-                placeholder="e.g., Holiday, Cancelled, Not enough signups..."
-                className="w-full px-4 py-3 bg-background-elevated border border-border-strong rounded-xl text-foreground text-[13px] focus:outline-none focus:border-accent transition placeholder-[#606060]"
-              />
-            </div>
-
-            {/* Footer */}
-            <div className="p-6 border-t border-border-strong flex gap-3">
-              <button
-                onClick={() => setShowSkipModal(null)}
-                className="flex-1 px-5 py-3 bg-background-elevated hover:bg-muted border border-border-strong rounded-[52px] text-foreground text-[13px] font-medium transition"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={confirmSkipDay}
-                className="flex-1 px-5 py-3 bg-primary hover:bg-primary/90 rounded-[52px] text-primary-foreground text-[13px] font-medium transition"
-              >
-                Skip Day
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <Modal open={!!showSkipModal} onClose={() => setShowSkipModal(null)} size="sm">
+        <ModalHeader onClose={() => setShowSkipModal(null)}>
+          <ModalTitle>Skip Raid Day</ModalTitle>
+          {showSkipModal && (
+            <ModalDescription>
+              {new Date(showSkipModal.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
+            </ModalDescription>
+          )}
+        </ModalHeader>
+        <ModalBody>
+          <label className="block text-sm text-muted-foreground mb-2">Reason for skipping</label>
+          <input
+            type="text"
+            value={skipReason}
+            onChange={e => setSkipReason(e.target.value)}
+            placeholder="e.g., Holiday, Cancelled, Not enough signups..."
+            className="w-full px-4 py-3 bg-transparent border border-border rounded-xl text-foreground text-sm focus:outline-none focus:border-accent transition placeholder:text-muted-foreground"
+          />
+        </ModalBody>
+        <ModalFooter>
+          <Button variant="secondary" onClick={() => setShowSkipModal(null)}>
+            Cancel
+          </Button>
+          <Button variant="primary" onClick={confirmSkipDay}>
+            Skip Day
+          </Button>
+        </ModalFooter>
+      </Modal>
 
       {/* Import Modal - Unified Form */}
-      {showImportModal && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setShowImportModal(null)}>
-          <div className="bg-background-subtle border border-border-strong rounded-xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col" onClick={e => e.stopPropagation()}>
-            {/* Header */}
-            <div className="p-6 border-b border-border-strong flex items-center justify-between bg-background-elevated">
+      <Modal
+        open={!!showImportModal}
+        onClose={() => {
+          setShowImportModal(null)
+          setAttendanceData('')
+          setLootData('')
+          setSignupsData('')
+        }}
+        size="xl"
+      >
+        <ModalHeader onClose={() => setShowImportModal(null)}>
+          <ModalTitle>{showImportModal?.isEdit ? 'Edit Raid Data' : 'Import Raid Data'}</ModalTitle>
+          {showImportModal && (
+            <ModalDescription>
+              {new Date(showImportModal.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
+            </ModalDescription>
+          )}
+        </ModalHeader>
+        <ModalBody className="space-y-6">
+          {/* Attendance & Loot Side by Side */}
+          <div className="grid grid-cols-2 gap-6">
+            {/* Attendance Section */}
+            <div className="space-y-3">
               <div>
-                <h3 className="text-[20px] font-bold text-foreground">{showImportModal.isEdit ? 'Edit Raid Data' : 'Import Raid Data'}</h3>
-                <p className="text-muted-foreground text-[13px] mt-1">
-                  {new Date(showImportModal.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
-                </p>
+                <label className="block text-md font-semibold text-foreground">
+                  Attendance <span className="text-accent">*</span>
+                </label>
+                <p className="text-muted-foreground text-sm">Who attended this raid day</p>
               </div>
-              <button onClick={() => setShowImportModal(null)} className="text-foreground-muted hover:text-foreground transition">
-                <HugeiconsIcon icon={Cancel01Icon} size={20} />
-              </button>
+              {attendanceData.trim() && (() => {
+                const preview = parseAttendancePreview(attendanceData)
+                return (
+                  <div className="flex items-center gap-2 text-sm">
+                    <span className="text-success">{preview.matched} matched</span>
+                    {preview.unmatched > 0 && (
+                      <span className="text-warning">{preview.unmatched} unmatched</span>
+                    )}
+                  </div>
+                )
+              })()}
+              <textarea
+                value={attendanceData}
+                onChange={e => setAttendanceData(e.target.value)}
+                placeholder="Paste character names (comma-separated or one per line)&#10;&#10;Example:&#10;Headjaws&#10;Calonise&#10;Leroyspankin"
+                className="w-full h-44 px-4 py-3 bg-transparent border border-border rounded-xl text-foreground text-sm focus:outline-none focus:border-accent font-mono placeholder:text-muted-foreground resize-none"
+              />
             </div>
 
-            {/* Content - Scrollable */}
-            <div className="flex-1 overflow-y-auto p-6 space-y-6">
-              {/* Attendance & Loot Side by Side */}
-              <div className="grid grid-cols-2 gap-6">
-                {/* Attendance Section */}
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <label className="block text-[14px] font-semibold text-foreground">
-                        Attendance <span className="text-accent">*</span>
-                      </label>
-                      <p className="text-foreground-muted text-[12px]">Who attended this raid day</p>
-                    </div>
-                  </div>
-                  {attendanceData.trim() && (() => {
-                    const preview = parseAttendancePreview(attendanceData)
-                    return (
-                      <div className="flex items-center gap-2 text-[12px]">
-                        <span className="text-green-400">{preview.matched} matched</span>
-                        {preview.unmatched > 0 && (
-                          <span className="text-yellow-400">{preview.unmatched} unmatched</span>
-                        )}
-                      </div>
-                    )
-                  })()}
-                  <textarea
-                    value={attendanceData}
-                    onChange={e => setAttendanceData(e.target.value)}
-                    placeholder="Paste character names (comma-separated or one per line)&#10;&#10;Example:&#10;Headjaws&#10;Calonise&#10;Leroyspankin"
-                    className="w-full h-44 px-4 py-3 bg-background-elevated border border-border-strong rounded-xl text-foreground text-[13px] focus:outline-none focus:border-accent font-mono placeholder-[#606060] resize-none"
-                  />
-                </div>
-
-                {/* Loot Section */}
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <label className="block text-[14px] font-semibold text-foreground">
-                        Loot <span className="text-accent">*</span>
-                      </label>
-                      <p className="text-foreground-muted text-[12px]">Gargul export format</p>
-                    </div>
-                  </div>
-                  {lootData.trim() && (() => {
-                    const preview = parseLootPreview(lootData)
-                    return (
-                      <div className="flex items-center gap-2 text-[12px]">
-                        {preview.linked > 0 && (
-                          <span className="text-green-400">{preview.linked} linked</span>
-                        )}
-                        {preview.unlinked > 0 && (
-                          <span className="text-yellow-400">{preview.unlinked} unlinked</span>
-                        )}
-                        {preview.failed > 0 && (
-                          <span className="text-red-400">{preview.failed} failed</span>
-                        )}
-                      </div>
-                    )
-                  })()}
-                  <textarea
-                    value={lootData}
-                    onChange={e => setLootData(e.target.value)}
-                    placeholder="DATE;[ITEM_ID];CHARACTER&#10;&#10;Example:&#10;12/15/2024;[16859];Lukasdnmd&#10;12/15/2024;[18203];Headjaws"
-                    className="w-full h-44 px-4 py-3 bg-background-elevated border border-border-strong rounded-xl text-foreground text-[13px] focus:outline-none focus:border-accent font-mono placeholder-[#606060] resize-none"
-                  />
-                </div>
+            {/* Loot Section */}
+            <div className="space-y-3">
+              <div>
+                <label className="block text-md font-semibold text-foreground">
+                  Loot <span className="text-accent">*</span>
+                </label>
+                <p className="text-muted-foreground text-sm">Gargul export format</p>
               </div>
-
-              {/* Signups Section - Only if enabled */}
-              {guildSettings?.use_signups && (
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <label className="block text-[14px] font-semibold text-foreground">
-                        Signups <span className="text-foreground-muted text-[12px] font-normal">(optional)</span>
-                      </label>
-                      <p className="text-foreground-muted text-[12px]">Who signed up for this raid</p>
-                    </div>
-                    {signupsData.trim() && (() => {
-                      const preview = parseSignupsPreview(signupsData)
-                      return (
-                        <div className="flex items-center gap-2 text-[12px]">
-                          <span className="text-green-400">{preview.matched} matched</span>
-                          {preview.unmatched > 0 && (
-                            <span className="text-yellow-400">{preview.unmatched} unmatched</span>
-                          )}
-                        </div>
-                      )
-                    })()}
+              {lootData.trim() && (() => {
+                const preview = parseLootPreview(lootData)
+                return (
+                  <div className="flex items-center gap-2 text-sm">
+                    {preview.linked > 0 && (
+                      <span className="text-success">{preview.linked} linked</span>
+                    )}
+                    {preview.unlinked > 0 && (
+                      <span className="text-warning">{preview.unlinked} unlinked</span>
+                    )}
+                    {preview.failed > 0 && (
+                      <span className="text-destructive">{preview.failed} failed</span>
+                    )}
                   </div>
-                  <textarea
-                    value={signupsData}
-                    onChange={e => setSignupsData(e.target.value)}
-                    placeholder="Paste character names (comma-separated or one per line)&#10;&#10;Example: Headjaws, Calonise, Leroyspankin, Nardziz"
-                    className="w-full h-24 px-4 py-3 bg-background-elevated border border-border-strong rounded-xl text-foreground text-[13px] focus:outline-none focus:border-accent font-mono placeholder-[#606060] resize-none"
-                  />
-                </div>
-              )}
-            </div>
-
-            {/* Footer */}
-            <div className="p-6 border-t border-border-strong flex gap-3">
-              <button
-                onClick={() => {
-                  setShowImportModal(null)
-                  setAttendanceData('')
-                  setLootData('')
-                  setSignupsData('')
-                }}
-                className="flex-1 px-5 py-3 bg-background-elevated hover:bg-muted border border-border-strong rounded-[52px] text-foreground text-[13px] font-medium transition"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={importAllRaidData}
-                disabled={importing || (!attendanceData.trim() && !lootData.trim())}
-                className="flex-1 px-5 py-3 bg-primary hover:bg-primary/90 disabled:bg-muted disabled:text-foreground-muted rounded-[52px] text-primary-foreground text-[13px] font-medium transition"
-              >
-                {importing ? 'Saving...' : (showImportModal.isEdit ? 'Save Changes' : 'Import All')}
-              </button>
+                )
+              })()}
+              <textarea
+                value={lootData}
+                onChange={e => setLootData(e.target.value)}
+                placeholder="DATE;[ITEM_ID];CHARACTER&#10;&#10;Example:&#10;12/15/2024;[16859];Lukasdnmd&#10;12/15/2024;[18203];Headjaws"
+                className="w-full h-44 px-4 py-3 bg-transparent border border-border rounded-xl text-foreground text-sm focus:outline-none focus:border-accent font-mono placeholder:text-muted-foreground resize-none"
+              />
             </div>
           </div>
-        </div>
-      )}
+
+          {/* Signups Section - Only if enabled */}
+          {guildSettings?.use_signups && (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <label className="block text-md font-semibold text-foreground">
+                    Signups <span className="text-muted-foreground text-sm font-normal">(optional)</span>
+                  </label>
+                  <p className="text-muted-foreground text-sm">Who signed up for this raid</p>
+                </div>
+                {signupsData.trim() && (() => {
+                  const preview = parseSignupsPreview(signupsData)
+                  return (
+                    <div className="flex items-center gap-2 text-sm">
+                      <span className="text-success">{preview.matched} matched</span>
+                      {preview.unmatched > 0 && (
+                        <span className="text-warning">{preview.unmatched} unmatched</span>
+                      )}
+                    </div>
+                  )
+                })()}
+              </div>
+              <textarea
+                value={signupsData}
+                onChange={e => setSignupsData(e.target.value)}
+                placeholder="Paste character names (comma-separated or one per line)&#10;&#10;Example: Headjaws, Calonise, Leroyspankin, Nardziz"
+                className="w-full h-24 px-4 py-3 bg-transparent border border-border rounded-xl text-foreground text-sm focus:outline-none focus:border-accent font-mono placeholder:text-muted-foreground resize-none"
+              />
+            </div>
+          )}
+        </ModalBody>
+        <ModalFooter>
+          <Button
+            variant="secondary"
+            onClick={() => {
+              setShowImportModal(null)
+              setAttendanceData('')
+              setLootData('')
+              setSignupsData('')
+            }}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="primary"
+            onClick={importAllRaidData}
+            disabled={importing || (!attendanceData.trim() && !lootData.trim())}
+            loading={importing}
+          >
+            {showImportModal?.isEdit ? 'Save Changes' : 'Import All'}
+          </Button>
+        </ModalFooter>
+      </Modal>
 
       {/* Loot Item Selection Modal */}
-      {showLootSelectionModal && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[60] flex items-center justify-center p-4" onClick={() => skipLootItemSelection()}>
-          <div className="bg-background-subtle border border-border-strong rounded-xl max-w-lg w-full overflow-hidden" onClick={e => e.stopPropagation()}>
-            {/* Header */}
-            <div className="p-6 border-b border-border-strong bg-background-elevated">
-              <h3 className="text-[18px] font-bold text-foreground">Item Not Found</h3>
-              <p className="text-muted-foreground text-[13px] mt-1">
-                Could not find item ID <span className="text-accent font-mono">[{showLootSelectionModal.itemId}]</span> for{' '}
-                <span className="text-foreground font-medium">{showLootSelectionModal.characterName}</span>
-              </p>
-            </div>
+      <Modal open={!!showLootSelectionModal} onClose={skipLootItemSelection} size="default" zIndex={60}>
+        <ModalHeader>
+          <ModalTitle>Item Not Found</ModalTitle>
+          {showLootSelectionModal && (
+            <ModalDescription>
+              Could not find item ID <span className="text-accent font-mono">[{showLootSelectionModal.itemId}]</span> for{' '}
+              <span className="text-foreground font-medium">{showLootSelectionModal.characterName}</span>
+            </ModalDescription>
+          )}
+        </ModalHeader>
+        <ModalBody className="space-y-4">
+          <input
+            type="text"
+            value={lootSearchQuery}
+            onChange={e => setLootSearchQuery(e.target.value)}
+            placeholder="Search for item by name..."
+            className="w-full px-4 py-3 bg-transparent border border-border rounded-xl text-foreground text-sm focus:outline-none focus:border-accent placeholder:text-muted-foreground"
+            autoFocus
+          />
 
-            {/* Content */}
-            <div className="p-6 space-y-4">
-              <input
-                type="text"
-                value={lootSearchQuery}
-                onChange={e => setLootSearchQuery(e.target.value)}
-                placeholder="Search for item by name..."
-                className="w-full px-4 py-3 bg-background-elevated border border-border-strong rounded-xl text-foreground text-[13px] focus:outline-none focus:border-accent placeholder-[#606060]"
-                autoFocus
-              />
-
-              <div className="max-h-64 overflow-y-auto space-y-1">
-                {lootItems
-                  .filter(item =>
-                    lootSearchQuery.length === 0 ||
-                    item.name.toLowerCase().includes(lootSearchQuery.toLowerCase()) ||
-                    item.boss_name.toLowerCase().includes(lootSearchQuery.toLowerCase())
-                  )
-                  .slice(0, 20)
-                  .map(item => (
-                    <button
-                      key={item.id}
-                      onClick={() => handleLootItemSelection(item)}
-                      className="w-full px-4 py-3 bg-background-elevated hover:bg-muted border border-border-strong rounded-xl text-left transition"
-                    >
-                      <p className="text-foreground text-[13px] font-medium">{item.name}</p>
-                      <p className="text-foreground-muted text-[11px]">{item.boss_name} • ID: {item.wowhead_id}</p>
-                    </button>
-                  ))}
-                {lootItems.filter(item =>
-                  lootSearchQuery.length === 0 ||
-                  item.name.toLowerCase().includes(lootSearchQuery.toLowerCase())
-                ).length === 0 && (
-                  <p className="text-foreground-muted text-[13px] text-center py-4">No items found</p>
-                )}
-              </div>
-            </div>
-
-            {/* Footer */}
-            <div className="p-6 border-t border-border-strong flex gap-3">
-              <button
-                onClick={skipLootItemSelection}
-                className="flex-1 px-5 py-3 bg-background-elevated hover:bg-muted border border-border-strong rounded-[52px] text-foreground text-[13px] font-medium transition"
-              >
-                Skip This Item
-              </button>
-            </div>
+          <div className="max-h-64 overflow-y-auto space-y-1">
+            {lootItems
+              .filter(item =>
+                lootSearchQuery.length === 0 ||
+                item.name.toLowerCase().includes(lootSearchQuery.toLowerCase()) ||
+                item.boss_name.toLowerCase().includes(lootSearchQuery.toLowerCase())
+              )
+              .slice(0, 20)
+              .map(item => (
+                <button
+                  key={item.id}
+                  onClick={() => handleLootItemSelection(item)}
+                  className="w-full px-4 py-3 bg-background-elevated hover:bg-muted border border-border rounded-xl text-left transition"
+                >
+                  <p className="text-foreground text-sm font-medium">{item.name}</p>
+                  <p className="text-muted-foreground text-xs">{item.boss_name} • ID: {item.wowhead_id}</p>
+                </button>
+              ))}
+            {lootItems.filter(item =>
+              lootSearchQuery.length === 0 ||
+              item.name.toLowerCase().includes(lootSearchQuery.toLowerCase())
+            ).length === 0 && (
+              <p className="text-muted-foreground text-sm text-center py-4">No items found</p>
+            )}
           </div>
-        </div>
-      )}
+        </ModalBody>
+        <ModalFooter>
+          <Button variant="secondary" onClick={skipLootItemSelection}>
+            Skip This Item
+          </Button>
+        </ModalFooter>
+      </Modal>
     </div>
   )
 }

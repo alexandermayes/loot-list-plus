@@ -10,7 +10,7 @@ export default function GuildSelectPage() {
   const router = useRouter()
 
   useEffect(() => {
-    router.replace('/dashboard')
+    router.replace('/overview')
   }, [router])
 
   return <LoadingSpinner fullScreen />

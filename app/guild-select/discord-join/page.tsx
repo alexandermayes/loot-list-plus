@@ -127,7 +127,7 @@ export default function DiscordJoinPage() {
           window.location.href = '/dashboard?create_character=true'
         } else {
           // Force a full page reload to refresh guild context
-          window.location.href = '/dashboard'
+          window.location.href = '/overview'
         }
       }, 1500)
     } catch (err) {

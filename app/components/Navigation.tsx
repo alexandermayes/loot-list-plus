@@ -27,7 +27,7 @@ export default function Navigation({
   classColor,
   role,
   showBack = false,
-  backUrl = '/dashboard',
+  backUrl = '/overview',
   title
 }: NavigationProps) {
   const supabase = createClient()
@@ -81,7 +81,7 @@ export default function Navigation({
             height={34}
             className="h-8 w-auto cursor-pointer"
             priority
-            onClick={() => router.push('/dashboard')}
+            onClick={() => router.push('/overview')}
           />
           {title && showBack && (
             <span className="text-muted-foreground">•</span>

@@ -131,7 +131,7 @@ export default function AdminLootItems() {
 
     // Check if officer using context
     if (!isOfficer) {
-      router.push('/dashboard')
+      router.push('/overview')
       return
     }
 

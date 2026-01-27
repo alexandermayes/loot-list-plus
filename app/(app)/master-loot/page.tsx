@@ -76,7 +76,7 @@ export default function MasterLootPage() {
       setUser(user)
 
       if (!guildLoading && !isOfficer) {
-        router.push('/dashboard')
+        router.push('/overview')
         return
       }
 

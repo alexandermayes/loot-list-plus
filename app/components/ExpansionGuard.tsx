@@ -49,7 +49,7 @@ export function ExpansionGuard({ children }: { children: React.ReactNode }) {
                     Go to Manage Expansions
                   </Button>
                 )}
-                <Button variant="outline" onClick={() => router.push('/dashboard')}>
+                <Button variant="outline" onClick={() => router.push('/overview')}>
                   Back to Dashboard
                 </Button>
               </div>

@@ -120,7 +120,7 @@ export default function AdminPrioList() {
       if (guildLoading || !activeGuild) return
 
       if (!isOfficer) {
-        router.push('/dashboard')
+        router.push('/overview')
         return
       }
 

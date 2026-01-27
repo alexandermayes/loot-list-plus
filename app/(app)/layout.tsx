@@ -30,7 +30,7 @@ function AppLayoutContent({
 
   // Map pathname to currentView for sidebar highlighting
   const getCurrentView = () => {
-    if (pathname === '/dashboard') return 'overview'
+    if (pathname === '/overview') return 'overview'
     if (pathname === '/master-sheet') return 'master-sheet'
     if (pathname === '/loot-list') return 'loot-list'
     if (pathname === '/attendance') return 'attendance'

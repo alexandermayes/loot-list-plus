@@ -328,7 +328,7 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
       // Success!
       onClose()
       onSuccess?.()
-      window.location.href = '/dashboard'
+      window.location.href = '/overview'
     } catch (err) {
       console.error('Error creating guild:', err)
       setError('An error occurred')

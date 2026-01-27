@@ -19,7 +19,7 @@ export function PageHeader({
   title,
   description,
   showBack = false,
-  backUrl = '/dashboard',
+  backUrl = '/overview',
   action
 }: PageHeaderProps) {
   const router = useRouter()

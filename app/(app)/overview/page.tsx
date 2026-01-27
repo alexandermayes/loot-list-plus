@@ -14,6 +14,7 @@ const CreateCharacterModal = dynamic(() => import('@/app/components/CreateCharac
 })
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { EmptyState } from '@/components/ui/empty-state'
+import { DashboardContentSkeleton } from '@/components/ui/skeletons'
 import { ScrollIcon, StarIcon } from '@hugeicons/core-free-icons'
 import { StatusBadge, type SubmissionStatus } from '@/components/ui/status-badge'
 import { useGuildContext } from '@/app/contexts/GuildContext'
@@ -135,7 +136,7 @@ export default function Dashboard() {
 
   // Set page title
   useEffect(() => {
-    document.title = 'LootList+ • Dashboard'
+    document.title = 'LootList+ • Overview'
   }, [])
 
   // Check for create_character query param (from guild join flow)
@@ -143,7 +144,7 @@ export default function Dashboard() {
     if (searchParams.get('create_character') === 'true') {
       setShowCreateCharacterModal(true)
       // Clean up the URL
-      router.replace('/dashboard', { scroll: false })
+      router.replace('/overview', { scroll: false })
     }
   }, [searchParams, router])
 
@@ -585,36 +586,42 @@ export default function Dashboard() {
     }
   }
 
-  if (loading || guildLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <LoadingSpinner />
-      </div>
-    )
+  // Show welcome screen if no active guild (after loading completes)
+  if (!guildLoading && !activeGuild) {
+    return <WelcomeScreen />
   }
 
+  // Determine if we're in a loading state
+  const isLoading = loading || guildLoading
 
   return (
-    <>
-      {!activeGuild ? (
-        <WelcomeScreen />
-      ) : (
-        <div className="p-8 space-y-6 font-poppins">
-          {/* Header */}
-          <div>
-            <h1 className="text-[42px] font-bold text-foreground leading-tight">
-              {greeting}
-            </h1>
-            <p className="text-muted-foreground mt-1 text-base">
-              {activeCharacter ? `Viewing loot for ${activeCharacter.name}` : `Welcome back to ${activeGuild?.name}`}
-            </p>
-          </div>
+    <div className="p-8 space-y-6 font-poppins">
+      {/* Header - Always visible but stable during loading */}
+      <div>
+        <h1 className="text-[42px] font-bold text-foreground leading-tight">
+          {isLoading ? 'Welcome back!' : (greeting || 'Welcome back!')}
+        </h1>
+        <p className="text-muted-foreground mt-1 text-base">
+          {isLoading
+            ? 'Loading your dashboard...'
+            : activeCharacter
+              ? `Viewing loot for ${activeCharacter.name}`
+              : activeGuild
+                ? `Welcome back to ${activeGuild.name}`
+                : 'Loading your dashboard...'}
+        </p>
+      </div>
 
+      {/* Show skeleton while loading */}
+      {isLoading ? (
+        <DashboardContentSkeleton />
+      ) : (
+        <>
           {/* Error Message (e.g., no expansion set) */}
           {error && (
             <div className="bg-background-elevated border border-accent/30 rounded-xl p-6">
               <div className="flex items-start gap-3">
-                <div className="text-accent mt-0.5">⚠️</div>
+                <div className="text-accent mt-0.5">&#x26A0;&#xFE0F;</div>
                 <div className="flex-1">
                   <p className="text-foreground font-semibold text-base">Action Required</p>
                   <p className="text-muted-foreground text-sm mt-1">{error}</p>
@@ -915,7 +922,7 @@ export default function Dashboard() {
             </div>
           )}
 
-        </div>
+        </>
       )}
 
       {/* Create Character Modal */}
@@ -924,6 +931,6 @@ export default function Dashboard() {
         onClose={() => setShowCreateCharacterModal(false)}
         suggestedName={activeCharacter?.name}
       />
-    </>
+    </div>
   )
 }

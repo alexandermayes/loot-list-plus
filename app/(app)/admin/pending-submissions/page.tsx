@@ -7,6 +7,7 @@ import { useGuildContext } from '@/app/contexts/GuildContext'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { Tick01Icon, Cancel01Icon, Clock01Icon, UserIcon, CheckmarkCircle01Icon } from '@hugeicons/core-free-icons'
 import { EmptyState } from '@/components/ui/empty-state'
+import { PendingSubmissionsListSkeleton } from '@/components/ui/skeletons'
 
 interface PendingSubmission {
   id: string
@@ -46,7 +47,7 @@ export default function PendingSubmissionsPage() {
   useEffect(() => {
     if (!guildLoading) {
       if (!isOfficer) {
-        router.push('/dashboard')
+        router.push('/overview')
         return
       }
       if (activeGuild) {
@@ -184,18 +185,10 @@ export default function PendingSubmissionsPage() {
     }
   }
 
-  if (loading || guildLoading) {
-    return (
-      <div className="min-h-screen bg-background-subtle p-8 flex items-center justify-center">
-        <p className="text-muted-foreground">Loading...</p>
-      </div>
-    )
-  }
-
   return (
     <div className="min-h-screen bg-background-subtle p-8">
       <div className="max-w-6xl mx-auto">
-        {/* Header */}
+        {/* Header - Always visible */}
         <div className="mb-8">
           <h1 className="text-[42px] font-bold text-foreground mb-2">Pending Submissions</h1>
           <p className="text-[16px] text-muted-foreground">
@@ -203,8 +196,13 @@ export default function PendingSubmissionsPage() {
           </p>
         </div>
 
-        {/* Message */}
-        {message && (
+        {/* Show skeleton while loading */}
+        {(loading || guildLoading) ? (
+          <PendingSubmissionsListSkeleton count={3} />
+        ) : (
+          <>
+            {/* Message */}
+            {message && (
           <div className={`mb-6 p-4 rounded-xl ${
             message.type === 'success'
               ? 'bg-green-950/50 border border-green-600/50 text-green-200'
@@ -305,13 +303,15 @@ export default function PendingSubmissionsPage() {
           </div>
         )}
 
-        {/* Summary */}
-        {submissions.length > 0 && (
-          <div className="mt-6 p-4 bg-background-elevated border border-border rounded-xl">
-            <p className="text-[13px] text-muted-foreground">
-              Total Pending: <span className="text-foreground font-medium">{submissions.length}</span>
-            </p>
-          </div>
+            {/* Summary */}
+            {submissions.length > 0 && (
+              <div className="mt-6 p-4 bg-background-elevated border border-border rounded-xl">
+                <p className="text-[13px] text-muted-foreground">
+                  Total Pending: <span className="text-foreground font-medium">{submissions.length}</span>
+                </p>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>

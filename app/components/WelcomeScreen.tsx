@@ -121,7 +121,7 @@ export default function WelcomeScreen() {
       }
 
       // Success! Redirect to dashboard
-      window.location.href = '/dashboard'
+      window.location.href = '/overview'
     } catch (err) {
       console.error('Error joining guild:', err)
       setDiscordError('An error occurred while joining the guild')
@@ -155,7 +155,7 @@ export default function WelcomeScreen() {
       }
 
       // Success! Redirect to dashboard
-      window.location.href = '/dashboard'
+      window.location.href = '/overview'
     } catch (err: any) {
       setError(err.message || 'Failed to join guild')
       setLoading(false)
@@ -186,7 +186,7 @@ export default function WelcomeScreen() {
       }
 
       // Success! Redirect to dashboard
-      window.location.href = '/dashboard'
+      window.location.href = '/overview'
     } catch (err: any) {
       setDiscordError(err.message || 'Failed to join guild')
       setJoining(false)

@@ -42,7 +42,7 @@ export default function ExpansionsManagementPage() {
   useEffect(() => {
     if (!guildLoading) {
       if (!isOfficer) {
-        router.push('/dashboard')
+        router.push('/overview')
         return
       }
       if (activeGuild) {

@@ -1,0 +1,406 @@
+import { cn } from '@/lib/utils'
+
+/**
+ * Base skeleton element with pulse animation
+ */
+interface SkeletonProps {
+  className?: string
+}
+
+export function Skeleton({ className }: SkeletonProps) {
+  return (
+    <div
+      className={cn(
+        'animate-pulse rounded-md bg-muted',
+        className
+      )}
+    />
+  )
+}
+
+/**
+ * Stat card skeleton for Dashboard and Attendance stat cards
+ */
+export function StatCardSkeleton() {
+  return (
+    <div className="bg-background-elevated border border-border rounded-xl p-6">
+      <div className="flex items-center justify-between">
+        <div className="space-y-3">
+          <Skeleton className="h-4 w-24" />
+          <Skeleton className="h-10 w-16" />
+        </div>
+        <Skeleton className="w-12 h-12 rounded-full" />
+      </div>
+    </div>
+  )
+}
+
+/**
+ * Character info card skeleton for Dashboard
+ */
+export function CharacterCardSkeleton() {
+  return (
+    <div className="bg-background-elevated border border-border rounded-xl p-6 lg:w-1/3">
+      <div className="flex items-center gap-4">
+        <Skeleton className="w-16 h-16 rounded-full" />
+        <div className="flex-1 space-y-2">
+          <Skeleton className="h-3 w-24" />
+          <Skeleton className="h-6 w-32" />
+          <div className="flex items-center gap-3">
+            <Skeleton className="h-4 w-20" />
+            <Skeleton className="h-4 w-16" />
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/**
+ * Item list skeleton for Dashboard loot priority items
+ */
+export function ItemListSkeleton({ count = 3 }: { count?: number }) {
+  return (
+    <div className="space-y-3">
+      {Array.from({ length: count }).map((_, i) => (
+        <div
+          key={i}
+          className="bg-background-inset border border-border rounded-xl p-4"
+        >
+          <div className="flex items-center gap-4">
+            <Skeleton className="w-10 h-10 rounded-full flex-shrink-0" />
+            <div className="flex-1 space-y-2">
+              <div className="flex items-center gap-2">
+                <Skeleton className="h-4 w-40" />
+                <Skeleton className="h-5 w-16 rounded-full" />
+              </div>
+              <div className="flex items-center gap-2">
+                <Skeleton className="h-3 w-24" />
+                <Skeleton className="h-3 w-12" />
+              </div>
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+/**
+ * Loot card skeleton for Dashboard "Next in Line" and "Recently Received" sections
+ */
+export function LootCardSkeleton() {
+  return (
+    <div className="bg-background-elevated border border-border rounded-xl p-6">
+      <div className="flex items-center gap-4 mb-6">
+        <Skeleton className="w-8 h-8 rounded" />
+        <div className="space-y-2">
+          <Skeleton className="h-6 w-32" />
+          <Skeleton className="h-4 w-48" />
+        </div>
+      </div>
+      <ItemListSkeleton count={3} />
+    </div>
+  )
+}
+
+/**
+ * Submission card skeleton for Pending Submissions and Loot Submissions pages
+ */
+export function SubmissionCardSkeleton() {
+  return (
+    <div className="bg-background-elevated border border-border rounded-xl p-5 flex items-center justify-between">
+      <div className="flex items-center gap-3">
+        <Skeleton className="h-5 w-24" />
+        <Skeleton className="h-6 w-16 rounded-full" />
+        <Skeleton className="h-5 w-20 rounded-full" />
+        <Skeleton className="h-4 w-32" />
+      </div>
+      <div className="flex gap-2">
+        <Skeleton className="h-10 w-28 rounded-[40px]" />
+        <Skeleton className="h-10 w-10 rounded-[40px]" />
+      </div>
+    </div>
+  )
+}
+
+/**
+ * Guild card skeleton for Profile guilds list
+ */
+export function GuildCardSkeleton() {
+  return (
+    <div className="flex items-center justify-between p-4 bg-background-inset border border-border rounded-lg">
+      <div className="flex items-center gap-4">
+        <Skeleton className="w-12 h-12 rounded-full" />
+        <div className="space-y-2">
+          <Skeleton className="h-5 w-32" />
+          <Skeleton className="h-4 w-24" />
+          <Skeleton className="h-5 w-16 rounded" />
+        </div>
+      </div>
+      <Skeleton className="h-10 w-28 rounded-[52px]" />
+    </div>
+  )
+}
+
+/**
+ * Tier tabs skeleton for pages with raid tier selection
+ */
+export function TierTabsSkeleton() {
+  return (
+    <div className="flex items-center gap-3">
+      <Skeleton className="h-4 w-20" />
+      <div className="flex gap-2">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <Skeleton key={i} className="h-10 w-24 rounded-[40px]" />
+        ))}
+      </div>
+    </div>
+  )
+}
+
+/**
+ * Table skeleton for Master Sheet, Loot List, Attendance tables
+ */
+export function TableSkeleton({ rows = 5, cols = 4 }: { rows?: number; cols?: number }) {
+  return (
+    <div className="bg-background-elevated border border-border rounded-xl overflow-hidden">
+      {/* Header */}
+      <div className="px-4 py-3 border-b border-border bg-background-subtle">
+        <div className="flex items-center gap-4">
+          {Array.from({ length: cols }).map((_, i) => (
+            <Skeleton key={i} className="h-4 w-20" />
+          ))}
+        </div>
+      </div>
+      {/* Rows */}
+      <div className="divide-y divide-border">
+        {Array.from({ length: rows }).map((_, rowIndex) => (
+          <div key={rowIndex} className="px-4 py-3">
+            <div className="flex items-center gap-4">
+              {Array.from({ length: cols }).map((_, colIndex) => (
+                <Skeleton
+                  key={colIndex}
+                  className={cn(
+                    'h-4',
+                    colIndex === 0 ? 'w-32' : 'w-16'
+                  )}
+                />
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+/**
+ * Boss section skeleton for Master Sheet boss navigation
+ */
+export function BossSectionSkeleton() {
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-3 overflow-x-auto pb-2">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <Skeleton key={i} className="h-10 w-28 rounded-[40px] flex-shrink-0" />
+        ))}
+      </div>
+    </div>
+  )
+}
+
+/**
+ * Full dashboard content skeleton
+ */
+export function DashboardContentSkeleton() {
+  return (
+    <div className="space-y-6">
+      {/* Character Card and Stats Row */}
+      <div className="flex flex-col lg:flex-row gap-6">
+        <CharacterCardSkeleton />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:flex-1">
+          <StatCardSkeleton />
+          <StatCardSkeleton />
+          <StatCardSkeleton />
+        </div>
+      </div>
+
+      {/* Loot Priority and Received Items Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <LootCardSkeleton />
+        <LootCardSkeleton />
+      </div>
+    </div>
+  )
+}
+
+/**
+ * Profile content skeleton
+ */
+export function ProfileContentSkeleton() {
+  return (
+    <div className="space-y-6">
+      {/* Header Card */}
+      <div className="bg-background-elevated border border-border rounded-xl p-6">
+        <div className="flex items-center gap-6">
+          <Skeleton className="w-20 h-20 rounded-full" />
+          <div className="flex-1 space-y-2">
+            <Skeleton className="h-7 w-40" />
+            <div className="flex items-center gap-4">
+              <Skeleton className="h-4 w-32" />
+              <Skeleton className="h-4 w-28" />
+            </div>
+          </div>
+          <Skeleton className="h-12 w-28 rounded-[52px]" />
+        </div>
+      </div>
+
+      {/* Tabs */}
+      <div className="flex items-center gap-2">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <Skeleton key={i} className="h-10 w-28 rounded-[40px]" />
+        ))}
+      </div>
+
+      {/* Content */}
+      <div className="bg-background-elevated border border-border rounded-xl overflow-hidden">
+        <div className="px-6 py-4 border-b border-border">
+          <Skeleton className="h-5 w-32" />
+          <Skeleton className="h-4 w-48 mt-1" />
+        </div>
+        <div className="p-6 space-y-3">
+          <GuildCardSkeleton />
+          <GuildCardSkeleton />
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/**
+ * Attendance stats skeleton for personal stats section
+ */
+export function AttendanceStatsSkeleton() {
+  return (
+    <>
+      <div className="flex items-center gap-2 mb-2">
+        <Skeleton className="h-4 w-24" />
+        <Skeleton className="h-4 w-32" />
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <StatCardSkeleton />
+        <StatCardSkeleton />
+        <StatCardSkeleton />
+      </div>
+    </>
+  )
+}
+
+/**
+ * Submissions list skeleton
+ */
+export function SubmissionsListSkeleton({ count = 4 }: { count?: number }) {
+  return (
+    <div className="space-y-3">
+      {Array.from({ length: count }).map((_, i) => (
+        <SubmissionCardSkeleton key={i} />
+      ))}
+    </div>
+  )
+}
+
+/**
+ * Pending submission card skeleton (larger with more details)
+ */
+export function PendingSubmissionCardSkeleton() {
+  return (
+    <div className="p-6 bg-background-elevated border border-border rounded-xl">
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex-1">
+          <div className="flex items-center gap-3 mb-3">
+            <Skeleton className="w-5 h-5 rounded" />
+            <div className="space-y-1">
+              <Skeleton className="h-5 w-28" />
+              <Skeleton className="h-4 w-16" />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <Skeleton className="h-4 w-16" />
+              <Skeleton className="h-4 w-24" />
+            </div>
+            <div className="flex items-center gap-2">
+              <Skeleton className="h-4 w-12" />
+              <Skeleton className="h-4 w-20" />
+            </div>
+            <div className="flex items-center gap-2">
+              <Skeleton className="h-4 w-20" />
+              <Skeleton className="h-4 w-36" />
+            </div>
+          </div>
+        </div>
+        <div className="flex items-center gap-3">
+          <Skeleton className="h-12 w-28 rounded-[52px]" />
+          <Skeleton className="h-12 w-24 rounded-[52px]" />
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/**
+ * Pending submissions list skeleton
+ */
+export function PendingSubmissionsListSkeleton({ count = 3 }: { count?: number }) {
+  return (
+    <div className="space-y-4">
+      {Array.from({ length: count }).map((_, i) => (
+        <PendingSubmissionCardSkeleton key={i} />
+      ))}
+    </div>
+  )
+}
+
+/**
+ * Settings card skeleton for Guild Settings page
+ */
+export function SettingsCardSkeleton() {
+  return (
+    <div className="bg-background-elevated border border-border rounded-xl overflow-hidden">
+      <div className="p-6 border-b border-border">
+        <Skeleton className="h-6 w-40" />
+        <Skeleton className="h-4 w-56 mt-2" />
+      </div>
+      <div className="p-6 space-y-4">
+        <div className="space-y-2">
+          <Skeleton className="h-4 w-20" />
+          <Skeleton className="h-12 w-full rounded-[52px]" />
+        </div>
+        <div className="space-y-2">
+          <Skeleton className="h-4 w-16" />
+          <Skeleton className="h-12 w-full rounded-[52px]" />
+        </div>
+        <div className="space-y-2">
+          <Skeleton className="h-4 w-24" />
+          <div className="grid grid-cols-2 gap-2">
+            <Skeleton className="h-12 rounded-[52px]" />
+            <Skeleton className="h-12 rounded-[52px]" />
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/**
+ * Guild Settings content skeleton
+ */
+export function GuildSettingsContentSkeleton() {
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <SettingsCardSkeleton />
+      <SettingsCardSkeleton />
+    </div>
+  )
+}

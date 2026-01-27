@@ -4,7 +4,16 @@ import { createClient } from '@/utils/supabase/client'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
+import { ProfileContentSkeleton } from '@/components/ui/skeletons'
 import { useGuildContext } from '@/app/contexts/GuildContext'
+import {
+  Modal,
+  ModalHeader,
+  ModalTitle,
+  ModalBody,
+  ModalFooter,
+} from '@/components/ui/modal'
+import { Button } from '@/components/ui/button'
 import { HugeiconsIcon } from '@hugeicons/react'
 import {
   UserIcon,
@@ -189,8 +198,9 @@ export default function ProfilePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <LoadingSpinner />
+      <div className="p-8 space-y-6 font-poppins">
+        {/* Header skeleton shown during load */}
+        <ProfileContentSkeleton />
       </div>
     )
   }
@@ -565,46 +575,44 @@ export default function ProfilePage() {
       )}
 
       {/* Leave Guild Confirmation Modal */}
-      {leaveGuildId && (
-        <div
-          className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-          onClick={() => !leaving && setLeaveGuildId(null)}
-        >
-          <div
-            className="bg-background-elevated border border-border rounded-xl max-w-md w-full p-6"
-            onClick={(e) => e.stopPropagation()}
+      {/* Leave Guild Confirmation Modal */}
+      <Modal open={!!leaveGuildId} onClose={() => !leaving && setLeaveGuildId(null)} size="sm">
+        <ModalHeader>
+          <ModalTitle>Leave guild?</ModalTitle>
+        </ModalHeader>
+        <ModalBody>
+          <p className="text-muted-foreground">
+            Are you sure you want to leave this guild? Your characters will be removed from this guild and you'll lose access to guild features.
+            {allGuilds.length === 1 && (
+              <span className="block mt-2 text-destructive font-medium">
+                This is your only guild. You'll need to join another guild to continue using LootList+.
+              </span>
+            )}
+          </p>
+        </ModalBody>
+        <ModalFooter>
+          <Button
+            variant="secondary"
+            onClick={() => setLeaveGuildId(null)}
+            disabled={leaving}
           >
-            <h3 className="text-[20px] font-bold text-foreground mb-2">Leave guild?</h3>
-            <p className="text-muted-foreground mb-6">
-              Are you sure you want to leave this guild? Your characters will be removed from this guild and you'll lose access to guild features.
-              {allGuilds.length === 1 && (
-                <span className="block mt-2 text-red-400 font-medium">
-                  This is your only guild. You'll need to join another guild to continue using LootList+.
-                </span>
-              )}
-            </p>
-            <div className="flex gap-3 justify-end">
-              <button
-                onClick={() => setLeaveGuildId(null)}
-                disabled={leaving}
-                className="px-5 py-2.5 bg-background-elevated hover:bg-muted border border-border rounded-[52px] text-foreground text-[13px] font-medium transition disabled:opacity-50"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => {
-                  handleLeaveGuild(leaveGuildId)
-                  setLeaveGuildId(null)
-                }}
-                disabled={leaving}
-                className="px-5 py-2.5 bg-red-900/20 hover:bg-red-900/30 border border-red-600 rounded-[52px] text-red-200 text-[13px] font-medium transition disabled:opacity-50"
-              >
-                {leaving ? 'Leaving...' : 'Leave Guild'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+            Cancel
+          </Button>
+          <Button
+            variant="destructive"
+            onClick={() => {
+              if (leaveGuildId) {
+                handleLeaveGuild(leaveGuildId)
+                setLeaveGuildId(null)
+              }
+            }}
+            disabled={leaving}
+            loading={leaving}
+          >
+            Leave Guild
+          </Button>
+        </ModalFooter>
+      </Modal>
     </div>
   )
 }

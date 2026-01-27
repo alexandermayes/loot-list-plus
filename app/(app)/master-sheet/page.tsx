@@ -12,6 +12,7 @@ import { StarFilledIcon } from '@/components/ui/icons'
 import { useGuildContext } from '@/app/contexts/GuildContext'
 import { ExpansionGuard } from '@/app/components/ExpansionGuard'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
+import { TierTabsSkeleton, BossSectionSkeleton, TableSkeleton } from '@/components/ui/skeletons'
 import { EmptyState } from '@/components/ui/empty-state'
 import { ScrollIcon } from '@hugeicons/core-free-icons'
 
@@ -572,14 +573,6 @@ export default function MasterSheet() {
 
   const selectedTier = raidTiers.find(t => t.id === selectedTierId)
 
-  if (initialLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <LoadingSpinner />
-      </div>
-    )
-  }
-
   const bossNames = Object.keys(groupedByBoss).sort((a, b) => getBossOrder(a) - getBossOrder(b))
 
   const scrollToBoss = (bossName: string) => {
@@ -612,10 +605,10 @@ export default function MasterSheet() {
   return (
     <ExpansionGuard>
       <div className="font-poppins">
-        {/* Header */}
+        {/* Header - Always visible */}
         <div className="p-8 pb-4">
           <h1 className="text-[42px] font-bold text-foreground leading-tight">
-            {selectedTier?.name}: Loot Rankings
+            {initialLoading ? 'Loot Rankings' : `${selectedTier?.name}: Loot Rankings`}
           </h1>
           <p className="text-muted-foreground text-base">
             Top 5 players for each item
@@ -623,7 +616,11 @@ export default function MasterSheet() {
         </div>
 
         {/* Raid Tier Tabs - Sticky */}
-        {raidTiers.length > 0 && (
+        {initialLoading ? (
+          <div className="sticky top-0 z-20 px-8 py-3 bg-background">
+            <TierTabsSkeleton />
+          </div>
+        ) : raidTiers.length > 0 && (
           <div className="sticky top-0 z-20 px-8 py-3 bg-background">
             <div
               ref={tierScrollRef}
@@ -657,7 +654,11 @@ export default function MasterSheet() {
         )}
 
         {/* Boss Quick Navigation - Sticky below tier tabs */}
-        {!contentLoading && bossNames.length > 0 && (
+        {initialLoading ? (
+          <div className="px-8 pt-3 pb-2 bg-background">
+            <BossSectionSkeleton />
+          </div>
+        ) : !contentLoading && bossNames.length > 0 && (
           <div className="sticky top-[64px] z-10 px-8 pt-3 pb-2 bg-background">
             <div className="flex gap-3">
               {/* Boss chips container with horizontal scroll fade */}
@@ -707,12 +708,10 @@ export default function MasterSheet() {
         <div className="px-8 pt-2 pb-8 space-y-6">
 
         {/* Content Loading State */}
-        {contentLoading ? (
-          <div className="bg-background-elevated border border-border rounded-xl p-12">
-            <div className="flex flex-col items-center justify-center gap-4">
-              <LoadingSpinner />
-              <p className="text-muted-foreground text-sm">Loading loot rankings...</p>
-            </div>
+        {(initialLoading || contentLoading) ? (
+          <div className="px-8 pb-8 space-y-6">
+            <TableSkeleton rows={8} cols={6} />
+            <TableSkeleton rows={8} cols={6} />
           </div>
         ) : (
         <>

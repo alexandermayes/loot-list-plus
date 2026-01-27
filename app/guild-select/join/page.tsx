@@ -115,7 +115,7 @@ export default function JoinGuildPage() {
       setSuccess(true)
       setTimeout(() => {
         // Force a full page reload to refresh guild context
-        window.location.href = '/dashboard'
+        window.location.href = '/overview'
       }, 1500)
     } catch (err) {
       console.error('Error joining guild:', err)

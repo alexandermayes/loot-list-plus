@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import type { User } from '@supabase/supabase-js'
 import { useGuildContext } from '@/app/contexts/GuildContext'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
+import { TierTabsSkeleton, SubmissionsListSkeleton } from '@/components/ui/skeletons'
 import { StatusBadge, type SubmissionStatus } from '@/components/ui/status-badge'
 import { EmptyState } from '@/components/ui/empty-state'
 import { ScrollIcon } from '@hugeicons/core-free-icons'
@@ -149,7 +150,7 @@ export default function MasterLootPage() {
       setUser(user)
 
       if (!isOfficer) {
-        router.push('/dashboard')
+        router.push('/overview')
         return
       }
 
@@ -413,24 +414,20 @@ export default function MasterLootPage() {
     return sub.status === filter
   })
 
-  if (initialLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <LoadingSpinner />
-      </div>
-    )
-  }
-
   return (
     <div className="font-poppins">
-      {/* Header */}
+      {/* Header - Always visible */}
       <div className="p-8 pb-4">
         <h1 className="text-[42px] font-bold text-foreground leading-tight">Loot Submissions</h1>
         <p className="text-muted-foreground mt-1 text-base">Review and manage character loot submissions</p>
       </div>
 
       {/* Raid Tier Selector - Sticky */}
-      {raidTiers.length > 0 && (
+      {initialLoading ? (
+        <div className="px-8 py-3 bg-background">
+          <TierTabsSkeleton />
+        </div>
+      ) : raidTiers.length > 0 && (
         <div className="sticky top-0 z-20 px-8 py-3 bg-background">
           <div className="flex items-center gap-3 overflow-x-auto">
             <span className="text-muted-foreground text-sm font-medium whitespace-nowrap">Raid Tier:</span>
@@ -469,6 +466,10 @@ export default function MasterLootPage() {
 
       {/* Main Content */}
       <div className="px-8 pb-8 space-y-6">
+      {initialLoading ? (
+        <SubmissionsListSkeleton count={5} />
+      ) : (
+        <>
       {message && (
         <div className={`p-4 rounded-xl ${
           message.type === 'success'
@@ -793,6 +794,8 @@ export default function MasterLootPage() {
             </div>
           </div>
         </div>
+      )}
+        </>
       )}
       </div>
     </div>

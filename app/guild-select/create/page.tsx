@@ -362,7 +362,7 @@ export default function CreateGuildPage() {
 
       // Wait a moment to show the success message, then redirect
       setTimeout(() => {
-        window.location.href = '/dashboard'
+        window.location.href = '/overview'
       }, 1500)
     } catch (err) {
       console.error('Error creating guild:', err)

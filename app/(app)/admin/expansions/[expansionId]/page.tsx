@@ -48,7 +48,7 @@ export default function ExpansionDetailPage({ params }: { params: Promise<{ expa
   useEffect(() => {
     if (!guildLoading) {
       if (!isOfficer) {
-        router.push('/dashboard')
+        router.push('/overview')
         return
       }
       if (activeGuild) {

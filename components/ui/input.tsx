@@ -17,11 +17,11 @@ import { cn } from "@/lib/utils"
  */
 const inputVariants = cva(
   [
-    "flex w-full bg-background-elevated border text-foreground transition-colors",
+    "flex w-full bg-transparent border text-foreground transition-colors",
     "placeholder:text-muted-foreground",
-    "hover:border-border-strong",
+    "hover:border-border-strong hover:bg-background-elevated/50",
     "focus:outline-none focus:border-accent",
-    "disabled:cursor-not-allowed disabled:opacity-50 disabled:bg-background",
+    "disabled:cursor-not-allowed disabled:opacity-50 disabled:bg-muted/20",
   ],
   {
     variants: {

@@ -34,7 +34,7 @@ export default function ImportPage() {
 
       // Check if officer using context
       if (!guildLoading && !isOfficer) {
-        router.push('/dashboard')
+        router.push('/overview')
         return
       }
 

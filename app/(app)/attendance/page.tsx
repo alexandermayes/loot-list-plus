@@ -8,6 +8,7 @@ import { useRouter } from 'next/navigation'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { Calendar01Icon, ArrowDown01Icon, ArrowUp01Icon } from '@hugeicons/core-free-icons'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
+import { AttendanceStatsSkeleton, TableSkeleton } from '@/components/ui/skeletons'
 import { calculateAttendanceScore, getRankModifier } from '@/utils/calculations'
 
 interface RaidEvent {
@@ -463,24 +464,24 @@ export default function AttendancePage() {
     }
   }
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <LoadingSpinner />
-      </div>
-    )
-  }
-
   return (
     <div className="p-8 space-y-6 font-poppins">
-      {/* Header */}
+      {/* Header - Always visible */}
       <div>
         <h1 className="text-[42px] font-bold text-foreground leading-tight">Attendance</h1>
         <p className="text-muted-foreground mt-1 text-base">Track raid attendance and view attendance scores</p>
       </div>
 
-      {/* Personal Summary Cards */}
-      {activeCharacter && (
+      {/* Show skeleton while loading */}
+      {loading ? (
+        <>
+          <AttendanceStatsSkeleton />
+          <TableSkeleton rows={8} cols={6} />
+        </>
+      ) : (
+        <>
+          {/* Personal Summary Cards */}
+          {activeCharacter && (
         <>
           <div className="flex items-center gap-2 mb-2">
             <span className="text-[14px] font-medium" style={{ color: (activeCharacter.class as any)?.color_hex || '#fff' }}>
@@ -655,46 +656,48 @@ export default function AttendancePage() {
         )}
       </div>
 
-      {/* Legend */}
-      <div className="flex flex-wrap items-center gap-4 text-[12px]">
-        <span className="text-foreground-muted">Legend:</span>
-        <div className="flex items-center gap-1.5">
-          <span className="inline-flex items-center justify-center w-5 h-5 rounded bg-green-600/30 text-green-300 text-[10px] font-medium">A</span>
-          <span className="text-muted-foreground">Attended</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <span className="inline-flex items-center justify-center w-5 h-5 rounded bg-yellow-600/30 text-yellow-300 text-[10px] font-medium">L</span>
-          <span className="text-muted-foreground">Late</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <span className="inline-flex items-center justify-center w-5 h-5 rounded bg-orange-600/30 text-orange-300 text-[10px] font-medium">B</span>
-          <span className="text-muted-foreground">Benched</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <span className="inline-flex items-center justify-center w-5 h-5 rounded bg-blue-600/30 text-blue-300 text-[10px] font-medium">S</span>
-          <span className="text-muted-foreground">Signed up only</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <span className="inline-flex items-center justify-center w-5 h-5 rounded bg-red-600/30 text-red-300 text-[10px] font-medium">X</span>
-          <span className="text-muted-foreground">No-show</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <span className="inline-flex items-center justify-center w-5 h-5 rounded bg-muted text-foreground-muted text-[10px] font-medium">-</span>
-          <span className="text-muted-foreground">No record</span>
-        </div>
-      </div>
+          {/* Legend */}
+          <div className="flex flex-wrap items-center gap-4 text-[12px]">
+            <span className="text-foreground-muted">Legend:</span>
+            <div className="flex items-center gap-1.5">
+              <span className="inline-flex items-center justify-center w-5 h-5 rounded bg-green-600/30 text-green-300 text-[10px] font-medium">A</span>
+              <span className="text-muted-foreground">Attended</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="inline-flex items-center justify-center w-5 h-5 rounded bg-yellow-600/30 text-yellow-300 text-[10px] font-medium">L</span>
+              <span className="text-muted-foreground">Late</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="inline-flex items-center justify-center w-5 h-5 rounded bg-orange-600/30 text-orange-300 text-[10px] font-medium">B</span>
+              <span className="text-muted-foreground">Benched</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="inline-flex items-center justify-center w-5 h-5 rounded bg-blue-600/30 text-blue-300 text-[10px] font-medium">S</span>
+              <span className="text-muted-foreground">Signed up only</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="inline-flex items-center justify-center w-5 h-5 rounded bg-red-600/30 text-red-300 text-[10px] font-medium">X</span>
+              <span className="text-muted-foreground">No-show</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="inline-flex items-center justify-center w-5 h-5 rounded bg-muted text-foreground-muted text-[10px] font-medium">-</span>
+              <span className="text-muted-foreground">No record</span>
+            </div>
+          </div>
 
-      {/* Color coding explanation */}
-      <div className="flex items-center gap-4 text-[12px] text-foreground-muted">
-        <div className="flex items-center gap-2">
-          <div className="w-4 h-4 rounded bg-green-900/20 border border-green-600/30" />
-          <span>Most recent tracked week</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="w-4 h-4 rounded bg-blue-900/10 border border-blue-600/20" />
-          <span>Previous tracked weeks</span>
-        </div>
-      </div>
+          {/* Color coding explanation */}
+          <div className="flex items-center gap-4 text-[12px] text-foreground-muted">
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 rounded bg-green-900/20 border border-green-600/30" />
+              <span>Most recent tracked week</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 rounded bg-blue-900/10 border border-blue-600/20" />
+              <span>Previous tracked weeks</span>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   )
 }

@@ -9,6 +9,14 @@ import MemberManager from './components/MemberManager'
 import RoleManager from './components/RoleManager'
 import RealmSelector from '@/app/components/RealmSelector'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
+import { GuildSettingsContentSkeleton } from '@/components/ui/skeletons'
+import {
+  Modal,
+  ModalHeader,
+  ModalTitle,
+  ModalDescription,
+  ModalBody,
+} from '@/components/ui/modal'
 
 export default function GuildSettingsPage() {
   const [loading, setLoading] = useState(true)
@@ -52,7 +60,7 @@ export default function GuildSettingsPage() {
 
       // Check if officer using context
       if (!isOfficer) {
-        router.push('/dashboard')
+        router.push('/overview')
         return
       }
 
@@ -188,15 +196,8 @@ export default function GuildSettingsPage() {
     }
   }
 
-  if (loading || guildLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <LoadingSpinner />
-      </div>
-    )
-  }
-
-  if (!activeGuild || !isOfficer) {
+  // Show unauthorized message if not officer (after loading completes)
+  if (!loading && !guildLoading && (!activeGuild || !isOfficer)) {
     return (
       <div className="fixed inset-0 bg-background flex items-center justify-center">
         <p className="text-muted-foreground">Unauthorized</p>
@@ -206,12 +207,18 @@ export default function GuildSettingsPage() {
 
   return (
       <div className="p-8 space-y-6 font-poppins">
-        {/* Header */}
+        {/* Header - Always visible */}
         <div>
           <h1 className="text-[42px] font-bold text-foreground leading-tight">Guild Settings</h1>
           <p className="text-muted-foreground mt-1 text-[14px]">Manage your guild configuration, members, and settings</p>
         </div>
-        {message && (
+
+        {/* Show skeleton while loading */}
+        {(loading || guildLoading) ? (
+          <GuildSettingsContentSkeleton />
+        ) : (
+          <>
+            {message && (
           <div className={`p-4 rounded-xl ${
             message.type === 'success'
               ? 'bg-green-950/50 border border-green-600/50 text-green-200'
@@ -407,33 +414,17 @@ export default function GuildSettingsPage() {
           </div>
         )}
 
-        {/* Roles Management Modal */}
-        {showRolesModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70" onClick={() => setShowRolesModal(false)}>
-            <div
-              className="bg-background-elevated border border-border rounded-xl w-full max-w-2xl max-h-[80vh] overflow-hidden flex flex-col"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="p-6 border-b border-border flex items-center justify-between flex-shrink-0">
-                <div>
-                  <h2 className="text-[24px] font-semibold text-foreground">Guild Roles</h2>
-                  <p className="text-muted-foreground text-[13px] mt-1">Create and manage custom roles for your guild members</p>
-                </div>
-                <button
-                  onClick={() => setShowRolesModal(false)}
-                  className="p-2 hover:bg-foreground/10 rounded-lg text-muted-foreground hover:text-foreground transition"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <line x1="18" y1="6" x2="6" y2="18"></line>
-                    <line x1="6" y1="6" x2="18" y2="18"></line>
-                  </svg>
-                </button>
-              </div>
-              <div className="overflow-y-auto flex-1">
+            {/* Roles Management Modal */}
+            <Modal open={showRolesModal} onClose={() => setShowRolesModal(false)} size="lg">
+              <ModalHeader onClose={() => setShowRolesModal(false)}>
+                <ModalTitle>Guild Roles</ModalTitle>
+                <ModalDescription>Create and manage custom roles for your guild members</ModalDescription>
+              </ModalHeader>
+              <ModalBody className="p-0">
                 <RoleManager />
-              </div>
-            </div>
-          </div>
+              </ModalBody>
+            </Modal>
+          </>
         )}
       </div>
   )

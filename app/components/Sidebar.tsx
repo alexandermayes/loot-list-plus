@@ -140,7 +140,7 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange }
       }
 
       // Success! Redirect to dashboard
-      window.location.href = '/dashboard'
+      window.location.href = '/overview'
     } catch (err) {
       console.error('Error joining guild:', err)
       showErrorToast('An error occurred while joining the guild')
@@ -230,7 +230,7 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange }
       }
 
       // Success! Redirect to dashboard
-      window.location.href = '/dashboard'
+      window.location.href = '/overview'
     } catch (err) {
       console.error('Error joining guild:', err)
       setDiscordError('An error occurred while joining the guild')
@@ -242,7 +242,7 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange }
     // If no active guild, clicking logo should go to dashboard (shows WelcomeScreen)
     if (!activeGuild) {
       if (view === 'overview') {
-        router.push('/dashboard')
+        router.push('/overview')
       }
       return
     }
@@ -253,7 +253,7 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange }
     } else {
       // Standalone page mode - use router
       const routeMap: Record<string, string> = {
-        'overview': '/dashboard',
+        'overview': '/overview',
         'master-sheet': '/master-sheet',
         'loot-list': '/loot-list',
         'attendance': '/attendance',
@@ -264,7 +264,7 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange }
         'raid-tracking': '/admin/raid-tracking',
         'prio-list': '/admin/prio-list',
       }
-      router.push(routeMap[view] || '/dashboard')
+      router.push(routeMap[view] || '/overview')
     }
   }
 
@@ -290,7 +290,7 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange }
 
     // Also check pathname for standalone page mode
     const routeMap: Record<string, string> = {
-      'overview': '/dashboard',
+      'overview': '/overview',
       'master-sheet': '/master-sheet',
       'loot-list': '/loot-list',
       'attendance': '/attendance',
