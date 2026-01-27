@@ -8,6 +8,7 @@ import ItemLink from '@/app/components/ItemLink'
 import { useGuildContext } from '@/app/contexts/GuildContext'
 import { ExpansionGuard } from '@/app/components/ExpansionGuard'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
+import { Button } from '@/components/ui/button'
 import { allRoles, getRoleDisplayName, type Role } from '@/utils/spec-role-mapping'
 
 // Lazy load the modal to reduce initial bundle size
@@ -62,6 +63,42 @@ interface WowClass {
   id: string
   name: string
   color_hex: string
+}
+
+// Define raid tier progression order (Classic + TBC + WotLK)
+const getRaidTierOrder = (tierName: string): number => {
+  const order: Record<string, number> = {
+    // Classic
+    'Molten Core': 1, 'MC': 1,
+    'Onyxia\'s Lair': 2, 'Onyxia': 2,
+    'Blackwing Lair': 3, 'BWL': 3,
+    'Zul\'Gurub': 4, 'ZG': 4,
+    'Ruins of Ahn\'Qiraj': 5, 'AQ20': 5,
+    'Temple of Ahn\'Qiraj': 6, 'AQ40': 6,
+    'Naxxramas': 7, 'Naxx': 7,
+    // TBC
+    'Karazhan': 10, 'Kara': 10,
+    'Gruul\'s Lair': 11, 'Gruul': 11,
+    'Magtheridon\'s Lair': 12, 'Magtheridon': 12, 'Mag': 12,
+    'Serpentshrine Cavern': 20, 'SSC': 20,
+    'Tempest Keep: The Eye': 21, 'Tempest Keep': 21, 'The Eye': 21, 'TK': 21,
+    'Hyjal Summit': 30, 'Mount Hyjal': 30, 'Hyjal': 30,
+    'Black Temple': 31, 'BT': 31,
+    'Zul\'Aman': 32, 'ZA': 32,
+    'Sunwell Plateau': 33, 'Sunwell': 33, 'SWP': 33,
+    // WotLK
+    'Vault of Archavon': 40, 'VoA': 40,
+    'Obsidian Sanctum': 41, 'OS': 41,
+    'Eye of Eternity': 42, 'EoE': 42,
+    'Naxxramas (10)': 43, 'Naxxramas (25)': 44,
+    'Ulduar': 50,
+    'Trial of the Crusader': 60, 'ToC': 60,
+    'Trial of the Grand Crusader': 61, 'ToGC': 61,
+    'Onyxia\'s Lair (10)': 62, 'Onyxia\'s Lair (25)': 63,
+    'Icecrown Citadel': 70, 'ICC': 70,
+    'Ruby Sanctum': 80, 'RS': 80
+  }
+  return order[tierName] || 999
 }
 
 export default function AdminPrioList() {
@@ -134,12 +171,15 @@ export default function AdminPrioList() {
             .select('id, name, is_active')
             .eq('expansion_id', activeGuild.active_expansion_id)
             .eq('is_guild_active', true)
-            .order('name')
 
           if (tiersData && tiersData.length > 0) {
-            setRaidTiers(tiersData)
+            // Sort by progression order
+            const sortedTiers = tiersData.sort((a, b) =>
+              getRaidTierOrder(a.name) - getRaidTierOrder(b.name)
+            )
+            setRaidTiers(sortedTiers)
             // Set initial tier to active or first
-            const activeTier = tiersData.find(t => t.is_active) || tiersData[0]
+            const activeTier = sortedTiers.find(t => t.is_active) || sortedTiers[0]
             setSelectedTierId(activeTier.id)
           }
         }
@@ -546,18 +586,12 @@ export default function AdminPrioList() {
               {/* Expand/Collapse container */}
               <div className="flex-shrink-0 bg-background-elevated border border-border rounded-xl p-3">
                 <div className="flex gap-2 h-full items-center">
-                  <button
-                    onClick={expandAll}
-                    className="px-4 py-2 bg-background-inset hover:bg-muted border border-border rounded-[40px] text-sm font-medium text-muted-foreground hover:text-foreground whitespace-nowrap transition"
-                  >
+                  <Button variant="secondary" size="sm" onClick={expandAll}>
                     Expand All
-                  </button>
-                  <button
-                    onClick={collapseAll}
-                    className="px-4 py-2 bg-background-inset hover:bg-muted border border-border rounded-[40px] text-sm font-medium text-muted-foreground hover:text-foreground whitespace-nowrap transition"
-                  >
+                  </Button>
+                  <Button variant="secondary" size="sm" onClick={collapseAll}>
                     Collapse All
-                  </button>
+                  </Button>
                 </div>
               </div>
             </div>
@@ -665,19 +699,13 @@ export default function AdminPrioList() {
                                 </td>
                                 <td className="px-3 py-2.5 text-center">
                                   <div className="flex items-center justify-center gap-2">
-                                    <button
-                                      onClick={() => handleEditItem(item)}
-                                      className="px-3 py-1.5 bg-background-elevated hover:bg-muted border border-border-strong text-foreground text-[11px] font-medium rounded-[52px] transition"
-                                    >
+                                    <Button variant="secondary" size="sm" onClick={() => handleEditItem(item)}>
                                       {hasPriority ? 'Edit' : 'Set Priority'}
-                                    </button>
+                                    </Button>
                                     {hasPriority && (
-                                      <button
-                                        onClick={() => handleClearPriority(item.id)}
-                                        className="px-3 py-1.5 bg-background-elevated hover:bg-red-900/30 border border-border-strong hover:border-red-600/50 text-muted-foreground hover:text-red-400 text-[11px] font-medium rounded-[52px] transition"
-                                      >
+                                      <Button variant="ghost" size="sm" onClick={() => handleClearPriority(item.id)} className="text-muted-foreground hover:text-destructive hover:bg-destructive/10">
                                         Clear
-                                      </button>
+                                      </Button>
                                     )}
                                   </div>
                                 </td>

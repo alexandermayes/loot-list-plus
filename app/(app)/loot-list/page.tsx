@@ -15,6 +15,7 @@ import {
   ModalTitle,
   ModalBody,
 } from '@/components/ui/modal'
+import { Button } from '@/components/ui/button'
 import { normalizeBossName } from '@/utils/bossOrder'
 import { StarFilledIcon, CheckFilledIcon, ClockFilledIcon, AlertFilledIcon, CancelFilledIcon } from '@/components/ui/icons'
 
@@ -99,49 +100,38 @@ export default function LootList() {
     document.title = 'LootList+ • Loot List'
   }, [])
 
-  // Define raid tier progression order (Classic + TBC)
+  // Define raid tier progression order (Classic + TBC + WotLK)
   const getRaidTierOrder = (tierName: string): number => {
     const order: Record<string, number> = {
       // Classic
-      'Molten Core': 1,
-      'MC': 1,
-      'Onyxia\'s Lair': 2,
-      'Onyxia': 2,
-      'Blackwing Lair': 3,
-      'BWL': 3,
-      'Zul\'Gurub': 4,
-      'ZG': 4,
-      'Ruins of Ahn\'Qiraj': 5,
-      'AQ20': 5,
-      'Temple of Ahn\'Qiraj': 6,
-      'AQ40': 6,
-      'Naxxramas': 7,
-      'Naxx': 7,
-      // TBC Tier 4
-      'Karazhan': 10,
-      'Kara': 10,
-      'Gruul\'s Lair': 11,
-      'Gruul': 11,
-      'Magtheridon\'s Lair': 12,
-      'Mag': 12,
-      // TBC Tier 5
-      'Serpentshrine Cavern': 20,
-      'SSC': 20,
-      'Tempest Keep: The Eye': 21,
-      'Tempest Keep': 21,
-      'The Eye': 21,
-      'TK': 21,
-      // TBC Tier 6
-      'Hyjal Summit': 30,
-      'Mount Hyjal': 30,
-      'Hyjal': 30,
-      'Black Temple': 31,
-      'BT': 31,
-      'Zul\'Aman': 32,
-      'ZA': 32,
-      'Sunwell Plateau': 33,
-      'Sunwell': 33,
-      'SWP': 33
+      'Molten Core': 1, 'MC': 1,
+      'Onyxia\'s Lair': 2, 'Onyxia': 2,
+      'Blackwing Lair': 3, 'BWL': 3,
+      'Zul\'Gurub': 4, 'ZG': 4,
+      'Ruins of Ahn\'Qiraj': 5, 'AQ20': 5,
+      'Temple of Ahn\'Qiraj': 6, 'AQ40': 6,
+      'Naxxramas': 7, 'Naxx': 7,
+      // TBC
+      'Karazhan': 10, 'Kara': 10,
+      'Gruul\'s Lair': 11, 'Gruul': 11,
+      'Magtheridon\'s Lair': 12, 'Magtheridon': 12, 'Mag': 12,
+      'Serpentshrine Cavern': 20, 'SSC': 20,
+      'Tempest Keep: The Eye': 21, 'Tempest Keep': 21, 'The Eye': 21, 'TK': 21,
+      'Hyjal Summit': 30, 'Mount Hyjal': 30, 'Hyjal': 30,
+      'Black Temple': 31, 'BT': 31,
+      'Zul\'Aman': 32, 'ZA': 32,
+      'Sunwell Plateau': 33, 'Sunwell': 33, 'SWP': 33,
+      // WotLK
+      'Vault of Archavon': 40, 'VoA': 40,
+      'Obsidian Sanctum': 41, 'OS': 41,
+      'Eye of Eternity': 42, 'EoE': 42,
+      'Naxxramas (10)': 43, 'Naxxramas (25)': 44,
+      'Ulduar': 50,
+      'Trial of the Crusader': 60, 'ToC': 60,
+      'Trial of the Grand Crusader': 61, 'ToGC': 61,
+      'Onyxia\'s Lair (10)': 62, 'Onyxia\'s Lair (25)': 63,
+      'Icecrown Citadel': 70, 'ICC': 70,
+      'Ruby Sanctum': 80, 'RS': 80
     }
     return order[tierName] || 999 // Unknown tiers go to the end
   }
@@ -973,12 +963,9 @@ export default function LootList() {
                 ) : null}
               </div>
               {/* How to Rank Button */}
-              <button
-                onClick={() => setShowInstructionsModal(true)}
-                className="px-6 py-3 bg-background-elevated hover:bg-muted border border-border rounded-[52px] text-foreground font-medium text-base transition whitespace-nowrap"
-              >
+              <Button variant="secondary" onClick={() => setShowInstructionsModal(true)}>
                 How to Rank
-              </button>
+              </Button>
             </div>
           </div>
 
@@ -1099,31 +1086,23 @@ export default function LootList() {
                 <span className="text-sm opacity-75">{rankedCount} items ranked</span>
                 {/* Clear List Button */}
                 {rankedCount > 0 && (
-                  <button
-                    onClick={handleClearList}
-                    className="px-6 py-3 bg-background-elevated hover:bg-red-950/50 border border-border hover:border-red-600/30 rounded-[52px] text-red-400 hover:text-red-300 font-medium text-base transition whitespace-nowrap"
-                  >
+                  <Button variant="destructive" onClick={handleClearList}>
                     Clear List
-                  </button>
+                  </Button>
                 )}
                 {/* Submit for Review Button */}
-                <button
+                <Button
                   onClick={() => saveSubmission(true)}
                   disabled={
-                    saving ||
                     rankedCount === 0 ||
                     duplicateItems.length > 0 ||
                     hasValidationErrors ||
                     (!hasChanges && (submission?.status === 'approved' || submission?.status === 'pending'))
                   }
-                  className={`px-6 py-3 rounded-[52px] font-medium text-base transition whitespace-nowrap shadow-lg
-                    ${(!hasChanges && (submission?.status === 'approved' || submission?.status === 'pending')) || saving || rankedCount === 0 || duplicateItems.length > 0 || hasValidationErrors
-                      ? 'bg-muted text-foreground-muted cursor-not-allowed border-border border-2'
-                      : 'bg-primary hover:bg-primary/90 text-primary-foreground border-2 border-primary'
-                    }`}
+                  loading={saving}
                 >
-                  {saving ? 'Submitting...' : 'Submit for Review'}
-                </button>
+                  Submit for Review
+                </Button>
               </div>
             </div>
             {submission?.review_notes && (
