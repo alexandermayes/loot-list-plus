@@ -8,7 +8,7 @@ const securityHeaders = [
       "default-src 'self'",
       "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://wow.zamimg.com",
       "style-src 'self' 'unsafe-inline' https://wow.zamimg.com",
-      "img-src 'self' data: blob: https://cdn.discordapp.com https://wow.zamimg.com https://*.akamaihd.net",
+      "img-src 'self' data: blob: https://cdn.discordapp.com https://wow.zamimg.com https://*.akamaihd.net https://static.wikia.nocookie.net",
       "font-src 'self' data:",
       "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.anthropic.com https://api.linear.app https://discord.com https://wow.zamimg.com https://nether.wowhead.com",
       "frame-ancestors 'none'",
