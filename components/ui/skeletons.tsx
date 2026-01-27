@@ -404,3 +404,121 @@ export function GuildSettingsContentSkeleton() {
     </div>
   )
 }
+
+/**
+ * Loot List bracket section skeleton
+ */
+export function LootListBracketSkeleton() {
+  return (
+    <div className="bg-card border border-border rounded-xl overflow-hidden">
+      {/* Bracket header */}
+      <div className="bg-muted/30 border-l-4 border-l-muted px-4 py-2">
+        <Skeleton className="h-5 w-32" />
+        <Skeleton className="h-3 w-48 mt-1" />
+      </div>
+      {/* Bracket rows */}
+      <div className="divide-y divide-border">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <div key={i} className="flex items-center gap-4 px-4 py-3">
+            <Skeleton className="h-6 w-10 rounded" />
+            <Skeleton className="h-8 w-64 rounded-lg" />
+            <div className="flex gap-2 ml-auto">
+              <Skeleton className="h-8 w-16 rounded" />
+              <Skeleton className="h-8 w-16 rounded" />
+              <Skeleton className="h-8 w-16 rounded" />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+/**
+ * Loot List content skeleton - status banner + brackets
+ */
+export function LootListContentSkeleton() {
+  return (
+    <div className="space-y-6">
+      {/* Status Banner */}
+      <div className="bg-background-elevated border border-border rounded-xl p-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Skeleton className="w-10 h-10 rounded-lg" />
+            <div className="space-y-1">
+              <Skeleton className="h-5 w-32" />
+              <Skeleton className="h-4 w-48" />
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <Skeleton className="h-10 w-24 rounded-[40px]" />
+            <Skeleton className="h-10 w-32 rounded-[40px]" />
+          </div>
+        </div>
+      </div>
+      {/* Brackets */}
+      <LootListBracketSkeleton />
+      <LootListBracketSkeleton />
+      <LootListBracketSkeleton />
+      <LootListBracketSkeleton />
+    </div>
+  )
+}
+
+/**
+ * Master Sheet boss section skeleton
+ */
+export function MasterSheetBossSkeleton() {
+  return (
+    <div className="bg-background-elevated border border-border rounded-xl overflow-hidden">
+      {/* Boss header */}
+      <div className="flex items-center gap-4 p-4 border-b border-border bg-background-subtle">
+        <Skeleton className="w-12 h-12 rounded-lg" />
+        <Skeleton className="h-6 w-40" />
+        <Skeleton className="h-6 w-6 rounded ml-auto" />
+      </div>
+      {/* Rankings table */}
+      <div className="divide-y divide-border">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={i} className="flex items-center gap-4 px-4 py-3">
+            <Skeleton className="h-5 w-40" />
+            <div className="flex gap-2 ml-auto">
+              {Array.from({ length: 5 }).map((_, j) => (
+                <Skeleton key={j} className="h-6 w-20 rounded" />
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+/**
+ * Master Sheet content skeleton - boss nav + boss sections
+ */
+export function MasterSheetContentSkeleton() {
+  return (
+    <div className="space-y-6">
+      {/* Boss Navigation */}
+      <div className="flex gap-3">
+        <div className="flex-1 bg-background-elevated border border-border rounded-xl p-3">
+          <div className="flex gap-2">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <Skeleton key={i} className="h-10 w-24 rounded-[40px] flex-shrink-0" />
+            ))}
+          </div>
+        </div>
+        <div className="bg-background-elevated border border-border rounded-xl p-3">
+          <div className="flex gap-2">
+            <Skeleton className="h-10 w-24 rounded-[40px]" />
+            <Skeleton className="h-10 w-28 rounded-[40px]" />
+          </div>
+        </div>
+      </div>
+      {/* Boss Sections */}
+      <MasterSheetBossSkeleton />
+      <MasterSheetBossSkeleton />
+    </div>
+  )
+}

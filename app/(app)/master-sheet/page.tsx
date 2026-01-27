@@ -12,7 +12,7 @@ import { StarFilledIcon } from '@/components/ui/icons'
 import { useGuildContext } from '@/app/contexts/GuildContext'
 import { ExpansionGuard } from '@/app/components/ExpansionGuard'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
-import { TierTabsSkeleton, BossSectionSkeleton, TableSkeleton } from '@/components/ui/skeletons'
+import { TierTabsSkeleton, MasterSheetContentSkeleton } from '@/components/ui/skeletons'
 import { EmptyState } from '@/components/ui/empty-state'
 import { ScrollIcon } from '@hugeicons/core-free-icons'
 import { Heading } from '@/components/ui/typography'
@@ -646,11 +646,7 @@ export default function MasterSheet() {
         )}
 
         {/* Boss Quick Navigation - Sticky below tier tabs */}
-        {initialLoading ? (
-          <div className="px-8 pt-3 pb-2 bg-background">
-            <BossSectionSkeleton />
-          </div>
-        ) : !contentLoading && bossNames.length > 0 && (
+        {!initialLoading && !contentLoading && bossNames.length > 0 && (
           <div className="sticky top-[64px] z-10 px-8 pt-3 pb-2 bg-background">
             <div className="flex gap-3">
               {/* Boss chips container with horizontal scroll fade */}
@@ -701,10 +697,7 @@ export default function MasterSheet() {
 
         {/* Content Loading State */}
         {(initialLoading || contentLoading) ? (
-          <div className="px-8 pb-8 space-y-6">
-            <TableSkeleton rows={8} cols={6} />
-            <TableSkeleton rows={8} cols={6} />
-          </div>
+          <MasterSheetContentSkeleton />
         ) : (
         <>
         {/* Master Sheet Hidden Warning */}
