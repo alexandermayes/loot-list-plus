@@ -94,7 +94,7 @@ const ModalHeader = React.forwardRef<HTMLDivElement, ModalHeaderProps>(
     <div
       ref={ref}
       className={cn(
-        "p-6 border-b border-border-strong bg-background-elevated flex items-start justify-between gap-4 flex-shrink-0",
+        "p-6 border-b border-border flex items-start justify-between gap-4 flex-shrink-0",
         className
       )}
       {...props}
@@ -160,7 +160,7 @@ const ModalFooter = React.forwardRef<
   <div
     ref={ref}
     className={cn(
-      "p-6 border-t border-border-strong bg-background-elevated flex items-center justify-end gap-3 flex-shrink-0",
+      "p-6 border-t border-border flex items-center justify-end gap-3 flex-shrink-0",
       className
     )}
     {...props}
