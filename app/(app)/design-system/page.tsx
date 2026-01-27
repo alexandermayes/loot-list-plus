@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { LoadingSpinner, Spinner } from "@/components/ui/loading-spinner";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
+import { Heading, Text, LabelText } from "@/components/ui/typography";
 import {
   Modal,
   ModalHeader,
@@ -331,34 +332,159 @@ export default function DesignSystemPage() {
         </section>
 
         {/* Typography */}
-        <section className="space-y-4">
-          <h2 className="text-2xl font-semibold">Typography</h2>
-          <p className="text-foreground-secondary">Poppins font family throughout</p>
+        <section className="space-y-6">
+          <div>
+            <h2 className="text-2xl font-semibold">Typography</h2>
+            <p className="text-foreground-secondary">Poppins font family with consistent sizing scale</p>
+          </div>
 
-          <div className="space-y-4 bg-background-elevated p-6 rounded-lg border border-border">
-            <div className="space-y-1">
-              <p className="text-5xl font-bold">Hero Heading (42px Bold)</p>
-              <p className="text-xs text-foreground-muted">text-5xl font-bold</p>
+          {/* Type Scale */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-medium text-foreground">Type Scale</h3>
+            <div className="bg-background-elevated p-6 rounded-xl border border-border space-y-4">
+              <div className="flex items-baseline justify-between border-b border-border pb-3">
+                <span className="text-5xl font-bold">Page Title</span>
+                <span className="text-xs text-muted-foreground">text-5xl (42px) font-bold</span>
+              </div>
+              <div className="flex items-baseline justify-between border-b border-border pb-3">
+                <span className="text-4xl font-bold">Large Heading</span>
+                <span className="text-xs text-muted-foreground">text-4xl (32px) font-bold</span>
+              </div>
+              <div className="flex items-baseline justify-between border-b border-border pb-3">
+                <span className="text-3xl font-bold">Section Heading</span>
+                <span className="text-xs text-muted-foreground">text-3xl (24px) font-bold</span>
+              </div>
+              <div className="flex items-baseline justify-between border-b border-border pb-3">
+                <span className="text-2xl font-semibold">Subsection</span>
+                <span className="text-xs text-muted-foreground">text-2xl (20px) font-semibold</span>
+              </div>
+              <div className="flex items-baseline justify-between border-b border-border pb-3">
+                <span className="text-xl font-semibold">Card Title</span>
+                <span className="text-xs text-muted-foreground">text-xl (18px) font-semibold</span>
+              </div>
+              <div className="flex items-baseline justify-between border-b border-border pb-3">
+                <span className="text-lg font-medium">Emphasized Text</span>
+                <span className="text-xs text-muted-foreground">text-lg (16px) font-medium</span>
+              </div>
+              <div className="flex items-baseline justify-between border-b border-border pb-3">
+                <span className="text-md">Larger Body</span>
+                <span className="text-xs text-muted-foreground">text-md (14px)</span>
+              </div>
+              <div className="flex items-baseline justify-between border-b border-border pb-3">
+                <span className="text-base">Default Body Text</span>
+                <span className="text-xs text-muted-foreground">text-base (13px) - default</span>
+              </div>
+              <div className="flex items-baseline justify-between border-b border-border pb-3">
+                <span className="text-sm">Small Text / Labels</span>
+                <span className="text-xs text-muted-foreground">text-sm (12px)</span>
+              </div>
+              <div className="flex items-baseline justify-between">
+                <span className="text-xs">Tiny Text / Badges</span>
+                <span className="text-xs text-muted-foreground">text-xs (10px)</span>
+              </div>
             </div>
-            <div className="space-y-1">
-              <p className="text-3xl font-bold">Page Heading (24px Bold)</p>
-              <p className="text-xs text-foreground-muted">text-3xl font-bold</p>
+          </div>
+
+          {/* Heading Component */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-medium text-foreground">Heading Component</h3>
+            <p className="text-sm text-muted-foreground">Use the <code className="text-accent">Heading</code> component for semantic headings with consistent styling</p>
+            <div className="bg-background-elevated p-6 rounded-xl border border-border space-y-4">
+              <div className="space-y-1">
+                <Heading level={1}>Heading Level 1</Heading>
+                <p className="text-xs text-muted-foreground">{'<Heading level={1}>'} - Page titles (42px bold)</p>
+              </div>
+              <div className="space-y-1">
+                <Heading level={2}>Heading Level 2</Heading>
+                <p className="text-xs text-muted-foreground">{'<Heading level={2}>'} - Section headers (24px bold)</p>
+              </div>
+              <div className="space-y-1">
+                <Heading level={3}>Heading Level 3</Heading>
+                <p className="text-xs text-muted-foreground">{'<Heading level={3}>'} - Subsections (20px semibold)</p>
+              </div>
+              <div className="space-y-1">
+                <Heading level={4}>Heading Level 4</Heading>
+                <p className="text-xs text-muted-foreground">{'<Heading level={4}>'} - Small sections (18px semibold)</p>
+              </div>
+              <div className="space-y-1">
+                <Heading level={5}>Heading Level 5</Heading>
+                <p className="text-xs text-muted-foreground">{'<Heading level={5}>'} - Card titles (16px medium)</p>
+              </div>
+              <div className="space-y-1">
+                <Heading level={6}>Heading Level 6</Heading>
+                <p className="text-xs text-muted-foreground">{'<Heading level={6}>'} - Mini headers (13px medium)</p>
+              </div>
             </div>
-            <div className="space-y-1">
-              <p className="text-2xl font-semibold">Section Heading (20px Semibold)</p>
-              <p className="text-xs text-foreground-muted">text-2xl font-semibold</p>
+          </div>
+
+          {/* Text Component */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-medium text-foreground">Text Component</h3>
+            <p className="text-sm text-muted-foreground">Use the <code className="text-accent">Text</code> component for body text with size, weight, and color variants</p>
+            <div className="grid grid-cols-2 gap-6">
+              {/* Sizes */}
+              <div className="bg-background-elevated p-4 rounded-xl border border-border space-y-3">
+                <LabelText>Sizes</LabelText>
+                <div className="space-y-2">
+                  <Text size="lg">Large text (16px)</Text>
+                  <Text size="md">Medium text (14px)</Text>
+                  <Text size="base">Base text (13px) - default</Text>
+                  <Text size="sm">Small text (12px)</Text>
+                  <Text size="xs">Tiny text (10px)</Text>
+                </div>
+              </div>
+
+              {/* Colors */}
+              <div className="bg-background-elevated p-4 rounded-xl border border-border space-y-3">
+                <LabelText>Colors</LabelText>
+                <div className="space-y-2">
+                  <Text color="default">Default text</Text>
+                  <Text color="secondary">Secondary text</Text>
+                  <Text color="muted">Muted text</Text>
+                  <Text color="accent">Accent text</Text>
+                  <Text color="success">Success text</Text>
+                  <Text color="destructive">Destructive text</Text>
+                </div>
+              </div>
+
+              {/* Weights */}
+              <div className="bg-background-elevated p-4 rounded-xl border border-border space-y-3">
+                <LabelText>Weights</LabelText>
+                <div className="space-y-2">
+                  <Text weight="normal">Normal weight</Text>
+                  <Text weight="medium">Medium weight</Text>
+                  <Text weight="semibold">Semibold weight</Text>
+                  <Text weight="bold">Bold weight</Text>
+                </div>
+              </div>
+
+              {/* Label Text */}
+              <div className="bg-background-elevated p-4 rounded-xl border border-border space-y-3">
+                <LabelText>Section Labels</LabelText>
+                <div className="space-y-3">
+                  <div>
+                    <LabelText size="xs">Extra Small Label</LabelText>
+                    <p className="text-xs text-muted-foreground mt-1">10px uppercase tracking-wider</p>
+                  </div>
+                  <div>
+                    <LabelText size="sm">Small Label</LabelText>
+                    <p className="text-xs text-muted-foreground mt-1">12px uppercase tracking-wider</p>
+                  </div>
+                </div>
+              </div>
             </div>
-            <div className="space-y-1">
-              <p className="text-lg">Body Large (16px Regular)</p>
-              <p className="text-xs text-foreground-muted">text-lg</p>
-            </div>
-            <div className="space-y-1">
-              <p className="text-base">Body (13px Regular) - Default for nav items and UI text</p>
-              <p className="text-xs text-foreground-muted">text-base</p>
-            </div>
-            <div className="space-y-1">
-              <p className="text-xs font-medium uppercase tracking-wider text-foreground-secondary">Section Label</p>
-              <p className="text-xs text-foreground-muted">text-xs font-medium uppercase tracking-wider (section-label class)</p>
+          </div>
+
+          {/* Usage Patterns */}
+          <div className="bg-background-elevated p-4 rounded-lg border border-border">
+            <h3 className="text-sm font-medium text-foreground-secondary mb-3 uppercase tracking-wider">Usage Patterns</h3>
+            <div className="space-y-2 text-sm">
+              <p><code className="text-accent">{'<Heading level={1}>Page Title</Heading>'}</code></p>
+              <p><code className="text-accent">{'<Heading level={2}>Section</Heading>'}</code></p>
+              <p><code className="text-accent">{'<Heading level={3} as="h2">Visual h3, semantic h2</Heading>'}</code></p>
+              <p><code className="text-accent">{'<Text size="sm" color="muted">Helper text</Text>'}</code></p>
+              <p><code className="text-accent">{'<Text weight="semibold">Bold statement</Text>'}</code></p>
+              <p><code className="text-accent">{'<LabelText>Section Label</LabelText>'}</code></p>
             </div>
           </div>
         </section>
