@@ -16,23 +16,32 @@ const poppins = Poppins({
 });
 
 export const metadata: Metadata = {
-  title: "LootList+ | WoW Classic Loot Management",
-  description: "The ultimate loot council tool for WoW Classic guilds. Track attendance, manage loot lists, and streamline your raid's loot distribution.",
-  keywords: ["WoW Classic", "loot council", "guild management", "raid loot", "loot tracking", "World of Warcraft"],
+  title: "LootList+ | WoW Loot Management",
+  description: "The ultimate loot tool for WoW guilds. Track attendance, manage loot lists, and streamline your raid's loot distribution.",
+  keywords: ["WoW", "loot management", "guild management", "raid loot", "loot tracking", "World of Warcraft"],
   authors: [{ name: "LootList+" }],
   metadataBase: new URL("https://www.lootlistplus.com"),
   openGraph: {
-    title: "LootList+ | WoW Classic Loot Management",
-    description: "The ultimate loot council tool for WoW Classic guilds. Track attendance, manage loot lists, and streamline your raid's loot distribution.",
+    title: "LootList+ | WoW Loot Management",
+    description: "The ultimate loot tool for WoW guilds. Track attendance, manage loot lists, and streamline your raid's loot distribution.",
     url: "https://www.lootlistplus.com",
     siteName: "LootList+",
     locale: "en_US",
     type: "website",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "LootList+ - WoW Loot Management",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "LootList+ | WoW Classic Loot Management",
-    description: "The ultimate loot council tool for WoW Classic guilds. Track attendance, manage loot lists, and streamline your raid's loot distribution.",
+    title: "LootList+ | WoW Loot Management",
+    description: "The ultimate loot tool for WoW guilds. Track attendance, manage loot lists, and streamline your raid's loot distribution.",
+    images: ["/og-image.png"],
   },
   icons: {
     icon: "/favicon.png",
