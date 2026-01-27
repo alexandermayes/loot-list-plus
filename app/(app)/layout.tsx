@@ -8,12 +8,13 @@ import dynamic from 'next/dynamic'
 import Sidebar from '@/app/components/Sidebar'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { Bug } from 'lucide-react'
+import { SidebarProvider, useSidebar } from '@/app/contexts/SidebarContext'
 
 const FeedbackModal = dynamic(() => import('@/app/components/FeedbackModal').then(mod => ({ default: mod.FeedbackModal })), {
   loading: () => null
 })
 
-export default function AppLayout({
+function AppLayoutContent({
   children,
 }: {
   children: React.ReactNode
@@ -24,6 +25,7 @@ export default function AppLayout({
   const [loading, setLoading] = useState(true)
   const [showFeedbackModal, setShowFeedbackModal] = useState(false)
   const supabase = createClient()
+  const { sidebarWidth, isResizing } = useSidebar()
 
   // Map pathname to currentView for sidebar highlighting
   const getCurrentView = () => {
@@ -63,7 +65,10 @@ export default function AppLayout({
       <Sidebar user={user} currentView={getCurrentView()} />
 
       {/* Main Content */}
-      <main className="ml-[208px] min-h-screen bg-[#09090c]">
+      <main
+        className={`min-h-screen bg-[#09090c] ${isResizing ? '' : 'transition-[margin-left] duration-150'}`}
+        style={{ marginLeft: sidebarWidth }}
+      >
         {children}
       </main>
 
@@ -82,5 +87,17 @@ export default function AppLayout({
         onClose={() => setShowFeedbackModal(false)}
       />
     </div>
+  )
+}
+
+export default function AppLayout({
+  children,
+}: {
+  children: React.ReactNode
+}) {
+  return (
+    <SidebarProvider>
+      <AppLayoutContent>{children}</AppLayoutContent>
+    </SidebarProvider>
   )
 }

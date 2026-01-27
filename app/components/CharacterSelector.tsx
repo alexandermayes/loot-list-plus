@@ -200,18 +200,18 @@ export function CharacterSelector() {
     <div className="relative">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex items-center gap-3 px-[14px] py-2 rounded-xl bg-[#141519] border border-[#1a1a1a] hover:bg-[#1a1a1a] transition"
+        className="w-full flex items-center gap-3 px-[14px] py-2 rounded-[12px] bg-[#141519] border border-[rgba(255,255,255,0.1)] hover:bg-[#1a1a1a] transition"
       >
         {/* Character Class Icon */}
         {activeCharacter.class?.name ? (
           <img
             src={getClassIconUrl(activeCharacter.class.name)}
             alt={activeCharacter.class.name}
-            className="w-5 h-5 rounded-full flex-shrink-0 border border-[#383838]"
+            className="w-5 h-5 rounded-full flex-shrink-0"
           />
         ) : (
           <div
-            className="w-5 h-5 rounded-full flex items-center justify-center text-white font-bold text-[10px] flex-shrink-0 border border-border"
+            className="w-5 h-5 rounded-full flex items-center justify-center text-white font-bold text-[10px] flex-shrink-0"
             style={{ backgroundColor: classColor }}
           >
             {activeCharacter.name.charAt(0).toUpperCase()}
@@ -219,15 +219,15 @@ export function CharacterSelector() {
         )}
 
         {/* Character Info */}
-        <div className="flex flex-col flex-1 min-w-0 leading-normal text-left">
+        <div className="flex flex-col flex-1 min-w-0 leading-[normal] text-left">
           <p
-            className="text-[13px] font-medium truncate text-left"
+            className="font-poppins font-medium text-[13px] truncate text-left"
             style={{ color: classColor }}
           >
             {activeCharacter.name}
           </p>
           {(activeCharacter.spec?.name || activeCharacter.class?.name) && (
-            <p className="text-[10px] text-[#a1a1a1] truncate text-left">
+            <p className="font-poppins font-normal text-[10px] text-[#a1a1a1] truncate text-left">
               {activeCharacter.spec?.name && activeCharacter.class?.name
                 ? `${activeCharacter.spec.name} ${activeCharacter.class.name}`
                 : activeCharacter.spec?.name || activeCharacter.class?.name}
@@ -235,7 +235,13 @@ export function CharacterSelector() {
           )}
         </div>
 
-        <ChevronDown className="w-5 h-5 text-[#a1a1a1] flex-shrink-0" />
+        <Image
+          src="/icons/arrow-down.svg"
+          alt="Toggle"
+          width={20}
+          height={20}
+          className={`w-5 h-5 shrink-0 transition-transform ${isOpen ? 'rotate-180' : ''}`}
+        />
       </button>
 
       {/* Dropdown */}
@@ -248,187 +254,183 @@ export function CharacterSelector() {
           />
 
           {/* Dropdown Content */}
-          <div className="absolute top-full mt-2 left-0 right-0 bg-[#141519] border border-[#1a1a1a] rounded-xl shadow-lg z-50">
-            <div className="p-2">
-              {/* Current Guild Characters */}
-              {activeGuild && charactersInGuild.length > 0 && (
-                <>
-                  <div className="px-3 py-2 text-[10px] font-semibold text-[#a1a1a1] uppercase tracking-wider text-left">
+          <div className="absolute top-full mt-2 left-0 right-0 bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-[12px] shadow-lg z-50 py-2 overflow-hidden">
+            {/* Current Guild Characters */}
+            {activeGuild && charactersInGuild.length > 0 && (
+              <div>
+                <div className="px-3 pt-2 pb-1">
+                  <p className="font-poppins font-medium text-[10px] text-[#a1a1a1] uppercase tracking-wide truncate">
                     {activeGuild.name}
-                  </div>
-                  {charactersInGuild.map(char => {
+                  </p>
+                </div>
+                {charactersInGuild.map(char => {
+                  const charColor = char.class?.color_hex || '#808080'
+                  const isSelected = char.id === activeCharacter?.id
+
+                  return (
+                    <button
+                      key={char.id}
+                      onClick={() => handleCharacterSelect(char.id)}
+                      className="w-full flex items-center gap-3 px-[14px] py-2 hover:bg-[#1a1a1a] transition text-left"
+                    >
+                      {/* Character Class Icon */}
+                      {char.class?.name ? (
+                        <img
+                          src={getClassIconUrl(char.class.name)}
+                          alt={char.class.name}
+                          className="w-5 h-5 rounded-full flex-shrink-0"
+                        />
+                      ) : (
+                        <div
+                          className="w-5 h-5 rounded-full flex items-center justify-center text-white font-bold text-[10px] flex-shrink-0"
+                          style={{ backgroundColor: charColor }}
+                        >
+                          {char.name.charAt(0).toUpperCase()}
+                        </div>
+                      )}
+
+                      <div className="flex flex-col flex-1 min-w-0 leading-[normal] text-left">
+                        <p
+                          className="font-poppins font-medium text-[13px] truncate"
+                          style={{ color: charColor }}
+                        >
+                          {char.name}
+                        </p>
+                        {(char.spec?.name || char.class?.name) && (
+                          <p className="font-poppins font-normal text-[10px] text-[#a1a1a1] truncate">
+                            {char.spec?.name && char.class?.name
+                              ? `${char.spec.name} ${char.class.name}`
+                              : char.spec?.name || char.class?.name}
+                          </p>
+                        )}
+                      </div>
+                      {isSelected && (
+                        <Image
+                          src="/icons/tick.svg"
+                          alt="Selected"
+                          width={20}
+                          height={20}
+                          className="w-5 h-5 shrink-0"
+                        />
+                      )}
+                    </button>
+                  )
+                })}
+              </div>
+            )}
+
+            {/* Other Characters */}
+            {activeGuild && charactersInGuild.length < userCharacters.length && (
+              <div>
+                <div className="px-3 pt-2 pb-1">
+                  <p className="font-poppins font-medium text-[10px] text-[#a1a1a1] uppercase tracking-wide truncate">
+                    Not in {activeGuild.name}
+                  </p>
+                </div>
+                {userCharacters
+                  .filter(
+                    char =>
+                      !charactersInGuild.some(c => c.id === char.id)
+                  )
+                  .map(char => {
                     const charColor = char.class?.color_hex || '#808080'
-                    const isActive = char.id === activeCharacter?.id
+                    const isAdding = addingToGuild === char.id
 
                     return (
-                      <button
+                      <div
                         key={char.id}
-                        onClick={() => handleCharacterSelect(char.id)}
-                        className="w-full flex items-center justify-between px-3 py-2 rounded-lg hover:bg-[#1a1a1a] transition text-left"
+                        className="w-full flex items-center gap-3 px-[14px] py-2 hover:bg-[#1a1a1a] transition"
                       >
-                        <div className="flex items-center gap-3 flex-1 min-w-0">
-                          {/* Character Class Icon */}
-                          {char.class?.name ? (
-                            <img
-                              src={getClassIconUrl(char.class.name)}
-                              alt={char.class.name}
-                              className="w-5 h-5 rounded-full flex-shrink-0 border border-[#383838]"
-                            />
-                          ) : (
-                            <div
-                              className="w-5 h-5 rounded-full flex items-center justify-center text-white font-bold text-[10px] flex-shrink-0 border border-[#383838]"
-                              style={{ backgroundColor: charColor }}
-                            >
-                              {char.name.charAt(0).toUpperCase()}
-                            </div>
-                          )}
-
-                          <div className="flex flex-col flex-1 min-w-0 leading-normal text-left">
-                            <div className="flex items-center gap-2">
-                              <p
-                                className="text-[13px] font-medium truncate text-left"
-                                style={{ color: charColor }}
-                              >
-                                {char.name}
-                              </p>
-                              {char.is_main && (
-                                <span className="px-1.5 py-0.5 bg-primary/20 border border-primary rounded text-primary text-[10px] font-medium">
-                                  Main
-                                </span>
-                              )}
-                            </div>
-                            {(char.spec?.name || char.class?.name) && (
-                              <p className="text-[10px] text-[#a1a1a1] truncate text-left">
-                                {char.spec?.name && char.class?.name
-                                  ? `${char.spec.name} ${char.class.name}`
-                                  : char.spec?.name || char.class?.name}
-                              </p>
-                            )}
+                        {/* Character Class Icon */}
+                        {char.class?.name ? (
+                          <img
+                            src={getClassIconUrl(char.class.name)}
+                            alt={char.class.name}
+                            className="w-5 h-5 rounded-full flex-shrink-0"
+                          />
+                        ) : (
+                          <div
+                            className="w-5 h-5 rounded-full flex items-center justify-center text-white font-bold text-[10px] flex-shrink-0"
+                            style={{ backgroundColor: charColor }}
+                          >
+                            {char.name.charAt(0).toUpperCase()}
                           </div>
-                        </div>
-                        {isActive && (
-                          <Check className="w-5 h-5 text-green-400 flex-shrink-0" />
                         )}
-                      </button>
+
+                        <div className="flex flex-col flex-1 min-w-0 leading-[normal] text-left">
+                          <p
+                            className="font-poppins font-medium text-[13px] truncate"
+                            style={{ color: charColor }}
+                          >
+                            {char.name}
+                          </p>
+                          <p className="font-poppins font-normal text-[10px] text-[#a1a1a1] truncate">
+                            {char.is_main && <span className="text-white">Main</span>}
+                            {char.is_main && (char.spec?.name || char.class?.name) && ' • '}
+                            {char.spec?.name && char.class?.name
+                              ? `${char.spec.name} ${char.class.name}`
+                              : char.spec?.name || char.class?.name}
+                          </p>
+                        </div>
+
+                        <button
+                          onClick={(e) => handleAddToGuild(char.id, e)}
+                          disabled={isAdding}
+                          className="shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {isAdding ? (
+                            <div className="w-5 h-5 border-2 border-[#a1a1a1]/30 border-t-[#a1a1a1] rounded-full animate-spin" />
+                          ) : (
+                            <Image
+                              src="/icons/add-circle.svg"
+                              alt="Add to guild"
+                              width={20}
+                              height={20}
+                              className="w-5 h-5"
+                            />
+                          )}
+                        </button>
+                      </div>
                     )
                   })}
-                </>
-              )}
-
-              {/* Other Characters */}
-              {activeGuild && charactersInGuild.length < userCharacters.length && (
-                <>
-                  <div className="border-t border-[#1a1a1a] mt-2 pt-2">
-                    <div className="px-3 py-2 text-[10px] font-semibold text-[#a1a1a1] uppercase tracking-wider text-left">
-                      Not in {activeGuild.name}
-                    </div>
-                    {userCharacters
-                      .filter(
-                        char =>
-                          !charactersInGuild.some(c => c.id === char.id)
-                      )
-                      .map(char => {
-                        const charColor = char.class?.color_hex || '#808080'
-                        const isAdding = addingToGuild === char.id
-
-                        return (
-                          <div
-                            key={char.id}
-                            className="w-full flex items-center justify-between px-3 py-2 rounded-lg hover:bg-[#1a1a1a] transition"
-                          >
-                            <div className="flex items-center gap-3 flex-1 min-w-0">
-                              {/* Character Class Icon */}
-                              {char.class?.name ? (
-                                <img
-                                  src={getClassIconUrl(char.class.name)}
-                                  alt={char.class.name}
-                                  className="w-5 h-5 rounded-full flex-shrink-0 border border-[#383838]"
-                                />
-                              ) : (
-                                <div
-                                  className="w-5 h-5 rounded-full flex items-center justify-center text-white font-bold text-[10px] flex-shrink-0 border border-[#383838]"
-                                  style={{ backgroundColor: charColor }}
-                                >
-                                  {char.name.charAt(0).toUpperCase()}
-                                </div>
-                              )}
-
-                              <div className="flex flex-col flex-1 min-w-0 leading-normal text-left">
-                                <div className="flex items-center gap-2">
-                                  <p
-                                    className="text-[13px] font-medium truncate text-left"
-                                    style={{ color: charColor }}
-                                  >
-                                    {char.name}
-                                  </p>
-                                  {char.is_main && (
-                                    <span className="px-1.5 py-0.5 bg-primary/20 border border-primary rounded text-primary text-[10px] font-medium">
-                                      Main
-                                    </span>
-                                  )}
-                                </div>
-                                {(char.spec?.name || char.class?.name) && (
-                                  <p className="text-[10px] text-[#a1a1a1] truncate text-left">
-                                    {char.spec?.name && char.class?.name
-                                      ? `${char.spec.name} ${char.class.name}`
-                                      : char.spec?.name || char.class?.name}
-                                  </p>
-                                )}
-                              </div>
-                            </div>
-                            <button
-                              onClick={(e) => handleAddToGuild(char.id, e)}
-                              disabled={isAdding}
-                              className="flex items-center gap-1.5 px-2.5 py-1.5 bg-primary/20 hover:bg-primary/30 border border-primary/50 rounded-lg text-primary text-[11px] font-medium transition disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
-                            >
-                              {isAdding ? (
-                                <div className="w-3 h-3 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
-                              ) : (
-                                <Plus className="w-3 h-3" />
-                              )}
-                              <span>{isAdding ? 'Adding...' : 'Add'}</span>
-                            </button>
-                          </div>
-                        )
-                      })}
-                  </div>
-                </>
-              )}
-
-              {/* Create Character & Manage */}
-              <div className="border-t border-[#1a1a1a] mt-2 pt-2">
-                <button
-                  onClick={handleCreateCharacter}
-                  className="w-full px-3 py-2 flex items-center gap-3 hover:bg-[#1a1a1a] rounded-lg transition text-left"
-                >
-                  <Image
-                    src="/icons/add-circle.svg"
-                    alt="Create"
-                    width={20}
-                    height={20}
-                    className="w-5 h-5 shrink-0 brightness-0 invert"
-                  />
-                  <div className="flex-1">
-                    <p className="font-poppins font-medium text-[13px] text-white">
-                      Create character
-                    </p>
-                  </div>
-                </button>
-                <button
-                  onClick={handleManageCharacters}
-                  className="w-full px-3 py-2 flex items-center gap-3 hover:bg-[#1a1a1a] rounded-lg transition text-left"
-                >
-                  <svg className="w-5 h-5 shrink-0 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                  </svg>
-                  <div className="flex-1">
-                    <p className="font-poppins font-medium text-[13px] text-white">
-                      Manage characters
-                    </p>
-                  </div>
-                </button>
               </div>
+            )}
+
+            {/* Divider */}
+            <div className="h-px bg-[rgba(255,255,255,0.1)] my-1" />
+
+            {/* Create Character & Manage */}
+            <div>
+              <button
+                onClick={handleCreateCharacter}
+                className="w-full px-[14px] py-2 flex items-center gap-3 hover:bg-[#1a1a1a] transition text-left"
+              >
+                <Image
+                  src="/icons/user-add.svg"
+                  alt="Create"
+                  width={20}
+                  height={20}
+                  className="w-5 h-5 shrink-0"
+                />
+                <p className="font-poppins font-medium text-[13px] text-white">
+                  Create character
+                </p>
+              </button>
+              <button
+                onClick={handleManageCharacters}
+                className="w-full px-[14px] py-2 flex items-center gap-3 hover:bg-[#1a1a1a] transition text-left"
+              >
+                <Image
+                  src="/icons/user-settings.svg"
+                  alt="Manage"
+                  width={20}
+                  height={20}
+                  className="w-5 h-5 shrink-0"
+                />
+                <p className="font-poppins font-medium text-[13px] text-white">
+                  Manage characters
+                </p>
+              </button>
             </div>
           </div>
         </>
