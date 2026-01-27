@@ -7,7 +7,7 @@ import SearchableItemSelect from '@/app/components/SearchableItemSelect'
 import { useGuildContext } from '@/app/contexts/GuildContext'
 import { ExpansionGuard } from '@/app/components/ExpansionGuard'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
-import { TierTabsSkeleton, TableSkeleton } from '@/components/ui/skeletons'
+import { TierTabsSkeleton, LootListContentSkeleton } from '@/components/ui/skeletons'
 import { useNotification } from '@/app/contexts/NotificationContext'
 import {
   Modal,
@@ -1060,9 +1060,7 @@ export default function LootList() {
         <div className="px-8 pb-8 space-y-6">
         {/* Content Loading State */}
         {(initialLoading || contentLoading) ? (
-          <div className="space-y-6">
-            <TableSkeleton rows={10} cols={3} />
-          </div>
+          <LootListContentSkeleton />
         ) : (
         <>
         {/* Status Banner */}
