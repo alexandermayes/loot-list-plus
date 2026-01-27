@@ -31,10 +31,10 @@ export function CharacterCard({
   return (
     <div
       className={`
-        bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl p-4
+        bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-xl p-4
         transition-all duration-200
         ${onClick ? 'cursor-pointer hover:bg-[#1a1a1f] hover:border-[rgba(255,255,255,0.2)]' : ''}
-        ${isActive ? 'ring-2 ring-[#ff8000]' : ''}
+        ${isActive ? 'ring-2 ring-accent' : ''}
         ${className}
       `}
       onClick={onClick}
@@ -66,13 +66,13 @@ export function CharacterCard({
               {character.name}
             </h3>
             {character.is_main && (
-              <span className="px-2 py-0.5 bg-[#ff8000]/20 border border-[#ff8000] rounded-full text-[#ff8000] text-[11px] font-medium">
+              <span className="px-2 py-0.5 bg-accent/20 border border-accent rounded-full text-accent text-[11px] font-medium">
                 Main
               </span>
             )}
           </div>
 
-          <div className="flex items-center gap-2 mt-1 text-[13px] text-[#a1a1a1]">
+          <div className="flex items-center gap-2 mt-1 text-[13px] text-muted-foreground">
             <span>
               {character.spec?.name
                 ? `${character.spec.name} ${character.class?.name || 'Unknown'}`
@@ -81,7 +81,7 @@ export function CharacterCard({
           </div>
 
           {showGuildCount && (
-            <div className="mt-1 text-[12px] text-[#a1a1a1]">
+            <div className="mt-1 text-[12px] text-muted-foreground">
               {guildCount === 0 && 'No guilds'}
               {guildCount === 1 && '1 guild'}
               {guildCount > 1 && `${guildCount} guilds`}
@@ -91,7 +91,7 @@ export function CharacterCard({
 
         {/* Active Indicator */}
         {isActive && (
-          <div className="w-2 h-2 rounded-full bg-[#ff8000]" />
+          <div className="w-2 h-2 rounded-full bg-accent" />
         )}
       </div>
     </div>

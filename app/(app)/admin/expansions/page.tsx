@@ -4,7 +4,8 @@ import { createClient } from '@/utils/supabase/client'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useGuildContext } from '@/app/contexts/GuildContext'
-import { Add01Icon, Calendar01Icon, ArrowRight01Icon } from 'hugeicons-react'
+import { HugeiconsIcon } from '@hugeicons/react'
+import { Add01Icon, Calendar01Icon, ArrowRight01Icon } from '@hugeicons/core-free-icons'
 import Link from 'next/link'
 import { getExpansionVisuals } from '@/utils/expansionVisuals'
 
@@ -195,7 +196,7 @@ export default function ExpansionsManagementPage() {
   if (loading || guildLoading) {
     return (
       <div className="p-8 flex items-center justify-center">
-        <p className="text-[#666]">Loading...</p>
+        <p className="text-foreground-muted">Loading...</p>
       </div>
     )
   }
@@ -205,7 +206,7 @@ export default function ExpansionsManagementPage() {
       {/* Header */}
       <div>
         <h1 className="text-[42px] font-bold text-white mb-2">Manage Expansions</h1>
-        <p className="text-[16px] text-[#666]">
+        <p className="text-[16px] text-foreground-muted">
           Add and manage expansions for your guild. Each expansion maintains its own loot lists and raid data.
         </p>
       </div>
@@ -313,7 +314,7 @@ export default function ExpansionsManagementPage() {
                           className="block text-[13px] font-medium mb-2"
                           style={{ color: visuals.textColor }}
                         >
-                          <Calendar01Icon className="w-4 h-4 inline mr-2" style={{ color: visuals.accentColor }} />
+                          <HugeiconsIcon icon={Calendar01Icon} size={16} className="inline mr-2" style={{ color: visuals.accentColor }} />
                           Raid Start Date
                         </label>
                         <input
@@ -360,8 +361,7 @@ export default function ExpansionsManagementPage() {
                       >
                         Manage Raid Tiers
                       </span>
-                      <ArrowRight01Icon
-                        className="w-4 h-4"
+                      <HugeiconsIcon icon={ArrowRight01Icon} size={16}
                         style={{ color: visuals.accentColor }}
                       />
                     </Link>
@@ -442,7 +442,7 @@ export default function ExpansionsManagementPage() {
                         border: `1px solid ${visuals.accentColor}40`
                       }}
                     >
-                      <Add01Icon className="w-5 h-5" style={{ color: visuals.accentColor }} />
+                      <HugeiconsIcon icon={Add01Icon} size={20} style={{ color: visuals.accentColor }} />
                     </div>
                   </div>
                 </div>
@@ -450,16 +450,16 @@ export default function ExpansionsManagementPage() {
             })}
           </div>
           {adding && (
-            <div className="mt-4 p-4 bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl text-center">
-              <p className="text-[#666]">Adding expansion... This may take a moment.</p>
+            <div className="mt-4 p-4 bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-xl text-center">
+              <p className="text-foreground-muted">Adding expansion... This may take a moment.</p>
             </div>
           )}
         </div>
       )}
 
       {guildExpansions.length === 0 && addableExpansions.length === 0 && (
-        <div className="p-12 bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl text-center">
-          <p className="text-[#666] text-[16px]">No expansions available to add</p>
+        <div className="p-12 bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-xl text-center">
+          <p className="text-foreground-muted text-[16px]">No expansions available to add</p>
         </div>
       )}
     </div>

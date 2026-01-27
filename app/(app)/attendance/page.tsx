@@ -433,7 +433,7 @@ export default function AttendancePage() {
       case 'benched': return 'bg-orange-600/30 text-orange-300'
       case 'signed-up': return 'bg-blue-600/30 text-blue-300'
       case 'no-show': return 'bg-red-600/30 text-red-300'
-      default: return 'bg-[#1a1a1a] text-[#505050]'
+      default: return 'bg-muted text-foreground-muted'
     }
   }
 
@@ -476,7 +476,7 @@ export default function AttendancePage() {
       {/* Header */}
       <div>
         <h1 className="text-[42px] font-bold text-white leading-tight">Attendance</h1>
-        <p className="text-[#a1a1a1] mt-1 text-base">Track raid attendance and view attendance scores</p>
+        <p className="text-muted-foreground mt-1 text-base">Track raid attendance and view attendance scores</p>
       </div>
 
       {/* Personal Summary Cards */}
@@ -486,11 +486,11 @@ export default function AttendancePage() {
             <span className="text-[14px] font-medium" style={{ color: (activeCharacter.class as any)?.color_hex || '#fff' }}>
               {activeCharacter.name}
             </span>
-            <span className="text-[#666] text-[13px]">• Your Attendance</span>
+            <span className="text-foreground-muted text-[13px]">• Your Attendance</span>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl p-6">
-              <p className="text-[#a1a1a1] text-sm mb-1">
+            <div className="bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-xl p-6">
+              <p className="text-muted-foreground text-sm mb-1">
                 Attendance Credit (Previous {guildSettings?.rolling_attendance_weeks || 4} Weeks)
               </p>
               <p className={`text-[42px] font-bold leading-none ${
@@ -498,39 +498,39 @@ export default function AttendancePage() {
                 attendanceScore >= (guildSettings?.max_attendance_bonus || 8) * 0.5 ? 'text-yellow-400' :
                 'text-red-400'
               }`}>
-                {attendanceScore.toFixed(guildSettings?.decimal_places || 2)} <span className="text-[18px] text-[#a1a1a1]">/ {(guildSettings?.max_attendance_bonus || 8).toFixed(guildSettings?.decimal_places || 2)}</span>
+                {attendanceScore.toFixed(guildSettings?.decimal_places || 2)} <span className="text-[18px] text-muted-foreground">/ {(guildSettings?.max_attendance_bonus || 8).toFixed(guildSettings?.decimal_places || 2)}</span>
               </p>
             </div>
 
-            <div className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl p-6">
-              <p className="text-[#a1a1a1] text-sm mb-1">Role Modifier</p>
+            <div className="bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-xl p-6">
+              <p className="text-muted-foreground text-sm mb-1">Role Modifier</p>
               <p className={`text-[42px] font-bold leading-none ${roleModifier < 0 ? 'text-red-400' : roleModifier > 0 ? 'text-green-400' : 'text-white'}`}>
                 {roleModifier >= 0 ? '+' : ''}{roleModifier}
               </p>
-              <p className="text-[#a1a1a1] text-sm mt-2">{memberRole}</p>
+              <p className="text-muted-foreground text-sm mt-2">{memberRole}</p>
             </div>
 
-            <div className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl p-6">
-              <p className="text-[#a1a1a1] text-sm mb-1">Tracked Raids</p>
+            <div className="bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-xl p-6">
+              <p className="text-muted-foreground text-sm mb-1">Tracked Raids</p>
               <p className="text-[42px] font-bold text-white leading-none">
                 {guildRaidEvents.length}
               </p>
-              <p className="text-[#a1a1a1] text-sm mt-2">Previous {guildSettings?.rolling_attendance_weeks || 4} completed weeks</p>
+              <p className="text-muted-foreground text-sm mt-2">Previous {guildSettings?.rolling_attendance_weeks || 4} completed weeks</p>
             </div>
           </div>
         </>
       )}
 
       {/* Guild Attendance Table */}
-      <div className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl overflow-hidden">
+      <div className="bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-xl overflow-hidden">
         <div className="p-4 border-b border-[rgba(255,255,255,0.1)] flex items-center justify-between">
           <h2 className="text-white font-semibold">Guild Attendance</h2>
           <div className="flex items-center gap-2">
-            <span className="text-[12px] text-[#666]">Sort:</span>
+            <span className="text-[12px] text-foreground-muted">Sort:</span>
             <button
               onClick={() => toggleSort('score')}
               className={`px-3 py-1.5 rounded-lg text-[12px] font-medium transition flex items-center gap-1 ${
-                sortBy === 'score' ? 'bg-[#ff8000]/20 text-[#ff8000]' : 'bg-[#1a1a1a] text-[#a1a1a1] hover:text-white'
+                sortBy === 'score' ? 'bg-accent/20 text-accent' : 'bg-muted text-muted-foreground hover:text-white'
               }`}
             >
               Credit
@@ -539,7 +539,7 @@ export default function AttendancePage() {
             <button
               onClick={() => toggleSort('name')}
               className={`px-3 py-1.5 rounded-lg text-[12px] font-medium transition flex items-center gap-1 ${
-                sortBy === 'name' ? 'bg-[#ff8000]/20 text-[#ff8000]' : 'bg-[#1a1a1a] text-[#a1a1a1] hover:text-white'
+                sortBy === 'name' ? 'bg-accent/20 text-accent' : 'bg-muted text-muted-foreground hover:text-white'
               }`}
             >
               Name
@@ -550,28 +550,28 @@ export default function AttendancePage() {
 
         {guildRaiders.length === 0 ? (
           <div className="p-8 text-center">
-            <HugeiconsIcon icon={Calendar01Icon} size={48} className="text-[#505050] mx-auto mb-3" />
-            <p className="text-[#666]">No active raiders found</p>
-            <p className="text-[#505050] text-sm mt-1">Raiders need approved loot submissions to appear here</p>
+            <HugeiconsIcon icon={Calendar01Icon} size={48} className="text-foreground-muted mx-auto mb-3" />
+            <p className="text-foreground-muted">No active raiders found</p>
+            <p className="text-foreground-muted text-sm mt-1">Raiders need approved loot submissions to appear here</p>
           </div>
         ) : guildRaidEvents.length === 0 ? (
           <div className="p-8 text-center">
-            <HugeiconsIcon icon={Calendar01Icon} size={48} className="text-[#505050] mx-auto mb-3" />
-            <p className="text-[#666]">No raid events in the attendance window</p>
+            <HugeiconsIcon icon={Calendar01Icon} size={48} className="text-foreground-muted mx-auto mb-3" />
+            <p className="text-foreground-muted">No raid events in the attendance window</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full min-w-max">
               {/* Header row with week groupings */}
               <thead>
-                <tr className="bg-[#0d0e11]">
-                  <th className="sticky left-0 z-20 bg-[#0d0e11] px-4 py-2 text-left text-[11px] font-medium text-[#666] min-w-[160px]">
+                <tr className="bg-background-subtle">
+                  <th className="sticky left-0 z-20 bg-background-subtle px-4 py-2 text-left text-[11px] font-medium text-foreground-muted min-w-[160px]">
                     Character
                   </th>
-                  <th className="sticky left-[160px] z-20 bg-[#0d0e11] px-3 py-2 text-left text-[11px] font-medium text-[#666] min-w-[100px]">
+                  <th className="sticky left-[160px] z-20 bg-background-subtle px-3 py-2 text-left text-[11px] font-medium text-foreground-muted min-w-[100px]">
                     Role
                   </th>
-                  <th className="sticky left-[260px] z-20 bg-[#0d0e11] px-3 py-2 text-center text-[11px] font-medium text-[#666] min-w-[70px]">
+                  <th className="sticky left-[260px] z-20 bg-background-subtle px-3 py-2 text-center text-[11px] font-medium text-foreground-muted min-w-[70px]">
                     Credit
                   </th>
                   {/* Week grouping headers */}
@@ -588,10 +588,10 @@ export default function AttendancePage() {
                   ))}
                 </tr>
                 {/* Sub-header for individual dates */}
-                <tr className="bg-[#0d0e11]/80">
-                  <th className="sticky left-0 z-20 bg-[#0d0e11]/80 px-4 py-1.5" />
-                  <th className="sticky left-[160px] z-20 bg-[#0d0e11]/80 px-3 py-1.5" />
-                  <th className="sticky left-[260px] z-20 bg-[#0d0e11]/80 px-3 py-1.5" />
+                <tr className="bg-background-subtle/80">
+                  <th className="sticky left-0 z-20 bg-background-subtle/80 px-4 py-1.5" />
+                  <th className="sticky left-[160px] z-20 bg-background-subtle/80 px-3 py-1.5" />
+                  <th className="sticky left-[260px] z-20 bg-background-subtle/80 px-3 py-1.5" />
                   {raidsByWeek.flatMap(week =>
                     week.raids.map(raid => (
                       <th
@@ -608,16 +608,16 @@ export default function AttendancePage() {
               </thead>
               <tbody className="divide-y divide-[rgba(255,255,255,0.05)]">
                 {sortedRaiders.map(raider => (
-                  <tr key={raider.id} className="hover:bg-[#1a1a1a] transition">
-                    <td className="sticky left-0 z-10 bg-[#141519] group-hover:bg-[#1a1a1a] px-4 py-2.5">
+                  <tr key={raider.id} className="hover:bg-muted transition">
+                    <td className="sticky left-0 z-10 bg-background-elevated group-hover:bg-muted px-4 py-2.5">
                       <span className="font-medium text-[13px]" style={{ color: raider.classColor }}>
                         {raider.name}
                       </span>
                     </td>
-                    <td className="sticky left-[160px] z-10 bg-[#141519] group-hover:bg-[#1a1a1a] px-3 py-2.5 text-[12px] text-[#a1a1a1]">
+                    <td className="sticky left-[160px] z-10 bg-background-elevated group-hover:bg-muted px-3 py-2.5 text-[12px] text-muted-foreground">
                       {raider.role}
                     </td>
-                    <td className="sticky left-[260px] z-10 bg-[#141519] group-hover:bg-[#1a1a1a] px-3 py-2.5 text-center">
+                    <td className="sticky left-[260px] z-10 bg-background-elevated group-hover:bg-muted px-3 py-2.5 text-center">
                       <span className={`font-semibold text-[13px] ${
                         raider.attendanceScore >= (guildSettings?.max_attendance_bonus || 8) * 0.75 ? 'text-green-400' :
                         raider.attendanceScore >= (guildSettings?.max_attendance_bonus || 8) * 0.5 ? 'text-yellow-400' :
@@ -657,35 +657,35 @@ export default function AttendancePage() {
 
       {/* Legend */}
       <div className="flex flex-wrap items-center gap-4 text-[12px]">
-        <span className="text-[#666]">Legend:</span>
+        <span className="text-foreground-muted">Legend:</span>
         <div className="flex items-center gap-1.5">
           <span className="inline-flex items-center justify-center w-5 h-5 rounded bg-green-600/30 text-green-300 text-[10px] font-medium">A</span>
-          <span className="text-[#a1a1a1]">Attended</span>
+          <span className="text-muted-foreground">Attended</span>
         </div>
         <div className="flex items-center gap-1.5">
           <span className="inline-flex items-center justify-center w-5 h-5 rounded bg-yellow-600/30 text-yellow-300 text-[10px] font-medium">L</span>
-          <span className="text-[#a1a1a1]">Late</span>
+          <span className="text-muted-foreground">Late</span>
         </div>
         <div className="flex items-center gap-1.5">
           <span className="inline-flex items-center justify-center w-5 h-5 rounded bg-orange-600/30 text-orange-300 text-[10px] font-medium">B</span>
-          <span className="text-[#a1a1a1]">Benched</span>
+          <span className="text-muted-foreground">Benched</span>
         </div>
         <div className="flex items-center gap-1.5">
           <span className="inline-flex items-center justify-center w-5 h-5 rounded bg-blue-600/30 text-blue-300 text-[10px] font-medium">S</span>
-          <span className="text-[#a1a1a1]">Signed up only</span>
+          <span className="text-muted-foreground">Signed up only</span>
         </div>
         <div className="flex items-center gap-1.5">
           <span className="inline-flex items-center justify-center w-5 h-5 rounded bg-red-600/30 text-red-300 text-[10px] font-medium">X</span>
-          <span className="text-[#a1a1a1]">No-show</span>
+          <span className="text-muted-foreground">No-show</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <span className="inline-flex items-center justify-center w-5 h-5 rounded bg-[#1a1a1a] text-[#505050] text-[10px] font-medium">-</span>
-          <span className="text-[#a1a1a1]">No record</span>
+          <span className="inline-flex items-center justify-center w-5 h-5 rounded bg-muted text-foreground-muted text-[10px] font-medium">-</span>
+          <span className="text-muted-foreground">No record</span>
         </div>
       </div>
 
       {/* Color coding explanation */}
-      <div className="flex items-center gap-4 text-[12px] text-[#666]">
+      <div className="flex items-center gap-4 text-[12px] text-foreground-muted">
         <div className="flex items-center gap-2">
           <div className="w-4 h-4 rounded bg-green-900/20 border border-green-600/30" />
           <span>Most recent tracked week</span>

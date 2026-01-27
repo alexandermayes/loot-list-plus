@@ -4,7 +4,8 @@ import { useState, useEffect } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { useGuildContext, Character } from '@/app/contexts/GuildContext'
 import { createClient } from '@/utils/supabase/client'
-import { ArrowLeft01Icon, Delete01Icon } from 'hugeicons-react'
+import { HugeiconsIcon } from '@hugeicons/react'
+import { ArrowLeft01Icon, Delete01Icon } from '@hugeicons/core-free-icons'
 
 interface WowClass {
   id: string
@@ -208,17 +209,17 @@ export default function EditCharacterPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0d0e11] p-8 flex items-center justify-center">
-        <p className="text-[#a1a1a1] text-[16px]">Loading character...</p>
+      <div className="min-h-screen bg-background-subtle p-8 flex items-center justify-center">
+        <p className="text-muted-foreground text-[16px]">Loading character...</p>
       </div>
     )
   }
 
   if (!character) {
     return (
-      <div className="min-h-screen bg-[#0d0e11] p-8">
+      <div className="min-h-screen bg-background-subtle p-8">
         <div className="max-w-2xl mx-auto">
-          <div className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl p-12 text-center">
+          <div className="bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-xl p-12 text-center">
             <h2 className="text-[24px] font-bold text-white mb-4">Character not found</h2>
             <button
               onClick={() => router.push('/characters/manage')}
@@ -233,20 +234,20 @@ export default function EditCharacterPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0d0e11] p-8">
+    <div className="min-h-screen bg-background-subtle p-8">
       <div className="max-w-2xl mx-auto">
         {/* Header */}
         <div className="mb-8">
           <button
             onClick={() => router.push('/characters/manage')}
-            className="mb-4 flex items-center gap-2 text-[#a1a1a1] hover:text-white transition"
+            className="mb-4 flex items-center gap-2 text-muted-foreground hover:text-white transition"
           >
-            <ArrowLeft01Icon className="w-4 h-4" />
+            <HugeiconsIcon icon={ArrowLeft01Icon} size={16} />
             <span className="text-[14px]">Back to Characters</span>
           </button>
 
           <h1 className="text-[42px] font-bold text-white mb-2">Edit Character</h1>
-          <p className="text-[16px] text-[#a1a1a1]">
+          <p className="text-[16px] text-muted-foreground">
             Update character details and settings
           </p>
         </div>
@@ -259,7 +260,7 @@ export default function EditCharacterPage() {
         )}
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl p-6 mb-6">
+        <form onSubmit={handleSubmit} className="bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-xl p-6 mb-6">
           <div className="space-y-6">
             {/* Character Name */}
             <div>
@@ -270,7 +271,7 @@ export default function EditCharacterPage() {
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full px-4 py-3 bg-[#0d0e11] border border-[rgba(255,255,255,0.1)] rounded-xl text-white text-[14px] focus:outline-none focus:border-[#ff8000] transition"
+                className="w-full px-4 py-3 bg-background-subtle border border-[rgba(255,255,255,0.1)] rounded-xl text-white text-[14px] focus:outline-none focus:border-accent transition"
                 placeholder="Enter character name"
                 required
               />
@@ -284,7 +285,7 @@ export default function EditCharacterPage() {
               <select
                 value={classId}
                 onChange={(e) => handleClassChange(e.target.value)}
-                className="w-full px-4 py-3 bg-[#0d0e11] border border-[rgba(255,255,255,0.1)] rounded-xl text-white text-[14px] focus:outline-none focus:border-[#ff8000] transition"
+                className="w-full px-4 py-3 bg-background-subtle border border-[rgba(255,255,255,0.1)] rounded-xl text-white text-[14px] focus:outline-none focus:border-accent transition"
                 required
               >
                 <option value="">Select a class</option>
@@ -305,7 +306,7 @@ export default function EditCharacterPage() {
                 <select
                   value={specId}
                   onChange={(e) => setSpecId(e.target.value)}
-                  className="w-full px-4 py-3 bg-[#0d0e11] border border-[rgba(255,255,255,0.1)] rounded-xl text-white text-[14px] focus:outline-none focus:border-[#ff8000] transition"
+                  className="w-full px-4 py-3 bg-background-subtle border border-[rgba(255,255,255,0.1)] rounded-xl text-white text-[14px] focus:outline-none focus:border-accent transition"
                 >
                   <option value="">Select a specialization</option>
                   {getAvailableSpecs().map((spec) => (
@@ -328,8 +329,8 @@ export default function EditCharacterPage() {
                   onClick={() => setIsMain(true)}
                   className={`flex-1 px-6 py-3 rounded-xl text-[14px] font-medium transition ${
                     isMain
-                      ? 'bg-[#ff8000] text-white'
-                      : 'bg-[#0d0e11] border border-[rgba(255,255,255,0.1)] text-[#a1a1a1] hover:border-[rgba(255,255,255,0.2)]'
+                      ? 'bg-accent text-white'
+                      : 'bg-background-subtle border border-[rgba(255,255,255,0.1)] text-muted-foreground hover:border-[rgba(255,255,255,0.2)]'
                   }`}
                 >
                   Main
@@ -339,21 +340,21 @@ export default function EditCharacterPage() {
                   onClick={() => setIsMain(false)}
                   className={`flex-1 px-6 py-3 rounded-xl text-[14px] font-medium transition ${
                     !isMain
-                      ? 'bg-[#ff8000] text-white'
-                      : 'bg-[#0d0e11] border border-[rgba(255,255,255,0.1)] text-[#a1a1a1] hover:border-[rgba(255,255,255,0.2)]'
+                      ? 'bg-accent text-white'
+                      : 'bg-background-subtle border border-[rgba(255,255,255,0.1)] text-muted-foreground hover:border-[rgba(255,255,255,0.2)]'
                   }`}
                 >
                   Alt
                 </button>
               </div>
-              <p className="text-[12px] text-[#a1a1a1] mt-2">
+              <p className="text-[12px] text-muted-foreground mt-2">
                 You can only have one main character. Setting this as main will change your current main to an alt.
               </p>
             </div>
 
             {/* Guild Info */}
             {guildCount > 0 && (
-              <div className="text-[13px] text-[#a1a1a1] bg-[#0d0e11] border border-[rgba(255,255,255,0.1)] rounded-lg p-4">
+              <div className="text-[13px] text-muted-foreground bg-background-subtle border border-[rgba(255,255,255,0.1)] rounded-lg p-4">
                 <p className="font-medium text-white mb-1">Guild Memberships</p>
                 <p>This character is a member of {guildCount} guild{guildCount !== 1 ? 's' : ''}</p>
               </div>
@@ -374,7 +375,7 @@ export default function EditCharacterPage() {
               <button
                 type="button"
                 onClick={() => router.push('/characters/manage')}
-                className="px-8 py-3 bg-[#151515] hover:bg-[#1a1a1a] border border-[rgba(255,255,255,0.1)] rounded-[52px] text-white font-medium text-[16px] transition"
+                className="px-8 py-3 bg-background-elevated hover:bg-muted border border-[rgba(255,255,255,0.1)] rounded-[52px] text-white font-medium text-[16px] transition"
               >
                 Cancel
               </button>
@@ -383,9 +384,9 @@ export default function EditCharacterPage() {
         </form>
 
         {/* Delete Character Section */}
-        <div className="bg-[#141519] border border-red-900/50 rounded-xl p-6">
+        <div className="bg-background-elevated border border-red-900/50 rounded-xl p-6">
           <h2 className="text-[18px] font-semibold text-red-400 mb-2">Danger Zone</h2>
-          <p className="text-[14px] text-[#a1a1a1] mb-4">
+          <p className="text-[14px] text-muted-foreground mb-4">
             Deleting a character is permanent and cannot be undone. This will delete all loot submissions and remove the character from all guilds.
           </p>
 
@@ -394,7 +395,7 @@ export default function EditCharacterPage() {
               onClick={() => setShowDeleteConfirm(true)}
               className="px-6 py-3 bg-red-900/20 hover:bg-red-900/30 border border-red-600 rounded-[52px] text-red-400 font-medium text-[14px] transition flex items-center gap-2"
             >
-              <Delete01Icon className="w-4 h-4" />
+              <HugeiconsIcon icon={Delete01Icon} size={16} />
               Delete Character
             </button>
           ) : (
@@ -408,7 +409,7 @@ export default function EditCharacterPage() {
                   value={deleteConfirmName}
                   onChange={(e) => setDeleteConfirmName(e.target.value)}
                   placeholder="Type character name to confirm"
-                  className="w-full px-4 py-3 bg-[#0d0e11] border border-red-600/50 rounded-xl text-white text-[14px] focus:outline-none focus:border-red-500 transition"
+                  className="w-full px-4 py-3 bg-background-subtle border border-red-600/50 rounded-xl text-white text-[14px] focus:outline-none focus:border-red-500 transition"
                   autoFocus
                 />
               </div>
@@ -418,13 +419,13 @@ export default function EditCharacterPage() {
                   disabled={deleting || deleteConfirmName.toLowerCase() !== character?.name.toLowerCase()}
                   className="px-6 py-3 bg-red-600 hover:bg-red-700 rounded-[52px] text-white font-medium text-[14px] transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                 >
-                  <Delete01Icon className="w-4 h-4" />
+                  <HugeiconsIcon icon={Delete01Icon} size={16} />
                   {deleting ? 'Deleting...' : 'Delete Forever'}
                 </button>
                 <button
                   onClick={handleCancelDelete}
                   disabled={deleting}
-                  className="px-6 py-3 bg-[#151515] hover:bg-[#1a1a1a] border border-[rgba(255,255,255,0.1)] rounded-[52px] text-white font-medium text-[14px] transition"
+                  className="px-6 py-3 bg-background-elevated hover:bg-muted border border-[rgba(255,255,255,0.1)] rounded-[52px] text-white font-medium text-[14px] transition"
                 >
                   Cancel
                 </button>

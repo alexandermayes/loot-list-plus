@@ -9,7 +9,8 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { PageHeader } from '@/components/ui/page-header'
 import { ProfileStats } from '@/components/profile/profile-stats'
-import { UserIcon, Mail01Icon, Shield01Icon, Calendar01Icon, Award01Icon, Settings01Icon, CheckmarkCircle01Icon, CancelCircleIcon, Logout01Icon } from 'hugeicons-react'
+import { HugeiconsIcon } from '@hugeicons/react'
+import { UserIcon, Mail01Icon, Shield01Icon, Calendar01Icon, Award01Icon, Settings01Icon, CheckmarkCircle01Icon, CancelCircleIcon, Logout01Icon } from '@hugeicons/core-free-icons'
 
 // Get WoWhead class icon URL
 function getClassIconUrl(className: string | undefined): string {
@@ -281,12 +282,12 @@ export default function ProfilePage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-[42px] font-bold text-white leading-tight">Profile</h1>
-            <p className="text-[#a1a1a1] mt-1 text-base">Manage your account and Discord integration</p>
+            <p className="text-muted-foreground mt-1 text-base">Manage your account and Discord integration</p>
           </div>
         </div>
 
         {/* Profile Overview */}
-        <div className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl p-6">
+        <div className="bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-xl p-6">
           <div className="flex items-start gap-6">
             <img
               src={avatarUrl}
@@ -298,7 +299,7 @@ export default function ProfilePage() {
                 <h2 className="text-[24px] font-bold text-white">
                   {user?.user_metadata?.custom_claims?.global_name || user?.user_metadata?.full_name || member?.character_name || 'User'}
                 </h2>
-                <span className="px-3 py-1 bg-[#151515] border border-[rgba(255,255,255,0.1)] rounded-full text-[#a1a1a1] text-[13px]">
+                <span className="px-3 py-1 bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-full text-muted-foreground text-[13px]">
                   {member?.role || 'Member'}
                 </span>
               </div>
@@ -307,14 +308,14 @@ export default function ProfilePage() {
                   {member.class.name}
                 </p>
               )}
-              <div className="flex items-center gap-4 text-[13px] text-[#a1a1a1]">
+              <div className="flex items-center gap-4 text-[13px] text-muted-foreground">
                 <div className="flex items-center gap-1">
-                  <Shield01Icon className="w-4 h-4" />
+                  <HugeiconsIcon icon={Shield01Icon} size={16} />
                   <span>{member?.guild?.name || 'No guild'}</span>
                 </div>
                 {member?.guild?.realm && (
                   <div className="flex items-center gap-1">
-                    <Award01Icon className="w-4 h-4" />
+                    <HugeiconsIcon icon={Award01Icon} size={16} />
                     <span>{member.guild.realm}</span>
                   </div>
                 )}
@@ -322,9 +323,9 @@ export default function ProfilePage() {
             </div>
             <button
               onClick={handleLogout}
-              className="px-6 py-3 bg-[#151515] hover:bg-[#1a1a1a] border border-[rgba(255,255,255,0.1)] rounded-[52px] text-white font-medium text-base transition whitespace-nowrap flex items-center gap-2"
+              className="px-6 py-3 bg-background-elevated hover:bg-muted border border-[rgba(255,255,255,0.1)] rounded-[52px] text-white font-medium text-base transition whitespace-nowrap flex items-center gap-2"
             >
-              <Logout01Icon className="w-4 h-4" />
+              <HugeiconsIcon icon={Logout01Icon} size={16} />
               Log Out
             </button>
           </div>
@@ -332,7 +333,7 @@ export default function ProfilePage() {
 
         {/* Bio Section */}
         {preferences?.bio && (
-          <div className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl p-6">
+          <div className="bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-xl p-6">
             <p className="text-white">{preferences.bio}</p>
           </div>
         )}
@@ -351,14 +352,14 @@ export default function ProfilePage() {
         )}
 
         {/* Discord Information */}
-        <div className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl overflow-hidden">
+        <div className="bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-xl overflow-hidden">
           <div className="px-6 py-4 border-b border-[rgba(255,255,255,0.1)]">
             <div className="flex items-center gap-2">
-              <UserIcon className="w-5 h-5 text-white" />
+              <HugeiconsIcon icon={UserIcon} size={20} className="text-white" />
               <h3 className="text-[18px] font-semibold text-white">Discord Information</h3>
               {preferences?.discord_guild_member && (
                 <span className="ml-auto px-3 py-1 bg-green-900/20 border border-green-600 rounded-full text-green-200 text-[13px] flex items-center gap-1">
-                  <CheckmarkCircle01Icon className="w-3 h-3" />
+                  <HugeiconsIcon icon={CheckmarkCircle01Icon} size={12} />
                   Guild Verified
                 </span>
               )}
@@ -367,14 +368,14 @@ export default function ProfilePage() {
           <div className="p-6">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <p className="text-[13px] text-[#a1a1a1] mb-1">Discord Display Name</p>
+                <p className="text-[13px] text-muted-foreground mb-1">Discord Display Name</p>
                 <p className="text-white font-medium">
                   {user?.user_metadata?.custom_claims?.global_name || 'N/A'}
                 </p>
               </div>
               {(preferences?.show_discord_username !== false) && (
                 <div>
-                  <p className="text-[13px] text-[#a1a1a1] mb-1">Discord Username</p>
+                  <p className="text-[13px] text-muted-foreground mb-1">Discord Username</p>
                   <p className="text-white font-medium">
                     {user?.user_metadata?.full_name || user?.user_metadata?.name || 'N/A'}
                   </p>
@@ -382,17 +383,17 @@ export default function ProfilePage() {
               )}
               {(preferences?.show_email !== false) && user?.email && (
                 <div>
-                  <p className="text-[13px] text-[#a1a1a1] mb-1">Email</p>
+                  <p className="text-[13px] text-muted-foreground mb-1">Email</p>
                   <p className="text-white font-medium flex items-center gap-2">
-                    <Mail01Icon className="w-4 h-4" />
+                    <HugeiconsIcon icon={Mail01Icon} size={16} />
                     {user.email}
                   </p>
                 </div>
               )}
               <div>
-                <p className="text-[13px] text-[#a1a1a1] mb-1">Member Since</p>
+                <p className="text-[13px] text-muted-foreground mb-1">Member Since</p>
                 <p className="text-white font-medium flex items-center gap-2">
-                  <Calendar01Icon className="w-4 h-4" />
+                  <HugeiconsIcon icon={Calendar01Icon} size={16} />
                   {new Date(user?.created_at).toLocaleDateString()}
                 </p>
               </div>
@@ -402,7 +403,7 @@ export default function ProfilePage() {
 
         {/* Guilds Section */}
         {allGuilds.length > 0 && (
-          <div className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl overflow-hidden">
+          <div className="bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-xl overflow-hidden">
             <div className="px-6 py-4 border-b border-[rgba(255,255,255,0.1)]">
               <h3 className="text-[18px] font-semibold text-white">Your Guilds</h3>
             </div>
@@ -413,19 +414,19 @@ export default function ProfilePage() {
                   return (
                     <div
                       key={membership.guild.id}
-                      className="flex items-center justify-between p-4 bg-[#0d0e11] border border-[rgba(255,255,255,0.1)] rounded-lg"
+                      className="flex items-center justify-between p-4 bg-background-subtle border border-[rgba(255,255,255,0.1)] rounded-lg"
                     >
                       <div className="flex-1">
                         <div className="flex items-center gap-2">
                           <p className="font-medium text-white">{membership.guild.name}</p>
                           {isCreator && (
-                            <span className="px-2 py-0.5 bg-[rgba(255,128,0,0.2)] border border-[rgba(255,128,0,0.3)] rounded text-[#ff8000] text-xs">Creator</span>
+                            <span className="px-2 py-0.5 bg-[rgba(255,128,0,0.2)] border border-[rgba(255,128,0,0.3)] rounded text-accent text-xs">Creator</span>
                           )}
                         </div>
-                        <p className="text-[13px] text-[#a1a1a1]">
+                        <p className="text-[13px] text-muted-foreground">
                           {membership.guild.realm && `${membership.guild.realm} • ${membership.guild.faction}`}
                         </p>
-                        <span className="inline-block mt-1 px-2 py-0.5 bg-[#151515] border border-[rgba(255,255,255,0.1)] rounded text-[#a1a1a1] text-xs">
+                        <span className="inline-block mt-1 px-2 py-0.5 bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded text-muted-foreground text-xs">
                           {membership.role}
                         </span>
                       </div>
@@ -434,8 +435,8 @@ export default function ProfilePage() {
                           <span className="block px-3 py-1 border border-[rgba(255,255,255,0.1)] rounded-full text-white text-[13px] mb-1">
                             Guild Creator
                           </span>
-                          <p className="text-xs text-[#a1a1a1]">
-                            Go to <button onClick={() => router.push('/admin/settings')} className="text-[#ff8000] underline hover:no-underline">Guild Settings</button> to manage
+                          <p className="text-xs text-muted-foreground">
+                            Go to <button onClick={() => router.push('/admin/settings')} className="text-accent underline hover:no-underline">Guild Settings</button> to manage
                           </p>
                         </div>
                       ) : (
@@ -444,7 +445,7 @@ export default function ProfilePage() {
                           disabled={leaving}
                           className="px-4 py-2 bg-red-900/20 hover:bg-red-900/30 border border-red-600 rounded-[52px] text-red-200 text-[13px] font-medium transition flex items-center gap-2 disabled:opacity-50"
                         >
-                          <Logout01Icon className="w-4 h-4" />
+                          <HugeiconsIcon icon={Logout01Icon} size={16} />
                           Leave Guild
                         </button>
                       )}
@@ -457,12 +458,12 @@ export default function ProfilePage() {
         )}
 
         {/* Characters Section */}
-        <div className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl overflow-hidden">
+        <div className="bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-xl overflow-hidden">
           <div className="px-6 py-4 border-b border-[rgba(255,255,255,0.1)] flex items-center justify-between">
             <h3 className="text-[18px] font-semibold text-white">My Characters</h3>
             <button
               onClick={() => router.push('/characters/manage')}
-              className="px-4 py-2 bg-[rgba(255,128,0,0.2)] hover:bg-[rgba(255,128,0,0.3)] border border-[rgba(255,128,0,0.3)] rounded-[52px] text-[#ff8000] text-[13px] font-medium transition"
+              className="px-4 py-2 bg-[rgba(255,128,0,0.2)] hover:bg-[rgba(255,128,0,0.3)] border border-[rgba(255,128,0,0.3)] rounded-[52px] text-accent text-[13px] font-medium transition"
             >
               Manage Characters
             </button>
@@ -473,7 +474,7 @@ export default function ProfilePage() {
                 {characters.map((character) => (
                   <div
                     key={character.id}
-                    className="flex items-center justify-between p-4 bg-[#0d0e11] border border-[rgba(255,255,255,0.1)] rounded-lg"
+                    className="flex items-center justify-between p-4 bg-background-subtle border border-[rgba(255,255,255,0.1)] rounded-lg"
                   >
                     <div className="flex items-center gap-3">
                       {/* Character Class Icon */}
@@ -492,7 +493,7 @@ export default function ProfilePage() {
                         <div className="flex items-center gap-2">
                           <p className="font-medium text-white">{character.name}</p>
                           {character.is_main && (
-                            <span className="px-2 py-0.5 bg-[rgba(255,128,0,0.2)] border border-[rgba(255,128,0,0.3)] rounded text-[#ff8000] text-xs">Main</span>
+                            <span className="px-2 py-0.5 bg-[rgba(255,128,0,0.2)] border border-[rgba(255,128,0,0.3)] rounded text-accent text-xs">Main</span>
                           )}
                         </div>
                         {(character.spec || character.class) && (
@@ -509,7 +510,7 @@ export default function ProfilePage() {
               </div>
             ) : (
               <div className="text-center py-8">
-                <p className="text-[#a1a1a1] mb-4">You haven't created any characters yet.</p>
+                <p className="text-muted-foreground mb-4">You haven't created any characters yet.</p>
                 <button
                   onClick={() => router.push('/characters/create')}
                   className="px-6 py-3 bg-white hover:bg-gray-100 rounded-[52px] text-black font-medium text-base transition"
@@ -528,11 +529,11 @@ export default function ProfilePage() {
             onClick={() => !leaving && setLeaveGuildId(null)}
           >
             <div
-              className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl max-w-md w-full p-6"
+              className="bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-xl max-w-md w-full p-6"
               onClick={(e) => e.stopPropagation()}
             >
               <h3 className="text-[20px] font-bold text-white mb-2">Leave guild?</h3>
-              <p className="text-[#a1a1a1] mb-6">
+              <p className="text-muted-foreground mb-6">
                 Are you sure you want to leave this guild? This action cannot be undone.
                 {allGuilds.length === 1 && (
                   <span className="block mt-2 text-red-400 font-medium">
@@ -544,7 +545,7 @@ export default function ProfilePage() {
                 <button
                   onClick={() => setLeaveGuildId(null)}
                   disabled={leaving}
-                  className="px-5 py-2.5 bg-[#151515] hover:bg-[#1a1a1a] border border-[rgba(255,255,255,0.1)] rounded-[52px] text-white text-[13px] font-medium transition disabled:opacity-50"
+                  className="px-5 py-2.5 bg-background-elevated hover:bg-muted border border-[rgba(255,255,255,0.1)] rounded-[52px] text-white text-[13px] font-medium transition disabled:opacity-50"
                 >
                   Cancel
                 </button>
@@ -567,9 +568,9 @@ export default function ProfilePage() {
         {(user?.user_metadata?.custom_claims?.global_name === '_zev' ||
           user?.user_metadata?.name === '_zev' ||
           user?.user_metadata?.full_name === '_zev') && (
-          <div className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl overflow-hidden">
+          <div className="bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-xl overflow-hidden">
             <div
-              className="px-6 py-4 border-b border-[rgba(255,255,255,0.1)] cursor-pointer hover:bg-[#1a1a1a] transition"
+              className="px-6 py-4 border-b border-[rgba(255,255,255,0.1)] cursor-pointer hover:bg-muted transition"
               onClick={() => setDebugExpanded(!debugExpanded)}
             >
               <div className="flex items-center justify-between">
@@ -590,13 +591,13 @@ export default function ProfilePage() {
                 <div className="space-y-4">
                   <div>
                     <h4 className="font-semibold text-[13px] text-white mb-2">user.user_metadata:</h4>
-                    <pre className="bg-[#0d0e11] p-4 rounded-lg overflow-x-auto text-xs text-[#a1a1a1]">
+                    <pre className="bg-background-subtle p-4 rounded-lg overflow-x-auto text-xs text-muted-foreground">
                       {JSON.stringify(user?.user_metadata, null, 2)}
                     </pre>
                   </div>
                   <div>
                     <h4 className="font-semibold text-[13px] text-white mb-2">Guild Member Data:</h4>
-                    <pre className="bg-[#0d0e11] p-4 rounded-lg overflow-x-auto text-xs text-[#a1a1a1]">
+                    <pre className="bg-background-subtle p-4 rounded-lg overflow-x-auto text-xs text-muted-foreground">
                       {JSON.stringify(member, null, 2)}
                     </pre>
                   </div>

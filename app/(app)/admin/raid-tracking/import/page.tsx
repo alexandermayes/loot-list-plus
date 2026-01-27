@@ -260,7 +260,7 @@ export default function ImportPage() {
         {/* Header */}
         <div>
           <h1 className="text-[42px] font-bold text-white leading-tight">Import Raid Data</h1>
-          <p className="text-[#a1a1a1] mt-1 text-[14px]">Import raid tracking data from CSV files</p>
+          <p className="text-muted-foreground mt-1 text-[14px]">Import raid tracking data from CSV files</p>
         </div>
 
         {message && (
@@ -273,7 +273,7 @@ export default function ImportPage() {
           </div>
         )}
 
-        <div className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl p-6">
+        <div className="bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-xl p-6">
           <h2 className="text-[24px] font-semibold text-white mb-4">Import Data from CSV</h2>
 
           <div className="space-y-4">
@@ -282,11 +282,11 @@ export default function ImportPage() {
               <select
                 value={importType}
                 onChange={(e) => setImportType(e.target.value as any)}
-                className="w-full px-5 py-3 bg-[#151515] border border-[#383838] rounded-[52px] text-white text-[13px] focus:outline-none focus:border-[#ff8000] cursor-pointer select-custom"
+                className="w-full px-5 py-3 bg-background-elevated border border-border-strong rounded-[52px] text-white text-[13px] focus:outline-none focus:border-accent cursor-pointer select-custom"
               >
-                <option value="attendance" className="bg-[#151515] text-white">Attendance Records</option>
-                <option value="loot_items" className="bg-[#151515] text-white">Loot Items</option>
-                <option value="members" className="bg-[#151515] text-white">Guild Members (Not Available)</option>
+                <option value="attendance" className="bg-background-elevated text-white">Attendance Records</option>
+                <option value="loot_items" className="bg-background-elevated text-white">Loot Items</option>
+                <option value="members" className="bg-background-elevated text-white">Guild Members (Not Available)</option>
               </select>
             </div>
 
@@ -296,27 +296,27 @@ export default function ImportPage() {
                 type="file"
                 accept=".csv"
                 onChange={handleFileChange}
-                className="w-full px-5 py-3 bg-[#151515] border border-[#383838] rounded-[52px] text-white text-[13px] focus:outline-none focus:border-[#ff8000]"
+                className="w-full px-5 py-3 bg-background-elevated border border-border-strong rounded-[52px] text-white text-[13px] focus:outline-none focus:border-accent"
               />
             </div>
 
-            <div className="bg-[#151515] rounded-xl p-4">
+            <div className="bg-background-elevated rounded-xl p-4">
               <h3 className="text-white font-medium mb-2 text-[14px]">Expected CSV Format:</h3>
               {importType === 'attendance' && (
-                <div className="text-[#a1a1a1] text-[13px] space-y-1">
+                <div className="text-muted-foreground text-[13px] space-y-1">
                   <p><strong className="text-white">Headers:</strong> date, character_name, signed_up, attended, no_call_no_show</p>
                   <p><strong className="text-white">Example:</strong></p>
-                  <pre className="bg-[#0d0e11] p-2 rounded text-xs mt-2">
+                  <pre className="bg-background-subtle p-2 rounded text-xs mt-2">
 {`date,character_name,signed_up,attended,no_call_no_show
 2025-01-14,PlayerName,true,true,false`}
                   </pre>
                 </div>
               )}
               {importType === 'loot_items' && (
-                <div className="text-[#a1a1a1] text-[13px] space-y-1">
+                <div className="text-muted-foreground text-[13px] space-y-1">
                   <p><strong className="text-white">Headers:</strong> name, boss_name, item_slot, wowhead_id</p>
                   <p><strong className="text-white">Example:</strong></p>
-                  <pre className="bg-[#0d0e11] p-2 rounded text-xs mt-2">
+                  <pre className="bg-background-subtle p-2 rounded text-xs mt-2">
 {`name,boss_name,item_slot,wowhead_id
 Thunderfury,Prince,Weapon,19019`}
                   </pre>

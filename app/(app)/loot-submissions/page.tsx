@@ -423,22 +423,22 @@ export default function MasterLootPage() {
       {/* Header */}
       <div className="p-8 pb-4">
         <h1 className="text-[42px] font-bold text-white leading-tight">Loot Submissions</h1>
-        <p className="text-[#a1a1a1] mt-1 text-base">Review and manage character loot submissions</p>
+        <p className="text-muted-foreground mt-1 text-base">Review and manage character loot submissions</p>
       </div>
 
       {/* Raid Tier Selector - Sticky */}
       {raidTiers.length > 0 && (
-        <div className="sticky top-0 z-20 px-8 py-3 bg-[#09090c]">
+        <div className="sticky top-0 z-20 px-8 py-3 bg-background">
           <div className="flex items-center gap-3 overflow-x-auto">
-            <span className="text-[#a1a1a1] text-sm font-medium whitespace-nowrap">Raid Tier:</span>
+            <span className="text-muted-foreground text-sm font-medium whitespace-nowrap">Raid Tier:</span>
             <div className="flex gap-2">
               {/* All Tiers Button */}
               <button
                 onClick={() => setActiveTier('all')}
                 className={`px-5 py-2.5 rounded-[40px] whitespace-nowrap text-[13px] font-medium transition-all ${
                   activeTier === 'all'
-                    ? 'bg-[rgba(255,128,0,0.2)] border-[0.5px] border-[rgba(255,128,0,0.2)] text-[#ff8000]'
-                    : 'bg-[#151515] border border-[rgba(255,255,255,0.1)] text-white hover:bg-[#1a1a1a]'
+                    ? 'bg-[rgba(255,128,0,0.2)] border-[0.5px] border-[rgba(255,128,0,0.2)] text-accent'
+                    : 'bg-background-elevated border border-[rgba(255,255,255,0.1)] text-white hover:bg-muted'
                 }`}
               >
                 All
@@ -449,8 +449,8 @@ export default function MasterLootPage() {
                   onClick={() => setActiveTier(tier)}
                   className={`px-5 py-2.5 rounded-[40px] whitespace-nowrap text-[13px] font-medium transition-all ${
                     activeTier !== 'all' && activeTier?.id === tier.id
-                      ? 'bg-[rgba(255,128,0,0.2)] border-[0.5px] border-[rgba(255,128,0,0.2)] text-[#ff8000]'
-                      : 'bg-[#151515] border border-[rgba(255,255,255,0.1)] text-white hover:bg-[#1a1a1a]'
+                      ? 'bg-[rgba(255,128,0,0.2)] border-[0.5px] border-[rgba(255,128,0,0.2)] text-accent'
+                      : 'bg-background-elevated border border-[rgba(255,255,255,0.1)] text-white hover:bg-muted'
                   }`}
                 >
                   <div className="flex items-center gap-2">
@@ -481,7 +481,7 @@ export default function MasterLootPage() {
           {/* Filters and Delete Actions */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <span className="text-[#a1a1a1] text-sm font-medium whitespace-nowrap">Status:</span>
+              <span className="text-muted-foreground text-sm font-medium whitespace-nowrap">Status:</span>
               <div className="flex gap-2">
               {(['all', 'pending', 'approved', 'rejected'] as const).map((status) => (
                 <button
@@ -489,8 +489,8 @@ export default function MasterLootPage() {
                   onClick={() => setFilter(status)}
                   className={`px-5 py-2.5 rounded-[40px] text-[13px] font-medium transition-all ${
                     filter === status
-                      ? 'bg-[rgba(255,128,0,0.2)] border-[0.5px] border-[rgba(255,128,0,0.2)] text-[#ff8000]'
-                      : 'bg-[#151515] text-white hover:bg-[#1a1a1a] border border-[rgba(255,255,255,0.1)]'
+                      ? 'bg-[rgba(255,128,0,0.2)] border-[0.5px] border-[rgba(255,128,0,0.2)] text-accent'
+                      : 'bg-background-elevated text-white hover:bg-muted border border-[rgba(255,255,255,0.1)]'
                   }`}
                 >
                   {status.charAt(0).toUpperCase() + status.slice(1)}
@@ -523,21 +523,21 @@ export default function MasterLootPage() {
           {/* Submissions List */}
           <div className="space-y-3">
             {contentLoading ? (
-              <div className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl p-12">
+              <div className="bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-xl p-12">
                 <div className="flex flex-col items-center justify-center gap-4">
                   <LoadingSpinner />
-                  <p className="text-[#a1a1a1] text-sm">Loading submissions...</p>
+                  <p className="text-muted-foreground text-sm">Loading submissions...</p>
                 </div>
               </div>
             ) : filteredSubmissions.length === 0 ? (
-              <div className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl p-8 text-center">
-                <p className="text-[#a1a1a1]">No submissions found</p>
+              <div className="bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-xl p-8 text-center">
+                <p className="text-muted-foreground">No submissions found</p>
               </div>
             ) : (
               filteredSubmissions.map((submission) => (
                 <div
                   key={submission.id}
-                  className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl p-5 flex items-center justify-between hover:bg-[#18191d] transition-all"
+                  className="bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-xl p-5 flex items-center justify-between hover:bg-[#18191d] transition-all"
                 >
                   <div className="flex items-center gap-3">
                     <h3 className="text-[16px] font-semibold text-white">
@@ -558,14 +558,14 @@ export default function MasterLootPage() {
                     }`}>
                       {submission.status}
                     </span>
-                    <span className="text-[#a1a1a1] text-[13px]">
+                    <span className="text-muted-foreground text-[13px]">
                       {submission.item_count} items • Submitted {submission.submitted_at ? new Date(submission.submitted_at).toLocaleDateString('en-US', { month: 'numeric', day: 'numeric', year: 'numeric' }) : 'N/A'}
                     </span>
                   </div>
                   <div className="flex gap-2">
                     <button
                       onClick={() => viewSubmissionDetails(submission.id)}
-                      className="px-5 py-2.5 bg-[#151515] hover:bg-[#1a1a1a] border border-[rgba(255,255,255,0.1)] rounded-[40px] text-white text-[13px] font-medium transition-all"
+                      className="px-5 py-2.5 bg-background-elevated hover:bg-muted border border-[rgba(255,255,255,0.1)] rounded-[40px] text-white text-[13px] font-medium transition-all"
                     >
                       View Details
                     </button>
@@ -595,15 +595,15 @@ export default function MasterLootPage() {
           onClick={() => setViewingSubmission(null)}
         >
           <div
-            className="bg-[#0d0e11] border border-[#383838] rounded-xl max-w-2xl w-full max-h-[85vh] overflow-hidden flex flex-col"
+            className="bg-background-subtle border border-border-strong rounded-xl max-w-2xl w-full max-h-[85vh] overflow-hidden flex flex-col"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
-            <div className="p-6 border-b border-[#383838] flex items-center justify-between bg-[#141519]">
+            <div className="p-6 border-b border-border-strong flex items-center justify-between bg-background-elevated">
               <h3 className="text-[24px] font-bold text-white">Submission details</h3>
               <button
                 onClick={() => setViewingSubmission(null)}
-                className="text-[#a1a1a1] hover:text-white transition"
+                className="text-muted-foreground hover:text-white transition"
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -614,14 +614,14 @@ export default function MasterLootPage() {
             {/* Content */}
             <div className="overflow-y-auto flex-1">
               {submissionDetails.length === 0 ? (
-                <p className="text-[#a1a1a1] text-center py-8">No items in this submission</p>
+                <p className="text-muted-foreground text-center py-8">No items in this submission</p>
               ) : (
                 <table className="w-full">
                   <thead>
-                    <tr className="bg-[#0d0e11] border-b border-[rgba(255,255,255,0.05)]">
-                      <th className="px-3 py-2 text-left text-[11px] font-medium text-[#666] w-12">Rank</th>
-                      <th className="px-3 py-2 text-left text-[11px] font-medium text-[#666]">Item #1</th>
-                      <th className="px-3 py-2 text-left text-[11px] font-medium text-[#666]">Item #2</th>
+                    <tr className="bg-background-subtle border-b border-[rgba(255,255,255,0.05)]">
+                      <th className="px-3 py-2 text-left text-[11px] font-medium text-foreground-muted w-12">Rank</th>
+                      <th className="px-3 py-2 text-left text-[11px] font-medium text-foreground-muted">Item #1</th>
+                      <th className="px-3 py-2 text-left text-[11px] font-medium text-foreground-muted">Item #2</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -672,7 +672,7 @@ export default function MasterLootPage() {
                                   />
                                   {getClassificationBadge(itemsArr[0].loot_item?.classification)}
                                 </div>
-                              ) : <span className="text-[#666] text-[12px]">-</span>}
+                              ) : <span className="text-foreground-muted text-[12px]">-</span>}
                             </td>
                             <td className="px-3 py-2">
                               {itemsArr[1] ? (
@@ -684,7 +684,7 @@ export default function MasterLootPage() {
                                   />
                                   {getClassificationBadge(itemsArr[1].loot_item?.classification)}
                                 </div>
-                              ) : <span className="text-[#666] text-[12px]">-</span>}
+                              ) : <span className="text-foreground-muted text-[12px]">-</span>}
                             </td>
                           </tr>
                         )
@@ -695,7 +695,7 @@ export default function MasterLootPage() {
             </div>
 
             {/* Footer */}
-            <div className="p-6 border-t border-[#383838] bg-[#141519] flex justify-between items-center">
+            <div className="p-6 border-t border-border-strong bg-background-elevated flex justify-between items-center">
               <div className="flex gap-3">
                 {submissions.find(s => s.id === viewingSubmission)?.status === 'pending' && (
                   <>
@@ -724,7 +724,7 @@ export default function MasterLootPage() {
               </div>
               <button
                 onClick={() => setViewingSubmission(null)}
-                className="px-6 py-2.5 bg-[#151515] hover:bg-[#1a1a1a] border border-[#383838] rounded-[52px] text-white text-[13px] font-medium transition"
+                className="px-6 py-2.5 bg-background-elevated hover:bg-muted border border-border-strong rounded-[52px] text-white text-[13px] font-medium transition"
               >
                 Close
               </button>
@@ -743,7 +743,7 @@ export default function MasterLootPage() {
           }}
         >
           <div
-            className="bg-[#0d0e11] border border-red-900/50 rounded-xl max-w-md w-full p-6"
+            className="bg-background-subtle border border-red-900/50 rounded-xl max-w-md w-full p-6"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-start gap-4 mb-4">
@@ -758,7 +758,7 @@ export default function MasterLootPage() {
                    deleteTarget?.type === 'pending' ? 'Delete Pending Lists?' :
                    'Delete All Lists?'}
                 </h3>
-                <p className="text-[13px] text-[#a1a1a1] mb-4">
+                <p className="text-[13px] text-muted-foreground mb-4">
                   {deleteTarget?.type === 'single'
                     ? 'This will permanently delete this loot submission. The user will need to recreate their list.'
                     : deleteTarget?.type === 'pending'
@@ -779,7 +779,7 @@ export default function MasterLootPage() {
                   setDeleteTarget(null)
                 }}
                 disabled={deleting}
-                className="px-6 py-2.5 bg-[#151515] hover:bg-[#1a1a1a] border border-[rgba(255,255,255,0.1)] rounded-[40px] text-white text-[13px] font-medium transition-all disabled:opacity-50"
+                className="px-6 py-2.5 bg-background-elevated hover:bg-muted border border-[rgba(255,255,255,0.1)] rounded-[40px] text-white text-[13px] font-medium transition-all disabled:opacity-50"
               >
                 Cancel
               </button>

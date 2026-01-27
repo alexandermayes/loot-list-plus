@@ -235,22 +235,22 @@ export function PrioListItemModal({
       onClick={onClose}
     >
       <div
-        className="bg-[#0d0e11] border border-[#383838] rounded-xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col"
+        className="bg-background-subtle border border-border-strong rounded-xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="p-6 border-b border-[#383838] flex items-start justify-between bg-[#141519]">
+        <div className="p-6 border-b border-border-strong flex items-start justify-between bg-background-elevated">
           <div>
             <h3 className="text-[24px] font-bold text-white mb-2">Set item priority</h3>
             <div className="flex items-center gap-2">
               <ItemLink name={item.name} wowheadId={item.wowhead_id} />
-              <span className="text-[#a1a1a1] text-[13px]">({item.item_slot})</span>
+              <span className="text-muted-foreground text-[13px]">({item.item_slot})</span>
             </div>
-            <p className="text-[#666] text-[13px] mt-1">{item.boss_name}</p>
+            <p className="text-foreground-muted text-[13px] mt-1">{item.boss_name}</p>
           </div>
           <button
             onClick={onClose}
-            className="text-[#a1a1a1] hover:text-white transition"
+            className="text-muted-foreground hover:text-white transition"
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -266,7 +266,7 @@ export function PrioListItemModal({
               <label className="block text-[13px] font-medium text-white mb-1">
                 Role Priority
               </label>
-              <p className="text-[#606060] text-[12px]">
+              <p className="text-foreground-muted text-[12px]">
                 Select roles and set point values for this item
               </p>
             </div>
@@ -285,7 +285,7 @@ export function PrioListItemModal({
                 {sortedRoles.map(([role, points]) => (
                   <div
                     key={role}
-                    className="flex items-center gap-3 p-3 bg-[#151515] border border-[#383838] rounded-xl"
+                    className="flex items-center gap-3 p-3 bg-background-elevated border border-border-strong rounded-xl"
                   >
                     <span className="flex-1 text-white font-medium text-[13px]">
                       {getRoleDisplayName(role as Role)}
@@ -296,9 +296,9 @@ export function PrioListItemModal({
                       onChange={(e) => handleUpdateRolePriority(role, e.target.value === '' ? 0 : Number(e.target.value))}
                       placeholder="0"
                       step="any"
-                      className="w-20 px-3 py-1.5 bg-[#0d0e11] border border-[#383838] rounded-lg text-white text-[13px] text-center focus:outline-none focus:border-[#ff8000] transition"
+                      className="w-20 px-3 py-1.5 bg-background-subtle border border-border-strong rounded-lg text-white text-[13px] text-center focus:outline-none focus:border-accent transition"
                     />
-                    <span className="text-[#606060] text-[12px]">pts</span>
+                    <span className="text-foreground-muted text-[12px]">pts</span>
                   </div>
                 ))}
               </div>
@@ -311,7 +311,7 @@ export function PrioListItemModal({
               <label className="block text-[13px] font-medium text-white mb-1">
                 Class/Spec Priority
               </label>
-              <p className="text-[#606060] text-[12px]">
+              <p className="text-foreground-muted text-[12px]">
                 Select specs and set point values for this item
               </p>
             </div>
@@ -332,7 +332,7 @@ export function PrioListItemModal({
                 {sortedSpecs.map(([specId, points]) => (
                   <div
                     key={specId}
-                    className="flex items-center gap-3 p-3 bg-[#151515] border border-[#383838] rounded-xl"
+                    className="flex items-center gap-3 p-3 bg-background-elevated border border-border-strong rounded-xl"
                   >
                     <div
                       className="w-2 h-2 rounded-full flex-shrink-0"
@@ -347,9 +347,9 @@ export function PrioListItemModal({
                       onChange={(e) => handleUpdateClassPriority(specId, e.target.value === '' ? 0 : Number(e.target.value))}
                       placeholder="0"
                       step="any"
-                      className="w-20 px-3 py-1.5 bg-[#0d0e11] border border-[#383838] rounded-lg text-white text-[13px] text-center focus:outline-none focus:border-[#ff8000] transition"
+                      className="w-20 px-3 py-1.5 bg-background-subtle border border-border-strong rounded-lg text-white text-[13px] text-center focus:outline-none focus:border-accent transition"
                     />
-                    <span className="text-[#606060] text-[12px]">pts</span>
+                    <span className="text-foreground-muted text-[12px]">pts</span>
                   </div>
                 ))}
               </div>
@@ -362,7 +362,7 @@ export function PrioListItemModal({
               <label className="block text-[13px] font-medium text-white mb-1">
                 Individual Raiders
               </label>
-              <p className="text-[#606060] text-[12px]">
+              <p className="text-foreground-muted text-[12px]">
                 Select specific raiders and set point values for this item
               </p>
             </div>
@@ -384,7 +384,7 @@ export function PrioListItemModal({
                   return (
                     <div
                       key={charId}
-                      className="flex items-center gap-3 p-3 bg-[#151515] border border-[#383838] rounded-xl"
+                      className="flex items-center gap-3 p-3 bg-background-elevated border border-border-strong rounded-xl"
                     >
                       <div
                         className="w-2 h-2 rounded-full flex-shrink-0"
@@ -392,7 +392,7 @@ export function PrioListItemModal({
                       />
                       <span className="flex-1 text-white font-medium text-[13px]">
                         {char?.name || charId}
-                        <span className="text-[#606060] ml-2">
+                        <span className="text-foreground-muted ml-2">
                           ({char?.class?.name || 'Unknown'})
                         </span>
                       </span>
@@ -402,9 +402,9 @@ export function PrioListItemModal({
                         onChange={(e) => handleUpdateCharacterPriority(charId, e.target.value === '' ? 0 : Number(e.target.value))}
                         placeholder="0"
                         step="any"
-                        className="w-20 px-3 py-1.5 bg-[#0d0e11] border border-[#383838] rounded-lg text-white text-[13px] text-center focus:outline-none focus:border-[#ff8000] transition"
+                        className="w-20 px-3 py-1.5 bg-background-subtle border border-border-strong rounded-lg text-white text-[13px] text-center focus:outline-none focus:border-accent transition"
                       />
-                      <span className="text-[#606060] text-[12px]">pts</span>
+                      <span className="text-foreground-muted text-[12px]">pts</span>
                     </div>
                   )
                 })}
@@ -413,7 +413,7 @@ export function PrioListItemModal({
           </div>
 
           {/* Notes */}
-          <div className="space-y-3 pt-4 border-t border-[#383838]">
+          <div className="space-y-3 pt-4 border-t border-border-strong">
             <label className="block text-[13px] font-medium text-white">
               Notes (optional)
             </label>
@@ -422,23 +422,23 @@ export function PrioListItemModal({
               onChange={(e) => setNotes(e.target.value)}
               placeholder="Add any notes for loot council..."
               rows={2}
-              className="w-full px-5 py-3 bg-[#151515] border border-[#383838] rounded-xl text-white text-[13px] focus:outline-none focus:border-[#ff8000] transition resize-none placeholder-[#606060]"
+              className="w-full px-5 py-3 bg-background-elevated border border-border-strong rounded-xl text-white text-[13px] focus:outline-none focus:border-accent transition resize-none placeholder-[#606060]"
             />
           </div>
         </div>
 
         {/* Footer */}
-        <div className="p-6 border-t border-[#383838] flex justify-end gap-3">
+        <div className="p-6 border-t border-border-strong flex justify-end gap-3">
           <button
             onClick={onClose}
-            className="px-5 py-3 bg-[#151515] hover:bg-[#1a1a1a] border border-[#383838] text-white text-[13px] font-medium rounded-[52px] transition"
+            className="px-5 py-3 bg-background-elevated hover:bg-muted border border-border-strong text-white text-[13px] font-medium rounded-[52px] transition"
           >
             Cancel
           </button>
           <button
             onClick={handleSave}
             disabled={saving}
-            className="px-5 py-3 bg-white hover:bg-gray-100 disabled:bg-[#333] disabled:text-[#666] text-black text-[13px] font-medium rounded-[52px] transition"
+            className="px-5 py-3 bg-white hover:bg-gray-100 disabled:bg-[#333] disabled:text-foreground-muted text-black text-[13px] font-medium rounded-[52px] transition"
           >
             {saving ? 'Saving...' : 'Save Priority'}
           </button>

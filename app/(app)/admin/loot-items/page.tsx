@@ -361,11 +361,11 @@ export default function AdminLootItems() {
         {/* Header */}
         <div>
           <h1 className="text-[42px] font-bold text-white leading-tight">Loot Items</h1>
-          <p className="text-[#a1a1a1] mt-1 text-[14px]">Manage loot items for your guild</p>
+          <p className="text-muted-foreground mt-1 text-[14px]">Manage loot items for your guild</p>
         </div>
 
         {/* Filters */}
-        <div className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl p-4">
+        <div className="bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-xl p-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-[13px] font-medium text-white mb-2">Search Items</label>
@@ -374,7 +374,7 @@ export default function AdminLootItems() {
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="Search by name or boss..."
-                className="w-full px-5 py-3 bg-[#151515] border border-[#383838] rounded-[52px] text-white text-[13px] focus:outline-none focus:border-[#ff8000]"
+                className="w-full px-5 py-3 bg-background-elevated border border-border-strong rounded-[52px] text-white text-[13px] focus:outline-none focus:border-accent"
               />
             </div>
             <div>
@@ -382,11 +382,11 @@ export default function AdminLootItems() {
               <select
                 value={filterTier}
                 onChange={(e) => setFilterTier(e.target.value)}
-                className="w-full px-5 py-3 bg-[#151515] border border-[#383838] rounded-[52px] text-white text-[13px] focus:outline-none focus:border-[#ff8000] cursor-pointer select-custom"
+                className="w-full px-5 py-3 bg-background-elevated border border-border-strong rounded-[52px] text-white text-[13px] focus:outline-none focus:border-accent cursor-pointer select-custom"
               >
-                <option value="all" className="bg-[#151515] text-white">All Raids</option>
+                <option value="all" className="bg-background-elevated text-white">All Raids</option>
                 {raidTiers.map(tier => (
-                  <option key={tier.id} value={tier.name} className="bg-[#151515] text-white">{tier.name}</option>
+                  <option key={tier.id} value={tier.name} className="bg-background-elevated text-white">{tier.name}</option>
                 ))}
               </select>
             </div>
@@ -395,24 +395,24 @@ export default function AdminLootItems() {
 
         {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl p-4">
-            <p className="text-[#a1a1a1] text-sm">Total Items</p>
+          <div className="bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-xl p-4">
+            <p className="text-muted-foreground text-sm">Total Items</p>
             <p className="text-2xl font-bold text-white">{filteredItems.length}</p>
           </div>
-          <div className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl p-4">
-            <p className="text-[#a1a1a1] text-sm">Available</p>
+          <div className="bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-xl p-4">
+            <p className="text-muted-foreground text-sm">Available</p>
             <p className="text-2xl font-bold text-green-400">
               {filteredItems.filter(i => i.is_available).length}
             </p>
           </div>
-          <div className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl p-4">
-            <p className="text-[#a1a1a1] text-sm">Reserved</p>
+          <div className="bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-xl p-4">
+            <p className="text-muted-foreground text-sm">Reserved</p>
             <p className="text-2xl font-bold text-red-400">
               {filteredItems.filter(i => i.classification === 'Reserved').length}
             </p>
           </div>
-          <div className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl p-4">
-            <p className="text-[#a1a1a1] text-sm">Limited</p>
+          <div className="bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-xl p-4">
+            <p className="text-muted-foreground text-sm">Limited</p>
             <p className="text-2xl font-bold text-yellow-400">
               {filteredItems.filter(i => i.classification === 'Limited').length}
             </p>
@@ -420,24 +420,24 @@ export default function AdminLootItems() {
         </div>
 
         {/* Items Table */}
-        <div className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl overflow-visible">
+        <div className="bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-xl overflow-visible">
           <div className="overflow-x-auto rounded-xl">
             <table className="w-full">
               <thead>
-                <tr className="bg-[#1a1a1a] border-b border-[rgba(255,255,255,0.1)]">
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-[#a1a1a1]">Available</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-[#a1a1a1]">Item Name</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-[#a1a1a1]">Boss</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-[#a1a1a1]">Slot</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-[#a1a1a1]">Raid</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-[#a1a1a1]">Classification</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-[#a1a1a1]">Primary Specs</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-[#a1a1a1]">Secondary Specs</th>
+                <tr className="bg-muted border-b border-[rgba(255,255,255,0.1)]">
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-muted-foreground">Available</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-muted-foreground">Item Name</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-muted-foreground">Boss</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-muted-foreground">Slot</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-muted-foreground">Raid</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-muted-foreground">Classification</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-muted-foreground">Primary Specs</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-muted-foreground">Secondary Specs</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[rgba(255,255,255,0.1)]">
                 {filteredItems.map((item) => (
-                  <tr key={item.id} className="hover:bg-[#1a1a1a]">
+                  <tr key={item.id} className="hover:bg-muted">
                     <td className="px-4 py-3">
                       <button
                         onClick={() => toggleAvailability(item.id, item.is_available)}
@@ -457,18 +457,18 @@ export default function AdminLootItems() {
                     <td className="px-4 py-3 text-white">
                       <ItemLink name={item.name} wowheadId={item.wowhead_id} />
                     </td>
-                    <td className="px-4 py-3 text-[#a1a1a1]">{normalizeBossName(item.boss_name)}</td>
-                    <td className="px-4 py-3 text-[#a1a1a1]">{item.item_slot}</td>
-                    <td className="px-4 py-3 text-[#a1a1a1]">{(item.raid_tier as any)?.name}</td>
+                    <td className="px-4 py-3 text-muted-foreground">{normalizeBossName(item.boss_name)}</td>
+                    <td className="px-4 py-3 text-muted-foreground">{item.item_slot}</td>
+                    <td className="px-4 py-3 text-muted-foreground">{(item.raid_tier as any)?.name}</td>
                     <td className="px-4 py-3">
                       <select
                         value={item.classification}
                         onChange={(e) => updateClassification(item.id, e.target.value)}
-                        className="px-3 py-1 bg-[#151515] border border-[rgba(255,255,255,0.1)] rounded text-white text-sm focus:outline-none focus:border-[#ff8000] cursor-pointer select-custom-sm"
+                        className="px-3 py-1 bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded text-white text-sm focus:outline-none focus:border-accent cursor-pointer select-custom-sm"
                       >
-                        <option value="Reserved" className="bg-[#151515] text-white">Reserved</option>
-                        <option value="Limited" className="bg-[#151515] text-white">Limited</option>
-                        <option value="Unlimited" className="bg-[#151515] text-white">Unlimited</option>
+                        <option value="Reserved" className="bg-background-elevated text-white">Reserved</option>
+                        <option value="Limited" className="bg-background-elevated text-white">Limited</option>
+                        <option value="Unlimited" className="bg-background-elevated text-white">Unlimited</option>
                       </select>
                     </td>
                     <td className="px-4 py-3">
@@ -480,7 +480,7 @@ export default function AdminLootItems() {
                               addSpec(item.id, e.target.value, 'primary')
                             }
                           }}
-                          className="w-full px-2 py-1 bg-[#151515] border border-[rgba(255,255,255,0.1)] rounded text-white text-xs focus:outline-none focus:border-[#ff8000] cursor-pointer select-custom-xs"
+                          className="w-full px-2 py-1 bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded text-white text-xs focus:outline-none focus:border-accent cursor-pointer select-custom-xs"
                         >
                           <option value="">+ Add Primary Spec...</option>
                           {getClassSpecOptions().map(opt => {
@@ -528,7 +528,7 @@ export default function AdminLootItems() {
                               addSpec(item.id, e.target.value, 'secondary')
                             }
                           }}
-                          className="w-full px-2 py-1 bg-[#151515] border border-[rgba(255,255,255,0.1)] rounded text-white text-xs focus:outline-none focus:border-[#ff8000] cursor-pointer select-custom-xs"
+                          className="w-full px-2 py-1 bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded text-white text-xs focus:outline-none focus:border-accent cursor-pointer select-custom-xs"
                         >
                           <option value="">+ Add Secondary Spec...</option>
                           {getClassSpecOptions().map(opt => {
@@ -575,7 +575,7 @@ export default function AdminLootItems() {
         </div>
 
         {filteredItems.length === 0 && (
-          <div className="text-center py-12 text-[#a1a1a1]">
+          <div className="text-center py-12 text-muted-foreground">
             No items found matching your filters
           </div>
         )}

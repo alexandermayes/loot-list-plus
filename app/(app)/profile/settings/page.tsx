@@ -10,7 +10,8 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { EyeIcon, ViewOffIcon, Notification01Icon, Shield01Icon, FloppyDiskIcon, CheckmarkCircle01Icon, RefreshIcon } from 'hugeicons-react'
+import { HugeiconsIcon } from '@hugeicons/react'
+import { EyeIcon, ViewOffIcon, Notification01Icon, Shield01Icon, FloppyDiskIcon, CheckmarkCircle01Icon, RefreshIcon } from '@hugeicons/core-free-icons'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 
 interface UserPreferences {
@@ -173,7 +174,7 @@ export default function SettingsPage() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <EyeIcon className="w-5 h-5" />
+              <HugeiconsIcon icon={EyeIcon} size={20} />
               Privacy Settings
             </CardTitle>
             <CardDescription>Control what information is visible to other members</CardDescription>
@@ -189,7 +190,7 @@ export default function SettingsPage() {
                 size="sm"
                 onClick={() => updatePreference('show_email', !preferences?.show_email)}
               >
-                {preferences?.show_email ? <EyeIcon className="w-4 h-4" /> : <ViewOffIcon className="w-4 h-4" />}
+                {preferences?.show_email ? <HugeiconsIcon icon={EyeIcon} size={16} /> : <HugeiconsIcon icon={ViewOffIcon} size={16} />}
               </Button>
             </div>
 
@@ -203,7 +204,7 @@ export default function SettingsPage() {
                 size="sm"
                 onClick={() => updatePreference('show_discord_username', !preferences?.show_discord_username)}
               >
-                {preferences?.show_discord_username ? <EyeIcon className="w-4 h-4" /> : <ViewOffIcon className="w-4 h-4" />}
+                {preferences?.show_discord_username ? <HugeiconsIcon icon={EyeIcon} size={16} /> : <HugeiconsIcon icon={ViewOffIcon} size={16} />}
               </Button>
             </div>
 
@@ -217,7 +218,7 @@ export default function SettingsPage() {
                 size="sm"
                 onClick={() => updatePreference('show_attendance_stats', !preferences?.show_attendance_stats)}
               >
-                {preferences?.show_attendance_stats ? <EyeIcon className="w-4 h-4" /> : <ViewOffIcon className="w-4 h-4" />}
+                {preferences?.show_attendance_stats ? <HugeiconsIcon icon={EyeIcon} size={16} /> : <HugeiconsIcon icon={ViewOffIcon} size={16} />}
               </Button>
             </div>
 
@@ -231,7 +232,7 @@ export default function SettingsPage() {
                 size="sm"
                 onClick={() => updatePreference('show_loot_history', !preferences?.show_loot_history)}
               >
-                {preferences?.show_loot_history ? <EyeIcon className="w-4 h-4" /> : <ViewOffIcon className="w-4 h-4" />}
+                {preferences?.show_loot_history ? <HugeiconsIcon icon={EyeIcon} size={16} /> : <HugeiconsIcon icon={ViewOffIcon} size={16} />}
               </Button>
             </div>
           </CardContent>
@@ -241,7 +242,7 @@ export default function SettingsPage() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Notification01Icon className="w-5 h-5" />
+              <HugeiconsIcon icon={Notification01Icon} size={20} />
               Notification Preferences
             </CardTitle>
             <CardDescription>Choose what notifications you want to receive</CardDescription>
@@ -257,7 +258,7 @@ export default function SettingsPage() {
                 size="sm"
                 onClick={() => updatePreference('notify_loot_deadline', !preferences?.notify_loot_deadline)}
               >
-                {preferences?.notify_loot_deadline ? <Notification01Icon className="w-4 h-4" /> : <ViewOffIcon className="w-4 h-4" />}
+                {preferences?.notify_loot_deadline ? <HugeiconsIcon icon={Notification01Icon} size={16} /> : <HugeiconsIcon icon={ViewOffIcon} size={16} />}
               </Button>
             </div>
 
@@ -271,7 +272,7 @@ export default function SettingsPage() {
                 size="sm"
                 onClick={() => updatePreference('notify_submission_status', !preferences?.notify_submission_status)}
               >
-                {preferences?.notify_submission_status ? <Notification01Icon className="w-4 h-4" /> : <ViewOffIcon className="w-4 h-4" />}
+                {preferences?.notify_submission_status ? <HugeiconsIcon icon={Notification01Icon} size={16} /> : <HugeiconsIcon icon={ViewOffIcon} size={16} />}
               </Button>
             </div>
 
@@ -285,7 +286,7 @@ export default function SettingsPage() {
                 size="sm"
                 onClick={() => updatePreference('notify_new_raids', !preferences?.notify_new_raids)}
               >
-                {preferences?.notify_new_raids ? <Notification01Icon className="w-4 h-4" /> : <ViewOffIcon className="w-4 h-4" />}
+                {preferences?.notify_new_raids ? <HugeiconsIcon icon={Notification01Icon} size={16} /> : <HugeiconsIcon icon={ViewOffIcon} size={16} />}
               </Button>
             </div>
           </CardContent>
@@ -295,7 +296,7 @@ export default function SettingsPage() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Shield01Icon className="w-5 h-5" />
+              <HugeiconsIcon icon={Shield01Icon} size={20} />
               Profile Customization
             </CardTitle>
             <CardDescription>Personalize your profile</CardDescription>
@@ -330,7 +331,7 @@ export default function SettingsPage() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <CheckmarkCircle01Icon className="w-5 h-5 text-green-500" />
+              <HugeiconsIcon icon={CheckmarkCircle01Icon} size={20} className="text-green-500" />
               Discord Server Verification
             </CardTitle>
             <CardDescription>
@@ -342,7 +343,7 @@ export default function SettingsPage() {
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
                   <Badge variant="default">
-                    <CheckmarkCircle01Icon className="w-3 h-3 mr-1" />
+                    <HugeiconsIcon icon={CheckmarkCircle01Icon} size={12} className="mr-1" />
                     Guild Member Verified
                   </Badge>
                   {preferences.last_verified_at && (
@@ -368,7 +369,7 @@ export default function SettingsPage() {
               disabled={verifying}
               variant="outline"
             >
-              <RefreshIcon className={`w-4 h-4 mr-2 ${verifying ? 'animate-spin' : ''}`} />
+              <HugeiconsIcon icon={RefreshIcon} size={16} className={`mr-2 ${verifying ? 'animate-spin' : ''}`} />
               {verifying ? 'Verifying...' : 'Verify Discord Server Membership'}
             </Button>
           </CardContent>
@@ -381,7 +382,7 @@ export default function SettingsPage() {
             disabled={saving}
             size="lg"
           >
-            <FloppyDiskIcon className="w-4 h-4 mr-2" />
+            <HugeiconsIcon icon={FloppyDiskIcon} size={16} className="mr-2" />
             {saving ? 'Saving...' : 'Save Preferences'}
           </Button>
         </div>

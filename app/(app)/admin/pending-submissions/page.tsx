@@ -4,7 +4,8 @@ import { createClient } from '@/utils/supabase/client'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useGuildContext } from '@/app/contexts/GuildContext'
-import { Tick01Icon, Cancel01Icon, Clock01Icon, UserIcon } from 'hugeicons-react'
+import { HugeiconsIcon } from '@hugeicons/react'
+import { Tick01Icon, Cancel01Icon, Clock01Icon, UserIcon } from '@hugeicons/core-free-icons'
 
 interface PendingSubmission {
   id: string
@@ -184,19 +185,19 @@ export default function PendingSubmissionsPage() {
 
   if (loading || guildLoading) {
     return (
-      <div className="min-h-screen bg-[#0d0e11] p-8 flex items-center justify-center">
-        <p className="text-[#a1a1a1]">Loading...</p>
+      <div className="min-h-screen bg-background-subtle p-8 flex items-center justify-center">
+        <p className="text-muted-foreground">Loading...</p>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-[#0d0e11] p-8">
+    <div className="min-h-screen bg-background-subtle p-8">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-[42px] font-bold text-white mb-2">Pending Submissions</h1>
-          <p className="text-[16px] text-[#a1a1a1]">
+          <p className="text-[16px] text-muted-foreground">
             Review and approve loot list submissions from your guild members
           </p>
         </div>
@@ -214,10 +215,10 @@ export default function PendingSubmissionsPage() {
 
         {/* Submissions List */}
         {submissions.length === 0 ? (
-          <div className="p-12 bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl text-center">
-            <Clock01Icon className="w-12 h-12 text-[#a1a1a1] mx-auto mb-4" />
-            <p className="text-[#a1a1a1] text-[16px]">No pending submissions</p>
-            <p className="text-[#666] text-[14px] mt-2">
+          <div className="p-12 bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-xl text-center">
+            <HugeiconsIcon icon={Clock01Icon} size={48} className="text-muted-foreground mx-auto mb-4" />
+            <p className="text-muted-foreground text-[16px]">No pending submissions</p>
+            <p className="text-foreground-muted text-[14px] mt-2">
               All submissions have been reviewed!
             </p>
           </div>
@@ -226,13 +227,13 @@ export default function PendingSubmissionsPage() {
             {submissions.map((submission) => (
               <div
                 key={submission.id}
-                className="p-6 bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl"
+                className="p-6 bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-xl"
               >
                 <div className="flex items-start justify-between gap-4">
                   {/* Submission Info */}
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-3">
-                      <UserIcon className="w-5 h-5 text-[#a1a1a1]" />
+                      <HugeiconsIcon icon={UserIcon} size={20} className="text-muted-foreground" />
                       <div>
                         <p
                           className="text-[16px] font-semibold"
@@ -241,7 +242,7 @@ export default function PendingSubmissionsPage() {
                           {submission.character.name}
                         </p>
                         {submission.character.class && (
-                          <p className="text-[13px] text-[#a1a1a1]">
+                          <p className="text-[13px] text-muted-foreground">
                             {submission.character.class.name}
                           </p>
                         )}
@@ -250,26 +251,26 @@ export default function PendingSubmissionsPage() {
 
                     <div className="space-y-2">
                       <div className="flex items-center gap-2">
-                        <span className="text-[13px] text-[#a1a1a1]">Raid Tier:</span>
+                        <span className="text-[13px] text-muted-foreground">Raid Tier:</span>
                         <span className="text-[13px] text-white font-medium">
                           {submission.raid_tier.name}
                         </span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="text-[13px] text-[#a1a1a1]">Items:</span>
+                        <span className="text-[13px] text-muted-foreground">Items:</span>
                         <span className="text-[13px] text-white font-medium">
                           {submission.item_count} items
                         </span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="text-[13px] text-[#a1a1a1]">Submitted:</span>
+                        <span className="text-[13px] text-muted-foreground">Submitted:</span>
                         <span className="text-[13px] text-white">
                           {new Date(submission.created_at).toLocaleString()}
                         </span>
                       </div>
                       {submission.updated_at !== submission.created_at && (
                         <div className="flex items-center gap-2">
-                          <span className="text-[13px] text-[#a1a1a1]">Last Updated:</span>
+                          <span className="text-[13px] text-muted-foreground">Last Updated:</span>
                           <span className="text-[13px] text-white">
                             {new Date(submission.updated_at).toLocaleString()}
                           </span>
@@ -285,7 +286,7 @@ export default function PendingSubmissionsPage() {
                       disabled={processing === submission.id}
                       className="px-6 py-3 bg-green-600 hover:bg-green-700 rounded-[52px] text-white font-medium text-[14px] transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                     >
-                      <Tick01Icon className="w-4 h-4" />
+                      <HugeiconsIcon icon={Tick01Icon} size={16} />
                       {processing === submission.id ? 'Approving...' : 'Approve'}
                     </button>
                     <button
@@ -293,7 +294,7 @@ export default function PendingSubmissionsPage() {
                       disabled={processing === submission.id}
                       className="px-6 py-3 bg-red-600 hover:bg-red-700 rounded-[52px] text-white font-medium text-[14px] transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                     >
-                      <Cancel01Icon className="w-4 h-4" />
+                      <HugeiconsIcon icon={Cancel01Icon} size={16} />
                       Reject
                     </button>
                   </div>
@@ -305,8 +306,8 @@ export default function PendingSubmissionsPage() {
 
         {/* Summary */}
         {submissions.length > 0 && (
-          <div className="mt-6 p-4 bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl">
-            <p className="text-[13px] text-[#a1a1a1]">
+          <div className="mt-6 p-4 bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-xl">
+            <p className="text-[13px] text-muted-foreground">
               Total Pending: <span className="text-white font-medium">{submissions.length}</span>
             </p>
           </div>

@@ -40,7 +40,7 @@ export function ProfileStats({
     } else if (status === 'pending') {
       return 'px-3 py-1 bg-yellow-900/20 border border-yellow-600 rounded-full text-yellow-200 text-[13px]'
     } else {
-      return 'px-3 py-1 bg-[#151515] border border-[rgba(255,255,255,0.1)] rounded-full text-[#a1a1a1] text-[13px]'
+      return 'px-3 py-1 bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-full text-muted-foreground text-[13px]'
     }
   }
 
@@ -48,7 +48,7 @@ export function ProfileStats({
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
       {/* Attendance Stats */}
       {showAttendance && (
-        <div className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl overflow-hidden">
+        <div className="bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-xl overflow-hidden">
           <div className="px-6 py-4 border-b border-[rgba(255,255,255,0.1)]">
             <h3 className="text-[18px] font-semibold text-white flex items-center gap-2">
               <HugeiconsIcon icon={Calendar01Icon} size={20} />
@@ -57,20 +57,20 @@ export function ProfileStats({
           </div>
           <div className="p-6 space-y-3">
             <div className="flex items-center justify-between">
-              <span className="text-[13px] text-[#a1a1a1]">Attendance Score</span>
+              <span className="text-[13px] text-muted-foreground">Attendance Score</span>
               <span className={getAttendanceScoreBadge(attendanceScore)}>
                 {attendanceScore.toFixed(2)} / 8.00
               </span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-[13px] text-[#a1a1a1]">Raids Attended (4 weeks)</span>
+              <span className="text-[13px] text-muted-foreground">Raids Attended (4 weeks)</span>
               <span className="text-white font-medium">{raidsAttended} / {totalRaids}</span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-[13px] text-[#a1a1a1]">Attendance Rate</span>
+              <span className="text-[13px] text-muted-foreground">Attendance Rate</span>
               <span className="text-white font-medium">{attendancePercentage}%</span>
             </div>
-            <div className="w-full bg-[#0d0e11] rounded-full h-2 mt-2">
+            <div className="w-full bg-background-subtle rounded-full h-2 mt-2">
               <div
                 className={`h-2 rounded-full transition-all ${
                   attendancePercentage >= 80 ? 'bg-green-500' :
@@ -86,7 +86,7 @@ export function ProfileStats({
 
       {/* Loot Stats */}
       {showLootHistory && (
-        <div className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl overflow-hidden">
+        <div className="bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-xl overflow-hidden">
           <div className="px-6 py-4 border-b border-[rgba(255,255,255,0.1)]">
             <h3 className="text-[18px] font-semibold text-white flex items-center gap-2">
               <HugeiconsIcon icon={Award01Icon} size={20} />
@@ -95,24 +95,24 @@ export function ProfileStats({
           </div>
           <div className="p-6 space-y-3">
             <div className="flex items-center justify-between">
-              <span className="text-[13px] text-[#a1a1a1]">Items Received</span>
+              <span className="text-[13px] text-muted-foreground">Items Received</span>
               <span className="text-white font-medium flex items-center gap-1">
-                <HugeiconsIcon icon={StarIcon} size={16} className="text-[#ff8000]" />
+                <HugeiconsIcon icon={StarIcon} size={16} className="text-accent" />
                 {lootReceived}
               </span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-[13px] text-[#a1a1a1]">Submission Status</span>
+              <span className="text-[13px] text-muted-foreground">Submission Status</span>
               <span className={getSubmissionBadge(submissionStatus)}>
                 {submissionStatus ? submissionStatus.replace('_', ' ').toUpperCase() : 'No Submission'}
               </span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-[13px] text-[#a1a1a1] flex items-center gap-1">
+              <span className="text-[13px] text-muted-foreground flex items-center gap-1">
                 <HugeiconsIcon icon={CheckListIcon} size={16} />
                 List Complete
               </span>
-              <span className={submissionStatus === 'approved' ? 'px-3 py-1 bg-green-900/20 border border-green-600 rounded-full text-green-200 text-[13px]' : 'px-3 py-1 bg-[#151515] border border-[rgba(255,255,255,0.1)] rounded-full text-[#a1a1a1] text-[13px]'}>
+              <span className={submissionStatus === 'approved' ? 'px-3 py-1 bg-green-900/20 border border-green-600 rounded-full text-green-200 text-[13px]' : 'px-3 py-1 bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-full text-muted-foreground text-[13px]'}>
                 {submissionStatus === 'approved' ? 'Yes' : 'No'}
               </span>
             </div>
@@ -122,7 +122,7 @@ export function ProfileStats({
 
       {/* Hidden Stats Message */}
       {!showAttendance && !showLootHistory && (
-        <div className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl p-6 md:col-span-2 text-center text-[#a1a1a1]">
+        <div className="bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-xl p-6 md:col-span-2 text-center text-muted-foreground">
           This user has hidden their statistics
         </div>
       )}

@@ -155,20 +155,20 @@ export default function CreateCharacterPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0d0e11] p-8">
+    <div className="min-h-screen bg-background-subtle p-8">
       <div className="max-w-2xl mx-auto">
         {/* Header */}
         <div className="mb-8">
           <button
             onClick={() => router.back()}
-            className="mb-4 flex items-center gap-2 text-[#a1a1a1] hover:text-white transition"
+            className="mb-4 flex items-center gap-2 text-muted-foreground hover:text-white transition"
           >
             <HugeiconsIcon icon={ArrowLeft01Icon} size={16} />
             <span className="text-[14px]">Back</span>
           </button>
 
           <h1 className="text-[42px] font-bold text-white mb-2">Create Character</h1>
-          <p className="text-[16px] text-[#a1a1a1]">
+          <p className="text-[16px] text-muted-foreground">
             Add a new character to your account
           </p>
         </div>
@@ -181,7 +181,7 @@ export default function CreateCharacterPage() {
         )}
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl p-6">
+        <form onSubmit={handleSubmit} className="bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-xl p-6">
           <div className="space-y-6">
             {/* Character Name */}
             <div>
@@ -192,7 +192,7 @@ export default function CreateCharacterPage() {
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full px-4 py-3 bg-[#0d0e11] border border-[rgba(255,255,255,0.1)] rounded-xl text-white text-[14px] focus:outline-none focus:border-[#ff8000] transition"
+                className="w-full px-4 py-3 bg-background-subtle border border-[rgba(255,255,255,0.1)] rounded-xl text-white text-[14px] focus:outline-none focus:border-accent transition"
                 placeholder="Enter character name"
                 required
               />
@@ -206,7 +206,7 @@ export default function CreateCharacterPage() {
               <select
                 value={classId}
                 onChange={(e) => handleClassChange(e.target.value)}
-                className="w-full px-4 py-3 bg-[#0d0e11] border border-[rgba(255,255,255,0.1)] rounded-xl text-white text-[14px] focus:outline-none focus:border-[#ff8000] transition"
+                className="w-full px-4 py-3 bg-background-subtle border border-[rgba(255,255,255,0.1)] rounded-xl text-white text-[14px] focus:outline-none focus:border-accent transition"
                 required
               >
                 <option value="">Select a class</option>
@@ -227,7 +227,7 @@ export default function CreateCharacterPage() {
                 <select
                   value={specId}
                   onChange={(e) => setSpecId(e.target.value)}
-                  className="w-full px-4 py-3 bg-[#0d0e11] border border-[rgba(255,255,255,0.1)] rounded-xl text-white text-[14px] focus:outline-none focus:border-[#ff8000] transition"
+                  className="w-full px-4 py-3 bg-background-subtle border border-[rgba(255,255,255,0.1)] rounded-xl text-white text-[14px] focus:outline-none focus:border-accent transition"
                 >
                   <option value="">Select a specialization</option>
                   {getAvailableSpecs().map((spec) => (
@@ -250,8 +250,8 @@ export default function CreateCharacterPage() {
                   onClick={() => setIsMain(true)}
                   className={`flex-1 px-6 py-3 rounded-xl text-[14px] font-medium transition ${
                     isMain
-                      ? 'bg-[#ff8000] text-white'
-                      : 'bg-[#0d0e11] border border-[rgba(255,255,255,0.1)] text-[#a1a1a1] hover:border-[rgba(255,255,255,0.2)]'
+                      ? 'bg-accent text-white'
+                      : 'bg-background-subtle border border-[rgba(255,255,255,0.1)] text-muted-foreground hover:border-[rgba(255,255,255,0.2)]'
                   }`}
                 >
                   Main
@@ -261,19 +261,19 @@ export default function CreateCharacterPage() {
                   onClick={() => setIsMain(false)}
                   className={`flex-1 px-6 py-3 rounded-xl text-[14px] font-medium transition ${
                     !isMain
-                      ? 'bg-[#ff8000] text-white'
-                      : 'bg-[#0d0e11] border border-[rgba(255,255,255,0.1)] text-[#a1a1a1] hover:border-[rgba(255,255,255,0.2)]'
+                      ? 'bg-accent text-white'
+                      : 'bg-background-subtle border border-[rgba(255,255,255,0.1)] text-muted-foreground hover:border-[rgba(255,255,255,0.2)]'
                   }`}
                 >
                   Alt
                 </button>
               </div>
-              <p className="text-[12px] text-[#a1a1a1] mt-2">
+              <p className="text-[12px] text-muted-foreground mt-2">
                 You can only have one main character. Setting this as main will change your current main to an alt.
               </p>
             </div>
 
-            <div className="text-[13px] text-[#a1a1a1] bg-[#0d0e11] border border-[rgba(255,255,255,0.1)] rounded-lg p-4">
+            <div className="text-[13px] text-muted-foreground bg-background-subtle border border-[rgba(255,255,255,0.1)] rounded-lg p-4">
               <p className="font-medium text-white mb-2">Note:</p>
               <ul className="space-y-1 list-disc list-inside">
                 <li>Main characters are displayed first in character lists</li>
@@ -295,7 +295,7 @@ export default function CreateCharacterPage() {
             <button
               type="button"
               onClick={() => router.back()}
-              className="px-8 py-3 bg-[#151515] hover:bg-[#1a1a1a] border border-[rgba(255,255,255,0.1)] rounded-[52px] text-white font-medium text-[16px] transition"
+              className="px-8 py-3 bg-background-elevated hover:bg-muted border border-[rgba(255,255,255,0.1)] rounded-[52px] text-white font-medium text-[16px] transition"
             >
               Cancel
             </button>

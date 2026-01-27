@@ -136,23 +136,23 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
     >
       <div
         ref={modalRef}
-        className="bg-[#0d0e11] border border-[#383838] rounded-xl max-w-lg w-full max-h-[85vh] overflow-hidden flex flex-col"
+        className="bg-background-subtle border border-border-strong rounded-xl max-w-lg w-full max-h-[85vh] overflow-hidden flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="p-6 border-b border-[#383838] flex items-center justify-between bg-[#141519]">
+        <div className="p-6 border-b border-border-strong flex items-center justify-between bg-background-elevated">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-[#ff8000]/20 flex items-center justify-center">
-              <HugeiconsIcon icon={Bug01Icon} size={20} className="text-[#ff8000]" />
+            <div className="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center">
+              <HugeiconsIcon icon={Bug01Icon} size={20} className="text-accent" />
             </div>
             <div>
               <h3 className="text-[20px] font-bold text-white">Report a Bug</h3>
-              <p className="text-[12px] text-[#a1a1a1]">Help us improve LootList+</p>
+              <p className="text-[12px] text-muted-foreground">Help us improve LootList+</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="text-[#a1a1a1] hover:text-white transition"
+            className="text-muted-foreground hover:text-white transition"
           >
             <HugeiconsIcon icon={Cancel01Icon} size={24} />
           </button>
@@ -165,7 +165,7 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
               <HugeiconsIcon icon={SentIcon} size={32} className="text-green-400" />
             </div>
             <h4 className="text-[18px] font-semibold text-white mb-2">Thanks for your feedback!</h4>
-            <p className="text-[14px] text-[#a1a1a1]">We'll look into this and get back to you if needed.</p>
+            <p className="text-[14px] text-muted-foreground">We'll look into this and get back to you if needed.</p>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
@@ -181,22 +181,22 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <label className="text-[13px] font-medium text-white flex items-center gap-2">
-                    <HugeiconsIcon icon={Camera01Icon} size={16} className="text-[#a1a1a1]" />
+                    <HugeiconsIcon icon={Camera01Icon} size={16} className="text-muted-foreground" />
                     Screenshot
                   </label>
                   <button
                     type="button"
                     onClick={captureScreenshot}
                     disabled={capturing}
-                    className="text-[12px] text-[#ff8000] hover:text-[#ff9933] transition disabled:opacity-50"
+                    className="text-[12px] text-accent hover:text-[#ff9933] transition disabled:opacity-50"
                   >
                     {capturing ? 'Capturing...' : 'Retake'}
                   </button>
                 </div>
-                <div className="relative bg-[#151515] border border-[#383838] rounded-xl overflow-hidden aspect-video">
+                <div className="relative bg-background-elevated border border-border-strong rounded-xl overflow-hidden aspect-video">
                   {capturing ? (
                     <div className="absolute inset-0 flex items-center justify-center">
-                      <HugeiconsIcon icon={Loading03Icon} size={32} className="text-[#a1a1a1] animate-spin" />
+                      <HugeiconsIcon icon={Loading03Icon} size={32} className="text-muted-foreground animate-spin" />
                     </div>
                   ) : screenshot ? (
                     <img
@@ -205,12 +205,12 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
                       className="w-full h-full object-contain"
                     />
                   ) : (
-                    <div className="absolute inset-0 flex items-center justify-center text-[#666]">
+                    <div className="absolute inset-0 flex items-center justify-center text-foreground-muted">
                       No screenshot captured
                     </div>
                   )}
                 </div>
-                <p className="text-[11px] text-[#666] mt-1">
+                <p className="text-[11px] text-foreground-muted mt-1">
                   This screenshot was taken when you opened the feedback form
                 </p>
               </div>
@@ -224,7 +224,7 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   rows={4}
-                  className="w-full px-4 py-3 bg-[#151515] border border-[#383838] rounded-xl text-white text-[14px] focus:outline-none focus:border-[#ff8000] transition resize-none placeholder:text-[#666]"
+                  className="w-full px-4 py-3 bg-background-elevated border border-border-strong rounded-xl text-white text-[14px] focus:outline-none focus:border-accent transition resize-none placeholder:text-foreground-muted"
                   placeholder="Describe the bug or issue you encountered..."
                   autoFocus
                 />
@@ -232,19 +232,19 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
             </div>
 
             {/* Footer */}
-            <div className="p-6 border-t border-[#383838] bg-[#141519] flex justify-end gap-3">
+            <div className="p-6 border-t border-border-strong bg-background-elevated flex justify-end gap-3">
               <button
                 type="button"
                 onClick={onClose}
                 disabled={submitting}
-                className="px-6 py-2.5 bg-[#151515] hover:bg-[#1a1a1a] border border-[#383838] rounded-[52px] text-white text-[13px] transition disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-6 py-2.5 bg-background-elevated hover:bg-muted border border-border-strong rounded-[52px] text-white text-[13px] transition disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={submitting || !description.trim()}
-                className="px-6 py-2.5 bg-[#ff8000] hover:bg-[#ff9933] rounded-[52px] text-white text-[13px] font-medium transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                className="px-6 py-2.5 bg-accent hover:bg-[#ff9933] rounded-[52px] text-white text-[13px] font-medium transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
               >
                 {submitting ? (
                   <>

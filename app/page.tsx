@@ -37,7 +37,7 @@ export default function Home() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#151515] flex items-center justify-center">
+      <div className="min-h-screen bg-background-elevated flex items-center justify-center">
         <HugeiconsIcon icon={Loading01Icon} size={32} className="animate-spin text-primary" />
       </div>
     )
@@ -46,7 +46,7 @@ export default function Home() {
   return (
     <div className="relative min-h-screen w-full overflow-hidden">
       {/* Background Image Section */}
-      <div className="absolute inset-0 bg-[#151515]">
+      <div className="absolute inset-0 bg-background-elevated">
         <Image
           src="/landing-background.png"
           alt="Epic loot background"
@@ -79,7 +79,7 @@ export default function Home() {
         <div className="absolute top-[50px] right-[60px] z-20">
           <button
             onClick={() => setShowLogin(!showLogin)}
-            className="px-5 py-3 bg-[#151515] text-white font-poppins font-semibold text-base rounded-[60px] hover:bg-[#1f1f1f] transition"
+            className="px-5 py-3 bg-background-elevated text-white font-poppins font-semibold text-base rounded-[60px] hover:bg-[#1f1f1f] transition"
           >
             {showLogin ? 'Signup' : 'Login'}
           </button>
@@ -113,7 +113,7 @@ export default function Home() {
                 </h1>
 
                 {/* Description */}
-                <p className="font-poppins font-normal text-base text-[#a1a1a1] text-center max-w-[600px]">
+                <p className="font-poppins font-normal text-base text-muted-foreground text-center max-w-[600px]">
                   LootList+ is a transparent loot management system for WoW guilds. Includes loot submissions, attendance, tracking, and more!
                 </p>
               </div>
@@ -123,7 +123,7 @@ export default function Home() {
                 {/* Continue with Discord */}
                 <button
                   onClick={handleDiscordLogin}
-                  className="w-full px-5 py-3 bg-white hover:bg-gray-100 transition border border-[#383838] rounded-[52px] flex items-center justify-center gap-3"
+                  className="w-full px-5 py-3 bg-white hover:bg-gray-100 transition border border-border-strong rounded-[52px] flex items-center justify-center gap-3"
                 >
                   <Image
                     src="/discord-icon.svg"
@@ -138,14 +138,14 @@ export default function Home() {
                 </button>
 
                 {/* Learn more */}
-                <button className="w-full px-5 py-3 bg-[#151515] hover:bg-[#1f1f1f] transition border border-[rgba(255,255,255,0.1)] rounded-[52px] flex items-center justify-center">
+                <button className="w-full px-5 py-3 bg-background-elevated hover:bg-[#1f1f1f] transition border border-[rgba(255,255,255,0.1)] rounded-[52px] flex items-center justify-center">
                   <span className="font-poppins font-medium text-base text-white">
                     Learn more
                   </span>
                 </button>
 
                 {/* Terms and Privacy */}
-                <p className="font-poppins font-normal text-sm text-[#a1a1a1] text-center mt-0">
+                <p className="font-poppins font-normal text-sm text-muted-foreground text-center mt-0">
                   By continuing, you agree to our{' '}
                   <span className="text-white underline decoration-solid cursor-pointer hover:opacity-80">
                     Terms of Service
@@ -190,7 +190,7 @@ export default function Home() {
                 {/* Continue with Discord */}
                 <button
                   onClick={handleDiscordLogin}
-                  className="px-[60px] py-3 bg-white hover:bg-gray-100 transition border border-[#383838] rounded-[52px] flex items-center justify-center gap-3 w-max"
+                  className="px-[60px] py-3 bg-white hover:bg-gray-100 transition border border-border-strong rounded-[52px] flex items-center justify-center gap-3 w-max"
                 >
                   <Image
                     src="/discord-icon.svg"
@@ -205,7 +205,7 @@ export default function Home() {
                 </button>
 
                 {/* Terms and Privacy */}
-                <p className="font-poppins font-normal text-sm text-[#a1a1a1] text-center" style={{ width: '100%', maxWidth: '312px' }}>
+                <p className="font-poppins font-normal text-sm text-muted-foreground text-center" style={{ width: '100%', maxWidth: '312px' }}>
                   By continuing, you agree to our{' '}
                   <span className="text-white underline decoration-solid cursor-pointer hover:opacity-80">
                     Terms of Service

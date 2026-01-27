@@ -62,12 +62,12 @@ function AppLayoutContent({
   }
 
   return (
-    <div className="min-h-screen bg-[#151515]">
+    <div className="min-h-screen bg-background-elevated">
       <Sidebar user={user} currentView={getCurrentView()} />
 
       {/* Main Content */}
       <main
-        className={`min-h-screen bg-[#09090c] ${isResizing ? '' : 'transition-[margin-left] duration-150'}`}
+        className={`min-h-screen bg-background ${isResizing ? '' : 'transition-[margin-left] duration-150'}`}
         style={{ marginLeft: sidebarWidth }}
       >
         {children}
@@ -76,10 +76,10 @@ function AppLayoutContent({
       {/* Floating Bug Report Button */}
       <button
         onClick={() => setShowFeedbackModal(true)}
-        className="fixed bottom-6 right-6 w-14 h-14 bg-[#141519] hover:bg-[#1a1a1a] border border-[#383838] rounded-full shadow-lg flex items-center justify-center transition-all hover:scale-105 z-40"
+        className="fixed bottom-6 right-6 w-14 h-14 bg-background-elevated hover:bg-muted border border-border-strong rounded-full shadow-lg flex items-center justify-center transition-all hover:scale-105 z-40"
         title="Report a Bug"
       >
-        <HugeiconsIcon icon={Bug01Icon} size={24} className="text-[#a1a1a1]" />
+        <HugeiconsIcon icon={Bug01Icon} size={24} className="text-muted-foreground" />
       </button>
 
       {/* Feedback Modal */}

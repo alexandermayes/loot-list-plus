@@ -6,7 +6,8 @@ import { useRouter } from 'next/navigation'
 import type { User } from '@supabase/supabase-js'
 import { useGuildContext } from '@/app/contexts/GuildContext'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
-import { Settings01Icon } from 'hugeicons-react'
+import { HugeiconsIcon } from '@hugeicons/react'
+import { Settings01Icon } from '@hugeicons/core-free-icons'
 import Link from 'next/link'
 import ItemLink from '@/app/components/ItemLink'
 
@@ -251,13 +252,13 @@ export default function MasterLootPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-[42px] font-bold text-white leading-tight">Master Loot</h1>
-          <p className="text-[#8a8d94] mt-1 text-[14px]">Manage loot submissions and available items</p>
+          <p className="text-muted-foreground mt-1 text-[14px]">Manage loot submissions and available items</p>
         </div>
         <Link
           href="/loot-settings"
           className="flex items-center gap-2 px-5 py-2.5 bg-[#2a2d35] hover:bg-[#34373f] border border-[rgba(255,255,255,0.1)] rounded-lg text-white text-[14px] font-medium transition"
         >
-          <Settings01Icon className="w-4 h-4" />
+          <HugeiconsIcon icon={Settings01Icon} size={16} />
           Loot Settings
         </Link>
       </div>
@@ -282,8 +283,8 @@ export default function MasterLootPage() {
                 onClick={() => setFilter(status)}
                 className={`px-5 py-2.5 rounded-full text-[13px] font-medium transition ${
                   filter === status
-                    ? 'bg-[#ff8000] text-white'
-                    : 'bg-[#2a2d35] text-[#a1a1a1] hover:bg-[#34373f] border border-[rgba(255,255,255,0.05)]'
+                    ? 'bg-accent text-white'
+                    : 'bg-[#2a2d35] text-muted-foreground hover:bg-[#34373f] border border-[rgba(255,255,255,0.05)]'
                 }`}
               >
                 {status.charAt(0).toUpperCase() + status.slice(1)}
@@ -294,8 +295,8 @@ export default function MasterLootPage() {
           {/* Submissions List */}
           <div className="space-y-3">
             {filteredSubmissions.length === 0 ? (
-              <div className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl p-8 text-center">
-                <p className="text-[#a1a1a1]">No submissions found</p>
+              <div className="bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-xl p-8 text-center">
+                <p className="text-muted-foreground">No submissions found</p>
               </div>
             ) : (
               filteredSubmissions.map((submission) => (
@@ -323,7 +324,7 @@ export default function MasterLootPage() {
                     }`}>
                       {submission.status}
                     </span>
-                    <span className="text-[#8a8d94] text-[14px]">
+                    <span className="text-muted-foreground text-[14px]">
                       {submission.item_count} items • Submitted {submission.submitted_at ? new Date(submission.submitted_at).toLocaleDateString('en-US', { month: 'numeric', day: 'numeric', year: 'numeric' }) : 'N/A'}
                     </span>
                   </div>
@@ -346,7 +347,7 @@ export default function MasterLootPage() {
           onClick={() => setViewingSubmission(null)}
         >
           <div
-            className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl max-w-2xl w-full max-h-[80vh] overflow-y-auto"
+            className="bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-xl max-w-2xl w-full max-h-[80vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="p-6 border-b border-[rgba(255,255,255,0.1)]">
@@ -354,7 +355,7 @@ export default function MasterLootPage() {
             </div>
             <div className="p-6">
               {submissionDetails.length === 0 ? (
-                <p className="text-[#a1a1a1] text-center py-8">No items in this submission</p>
+                <p className="text-muted-foreground text-center py-8">No items in this submission</p>
               ) : (
                 <div className="space-y-2">
                   {submissionDetails.map((detail: any, idx: number) => (
@@ -365,9 +366,9 @@ export default function MasterLootPage() {
                           wowheadId={detail.loot_item?.wowhead_id}
                           className="font-medium text-[14px]"
                         />
-                        <p className="text-[#a1a1a1] text-[12px]">{detail.loot_item?.boss_name}</p>
+                        <p className="text-muted-foreground text-[12px]">{detail.loot_item?.boss_name}</p>
                       </div>
-                      <span className="px-3 py-1 bg-[#ff8000] text-white rounded-full text-[13px] font-medium">
+                      <span className="px-3 py-1 bg-accent text-white rounded-full text-[13px] font-medium">
                         Rank {detail.rank}
                       </span>
                     </div>
@@ -404,7 +405,7 @@ export default function MasterLootPage() {
               </div>
               <button
                 onClick={() => setViewingSubmission(null)}
-                className="px-5 py-2.5 bg-[#151515] hover:bg-[#1a1a1a] border border-[rgba(255,255,255,0.1)] rounded-[52px] text-white text-[13px] transition"
+                className="px-5 py-2.5 bg-background-elevated hover:bg-muted border border-[rgba(255,255,255,0.1)] rounded-[52px] text-white text-[13px] transition"
               >
                 Close
               </button>

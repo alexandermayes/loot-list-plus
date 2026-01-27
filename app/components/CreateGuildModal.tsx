@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/utils/supabase/client'
-import { Tick01Icon, ArrowRight01Icon, Loading01Icon, Link01Icon, File01Icon, Settings01Icon } from 'hugeicons-react'
+import { HugeiconsIcon } from '@hugeicons/react'
+import { Tick01Icon, ArrowRight01Icon, Loading01Icon, Link01Icon, File01Icon, Settings01Icon } from '@hugeicons/core-free-icons'
 import Image from 'next/image'
 import RealmSelector from '@/app/components/RealmSelector'
 
@@ -417,13 +418,13 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
                     }`}
                   >
                     {isCompleted ? (
-                      <Tick01Icon className="w-4 h-4" />
+                      <HugeiconsIcon icon={Tick01Icon} size={16} />
                     ) : step === 'discord' ? (
-                      <Link01Icon className="w-4 h-4" />
+                      <HugeiconsIcon icon={Link01Icon} size={16} />
                     ) : step === 'details' ? (
-                      <File01Icon className="w-4 h-4" />
+                      <HugeiconsIcon icon={File01Icon} size={16} />
                     ) : (
-                      <Settings01Icon className="w-4 h-4" />
+                      <HugeiconsIcon icon={Settings01Icon} size={16} />
                     )}
                     {step === 'discord' ? 'Connect Discord' : step === 'details' ? 'Add guild details' : 'Finalize settings'}
                   </button>
@@ -444,7 +445,7 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
         <div className="p-6 flex-1 flex flex-col min-h-0">
           {loading ? (
             <div className="flex items-center justify-center py-12">
-              <Loading01Icon className="w-8 h-8 animate-spin text-accent" />
+              <HugeiconsIcon icon={Loading01Icon} size={32} className="animate-spin text-accent" />
             </div>
           ) : !discordVerified ? (
             <div className="text-center py-8">
@@ -503,7 +504,7 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
                           >
                             {selectedDiscordServer === guild.id && (
                               <div className="absolute top-2 right-2">
-                                <Tick01Icon className="w-4 h-4 text-accent" />
+                                <HugeiconsIcon icon={Tick01Icon} size={16} className="text-accent" />
                               </div>
                             )}
                             {guild.icon ? (
@@ -537,7 +538,7 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
                         >
                           {showManualEntry && (
                             <div className="absolute top-2 right-2">
-                              <Tick01Icon className="w-4 h-4 text-accent" />
+                              <HugeiconsIcon icon={Tick01Icon} size={16} className="text-accent" />
                             </div>
                           )}
                           <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center text-muted-foreground">
@@ -602,13 +603,13 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
                         }`}>
                           {checkingBot ? (
                             <div className="flex items-center gap-3">
-                              <Loading01Icon className="w-5 h-5 animate-spin text-muted-foreground" />
+                              <HugeiconsIcon icon={Loading01Icon} size={20} className="animate-spin text-muted-foreground" />
                               <p className="text-[13px] text-muted-foreground">Checking bot installation...</p>
                             </div>
                           ) : botInstalled ? (
                             <div className="flex items-center gap-3">
                               <div className="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center">
-                                <Tick01Icon className="w-5 h-5 text-green-400" />
+                                <HugeiconsIcon icon={Tick01Icon} size={20} className="text-green-400" />
                               </div>
                               <div>
                                 <p className="text-[14px] font-medium text-green-400">Bot Connected!</p>
@@ -673,10 +674,10 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
                         }`}
                       />
                       {checkingName && (
-                        <Loading01Icon className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 animate-spin text-muted-foreground" />
+                        <HugeiconsIcon icon={Loading01Icon} size={20} className="absolute right-3 top-1/2 -translate-y-1/2 animate-spin text-muted-foreground" />
                       )}
                       {!checkingName && nameAvailable === true && (
-                        <Tick01Icon className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-green-500" />
+                        <HugeiconsIcon icon={Tick01Icon} size={20} className="absolute right-3 top-1/2 -translate-y-1/2 text-green-500" />
                       )}
                     </div>
                     {nameError && <p className="text-[12px] text-red-400 mt-1">{nameError}</p>}
@@ -852,7 +853,7 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
               >
                 {creating ? (
                   <>
-                    <Loading01Icon className="w-4 h-4 animate-spin" />
+                    <HugeiconsIcon icon={Loading01Icon} size={16} className="animate-spin" />
                     Creating...
                   </>
                 ) : (
@@ -872,7 +873,7 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
                 className="px-6 py-2.5 bg-white hover:bg-gray-100 rounded-[52px] text-black text-[13px] font-medium transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
               >
                 Continue
-                <ArrowRight01Icon className="w-4 h-4" />
+                <HugeiconsIcon icon={ArrowRight01Icon} size={16} />
               </button>
             )}
           </div>

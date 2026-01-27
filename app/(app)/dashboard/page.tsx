@@ -620,19 +620,19 @@ export default function Dashboard() {
             <h1 className="text-[42px] font-bold text-white leading-tight">
               {greeting}
             </h1>
-            <p className="text-[#a1a1a1] mt-1 text-base">
+            <p className="text-muted-foreground mt-1 text-base">
               {activeCharacter ? `Viewing loot for ${activeCharacter.name}` : `Welcome back to ${activeGuild?.name}`}
             </p>
           </div>
 
           {/* Error Message (e.g., no expansion set) */}
           {error && (
-            <div className="bg-[#141519] border border-[rgba(255,128,0,0.3)] rounded-xl p-6">
+            <div className="bg-background-elevated border border-[rgba(255,128,0,0.3)] rounded-xl p-6">
               <div className="flex items-start gap-3">
-                <div className="text-[#ff8000] mt-0.5">⚠️</div>
+                <div className="text-accent mt-0.5">⚠️</div>
                 <div className="flex-1">
                   <p className="text-white font-semibold text-base">Action Required</p>
-                  <p className="text-[#a1a1a1] text-sm mt-1">{error}</p>
+                  <p className="text-muted-foreground text-sm mt-1">{error}</p>
                   {isOfficer && (
                     <button
                       onClick={() => router.push('/admin/expansions')}
@@ -650,17 +650,17 @@ export default function Dashboard() {
           {!activeCharacter && (
             <div
               onClick={() => setShowCreateCharacterModal(true)}
-              className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl p-6 hover:border-[#ff8000]/50 transition cursor-pointer"
+              className="bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-xl p-6 hover:border-accent/50 transition cursor-pointer"
             >
               <div className="flex items-center gap-4">
-                <div className="w-16 h-16 bg-[#252525] border border-[#383838] rounded-full flex items-center justify-center">
-                  <HugeiconsIcon icon={Add01Icon} size={32} className="text-[#a1a1a1]" />
+                <div className="w-16 h-16 bg-muted border border-border-strong rounded-full flex items-center justify-center">
+                  <HugeiconsIcon icon={Add01Icon} size={32} className="text-muted-foreground" />
                 </div>
                 <div className="flex-1">
                   <h2 className="text-[24px] font-bold text-white">
                     Create Your First Character
                   </h2>
-                  <p className="text-[#a1a1a1] text-sm mt-1">
+                  <p className="text-muted-foreground text-sm mt-1">
                     Add a character to start submitting loot lists and tracking your priority
                   </p>
                 </div>
@@ -675,7 +675,7 @@ export default function Dashboard() {
           {activeCharacter && (
             <div className="flex flex-col lg:flex-row gap-6">
               {/* Character Info Card */}
-              <div className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl p-6 lg:w-1/3">
+              <div className="bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-xl p-6 lg:w-1/3">
                 <div className="flex items-center gap-4">
                   {activeCharacter.class?.name ? (
                     <img
@@ -689,26 +689,26 @@ export default function Dashboard() {
                     </div>
                   )}
                   <div className="flex-1">
-                    <p className="text-sm text-[#a1a1a1]">Current Character</p>
+                    <p className="text-sm text-muted-foreground">Current Character</p>
                     <h2 className="text-[24px] font-bold" style={{ color: activeCharacter.class?.color_hex || '#fff' }}>
                       {activeCharacter.name}
                     </h2>
                     <div className="flex items-center gap-3 mt-1">
                       {(activeCharacter.spec || activeCharacter.class) && (
-                        <span className="text-sm text-[#a1a1a1]">
+                        <span className="text-sm text-muted-foreground">
                           {activeCharacter.spec?.name && activeCharacter.class?.name
                             ? `${activeCharacter.spec.name} ${activeCharacter.class.name}`
                             : activeCharacter.spec?.name || activeCharacter.class?.name}
                         </span>
                       )}
                       {activeCharacter.level && (
-                        <span className="text-sm text-[#a1a1a1]">Level {activeCharacter.level}</span>
+                        <span className="text-sm text-muted-foreground">Level {activeCharacter.level}</span>
                       )}
                       {activeCharacter.realm && (
-                        <span className="text-sm text-[#a1a1a1]">{activeCharacter.realm}</span>
+                        <span className="text-sm text-muted-foreground">{activeCharacter.realm}</span>
                       )}
                       {activeCharacter.is_main && (
-                        <span className="px-2 py-0.5 bg-[#ff8000]/20 text-[#ff8000] text-xs rounded-full border border-[#ff8000]/30">
+                        <span className="px-2 py-0.5 bg-accent/20 text-accent text-xs rounded-full border border-accent/30">
                           Main
                         </span>
                       )}
@@ -720,10 +720,10 @@ export default function Dashboard() {
               {/* Stats Grid */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:flex-1">
                 {/* Completed Lists */}
-                <div className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl p-6">
+                <div className="bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-xl p-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm text-[#a1a1a1]">Completed Lists</p>
+                      <p className="text-sm text-muted-foreground">Completed Lists</p>
                       <p className="text-[42px] font-bold text-white mt-2 leading-none">{stats.completedLists}</p>
                     </div>
                     <div className="w-12 h-12 bg-green-500/20 rounded-full flex items-center justify-center">
@@ -733,10 +733,10 @@ export default function Dashboard() {
                 </div>
 
                 {/* Pending Reviews */}
-                <div className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl p-6">
+                <div className="bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-xl p-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm text-[#a1a1a1]">Pending Reviews</p>
+                      <p className="text-sm text-muted-foreground">Pending Reviews</p>
                       <p className="text-[42px] font-bold text-white mt-2 leading-none">{stats.pendingReviews}</p>
                     </div>
                     <div className="w-12 h-12 bg-yellow-500/20 rounded-full flex items-center justify-center">
@@ -746,10 +746,10 @@ export default function Dashboard() {
                 </div>
 
                 {/* Actions Needed */}
-                <div className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl p-6">
+                <div className="bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-xl p-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm text-[#a1a1a1]">Actions Needed</p>
+                      <p className="text-sm text-muted-foreground">Actions Needed</p>
                       <p className="text-[42px] font-bold text-white mt-2 leading-none">{visibleActionsCount}</p>
                     </div>
                     <div className="w-12 h-12 bg-orange-500/20 rounded-full flex items-center justify-center">
@@ -764,17 +764,17 @@ export default function Dashboard() {
           {/* Loot Priority and Received Items Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Next in Line - Top Items */}
-            <div className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl p-6">
+            <div className="bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-xl p-6">
               <div className="flex items-center gap-4 mb-6">
-                <HugeiconsIcon icon={Award01Icon} size={32} className="text-[#ff8000] flex-shrink-0" />
+                <HugeiconsIcon icon={Award01Icon} size={32} className="text-accent flex-shrink-0" />
                 <div>
                   <h2 className="text-[24px] font-bold text-white">Next in Line</h2>
-                  <p className="text-sm text-[#a1a1a1] mt-1">Your highest priority items</p>
+                  <p className="text-sm text-muted-foreground mt-1">Your highest priority items</p>
                 </div>
               </div>
               {lootPriority.length === 0 ? (
                 <div className="text-center py-8">
-                  <p className="text-[#a1a1a1] text-sm">No priority items yet</p>
+                  <p className="text-muted-foreground text-sm">No priority items yet</p>
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -782,22 +782,22 @@ export default function Dashboard() {
                     <div
                       key={item.item_id}
                       onClick={() => router.push(`/master-sheet?tier=${item.raid_tier_id}&item=${item.item_id}`)}
-                      className="bg-[#151515] border border-[rgba(255,255,255,0.1)] rounded-xl p-4 hover:border-[#ff8000]/50 transition cursor-pointer"
+                      className="bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-xl p-4 hover:border-accent/50 transition cursor-pointer"
                     >
                       <div className="flex items-center gap-4">
-                        <div className="flex-shrink-0 w-10 h-10 bg-[#ff8000]/20 rounded-full flex items-center justify-center">
-                          <span className="text-[#ff8000] font-bold text-lg">#{index + 1}</span>
+                        <div className="flex-shrink-0 w-10 h-10 bg-accent/20 rounded-full flex items-center justify-center">
+                          <span className="text-accent font-bold text-lg">#{index + 1}</span>
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1">
                             <ItemLink name={item.item_name} wowheadId={item.wowhead_id} clickable={true} showIcon={true} />
                             {item.classification && item.classification !== 'Unlimited' && (
-                              <span className="text-xs px-2 py-0.5 bg-[#ff8000]/20 text-[#ff8000] rounded-full border border-[#ff8000]/30">
+                              <span className="text-xs px-2 py-0.5 bg-accent/20 text-accent rounded-full border border-accent/30">
                                 {item.classification}
                               </span>
                             )}
                           </div>
-                          <div className="flex items-center gap-2 text-xs text-[#a1a1a1] flex-wrap">
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
                             <span>{item.boss_name}</span>
                             <span>•</span>
                             <span className="font-semibold text-white">{item.loot_score.toFixed(1)}</span>
@@ -810,7 +810,7 @@ export default function Dashboard() {
                                     <span style={{ color: char.class_color }} className="font-semibold">
                                       {char.name}
                                     </span>
-                                    {idx < item.tied_characters.length - 1 && <span className="text-[#a1a1a1]">,</span>}
+                                    {idx < item.tied_characters.length - 1 && <span className="text-muted-foreground">,</span>}
                                   </span>
                                 ))}
                               </>
@@ -825,24 +825,24 @@ export default function Dashboard() {
             </div>
 
             {/* Recently Received Items */}
-            <div className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl p-6">
+            <div className="bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-xl p-6">
               <div className="flex items-center gap-4 mb-6">
                 <HugeiconsIcon icon={CheckmarkCircle01Icon} size={32} className="text-green-500 flex-shrink-0" />
                 <div>
                   <h2 className="text-[24px] font-bold text-white">Recently received</h2>
-                  <p className="text-sm text-[#a1a1a1] mt-1">Your recent loot awards</p>
+                  <p className="text-sm text-muted-foreground mt-1">Your recent loot awards</p>
                 </div>
               </div>
               {receivedItems.length === 0 ? (
                 <div className="text-center py-8">
-                  <p className="text-[#a1a1a1] text-sm">No loot received yet</p>
+                  <p className="text-muted-foreground text-sm">No loot received yet</p>
                 </div>
               ) : (
                 <div className="space-y-3">
                   {receivedItems.map((item) => (
                     <div
                       key={item.id}
-                      className="bg-[#151515] border border-[rgba(255,255,255,0.1)] rounded-xl p-4"
+                      className="bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-xl p-4"
                     >
                       <div className="flex items-center gap-4">
                         <div className="flex-shrink-0 w-10 h-10 bg-green-500/20 rounded-full flex items-center justify-center">
@@ -857,7 +857,7 @@ export default function Dashboard() {
                               </span>
                             )}
                           </div>
-                          <div className="flex items-center gap-2 text-xs text-[#a1a1a1] flex-wrap">
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
                             <span>{item.boss_name}</span>
                             <span>•</span>
                             <span>{item.raid_tier_name}</span>
@@ -875,7 +875,7 @@ export default function Dashboard() {
 
           {/* Actions Needed - Current Character */}
           {actionsNeeded.filter(submission => !dismissedActions.has(submission.id)).length > 0 && (
-            <div className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl p-6">
+            <div className="bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-xl p-6">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-[24px] font-bold text-white">Actions needed</h2>
               </div>
@@ -883,7 +883,7 @@ export default function Dashboard() {
                 {actionsNeeded.filter(submission => !dismissedActions.has(submission.id)).map(submission => (
                   <div
                     key={submission.id}
-                    className="bg-[#151515] border border-[rgba(255,255,255,0.1)] rounded-xl p-4 hover:border-[#ff8000]/50 transition cursor-pointer"
+                    className="bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-xl p-4 hover:border-accent/50 transition cursor-pointer"
                     onClick={() => router.push('/loot-list')}
                   >
                     <div className="flex items-center justify-between">
@@ -895,13 +895,13 @@ export default function Dashboard() {
                           >
                             {submission.character.name}
                           </span>
-                          <span className="text-[#a1a1a1] text-sm">•</span>
+                          <span className="text-muted-foreground text-sm">•</span>
                           <span className="text-white text-sm">{submission.raid_tier.name}</span>
                           <span className={`px-3 py-1 rounded-full text-xs font-medium border ${getStatusBadge(submission.status)}`}>
                             {getStatusText(submission.status)}
                           </span>
                         </div>
-                        <p className="text-[#a1a1a1] text-sm mt-1">
+                        <p className="text-muted-foreground text-sm mt-1">
                           {submission.status === 'draft'
                             ? 'Complete and submit your loot list'
                             : 'Address feedback and resubmit'}
@@ -910,7 +910,7 @@ export default function Dashboard() {
                       <div className="ml-4 flex items-center gap-2">
                         <button
                           onClick={(e) => handleDismissAction(e, submission.id)}
-                          className="p-2 bg-[#151515] hover:bg-red-950/50 border border-[rgba(255,255,255,0.1)] hover:border-red-600/30 rounded-lg text-[#a1a1a1] hover:text-red-400 transition"
+                          className="p-2 bg-background-elevated hover:bg-red-950/50 border border-[rgba(255,255,255,0.1)] hover:border-red-600/30 rounded-lg text-muted-foreground hover:text-red-400 transition"
                           title="Dismiss"
                         >
                           <HugeiconsIcon icon={Cancel01Icon} size={16} />

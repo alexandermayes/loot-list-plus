@@ -4,7 +4,8 @@ import { useState, useEffect } from 'react'
 import dynamic from 'next/dynamic'
 import { useGuildContext, Character } from '@/app/contexts/GuildContext'
 import { CharacterCard } from '@/app/components/CharacterCard'
-import { Add01Icon } from 'hugeicons-react'
+import { HugeiconsIcon } from '@hugeicons/react'
+import { Add01Icon } from '@hugeicons/core-free-icons'
 
 // Lazy load modals to reduce initial bundle size
 const CreateCharacterModal = dynamic(() => import('@/app/components/CreateCharacterModal').then(mod => ({ default: mod.CreateCharacterModal })), {
@@ -30,7 +31,7 @@ export default function ManageCharactersPage() {
   if (loading) {
     return (
       <div className="p-8 flex items-center justify-center">
-        <p className="text-[#666] text-[16px]">Loading characters...</p>
+        <p className="text-foreground-muted text-[16px]">Loading characters...</p>
       </div>
     )
   }
@@ -41,7 +42,7 @@ export default function ManageCharactersPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-[42px] font-bold text-white mb-2">My Characters</h1>
-          <p className="text-[16px] text-[#666]">
+          <p className="text-[16px] text-foreground-muted">
             Manage your characters and their guild memberships
           </p>
         </div>
@@ -50,22 +51,22 @@ export default function ManageCharactersPage() {
           onClick={() => setShowCreateModal(true)}
           className="px-6 py-3 bg-white hover:bg-gray-100 rounded-[52px] text-black font-medium text-[16px] transition flex items-center gap-2"
         >
-          <Add01Icon className="w-5 h-5" />
+          <HugeiconsIcon icon={Add01Icon} size={20} />
           Create Character
         </button>
       </div>
 
       {/* Characters List */}
       {userCharacters.length === 0 ? (
-        <div className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl p-12 text-center">
+        <div className="bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-xl p-12 text-center">
           <div className="max-w-md mx-auto">
             <div className="w-16 h-16 bg-[#1a1a1f] rounded-full flex items-center justify-center mx-auto mb-4">
-              <Add01Icon className="w-8 h-8 text-[#666]" />
+              <HugeiconsIcon icon={Add01Icon} size={32} className="text-foreground-muted" />
             </div>
             <h3 className="text-[24px] font-bold text-white mb-2">
               No Characters Yet
             </h3>
-            <p className="text-[14px] text-[#666] mb-6">
+            <p className="text-[14px] text-foreground-muted mb-6">
               Create your first character to start managing loot lists and joining guilds
             </p>
             <button
@@ -126,11 +127,11 @@ export default function ManageCharactersPage() {
 
       {/* Info Box */}
       {userCharacters.length > 0 && (
-        <div className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl p-6">
+        <div className="bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-xl p-6">
           <h3 className="text-[16px] font-semibold text-white mb-3">
             Character Management Tips
           </h3>
-          <ul className="space-y-2 text-[14px] text-[#666]">
+          <ul className="space-y-2 text-[14px] text-foreground-muted">
             <li>• Click on a character to view and edit details</li>
             <li>• Each character can join multiple guilds</li>
             <li>• Each character has separate loot lists per raid tier</li>

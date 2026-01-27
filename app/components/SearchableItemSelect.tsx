@@ -175,7 +175,7 @@ export default function SearchableItemSelect({
         ref={buttonRef}
         type="button"
         onClick={() => isOpen ? setIsOpen(false) : handleOpen()}
-        className="w-full px-3 py-2 bg-[#151515] border border-[#383838] rounded-[52px] text-white text-left focus:outline-none focus:border-[#ff8000] flex items-center justify-between gap-2"
+        className="w-full px-3 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-white text-left focus:outline-none focus:border-accent flex items-center justify-between gap-2"
       >
         <span className="truncate flex items-center gap-2 min-w-0">
           {selectedItem ? (
@@ -206,7 +206,7 @@ export default function SearchableItemSelect({
       {isOpen && dropdownPosition.width > 0 && (
         <div
           ref={dropdownContentRef}
-          className="fixed z-[9999] bg-[#151515] border border-[#383838] rounded-lg shadow-lg max-h-96 overflow-hidden"
+          className="fixed z-[9999] bg-background-elevated border border-border-strong rounded-lg shadow-lg max-h-96 overflow-hidden"
           style={{
             top: `${dropdownPosition.top + 4}px`,
             left: `${dropdownPosition.left}px`,
@@ -215,14 +215,14 @@ export default function SearchableItemSelect({
           }}
         >
           {/* Search Input */}
-          <div className="p-2 border-b border-[rgba(255,255,255,0.1)] sticky top-0 bg-[#151515]">
+          <div className="p-2 border-b border-[rgba(255,255,255,0.1)] sticky top-0 bg-background-elevated">
             <input
               ref={searchInputRef}
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search items..."
-              className="w-full px-3 py-2 bg-[#0d0e11] border border-[rgba(255,255,255,0.1)] rounded-md text-white text-sm focus:outline-none focus:border-[#ff8000]"
+              className="w-full px-3 py-2 bg-background-subtle border border-[rgba(255,255,255,0.1)] rounded-md text-white text-sm focus:outline-none focus:border-accent"
             />
           </div>
 
@@ -234,7 +234,7 @@ export default function SearchableItemSelect({
                 e.stopPropagation()
                 handleClear()
               }}
-              className="w-full px-3 py-2 text-left hover:bg-[#1a1a1a] text-[#a1a1a1] text-sm border-b border-[rgba(255,255,255,0.1)]"
+              className="w-full px-3 py-2 text-left hover:bg-muted text-muted-foreground text-sm border-b border-[rgba(255,255,255,0.1)]"
             >
               -- Clear Selection --
             </button>
@@ -243,14 +243,14 @@ export default function SearchableItemSelect({
           {/* Items List */}
           <div className="max-h-80 overflow-y-auto">
             {filteredItems.length === 0 ? (
-              <div className="px-3 py-4 text-center text-[#a1a1a1] text-sm">
+              <div className="px-3 py-4 text-center text-muted-foreground text-sm">
                 No items found
               </div>
             ) : (
               bossNames.map(boss => (
                 <div key={boss}>
                   {/* Boss Header */}
-                  <div className="px-3 py-2 bg-[#1a1a1a] border-b border-[rgba(255,255,255,0.1)]">
+                  <div className="px-3 py-2 bg-muted border-b border-[rgba(255,255,255,0.1)]">
                     <p className="text-xs font-semibold text-white uppercase tracking-wide">
                       {boss}
                     </p>
@@ -269,15 +269,15 @@ export default function SearchableItemSelect({
                           }
                         }}
                         disabled={isDisabled}
-                        className={`w-full px-3 py-2 text-left hover:bg-[#1a1a1a] flex items-center gap-2 min-w-0 ${
+                        className={`w-full px-3 py-2 text-left hover:bg-muted flex items-center gap-2 min-w-0 ${
                           isDisabled ? 'opacity-50 cursor-not-allowed' : ''
-                        } ${value === item.id ? 'bg-[#1a1a1a]' : ''}`}
+                        } ${value === item.id ? 'bg-muted' : ''}`}
                       >
                         <span className="truncate flex-1 min-w-0">
                           <ItemLink name={item.name} wowheadId={item.wowhead_id} clickable={false} />
                         </span>
                         {item.classification && item.classification !== 'Unlimited' && (
-                          <span className="text-xs text-[#a1a1a1] flex-shrink-0">
+                          <span className="text-xs text-muted-foreground flex-shrink-0">
                             [{item.classification}]
                           </span>
                         )}

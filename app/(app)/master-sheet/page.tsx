@@ -542,9 +542,9 @@ export default function MasterSheet() {
           if (element) {
             element.scrollIntoView({ behavior: 'smooth', block: 'center' })
             // Highlight the item briefly
-            element.classList.add('ring-2', 'ring-[#ff8000]')
+            element.classList.add('ring-2', 'ring-accent')
             setTimeout(() => {
-              element.classList.remove('ring-2', 'ring-[#ff8000]')
+              element.classList.remove('ring-2', 'ring-accent')
             }, 2000)
 
             // Clear the pending scroll
@@ -615,14 +615,14 @@ export default function MasterSheet() {
           <h1 className="text-[42px] font-bold text-white leading-tight">
             {selectedTier?.name}: Loot Rankings
           </h1>
-          <p className="text-[#a1a1a1] text-base">
+          <p className="text-muted-foreground text-base">
             Top 5 players for each item
           </p>
         </div>
 
         {/* Raid Tier Tabs - Sticky */}
         {raidTiers.length > 0 && (
-          <div className="sticky top-0 z-20 px-8 py-3 bg-[#09090c]">
+          <div className="sticky top-0 z-20 px-8 py-3 bg-background">
             <div
               ref={tierScrollRef}
               onScroll={handleTierScroll}
@@ -639,8 +639,8 @@ export default function MasterSheet() {
                     onClick={() => setSelectedTierId(tier.id)}
                     className={`px-5 py-2.5 rounded-[40px] whitespace-nowrap text-[13px] font-medium transition-all ${
                       selectedTierId === tier.id
-                        ? 'bg-[rgba(255,128,0,0.2)] border-[0.5px] border-[rgba(255,128,0,0.2)] text-[#ff8000]'
-                        : 'bg-[#151515] border border-[rgba(255,255,255,0.1)] text-white hover:bg-[#1a1a1a]'
+                        ? 'bg-[rgba(255,128,0,0.2)] border-[0.5px] border-[rgba(255,128,0,0.2)] text-accent'
+                        : 'bg-background-elevated border border-[rgba(255,255,255,0.1)] text-white hover:bg-muted'
                     }`}
                   >
                     <span className="flex items-center gap-2">
@@ -656,10 +656,10 @@ export default function MasterSheet() {
 
         {/* Boss Quick Navigation - Sticky below tier tabs */}
         {!contentLoading && bossNames.length > 0 && (
-          <div className="sticky top-[64px] z-10 px-8 pt-3 pb-2 bg-[#09090c]">
+          <div className="sticky top-[64px] z-10 px-8 pt-3 pb-2 bg-background">
             <div className="flex gap-3">
               {/* Boss chips container with horizontal scroll fade */}
-              <div className="flex-1 min-w-0 bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl p-3 overflow-hidden">
+              <div className="flex-1 min-w-0 bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-xl p-3 overflow-hidden">
                 <div
                   className="overflow-x-auto scrollbar-hide"
                   style={{
@@ -672,7 +672,7 @@ export default function MasterSheet() {
                       <button
                         key={boss}
                         onClick={() => scrollToBoss(boss)}
-                        className="px-3 py-1.5 bg-[#151515] hover:bg-[#1a1a1a] border border-[rgba(255,255,255,0.1)] rounded-[40px] text-xs font-medium text-white whitespace-nowrap transition"
+                        className="px-3 py-1.5 bg-background-elevated hover:bg-muted border border-[rgba(255,255,255,0.1)] rounded-[40px] text-xs font-medium text-white whitespace-nowrap transition"
                       >
                         {boss}
                       </button>
@@ -681,17 +681,17 @@ export default function MasterSheet() {
                 </div>
               </div>
               {/* Expand/Collapse container */}
-              <div className="flex-shrink-0 bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl p-3">
+              <div className="flex-shrink-0 bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-xl p-3">
                 <div className="flex gap-2 h-full items-center">
                   <button
                     onClick={expandAll}
-                    className="px-3 py-1.5 bg-[#151515] hover:bg-[#1a1a1a] border border-[rgba(255,255,255,0.1)] rounded-[40px] text-xs font-medium text-[#a1a1a1] hover:text-white whitespace-nowrap transition"
+                    className="px-3 py-1.5 bg-background-elevated hover:bg-muted border border-[rgba(255,255,255,0.1)] rounded-[40px] text-xs font-medium text-muted-foreground hover:text-white whitespace-nowrap transition"
                   >
                     Expand All
                   </button>
                   <button
                     onClick={collapseAll}
-                    className="px-3 py-1.5 bg-[#151515] hover:bg-[#1a1a1a] border border-[rgba(255,255,255,0.1)] rounded-[40px] text-xs font-medium text-[#a1a1a1] hover:text-white whitespace-nowrap transition"
+                    className="px-3 py-1.5 bg-background-elevated hover:bg-muted border border-[rgba(255,255,255,0.1)] rounded-[40px] text-xs font-medium text-muted-foreground hover:text-white whitespace-nowrap transition"
                   >
                     Collapse All
                   </button>
@@ -706,23 +706,23 @@ export default function MasterSheet() {
 
         {/* Content Loading State */}
         {contentLoading ? (
-          <div className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl p-12">
+          <div className="bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-xl p-12">
             <div className="flex flex-col items-center justify-center gap-4">
               <LoadingSpinner />
-              <p className="text-[#a1a1a1] text-sm">Loading loot rankings...</p>
+              <p className="text-muted-foreground text-sm">Loading loot rankings...</p>
             </div>
           </div>
         ) : (
         <>
         {/* Master Sheet Hidden Warning */}
         {!masterSheetVisible && !isOfficer ? (
-          <div className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl p-12 text-center">
+          <div className="bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-xl p-12 text-center">
             <div className="max-w-md mx-auto">
-              <div className="w-16 h-16 bg-[#1a1a1a] rounded-full flex items-center justify-center mx-auto mb-4">
+              <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
                 <span className="text-3xl">🔒</span>
               </div>
               <h3 className="text-xl font-semibold text-white mb-2">Master Sheet Not Available</h3>
-              <p className="text-[#a1a1a1]">
+              <p className="text-muted-foreground">
                 The loot rankings for this raid tier are currently hidden. Officers will make them visible once the submission deadline has passed.
               </p>
             </div>
@@ -746,8 +746,8 @@ export default function MasterSheet() {
 
             {/* Loot Table */}
             {Object.keys(groupedByBoss).length === 0 ? (
-              <div className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl p-8 text-center">
-                <p className="text-[#a1a1a1]">No loot items found for this raid tier</p>
+              <div className="bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-xl p-8 text-center">
+                <p className="text-muted-foreground">No loot items found for this raid tier</p>
               </div>
             ) : (
           <div className="space-y-3">
@@ -757,12 +757,12 @@ export default function MasterSheet() {
                 <div
                   key={boss}
                   id={`boss-${boss.replace(/\s+/g, '-')}`}
-                  className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl overflow-hidden scroll-mt-[140px]"
+                  className="bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-xl overflow-hidden scroll-mt-[140px]"
                 >
                   {/* Boss Header - Clickable */}
                   <button
                     onClick={() => toggleBossCollapse(boss)}
-                    className="w-full px-5 py-3 flex items-center justify-between hover:bg-[#1a1a1a] transition-colors"
+                    className="w-full px-5 py-3 flex items-center justify-between hover:bg-muted transition-colors"
                   >
                     <div className="flex items-center gap-3">
                       {getBossImage(boss) && (
@@ -775,11 +775,11 @@ export default function MasterSheet() {
                       <h2 className="text-[15px] font-semibold text-white">{boss}</h2>
                     </div>
                     <div className="flex items-center gap-3">
-                      <span className="text-[12px] text-[#666] font-medium">
+                      <span className="text-[12px] text-foreground-muted font-medium">
                         {items.length} item{items.length !== 1 ? 's' : ''}
                       </span>
                       <svg
-                        className={`w-4 h-4 text-[#a1a1a1] transition-transform ${isCollapsed ? '' : 'rotate-90'}`}
+                        className={`w-4 h-4 text-muted-foreground transition-transform ${isCollapsed ? '' : 'rotate-90'}`}
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"
@@ -794,14 +794,14 @@ export default function MasterSheet() {
                     <div className="border-t border-[rgba(255,255,255,0.1)]">
                       <table className="w-full">
                         <thead>
-                          <tr className="bg-[#0d0e11]">
-                            <th className="px-5 py-2.5 text-left text-[12px] font-medium text-[#666] w-[280px]">Item</th>
-                            <th className="px-3 py-2.5 text-left text-[12px] font-medium text-[#666] w-[100px]">Slot</th>
-                            <th className="px-3 py-2.5 text-center text-[12px] font-medium text-[#666] w-[120px]">#1</th>
-                            <th className="px-3 py-2.5 text-center text-[12px] font-medium text-[#666] w-[120px]">#2</th>
-                            <th className="px-3 py-2.5 text-center text-[12px] font-medium text-[#666] w-[120px]">#3</th>
-                            <th className="px-3 py-2.5 text-center text-[12px] font-medium text-[#666] w-[120px]">#4</th>
-                            <th className="px-3 py-2.5 text-center text-[12px] font-medium text-[#666] w-[120px]">#5</th>
+                          <tr className="bg-background-subtle">
+                            <th className="px-5 py-2.5 text-left text-[12px] font-medium text-foreground-muted w-[280px]">Item</th>
+                            <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted w-[100px]">Slot</th>
+                            <th className="px-3 py-2.5 text-center text-[12px] font-medium text-foreground-muted w-[120px]">#1</th>
+                            <th className="px-3 py-2.5 text-center text-[12px] font-medium text-foreground-muted w-[120px]">#2</th>
+                            <th className="px-3 py-2.5 text-center text-[12px] font-medium text-foreground-muted w-[120px]">#3</th>
+                            <th className="px-3 py-2.5 text-center text-[12px] font-medium text-foreground-muted w-[120px]">#4</th>
+                            <th className="px-3 py-2.5 text-center text-[12px] font-medium text-foreground-muted w-[120px]">#5</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-[rgba(255,255,255,0.05)]">
@@ -809,7 +809,7 @@ export default function MasterSheet() {
                             <tr
                               key={ir.item.id}
                               id={`item-${ir.item.id}`}
-                              className={`transition-all hover:bg-[#1a1a1a] ${ir.rankings.length === 0 ? 'bg-[#1a1519]' : ''}`}
+                              className={`transition-all hover:bg-muted ${ir.rankings.length === 0 ? 'bg-[#1a1519]' : ''}`}
                             >
                               <td className="px-5 py-2.5">
                                 <ItemLink
@@ -818,7 +818,7 @@ export default function MasterSheet() {
                                   className="font-medium text-[13px]"
                                 />
                               </td>
-                              <td className="px-3 py-2.5 text-[12px] text-[#666]">
+                              <td className="px-3 py-2.5 text-[12px] text-foreground-muted">
                                 {ir.item.item_slot}
                               </td>
                               {[0, 1, 2, 3, 4].map((index) => {
@@ -833,7 +833,7 @@ export default function MasterSheet() {
                                         >
                                           {ranking.player_name}
                                         </span>
-                                        <span className="text-[11px] text-[#666]">
+                                        <span className="text-[11px] text-foreground-muted">
                                           {Math.round(ranking.loot_score)}
                                         </span>
                                       </div>
@@ -860,13 +860,13 @@ export default function MasterSheet() {
         )}
 
         {/* Legend */}
-        <div className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl p-4">
+        <div className="bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-xl p-4">
           <div className="flex items-center justify-between">
-            <p className="text-[#666] text-[12px]">
+            <p className="text-foreground-muted text-[12px]">
               Scores = item rank + attendance + role modifiers + priority bonuses. Ties go to roll.
             </p>
             {Object.keys(itemPriorities).length > 0 && (
-              <p className="text-[#666] text-[12px]">
+              <p className="text-foreground-muted text-[12px]">
                 {Object.keys(itemPriorities).length} items with priority
               </p>
             )}

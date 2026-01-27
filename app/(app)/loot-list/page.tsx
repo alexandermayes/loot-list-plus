@@ -699,7 +699,7 @@ export default function LootList() {
       case 'pending': return 'bg-yellow-950/20 border-yellow-600 text-white'
       case 'needs_revision': return 'bg-orange-950/20 border-orange-600 text-white'
       case 'rejected': return 'bg-red-950/20 border-red-600 text-white'
-      default: return 'bg-[#141519] border-[rgba(255,255,255,0.1)] text-[#a1a1a1]'
+      default: return 'bg-background-elevated border-[rgba(255,255,255,0.1)] text-muted-foreground'
     }
   }
 
@@ -911,10 +911,10 @@ export default function LootList() {
         <td className="px-3 py-2.5">
           {selectedItem1 ? (
             <div className="flex items-center gap-2">
-              <p className="text-[#666] text-[12px]">{normalizeBossName(selectedItem1.boss_name)}</p>
+              <p className="text-foreground-muted text-[12px]">{normalizeBossName(selectedItem1.boss_name)}</p>
               {selectedItem1.classification && getClassificationBadge(selectedItem1.classification)}
             </div>
-          ) : <span className="text-[#666] text-[12px]">-</span>}
+          ) : <span className="text-foreground-muted text-[12px]">-</span>}
         </td>
         <td className="px-3 py-2.5">
           <SearchableItemSelect
@@ -928,10 +928,10 @@ export default function LootList() {
         <td className="px-3 py-2.5">
           {selectedItem2 ? (
             <div className="flex items-center gap-2">
-              <p className="text-[#666] text-[12px]">{normalizeBossName(selectedItem2.boss_name)}</p>
+              <p className="text-foreground-muted text-[12px]">{normalizeBossName(selectedItem2.boss_name)}</p>
               {selectedItem2.classification && getClassificationBadge(selectedItem2.classification)}
             </div>
-          ) : <span className="text-[#666] text-[12px]">-</span>}
+          ) : <span className="text-foreground-muted text-[12px]">-</span>}
         </td>
       </tr>
     )
@@ -954,7 +954,7 @@ export default function LootList() {
             <div>
               <h1 className="text-[42px] font-bold text-white leading-tight">Loot Lists</h1>
               <div className="mt-1">
-                <p className="text-[#a1a1a1] text-base inline">
+                <p className="text-muted-foreground text-base inline">
                   Rank your preferred items for {raidTiers.find(t => t.id === selectedTierId)?.name || 'this raid tier'}
                 </p>
                 {viewingExpansionId && (
@@ -966,7 +966,7 @@ export default function LootList() {
             </div>
             <div className="flex items-center gap-3">
               {/* Auto-save status */}
-              <div className="text-sm text-[#a1a1a1]">
+              <div className="text-sm text-muted-foreground">
                 {autoSaving ? (
                   <span>Saving...</span>
                 ) : lastSaved ? (
@@ -976,7 +976,7 @@ export default function LootList() {
               {/* How to Rank Button */}
               <button
                 onClick={() => setShowInstructionsModal(true)}
-                className="px-6 py-3 bg-[#151515] hover:bg-[#1a1a1a] border border-[rgba(255,255,255,0.1)] rounded-[52px] text-white font-medium text-base transition whitespace-nowrap"
+                className="px-6 py-3 bg-background-elevated hover:bg-muted border border-[rgba(255,255,255,0.1)] rounded-[52px] text-white font-medium text-base transition whitespace-nowrap"
               >
                 How to Rank
               </button>
@@ -986,7 +986,7 @@ export default function LootList() {
           {/* Expansion Selector */}
           {guildExpansions.length > 1 && (
             <div className="flex items-center gap-3 overflow-x-auto pb-2 mt-4">
-              <span className="text-[#a1a1a1] text-sm font-medium whitespace-nowrap">Expansion:</span>
+              <span className="text-muted-foreground text-sm font-medium whitespace-nowrap">Expansion:</span>
               <div className="flex gap-2">
                 {guildExpansions.map((expansion) => {
                   const isViewing = viewingExpansionId === expansion.expansion_id
@@ -998,8 +998,8 @@ export default function LootList() {
                       onClick={() => setViewingExpansion(expansion.is_current ? null : expansion.expansion_id)}
                       className={`px-5 py-2.5 rounded-[40px] whitespace-nowrap text-[13px] font-medium transition-all ${
                         isViewing || isCurrent
-                          ? 'bg-[rgba(255,128,0,0.2)] border-[0.5px] border-[rgba(255,128,0,0.2)] text-[#ff8000]'
-                          : 'bg-[#151515] border border-[rgba(255,255,255,0.1)] text-white hover:bg-[#1a1a1a]'
+                          ? 'bg-[rgba(255,128,0,0.2)] border-[0.5px] border-[rgba(255,128,0,0.2)] text-accent'
+                          : 'bg-background-elevated border border-[rgba(255,255,255,0.1)] text-white hover:bg-muted'
                       }`}
                     >
                       <div className="flex items-center gap-2">
@@ -1016,9 +1016,9 @@ export default function LootList() {
 
         {/* Raid Tier Tabs - Sticky */}
         {raidTiers.length > 0 && (
-          <div className="sticky top-0 z-20 px-8 py-3 bg-[#09090c]">
+          <div className="sticky top-0 z-20 px-8 py-3 bg-background">
             <div className="flex items-center gap-3 overflow-x-auto">
-              <span className="text-[#a1a1a1] text-sm font-medium whitespace-nowrap">Raid Tier:</span>
+              <span className="text-muted-foreground text-sm font-medium whitespace-nowrap">Raid Tier:</span>
               <div className="flex gap-2">
                 {raidTiers.map((tier: any) => {
                   const status = tierSubmissionStatuses[tier.id]
@@ -1041,8 +1041,8 @@ export default function LootList() {
                       onClick={() => changeTier(tier.id)}
                       className={`px-5 py-2.5 rounded-[40px] whitespace-nowrap text-[13px] font-medium transition-all ${
                         selectedTierId === tier.id
-                          ? 'bg-[rgba(255,128,0,0.2)] border-[0.5px] border-[rgba(255,128,0,0.2)] text-[#ff8000]'
-                          : 'bg-[#151515] border border-[rgba(255,255,255,0.1)] text-white hover:bg-[#1a1a1a]'
+                          ? 'bg-[rgba(255,128,0,0.2)] border-[0.5px] border-[rgba(255,128,0,0.2)] text-accent'
+                          : 'bg-background-elevated border border-[rgba(255,255,255,0.1)] text-white hover:bg-muted'
                       }`}
                     >
                       <div className="flex items-center gap-2">
@@ -1070,10 +1070,10 @@ export default function LootList() {
         <div className="px-8 pb-8 space-y-6">
         {/* Content Loading State */}
         {contentLoading ? (
-          <div className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl p-12">
+          <div className="bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-xl p-12">
             <div className="flex flex-col items-center justify-center gap-4">
               <LoadingSpinner />
-              <p className="text-[#a1a1a1] text-sm">Loading loot items...</p>
+              <p className="text-muted-foreground text-sm">Loading loot items...</p>
             </div>
           </div>
         ) : (
@@ -1101,7 +1101,7 @@ export default function LootList() {
                 {rankedCount > 0 && (
                   <button
                     onClick={handleClearList}
-                    className="px-6 py-3 bg-[#151515] hover:bg-red-950/50 border border-[rgba(255,255,255,0.1)] hover:border-red-600/30 rounded-[52px] text-red-400 hover:text-red-300 font-medium text-base transition whitespace-nowrap"
+                    className="px-6 py-3 bg-background-elevated hover:bg-red-950/50 border border-[rgba(255,255,255,0.1)] hover:border-red-600/30 rounded-[52px] text-red-400 hover:text-red-300 font-medium text-base transition whitespace-nowrap"
                   >
                     Clear List
                   </button>
@@ -1118,7 +1118,7 @@ export default function LootList() {
                   }
                   className={`px-6 py-3 rounded-[52px] font-medium text-base transition whitespace-nowrap shadow-lg
                     ${(!hasChanges && (submission?.status === 'approved' || submission?.status === 'pending')) || saving || rankedCount === 0 || duplicateItems.length > 0 || hasValidationErrors
-                      ? 'bg-[#1a1a1a] text-[#666] cursor-not-allowed border-[rgba(255,255,255,0.1)] border-2'
+                      ? 'bg-muted text-foreground-muted cursor-not-allowed border-[rgba(255,255,255,0.1)] border-2'
                       : 'bg-white hover:bg-gray-100 text-black border-2 border-white'
                     }`}
                 >
@@ -1217,12 +1217,12 @@ export default function LootList() {
                 <col style={{ width: '160px' }} />
               </colgroup>
               <thead>
-                <tr className="bg-[#0d0e11] border-b border-[rgba(255,255,255,0.05)]">
-                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-[#666]">Rank</th>
-                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-[#666]">Loot #1</th>
-                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-[#666]">Details</th>
-                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-[#666]">Loot #2</th>
-                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-[#666]">Details</th>
+                <tr className="bg-background-subtle border-b border-[rgba(255,255,255,0.05)]">
+                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted">Rank</th>
+                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted">Loot #1</th>
+                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted">Details</th>
+                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted">Loot #2</th>
+                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted">Details</th>
                 </tr>
               </thead>
               <tbody>
@@ -1293,12 +1293,12 @@ export default function LootList() {
                 <col style={{ width: '160px' }} />
               </colgroup>
               <thead>
-                <tr className="bg-[#0d0e11] border-b border-[rgba(255,255,255,0.05)]">
-                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-[#666]">Rank</th>
-                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-[#666]">Loot #1</th>
-                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-[#666]">Details</th>
-                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-[#666]">Loot #2</th>
-                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-[#666]">Details</th>
+                <tr className="bg-background-subtle border-b border-[rgba(255,255,255,0.05)]">
+                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted">Rank</th>
+                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted">Loot #1</th>
+                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted">Details</th>
+                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted">Loot #2</th>
+                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted">Details</th>
                 </tr>
               </thead>
               <tbody>
@@ -1369,12 +1369,12 @@ export default function LootList() {
                 <col style={{ width: '160px' }} />
               </colgroup>
               <thead>
-                <tr className="bg-[#0d0e11] border-b border-[rgba(255,255,255,0.05)]">
-                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-[#666]">Rank</th>
-                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-[#666]">Loot #1</th>
-                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-[#666]">Details</th>
-                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-[#666]">Loot #2</th>
-                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-[#666]">Details</th>
+                <tr className="bg-background-subtle border-b border-[rgba(255,255,255,0.05)]">
+                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted">Rank</th>
+                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted">Loot #1</th>
+                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted">Details</th>
+                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted">Loot #2</th>
+                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted">Details</th>
                 </tr>
               </thead>
               <tbody>
@@ -1445,12 +1445,12 @@ export default function LootList() {
                 <col style={{ width: '160px' }} />
               </colgroup>
               <thead>
-                <tr className="bg-[#0d0e11] border-b border-[rgba(255,255,255,0.05)]">
-                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-[#666]">Rank</th>
-                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-[#666]">Loot #1</th>
-                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-[#666]">Details</th>
-                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-[#666]">Loot #2</th>
-                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-[#666]">Details</th>
+                <tr className="bg-background-subtle border-b border-[rgba(255,255,255,0.05)]">
+                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted">Rank</th>
+                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted">Loot #1</th>
+                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted">Details</th>
+                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted">Loot #2</th>
+                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted">Details</th>
                 </tr>
               </thead>
               <tbody>
@@ -1478,12 +1478,12 @@ export default function LootList() {
                 <col style={{ width: '160px' }} />
               </colgroup>
               <thead>
-                <tr className="bg-[#0d0e11] border-b border-[rgba(255,255,255,0.05)]">
-                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-[#666]">Rank</th>
-                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-[#666]">Loot #1</th>
-                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-[#666]">Details</th>
-                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-[#666]">Loot #2</th>
-                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-[#666]">Details</th>
+                <tr className="bg-background-subtle border-b border-[rgba(255,255,255,0.05)]">
+                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted">Rank</th>
+                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted">Loot #1</th>
+                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted">Details</th>
+                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted">Loot #2</th>
+                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted">Details</th>
                 </tr>
               </thead>
               <tbody>
@@ -1511,12 +1511,12 @@ export default function LootList() {
                 <col style={{ width: '160px' }} />
               </colgroup>
               <thead>
-                <tr className="bg-[#0d0e11] border-b border-[rgba(255,255,255,0.05)]">
-                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-[#666]">Rank</th>
-                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-[#666]">Loot #1</th>
-                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-[#666]">Details</th>
-                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-[#666]">Loot #2</th>
-                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-[#666]">Details</th>
+                <tr className="bg-background-subtle border-b border-[rgba(255,255,255,0.05)]">
+                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted">Rank</th>
+                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted">Loot #1</th>
+                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted">Details</th>
+                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted">Loot #2</th>
+                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted">Details</th>
                 </tr>
               </thead>
               <tbody>
@@ -1535,15 +1535,15 @@ export default function LootList() {
             onClick={() => setShowInstructionsModal(false)}
           >
             <div
-              className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto"
+              className="bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto"
               onClick={(e) => e.stopPropagation()}
             >
               {/* Modal Header */}
-              <div className="sticky top-0 bg-[#141519] border-b border-[rgba(255,255,255,0.1)] px-6 py-4 flex items-center justify-between">
+              <div className="sticky top-0 bg-background-elevated border-b border-[rgba(255,255,255,0.1)] px-6 py-4 flex items-center justify-between">
                 <h2 className="text-white font-bold text-[24px]">How to Rank</h2>
                 <button
                   onClick={() => setShowInstructionsModal(false)}
-                  className="text-[#a1a1a1] hover:text-white transition"
+                  className="text-muted-foreground hover:text-white transition"
                 >
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -1556,7 +1556,7 @@ export default function LootList() {
                 {/* Core Structure */}
                 <div>
                   <h4 className="text-white font-semibold text-sm mb-2">Core Structure</h4>
-                  <p className="text-[#a1a1a1] text-sm">
+                  <p className="text-muted-foreground text-sm">
                     The system uses <span className="font-semibold text-white">50 desirability levels</span> (Level 50 being most desirable),
                     with each level containing <span className="font-semibold text-white">2 item slots</span> divided into 6 brackets.
                   </p>
@@ -1565,7 +1565,7 @@ export default function LootList() {
                 {/* Brackets */}
                 <div>
                   <h4 className="text-white font-semibold text-sm mb-2">Bracket Framework</h4>
-                  <ul className="text-[#a1a1a1] text-sm space-y-1">
+                  <ul className="text-muted-foreground text-sm space-y-1">
                     <li>• <span className="font-semibold text-red-300">Bracket 1:</span> Levels 50, 49, 48</li>
                     <li>• <span className="font-semibold text-orange-300">Bracket 2:</span> Levels 47, 46, 45</li>
                     <li>• <span className="font-semibold text-yellow-300">Bracket 3:</span> Levels 44, 43, 42</li>
@@ -1578,7 +1578,7 @@ export default function LootList() {
                 {/* Key Rules */}
                 <div>
                   <h4 className="text-white font-semibold text-sm mb-2">Key Rules (Brackets 1-4)</h4>
-                  <ul className="text-[#a1a1a1] text-sm space-y-2">
+                  <ul className="text-muted-foreground text-sm space-y-2">
                     <li>
                       <span className="font-semibold text-white">1. Allocation Point Limit:</span> Maximum 3 points per bracket.
                       <ul className="ml-4 mt-1 space-y-0.5">

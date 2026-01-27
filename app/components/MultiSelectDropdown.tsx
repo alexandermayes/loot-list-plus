@@ -174,7 +174,7 @@ const MultiSelectDropdown = memo(function MultiSelectDropdown({
         ref={buttonRef}
         type="button"
         onClick={handleToggleDropdown}
-        className="w-full px-3 py-2 bg-[#151515] border border-[#383838] rounded-[52px] text-white text-[12px] text-left focus:outline-none focus:border-[#ff8000] flex items-center justify-between gap-2 transition-colors"
+        className="w-full px-3 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-white text-[12px] text-left focus:outline-none focus:border-accent flex items-center justify-between gap-2 transition-colors"
       >
         <span className="truncate flex-1 min-w-0 overflow-hidden whitespace-nowrap">{renderButtonContent()}</span>
         <svg
@@ -189,7 +189,7 @@ const MultiSelectDropdown = memo(function MultiSelectDropdown({
 
       {isOpen && dropdownPosition && (
         <div
-          className="fixed z-[9999] max-w-xs bg-[#151515] border border-[#383838] rounded-lg shadow-xl overflow-hidden"
+          className="fixed z-[9999] max-w-xs bg-background-elevated border border-border-strong rounded-lg shadow-xl overflow-hidden"
           style={{
             top: dropdownPosition.openUpwards ? 'auto' : `${dropdownPosition.top + 4}px`,
             bottom: dropdownPosition.openUpwards ? `${window.innerHeight - dropdownPosition.top + 4}px` : 'auto',
@@ -198,14 +198,14 @@ const MultiSelectDropdown = memo(function MultiSelectDropdown({
           }}
         >
           {/* Search Input */}
-          <div className="p-2 border-b border-[rgba(255,255,255,0.1)] sticky top-0 bg-[#151515]">
+          <div className="p-2 border-b border-[rgba(255,255,255,0.1)] sticky top-0 bg-background-elevated">
             <input
               ref={searchInputRef}
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search specs..."
-              className="w-full px-3 py-2 bg-[#0d0e11] border border-[rgba(255,255,255,0.1)] rounded-md text-white text-[12px] focus:outline-none focus:border-[#ff8000]"
+              className="w-full px-3 py-2 bg-background-subtle border border-[rgba(255,255,255,0.1)] rounded-md text-white text-[12px] focus:outline-none focus:border-accent"
             />
           </div>
 
@@ -217,7 +217,7 @@ const MultiSelectDropdown = memo(function MultiSelectDropdown({
                 e.stopPropagation()
                 onClear()
               }}
-              className="w-full px-3 py-2 text-left hover:bg-[#1a1a1a] text-[#666] text-[12px] border-b border-[rgba(255,255,255,0.1)]"
+              className="w-full px-3 py-2 text-left hover:bg-muted text-foreground-muted text-[12px] border-b border-[rgba(255,255,255,0.1)]"
             >
               -- Clear All --
             </button>
@@ -233,7 +233,7 @@ const MultiSelectDropdown = memo(function MultiSelectDropdown({
 
               if (allFilteredOptions.length === 0) {
                 return (
-                  <div className="px-3 py-4 text-center text-[#666] text-[12px]">
+                  <div className="px-3 py-4 text-center text-foreground-muted text-[12px]">
                     No specs found
                   </div>
                 )
@@ -247,7 +247,7 @@ const MultiSelectDropdown = memo(function MultiSelectDropdown({
                   return (
                     <div key={groupIndex}>
                       {group.label && (
-                        <div className="px-3 py-2 bg-[#1a1a1a] border-b border-[rgba(255,255,255,0.1)]">
+                        <div className="px-3 py-2 bg-muted border-b border-[rgba(255,255,255,0.1)]">
                           <p className="text-xs font-semibold text-white uppercase tracking-wide">
                             {group.label}
                           </p>
@@ -261,7 +261,7 @@ const MultiSelectDropdown = memo(function MultiSelectDropdown({
                       return (
                         <label
                           key={option.id}
-                          className={`flex items-center px-3 py-1.5 hover:bg-[#1a1a1a] cursor-pointer transition-colors ${
+                          className={`flex items-center px-3 py-1.5 hover:bg-muted cursor-pointer transition-colors ${
                             option.disabled ? 'opacity-50 cursor-not-allowed' : ''
                           }`}
                         >
@@ -270,7 +270,7 @@ const MultiSelectDropdown = memo(function MultiSelectDropdown({
                             checked={isChecked}
                             onChange={(e) => handleToggle(option.id, e.target.checked)}
                             disabled={option.disabled}
-                            className="w-3.5 h-3.5 rounded border-gray-600 bg-[#0f1011] text-[#ff8000] focus:ring-2 focus:ring-[#ff8000]/30 focus:ring-offset-0"
+                            className="w-3.5 h-3.5 rounded border-gray-600 bg-[#0f1011] text-accent focus:ring-2 focus:ring-accent/30 focus:ring-offset-0"
                           />
                           <span
                             className="ml-2.5 text-[12px]"
@@ -293,7 +293,7 @@ const MultiSelectDropdown = memo(function MultiSelectDropdown({
                 return (
                   <label
                     key={option.id}
-                    className={`flex items-center px-3 py-1.5 hover:bg-[#1a1a1a] cursor-pointer transition-colors ${
+                    className={`flex items-center px-3 py-1.5 hover:bg-muted cursor-pointer transition-colors ${
                       option.disabled ? 'opacity-50 cursor-not-allowed' : ''
                     }`}
                   >
@@ -302,7 +302,7 @@ const MultiSelectDropdown = memo(function MultiSelectDropdown({
                       checked={isChecked}
                       onChange={(e) => handleToggle(option.id, e.target.checked)}
                       disabled={option.disabled}
-                      className="w-3.5 h-3.5 rounded border-gray-600 bg-[#0f1011] text-[#ff8000] focus:ring-2 focus:ring-[#ff8000]/30 focus:ring-offset-0"
+                      className="w-3.5 h-3.5 rounded border-gray-600 bg-[#0f1011] text-accent focus:ring-2 focus:ring-accent/30 focus:ring-offset-0"
                     />
                     <span
                       className="ml-2.5 text-[12px]"

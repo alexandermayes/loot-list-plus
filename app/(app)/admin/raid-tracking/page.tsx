@@ -5,7 +5,8 @@ export const dynamic = 'force-dynamic'
 import { createClient } from '@/utils/supabase/client'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowDown01Icon, ArrowUp01Icon, Upload01Icon, Cancel01Icon, NextIcon } from 'hugeicons-react'
+import { HugeiconsIcon } from '@hugeicons/react'
+import { ArrowDown01Icon, ArrowUp01Icon, Upload01Icon, Cancel01Icon, NextIcon } from '@hugeicons/core-free-icons'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { useGuildContext } from '@/app/contexts/GuildContext'
 import ItemLink from '@/app/components/ItemLink'
@@ -505,7 +506,7 @@ export default function RaidTrackingPage() {
       case 'benched': return 'bg-orange-600/30 border-orange-600 text-orange-300'
       case 'signed-up': return 'bg-blue-600/30 border-blue-600 text-blue-300'
       case 'no-show': return 'bg-red-600/30 border-red-600 text-red-300'
-      default: return 'bg-[#141519] border-[rgba(255,255,255,0.1)]'
+      default: return 'bg-background-elevated border-[rgba(255,255,255,0.1)]'
     }
   }
 
@@ -1484,10 +1485,10 @@ export default function RaidTrackingPage() {
       {/* Header */}
       <div>
         <h1 className="text-[42px] font-bold text-white leading-tight">Raid Tracking</h1>
-        <p className="text-[#8a8d94] mt-1 text-[14px]">
+        <p className="text-muted-foreground mt-1 text-[14px]">
           Manage attendance and signups for each raid day
           {currentExpansion && (
-            <span className="text-[#ff8000] ml-2">• {currentExpansion.expansion_name}</span>
+            <span className="text-accent ml-2">• {currentExpansion.expansion_name}</span>
           )}
         </p>
       </div>
@@ -1495,42 +1496,42 @@ export default function RaidTrackingPage() {
       {/* Legend */}
       {!raidStartDateInFuture && (
         <div className="flex items-center gap-4 text-[13px] flex-wrap">
-          <span className="text-[#a1a1a1]">Status Options:</span>
+          <span className="text-muted-foreground">Status Options:</span>
           <div className="flex items-center gap-1">
             <div className="w-5 h-5 rounded border bg-green-600/30 border-green-600"></div>
-            <span className="text-[#a1a1a1]">Attended</span>
+            <span className="text-muted-foreground">Attended</span>
           </div>
           <div className="flex items-center gap-1">
             <div className="w-5 h-5 rounded border bg-yellow-600/30 border-yellow-600"></div>
-            <span className="text-[#a1a1a1]">Late</span>
+            <span className="text-muted-foreground">Late</span>
           </div>
           <div className="flex items-center gap-1">
             <div className="w-5 h-5 rounded border bg-orange-600/30 border-orange-600"></div>
-            <span className="text-[#a1a1a1]">Benched</span>
+            <span className="text-muted-foreground">Benched</span>
           </div>
           <div className="flex items-center gap-1">
             <div className="w-5 h-5 rounded border bg-blue-600/30 border-blue-600"></div>
-            <span className="text-[#a1a1a1]">Signed Up</span>
+            <span className="text-muted-foreground">Signed Up</span>
           </div>
           <div className="flex items-center gap-1">
             <div className="w-5 h-5 rounded border bg-red-600/30 border-red-600"></div>
-            <span className="text-[#a1a1a1]">No-Show</span>
+            <span className="text-muted-foreground">No-Show</span>
           </div>
         </div>
       )}
 
       {/* Future Raid Start Message */}
       {raidStartDateInFuture && currentExpansion && (
-        <div className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl p-8 text-center">
+        <div className="bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-xl p-8 text-center">
           <div className="max-w-md mx-auto space-y-4">
-            <div className="w-16 h-16 mx-auto bg-[#ff8000]/20 rounded-full flex items-center justify-center">
-              <svg className="w-8 h-8 text-[#ff8000]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <div className="w-16 h-16 mx-auto bg-accent/20 rounded-full flex items-center justify-center">
+              <svg className="w-8 h-8 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
             </div>
             <h3 className="text-[24px] font-bold text-white">{currentExpansion.expansion_name} Raids Haven't Started Yet</h3>
-            <p className="text-[#a1a1a1] text-[14px]">
-              Your first raid week for <span className="text-[#ff8000]">{currentExpansion.expansion_name}</span> is scheduled to begin on{' '}
+            <p className="text-muted-foreground text-[14px]">
+              Your first raid week for <span className="text-accent">{currentExpansion.expansion_name}</span> is scheduled to begin on{' '}
               <span className="text-white font-medium">
                 {new Date(currentExpansion.raid_start_date + 'T00:00:00').toLocaleDateString('en-US', {
                   weekday: 'long',
@@ -1540,7 +1541,7 @@ export default function RaidTrackingPage() {
                 })}
               </span>
             </p>
-            <p className="text-[#666] text-[13px]">
+            <p className="text-foreground-muted text-[13px]">
               Once raids begin, you'll be able to track attendance, signups, and manage raid days here.
             </p>
           </div>
@@ -1562,11 +1563,11 @@ export default function RaidTrackingPage() {
                 className="flex items-center gap-3 w-full group"
               >
                 {isWeekExpanded ? (
-                  <ArrowUp01Icon className="w-6 h-6 text-white group-hover:text-[#ff8000] transition flex-shrink-0" />
+                  <HugeiconsIcon icon={ArrowUp01Icon} size={24} className="text-white group-hover:text-accent transition flex-shrink-0" />
                 ) : (
-                  <ArrowDown01Icon className="w-6 h-6 text-white group-hover:text-[#ff8000] transition flex-shrink-0" />
+                  <HugeiconsIcon icon={ArrowDown01Icon} size={24} className="text-white group-hover:text-accent transition flex-shrink-0" />
                 )}
-                <h2 className="text-[24px] font-bold text-white group-hover:text-[#ff8000] transition">{getWeekLabel(weekStart)}</h2>
+                <h2 className="text-[24px] font-bold text-white group-hover:text-accent transition">{getWeekLabel(weekStart)}</h2>
                 <div className="flex-1 h-[1px] bg-[rgba(255,255,255,0.1)]"></div>
               </button>
 
@@ -1582,16 +1583,16 @@ export default function RaidTrackingPage() {
           return (
             <div
               key={raid.id}
-              className="bg-[#141519] border border-[rgba(255,255,255,0.1)] rounded-xl overflow-hidden"
+              className="bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-xl overflow-hidden"
             >
               {/* Raid Header */}
               <div className="px-6 py-4 flex items-center justify-between">
                 <div className="flex items-center gap-4">
                   <button
                     onClick={() => toggleRaidExpanded(raid.id)}
-                    className="text-white hover:text-[#ff8000] transition"
+                    className="text-white hover:text-accent transition"
                   >
-                    {isExpanded ? <ArrowUp01Icon className="w-5 h-5" /> : <ArrowDown01Icon className="w-5 h-5" />}
+                    {isExpanded ? <HugeiconsIcon icon={ArrowUp01Icon} size={20} /> : <HugeiconsIcon icon={ArrowDown01Icon} size={20} />}
                   </button>
                   <div>
                     <div className="flex items-center gap-3">
@@ -1609,7 +1610,7 @@ export default function RaidTrackingPage() {
                         </span>
                       )}
                       {!isPast && !raid.is_skipped && raid.raid_date === today && (
-                        <span className="px-3 py-1 rounded-full text-[11px] font-medium bg-[#ff8000] text-white">
+                        <span className="px-3 py-1 rounded-full text-[11px] font-medium bg-accent text-white">
                           Today
                         </span>
                       )}
@@ -1620,7 +1621,7 @@ export default function RaidTrackingPage() {
                       )}
                     </div>
                     {!raid.is_skipped && (
-                      <p className="text-[#666] text-[13px] mt-1">
+                      <p className="text-foreground-muted text-[13px] mt-1">
                         {attendedCount} attended • {signupCount} signed up
                         {lootCount > 0 && <span className="text-[#a335ee]"> • {lootCount} loot</span>}
                       </p>
@@ -1655,10 +1656,10 @@ export default function RaidTrackingPage() {
                       className={`px-4 py-2 rounded-[52px] text-[13px] font-medium transition flex items-center gap-2 ${
                         hasImportedData
                           ? 'bg-green-600/20 hover:bg-green-600/30 border border-green-600/50 text-green-300'
-                          : 'bg-[#151515] hover:bg-[#1a1a1a] border border-[rgba(255,255,255,0.1)] text-white'
+                          : 'bg-background-elevated hover:bg-muted border border-[rgba(255,255,255,0.1)] text-white'
                       }`}
                     >
-                      <Upload01Icon className="w-4 h-4" />
+                      <HugeiconsIcon icon={Upload01Icon} size={16} />
                       {hasImportedData ? 'Edit Import' : 'Import Data'}
                     </button>
                   )}
@@ -1667,7 +1668,7 @@ export default function RaidTrackingPage() {
                     className={`px-4 py-2 rounded-[52px] text-[13px] font-medium transition ${
                       raid.is_skipped
                         ? 'bg-red-600/30 text-red-300 hover:bg-red-600/40 border border-red-600'
-                        : 'bg-[#151515] text-[#666] hover:bg-[#1a1a1a] border border-[rgba(255,255,255,0.1)]'
+                        : 'bg-background-elevated text-foreground-muted hover:bg-muted border border-[rgba(255,255,255,0.1)]'
                     }`}
                   >
                     {raid.is_skipped ? 'Unskip' : 'Skip Day'}
@@ -1681,13 +1682,13 @@ export default function RaidTrackingPage() {
                   {members.length === 0 && (!unlinkedAttendees[raid.id] || unlinkedAttendees[raid.id].length === 0) ? (
                     /* Empty State */
                     <div className="text-center py-12">
-                      <div className="w-16 h-16 mx-auto mb-4 bg-[#1a1a1a] rounded-full flex items-center justify-center">
-                        <svg className="w-8 h-8 text-[#666]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <div className="w-16 h-16 mx-auto mb-4 bg-muted rounded-full flex items-center justify-center">
+                        <svg className="w-8 h-8 text-foreground-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
                         </svg>
                       </div>
                       <h4 className="text-[16px] font-semibold text-white mb-2">No Raiders with Approved Loot Lists</h4>
-                      <p className="text-[#666] text-[13px] max-w-md mx-auto">
+                      <p className="text-foreground-muted text-[13px] max-w-md mx-auto">
                         Raiders will appear here once they submit and get their loot lists approved. Use the "Import Data" button to add attendance for this raid day.
                       </p>
                     </div>
@@ -1709,7 +1710,7 @@ export default function RaidTrackingPage() {
                               <p className="font-medium" style={{ color: member.class_color }}>
                                 {member.character_name}
                               </p>
-                              <p className="text-[11px] text-[#666] mt-0.5">{member.class_name}</p>
+                              <p className="text-[11px] text-foreground-muted mt-0.5">{member.class_name}</p>
                             </div>
                             <span className="text-[12px] font-medium">
                               {getCellLabel(state)}
@@ -1731,14 +1732,14 @@ export default function RaidTrackingPage() {
                           <div className="flex items-center justify-between">
                             <div>
                               <div className="flex items-center gap-2">
-                                <p className="font-medium text-[#a1a1a1]">
+                                <p className="font-medium text-muted-foreground">
                                   {attendee.character_name}
                                 </p>
                                 <span className="px-2 py-0.5 rounded-full text-[9px] font-medium bg-yellow-600/30 text-yellow-300 border border-yellow-600/50">
                                   Pending
                                 </span>
                               </div>
-                              <p className="text-[11px] text-[#666] mt-0.5">No account</p>
+                              <p className="text-[11px] text-foreground-muted mt-0.5">No account</p>
                             </div>
                             <span className="text-[12px] font-medium">
                               {getCellLabel(state)}
@@ -1754,7 +1755,7 @@ export default function RaidTrackingPage() {
                   {raidLoot[raid.id] && raidLoot[raid.id].length > 0 && (
                     <div className="mt-6 pt-6 border-t border-[rgba(255,255,255,0.1)]">
                       <h4 className="text-[14px] font-semibold text-white mb-3 flex items-center gap-2">
-                        <svg className="w-4 h-4 text-[#ff8000]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <svg className="w-4 h-4 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                         Loot Awarded ({raidLoot[raid.id].length} items)
@@ -1763,7 +1764,7 @@ export default function RaidTrackingPage() {
                         {raidLoot[raid.id].map(loot => (
                           <div
                             key={loot.id}
-                            className="flex items-center justify-between px-4 py-2.5 bg-[#1a1a1a] border border-[#383838] rounded-lg group"
+                            className="flex items-center justify-between px-4 py-2.5 bg-muted border border-border-strong rounded-lg group"
                           >
                             <div className="flex items-center gap-3 min-w-0">
                               <span
@@ -1772,17 +1773,17 @@ export default function RaidTrackingPage() {
                               >
                                 {loot.character_name}
                               </span>
-                              <span className="text-[#606060] text-[12px]">→</span>
+                              <span className="text-foreground-muted text-[12px]">→</span>
                               <span className="text-[13px] truncate">
                                 <ItemLink name={loot.item_name} wowheadId={loot.item_wowhead_id} />
                               </span>
                             </div>
                             <button
                               onClick={() => deleteLootEntry(loot.id, raid.id)}
-                              className="p-1.5 text-[#666] hover:text-red-400 hover:bg-red-500/10 rounded-md transition opacity-0 group-hover:opacity-100"
+                              className="p-1.5 text-foreground-muted hover:text-red-400 hover:bg-red-500/10 rounded-md transition opacity-0 group-hover:opacity-100"
                               title="Remove loot entry"
                             >
-                              <Cancel01Icon className="w-4 h-4" />
+                              <HugeiconsIcon icon={Cancel01Icon} size={16} />
                             </button>
                           </div>
                         ))}
@@ -1803,37 +1804,37 @@ export default function RaidTrackingPage() {
       {/* Skip Day Modal */}
       {showSkipModal && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setShowSkipModal(null)}>
-          <div className="bg-[#0d0e11] border border-[#383838] rounded-xl max-w-md w-full overflow-hidden" onClick={e => e.stopPropagation()}>
+          <div className="bg-background-subtle border border-border-strong rounded-xl max-w-md w-full overflow-hidden" onClick={e => e.stopPropagation()}>
             {/* Header */}
-            <div className="p-6 border-b border-[#383838] flex items-center justify-between bg-[#141519]">
+            <div className="p-6 border-b border-border-strong flex items-center justify-between bg-background-elevated">
               <div>
                 <h3 className="text-[20px] font-bold text-white">Skip Raid Day</h3>
-                <p className="text-[#a1a1a1] text-[13px] mt-1">
+                <p className="text-muted-foreground text-[13px] mt-1">
                   {new Date(showSkipModal.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
                 </p>
               </div>
-              <button onClick={() => setShowSkipModal(null)} className="text-[#666] hover:text-white transition">
-                <Cancel01Icon className="w-5 h-5" />
+              <button onClick={() => setShowSkipModal(null)} className="text-foreground-muted hover:text-white transition">
+                <HugeiconsIcon icon={Cancel01Icon} size={20} />
               </button>
             </div>
 
             {/* Content */}
             <div className="p-6">
-              <label className="block text-[13px] text-[#a1a1a1] mb-2">Reason for skipping</label>
+              <label className="block text-[13px] text-muted-foreground mb-2">Reason for skipping</label>
               <input
                 type="text"
                 value={skipReason}
                 onChange={e => setSkipReason(e.target.value)}
                 placeholder="e.g., Holiday, Cancelled, Not enough signups..."
-                className="w-full px-4 py-3 bg-[#151515] border border-[#383838] rounded-xl text-white text-[13px] focus:outline-none focus:border-[#ff8000] transition placeholder-[#606060]"
+                className="w-full px-4 py-3 bg-background-elevated border border-border-strong rounded-xl text-white text-[13px] focus:outline-none focus:border-accent transition placeholder-[#606060]"
               />
             </div>
 
             {/* Footer */}
-            <div className="p-6 border-t border-[#383838] flex gap-3">
+            <div className="p-6 border-t border-border-strong flex gap-3">
               <button
                 onClick={() => setShowSkipModal(null)}
-                className="flex-1 px-5 py-3 bg-[#151515] hover:bg-[#1a1a1a] border border-[#383838] rounded-[52px] text-white text-[13px] font-medium transition"
+                className="flex-1 px-5 py-3 bg-background-elevated hover:bg-muted border border-border-strong rounded-[52px] text-white text-[13px] font-medium transition"
               >
                 Cancel
               </button>
@@ -1851,17 +1852,17 @@ export default function RaidTrackingPage() {
       {/* Import Modal - Unified Form */}
       {showImportModal && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setShowImportModal(null)}>
-          <div className="bg-[#0d0e11] border border-[#383838] rounded-xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col" onClick={e => e.stopPropagation()}>
+          <div className="bg-background-subtle border border-border-strong rounded-xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col" onClick={e => e.stopPropagation()}>
             {/* Header */}
-            <div className="p-6 border-b border-[#383838] flex items-center justify-between bg-[#141519]">
+            <div className="p-6 border-b border-border-strong flex items-center justify-between bg-background-elevated">
               <div>
                 <h3 className="text-[20px] font-bold text-white">{showImportModal.isEdit ? 'Edit Raid Data' : 'Import Raid Data'}</h3>
-                <p className="text-[#a1a1a1] text-[13px] mt-1">
+                <p className="text-muted-foreground text-[13px] mt-1">
                   {new Date(showImportModal.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
                 </p>
               </div>
-              <button onClick={() => setShowImportModal(null)} className="text-[#666] hover:text-white transition">
-                <Cancel01Icon className="w-5 h-5" />
+              <button onClick={() => setShowImportModal(null)} className="text-foreground-muted hover:text-white transition">
+                <HugeiconsIcon icon={Cancel01Icon} size={20} />
               </button>
             </div>
 
@@ -1874,9 +1875,9 @@ export default function RaidTrackingPage() {
                   <div className="flex items-center justify-between">
                     <div>
                       <label className="block text-[14px] font-semibold text-white">
-                        Attendance <span className="text-[#ff8000]">*</span>
+                        Attendance <span className="text-accent">*</span>
                       </label>
-                      <p className="text-[#606060] text-[12px]">Who attended this raid day</p>
+                      <p className="text-foreground-muted text-[12px]">Who attended this raid day</p>
                     </div>
                   </div>
                   {attendanceData.trim() && (() => {
@@ -1894,7 +1895,7 @@ export default function RaidTrackingPage() {
                     value={attendanceData}
                     onChange={e => setAttendanceData(e.target.value)}
                     placeholder="Paste character names (comma-separated or one per line)&#10;&#10;Example:&#10;Headjaws&#10;Calonise&#10;Leroyspankin"
-                    className="w-full h-44 px-4 py-3 bg-[#151515] border border-[#383838] rounded-xl text-white text-[13px] focus:outline-none focus:border-[#ff8000] font-mono placeholder-[#606060] resize-none"
+                    className="w-full h-44 px-4 py-3 bg-background-elevated border border-border-strong rounded-xl text-white text-[13px] focus:outline-none focus:border-accent font-mono placeholder-[#606060] resize-none"
                   />
                 </div>
 
@@ -1903,9 +1904,9 @@ export default function RaidTrackingPage() {
                   <div className="flex items-center justify-between">
                     <div>
                       <label className="block text-[14px] font-semibold text-white">
-                        Loot <span className="text-[#ff8000]">*</span>
+                        Loot <span className="text-accent">*</span>
                       </label>
-                      <p className="text-[#606060] text-[12px]">Gargul export format</p>
+                      <p className="text-foreground-muted text-[12px]">Gargul export format</p>
                     </div>
                   </div>
                   {lootData.trim() && (() => {
@@ -1928,7 +1929,7 @@ export default function RaidTrackingPage() {
                     value={lootData}
                     onChange={e => setLootData(e.target.value)}
                     placeholder="DATE;[ITEM_ID];CHARACTER&#10;&#10;Example:&#10;12/15/2024;[16859];Lukasdnmd&#10;12/15/2024;[18203];Headjaws"
-                    className="w-full h-44 px-4 py-3 bg-[#151515] border border-[#383838] rounded-xl text-white text-[13px] focus:outline-none focus:border-[#ff8000] font-mono placeholder-[#606060] resize-none"
+                    className="w-full h-44 px-4 py-3 bg-background-elevated border border-border-strong rounded-xl text-white text-[13px] focus:outline-none focus:border-accent font-mono placeholder-[#606060] resize-none"
                   />
                 </div>
               </div>
@@ -1939,9 +1940,9 @@ export default function RaidTrackingPage() {
                   <div className="flex items-center justify-between">
                     <div>
                       <label className="block text-[14px] font-semibold text-white">
-                        Signups <span className="text-[#606060] text-[12px] font-normal">(optional)</span>
+                        Signups <span className="text-foreground-muted text-[12px] font-normal">(optional)</span>
                       </label>
-                      <p className="text-[#606060] text-[12px]">Who signed up for this raid</p>
+                      <p className="text-foreground-muted text-[12px]">Who signed up for this raid</p>
                     </div>
                     {signupsData.trim() && (() => {
                       const preview = parseSignupsPreview(signupsData)
@@ -1959,14 +1960,14 @@ export default function RaidTrackingPage() {
                     value={signupsData}
                     onChange={e => setSignupsData(e.target.value)}
                     placeholder="Paste character names (comma-separated or one per line)&#10;&#10;Example: Headjaws, Calonise, Leroyspankin, Nardziz"
-                    className="w-full h-24 px-4 py-3 bg-[#151515] border border-[#383838] rounded-xl text-white text-[13px] focus:outline-none focus:border-[#ff8000] font-mono placeholder-[#606060] resize-none"
+                    className="w-full h-24 px-4 py-3 bg-background-elevated border border-border-strong rounded-xl text-white text-[13px] focus:outline-none focus:border-accent font-mono placeholder-[#606060] resize-none"
                   />
                 </div>
               )}
             </div>
 
             {/* Footer */}
-            <div className="p-6 border-t border-[#383838] flex gap-3">
+            <div className="p-6 border-t border-border-strong flex gap-3">
               <button
                 onClick={() => {
                   setShowImportModal(null)
@@ -1974,14 +1975,14 @@ export default function RaidTrackingPage() {
                   setLootData('')
                   setSignupsData('')
                 }}
-                className="flex-1 px-5 py-3 bg-[#151515] hover:bg-[#1a1a1a] border border-[#383838] rounded-[52px] text-white text-[13px] font-medium transition"
+                className="flex-1 px-5 py-3 bg-background-elevated hover:bg-muted border border-border-strong rounded-[52px] text-white text-[13px] font-medium transition"
               >
                 Cancel
               </button>
               <button
                 onClick={importAllRaidData}
                 disabled={importing || (!attendanceData.trim() && !lootData.trim())}
-                className="flex-1 px-5 py-3 bg-white hover:bg-gray-100 disabled:bg-[#333] disabled:text-[#666] rounded-[52px] text-black text-[13px] font-medium transition"
+                className="flex-1 px-5 py-3 bg-white hover:bg-gray-100 disabled:bg-[#333] disabled:text-foreground-muted rounded-[52px] text-black text-[13px] font-medium transition"
               >
                 {importing ? 'Saving...' : (showImportModal.isEdit ? 'Save Changes' : 'Import All')}
               </button>
@@ -1993,12 +1994,12 @@ export default function RaidTrackingPage() {
       {/* Loot Item Selection Modal */}
       {showLootSelectionModal && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[60] flex items-center justify-center p-4" onClick={() => skipLootItemSelection()}>
-          <div className="bg-[#0d0e11] border border-[#383838] rounded-xl max-w-lg w-full overflow-hidden" onClick={e => e.stopPropagation()}>
+          <div className="bg-background-subtle border border-border-strong rounded-xl max-w-lg w-full overflow-hidden" onClick={e => e.stopPropagation()}>
             {/* Header */}
-            <div className="p-6 border-b border-[#383838] bg-[#141519]">
+            <div className="p-6 border-b border-border-strong bg-background-elevated">
               <h3 className="text-[18px] font-bold text-white">Item Not Found</h3>
-              <p className="text-[#a1a1a1] text-[13px] mt-1">
-                Could not find item ID <span className="text-[#ff8000] font-mono">[{showLootSelectionModal.itemId}]</span> for{' '}
+              <p className="text-muted-foreground text-[13px] mt-1">
+                Could not find item ID <span className="text-accent font-mono">[{showLootSelectionModal.itemId}]</span> for{' '}
                 <span className="text-white font-medium">{showLootSelectionModal.characterName}</span>
               </p>
             </div>
@@ -2010,7 +2011,7 @@ export default function RaidTrackingPage() {
                 value={lootSearchQuery}
                 onChange={e => setLootSearchQuery(e.target.value)}
                 placeholder="Search for item by name..."
-                className="w-full px-4 py-3 bg-[#151515] border border-[#383838] rounded-xl text-white text-[13px] focus:outline-none focus:border-[#ff8000] placeholder-[#606060]"
+                className="w-full px-4 py-3 bg-background-elevated border border-border-strong rounded-xl text-white text-[13px] focus:outline-none focus:border-accent placeholder-[#606060]"
                 autoFocus
               />
 
@@ -2026,26 +2027,26 @@ export default function RaidTrackingPage() {
                     <button
                       key={item.id}
                       onClick={() => handleLootItemSelection(item)}
-                      className="w-full px-4 py-3 bg-[#151515] hover:bg-[#1a1a1a] border border-[#383838] rounded-xl text-left transition"
+                      className="w-full px-4 py-3 bg-background-elevated hover:bg-muted border border-border-strong rounded-xl text-left transition"
                     >
                       <p className="text-white text-[13px] font-medium">{item.name}</p>
-                      <p className="text-[#606060] text-[11px]">{item.boss_name} • ID: {item.wowhead_id}</p>
+                      <p className="text-foreground-muted text-[11px]">{item.boss_name} • ID: {item.wowhead_id}</p>
                     </button>
                   ))}
                 {lootItems.filter(item =>
                   lootSearchQuery.length === 0 ||
                   item.name.toLowerCase().includes(lootSearchQuery.toLowerCase())
                 ).length === 0 && (
-                  <p className="text-[#606060] text-[13px] text-center py-4">No items found</p>
+                  <p className="text-foreground-muted text-[13px] text-center py-4">No items found</p>
                 )}
               </div>
             </div>
 
             {/* Footer */}
-            <div className="p-6 border-t border-[#383838] flex gap-3">
+            <div className="p-6 border-t border-border-strong flex gap-3">
               <button
                 onClick={skipLootItemSelection}
-                className="flex-1 px-5 py-3 bg-[#151515] hover:bg-[#1a1a1a] border border-[#383838] rounded-[52px] text-white text-[13px] font-medium transition"
+                className="flex-1 px-5 py-3 bg-background-elevated hover:bg-muted border border-border-strong rounded-[52px] text-white text-[13px] font-medium transition"
               >
                 Skip This Item
               </button>
