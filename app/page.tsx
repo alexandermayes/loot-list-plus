@@ -71,7 +71,7 @@ export default function Home() {
 
       {/* Animated Panel */}
       <div
-        className={`absolute right-0 top-0 h-screen bg-[#0a0a0a] flex flex-col transition-all duration-500 ease-in-out ${
+        className={`absolute right-0 top-0 h-screen bg-background flex flex-col transition-all duration-500 ease-in-out ${
           showLogin ? 'w-full' : 'w-full md:w-[720px]'
         }`}
       >
@@ -79,7 +79,7 @@ export default function Home() {
         <div className="absolute top-[50px] right-[60px] z-20">
           <button
             onClick={() => setShowLogin(!showLogin)}
-            className="px-5 py-3 bg-background-elevated text-white font-poppins font-semibold text-base rounded-[60px] hover:bg-[#1f1f1f] transition"
+            className="px-5 py-3 bg-background-elevated text-foreground font-poppins font-semibold text-base rounded-[60px] hover:bg-muted transition"
           >
             {showLogin ? 'Signup' : 'Login'}
           </button>
@@ -108,7 +108,7 @@ export default function Home() {
                 </div>
 
                 {/* Headline */}
-                <h1 className="font-poppins font-bold text-[42px] leading-[43px] text-white text-center max-w-[600px]">
+                <h1 className="font-poppins font-bold text-[42px] leading-[43px] text-foreground text-center max-w-[600px]">
                   Epic loot deserves an epic system.
                 </h1>
 
@@ -132,14 +132,14 @@ export default function Home() {
                     height={24}
                     className="w-6 h-6"
                   />
-                  <span className="font-poppins font-medium text-base text-[#0a0a0a]">
+                  <span className="font-poppins font-medium text-base text-black">
                     Continue with Discord
                   </span>
                 </button>
 
                 {/* Learn more */}
-                <button className="w-full px-5 py-3 bg-background-elevated hover:bg-[#1f1f1f] transition border border-[rgba(255,255,255,0.1)] rounded-[52px] flex items-center justify-center">
-                  <span className="font-poppins font-medium text-base text-white">
+                <button className="w-full px-5 py-3 bg-background-elevated hover:bg-muted transition border border-border rounded-[52px] flex items-center justify-center">
+                  <span className="font-poppins font-medium text-base text-foreground">
                     Learn more
                   </span>
                 </button>
@@ -147,11 +147,11 @@ export default function Home() {
                 {/* Terms and Privacy */}
                 <p className="font-poppins font-normal text-sm text-muted-foreground text-center mt-0">
                   By continuing, you agree to our{' '}
-                  <span className="text-white underline decoration-solid cursor-pointer hover:opacity-80">
+                  <span className="text-foreground underline decoration-solid cursor-pointer hover:opacity-80">
                     Terms of Service
                   </span>
                   {' '}and{' '}
-                  <span className="text-white underline decoration-solid cursor-pointer hover:opacity-80">
+                  <span className="text-foreground underline decoration-solid cursor-pointer hover:opacity-80">
                     Privacy Policy
                   </span>.
                 </p>
@@ -180,7 +180,7 @@ export default function Home() {
                 </div>
 
                 {/* Headline */}
-                <h1 className="font-poppins font-bold text-[42px] leading-[43px] text-white text-center w-[500px]">
+                <h1 className="font-poppins font-bold text-[42px] leading-[43px] text-foreground text-center w-[500px]">
                   Login to LL+
                 </h1>
               </div>
@@ -199,7 +199,7 @@ export default function Home() {
                     height={24}
                     className="w-6 h-6"
                   />
-                  <span className="font-poppins font-medium text-base text-[#0a0a0a]">
+                  <span className="font-poppins font-medium text-base text-black">
                     Continue with Discord
                   </span>
                 </button>
@@ -207,11 +207,11 @@ export default function Home() {
                 {/* Terms and Privacy */}
                 <p className="font-poppins font-normal text-sm text-muted-foreground text-center" style={{ width: '100%', maxWidth: '312px' }}>
                   By continuing, you agree to our{' '}
-                  <span className="text-white underline decoration-solid cursor-pointer hover:opacity-80">
+                  <span className="text-foreground underline decoration-solid cursor-pointer hover:opacity-80">
                     Terms of Service
                   </span>
                   {' '}and{' '}
-                  <span className="text-white underline decoration-solid cursor-pointer hover:opacity-80">
+                  <span className="text-foreground underline decoration-solid cursor-pointer hover:opacity-80">
                     Privacy Policy
                   </span>.
                 </p>

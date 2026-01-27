@@ -695,11 +695,11 @@ export default function LootList() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'approved': return 'bg-green-950/20 border-green-600 text-white'
-      case 'pending': return 'bg-yellow-950/20 border-yellow-600 text-white'
-      case 'needs_revision': return 'bg-orange-950/20 border-orange-600 text-white'
-      case 'rejected': return 'bg-red-950/20 border-red-600 text-white'
-      default: return 'bg-background-elevated border-[rgba(255,255,255,0.1)] text-muted-foreground'
+      case 'approved': return 'bg-green-950/20 border-green-600 text-foreground'
+      case 'pending': return 'bg-yellow-950/20 border-yellow-600 text-foreground'
+      case 'needs_revision': return 'bg-orange-950/20 border-orange-600 text-foreground'
+      case 'rejected': return 'bg-red-950/20 border-red-600 text-foreground'
+      default: return 'bg-background-elevated border-border text-muted-foreground'
     }
   }
 
@@ -895,8 +895,8 @@ export default function LootList() {
     }
 
     return (
-      <tr className={`border-b border-[rgba(255,255,255,0.05)] ${(isDuplicate1 || isDuplicate2) ? 'bg-red-900/20' : ''}`}>
-        <td className={`px-3 py-2.5 font-semibold text-[13px] text-white bg-gradient-to-r ${getRankColor(rank)}`} rowSpan={1}>
+      <tr className={`border-b border-border ${(isDuplicate1 || isDuplicate2) ? 'bg-red-900/20' : ''}`}>
+        <td className={`px-3 py-2.5 font-semibold text-[13px] text-foreground bg-gradient-to-r ${getRankColor(rank)}`} rowSpan={1}>
           {rank}
         </td>
         <td className="px-3 py-2.5">
@@ -952,7 +952,7 @@ export default function LootList() {
         <div className="p-8 pb-4">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <h1 className="text-[42px] font-bold text-white leading-tight">Loot Lists</h1>
+              <h1 className="text-[42px] font-bold text-foreground leading-tight">Loot Lists</h1>
               <div className="mt-1">
                 <p className="text-muted-foreground text-base inline">
                   Rank your preferred items for {raidTiers.find(t => t.id === selectedTierId)?.name || 'this raid tier'}
@@ -976,7 +976,7 @@ export default function LootList() {
               {/* How to Rank Button */}
               <button
                 onClick={() => setShowInstructionsModal(true)}
-                className="px-6 py-3 bg-background-elevated hover:bg-muted border border-[rgba(255,255,255,0.1)] rounded-[52px] text-white font-medium text-base transition whitespace-nowrap"
+                className="px-6 py-3 bg-background-elevated hover:bg-muted border border-border rounded-[52px] text-foreground font-medium text-base transition whitespace-nowrap"
               >
                 How to Rank
               </button>
@@ -998,8 +998,8 @@ export default function LootList() {
                       onClick={() => setViewingExpansion(expansion.is_current ? null : expansion.expansion_id)}
                       className={`px-5 py-2.5 rounded-[40px] whitespace-nowrap text-[13px] font-medium transition-all ${
                         isViewing || isCurrent
-                          ? 'bg-[rgba(255,128,0,0.2)] border-[0.5px] border-[rgba(255,128,0,0.2)] text-accent'
-                          : 'bg-background-elevated border border-[rgba(255,255,255,0.1)] text-white hover:bg-muted'
+                          ? 'bg-accent/20 border-[0.5px] border-accent/20 text-accent'
+                          : 'bg-background-elevated border border-border text-foreground hover:bg-muted'
                       }`}
                     >
                       <div className="flex items-center gap-2">
@@ -1041,8 +1041,8 @@ export default function LootList() {
                       onClick={() => changeTier(tier.id)}
                       className={`px-5 py-2.5 rounded-[40px] whitespace-nowrap text-[13px] font-medium transition-all ${
                         selectedTierId === tier.id
-                          ? 'bg-[rgba(255,128,0,0.2)] border-[0.5px] border-[rgba(255,128,0,0.2)] text-accent'
-                          : 'bg-background-elevated border border-[rgba(255,255,255,0.1)] text-white hover:bg-muted'
+                          ? 'bg-accent/20 border-[0.5px] border-accent/20 text-accent'
+                          : 'bg-background-elevated border border-border text-foreground hover:bg-muted'
                       }`}
                     >
                       <div className="flex items-center gap-2">
@@ -1070,7 +1070,7 @@ export default function LootList() {
         <div className="px-8 pb-8 space-y-6">
         {/* Content Loading State */}
         {contentLoading ? (
-          <div className="bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-xl p-12">
+          <div className="bg-background-elevated border border-border rounded-xl p-12">
             <div className="flex flex-col items-center justify-center gap-4">
               <LoadingSpinner />
               <p className="text-muted-foreground text-sm">Loading loot items...</p>
@@ -1101,7 +1101,7 @@ export default function LootList() {
                 {rankedCount > 0 && (
                   <button
                     onClick={handleClearList}
-                    className="px-6 py-3 bg-background-elevated hover:bg-red-950/50 border border-[rgba(255,255,255,0.1)] hover:border-red-600/30 rounded-[52px] text-red-400 hover:text-red-300 font-medium text-base transition whitespace-nowrap"
+                    className="px-6 py-3 bg-background-elevated hover:bg-red-950/50 border border-border hover:border-red-600/30 rounded-[52px] text-red-400 hover:text-red-300 font-medium text-base transition whitespace-nowrap"
                   >
                     Clear List
                   </button>
@@ -1118,7 +1118,7 @@ export default function LootList() {
                   }
                   className={`px-6 py-3 rounded-[52px] font-medium text-base transition whitespace-nowrap shadow-lg
                     ${(!hasChanges && (submission?.status === 'approved' || submission?.status === 'pending')) || saving || rankedCount === 0 || duplicateItems.length > 0 || hasValidationErrors
-                      ? 'bg-muted text-foreground-muted cursor-not-allowed border-[rgba(255,255,255,0.1)] border-2'
+                      ? 'bg-muted text-foreground-muted cursor-not-allowed border-border border-2'
                       : 'bg-white hover:bg-gray-100 text-black border-2 border-white'
                     }`}
                 >
@@ -1160,10 +1160,10 @@ export default function LootList() {
 
         {/* Bracket 1 (50-48) */}
         <div className="bg-card border border-border rounded-xl overflow-hidden">
-          <div className="bg-[#2a1a1a] border-l-4 border-l-red-800/60 px-4 py-2">
+          <div className="bg-red-500/10 border-l-4 border-l-red-800/60 px-4 py-2">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <h2 className="text-[15px] font-semibold text-white">Bracket 1 (50-48)</h2>
+                <h2 className="text-[15px] font-semibold text-foreground">Bracket 1 (50-48)</h2>
                 {(() => {
                   const validation = getBracketValidation('Bracket 1 (50-48)')
                   return validation ? (
@@ -1183,7 +1183,7 @@ export default function LootList() {
                   <div className="flex flex-col items-end gap-2">
                     <button
                       onClick={() => toggleErrorExpanded(bracketName)}
-                      className="flex items-center gap-2 bg-red-500 hover:bg-red-600 border-2 border-red-300 px-3 py-1.5 rounded-lg font-bold text-white shadow-lg animate-pulse transition-colors cursor-pointer"
+                      className="flex items-center gap-2 bg-red-500 hover:bg-red-600 border-2 border-red-300 px-3 py-1.5 rounded-lg font-bold text-foreground shadow-lg animate-pulse transition-colors cursor-pointer"
                     >
                       <span className="text-sm whitespace-nowrap">
                         {validation.violations.length} {validation.violations.length === 1 ? 'Error' : 'Errors'}
@@ -1192,7 +1192,7 @@ export default function LootList() {
                     </button>
                     {isExpanded && (
                       <div className="bg-red-600 border-2 border-red-400 rounded-lg px-3 py-2 shadow-lg max-w-md">
-                        <ul className="space-y-1 text-sm font-semibold text-white">
+                        <ul className="space-y-1 text-sm font-semibold text-foreground">
                           {validation.violations.map((violation, idx) => (
                             <li key={idx} className="flex items-center gap-2">
                               <span className="text-base">⚠️</span>
@@ -1217,7 +1217,7 @@ export default function LootList() {
                 <col style={{ width: '160px' }} />
               </colgroup>
               <thead>
-                <tr className="bg-background-subtle border-b border-[rgba(255,255,255,0.05)]">
+                <tr className="bg-background-subtle border-b border-border">
                   <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted">Rank</th>
                   <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted">Loot #1</th>
                   <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted">Details</th>
@@ -1236,10 +1236,10 @@ export default function LootList() {
 
         {/* Bracket 2 (47-45) */}
         <div className="bg-card border border-border rounded-xl overflow-hidden">
-          <div className="bg-[#2a1f1a] border-l-4 border-l-orange-800/60 px-4 py-2">
+          <div className="bg-orange-500/10 border-l-4 border-l-orange-800/60 px-4 py-2">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <h2 className="text-[15px] font-semibold text-white">Bracket 2 (47-45)</h2>
+                <h2 className="text-[15px] font-semibold text-foreground">Bracket 2 (47-45)</h2>
                 {(() => {
                   const validation = getBracketValidation('Bracket 2 (47-45)')
                   return validation ? (
@@ -1259,7 +1259,7 @@ export default function LootList() {
                   <div className="flex flex-col items-end gap-2">
                     <button
                       onClick={() => toggleErrorExpanded(bracketName)}
-                      className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 border-2 border-orange-300 px-3 py-1.5 rounded-lg font-bold text-white shadow-lg animate-pulse transition-colors cursor-pointer"
+                      className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 border-2 border-orange-300 px-3 py-1.5 rounded-lg font-bold text-foreground shadow-lg animate-pulse transition-colors cursor-pointer"
                     >
                       <span className="text-sm whitespace-nowrap">
                         {validation.violations.length} {validation.violations.length === 1 ? 'Error' : 'Errors'}
@@ -1268,7 +1268,7 @@ export default function LootList() {
                     </button>
                     {isExpanded && (
                       <div className="bg-orange-600 border-2 border-orange-400 rounded-lg px-3 py-2 shadow-lg max-w-md">
-                        <ul className="space-y-1 text-sm font-semibold text-white">
+                        <ul className="space-y-1 text-sm font-semibold text-foreground">
                           {validation.violations.map((violation, idx) => (
                             <li key={idx} className="flex items-center gap-2">
                               <span className="text-base">⚠️</span>
@@ -1293,7 +1293,7 @@ export default function LootList() {
                 <col style={{ width: '160px' }} />
               </colgroup>
               <thead>
-                <tr className="bg-background-subtle border-b border-[rgba(255,255,255,0.05)]">
+                <tr className="bg-background-subtle border-b border-border">
                   <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted">Rank</th>
                   <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted">Loot #1</th>
                   <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted">Details</th>
@@ -1312,10 +1312,10 @@ export default function LootList() {
 
         {/* Bracket 3 (44-42) */}
         <div className="bg-card border border-border rounded-xl overflow-hidden">
-          <div className="bg-[#2a2a1a] border-l-4 border-l-yellow-800/60 px-4 py-2">
+          <div className="bg-yellow-500/10 border-l-4 border-l-yellow-800/60 px-4 py-2">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <h2 className="text-[15px] font-semibold text-white">Bracket 3 (44-42)</h2>
+                <h2 className="text-[15px] font-semibold text-foreground">Bracket 3 (44-42)</h2>
                 {(() => {
                   const validation = getBracketValidation('Bracket 3 (44-42)')
                   return validation ? (
@@ -1335,7 +1335,7 @@ export default function LootList() {
                   <div className="flex flex-col items-end gap-2">
                     <button
                       onClick={() => toggleErrorExpanded(bracketName)}
-                      className="flex items-center gap-2 bg-yellow-500 hover:bg-yellow-600 border-2 border-yellow-300 px-3 py-1.5 rounded-lg font-bold text-white shadow-lg animate-pulse transition-colors cursor-pointer"
+                      className="flex items-center gap-2 bg-yellow-500 hover:bg-yellow-600 border-2 border-yellow-300 px-3 py-1.5 rounded-lg font-bold text-foreground shadow-lg animate-pulse transition-colors cursor-pointer"
                     >
                       <span className="text-sm whitespace-nowrap">
                         {validation.violations.length} {validation.violations.length === 1 ? 'Error' : 'Errors'}
@@ -1344,7 +1344,7 @@ export default function LootList() {
                     </button>
                     {isExpanded && (
                       <div className="bg-yellow-600 border-2 border-yellow-400 rounded-lg px-3 py-2 shadow-lg max-w-md">
-                        <ul className="space-y-1 text-sm font-semibold text-white">
+                        <ul className="space-y-1 text-sm font-semibold text-foreground">
                           {validation.violations.map((violation, idx) => (
                             <li key={idx} className="flex items-center gap-2">
                               <span className="text-base">⚠️</span>
@@ -1369,7 +1369,7 @@ export default function LootList() {
                 <col style={{ width: '160px' }} />
               </colgroup>
               <thead>
-                <tr className="bg-background-subtle border-b border-[rgba(255,255,255,0.05)]">
+                <tr className="bg-background-subtle border-b border-border">
                   <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted">Rank</th>
                   <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted">Loot #1</th>
                   <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted">Details</th>
@@ -1388,10 +1388,10 @@ export default function LootList() {
 
         {/* Bracket 4 (41-39) */}
         <div className="bg-card border border-border rounded-xl overflow-hidden">
-          <div className="bg-[#2a251a] border-l-4 border-l-amber-800/60 px-4 py-2">
+          <div className="bg-amber-500/10 border-l-4 border-l-amber-800/60 px-4 py-2">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <h2 className="text-[15px] font-semibold text-white">Bracket 4 (41-39)</h2>
+                <h2 className="text-[15px] font-semibold text-foreground">Bracket 4 (41-39)</h2>
                 {(() => {
                   const validation = getBracketValidation('Bracket 4 (41-39)')
                   return validation ? (
@@ -1411,7 +1411,7 @@ export default function LootList() {
                   <div className="flex flex-col items-end gap-2">
                     <button
                       onClick={() => toggleErrorExpanded(bracketName)}
-                      className="flex items-center gap-2 bg-amber-500 hover:bg-amber-600 border-2 border-amber-300 px-3 py-1.5 rounded-lg font-bold text-white shadow-lg animate-pulse transition-colors cursor-pointer"
+                      className="flex items-center gap-2 bg-amber-500 hover:bg-amber-600 border-2 border-amber-300 px-3 py-1.5 rounded-lg font-bold text-foreground shadow-lg animate-pulse transition-colors cursor-pointer"
                     >
                       <span className="text-sm whitespace-nowrap">
                         {validation.violations.length} {validation.violations.length === 1 ? 'Error' : 'Errors'}
@@ -1420,7 +1420,7 @@ export default function LootList() {
                     </button>
                     {isExpanded && (
                       <div className="bg-amber-600 border-2 border-amber-400 rounded-lg px-3 py-2 shadow-lg max-w-md">
-                        <ul className="space-y-1 text-sm font-semibold text-white">
+                        <ul className="space-y-1 text-sm font-semibold text-foreground">
                           {validation.violations.map((violation, idx) => (
                             <li key={idx} className="flex items-center gap-2">
                               <span className="text-base">⚠️</span>
@@ -1445,7 +1445,7 @@ export default function LootList() {
                 <col style={{ width: '160px' }} />
               </colgroup>
               <thead>
-                <tr className="bg-background-subtle border-b border-[rgba(255,255,255,0.05)]">
+                <tr className="bg-background-subtle border-b border-border">
                   <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted">Rank</th>
                   <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted">Loot #1</th>
                   <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted">Details</th>
@@ -1464,8 +1464,8 @@ export default function LootList() {
 
         {/* No Bracket (38-25) - Main-spec */}
         <div className="bg-card border border-border rounded-xl overflow-hidden">
-          <div className="bg-[#1a2a1a] border-l-4 border-l-green-800/60 px-4 py-2">
-            <h2 className="text-[15px] font-semibold text-white">No Bracket (38-25) - Main-spec</h2>
+          <div className="bg-green-500/10 border-l-4 border-l-green-800/60 px-4 py-2">
+            <h2 className="text-[15px] font-semibold text-foreground">No Bracket (38-25) - Main-spec</h2>
             <p className="text-green-200 text-[12px]">Still considered main-spec priority</p>
           </div>
           <div className="overflow-x-auto">
@@ -1478,7 +1478,7 @@ export default function LootList() {
                 <col style={{ width: '160px' }} />
               </colgroup>
               <thead>
-                <tr className="bg-background-subtle border-b border-[rgba(255,255,255,0.05)]">
+                <tr className="bg-background-subtle border-b border-border">
                   <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted">Rank</th>
                   <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted">Loot #1</th>
                   <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted">Details</th>
@@ -1497,8 +1497,8 @@ export default function LootList() {
 
         {/* Off-spec (24-1) */}
         <div className="bg-card border border-border rounded-xl overflow-hidden">
-          <div className="bg-[#1a1a2a] border-l-4 border-l-blue-800/60 px-4 py-2">
-            <h2 className="text-[15px] font-semibold text-white">Off-spec (24-1)</h2>
+          <div className="bg-blue-500/10 border-l-4 border-l-blue-800/60 px-4 py-2">
+            <h2 className="text-[15px] font-semibold text-foreground">Off-spec (24-1)</h2>
             <p className="text-blue-200 text-[12px]">Off-spec items to support guild flexibility</p>
           </div>
           <div className="overflow-x-auto">
@@ -1511,7 +1511,7 @@ export default function LootList() {
                 <col style={{ width: '160px' }} />
               </colgroup>
               <thead>
-                <tr className="bg-background-subtle border-b border-[rgba(255,255,255,0.05)]">
+                <tr className="bg-background-subtle border-b border-border">
                   <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted">Rank</th>
                   <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted">Loot #1</th>
                   <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted">Details</th>
@@ -1535,15 +1535,15 @@ export default function LootList() {
             onClick={() => setShowInstructionsModal(false)}
           >
             <div
-              className="bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto"
+              className="bg-background-elevated border border-border rounded-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto"
               onClick={(e) => e.stopPropagation()}
             >
               {/* Modal Header */}
-              <div className="sticky top-0 bg-background-elevated border-b border-[rgba(255,255,255,0.1)] px-6 py-4 flex items-center justify-between">
-                <h2 className="text-white font-bold text-[24px]">How to Rank</h2>
+              <div className="sticky top-0 bg-background-elevated border-b border-border px-6 py-4 flex items-center justify-between">
+                <h2 className="text-foreground font-bold text-[24px]">How to Rank</h2>
                 <button
                   onClick={() => setShowInstructionsModal(false)}
-                  className="text-muted-foreground hover:text-white transition"
+                  className="text-muted-foreground hover:text-foreground transition"
                 >
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -1555,16 +1555,16 @@ export default function LootList() {
               <div className="p-6 space-y-4">
                 {/* Core Structure */}
                 <div>
-                  <h4 className="text-white font-semibold text-sm mb-2">Core Structure</h4>
+                  <h4 className="text-foreground font-semibold text-sm mb-2">Core Structure</h4>
                   <p className="text-muted-foreground text-sm">
-                    The system uses <span className="font-semibold text-white">50 desirability levels</span> (Level 50 being most desirable),
-                    with each level containing <span className="font-semibold text-white">2 item slots</span> divided into 6 brackets.
+                    The system uses <span className="font-semibold text-foreground">50 desirability levels</span> (Level 50 being most desirable),
+                    with each level containing <span className="font-semibold text-foreground">2 item slots</span> divided into 6 brackets.
                   </p>
                 </div>
 
                 {/* Brackets */}
                 <div>
-                  <h4 className="text-white font-semibold text-sm mb-2">Bracket Framework</h4>
+                  <h4 className="text-foreground font-semibold text-sm mb-2">Bracket Framework</h4>
                   <ul className="text-muted-foreground text-sm space-y-1">
                     <li>• <span className="font-semibold text-red-300">Bracket 1:</span> Levels 50, 49, 48</li>
                     <li>• <span className="font-semibold text-orange-300">Bracket 2:</span> Levels 47, 46, 45</li>
@@ -1577,10 +1577,10 @@ export default function LootList() {
 
                 {/* Key Rules */}
                 <div>
-                  <h4 className="text-white font-semibold text-sm mb-2">Key Rules (Brackets 1-4)</h4>
+                  <h4 className="text-foreground font-semibold text-sm mb-2">Key Rules (Brackets 1-4)</h4>
                   <ul className="text-muted-foreground text-sm space-y-2">
                     <li>
-                      <span className="font-semibold text-white">1. Allocation Point Limit:</span> Maximum 3 points per bracket.
+                      <span className="font-semibold text-foreground">1. Allocation Point Limit:</span> Maximum 3 points per bracket.
                       <ul className="ml-4 mt-1 space-y-0.5">
                         <li>- <span className="text-red-300">Reserved items</span> cost 1 point</li>
                         <li>- <span className="text-yellow-300">Limited items</span> cost 1 point</li>
@@ -1588,22 +1588,22 @@ export default function LootList() {
                       </ul>
                     </li>
                     <li>
-                      <span className="font-semibold text-white">2. Type Restriction:</span> Brackets 1-4 may only contain 1 item of a type
+                      <span className="font-semibold text-foreground">2. Type Restriction:</span> Brackets 1-4 may only contain 1 item of a type
                       (no duplicate weapon types in same bracket).
                     </li>
                     <li>
-                      <span className="font-semibold text-white">3. Reserved Items:</span> Must be the sole entry at that desirability level
+                      <span className="font-semibold text-foreground">3. Reserved Items:</span> Must be the sole entry at that desirability level
                       (cannot have another item in the same rank).
                     </li>
                     <li>
-                      <span className="font-semibold text-white">4. Equal Priority:</span> Both item slots per level receive equal priority when filled.
+                      <span className="font-semibold text-foreground">4. Equal Priority:</span> Both item slots per level receive equal priority when filled.
                     </li>
                     <li>
-                      <span className="font-semibold text-white">5. Dual Weapons:</span> Two identical non-unique weapons are permitted if not hand-specific
+                      <span className="font-semibold text-foreground">5. Dual Weapons:</span> Two identical non-unique weapons are permitted if not hand-specific
                       (e.g., two of the same dagger).
                     </li>
                     <li>
-                      <span className="font-semibold text-white">6. Off-spec Importance:</span> Completing off-spec selections enhances guild flexibility
+                      <span className="font-semibold text-foreground">6. Off-spec Importance:</span> Completing off-spec selections enhances guild flexibility
                       and is encouraged.
                     </li>
                   </ul>

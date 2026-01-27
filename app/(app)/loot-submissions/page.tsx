@@ -422,7 +422,7 @@ export default function MasterLootPage() {
     <div className="font-poppins">
       {/* Header */}
       <div className="p-8 pb-4">
-        <h1 className="text-[42px] font-bold text-white leading-tight">Loot Submissions</h1>
+        <h1 className="text-[42px] font-bold text-foreground leading-tight">Loot Submissions</h1>
         <p className="text-muted-foreground mt-1 text-base">Review and manage character loot submissions</p>
       </div>
 
@@ -437,8 +437,8 @@ export default function MasterLootPage() {
                 onClick={() => setActiveTier('all')}
                 className={`px-5 py-2.5 rounded-[40px] whitespace-nowrap text-[13px] font-medium transition-all ${
                   activeTier === 'all'
-                    ? 'bg-[rgba(255,128,0,0.2)] border-[0.5px] border-[rgba(255,128,0,0.2)] text-accent'
-                    : 'bg-background-elevated border border-[rgba(255,255,255,0.1)] text-white hover:bg-muted'
+                    ? 'bg-accent/20 border-[0.5px] border-accent/20 text-accent'
+                    : 'bg-background-elevated border border-border text-foreground hover:bg-muted'
                 }`}
               >
                 All
@@ -449,8 +449,8 @@ export default function MasterLootPage() {
                   onClick={() => setActiveTier(tier)}
                   className={`px-5 py-2.5 rounded-[40px] whitespace-nowrap text-[13px] font-medium transition-all ${
                     activeTier !== 'all' && activeTier?.id === tier.id
-                      ? 'bg-[rgba(255,128,0,0.2)] border-[0.5px] border-[rgba(255,128,0,0.2)] text-accent'
-                      : 'bg-background-elevated border border-[rgba(255,255,255,0.1)] text-white hover:bg-muted'
+                      ? 'bg-accent/20 border-[0.5px] border-accent/20 text-accent'
+                      : 'bg-background-elevated border border-border text-foreground hover:bg-muted'
                   }`}
                 >
                   <div className="flex items-center gap-2">
@@ -489,8 +489,8 @@ export default function MasterLootPage() {
                   onClick={() => setFilter(status)}
                   className={`px-5 py-2.5 rounded-[40px] text-[13px] font-medium transition-all ${
                     filter === status
-                      ? 'bg-[rgba(255,128,0,0.2)] border-[0.5px] border-[rgba(255,128,0,0.2)] text-accent'
-                      : 'bg-background-elevated text-white hover:bg-muted border border-[rgba(255,255,255,0.1)]'
+                      ? 'bg-accent/20 border-[0.5px] border-accent/20 text-accent'
+                      : 'bg-background-elevated text-foreground hover:bg-muted border border-border'
                   }`}
                 >
                   {status.charAt(0).toUpperCase() + status.slice(1)}
@@ -523,24 +523,24 @@ export default function MasterLootPage() {
           {/* Submissions List */}
           <div className="space-y-3">
             {contentLoading ? (
-              <div className="bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-xl p-12">
+              <div className="bg-background-elevated border border-border rounded-xl p-12">
                 <div className="flex flex-col items-center justify-center gap-4">
                   <LoadingSpinner />
                   <p className="text-muted-foreground text-sm">Loading submissions...</p>
                 </div>
               </div>
             ) : filteredSubmissions.length === 0 ? (
-              <div className="bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-xl p-8 text-center">
+              <div className="bg-background-elevated border border-border rounded-xl p-8 text-center">
                 <p className="text-muted-foreground">No submissions found</p>
               </div>
             ) : (
               filteredSubmissions.map((submission) => (
                 <div
                   key={submission.id}
-                  className="bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-xl p-5 flex items-center justify-between hover:bg-[#18191d] transition-all"
+                  className="bg-background-elevated border border-border rounded-xl p-5 flex items-center justify-between hover:bg-muted transition-all"
                 >
                   <div className="flex items-center gap-3">
-                    <h3 className="text-[16px] font-semibold text-white">
+                    <h3 className="text-[16px] font-semibold text-foreground">
                       {submission.member?.character_name || 'Unknown'}
                     </h3>
                     {submission.member?.class && (
@@ -565,7 +565,7 @@ export default function MasterLootPage() {
                   <div className="flex gap-2">
                     <button
                       onClick={() => viewSubmissionDetails(submission.id)}
-                      className="px-5 py-2.5 bg-background-elevated hover:bg-muted border border-[rgba(255,255,255,0.1)] rounded-[40px] text-white text-[13px] font-medium transition-all"
+                      className="px-5 py-2.5 bg-background-elevated hover:bg-muted border border-border rounded-[40px] text-foreground text-[13px] font-medium transition-all"
                     >
                       View Details
                     </button>
@@ -600,10 +600,10 @@ export default function MasterLootPage() {
           >
             {/* Header */}
             <div className="p-6 border-b border-border-strong flex items-center justify-between bg-background-elevated">
-              <h3 className="text-[24px] font-bold text-white">Submission details</h3>
+              <h3 className="text-[24px] font-bold text-foreground">Submission details</h3>
               <button
                 onClick={() => setViewingSubmission(null)}
-                className="text-muted-foreground hover:text-white transition"
+                className="text-muted-foreground hover:text-foreground transition"
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -618,7 +618,7 @@ export default function MasterLootPage() {
               ) : (
                 <table className="w-full">
                   <thead>
-                    <tr className="bg-background-subtle border-b border-[rgba(255,255,255,0.05)]">
+                    <tr className="bg-background-subtle border-b border-border">
                       <th className="px-3 py-2 text-left text-[11px] font-medium text-foreground-muted w-12">Rank</th>
                       <th className="px-3 py-2 text-left text-[11px] font-medium text-foreground-muted">Item #1</th>
                       <th className="px-3 py-2 text-left text-[11px] font-medium text-foreground-muted">Item #2</th>
@@ -658,8 +658,8 @@ export default function MasterLootPage() {
                         }
                         const itemsArr = items as any[]
                         return (
-                          <tr key={rank} className="border-b border-[rgba(255,255,255,0.05)]">
-                            <td className={`px-3 py-2 font-semibold text-[13px] text-white bg-gradient-to-r ${getRankColor(rankNum)}`}>
+                          <tr key={rank} className="border-b border-border">
+                            <td className={`px-3 py-2 font-semibold text-[13px] text-foreground bg-gradient-to-r ${getRankColor(rankNum)}`}>
                               {rank}
                             </td>
                             <td className="px-3 py-2">
@@ -705,7 +705,7 @@ export default function MasterLootPage() {
                         setViewingSubmission(null)
                       }}
                       disabled={reviewing === viewingSubmission}
-                      className="px-6 py-2.5 bg-green-600 hover:bg-green-700 rounded-[52px] text-white text-[13px] font-medium transition disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="px-6 py-2.5 bg-green-600 hover:bg-green-700 rounded-[52px] text-foreground text-[13px] font-medium transition disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {reviewing === viewingSubmission ? 'Processing...' : 'Approve'}
                     </button>
@@ -715,7 +715,7 @@ export default function MasterLootPage() {
                         setViewingSubmission(null)
                       }}
                       disabled={reviewing === viewingSubmission}
-                      className="px-6 py-2.5 bg-red-600 hover:bg-red-700 rounded-[52px] text-white text-[13px] font-medium transition disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="px-6 py-2.5 bg-red-600 hover:bg-red-700 rounded-[52px] text-foreground text-[13px] font-medium transition disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       Reject
                     </button>
@@ -724,7 +724,7 @@ export default function MasterLootPage() {
               </div>
               <button
                 onClick={() => setViewingSubmission(null)}
-                className="px-6 py-2.5 bg-background-elevated hover:bg-muted border border-border-strong rounded-[52px] text-white text-[13px] font-medium transition"
+                className="px-6 py-2.5 bg-background-elevated hover:bg-muted border border-border-strong rounded-[52px] text-foreground text-[13px] font-medium transition"
               >
                 Close
               </button>
@@ -753,7 +753,7 @@ export default function MasterLootPage() {
                 </svg>
               </div>
               <div className="flex-1">
-                <h3 className="text-[18px] font-bold text-white mb-2">
+                <h3 className="text-[18px] font-bold text-foreground mb-2">
                   {deleteTarget?.type === 'single' ? 'Delete Submission?' :
                    deleteTarget?.type === 'pending' ? 'Delete Pending Lists?' :
                    'Delete All Lists?'}
@@ -779,14 +779,14 @@ export default function MasterLootPage() {
                   setDeleteTarget(null)
                 }}
                 disabled={deleting}
-                className="px-6 py-2.5 bg-background-elevated hover:bg-muted border border-[rgba(255,255,255,0.1)] rounded-[40px] text-white text-[13px] font-medium transition-all disabled:opacity-50"
+                className="px-6 py-2.5 bg-background-elevated hover:bg-muted border border-border rounded-[40px] text-foreground text-[13px] font-medium transition-all disabled:opacity-50"
               >
                 Cancel
               </button>
               <button
                 onClick={handleDeleteSubmissions}
                 disabled={deleting}
-                className="px-6 py-2.5 bg-red-600 hover:bg-red-700 rounded-[40px] text-white text-[13px] font-medium transition-all disabled:opacity-50"
+                className="px-6 py-2.5 bg-red-600 hover:bg-red-700 rounded-[40px] text-foreground text-[13px] font-medium transition-all disabled:opacity-50"
               >
                 {deleting ? 'Deleting...' : 'Delete'}
               </button>

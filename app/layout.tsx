@@ -3,6 +3,7 @@ import { Poppins } from "next/font/google";
 import Script from "next/script";
 import { GuildContextProvider } from "./contexts/GuildContext";
 import { NotificationProvider } from "./contexts/NotificationContext";
+import { ThemeProvider } from "./components/ThemeProvider";
 import NotificationContainer from "./components/NotificationContainer";
 import "./globals.css";
 
@@ -45,7 +46,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="dark">
+    <html lang="en" suppressHydrationWarning>
       <head>
         {/* Wowhead Tooltip Configuration */}
         <Script id="wowhead-config" strategy="beforeInteractive">
@@ -66,12 +67,19 @@ export default function RootLayout({
       <body
         className={`${poppins.variable} antialiased font-sans`}
       >
-        <NotificationProvider>
-          <GuildContextProvider>
-            <NotificationContainer />
-            {children}
-          </GuildContextProvider>
-        </NotificationProvider>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="dark"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <NotificationProvider>
+            <GuildContextProvider>
+              <NotificationContainer />
+              {children}
+            </GuildContextProvider>
+          </NotificationProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

@@ -21,7 +21,7 @@ export function LoadingSpinner({
           alt="Loading"
           width={48}
           height={48}
-          className="brightness-0 invert animate-pulse-fast"
+          className="icon-adaptive animate-pulse-fast"
           priority
         />
       </div>

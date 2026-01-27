@@ -617,7 +617,7 @@ export default function Dashboard() {
         <div className="p-8 space-y-6 font-poppins">
           {/* Header */}
           <div>
-            <h1 className="text-[42px] font-bold text-white leading-tight">
+            <h1 className="text-[42px] font-bold text-foreground leading-tight">
               {greeting}
             </h1>
             <p className="text-muted-foreground mt-1 text-base">
@@ -627,11 +627,11 @@ export default function Dashboard() {
 
           {/* Error Message (e.g., no expansion set) */}
           {error && (
-            <div className="bg-background-elevated border border-[rgba(255,128,0,0.3)] rounded-xl p-6">
+            <div className="bg-background-elevated border border-accent/30 rounded-xl p-6">
               <div className="flex items-start gap-3">
                 <div className="text-accent mt-0.5">⚠️</div>
                 <div className="flex-1">
-                  <p className="text-white font-semibold text-base">Action Required</p>
+                  <p className="text-foreground font-semibold text-base">Action Required</p>
                   <p className="text-muted-foreground text-sm mt-1">{error}</p>
                   {isOfficer && (
                     <button
@@ -650,14 +650,14 @@ export default function Dashboard() {
           {!activeCharacter && (
             <div
               onClick={() => setShowCreateCharacterModal(true)}
-              className="bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-xl p-6 hover:border-accent/50 transition cursor-pointer"
+              className="bg-background-elevated border border-border rounded-xl p-6 hover:border-accent/50 transition cursor-pointer"
             >
               <div className="flex items-center gap-4">
                 <div className="w-16 h-16 bg-muted border border-border-strong rounded-full flex items-center justify-center">
                   <HugeiconsIcon icon={Add01Icon} size={32} className="text-muted-foreground" />
                 </div>
                 <div className="flex-1">
-                  <h2 className="text-[24px] font-bold text-white">
+                  <h2 className="text-[24px] font-bold text-foreground">
                     Create Your First Character
                   </h2>
                   <p className="text-muted-foreground text-sm mt-1">
@@ -675,7 +675,7 @@ export default function Dashboard() {
           {activeCharacter && (
             <div className="flex flex-col lg:flex-row gap-6">
               {/* Character Info Card */}
-              <div className="bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-xl p-6 lg:w-1/3">
+              <div className="bg-background-elevated border border-border rounded-xl p-6 lg:w-1/3">
                 <div className="flex items-center gap-4">
                   {activeCharacter.class?.name ? (
                     <img
@@ -685,7 +685,7 @@ export default function Dashboard() {
                     />
                   ) : (
                     <div className="w-16 h-16 bg-gradient-to-br from-[#ff8000] to-[#ff6000] rounded-full flex items-center justify-center border border-border">
-                      <HugeiconsIcon icon={UserIcon} size={32} className="text-white" />
+                      <HugeiconsIcon icon={UserIcon} size={32} className="text-foreground" />
                     </div>
                   )}
                   <div className="flex-1">
@@ -720,11 +720,11 @@ export default function Dashboard() {
               {/* Stats Grid */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:flex-1">
                 {/* Completed Lists */}
-                <div className="bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-xl p-6">
+                <div className="bg-background-elevated border border-border rounded-xl p-6">
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-muted-foreground">Completed Lists</p>
-                      <p className="text-[42px] font-bold text-white mt-2 leading-none">{stats.completedLists}</p>
+                      <p className="text-[42px] font-bold text-foreground mt-2 leading-none">{stats.completedLists}</p>
                     </div>
                     <div className="w-12 h-12 bg-green-500/20 rounded-full flex items-center justify-center">
                       <HugeiconsIcon icon={CheckmarkCircle01Icon} size={24} className="text-green-500" />
@@ -733,11 +733,11 @@ export default function Dashboard() {
                 </div>
 
                 {/* Pending Reviews */}
-                <div className="bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-xl p-6">
+                <div className="bg-background-elevated border border-border rounded-xl p-6">
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-muted-foreground">Pending Reviews</p>
-                      <p className="text-[42px] font-bold text-white mt-2 leading-none">{stats.pendingReviews}</p>
+                      <p className="text-[42px] font-bold text-foreground mt-2 leading-none">{stats.pendingReviews}</p>
                     </div>
                     <div className="w-12 h-12 bg-yellow-500/20 rounded-full flex items-center justify-center">
                       <HugeiconsIcon icon={AlertCircleIcon} size={24} className="text-yellow-500" />
@@ -746,11 +746,11 @@ export default function Dashboard() {
                 </div>
 
                 {/* Actions Needed */}
-                <div className="bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-xl p-6">
+                <div className="bg-background-elevated border border-border rounded-xl p-6">
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-muted-foreground">Actions Needed</p>
-                      <p className="text-[42px] font-bold text-white mt-2 leading-none">{visibleActionsCount}</p>
+                      <p className="text-[42px] font-bold text-foreground mt-2 leading-none">{visibleActionsCount}</p>
                     </div>
                     <div className="w-12 h-12 bg-orange-500/20 rounded-full flex items-center justify-center">
                       <HugeiconsIcon icon={AlertCircleIcon} size={24} className="text-orange-500" />
@@ -764,11 +764,11 @@ export default function Dashboard() {
           {/* Loot Priority and Received Items Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Next in Line - Top Items */}
-            <div className="bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-xl p-6">
+            <div className="bg-background-elevated border border-border rounded-xl p-6">
               <div className="flex items-center gap-4 mb-6">
                 <HugeiconsIcon icon={Award01Icon} size={32} className="text-accent flex-shrink-0" />
                 <div>
-                  <h2 className="text-[24px] font-bold text-white">Next in Line</h2>
+                  <h2 className="text-[24px] font-bold text-foreground">Next in Line</h2>
                   <p className="text-sm text-muted-foreground mt-1">Your highest priority items</p>
                 </div>
               </div>
@@ -782,7 +782,7 @@ export default function Dashboard() {
                     <div
                       key={item.item_id}
                       onClick={() => router.push(`/master-sheet?tier=${item.raid_tier_id}&item=${item.item_id}`)}
-                      className="bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-xl p-4 hover:border-accent/50 transition cursor-pointer"
+                      className="bg-background-inset border border-border rounded-xl p-4 hover:border-accent/50 transition cursor-pointer"
                     >
                       <div className="flex items-center gap-4">
                         <div className="flex-shrink-0 w-10 h-10 bg-accent/20 rounded-full flex items-center justify-center">
@@ -800,7 +800,7 @@ export default function Dashboard() {
                           <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
                             <span>{item.boss_name}</span>
                             <span>•</span>
-                            <span className="font-semibold text-white">{item.loot_score.toFixed(1)}</span>
+                            <span className="font-semibold text-foreground">{item.loot_score.toFixed(1)}</span>
                             {item.tied_characters.length > 0 && (
                               <>
                                 <span>•</span>
@@ -825,11 +825,11 @@ export default function Dashboard() {
             </div>
 
             {/* Recently Received Items */}
-            <div className="bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-xl p-6">
+            <div className="bg-background-elevated border border-border rounded-xl p-6">
               <div className="flex items-center gap-4 mb-6">
                 <HugeiconsIcon icon={CheckmarkCircle01Icon} size={32} className="text-green-500 flex-shrink-0" />
                 <div>
-                  <h2 className="text-[24px] font-bold text-white">Recently received</h2>
+                  <h2 className="text-[24px] font-bold text-foreground">Recently received</h2>
                   <p className="text-sm text-muted-foreground mt-1">Your recent loot awards</p>
                 </div>
               </div>
@@ -842,7 +842,7 @@ export default function Dashboard() {
                   {receivedItems.map((item) => (
                     <div
                       key={item.id}
-                      className="bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-xl p-4"
+                      className="bg-background-elevated border border-border rounded-xl p-4"
                     >
                       <div className="flex items-center gap-4">
                         <div className="flex-shrink-0 w-10 h-10 bg-green-500/20 rounded-full flex items-center justify-center">
@@ -875,15 +875,15 @@ export default function Dashboard() {
 
           {/* Actions Needed - Current Character */}
           {actionsNeeded.filter(submission => !dismissedActions.has(submission.id)).length > 0 && (
-            <div className="bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-xl p-6">
+            <div className="bg-background-elevated border border-border rounded-xl p-6">
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-[24px] font-bold text-white">Actions needed</h2>
+                <h2 className="text-[24px] font-bold text-foreground">Actions needed</h2>
               </div>
               <div className="space-y-4">
                 {actionsNeeded.filter(submission => !dismissedActions.has(submission.id)).map(submission => (
                   <div
                     key={submission.id}
-                    className="bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-xl p-4 hover:border-accent/50 transition cursor-pointer"
+                    className="bg-background-inset border border-border rounded-xl p-4 hover:border-accent/50 transition cursor-pointer"
                     onClick={() => router.push('/loot-list')}
                   >
                     <div className="flex items-center justify-between">
@@ -896,7 +896,7 @@ export default function Dashboard() {
                             {submission.character.name}
                           </span>
                           <span className="text-muted-foreground text-sm">•</span>
-                          <span className="text-white text-sm">{submission.raid_tier.name}</span>
+                          <span className="text-foreground text-sm">{submission.raid_tier.name}</span>
                           <span className={`px-3 py-1 rounded-full text-xs font-medium border ${getStatusBadge(submission.status)}`}>
                             {getStatusText(submission.status)}
                           </span>
@@ -910,7 +910,7 @@ export default function Dashboard() {
                       <div className="ml-4 flex items-center gap-2">
                         <button
                           onClick={(e) => handleDismissAction(e, submission.id)}
-                          className="p-2 bg-background-elevated hover:bg-red-950/50 border border-[rgba(255,255,255,0.1)] hover:border-red-600/30 rounded-lg text-muted-foreground hover:text-red-400 transition"
+                          className="p-2 bg-background-elevated hover:bg-red-950/50 border border-border hover:border-red-600/30 rounded-lg text-muted-foreground hover:text-red-400 transition"
                           title="Dismiss"
                         >
                           <HugeiconsIcon icon={Cancel01Icon} size={16} />

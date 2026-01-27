@@ -434,7 +434,7 @@ export default function AdminPrioList() {
       <div className="font-poppins">
         {/* Header */}
         <div className="p-8 pb-4">
-          <h1 className="text-[42px] font-bold text-white leading-tight">Priority List</h1>
+          <h1 className="text-[42px] font-bold text-foreground leading-tight">Priority List</h1>
           <p className="text-muted-foreground mt-1 text-[14px]">
             Set role, class, and individual raider priorities for each item
           </p>
@@ -459,8 +459,8 @@ export default function AdminPrioList() {
                     onClick={() => setSelectedTierId(tier.id)}
                     className={`px-5 py-2.5 rounded-[40px] whitespace-nowrap text-[13px] font-medium transition-all ${
                       selectedTierId === tier.id
-                        ? 'bg-[rgba(255,128,0,0.2)] border-[0.5px] border-[rgba(255,128,0,0.2)] text-accent'
-                        : 'bg-background-elevated border border-[rgba(255,255,255,0.1)] text-white hover:bg-muted'
+                        ? 'bg-accent/20 border-[0.5px] border-accent/20 text-accent'
+                        : 'bg-background-elevated border border-border text-foreground hover:bg-muted'
                     }`}
                   >
                     <span className="flex items-center gap-2">
@@ -477,17 +477,17 @@ export default function AdminPrioList() {
         {/* Stats */}
         <div className="px-8 pb-4">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-xl p-4">
+            <div className="bg-background-elevated border border-border rounded-xl p-4">
               <p className="text-muted-foreground text-sm">Total Items</p>
-              <p className="text-2xl font-bold text-white">{filteredItems.length}</p>
+              <p className="text-2xl font-bold text-foreground">{filteredItems.length}</p>
             </div>
-            <div className="bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-xl p-4">
+            <div className="bg-background-elevated border border-border rounded-xl p-4">
               <p className="text-muted-foreground text-sm">With Priorities</p>
               <p className="text-2xl font-bold text-green-400">
                 {Object.keys(priorities).length}
               </p>
             </div>
-            <div className="bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-xl p-4">
+            <div className="bg-background-elevated border border-border rounded-xl p-4">
               <p className="text-muted-foreground text-sm">No Priorities</p>
               <p className="text-2xl font-bold text-yellow-400">
                 {filteredItems.length - Object.keys(priorities).filter(id =>
@@ -495,7 +495,7 @@ export default function AdminPrioList() {
                 ).length}
               </p>
             </div>
-            <div className="bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-xl p-4">
+            <div className="bg-background-elevated border border-border rounded-xl p-4">
               <p className="text-muted-foreground text-sm">Guild Raiders</p>
               <p className="text-2xl font-bold text-blue-400">{characters.length}</p>
             </div>
@@ -507,17 +507,17 @@ export default function AdminPrioList() {
           <div className="sticky top-[64px] z-10 px-8 pt-3 pb-2 bg-background">
             <div className="flex gap-3">
               {/* Search input */}
-              <div className="flex-shrink-0 bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-xl p-3 flex items-center">
+              <div className="flex-shrink-0 bg-background-elevated border border-border rounded-xl p-3 flex items-center">
                 <input
                   type="text"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   placeholder="Search items..."
-                  className="w-[160px] px-3 py-1.5 bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-[40px] text-white text-xs focus:outline-none focus:border-accent placeholder:text-foreground-muted"
+                  className="w-[160px] px-3 py-1.5 bg-background-elevated border border-border rounded-[40px] text-foreground text-xs focus:outline-none focus:border-accent placeholder:text-foreground-muted"
                 />
               </div>
               {/* Boss chips container with horizontal scroll fade */}
-              <div className="flex-1 min-w-0 bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-xl p-3 overflow-hidden">
+              <div className="flex-1 min-w-0 bg-background-elevated border border-border rounded-xl p-3 overflow-hidden">
                 <div
                   className="overflow-x-auto scrollbar-hide"
                   style={{
@@ -535,7 +535,7 @@ export default function AdminPrioList() {
                             element.scrollIntoView({ behavior: 'smooth', block: 'start' })
                           }
                         }}
-                        className="px-3 py-1.5 bg-background-elevated hover:bg-muted border border-[rgba(255,255,255,0.1)] rounded-[40px] text-xs font-medium text-white whitespace-nowrap transition"
+                        className="px-3 py-1.5 bg-background-inset hover:bg-muted border border-border rounded-[40px] text-xs font-medium text-foreground whitespace-nowrap transition"
                       >
                         {boss}
                       </button>
@@ -544,17 +544,17 @@ export default function AdminPrioList() {
                 </div>
               </div>
               {/* Expand/Collapse container */}
-              <div className="flex-shrink-0 bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-xl p-3">
+              <div className="flex-shrink-0 bg-background-elevated border border-border rounded-xl p-3">
                 <div className="flex gap-2 h-full items-center">
                   <button
                     onClick={expandAll}
-                    className="px-3 py-1.5 bg-background-elevated hover:bg-muted border border-[rgba(255,255,255,0.1)] rounded-[40px] text-xs font-medium text-muted-foreground hover:text-white whitespace-nowrap transition"
+                    className="px-3 py-1.5 bg-background-inset hover:bg-muted border border-border rounded-[40px] text-xs font-medium text-muted-foreground hover:text-foreground whitespace-nowrap transition"
                   >
                     Expand All
                   </button>
                   <button
                     onClick={collapseAll}
-                    className="px-3 py-1.5 bg-background-elevated hover:bg-muted border border-[rgba(255,255,255,0.1)] rounded-[40px] text-xs font-medium text-muted-foreground hover:text-white whitespace-nowrap transition"
+                    className="px-3 py-1.5 bg-background-inset hover:bg-muted border border-border rounded-[40px] text-xs font-medium text-muted-foreground hover:text-foreground whitespace-nowrap transition"
                   >
                     Collapse All
                   </button>
@@ -569,7 +569,7 @@ export default function AdminPrioList() {
 
         {/* Content Loading State */}
         {contentLoading ? (
-          <div className="bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-xl p-12">
+          <div className="bg-background-elevated border border-border rounded-xl p-12">
             <div className="flex flex-col items-center justify-center gap-4">
               <LoadingSpinner />
               <p className="text-muted-foreground text-sm">Loading items...</p>
@@ -579,7 +579,7 @@ export default function AdminPrioList() {
         <>
         {/* Items by Boss */}
         {bossNames.length === 0 ? (
-          <div className="bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-xl p-8 text-center">
+          <div className="bg-background-elevated border border-border rounded-xl p-8 text-center">
             <p className="text-muted-foreground">No items found for this raid tier</p>
           </div>
         ) : (
@@ -592,7 +592,7 @@ export default function AdminPrioList() {
                 <div
                   key={boss}
                   id={`boss-${boss.replace(/\s+/g, '-')}`}
-                  className="bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-xl overflow-hidden scroll-mt-[140px]"
+                  className="bg-background-elevated border border-border rounded-xl overflow-hidden scroll-mt-[140px]"
                 >
                   {/* Boss Header - Clickable */}
                   <button
@@ -607,7 +607,7 @@ export default function AdminPrioList() {
                           className="w-6 h-6 rounded"
                         />
                       )}
-                      <h2 className="text-[15px] font-semibold text-white">{boss}</h2>
+                      <h2 className="text-[15px] font-semibold text-foreground">{boss}</h2>
                     </div>
                     <div className="flex items-center gap-3">
                       <span className="text-[12px] text-foreground-muted font-medium">
@@ -626,7 +626,7 @@ export default function AdminPrioList() {
 
                   {/* Items Table - Collapsible */}
                   {!isCollapsed && (
-                    <div className="border-t border-[rgba(255,255,255,0.1)]">
+                    <div className="border-t border-border">
                       <table className="w-full">
                         <thead>
                           <tr className="bg-background-subtle">
@@ -636,7 +636,7 @@ export default function AdminPrioList() {
                             <th className="px-3 py-2.5 text-center text-[12px] font-medium text-foreground-muted w-[180px]">Actions</th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-[rgba(255,255,255,0.05)]">
+                        <tbody className="divide-y divide-border">
                           {bossItems.map((item) => {
                             const hasPriority = !!priorities[item.id]
                             const summary = getPrioritySummary(item.id)
@@ -660,14 +660,14 @@ export default function AdminPrioList() {
                                   {summary ? (
                                     <span className="text-[12px] text-green-400">{summary}</span>
                                   ) : (
-                                    <span className="text-[12px] text-[#444] italic">No priorities set</span>
+                                    <span className="text-[12px] text-muted-foreground italic">No priorities set</span>
                                   )}
                                 </td>
                                 <td className="px-3 py-2.5 text-center">
                                   <div className="flex items-center justify-center gap-2">
                                     <button
                                       onClick={() => handleEditItem(item)}
-                                      className="px-3 py-1.5 bg-background-elevated hover:bg-muted border border-border-strong text-white text-[11px] font-medium rounded-[52px] transition"
+                                      className="px-3 py-1.5 bg-background-elevated hover:bg-muted border border-border-strong text-foreground text-[11px] font-medium rounded-[52px] transition"
                                     >
                                       {hasPriority ? 'Edit' : 'Set Priority'}
                                     </button>
@@ -695,7 +695,7 @@ export default function AdminPrioList() {
         )}
 
         {/* Legend */}
-        <div className="bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-xl p-4">
+        <div className="bg-background-elevated border border-border rounded-xl p-4">
           <div className="flex items-center justify-between">
             <p className="text-foreground-muted text-[12px]">
               Priority 1 = highest. Bonuses are added to loot scores on the master sheet.

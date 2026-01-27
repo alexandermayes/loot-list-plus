@@ -47,6 +47,7 @@ module.exports = {
           DEFAULT: "hsl(var(--background))",
           subtle: "hsl(var(--background-subtle))",
           elevated: "hsl(var(--background-elevated))",
+          inset: "hsl(var(--background-inset))",
         },
         foreground: {
           DEFAULT: "hsl(var(--foreground))",
@@ -102,6 +103,9 @@ module.exports = {
           DEFAULT: "hsl(var(--discord))",
           foreground: "hsl(var(--discord-foreground))",
         },
+        // WoW Faction Colors
+        alliance: "hsl(var(--alliance))",
+        horde: "hsl(var(--horde))",
         // WoW Class Colors (for character displays)
         "class-warrior": "#C79C6E",
         "class-paladin": "#F58CBA",

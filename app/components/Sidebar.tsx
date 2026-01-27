@@ -330,7 +330,7 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange }
         className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize z-30 group"
       >
         {/* Visible line */}
-        <div className={`absolute right-0 top-0 bottom-0 w-px transition-colors ${isResizing ? 'bg-primary' : 'bg-border group-hover:bg-[rgba(255,255,255,0.3)]'}`} />
+        <div className={`absolute right-0 top-0 bottom-0 w-px transition-colors ${isResizing ? 'bg-primary' : 'bg-border group-hover:bg-foreground/30'}`} />
         {/* Wider hit area */}
         <div className="absolute right-[-2px] top-0 bottom-0 w-[5px]" />
       </div>
@@ -349,7 +349,7 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange }
               alt="LootList+"
               width={102}
               height={16}
-              className="h-4 w-auto"
+              className="logo-adaptive h-4 w-auto"
               priority
             />
           </button>
@@ -387,13 +387,13 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange }
                 alt="Add"
                 width={20}
                 height={20}
-                className="w-5 h-5 shrink-0 brightness-0 invert"
+                className="icon-adaptive w-5 h-5 shrink-0 brightness-0 invert"
               />
               <div className="flex-1 text-left leading-[normal]">
-                <p className="font-poppins font-medium text-[13px] text-white">
+                <p className="font-poppins font-medium text-[13px] text-foreground">
                   Create a guild
                 </p>
-                <p className="font-poppins font-normal text-[10px] text-[rgba(255,255,255,0.7)]">
+                <p className="font-poppins font-normal text-[10px] text-foreground/70">
                   Start your own guild
                 </p>
               </div>
@@ -415,7 +415,7 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange }
                 <div className="w-5 h-5 bg-muted-foreground rounded-[4px] shrink-0 border border-border" />
               )}
               <div className="flex-1 text-left leading-[normal] min-w-0">
-                <p className="font-poppins font-medium text-[13px] text-white w-full truncate">
+                <p className="font-poppins font-medium text-[13px] text-foreground w-full truncate">
                   {activeGuild.name}
                 </p>
                 <p className="font-poppins font-normal text-[10px] text-muted-foreground w-full truncate">
@@ -427,7 +427,7 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange }
                 alt="Toggle"
                 width={20}
                 height={20}
-                className={`w-5 h-5 shrink-0 transition-transform ${guildDropdownOpen ? 'rotate-180' : ''}`}
+                className={`icon-adaptive w-5 h-5 shrink-0 transition-transform ${guildDropdownOpen ? 'rotate-180' : ''}`}
               />
             </button>
           )}
@@ -461,7 +461,7 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange }
                       <div className="w-5 h-5 bg-muted-foreground rounded-[4px] shrink-0 border border-border" />
                     )}
                     <div className="flex-1 leading-[normal] min-w-0">
-                      <p className="font-poppins font-medium text-[13px] text-white w-full truncate">
+                      <p className="font-poppins font-medium text-[13px] text-foreground w-full truncate">
                         {g.guild.name}
                       </p>
                       <p className="font-poppins font-normal text-[10px] text-muted-foreground w-full truncate">
@@ -474,7 +474,7 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange }
                         alt="Selected"
                         width={20}
                         height={20}
-                        className="w-5 h-5 shrink-0"
+                        className="icon-adaptive w-5 h-5 shrink-0"
                       />
                     )}
                   </button>
@@ -500,9 +500,9 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange }
                   alt="Join"
                   width={20}
                   height={20}
-                  className="w-5 h-5 shrink-0"
+                  className="icon-adaptive w-5 h-5 shrink-0"
                 />
-                <p className="font-poppins font-medium text-[13px] text-white">
+                <p className="font-poppins font-medium text-[13px] text-foreground">
                   Join a guild
                 </p>
               </button>
@@ -520,9 +520,9 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange }
                   alt="Create"
                   width={20}
                   height={20}
-                  className="w-5 h-5 shrink-0"
+                  className="icon-adaptive w-5 h-5 shrink-0"
                 />
-                <p className="font-poppins font-medium text-[13px] text-white">
+                <p className="font-poppins font-medium text-[13px] text-foreground">
                   Create a guild
                 </p>
               </button>
@@ -563,10 +563,10 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange }
               disabled={!activeGuild}
               className={`w-full px-3.5 py-2.5 flex items-center gap-3 rounded-[40px] transition font-poppins font-medium text-[13px] ${
                 !activeGuild
-                  ? 'opacity-20 cursor-not-allowed text-white'
+                  ? 'opacity-20 cursor-not-allowed text-foreground'
                   : isActive(item.view)
                   ? 'bg-accent/20 border-[0.5px] border-accent/20 text-accent'
-                  : 'text-white hover:bg-muted'
+                  : 'text-foreground hover:bg-muted'
               }`}
             >
               <Image
@@ -575,7 +575,7 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange }
                 width={20}
                 height={20}
                 className={`w-5 h-5 shrink-0 ${
-                  activeGuild && isActive(item.view) ? 'brightness-0 saturate-100' : ''
+                  activeGuild && isActive(item.view) ? '' : 'icon-adaptive'
                 }`}
                 style={activeGuild && isActive(item.view) ? { filter: 'invert(55%) sepia(89%) saturate(2274%) hue-rotate(1deg) brightness(101%) contrast(105%)' } : undefined}
               />
@@ -599,7 +599,7 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange }
                 className={`w-full px-3.5 py-[10px] flex items-center gap-3 rounded-[40px] transition font-poppins font-medium text-[13px] text-left ${
                   isActive(item.view)
                     ? 'bg-accent/20 border-[0.5px] border-accent/20 text-accent'
-                    : 'text-white hover:bg-muted'
+                    : 'text-foreground hover:bg-muted'
                 }`}
               >
                 <Image
@@ -608,7 +608,7 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange }
                   width={20}
                   height={20}
                   className={`w-5 h-5 shrink-0 ${
-                    isActive(item.view) ? 'brightness-0 saturate-100' : ''
+                    isActive(item.view) ? '' : 'icon-adaptive'
                   }`}
                   style={isActive(item.view) ? { filter: 'invert(55%) sepia(89%) saturate(2274%) hue-rotate(1deg) brightness(101%) contrast(105%)' } : undefined}
                 />
@@ -624,26 +624,15 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange }
         className="absolute bottom-0 left-0 right-0 flex flex-col gap-0 z-10 bg-background-subtle border-t border-border p-[10px]"
         style={{ width: sidebarWidth }}
       >
-        <button className="w-full px-3.5 py-2 flex items-center gap-3 rounded-[40px] hover:bg-muted transition font-poppins font-medium text-[13px] text-white">
+        <button className="w-full px-3.5 py-2 flex items-center gap-3 rounded-[40px] hover:bg-muted transition font-poppins font-medium text-[13px] text-foreground">
           <Image
             src="/icons/help.svg"
             alt="Help"
             width={20}
             height={20}
-            className="w-5 h-5"
+            className="icon-adaptive w-5 h-5"
           />
           <span className="whitespace-nowrap">Help</span>
-        </button>
-
-        <button className="w-full px-3.5 py-2 flex items-center gap-3 rounded-[40px] hover:bg-muted transition font-poppins font-medium text-[13px] text-white">
-          <Image
-            src="/icons/moon.svg"
-            alt="Dark mode"
-            width={20}
-            height={20}
-            className="w-5 h-5"
-          />
-          <span className="whitespace-nowrap">Dark mode</span>
         </button>
 
         {/* User Profile Card */}
@@ -679,7 +668,7 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange }
               <div className="w-5 h-5 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 shrink-0 border border-border" />
             )}
             <div className="flex-1 text-left pb-[2px] pt-0 px-0 leading-[normal] min-w-0">
-              <p className="font-poppins font-medium text-[13px] text-white w-full truncate">
+              <p className="font-poppins font-medium text-[13px] text-foreground w-full truncate">
                 {user?.user_metadata?.custom_claims?.global_name || user?.user_metadata?.full_name || activeMember?.character_name || 'User'}
               </p>
               <p className="font-poppins font-normal text-[10px] text-muted-foreground w-full truncate">
@@ -691,7 +680,7 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange }
               alt="Settings"
               width={20}
               height={20}
-              className="w-5 h-5 shrink-0"
+              className="icon-adaptive w-5 h-5 shrink-0"
             />
           </button>
         )}
@@ -730,7 +719,7 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange }
                       className="w-10 h-10 rounded-xl border border-border"
                     />
                     <div>
-                      <h3 className="text-[20px] font-bold text-white">Join a guild</h3>
+                      <h3 className="text-[20px] font-bold text-foreground">Join a guild</h3>
                       <p className="text-[12px] text-muted-foreground">Choose how you'd like to join</p>
                     </div>
                   </div>
@@ -739,7 +728,7 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange }
                       setShowJoinModal(false)
                       setModalView('main')
                     }}
-                    className="text-muted-foreground hover:text-white transition"
+                    className="text-muted-foreground hover:text-foreground transition"
                   >
                     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -759,10 +748,10 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange }
                         alt="Discord"
                         width={40}
                         height={40}
-                        className="w-10 h-10"
+                        className="icon-adaptive w-10 h-10"
                       />
                       <div className="flex flex-col gap-1 text-center w-full">
-                        <h2 className="font-poppins font-bold text-lg text-white">
+                        <h2 className="font-poppins font-bold text-lg text-foreground">
                           Join with Discord
                         </h2>
                         <p className="font-poppins font-normal text-sm text-muted-foreground">
@@ -790,10 +779,10 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange }
                         alt="Code"
                         width={40}
                         height={40}
-                        className="w-10 h-10"
+                        className="icon-adaptive w-10 h-10"
                       />
                       <div className="flex flex-col gap-1 text-center w-full">
-                        <h2 className="font-poppins font-bold text-lg text-white">
+                        <h2 className="font-poppins font-bold text-lg text-foreground">
                           Join with Code
                         </h2>
                         <p className="font-poppins font-normal text-sm text-muted-foreground">
@@ -808,7 +797,7 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange }
                           value={inviteCode}
                           onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
                           placeholder="ABC123DEF456"
-                          className="flex-1 min-w-0 bg-background-subtle border border-border-strong rounded-[52px] px-5 py-3 font-poppins font-medium text-base text-white placeholder:text-muted-foreground/60 focus:outline-none focus:border-border-strong"
+                          className="flex-1 min-w-0 bg-background-subtle border border-border-strong rounded-[52px] px-5 py-3 font-poppins font-medium text-base text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:border-border-strong"
                           disabled={joining}
                         />
                         <button
@@ -833,9 +822,9 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange }
                       alt="Help"
                       width={16}
                       height={16}
-                      className="w-4 h-4"
+                      className="icon-adaptive w-4 h-4"
                     />
-                    <p className="font-poppins font-bold text-sm text-white">
+                    <p className="font-poppins font-bold text-sm text-foreground">
                       Need Help?
                     </p>
                   </div>
@@ -854,14 +843,14 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange }
                   <div className="flex items-center gap-3">
                     <button
                       onClick={() => setModalView('main')}
-                      className="text-muted-foreground hover:text-white transition"
+                      className="text-muted-foreground hover:text-foreground transition"
                     >
                       <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                       </svg>
                     </button>
                     <div>
-                      <h3 className="text-[20px] font-bold text-white">Select guild</h3>
+                      <h3 className="text-[20px] font-bold text-foreground">Select guild</h3>
                       <p className="text-[12px] text-muted-foreground">Automatically join guilds from your Discord servers</p>
                     </div>
                   </div>
@@ -870,7 +859,7 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange }
                       setShowJoinModal(false)
                       setModalView('main')
                     }}
-                    className="text-muted-foreground hover:text-white transition"
+                    className="text-muted-foreground hover:text-foreground transition"
                   >
                     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -904,12 +893,12 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange }
                   </div>
                 ) : availableGuilds.length === 0 ? (
                   <div className="text-center py-8">
-                    <p className="font-bold text-[18px] text-white mb-2">No guilds found</p>
+                    <p className="font-bold text-[18px] text-foreground mb-2">No guilds found</p>
                     <p className="text-[14px] text-muted-foreground mb-4">
                       We didn't find any LootList+ guilds linked to your Discord servers.
                     </p>
                     <div className="bg-background-elevated border border-border-strong rounded-xl p-4 text-left space-y-2">
-                      <p className="text-[14px] text-white font-medium">Why this might happen:</p>
+                      <p className="text-[14px] text-foreground font-medium">Why this might happen:</p>
                       <ul className="text-[13px] text-muted-foreground space-y-1 list-disc list-inside">
                         <li>No servers you're in use LootList+</li>
                         <li>You're already in all matching guilds</li>
@@ -922,7 +911,7 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange }
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    <h3 className="font-bold text-[16px] text-white">Available Guilds</h3>
+                    <h3 className="font-bold text-[16px] text-foreground">Available Guilds</h3>
                     <div className="space-y-3">
                       {availableGuilds.map((guild) => (
                         <div
@@ -939,7 +928,7 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange }
                                 />
                               )}
                               <div className="flex-1 min-w-0">
-                                <h4 className="font-bold text-[14px] text-white truncate">{guild.name}</h4>
+                                <h4 className="font-bold text-[14px] text-foreground truncate">{guild.name}</h4>
                                 <div className="flex gap-2 text-[12px] text-muted-foreground mt-0.5">
                                   {guild.realm && <span>{guild.realm}</span>}
                                   {guild.realm && <span>•</span>}

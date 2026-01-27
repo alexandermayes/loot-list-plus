@@ -221,10 +221,10 @@ export function EditCharacterModal({ isOpen, onClose, character, onSuccess }: Ed
       >
         {/* Header */}
         <div className="p-6 border-b border-border-strong flex items-center justify-between bg-background-elevated">
-          <h3 className="text-[24px] font-bold text-white">Edit character</h3>
+          <h3 className="text-[24px] font-bold text-foreground">Edit character</h3>
           <button
             onClick={onClose}
-            className="text-muted-foreground hover:text-white transition"
+            className="text-muted-foreground hover:text-foreground transition"
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -244,30 +244,30 @@ export function EditCharacterModal({ isOpen, onClose, character, onSuccess }: Ed
 
             {/* Character Name */}
             <div>
-              <label className="block text-[13px] font-medium text-white mb-2">
+              <label className="block text-[13px] font-medium text-foreground mb-2">
                 Character Name <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full px-4 py-2.5 bg-background-elevated border border-border-strong rounded-[52px] text-white text-[13px] focus:outline-none focus:border-accent transition"
+                className="w-full px-4 py-2.5 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[13px] focus:outline-none focus:border-accent transition"
                 placeholder="Enter character name"
               />
             </div>
 
             {/* Class */}
             <div>
-              <label className="block text-[13px] font-medium text-white mb-2">
+              <label className="block text-[13px] font-medium text-foreground mb-2">
                 Class <span className="text-red-500">*</span>
               </label>
               <select
                 value={classId}
                 onChange={(e) => handleClassChange(e.target.value)}
-                className="w-full pl-4 pr-12 py-2.5 bg-background-elevated border border-border-strong rounded-[52px] text-white text-[13px] focus:outline-none focus:border-accent transition select-custom-sm cursor-pointer"
+                className="w-full pl-4 pr-12 py-2.5 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[13px] focus:outline-none focus:border-accent transition select-custom-sm cursor-pointer"
                 style={selectedClass ? { color: selectedClass.color_hex } : undefined}
               >
-                <option value="" className="text-white bg-background-elevated">Select a class</option>
+                <option value="" className="text-foreground bg-background-elevated">Select a class</option>
                 {classes.map((cls) => (
                   <option
                     key={cls.id}
@@ -284,13 +284,13 @@ export function EditCharacterModal({ isOpen, onClose, character, onSuccess }: Ed
             {/* Spec */}
             {classId && getAvailableSpecs().length > 0 && (
               <div>
-                <label className="block text-[13px] font-medium text-white mb-2">
+                <label className="block text-[13px] font-medium text-foreground mb-2">
                   Specialization <span className="text-red-500">*</span>
                 </label>
                 <select
                   value={specId}
                   onChange={(e) => setSpecId(e.target.value)}
-                  className="w-full pl-4 pr-12 py-2.5 bg-background-elevated border border-border-strong rounded-[52px] text-white text-[13px] focus:outline-none focus:border-accent transition select-custom-sm cursor-pointer"
+                  className="w-full pl-4 pr-12 py-2.5 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[13px] focus:outline-none focus:border-accent transition select-custom-sm cursor-pointer"
                 >
                   <option value="">Select a specialization</option>
                   {getAvailableSpecs().map((spec) => (
@@ -304,13 +304,13 @@ export function EditCharacterModal({ isOpen, onClose, character, onSuccess }: Ed
 
             {/* Main/Alt Toggle */}
             <div>
-              <label className="block text-[13px] font-medium text-white mb-3">
+              <label className="block text-[13px] font-medium text-foreground mb-3">
                 Character Type
               </label>
               <div className="relative flex bg-background-subtle border border-border-strong rounded-[52px] p-1">
                 {/* Sliding indicator */}
                 <div
-                  className={`absolute top-1 bottom-1 w-[calc(50%-4px)] bg-muted border border-[#404040] rounded-[44px] transition-all duration-200 ease-out ${
+                  className={`absolute top-1 bottom-1 w-[calc(50%-4px)] bg-muted border border-border-strong rounded-[44px] transition-all duration-200 ease-out ${
                     isMain ? 'left-1' : 'left-[calc(50%+2px)]'
                   }`}
                 />
@@ -318,7 +318,7 @@ export function EditCharacterModal({ isOpen, onClose, character, onSuccess }: Ed
                   type="button"
                   onClick={() => setIsMain(true)}
                   className={`relative z-10 flex-1 px-6 py-2 rounded-[44px] text-[13px] font-medium transition-colors duration-200 ${
-                    isMain ? 'text-white' : 'text-foreground-muted'
+                    isMain ? 'text-foreground' : 'text-foreground-muted'
                   }`}
                 >
                   Main
@@ -327,7 +327,7 @@ export function EditCharacterModal({ isOpen, onClose, character, onSuccess }: Ed
                   type="button"
                   onClick={() => setIsMain(false)}
                   className={`relative z-10 flex-1 px-6 py-2 rounded-[44px] text-[13px] font-medium transition-colors duration-200 ${
-                    !isMain ? 'text-white' : 'text-foreground-muted'
+                    !isMain ? 'text-foreground' : 'text-foreground-muted'
                   }`}
                 >
                   Alt
@@ -338,7 +338,7 @@ export function EditCharacterModal({ isOpen, onClose, character, onSuccess }: Ed
             {/* Guild Info */}
             {guildCount > 0 && (
               <div className="text-[13px] text-muted-foreground bg-background-elevated border border-border-strong rounded-xl p-4">
-                <p className="font-medium text-white mb-1">Guild Memberships</p>
+                <p className="font-medium text-foreground mb-1">Guild Memberships</p>
                 <p>This character is a member of {guildCount} guild{guildCount !== 1 ? 's' : ''}</p>
               </div>
             )}
@@ -363,14 +363,14 @@ export function EditCharacterModal({ isOpen, onClose, character, onSuccess }: Ed
                 <div className="space-y-3">
                   <div className="p-3 bg-red-900/20 border border-red-600/50 rounded-xl">
                     <p className="text-red-200 text-[12px] mb-2">
-                      Type <span className="font-bold text-white">{character.name}</span> to confirm:
+                      Type <span className="font-bold text-foreground">{character.name}</span> to confirm:
                     </p>
                     <input
                       type="text"
                       value={deleteConfirmName}
                       onChange={(e) => setDeleteConfirmName(e.target.value)}
                       placeholder="Type character name"
-                      className="w-full px-3 py-2 bg-background-subtle border border-red-600/50 rounded-lg text-white text-[13px] focus:outline-none focus:border-red-500 transition"
+                      className="w-full px-3 py-2 bg-background-subtle border border-red-600/50 rounded-lg text-foreground text-[13px] focus:outline-none focus:border-red-500 transition"
                       autoFocus
                     />
                   </div>
@@ -379,7 +379,7 @@ export function EditCharacterModal({ isOpen, onClose, character, onSuccess }: Ed
                       type="button"
                       onClick={handleDelete}
                       disabled={deleting || deleteConfirmName.toLowerCase() !== character.name.toLowerCase()}
-                      className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-[52px] text-white text-[13px] font-medium transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                      className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-[52px] text-foreground text-[13px] font-medium transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                     >
                       <HugeiconsIcon icon={Delete01Icon} size={16} />
                       {deleting ? 'Deleting...' : 'Delete Forever'}
@@ -388,7 +388,7 @@ export function EditCharacterModal({ isOpen, onClose, character, onSuccess }: Ed
                       type="button"
                       onClick={handleCancelDelete}
                       disabled={deleting}
-                      className="px-4 py-2 bg-background-elevated hover:bg-muted border border-border-strong rounded-[52px] text-white text-[13px] font-medium transition"
+                      className="px-4 py-2 bg-background-elevated hover:bg-muted border border-border-strong rounded-[52px] text-foreground text-[13px] font-medium transition"
                     >
                       Cancel
                     </button>
@@ -404,7 +404,7 @@ export function EditCharacterModal({ isOpen, onClose, character, onSuccess }: Ed
               type="button"
               onClick={onClose}
               disabled={saving}
-              className="px-6 py-2.5 bg-background-elevated hover:bg-muted border border-border-strong rounded-[52px] text-white text-[13px] transition disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-6 py-2.5 bg-background-elevated hover:bg-muted border border-border-strong rounded-[52px] text-foreground text-[13px] transition disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Cancel
             </button>

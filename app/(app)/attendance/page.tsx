@@ -475,7 +475,7 @@ export default function AttendancePage() {
     <div className="p-8 space-y-6 font-poppins">
       {/* Header */}
       <div>
-        <h1 className="text-[42px] font-bold text-white leading-tight">Attendance</h1>
+        <h1 className="text-[42px] font-bold text-foreground leading-tight">Attendance</h1>
         <p className="text-muted-foreground mt-1 text-base">Track raid attendance and view attendance scores</p>
       </div>
 
@@ -489,7 +489,7 @@ export default function AttendancePage() {
             <span className="text-foreground-muted text-[13px]">• Your Attendance</span>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-xl p-6">
+            <div className="bg-background-elevated border border-border rounded-xl p-6">
               <p className="text-muted-foreground text-sm mb-1">
                 Attendance Credit (Previous {guildSettings?.rolling_attendance_weeks || 4} Weeks)
               </p>
@@ -502,17 +502,17 @@ export default function AttendancePage() {
               </p>
             </div>
 
-            <div className="bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-xl p-6">
+            <div className="bg-background-elevated border border-border rounded-xl p-6">
               <p className="text-muted-foreground text-sm mb-1">Role Modifier</p>
-              <p className={`text-[42px] font-bold leading-none ${roleModifier < 0 ? 'text-red-400' : roleModifier > 0 ? 'text-green-400' : 'text-white'}`}>
+              <p className={`text-[42px] font-bold leading-none ${roleModifier < 0 ? 'text-red-400' : roleModifier > 0 ? 'text-green-400' : 'text-foreground'}`}>
                 {roleModifier >= 0 ? '+' : ''}{roleModifier}
               </p>
               <p className="text-muted-foreground text-sm mt-2">{memberRole}</p>
             </div>
 
-            <div className="bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-xl p-6">
+            <div className="bg-background-elevated border border-border rounded-xl p-6">
               <p className="text-muted-foreground text-sm mb-1">Tracked Raids</p>
-              <p className="text-[42px] font-bold text-white leading-none">
+              <p className="text-[42px] font-bold text-foreground leading-none">
                 {guildRaidEvents.length}
               </p>
               <p className="text-muted-foreground text-sm mt-2">Previous {guildSettings?.rolling_attendance_weeks || 4} completed weeks</p>
@@ -522,15 +522,15 @@ export default function AttendancePage() {
       )}
 
       {/* Guild Attendance Table */}
-      <div className="bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-xl overflow-hidden">
-        <div className="p-4 border-b border-[rgba(255,255,255,0.1)] flex items-center justify-between">
-          <h2 className="text-white font-semibold">Guild Attendance</h2>
+      <div className="bg-background-elevated border border-border rounded-xl overflow-hidden">
+        <div className="p-4 border-b border-border flex items-center justify-between">
+          <h2 className="text-foreground font-semibold">Guild Attendance</h2>
           <div className="flex items-center gap-2">
             <span className="text-[12px] text-foreground-muted">Sort:</span>
             <button
               onClick={() => toggleSort('score')}
               className={`px-3 py-1.5 rounded-lg text-[12px] font-medium transition flex items-center gap-1 ${
-                sortBy === 'score' ? 'bg-accent/20 text-accent' : 'bg-muted text-muted-foreground hover:text-white'
+                sortBy === 'score' ? 'bg-accent/20 text-accent' : 'bg-muted text-muted-foreground hover:text-foreground'
               }`}
             >
               Credit
@@ -539,7 +539,7 @@ export default function AttendancePage() {
             <button
               onClick={() => toggleSort('name')}
               className={`px-3 py-1.5 rounded-lg text-[12px] font-medium transition flex items-center gap-1 ${
-                sortBy === 'name' ? 'bg-accent/20 text-accent' : 'bg-muted text-muted-foreground hover:text-white'
+                sortBy === 'name' ? 'bg-accent/20 text-accent' : 'bg-muted text-muted-foreground hover:text-foreground'
               }`}
             >
               Name
@@ -579,7 +579,7 @@ export default function AttendancePage() {
                     <th
                       key={week.weekStart}
                       colSpan={week.raids.length}
-                      className={`px-2 py-2 text-center text-[11px] font-medium border-l border-[rgba(255,255,255,0.05)] ${
+                      className={`px-2 py-2 text-center text-[11px] font-medium border-l border-border ${
                         week.isMostRecent ? 'bg-green-900/20 text-green-400' : 'bg-blue-900/10 text-blue-300'
                       }`}
                     >
@@ -596,7 +596,7 @@ export default function AttendancePage() {
                     week.raids.map(raid => (
                       <th
                         key={raid.id}
-                        className={`px-2 py-1.5 text-center text-[10px] font-normal min-w-[50px] border-l border-[rgba(255,255,255,0.05)] ${
+                        className={`px-2 py-1.5 text-center text-[10px] font-normal min-w-[50px] border-l border-border ${
                           week.isMostRecent ? 'bg-green-900/10 text-green-300/70' : 'bg-blue-900/5 text-blue-200/50'
                         }`}
                       >
@@ -606,7 +606,7 @@ export default function AttendancePage() {
                   )}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[rgba(255,255,255,0.05)]">
+              <tbody className="divide-y divide-border">
                 {sortedRaiders.map(raider => (
                   <tr key={raider.id} className="hover:bg-muted transition">
                     <td className="sticky left-0 z-10 bg-background-elevated group-hover:bg-muted px-4 py-2.5">
@@ -633,7 +633,7 @@ export default function AttendancePage() {
                         return (
                           <td
                             key={raid.id}
-                            className={`px-2 py-2.5 text-center border-l border-[rgba(255,255,255,0.05)] ${
+                            className={`px-2 py-2.5 text-center border-l border-border ${
                               week.isMostRecent ? 'bg-green-900/5' : 'bg-blue-900/5'
                             }`}
                           >

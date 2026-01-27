@@ -213,7 +213,7 @@ export default function WelcomeScreen() {
               height={44}
               className="w-[33px] h-[44px]"
             />
-            <h1 className="font-poppins font-bold text-[42px] leading-[43px] text-white">
+            <h1 className="font-poppins font-bold text-[42px] leading-[43px] text-foreground">
               Welcome to LootList+
             </h1>
             <p className="font-poppins font-normal text-base text-muted-foreground">
@@ -225,7 +225,7 @@ export default function WelcomeScreen() {
           <div className="flex flex-col gap-6 w-full">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-2.5 w-full">
               {/* Join via Discord */}
-              <div className="bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-[40px] p-6 pt-[43px] pb-6 flex flex-col items-center">
+              <div className="bg-background-elevated border border-border rounded-[40px] p-6 pt-[43px] pb-6 flex flex-col items-center">
                 <div className="flex flex-col gap-6 items-center w-full flex-1">
                   <Image
                     src="/icons/discord-large.svg"
@@ -235,7 +235,7 @@ export default function WelcomeScreen() {
                     className="w-11 h-11"
                   />
                   <div className="flex flex-col gap-1 text-center w-full">
-                    <h2 className="font-poppins font-bold text-2xl text-white">
+                    <h2 className="font-poppins font-bold text-2xl text-foreground">
                       Join with Discord
                     </h2>
                     <p className="font-poppins font-normal text-sm text-muted-foreground">
@@ -257,7 +257,7 @@ export default function WelcomeScreen() {
               </div>
 
               {/* Join with Code */}
-              <div className="bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-[40px] p-6 pt-[43px] pb-6 flex flex-col items-center">
+              <div className="bg-background-elevated border border-border rounded-[40px] p-6 pt-[43px] pb-6 flex flex-col items-center">
                 <div className="flex flex-col gap-6 items-center w-full flex-1">
                   <Image
                     src="/icons/password-validation.svg"
@@ -267,7 +267,7 @@ export default function WelcomeScreen() {
                     className="w-11 h-11"
                   />
                   <div className="flex flex-col gap-1 text-center w-full">
-                    <h2 className="font-poppins font-bold text-2xl text-white">
+                    <h2 className="font-poppins font-bold text-2xl text-foreground">
                       Join with Code
                     </h2>
                     <p className="font-poppins font-normal text-sm text-muted-foreground">
@@ -282,7 +282,7 @@ export default function WelcomeScreen() {
                       value={inviteCode}
                       onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
                       placeholder="ABC123DEF456"
-                      className="flex-1 min-w-0 bg-background-elevated border border-border-strong rounded-[52px] px-5 py-3 font-poppins font-medium text-base text-white placeholder:text-foreground-muted focus:outline-none focus:border-[#555]"
+                      className="flex-1 min-w-0 bg-background-elevated border border-border-strong rounded-[52px] px-5 py-3 font-poppins font-medium text-base text-foreground placeholder:text-foreground-muted focus:outline-none focus:border-border-strong"
                       disabled={loading}
                     />
                     <button
@@ -312,7 +312,7 @@ export default function WelcomeScreen() {
                   height={20}
                   className="w-5 h-5"
                 />
-                <p className="font-poppins font-bold text-lg text-white">
+                <p className="font-poppins font-bold text-lg text-foreground">
                   Need Help?
                 </p>
               </div>
@@ -344,10 +344,10 @@ export default function WelcomeScreen() {
                   <img
                     src="https://wow.zamimg.com/images/wow/icons/large/inv_shirt_guildtabard_01.jpg"
                     alt="Guild Tabard"
-                    className="w-10 h-10 rounded-xl border border-[rgba(255,255,255,0.1)]"
+                    className="w-10 h-10 rounded-xl border border-border"
                   />
                   <div>
-                    <h3 className="text-[20px] font-bold text-white">Select guild</h3>
+                    <h3 className="text-[20px] font-bold text-foreground">Select guild</h3>
                     <p className="text-[12px] text-muted-foreground">Automatically join guilds from your Discord servers</p>
                   </div>
                 </div>
@@ -356,7 +356,7 @@ export default function WelcomeScreen() {
                     setShowModal(false)
                     setModalView('main')
                   }}
-                  className="text-muted-foreground hover:text-white transition"
+                  className="text-muted-foreground hover:text-foreground transition"
                 >
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -369,7 +369,7 @@ export default function WelcomeScreen() {
             <div className="p-6 overflow-y-auto flex-1">
               {discordLoading ? (
                 <div className="flex flex-col items-center justify-center py-12">
-                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white"></div>
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-foreground"></div>
                   <p className="text-[14px] text-muted-foreground mt-4">Loading available guilds...</p>
                 </div>
               ) : discordError ? (
@@ -390,12 +390,12 @@ export default function WelcomeScreen() {
                 </div>
               ) : availableGuilds.length === 0 ? (
                 <div className="text-center py-8">
-                  <p className="font-bold text-[18px] text-white mb-2">No guilds found</p>
+                  <p className="font-bold text-[18px] text-foreground mb-2">No guilds found</p>
                   <p className="text-[14px] text-muted-foreground mb-4">
                     We didn't find any LootList+ guilds linked to your Discord servers.
                   </p>
                   <div className="bg-background-elevated border border-border-strong rounded-xl p-4 text-left space-y-2">
-                    <p className="text-[14px] text-white font-medium">Why this might happen:</p>
+                    <p className="text-[14px] text-foreground font-medium">Why this might happen:</p>
                     <ul className="text-[13px] text-muted-foreground space-y-1 list-disc list-inside">
                       <li>No servers you're in use LootList+</li>
                       <li>You're already in all matching guilds</li>
@@ -408,12 +408,12 @@ export default function WelcomeScreen() {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  <h3 className="font-bold text-[16px] text-white">Available Guilds</h3>
+                  <h3 className="font-bold text-[16px] text-foreground">Available Guilds</h3>
                   <div className="space-y-3">
                     {availableGuilds.map((guild) => (
                       <div
                         key={guild.id}
-                        className="bg-background-elevated border border-border-strong rounded-xl p-4 hover:border-[#505050] transition"
+                        className="bg-background-elevated border border-border-strong rounded-xl p-4 hover:border-foreground-muted transition"
                       >
                         <div className="flex items-center justify-between gap-4">
                           <div className="flex items-center gap-3 flex-1">
@@ -425,7 +425,7 @@ export default function WelcomeScreen() {
                               />
                             )}
                             <div className="flex-1 min-w-0">
-                              <h4 className="font-bold text-[14px] text-white truncate">{guild.name}</h4>
+                              <h4 className="font-bold text-[14px] text-foreground truncate">{guild.name}</h4>
                               <div className="flex gap-2 text-[12px] text-muted-foreground mt-0.5">
                                 {guild.realm && <span>{guild.realm}</span>}
                                 {guild.realm && <span>•</span>}

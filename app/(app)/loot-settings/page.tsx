@@ -1240,12 +1240,12 @@ export default function AdminLootItems() {
         {/* Header with Settings Button */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-[42px] font-bold text-white leading-tight">Master Loot</h1>
+            <h1 className="text-[42px] font-bold text-foreground leading-tight">Master Loot</h1>
             <p className="text-foreground-muted mt-1 text-[14px]">Manage loot items and configure classifications</p>
           </div>
           <button
             onClick={() => setShowSettingsModal(true)}
-            className="flex items-center gap-2 px-6 py-3 bg-background-elevated hover:bg-muted border border-[rgba(255,255,255,0.1)] rounded-[52px] text-white text-base font-medium transition whitespace-nowrap"
+            className="flex items-center gap-2 px-6 py-3 bg-background-elevated hover:bg-muted border border-border rounded-[52px] text-foreground text-base font-medium transition whitespace-nowrap"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
@@ -1256,7 +1256,7 @@ export default function AdminLootItems() {
         </div>
 
         {/* Filters */}
-        <div className="bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-xl p-4">
+        <div className="bg-background-elevated border border-border rounded-xl p-4">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
             <div>
               <label className="block text-[12px] font-medium text-foreground-muted mb-2">Search Items</label>
@@ -1265,7 +1265,7 @@ export default function AdminLootItems() {
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="Search by name or boss..."
-                className="w-full px-4 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-white text-[12px] focus:outline-none focus:border-accent"
+                className="w-full px-4 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[12px] focus:outline-none focus:border-accent"
               />
             </div>
             <div>
@@ -1273,11 +1273,11 @@ export default function AdminLootItems() {
               <select
                 value={filterTier}
                 onChange={(e) => setFilterTier(e.target.value)}
-                className="w-full px-4 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-white text-[12px] focus:outline-none focus:border-accent cursor-pointer select-custom-sm"
+                className="w-full px-4 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[12px] focus:outline-none focus:border-accent cursor-pointer select-custom-sm"
               >
-                <option value="all" className="bg-background-elevated text-white">All Raids</option>
+                <option value="all" className="bg-background-elevated text-foreground">All Raids</option>
                 {raidTiers.map(tier => (
-                  <option key={tier.id} value={tier.name} className="bg-background-elevated text-white">{tier.name}</option>
+                  <option key={tier.id} value={tier.name} className="bg-background-elevated text-foreground">{tier.name}</option>
                 ))}
               </select>
             </div>
@@ -1286,11 +1286,11 @@ export default function AdminLootItems() {
               <select
                 value={filterSlot}
                 onChange={(e) => setFilterSlot(e.target.value)}
-                className="w-full px-4 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-white text-[12px] focus:outline-none focus:border-accent cursor-pointer select-custom-sm"
+                className="w-full px-4 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[12px] focus:outline-none focus:border-accent cursor-pointer select-custom-sm"
               >
-                <option value="all" className="bg-background-elevated text-white">All Slots</option>
+                <option value="all" className="bg-background-elevated text-foreground">All Slots</option>
                 {uniqueSlots.map(slot => (
-                  <option key={slot} value={slot} className="bg-background-elevated text-white">{slot}</option>
+                  <option key={slot} value={slot} className="bg-background-elevated text-foreground">{slot}</option>
                 ))}
               </select>
             </div>
@@ -1299,9 +1299,9 @@ export default function AdminLootItems() {
               <select
                 value={filterClassification}
                 onChange={(e) => setFilterClassification(e.target.value)}
-                className="w-full px-4 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-white text-[12px] focus:outline-none focus:border-accent cursor-pointer select-custom-sm"
+                className="w-full px-4 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[12px] focus:outline-none focus:border-accent cursor-pointer select-custom-sm"
               >
-                <option value="all" className="bg-background-elevated text-white">All Classifications</option>
+                <option value="all" className="bg-background-elevated text-foreground">All Classifications</option>
                 <option value="Reserved" className="bg-background-elevated" style={{ color: '#E57373' }}>Reserved</option>
                 <option value="Limited" className="bg-background-elevated" style={{ color: '#64B5F6' }}>Limited</option>
                 <option value="Unlimited" className="bg-background-elevated" style={{ color: '#B0B0B0' }}>Unlimited</option>
@@ -1312,14 +1312,14 @@ export default function AdminLootItems() {
               <select
                 value={sortField || ''}
                 onChange={(e) => setSortField(e.target.value as any || null)}
-                className="w-full px-4 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-white text-[12px] focus:outline-none focus:border-accent cursor-pointer select-custom-sm"
+                className="w-full px-4 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[12px] focus:outline-none focus:border-accent cursor-pointer select-custom-sm"
               >
-                <option value="" className="bg-background-elevated text-white">Default</option>
-                <option value="name" className="bg-background-elevated text-white">Item Name</option>
-                <option value="boss" className="bg-background-elevated text-white">Boss</option>
-                <option value="slot" className="bg-background-elevated text-white">Slot</option>
-                <option value="raid" className="bg-background-elevated text-white">Raid</option>
-                <option value="classification" className="bg-background-elevated text-white">Classification</option>
+                <option value="" className="bg-background-elevated text-foreground">Default</option>
+                <option value="name" className="bg-background-elevated text-foreground">Item Name</option>
+                <option value="boss" className="bg-background-elevated text-foreground">Boss</option>
+                <option value="slot" className="bg-background-elevated text-foreground">Slot</option>
+                <option value="raid" className="bg-background-elevated text-foreground">Raid</option>
+                <option value="classification" className="bg-background-elevated text-foreground">Classification</option>
               </select>
             </div>
             <div>
@@ -1328,10 +1328,10 @@ export default function AdminLootItems() {
                 value={sortDirection}
                 onChange={(e) => setSortDirection(e.target.value as 'asc' | 'desc')}
                 disabled={!sortField}
-                className="w-full px-4 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-white text-[12px] focus:outline-none focus:border-accent cursor-pointer select-custom-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full px-4 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[12px] focus:outline-none focus:border-accent cursor-pointer select-custom-sm disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <option value="asc" className="bg-background-elevated text-white">A → Z</option>
-                <option value="desc" className="bg-background-elevated text-white">Z → A</option>
+                <option value="asc" className="bg-background-elevated text-foreground">A → Z</option>
+                <option value="desc" className="bg-background-elevated text-foreground">Z → A</option>
               </select>
             </div>
           </div>
@@ -1339,23 +1339,23 @@ export default function AdminLootItems() {
 
         {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-xl p-4">
+          <div className="bg-background-elevated border border-border rounded-xl p-4">
             <p className="text-foreground-muted text-sm">Total Items</p>
-            <p className="text-2xl font-bold text-white">{filteredItems.length}</p>
+            <p className="text-2xl font-bold text-foreground">{filteredItems.length}</p>
           </div>
-          <div className="bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-xl p-4">
+          <div className="bg-background-elevated border border-border rounded-xl p-4">
             <p className="text-foreground-muted text-sm">Available</p>
             <p className="text-2xl font-bold text-green-400">
               {filteredItems.filter(i => i.is_available).length}
             </p>
           </div>
-          <div className="bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-xl p-4">
+          <div className="bg-background-elevated border border-border rounded-xl p-4">
             <p className="text-foreground-muted text-sm">Reserved</p>
             <p className="text-2xl font-bold text-red-400">
               {filteredItems.filter(i => i.classification === 'Reserved').length}
             </p>
           </div>
-          <div className="bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-xl p-4">
+          <div className="bg-background-elevated border border-border rounded-xl p-4">
             <p className="text-foreground-muted text-sm">Limited</p>
             <p className="text-2xl font-bold text-yellow-400">
               {filteredItems.filter(i => i.classification === 'Limited').length}
@@ -1364,7 +1364,7 @@ export default function AdminLootItems() {
         </div>
 
         {/* Items Table */}
-        <div className="bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-xl overflow-hidden">
+        <div className="bg-background-elevated border border-border rounded-xl overflow-hidden">
           <div>
             <table className="w-full table-fixed">
               <colgroup>
@@ -1378,7 +1378,7 @@ export default function AdminLootItems() {
                 <col style={{ width: '220px' }} />
               </colgroup>
               <thead>
-                <tr className="bg-background-subtle border-b border-[rgba(255,255,255,0.05)]">
+                <tr className="bg-background-subtle border-b border-border">
                   <th className="px-4 py-2.5 text-left text-[12px] font-medium text-foreground-muted">On</th>
                   <th className="px-4 py-2.5 text-left text-[12px] font-medium text-foreground-muted">Item Name</th>
                   <th className="px-4 py-2.5 text-left text-[12px] font-medium text-foreground-muted">Boss</th>
@@ -1389,7 +1389,7 @@ export default function AdminLootItems() {
                   <th className="px-4 py-2.5 text-left text-[12px] font-medium text-foreground-muted">Secondary</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[rgba(255,255,255,0.05)]">
+              <tbody className="divide-y divide-border">
                 {paginatedItems.map((item) => (
                   <tr key={item.id} className="hover:bg-muted/50">
                     <td className="px-4 py-2.5">
@@ -1398,17 +1398,17 @@ export default function AdminLootItems() {
                         className={`w-4 h-4 rounded ${
                           item.is_available
                             ? 'bg-green-600 hover:bg-green-700'
-                            : 'bg-[#2a2a2a] hover:bg-[#333333]'
+                            : 'bg-muted hover:bg-border-strong'
                         } flex items-center justify-center`}
                       >
                         {item.is_available && (
-                          <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <svg className="w-2.5 h-2.5 text-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                           </svg>
                         )}
                       </button>
                     </td>
-                    <td className="px-4 py-2.5 text-[13px] text-white">
+                    <td className="px-4 py-2.5 text-[13px] text-foreground">
                       <div className="truncate overflow-hidden">
                         <ItemLink name={item.name} wowheadId={item.wowhead_id} />
                       </div>
@@ -1522,7 +1522,7 @@ export default function AdminLootItems() {
 
           {/* Pagination Controls */}
           {filteredItems.length > 0 && (
-            <div className="flex items-center justify-between px-4 py-6 bg-background-subtle border-t border-[rgba(255,255,255,0.05)]">
+            <div className="flex items-center justify-between px-4 py-6 bg-background-subtle border-t border-border">
               {/* Left: Results display */}
               <div className="text-[12px] text-foreground-muted">
                 Showing {startIndex + 1} to {Math.min(endIndex, filteredItems.length)} of {filteredItems.length} results
@@ -1535,7 +1535,7 @@ export default function AdminLootItems() {
                   <button
                     onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                     disabled={currentPage === 1}
-                    className="flex items-center justify-center w-9 h-9 rounded-md bg-background-elevated border border-border-strong text-white hover:bg-muted hover:border-accent disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-background-elevated disabled:hover:border-border-strong transition-colors"
+                    className="flex items-center justify-center w-9 h-9 rounded-md bg-background-elevated border border-border-strong text-foreground hover:bg-muted hover:border-accent disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-background-elevated disabled:hover:border-border-strong transition-colors"
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -1556,8 +1556,8 @@ export default function AdminLootItems() {
                           onClick={() => setCurrentPage(1)}
                           className={`flex items-center justify-center min-w-[36px] h-9 px-3 rounded-md text-sm font-medium transition-colors ${
                             currentPage === 1
-                              ? 'bg-accent text-white border border-accent'
-                              : 'bg-background-elevated text-foreground-muted border border-border-strong hover:bg-muted hover:border-accent hover:text-white'
+                              ? 'bg-accent text-foreground border border-accent'
+                              : 'bg-background-elevated text-foreground-muted border border-border-strong hover:bg-muted hover:border-accent hover:text-foreground'
                           }`}
                         >
                           1
@@ -1582,8 +1582,8 @@ export default function AdminLootItems() {
                             onClick={() => setCurrentPage(i)}
                             className={`flex items-center justify-center min-w-[36px] h-9 px-3 rounded-md text-sm font-medium transition-colors ${
                               currentPage === i
-                                ? 'bg-accent text-white border border-accent'
-                                : 'bg-background-elevated text-foreground-muted border border-border-strong hover:bg-muted hover:border-accent hover:text-white'
+                                ? 'bg-accent text-foreground border border-accent'
+                                : 'bg-background-elevated text-foreground-muted border border-border-strong hover:bg-muted hover:border-accent hover:text-foreground'
                             }`}
                           >
                             {i}
@@ -1606,8 +1606,8 @@ export default function AdminLootItems() {
                             onClick={() => setCurrentPage(totalPages)}
                             className={`flex items-center justify-center min-w-[36px] h-9 px-3 rounded-md text-sm font-medium transition-colors ${
                               currentPage === totalPages
-                                ? 'bg-accent text-white border border-accent'
-                                : 'bg-background-elevated text-foreground-muted border border-border-strong hover:bg-muted hover:border-accent hover:text-white'
+                                ? 'bg-accent text-foreground border border-accent'
+                                : 'bg-background-elevated text-foreground-muted border border-border-strong hover:bg-muted hover:border-accent hover:text-foreground'
                             }`}
                           >
                             {totalPages}
@@ -1623,7 +1623,7 @@ export default function AdminLootItems() {
                   <button
                     onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
                     disabled={currentPage === totalPages}
-                    className="flex items-center justify-center w-9 h-9 rounded-md bg-background-elevated border border-border-strong text-white hover:bg-muted hover:border-accent disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-background-elevated disabled:hover:border-border-strong transition-colors"
+                    className="flex items-center justify-center w-9 h-9 rounded-md bg-background-elevated border border-border-strong text-foreground hover:bg-muted hover:border-accent disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-background-elevated disabled:hover:border-border-strong transition-colors"
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -1638,7 +1638,7 @@ export default function AdminLootItems() {
                 <select
                   value={itemsPerPage}
                   onChange={(e) => setItemsPerPage(Number(e.target.value))}
-                  className="px-4 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-white text-[13px] focus:outline-none focus:border-accent cursor-pointer select-custom"
+                  className="px-4 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[13px] focus:outline-none focus:border-accent cursor-pointer select-custom"
                 >
                   <option value={25} className="bg-background-elevated">25</option>
                   <option value={50} className="bg-background-elevated">50</option>
@@ -1668,10 +1668,10 @@ export default function AdminLootItems() {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="p-6 border-b border-border-strong flex items-center justify-between bg-background-elevated">
-              <h3 className="text-[24px] font-bold text-white">Loot system settings</h3>
+              <h3 className="text-[24px] font-bold text-foreground">Loot system settings</h3>
               <button
                 onClick={() => setShowSettingsModal(false)}
-                className="text-foreground-muted hover:text-white transition"
+                className="text-foreground-muted hover:text-foreground transition"
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -1682,28 +1682,28 @@ export default function AdminLootItems() {
               {/* General Settings */}
               <div className="space-y-4 pb-6 border-b border-border-strong">
                 <div>
-                  <h4 className="text-[18px] font-semibold text-white pb-2">General Settings</h4>
+                  <h4 className="text-[18px] font-semibold text-foreground pb-2">General Settings</h4>
                   <p className="text-muted-foreground text-[13px] mt-1">Configure your guild's raid schedule and how loot priority points are calculated and displayed. These settings establish the foundation for your loot system.</p>
                 </div>
 
                 <div>
-                  <label className="block text-[13px] font-medium text-white mb-2">Date of 1st Full Raid Week (Reset Day)</label>
+                  <label className="block text-[13px] font-medium text-foreground mb-2">Date of 1st Full Raid Week (Reset Day)</label>
                   <div className="relative date-picker-wrapper">
                     <input
                       type="date"
                       value={settings.reset_date}
                       onChange={(e) => setSettings({ ...settings, reset_date: e.target.value })}
-                      className="date-picker-input w-full px-4 py-2.5 bg-background-elevated border border-border-strong rounded-[52px] text-white text-[13px] focus:outline-none focus:border-accent hover:bg-muted transition-colors cursor-pointer [color-scheme:dark]"
+                      className="date-picker-input w-full px-4 py-2.5 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[13px] focus:outline-none focus:border-accent hover:bg-muted transition-colors cursor-pointer [color-scheme:dark]"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-[13px] font-medium text-white mb-2">Number of Raid Days a Week</label>
+                  <label className="block text-[13px] font-medium text-foreground mb-2">Number of Raid Days a Week</label>
                   <select
                     value={settings.raid_days_per_week}
                     onChange={(e) => setSettings({ ...settings, raid_days_per_week: Number(e.target.value) })}
-                    className="w-full pl-4 pr-12 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-white text-[13px] focus:outline-none focus:border-accent transition-colors select-custom-sm"
+                    className="w-full pl-4 pr-12 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[13px] focus:outline-none focus:border-accent transition-colors select-custom-sm"
                   >
                     <option value="1">1</option>
                     <option value="2">2</option>
@@ -1717,11 +1717,11 @@ export default function AdminLootItems() {
                 <div className="grid grid-cols-2 gap-4">
                   {/* Always show 1st raid day */}
                   <div>
-                    <label className="block text-[13px] font-medium text-white mb-2">1st Raid Day of the Week</label>
+                    <label className="block text-[13px] font-medium text-foreground mb-2">1st Raid Day of the Week</label>
                     <select
                       value={settings.first_raid_day}
                       onChange={(e) => setSettings({ ...settings, first_raid_day: Number(e.target.value) })}
-                      className="w-full pl-4 pr-12 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-white text-[13px] focus:outline-none focus:border-accent transition-colors select-custom-sm"
+                      className="w-full pl-4 pr-12 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[13px] focus:outline-none focus:border-accent transition-colors select-custom-sm"
                     >
                       <option value="0">Sunday</option>
                       <option value="1">Monday</option>
@@ -1736,11 +1736,11 @@ export default function AdminLootItems() {
                   {/* Show 2nd raid day if >= 2 */}
                   {settings.raid_days_per_week >= 2 && (
                     <div>
-                      <label className="block text-[13px] font-medium text-white mb-2">2nd Raid Day of the Week</label>
+                      <label className="block text-[13px] font-medium text-foreground mb-2">2nd Raid Day of the Week</label>
                       <select
                         value={settings.second_raid_day?.toString() || ''}
                         onChange={(e) => setSettings({ ...settings, second_raid_day: e.target.value ? Number(e.target.value) : null })}
-                        className="w-full pl-4 pr-12 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-white text-[13px] focus:outline-none focus:border-accent transition-colors select-custom-sm"
+                        className="w-full pl-4 pr-12 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[13px] focus:outline-none focus:border-accent transition-colors select-custom-sm"
                       >
                         <option value="">None</option>
                         <option value="0">Sunday</option>
@@ -1759,11 +1759,11 @@ export default function AdminLootItems() {
                 {settings.raid_days_per_week >= 3 && (
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-[13px] font-medium text-white mb-2">3rd Raid Day of the Week</label>
+                      <label className="block text-[13px] font-medium text-foreground mb-2">3rd Raid Day of the Week</label>
                       <select
                         value={settings.third_raid_day?.toString() || ''}
                         onChange={(e) => setSettings({ ...settings, third_raid_day: e.target.value ? Number(e.target.value) : null })}
-                        className="w-full pl-4 pr-12 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-white text-[13px] focus:outline-none focus:border-accent transition-colors select-custom-sm"
+                        className="w-full pl-4 pr-12 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[13px] focus:outline-none focus:border-accent transition-colors select-custom-sm"
                       >
                         <option value="">None</option>
                         <option value="0">Sunday</option>
@@ -1779,11 +1779,11 @@ export default function AdminLootItems() {
                     {/* Show 4th raid day if >= 4 */}
                     {settings.raid_days_per_week >= 4 && (
                       <div>
-                        <label className="block text-[13px] font-medium text-white mb-2">4th Raid Day of the Week</label>
+                        <label className="block text-[13px] font-medium text-foreground mb-2">4th Raid Day of the Week</label>
                         <select
                           value={settings.fourth_raid_day?.toString() || ''}
                           onChange={(e) => setSettings({ ...settings, fourth_raid_day: e.target.value ? Number(e.target.value) : null })}
-                          className="w-full pl-4 pr-12 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-white text-[13px] focus:outline-none focus:border-accent transition-colors select-custom-sm"
+                          className="w-full pl-4 pr-12 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[13px] focus:outline-none focus:border-accent transition-colors select-custom-sm"
                         >
                           <option value="">None</option>
                           <option value="0">Sunday</option>
@@ -1803,11 +1803,11 @@ export default function AdminLootItems() {
                 {settings.raid_days_per_week >= 5 && (
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-[13px] font-medium text-white mb-2">5th Raid Day of the Week</label>
+                      <label className="block text-[13px] font-medium text-foreground mb-2">5th Raid Day of the Week</label>
                       <select
                         value={settings.fifth_raid_day?.toString() || ''}
                         onChange={(e) => setSettings({ ...settings, fifth_raid_day: e.target.value ? Number(e.target.value) : null })}
-                        className="w-full pl-4 pr-12 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-white text-[13px] focus:outline-none focus:border-accent transition-colors select-custom-sm"
+                        className="w-full pl-4 pr-12 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[13px] focus:outline-none focus:border-accent transition-colors select-custom-sm"
                       >
                         <option value="">None</option>
                         <option value="0">Sunday</option>
@@ -1823,11 +1823,11 @@ export default function AdminLootItems() {
                 )}
 
                 <div>
-                  <label className="block text-[13px] font-medium text-white mb-2">Decimal Places</label>
+                  <label className="block text-[13px] font-medium text-foreground mb-2">Decimal Places</label>
                   <select
                     value={settings.decimal_places}
                     onChange={(e) => setSettings({ ...settings, decimal_places: Number(e.target.value) })}
-                    className="w-full pl-4 pr-12 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-white text-[13px] focus:outline-none focus:border-accent transition-colors select-custom-sm"
+                    className="w-full pl-4 pr-12 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[13px] focus:outline-none focus:border-accent transition-colors select-custom-sm"
                   >
                     <option value="0">Ones</option>
                     <option value="1">Tenths</option>
@@ -1839,16 +1839,16 @@ export default function AdminLootItems() {
               {/* Attendance Settings */}
               <div className="space-y-4 pb-6 border-b border-border-strong">
                 <div>
-                  <h4 className="text-[18px] font-semibold text-white pb-2">Attendance</h4>
+                  <h4 className="text-[18px] font-semibold text-foreground pb-2">Attendance</h4>
                   <p className="text-muted-foreground text-[13px] mt-1">Control how attendance bonuses are calculated and awarded. Rewards consistent raiders while allowing flexibility for signups and absences. Set thresholds and penalties to match your guild's raiding culture.</p>
                 </div>
 
                 <div>
-                  <label className="block text-[13px] font-medium text-white mb-2">Type of Attendance Bonus</label>
+                  <label className="block text-[13px] font-medium text-foreground mb-2">Type of Attendance Bonus</label>
                   <select
                     value={settings.attendance_type}
                     onChange={(e) => setSettings({ ...settings, attendance_type: e.target.value as 'linear' | 'breakpoint' })}
-                    className="w-full pl-4 pr-12 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-white text-[13px] focus:outline-none focus:border-accent transition-colors select-custom-sm"
+                    className="w-full pl-4 pr-12 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[13px] focus:outline-none focus:border-accent transition-colors select-custom-sm"
                   >
                     <option value="linear">Linear</option>
                     <option value="breakpoint">Break Point</option>
@@ -1857,24 +1857,24 @@ export default function AdminLootItems() {
                 </div>
 
                 <div>
-                  <label className="block text-[13px] font-medium text-white mb-2">Rolling Attendance Period (Weeks)</label>
+                  <label className="block text-[13px] font-medium text-foreground mb-2">Rolling Attendance Period (Weeks)</label>
                   <input
                     type="number"
                     min="1"
                     value={settings.rolling_attendance_weeks}
                     onChange={(e) => setSettings({ ...settings, rolling_attendance_weeks: Number(e.target.value) })}
-                    className="w-full px-4 py-2.5 bg-background-elevated border border-border-strong rounded-[52px] text-white text-[13px] focus:outline-none focus:border-accent transition-colors"
+                    className="w-full px-4 py-2.5 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[13px] focus:outline-none focus:border-accent transition-colors"
                   />
                   <p className="text-muted-foreground text-[12px] mt-1">How long of a period to track attendance points</p>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-[13px] font-medium text-white mb-2">Use Raid Signups for Attendance</label>
+                    <label className="block text-[13px] font-medium text-foreground mb-2">Use Raid Signups for Attendance</label>
                     <select
                       value={settings.use_signups ? 'yes' : 'no'}
                       onChange={(e) => setSettings({ ...settings, use_signups: e.target.value === 'yes' })}
-                      className="w-full pl-4 pr-12 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-white text-[13px] focus:outline-none focus:border-accent transition-colors select-custom-sm"
+                      className="w-full pl-4 pr-12 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[13px] focus:outline-none focus:border-accent transition-colors select-custom-sm"
                     >
                       <option value="yes">Yes</option>
                       <option value="no">No</option>
@@ -1882,7 +1882,7 @@ export default function AdminLootItems() {
                   </div>
 
                   <div>
-                    <label className="block text-[13px] font-medium text-white mb-2">Signup % of Attendance (Decimal)</label>
+                    <label className="block text-[13px] font-medium text-foreground mb-2">Signup % of Attendance (Decimal)</label>
                     <input
                       type="number"
                       min="0"
@@ -1891,13 +1891,13 @@ export default function AdminLootItems() {
                       value={settings.signup_weight}
                       onChange={(e) => setSettings({ ...settings, signup_weight: Number(e.target.value) })}
                       disabled={!settings.use_signups}
-                      className="w-full pl-4 pr-12 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-white text-[13px] focus:outline-none focus:border-accent transition-colors select-custom-sm disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-[#0a0a0a]"
+                      className="w-full pl-4 pr-12 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[13px] focus:outline-none focus:border-accent transition-colors select-custom-sm disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-background"
                     />
                   </div>
                 </div>
 
                 <div className="bg-background-elevated border border-border-strong p-4 rounded-xl space-y-3">
-                  <p className="text-[13px] font-medium text-white">Attendance Bonus Tiers</p>
+                  <p className="text-[13px] font-medium text-foreground">Attendance Bonus Tiers</p>
                   <div className="grid grid-cols-3 gap-3">
                     <div>
                       <label className="block text-[12px] text-muted-foreground mb-1">Max Attendance</label>
@@ -1907,7 +1907,7 @@ export default function AdminLootItems() {
                           value={settings.max_attendance_bonus}
                           onChange={(e) => setSettings({ ...settings, max_attendance_bonus: Number(e.target.value) })}
                           placeholder="Points"
-                          className="w-full px-3 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-white text-[12px] focus:outline-none focus:border-accent transition-colors"
+                          className="w-full px-3 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[12px] focus:outline-none focus:border-accent transition-colors"
                         />
                         <input
                           type="number"
@@ -1915,7 +1915,7 @@ export default function AdminLootItems() {
                           value={settings.max_attendance_threshold}
                           onChange={(e) => setSettings({ ...settings, max_attendance_threshold: Number(e.target.value) })}
                           placeholder="Threshold"
-                          className="w-full px-3 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-white text-[12px] focus:outline-none focus:border-accent transition-colors"
+                          className="w-full px-3 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[12px] focus:outline-none focus:border-accent transition-colors"
                         />
                       </div>
                     </div>
@@ -1927,7 +1927,7 @@ export default function AdminLootItems() {
                           value={settings.middle_attendance_bonus}
                           onChange={(e) => setSettings({ ...settings, middle_attendance_bonus: Number(e.target.value) })}
                           placeholder="Points"
-                          className="w-full px-3 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-white text-[12px] focus:outline-none focus:border-accent transition-colors"
+                          className="w-full px-3 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[12px] focus:outline-none focus:border-accent transition-colors"
                         />
                         <input
                           type="number"
@@ -1935,7 +1935,7 @@ export default function AdminLootItems() {
                           value={settings.middle_attendance_threshold}
                           onChange={(e) => setSettings({ ...settings, middle_attendance_threshold: Number(e.target.value) })}
                           placeholder="Threshold"
-                          className="w-full px-3 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-white text-[12px] focus:outline-none focus:border-accent transition-colors"
+                          className="w-full px-3 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[12px] focus:outline-none focus:border-accent transition-colors"
                         />
                       </div>
                     </div>
@@ -1947,7 +1947,7 @@ export default function AdminLootItems() {
                           value={settings.bottom_attendance_bonus}
                           onChange={(e) => setSettings({ ...settings, bottom_attendance_bonus: Number(e.target.value) })}
                           placeholder="Points"
-                          className="w-full px-3 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-white text-[12px] focus:outline-none focus:border-accent transition-colors"
+                          className="w-full px-3 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[12px] focus:outline-none focus:border-accent transition-colors"
                         />
                         <input
                           type="number"
@@ -1955,7 +1955,7 @@ export default function AdminLootItems() {
                           value={settings.bottom_attendance_threshold}
                           onChange={(e) => setSettings({ ...settings, bottom_attendance_threshold: Number(e.target.value) })}
                           placeholder="Threshold"
-                          className="w-full px-3 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-white text-[12px] focus:outline-none focus:border-accent transition-colors"
+                          className="w-full px-3 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[12px] focus:outline-none focus:border-accent transition-colors"
                         />
                       </div>
                     </div>
@@ -1964,11 +1964,11 @@ export default function AdminLootItems() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-[13px] font-medium text-white mb-2">Minimum Raid Days Per Week</label>
+                    <label className="block text-[13px] font-medium text-foreground mb-2">Minimum Raid Days Per Week</label>
                     <select
                       value={settings.minimum_raid_days_enabled ? 'yes' : 'no'}
                       onChange={(e) => setSettings({ ...settings, minimum_raid_days_enabled: e.target.value === 'yes' })}
-                      className="w-full pl-4 pr-12 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-white text-[13px] focus:outline-none focus:border-accent transition-colors select-custom-sm"
+                      className="w-full pl-4 pr-12 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[13px] focus:outline-none focus:border-accent transition-colors select-custom-sm"
                     >
                       <option value="yes">Yes</option>
                       <option value="no">No</option>
@@ -1976,25 +1976,25 @@ export default function AdminLootItems() {
                   </div>
 
                   <div>
-                    <label className="block text-[13px] font-medium text-white mb-2">Minimum Number of Raids</label>
+                    <label className="block text-[13px] font-medium text-foreground mb-2">Minimum Number of Raids</label>
                     <input
                       type="number"
                       min="1"
                       value={settings.minimum_raid_days}
                       onChange={(e) => setSettings({ ...settings, minimum_raid_days: Number(e.target.value) })}
                       disabled={!settings.minimum_raid_days_enabled}
-                      className="w-full px-4 py-2.5 bg-background-elevated border border-border-strong rounded-[52px] text-white text-[13px] focus:outline-none focus:border-accent transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-[#0a0a0a]"
+                      className="w-full px-4 py-2.5 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[13px] focus:outline-none focus:border-accent transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-background"
                     />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-[13px] font-medium text-white mb-2">Late Show / Leave Early Penalty</label>
+                    <label className="block text-[13px] font-medium text-foreground mb-2">Late Show / Leave Early Penalty</label>
                     <select
                       value={settings.late_early_penalty_enabled ? 'yes' : 'no'}
                       onChange={(e) => setSettings({ ...settings, late_early_penalty_enabled: e.target.value === 'yes' })}
-                      className="w-full pl-4 pr-12 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-white text-[13px] focus:outline-none focus:border-accent transition-colors select-custom-sm"
+                      className="w-full pl-4 pr-12 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[13px] focus:outline-none focus:border-accent transition-colors select-custom-sm"
                     >
                       <option value="yes">Yes</option>
                       <option value="no">No</option>
@@ -2002,14 +2002,14 @@ export default function AdminLootItems() {
                   </div>
 
                   <div>
-                    <label className="block text-[13px] font-medium text-white mb-2">Penalty Value</label>
+                    <label className="block text-[13px] font-medium text-foreground mb-2">Penalty Value</label>
                     <input
                       type="number"
                       step="0.05"
                       value={settings.late_early_penalty_value}
                       onChange={(e) => setSettings({ ...settings, late_early_penalty_value: Number(e.target.value) })}
                       disabled={!settings.late_early_penalty_enabled}
-                      className="w-full px-4 py-2.5 bg-background-elevated border border-border-strong rounded-[52px] text-white text-[13px] focus:outline-none focus:border-accent transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-[#0a0a0a]"
+                      className="w-full px-4 py-2.5 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[13px] focus:outline-none focus:border-accent transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-background"
                     />
                   </div>
                 </div>
@@ -2018,17 +2018,17 @@ export default function AdminLootItems() {
               {/* Bad Luck Prevention */}
               <div className="space-y-4 pb-6 border-b border-border-strong">
                 <div>
-                  <h4 className="text-[18px] font-semibold text-white pb-2">Bad Luck Prevention</h4>
+                  <h4 className="text-[18px] font-semibold text-foreground pb-2">Bad Luck Prevention</h4>
                   <p className="text-muted-foreground text-[13px] mt-1">Provide bonus points to raiders who experience bad RNG luck. Rewards players who see their desired items drop but lose the roll, or who generously pass on items to help others progress.</p>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-[13px] font-medium text-white mb-2">Bonus for Seeing Item but Not Receiving</label>
+                    <label className="block text-[13px] font-medium text-foreground mb-2">Bonus for Seeing Item but Not Receiving</label>
                     <select
                       value={settings.see_item_bonus ? 'yes' : 'no'}
                       onChange={(e) => setSettings({ ...settings, see_item_bonus: e.target.value === 'yes' })}
-                      className="w-full pl-4 pr-12 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-white text-[13px] focus:outline-none focus:border-accent transition-colors select-custom-sm"
+                      className="w-full pl-4 pr-12 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[13px] focus:outline-none focus:border-accent transition-colors select-custom-sm"
                     >
                       <option value="yes">Yes</option>
                       <option value="no">No</option>
@@ -2036,24 +2036,24 @@ export default function AdminLootItems() {
                   </div>
 
                   <div>
-                    <label className="block text-[13px] font-medium text-white mb-2">Bonus Value</label>
+                    <label className="block text-[13px] font-medium text-foreground mb-2">Bonus Value</label>
                     <input
                       type="number"
                       value={settings.see_item_bonus_value}
                       onChange={(e) => setSettings({ ...settings, see_item_bonus_value: Number(e.target.value) })}
                       disabled={!settings.see_item_bonus}
-                      className="w-full px-4 py-2.5 bg-background-elevated border border-border-strong rounded-[52px] text-white text-[13px] focus:outline-none focus:border-accent transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-[#0a0a0a]"
+                      className="w-full px-4 py-2.5 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[13px] focus:outline-none focus:border-accent transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-background"
                     />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-[13px] font-medium text-white mb-2">Bonus for Passing an Item</label>
+                    <label className="block text-[13px] font-medium text-foreground mb-2">Bonus for Passing an Item</label>
                     <select
                       value={settings.pass_item_bonus ? 'yes' : 'no'}
                       onChange={(e) => setSettings({ ...settings, pass_item_bonus: e.target.value === 'yes' })}
-                      className="w-full pl-4 pr-12 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-white text-[13px] focus:outline-none focus:border-accent transition-colors select-custom-sm"
+                      className="w-full pl-4 pr-12 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[13px] focus:outline-none focus:border-accent transition-colors select-custom-sm"
                     >
                       <option value="yes">Yes</option>
                       <option value="no">No</option>
@@ -2061,13 +2061,13 @@ export default function AdminLootItems() {
                   </div>
 
                   <div>
-                    <label className="block text-[13px] font-medium text-white mb-2">Bonus Value</label>
+                    <label className="block text-[13px] font-medium text-foreground mb-2">Bonus Value</label>
                     <input
                       type="number"
                       value={settings.pass_item_bonus_value}
                       onChange={(e) => setSettings({ ...settings, pass_item_bonus_value: Number(e.target.value) })}
                       disabled={!settings.pass_item_bonus}
-                      className="w-full px-4 py-2.5 bg-background-elevated border border-border-strong rounded-[52px] text-white text-[13px] focus:outline-none focus:border-accent transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-[#0a0a0a]"
+                      className="w-full px-4 py-2.5 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[13px] focus:outline-none focus:border-accent transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-background"
                     />
                   </div>
                 </div>
@@ -2076,16 +2076,16 @@ export default function AdminLootItems() {
               {/* Rank, Role, Class Bonuses */}
               <div className="space-y-4">
                 <div>
-                  <h4 className="text-[18px] font-semibold text-white pb-2">Rank, Role, Class, or Raider Additional Bonuses</h4>
+                  <h4 className="text-[18px] font-semibold text-foreground pb-2">Rank, Role, Class, or Raider Additional Bonuses</h4>
                   <p className="text-muted-foreground text-[13px] mt-1">Fine-tune priority systems to value guild rank, raid roles, class needs, or individual contributions. Use these settings to prioritize items for main tanks, reward long-term members, or incentivize donations and support roles.</p>
                 </div>
 
                 <div>
-                  <label className="block text-[13px] font-medium text-white mb-2">Guild Ranks Give Bonuses (Positive or Negative)</label>
+                  <label className="block text-[13px] font-medium text-foreground mb-2">Guild Ranks Give Bonuses (Positive or Negative)</label>
                   <select
                     value={settings.guild_rank_bonuses_enabled ? 'yes' : 'no'}
                     onChange={(e) => setSettings({ ...settings, guild_rank_bonuses_enabled: e.target.value === 'yes' })}
-                    className="w-full pl-4 pr-12 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-white text-[13px] focus:outline-none focus:border-accent transition-colors select-custom-sm"
+                    className="w-full pl-4 pr-12 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[13px] focus:outline-none focus:border-accent transition-colors select-custom-sm"
                   >
                     <option value="yes">Yes</option>
                     <option value="no">No</option>
@@ -2095,7 +2095,7 @@ export default function AdminLootItems() {
                 {settings.guild_rank_bonuses_enabled && (
                   <div className="bg-background-elevated border border-border-strong p-4 rounded-xl space-y-3">
                     <div className="flex items-center justify-between mb-2">
-                      <p className="text-[13px] font-medium text-white">Rank Bonuses</p>
+                      <p className="text-[13px] font-medium text-foreground">Rank Bonuses</p>
                       <p className="text-[11px] text-muted-foreground">Can be positive or negative. For negative, use - before number (e.g., -1)</p>
                     </div>
                     <div className="grid grid-cols-3 gap-3">
@@ -2119,7 +2119,7 @@ export default function AdminLootItems() {
                               })
                             }}
                             placeholder="0"
-                            className="w-full px-3 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-white text-[12px] focus:outline-none focus:border-accent transition-colors"
+                            className="w-full px-3 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[12px] focus:outline-none focus:border-accent transition-colors"
                           />
                         </div>
                       ))}
@@ -2132,11 +2132,11 @@ export default function AdminLootItems() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-[13px] font-medium text-white mb-2">Role Bonus Priority on Single Item</label>
+                    <label className="block text-[13px] font-medium text-foreground mb-2">Role Bonus Priority on Single Item</label>
                     <select
                       value={settings.role_bonus_priority_single_item ? 'yes' : 'no'}
                       onChange={(e) => setSettings({ ...settings, role_bonus_priority_single_item: e.target.value === 'yes' })}
-                      className="w-full pl-4 pr-12 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-white text-[13px] focus:outline-none focus:border-accent transition-colors select-custom-sm"
+                      className="w-full pl-4 pr-12 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[13px] focus:outline-none focus:border-accent transition-colors select-custom-sm"
                     >
                       <option value="yes">Yes</option>
                       <option value="no">No</option>
@@ -2144,11 +2144,11 @@ export default function AdminLootItems() {
                   </div>
 
                   <div>
-                    <label className="block text-[13px] font-medium text-white mb-2">Class Bonus Priority on Single Item</label>
+                    <label className="block text-[13px] font-medium text-foreground mb-2">Class Bonus Priority on Single Item</label>
                     <select
                       value={settings.class_bonus_priority_single_item ? 'yes' : 'no'}
                       onChange={(e) => setSettings({ ...settings, class_bonus_priority_single_item: e.target.value === 'yes' })}
-                      className="w-full pl-4 pr-12 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-white text-[13px] focus:outline-none focus:border-accent transition-colors select-custom-sm"
+                      className="w-full pl-4 pr-12 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[13px] focus:outline-none focus:border-accent transition-colors select-custom-sm"
                     >
                       <option value="yes">Yes</option>
                       <option value="no">No</option>
@@ -2158,11 +2158,11 @@ export default function AdminLootItems() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-[13px] font-medium text-white mb-2">Raid Roles Overall Bonus Priority</label>
+                    <label className="block text-[13px] font-medium text-foreground mb-2">Raid Roles Overall Bonus Priority</label>
                     <select
                       value={settings.raid_roles_overall_bonus_priority ? 'yes' : 'no'}
                       onChange={(e) => setSettings({ ...settings, raid_roles_overall_bonus_priority: e.target.value === 'yes' })}
-                      className="w-full pl-4 pr-12 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-white text-[13px] focus:outline-none focus:border-accent transition-colors select-custom-sm"
+                      className="w-full pl-4 pr-12 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[13px] focus:outline-none focus:border-accent transition-colors select-custom-sm"
                     >
                       <option value="yes">Yes</option>
                       <option value="no">No</option>
@@ -2170,11 +2170,11 @@ export default function AdminLootItems() {
                   </div>
 
                   <div>
-                    <label className="block text-[13px] font-medium text-white mb-2">Single Raider Overall Bonus</label>
+                    <label className="block text-[13px] font-medium text-foreground mb-2">Single Raider Overall Bonus</label>
                     <select
                       value={settings.single_raider_overall_bonus ? 'yes' : 'no'}
                       onChange={(e) => setSettings({ ...settings, single_raider_overall_bonus: e.target.value === 'yes' })}
-                      className="w-full pl-4 pr-12 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-white text-[13px] focus:outline-none focus:border-accent transition-colors select-custom-sm"
+                      className="w-full pl-4 pr-12 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[13px] focus:outline-none focus:border-accent transition-colors select-custom-sm"
                     >
                       <option value="yes">Yes</option>
                       <option value="no">No</option>
@@ -2183,11 +2183,11 @@ export default function AdminLootItems() {
                 </div>
 
                 <div>
-                  <label className="block text-[13px] font-medium text-white mb-2">Single Raider Bonus on Single Item</label>
+                  <label className="block text-[13px] font-medium text-foreground mb-2">Single Raider Bonus on Single Item</label>
                   <select
                     value={settings.single_raider_bonus_single_item ? 'yes' : 'no'}
                     onChange={(e) => setSettings({ ...settings, single_raider_bonus_single_item: e.target.value === 'yes' })}
-                    className="w-full pl-4 pr-12 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-white text-[13px] focus:outline-none focus:border-accent transition-colors select-custom-sm"
+                    className="w-full pl-4 pr-12 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[13px] focus:outline-none focus:border-accent transition-colors select-custom-sm"
                   >
                     <option value="yes">Yes</option>
                     <option value="no">No</option>
@@ -2196,11 +2196,11 @@ export default function AdminLootItems() {
 
                 <div className="grid grid-cols-3 gap-4">
                   <div>
-                    <label className="block text-[13px] font-medium text-white mb-2">Donation Bonuses</label>
+                    <label className="block text-[13px] font-medium text-foreground mb-2">Donation Bonuses</label>
                     <select
                       value={settings.donation_bonuses_enabled ? 'yes' : 'no'}
                       onChange={(e) => setSettings({ ...settings, donation_bonuses_enabled: e.target.value === 'yes' })}
-                      className="w-full pl-4 pr-12 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-white text-[13px] focus:outline-none focus:border-accent transition-colors select-custom-sm"
+                      className="w-full pl-4 pr-12 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[13px] focus:outline-none focus:border-accent transition-colors select-custom-sm"
                     >
                       <option value="yes">Yes</option>
                       <option value="no">No</option>
@@ -2208,11 +2208,11 @@ export default function AdminLootItems() {
                   </div>
 
                   <div>
-                    <label className="block text-[13px] font-medium text-white mb-2">Cap on Donation Points</label>
+                    <label className="block text-[13px] font-medium text-foreground mb-2">Cap on Donation Points</label>
                     <select
                       value={settings.donation_cap_enabled ? 'yes' : 'no'}
                       onChange={(e) => setSettings({ ...settings, donation_cap_enabled: e.target.value === 'yes' })}
-                      className="w-full pl-4 pr-12 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-white text-[13px] focus:outline-none focus:border-accent transition-colors select-custom-sm"
+                      className="w-full pl-4 pr-12 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[13px] focus:outline-none focus:border-accent transition-colors select-custom-sm"
                     >
                       <option value="yes">Yes</option>
                       <option value="no">No</option>
@@ -2220,11 +2220,11 @@ export default function AdminLootItems() {
                   </div>
 
                   <div>
-                    <label className="block text-[13px] font-medium text-white mb-2">Donation Bonus Type</label>
+                    <label className="block text-[13px] font-medium text-foreground mb-2">Donation Bonus Type</label>
                     <select
                       value={settings.donation_bonus_type}
                       onChange={(e) => setSettings({ ...settings, donation_bonus_type: e.target.value as 'permanent' | 'rolling' | 'hard-reset' })}
-                      className="w-full pl-4 pr-12 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-white text-[13px] focus:outline-none focus:border-accent transition-colors select-custom-sm"
+                      className="w-full pl-4 pr-12 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[13px] focus:outline-none focus:border-accent transition-colors select-custom-sm"
                     >
                       <option value="permanent">Permanent</option>
                       <option value="rolling">Rolling</option>
@@ -2238,7 +2238,7 @@ export default function AdminLootItems() {
               <button
                 onClick={() => setShowSettingsModal(false)}
                 disabled={savingSettings}
-                className="px-6 py-2.5 bg-background-elevated hover:bg-muted border border-border-strong rounded-[52px] text-white text-[13px] transition disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-6 py-2.5 bg-background-elevated hover:bg-muted border border-border-strong rounded-[52px] text-foreground text-[13px] transition disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Cancel
               </button>

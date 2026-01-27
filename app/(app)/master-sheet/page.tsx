@@ -612,7 +612,7 @@ export default function MasterSheet() {
       <div className="font-poppins">
         {/* Header */}
         <div className="p-8 pb-4">
-          <h1 className="text-[42px] font-bold text-white leading-tight">
+          <h1 className="text-[42px] font-bold text-foreground leading-tight">
             {selectedTier?.name}: Loot Rankings
           </h1>
           <p className="text-muted-foreground text-base">
@@ -639,8 +639,8 @@ export default function MasterSheet() {
                     onClick={() => setSelectedTierId(tier.id)}
                     className={`px-5 py-2.5 rounded-[40px] whitespace-nowrap text-[13px] font-medium transition-all ${
                       selectedTierId === tier.id
-                        ? 'bg-[rgba(255,128,0,0.2)] border-[0.5px] border-[rgba(255,128,0,0.2)] text-accent'
-                        : 'bg-background-elevated border border-[rgba(255,255,255,0.1)] text-white hover:bg-muted'
+                        ? 'bg-accent/20 border-[0.5px] border-accent/20 text-accent'
+                        : 'bg-background-elevated border border-border text-foreground hover:bg-muted'
                     }`}
                   >
                     <span className="flex items-center gap-2">
@@ -659,7 +659,7 @@ export default function MasterSheet() {
           <div className="sticky top-[64px] z-10 px-8 pt-3 pb-2 bg-background">
             <div className="flex gap-3">
               {/* Boss chips container with horizontal scroll fade */}
-              <div className="flex-1 min-w-0 bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-xl p-3 overflow-hidden">
+              <div className="flex-1 min-w-0 bg-background-elevated border border-border rounded-xl p-3 overflow-hidden">
                 <div
                   className="overflow-x-auto scrollbar-hide"
                   style={{
@@ -672,7 +672,7 @@ export default function MasterSheet() {
                       <button
                         key={boss}
                         onClick={() => scrollToBoss(boss)}
-                        className="px-3 py-1.5 bg-background-elevated hover:bg-muted border border-[rgba(255,255,255,0.1)] rounded-[40px] text-xs font-medium text-white whitespace-nowrap transition"
+                        className="px-3 py-1.5 bg-background-inset hover:bg-muted border border-border rounded-[40px] text-xs font-medium text-foreground whitespace-nowrap transition"
                       >
                         {boss}
                       </button>
@@ -681,17 +681,17 @@ export default function MasterSheet() {
                 </div>
               </div>
               {/* Expand/Collapse container */}
-              <div className="flex-shrink-0 bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-xl p-3">
+              <div className="flex-shrink-0 bg-background-elevated border border-border rounded-xl p-3">
                 <div className="flex gap-2 h-full items-center">
                   <button
                     onClick={expandAll}
-                    className="px-3 py-1.5 bg-background-elevated hover:bg-muted border border-[rgba(255,255,255,0.1)] rounded-[40px] text-xs font-medium text-muted-foreground hover:text-white whitespace-nowrap transition"
+                    className="px-3 py-1.5 bg-background-inset hover:bg-muted border border-border rounded-[40px] text-xs font-medium text-muted-foreground hover:text-foreground whitespace-nowrap transition"
                   >
                     Expand All
                   </button>
                   <button
                     onClick={collapseAll}
-                    className="px-3 py-1.5 bg-background-elevated hover:bg-muted border border-[rgba(255,255,255,0.1)] rounded-[40px] text-xs font-medium text-muted-foreground hover:text-white whitespace-nowrap transition"
+                    className="px-3 py-1.5 bg-background-inset hover:bg-muted border border-border rounded-[40px] text-xs font-medium text-muted-foreground hover:text-foreground whitespace-nowrap transition"
                   >
                     Collapse All
                   </button>
@@ -706,7 +706,7 @@ export default function MasterSheet() {
 
         {/* Content Loading State */}
         {contentLoading ? (
-          <div className="bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-xl p-12">
+          <div className="bg-background-elevated border border-border rounded-xl p-12">
             <div className="flex flex-col items-center justify-center gap-4">
               <LoadingSpinner />
               <p className="text-muted-foreground text-sm">Loading loot rankings...</p>
@@ -716,12 +716,12 @@ export default function MasterSheet() {
         <>
         {/* Master Sheet Hidden Warning */}
         {!masterSheetVisible && !isOfficer ? (
-          <div className="bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-xl p-12 text-center">
+          <div className="bg-background-elevated border border-border rounded-xl p-12 text-center">
             <div className="max-w-md mx-auto">
               <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
                 <span className="text-3xl">🔒</span>
               </div>
-              <h3 className="text-xl font-semibold text-white mb-2">Master Sheet Not Available</h3>
+              <h3 className="text-xl font-semibold text-foreground mb-2">Master Sheet Not Available</h3>
               <p className="text-muted-foreground">
                 The loot rankings for this raid tier are currently hidden. Officers will make them visible once the submission deadline has passed.
               </p>
@@ -746,7 +746,7 @@ export default function MasterSheet() {
 
             {/* Loot Table */}
             {Object.keys(groupedByBoss).length === 0 ? (
-              <div className="bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-xl p-8 text-center">
+              <div className="bg-background-elevated border border-border rounded-xl p-8 text-center">
                 <p className="text-muted-foreground">No loot items found for this raid tier</p>
               </div>
             ) : (
@@ -757,7 +757,7 @@ export default function MasterSheet() {
                 <div
                   key={boss}
                   id={`boss-${boss.replace(/\s+/g, '-')}`}
-                  className="bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-xl overflow-hidden scroll-mt-[140px]"
+                  className="bg-background-elevated border border-border rounded-xl overflow-hidden scroll-mt-[140px]"
                 >
                   {/* Boss Header - Clickable */}
                   <button
@@ -772,7 +772,7 @@ export default function MasterSheet() {
                           className="w-6 h-6 rounded"
                         />
                       )}
-                      <h2 className="text-[15px] font-semibold text-white">{boss}</h2>
+                      <h2 className="text-[15px] font-semibold text-foreground">{boss}</h2>
                     </div>
                     <div className="flex items-center gap-3">
                       <span className="text-[12px] text-foreground-muted font-medium">
@@ -791,7 +791,7 @@ export default function MasterSheet() {
 
                   {/* Items Table - Collapsible */}
                   {!isCollapsed && (
-                    <div className="border-t border-[rgba(255,255,255,0.1)]">
+                    <div className="border-t border-border">
                       <table className="w-full">
                         <thead>
                           <tr className="bg-background-subtle">
@@ -804,12 +804,12 @@ export default function MasterSheet() {
                             <th className="px-3 py-2.5 text-center text-[12px] font-medium text-foreground-muted w-[120px]">#5</th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-[rgba(255,255,255,0.05)]">
+                        <tbody className="divide-y divide-border">
                           {items.map((ir) => (
                             <tr
                               key={ir.item.id}
                               id={`item-${ir.item.id}`}
-                              className={`transition-all hover:bg-muted ${ir.rankings.length === 0 ? 'bg-[#1a1519]' : ''}`}
+                              className={`transition-all hover:bg-muted ${ir.rankings.length === 0 ? 'bg-destructive/10' : ''}`}
                             >
                               <td className="px-5 py-2.5">
                                 <ItemLink
@@ -838,7 +838,7 @@ export default function MasterSheet() {
                                         </span>
                                       </div>
                                     ) : (
-                                      <span className="text-[#333]">—</span>
+                                      <span className="text-muted-foreground">—</span>
                                     )}
                                   </td>
                                 )
@@ -860,7 +860,7 @@ export default function MasterSheet() {
         )}
 
         {/* Legend */}
-        <div className="bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-xl p-4">
+        <div className="bg-background-elevated border border-border rounded-xl p-4">
           <div className="flex items-center justify-between">
             <p className="text-foreground-muted text-[12px]">
               Scores = item rank + attendance + role modifiers + priority bonuses. Ties go to roll.

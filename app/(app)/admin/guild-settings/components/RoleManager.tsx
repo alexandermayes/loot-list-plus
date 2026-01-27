@@ -226,7 +226,7 @@ export default function RoleManager() {
               return (
                 <div
                   key={role.id}
-                  className="p-3 bg-background-subtle border border-[rgba(255,255,255,0.1)] rounded-lg"
+                  className="p-3 bg-background-subtle border border-border rounded-lg"
                 >
                   {isEditing ? (
                     // Edit mode
@@ -237,7 +237,7 @@ export default function RoleManager() {
                         onChange={(e) => setEditingRoleName(e.target.value)}
                         placeholder="Role name"
                         maxLength={50}
-                        className="w-full px-3 py-2 bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-lg text-white text-[13px] focus:outline-none focus:border-[rgba(255,255,255,0.3)]"
+                        className="w-full px-3 py-2 bg-background-elevated border border-border rounded-lg text-foreground text-[13px] focus:outline-none focus:border-ring"
                       />
                       <div className="flex gap-2">
                         <button
@@ -249,7 +249,7 @@ export default function RoleManager() {
                         </button>
                         <button
                           onClick={handleCancelEdit}
-                          className="flex-1 px-3 py-2 bg-background-elevated text-white rounded-lg text-[13px] font-medium hover:bg-muted border border-[rgba(255,255,255,0.1)] transition flex items-center justify-center gap-2"
+                          className="flex-1 px-3 py-2 bg-background-elevated text-foreground rounded-lg text-[13px] font-medium hover:bg-muted border border-border transition flex items-center justify-center gap-2"
                         >
                           <HugeiconsIcon icon={Cancel01Icon} size={16} />
                           Cancel
@@ -269,7 +269,7 @@ export default function RoleManager() {
                           </span>
                         </div>
                         <div>
-                          <p className="text-white font-medium text-[14px]">{role.name}</p>
+                          <p className="text-foreground font-medium text-[14px]">{role.name}</p>
                         </div>
                       </div>
 
@@ -280,14 +280,14 @@ export default function RoleManager() {
                             <button
                               onClick={() => handleMoveRole(role, 'up')}
                               disabled={roles.filter(r => r.position !== 100 && r.position !== 50).findIndex(r => r.id === role.id) === 0}
-                              className="p-2 bg-background-elevated hover:bg-muted border border-[rgba(255,255,255,0.1)] rounded-lg text-white hover:text-white transition disabled:opacity-30 disabled:cursor-not-allowed"
+                              className="p-2 bg-background-elevated hover:bg-muted border border-border rounded-lg text-foreground hover:text-foreground transition disabled:opacity-30 disabled:cursor-not-allowed"
                             >
                               <HugeiconsIcon icon={ArrowUp01Icon} size={16} />
                             </button>
                             <button
                               onClick={() => handleMoveRole(role, 'down')}
                               disabled={roles.filter(r => r.position !== 100 && r.position !== 50).findIndex(r => r.id === role.id) === roles.filter(r => r.position !== 100 && r.position !== 50).length - 1}
-                              className="p-2 bg-background-elevated hover:bg-muted border border-[rgba(255,255,255,0.1)] rounded-lg text-white hover:text-white transition disabled:opacity-30 disabled:cursor-not-allowed"
+                              className="p-2 bg-background-elevated hover:bg-muted border border-border rounded-lg text-foreground hover:text-foreground transition disabled:opacity-30 disabled:cursor-not-allowed"
                             >
                               <HugeiconsIcon icon={ArrowDown01Icon} size={16} />
                             </button>
@@ -295,14 +295,14 @@ export default function RoleManager() {
                         )}
                         <button
                           onClick={() => handleStartEditRole(role)}
-                          className="p-2 bg-background-elevated hover:bg-muted border border-[rgba(255,255,255,0.1)] rounded-lg text-white hover:text-white transition"
+                          className="p-2 bg-background-elevated hover:bg-muted border border-border rounded-lg text-foreground hover:text-foreground transition"
                         >
                           <HugeiconsIcon icon={Edit01Icon} size={16} />
                         </button>
                         {!role.is_default && (
                           <button
                             onClick={() => handleDeleteRole(role.id, role.name)}
-                            className="p-2 bg-background-elevated hover:bg-red-950/50 border border-[rgba(255,255,255,0.1)] hover:border-red-600/30 rounded-lg text-red-400 hover:text-red-300 transition"
+                            className="p-2 bg-background-elevated hover:bg-red-950/50 border border-border hover:border-red-600/30 rounded-lg text-red-400 hover:text-red-300 transition"
                           >
                             <HugeiconsIcon icon={Delete01Icon} size={16} />
                           </button>
@@ -318,7 +318,7 @@ export default function RoleManager() {
           {!isAddingRole && roles.length < 10 && (
             <button
               onClick={() => setIsAddingRole(true)}
-              className="w-full p-3 bg-background-elevated hover:bg-muted border border-[rgba(255,255,255,0.1)] rounded-lg text-white text-[13px] font-medium transition flex items-center justify-center gap-2"
+              className="w-full p-3 bg-background-elevated hover:bg-muted border border-border rounded-lg text-foreground text-[13px] font-medium transition flex items-center justify-center gap-2"
             >
               <HugeiconsIcon icon={Add01Icon} size={16} />
               Add Custom Role
@@ -326,7 +326,7 @@ export default function RoleManager() {
           )}
 
           {isAddingRole && (
-            <div className="p-4 bg-background-subtle border border-[rgba(255,255,255,0.1)] rounded-lg space-y-3">
+            <div className="p-4 bg-background-subtle border border-border rounded-lg space-y-3">
               <div>
                 <label className="block text-[13px] text-muted-foreground mb-2">Role Name</label>
                 <input
@@ -335,7 +335,7 @@ export default function RoleManager() {
                   onChange={(e) => setNewRoleName(e.target.value)}
                   placeholder="e.g., Raider, Trial, Core"
                   maxLength={50}
-                  className="w-full px-3 py-2 bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-lg text-white text-[13px] focus:outline-none focus:border-[rgba(255,255,255,0.3)]"
+                  className="w-full px-3 py-2 bg-background-elevated border border-border rounded-lg text-foreground text-[13px] focus:outline-none focus:border-ring"
                 />
               </div>
 
@@ -351,7 +351,7 @@ export default function RoleManager() {
                     setIsAddingRole(false)
                     setNewRoleName('')
                   }}
-                  className="flex-1 px-4 py-2 bg-background-elevated text-white rounded-lg text-[13px] font-medium hover:bg-muted border border-[rgba(255,255,255,0.1)] transition"
+                  className="flex-1 px-4 py-2 bg-background-elevated text-foreground rounded-lg text-[13px] font-medium hover:bg-muted border border-border transition"
                 >
                   Cancel
                 </button>
@@ -359,7 +359,7 @@ export default function RoleManager() {
             </div>
           )}
 
-          <div className="pt-4 border-t border-[rgba(255,255,255,0.1)]">
+          <div className="pt-4 border-t border-border">
             <p className="text-[11px] text-muted-foreground">
               Total Roles: {roles.length} / 10
             </p>
