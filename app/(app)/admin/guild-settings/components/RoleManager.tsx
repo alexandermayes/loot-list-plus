@@ -3,6 +3,7 @@
 import { createClient } from '@/utils/supabase/client'
 import { useState, useEffect } from 'react'
 import { useGuildContext } from '@/app/contexts/GuildContext'
+import { Button } from '@/components/ui/button'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { Add01Icon, Delete01Icon, Shield01Icon, UserIcon, Edit01Icon, Tick01Icon, Cancel01Icon, CrownIcon, ArrowUp01Icon, ArrowDown01Icon } from '@hugeicons/core-free-icons'
 
@@ -208,8 +209,8 @@ export default function RoleManager() {
       {message && (
         <div className={`p-3 rounded-lg ${
           message.type === 'success'
-            ? 'bg-green-950/50 border border-green-600/50 text-green-200'
-            : 'bg-red-950/50 border border-red-600/50 text-red-200'
+            ? 'bg-success/10 border border-success/50 text-success'
+            : 'bg-destructive/10 border border-destructive/50 text-destructive'
         }`}>
           {message.text}
         </div>
@@ -240,20 +241,14 @@ export default function RoleManager() {
                         className="w-full px-3 py-2 bg-background-elevated border border-border rounded-lg text-foreground text-[13px] focus:outline-none focus:border-ring"
                       />
                       <div className="flex gap-2">
-                        <button
-                          onClick={() => handleSaveEditRole(role.id)}
-                          className="flex-1 px-3 py-2 bg-primary text-primary-foreground rounded-lg text-[13px] font-medium hover:bg-primary/90 transition flex items-center justify-center gap-2"
-                        >
+                        <Button size="sm" onClick={() => handleSaveEditRole(role.id)} className="flex-1">
                           <HugeiconsIcon icon={Tick01Icon} size={16} />
                           Save
-                        </button>
-                        <button
-                          onClick={handleCancelEdit}
-                          className="flex-1 px-3 py-2 bg-background-elevated text-foreground rounded-lg text-[13px] font-medium hover:bg-muted border border-border transition flex items-center justify-center gap-2"
-                        >
+                        </Button>
+                        <Button variant="secondary" size="sm" onClick={handleCancelEdit} className="flex-1">
                           <HugeiconsIcon icon={Cancel01Icon} size={16} />
                           Cancel
-                        </button>
+                        </Button>
                       </div>
                     </div>
                   ) : (
@@ -302,7 +297,7 @@ export default function RoleManager() {
                         {!role.is_default && (
                           <button
                             onClick={() => handleDeleteRole(role.id, role.name)}
-                            className="p-2 bg-background-elevated hover:bg-red-950/50 border border-border hover:border-red-600/30 rounded-lg text-red-400 hover:text-red-300 transition"
+                            className="p-2 bg-background-elevated hover:bg-destructive/10 border border-border hover:border-destructive/30 rounded-lg text-destructive hover:text-destructive transition"
                           >
                             <HugeiconsIcon icon={Delete01Icon} size={16} />
                           </button>
@@ -316,13 +311,10 @@ export default function RoleManager() {
           </div>
 
           {!isAddingRole && roles.length < 10 && (
-            <button
-              onClick={() => setIsAddingRole(true)}
-              className="w-full p-3 bg-background-elevated hover:bg-muted border border-border rounded-lg text-foreground text-[13px] font-medium transition flex items-center justify-center gap-2"
-            >
+            <Button variant="secondary" onClick={() => setIsAddingRole(true)} className="w-full">
               <HugeiconsIcon icon={Add01Icon} size={16} />
               Add Custom Role
-            </button>
+            </Button>
           )}
 
           {isAddingRole && (
@@ -340,21 +332,20 @@ export default function RoleManager() {
               </div>
 
               <div className="flex gap-2">
-                <button
-                  onClick={handleAddRole}
-                  className="flex-1 px-4 py-2 bg-primary text-primary-foreground rounded-lg text-[13px] font-medium hover:bg-primary/90 transition"
-                >
+                <Button size="sm" onClick={handleAddRole} className="flex-1">
                   Create Role
-                </button>
-                <button
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="sm"
                   onClick={() => {
                     setIsAddingRole(false)
                     setNewRoleName('')
                   }}
-                  className="flex-1 px-4 py-2 bg-background-elevated text-foreground rounded-lg text-[13px] font-medium hover:bg-muted border border-border transition"
+                  className="flex-1"
                 >
                   Cancel
-                </button>
+                </Button>
               </div>
             </div>
           )}

@@ -19,6 +19,7 @@ import {
   ModalFooter,
 } from '@/components/ui/modal'
 import { Button } from '@/components/ui/button'
+import { Heading } from '@/components/ui/typography'
 import { StarFilledIcon } from '@/components/ui/icons'
 import Link from 'next/link'
 import ItemLink from '@/app/components/ItemLink'
@@ -416,7 +417,7 @@ export default function MasterLootPage() {
     <div className="font-poppins">
       {/* Header - Always visible */}
       <div className="p-8 pb-4">
-        <h1 className="text-[42px] font-bold text-foreground leading-tight">Loot Submissions</h1>
+        <Heading level={1}>Loot Submissions</Heading>
         <p className="text-muted-foreground mt-1 text-base">Review and manage character loot submissions</p>
       </div>
 

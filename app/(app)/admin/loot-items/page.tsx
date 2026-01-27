@@ -7,6 +7,7 @@ import ItemLink from '@/app/components/ItemLink'
 import { useGuildContext } from '@/app/contexts/GuildContext'
 import { ExpansionGuard } from '@/app/components/ExpansionGuard'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
+import { Heading } from '@/components/ui/typography'
 import { normalizeBossName } from '@/utils/bossOrder'
 
 interface LootItem {
@@ -399,7 +400,7 @@ export default function AdminLootItems() {
       <div className="p-8 space-y-6 font-poppins">
         {/* Header */}
         <div>
-          <h1 className="text-[42px] font-bold text-foreground leading-tight">Loot Items</h1>
+          <Heading level={1}>Loot Items</Heading>
           <p className="text-muted-foreground mt-1 text-[14px]">Manage loot items for your guild</p>
         </div>
 
@@ -545,7 +546,7 @@ export default function AdminLootItems() {
                                 <span className="text-foreground">{getSpecName(specId)}</span>
                                 <button
                                   onClick={() => removeSpec(item.id, specId, 'primary')}
-                                  className="ml-0.5 hover:text-red-400"
+                                  className="ml-0.5 hover:text-destructive"
                                   title="Remove"
                                 >
                                   <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -593,7 +594,7 @@ export default function AdminLootItems() {
                                 <span className="text-foreground">{getSpecName(specId)}</span>
                                 <button
                                   onClick={() => removeSpec(item.id, specId, 'secondary')}
-                                  className="ml-0.5 hover:text-red-400"
+                                  className="ml-0.5 hover:text-destructive"
                                   title="Remove"
                                 >
                                   <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">

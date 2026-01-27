@@ -9,6 +9,7 @@ import { HugeiconsIcon } from '@hugeicons/react'
 import { Calendar01Icon, ArrowDown01Icon, ArrowUp01Icon } from '@hugeicons/core-free-icons'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { AttendanceStatsSkeleton, TableSkeleton } from '@/components/ui/skeletons'
+import { Heading } from '@/components/ui/typography'
 import { calculateAttendanceScore, getRankModifier } from '@/utils/calculations'
 
 interface RaidEvent {
@@ -468,7 +469,7 @@ export default function AttendancePage() {
     <div className="p-8 space-y-6 font-poppins">
       {/* Header - Always visible */}
       <div>
-        <h1 className="text-[42px] font-bold text-foreground leading-tight">Attendance</h1>
+        <Heading level={1}>Attendance</Heading>
         <p className="text-muted-foreground mt-1 text-base">Track raid attendance and view attendance scores</p>
       </div>
 

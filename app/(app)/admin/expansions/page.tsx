@@ -7,6 +7,8 @@ import { useGuildContext } from '@/app/contexts/GuildContext'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { Add01Icon, Calendar01Icon, ArrowRight01Icon } from '@hugeicons/core-free-icons'
 import Link from 'next/link'
+import { Button } from '@/components/ui/button'
+import { Heading } from '@/components/ui/typography'
 import { getExpansionVisuals } from '@/utils/expansionVisuals'
 
 interface GuildExpansion {
@@ -205,7 +207,7 @@ export default function ExpansionsManagementPage() {
     <div className="p-8 space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-[42px] font-bold text-foreground mb-2">Manage Expansions</h1>
+        <Heading level={1} className="mb-2">Manage Expansions</Heading>
         <p className="text-[16px] text-foreground-muted">
           Add and manage expansions for your guild. Each expansion maintains its own loot lists and raid data.
         </p>
@@ -215,8 +217,8 @@ export default function ExpansionsManagementPage() {
       {message && (
         <div className={`p-4 rounded-xl ${
           message.type === 'success'
-            ? 'bg-green-950/50 border border-green-600/50 text-green-200'
-            : 'bg-red-950/50 border border-red-600/50 text-red-200'
+            ? 'bg-success/10 border border-success/50 text-success'
+            : 'bg-destructive/10 border border-destructive/50 text-destructive'
         }`}>
           {message.text}
         </div>

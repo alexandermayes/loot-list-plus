@@ -121,7 +121,7 @@ export default function Navigation({
                         )}
                       </div>
                       {activeGuild.id === guild.guild.id && (
-                        <HugeiconsIcon icon={Tick01Icon} size={16} className="text-green-400" />
+                        <HugeiconsIcon icon={Tick01Icon} size={16} className="text-success" />
                       )}
                     </button>
                   ))}

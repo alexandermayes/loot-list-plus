@@ -3,6 +3,7 @@
 import { createClient } from '@/utils/supabase/client'
 import { useState, useEffect } from 'react'
 import { useGuildContext } from '@/app/contexts/GuildContext'
+import { Button } from '@/components/ui/button'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { Copy01Icon, Cancel01Icon, Add01Icon } from '@hugeicons/core-free-icons'
 
@@ -125,21 +126,18 @@ export default function InviteCodeManager() {
             <h2 className="text-[24px] font-semibold text-foreground">Invite Codes</h2>
             <p className="text-muted-foreground text-[13px] mt-1">Generate and manage invite codes for your guild</p>
           </div>
-          <button
-            onClick={() => setShowGenerateForm(!showGenerateForm)}
-            className="px-4 py-2 bg-primary hover:bg-primary/90 rounded-[40px] text-primary-foreground font-medium text-[13px] transition flex items-center gap-2"
-          >
+          <Button size="sm" onClick={() => setShowGenerateForm(!showGenerateForm)}>
             <HugeiconsIcon icon={Add01Icon} size={16} />
             Generate Code
-          </button>
+          </Button>
         </div>
       </div>
       <div className="p-6 space-y-4">
         {message && (
           <div className={`p-3 rounded-lg ${
             message.type === 'success'
-              ? 'bg-green-950/50 border border-green-600/50 text-green-200'
-              : 'bg-red-950/50 border border-red-600/50 text-red-200'
+              ? 'bg-success/10 border border-success/50 text-success'
+              : 'bg-destructive/10 border border-destructive/50 text-destructive'
           }`}>
             {message.text}
           </div>
@@ -175,19 +173,12 @@ export default function InviteCodeManager() {
             </div>
 
             <div className="flex gap-2">
-              <button
-                onClick={handleGenerateCode}
-                disabled={generating}
-                className="px-5 py-3 bg-primary hover:bg-primary/90 disabled:opacity-50 rounded-[40px] text-primary-foreground font-medium text-[16px] transition"
-              >
-                {generating ? 'Generating...' : 'Generate'}
-              </button>
-              <button
-                onClick={() => setShowGenerateForm(false)}
-                className="px-5 py-3 bg-background-elevated hover:bg-muted border border-border rounded-[40px] text-foreground font-medium text-[16px] transition"
-              >
+              <Button onClick={handleGenerateCode} loading={generating}>
+                Generate
+              </Button>
+              <Button variant="secondary" onClick={() => setShowGenerateForm(false)}>
                 Cancel
-              </button>
+              </Button>
             </div>
           </div>
         )}
@@ -208,7 +199,7 @@ export default function InviteCodeManager() {
                   key={code.id}
                   className={`p-4 bg-background-subtle rounded-lg border ${
                     !code.is_active || isExpired || isMaxedOut
-                      ? 'border-red-600/50 opacity-60'
+                      ? 'border-destructive/50 opacity-60'
                       : 'border-border'
                   }`}
                 >
@@ -219,17 +210,17 @@ export default function InviteCodeManager() {
                           {code.code}
                         </code>
                         {!code.is_active && (
-                          <span className="px-2 py-1 bg-red-950/50 text-red-200 text-xs rounded">
+                          <span className="px-2 py-1 bg-destructive/20 text-destructive text-xs rounded">
                             Deactivated
                           </span>
                         )}
                         {isExpired && (
-                          <span className="px-2 py-1 bg-red-950/50 text-red-200 text-xs rounded">
+                          <span className="px-2 py-1 bg-destructive/20 text-destructive text-xs rounded">
                             Expired
                           </span>
                         )}
                         {isMaxedOut && (
-                          <span className="px-2 py-1 bg-red-950/50 text-red-200 text-xs rounded">
+                          <span className="px-2 py-1 bg-destructive/20 text-destructive text-xs rounded">
                             Max Uses Reached
                           </span>
                         )}
@@ -264,7 +255,7 @@ export default function InviteCodeManager() {
                     {code.is_active && !isExpired && !isMaxedOut && (
                       <button
                         onClick={() => handleDeactivateCode(code.id)}
-                        className="ml-4 p-2 bg-background-elevated hover:bg-red-950/50 border border-border hover:border-red-600/30 rounded-lg text-red-400 hover:text-red-300 transition"
+                        className="ml-4 p-2 bg-background-elevated hover:bg-destructive/10 border border-border hover:border-destructive/30 rounded-lg text-destructive hover:text-destructive transition"
                       >
                         <HugeiconsIcon icon={Cancel01Icon} size={16} />
                       </button>

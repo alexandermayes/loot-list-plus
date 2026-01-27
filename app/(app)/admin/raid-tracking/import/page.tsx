@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import type { User } from '@supabase/supabase-js'
 import { useGuildContext } from '@/app/contexts/GuildContext'
+import { Heading } from '@/components/ui/typography'
 
 export default function ImportPage() {
   const [loading, setLoading] = useState(false)
@@ -259,15 +260,15 @@ export default function ImportPage() {
       <div className="p-8 space-y-6 font-poppins">
         {/* Header */}
         <div>
-          <h1 className="text-[42px] font-bold text-foreground leading-tight">Import Raid Data</h1>
+          <Heading level={1}>Import Raid Data</Heading>
           <p className="text-muted-foreground mt-1 text-[14px]">Import raid tracking data from CSV files</p>
         </div>
 
         {message && (
           <div className={`p-4 rounded-xl ${
             message.type === 'success'
-              ? 'bg-green-950/50 border border-green-600/50 text-green-200'
-              : 'bg-red-950/50 border border-red-600/50 text-red-200'
+              ? 'bg-success/10 border border-success/50 text-success'
+              : 'bg-destructive/10 border border-destructive/50 text-destructive'
           }`}>
             {message.text}
           </div>

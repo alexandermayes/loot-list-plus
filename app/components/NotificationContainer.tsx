@@ -15,7 +15,7 @@ const getNotificationStyles = (type: NotificationType) => {
     case 'error':
       return 'bg-destructive/95 border-destructive text-destructive-foreground'
     case 'warning':
-      return 'bg-yellow-500/95 border-yellow-500 text-white'
+      return 'bg-warning/95 border-warning text-warning-foreground'
     case 'info':
       return 'bg-accent/95 border-accent text-accent-foreground'
   }
