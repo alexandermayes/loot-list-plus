@@ -4,6 +4,7 @@ import { createClient } from '@/utils/supabase/client'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
+import { useGuildContext } from '@/app/contexts/GuildContext'
 import { HugeiconsIcon } from '@hugeicons/react'
 import {
   UserIcon,
@@ -34,8 +35,15 @@ export default function ProfilePage() {
   const [leaving, setLeaving] = useState(false)
   const [disconnecting, setDisconnecting] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const [mounted, setMounted] = useState(false)
 
   const { theme, setTheme } = useTheme()
+
+  // Handle hydration mismatch for theme
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+  const { switchGuild } = useGuildContext()
   const supabase = createClient()
   const router = useRouter()
 
@@ -343,7 +351,7 @@ export default function ProfilePage() {
                   <button
                     onClick={handleDeleteAccount}
                     disabled={deleting}
-                    className="shrink-0 px-5 py-2.5 bg-red-600 hover:bg-red-700 disabled:opacity-50 rounded-[40px] text-white font-medium text-[14px] transition"
+                    className="shrink-0 px-5 py-2.5 bg-destructive hover:bg-destructive/90 disabled:opacity-50 rounded-[40px] text-destructive-foreground font-medium text-[14px] transition"
                   >
                     {deleting ? 'Deleting...' : 'Delete Account'}
                   </button>
@@ -374,12 +382,19 @@ export default function ProfilePage() {
                     <p className="text-[13px] text-muted-foreground">Choose your preferred appearance</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-1 bg-background-subtle border border-border rounded-full p-1">
+                <div className="relative flex items-center bg-background-subtle border border-border rounded-full p-1">
+                  {/* Animated background indicator */}
+                  <div
+                    className={`absolute top-1 h-8 w-10 bg-accent/20 rounded-full transition-[left] duration-300 ease-out ${mounted ? 'opacity-100' : 'opacity-0'}`}
+                    style={{
+                      left: mounted ? (theme === 'light' ? '44px' : theme === 'dark' ? '84px' : '4px') : '4px'
+                    }}
+                  />
                   <button
                     onClick={() => setTheme('system')}
-                    className={`px-3 py-2 rounded-full text-[13px] font-medium transition-all ${
-                      theme === 'system'
-                        ? 'bg-accent/20 text-accent'
+                    className={`relative z-10 w-10 h-8 flex items-center justify-center rounded-full text-[13px] font-medium transition-colors duration-200 ${
+                      theme === 'system' || (!mounted && theme === undefined)
+                        ? 'text-accent'
                         : 'text-muted-foreground hover:text-foreground'
                     }`}
                     title="System"
@@ -388,9 +403,9 @@ export default function ProfilePage() {
                   </button>
                   <button
                     onClick={() => setTheme('light')}
-                    className={`px-3 py-2 rounded-full text-[13px] font-medium transition-all ${
+                    className={`relative z-10 w-10 h-8 flex items-center justify-center rounded-full text-[13px] font-medium transition-colors duration-200 ${
                       theme === 'light'
-                        ? 'bg-accent/20 text-accent'
+                        ? 'text-accent'
                         : 'text-muted-foreground hover:text-foreground'
                     }`}
                     title="Light"
@@ -399,9 +414,9 @@ export default function ProfilePage() {
                   </button>
                   <button
                     onClick={() => setTheme('dark')}
-                    className={`px-3 py-2 rounded-full text-[13px] font-medium transition-all ${
+                    className={`relative z-10 w-10 h-8 flex items-center justify-center rounded-full text-[13px] font-medium transition-colors duration-200 ${
                       theme === 'dark'
-                        ? 'bg-accent/20 text-accent'
+                        ? 'text-accent'
                         : 'text-muted-foreground hover:text-foreground'
                     }`}
                     title="Dark"
@@ -490,7 +505,10 @@ export default function ProfilePage() {
                               Guild Masters cannot leave
                             </p>
                             <button
-                              onClick={() => router.push('/admin/guild-settings')}
+                              onClick={async () => {
+                                await switchGuild(membership.guild.id)
+                                router.push('/admin/guild-settings')
+                              }}
                               className="text-accent text-[13px] hover:underline"
                             >
                               Go to Guild Settings
