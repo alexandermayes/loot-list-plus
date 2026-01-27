@@ -13,6 +13,7 @@ const CreateCharacterModal = dynamic(() => import('@/app/components/CreateCharac
   loading: () => null
 })
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
+import { StatusBadge, type SubmissionStatus } from '@/components/ui/status-badge'
 import { useGuildContext } from '@/app/contexts/GuildContext'
 import ItemLink from '@/app/components/ItemLink'
 import { calculateAttendanceScore, getRankModifier, calculateLootScore } from '@/utils/calculations'
@@ -590,28 +591,6 @@ export default function Dashboard() {
     )
   }
 
-  // Get status badge styling
-  const getStatusBadge = (status: string) => {
-    const styles = {
-      draft: 'bg-gray-500/20 text-gray-400 border-gray-500/30',
-      pending: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30',
-      approved: 'bg-green-500/20 text-green-400 border-green-500/30',
-      needs_revision: 'bg-orange-500/20 text-orange-400 border-orange-500/30',
-      rejected: 'bg-red-500/20 text-red-400 border-red-500/30'
-    }
-    return styles[status as keyof typeof styles] || styles.draft
-  }
-
-  const getStatusText = (status: string) => {
-    const text = {
-      draft: 'Draft',
-      pending: 'Pending',
-      approved: 'Approved',
-      needs_revision: 'Needs Revision',
-      rejected: 'Rejected'
-    }
-    return text[status as keyof typeof text] || status
-  }
 
   return (
     <>
@@ -901,9 +880,7 @@ export default function Dashboard() {
                           </span>
                           <span className="text-muted-foreground text-sm">•</span>
                           <span className="text-foreground text-sm">{submission.raid_tier.name}</span>
-                          <span className={`px-3 py-1 rounded-full text-xs font-medium border ${getStatusBadge(submission.status)}`}>
-                            {getStatusText(submission.status)}
-                          </span>
+                          <StatusBadge status={submission.status as SubmissionStatus} />
                         </div>
                         <p className="text-muted-foreground text-sm mt-1">
                           {submission.status === 'draft'

@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import type { User } from '@supabase/supabase-js'
 import { useGuildContext } from '@/app/contexts/GuildContext'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
+import { StatusBadge, type SubmissionStatus } from '@/components/ui/status-badge'
 import { StarFilledIcon } from '@/components/ui/icons'
 import Link from 'next/link'
 import ItemLink from '@/app/components/ItemLink'
@@ -551,13 +552,7 @@ export default function MasterLootPage() {
                         {submission.member.class.name}
                       </span>
                     )}
-                    <span className={`px-3 py-1 rounded-full text-[12px] font-medium ${
-                      submission.status === 'approved' ? 'bg-green-600/30 text-green-300' :
-                      submission.status === 'rejected' ? 'bg-red-600/30 text-red-300' :
-                      'bg-yellow-600/30 text-yellow-300'
-                    }`}>
-                      {submission.status}
-                    </span>
+                    <StatusBadge status={submission.status as SubmissionStatus} />
                     <span className="text-muted-foreground text-[13px]">
                       {submission.item_count} items • Submitted {submission.submitted_at ? new Date(submission.submitted_at).toLocaleDateString('en-US', { month: 'numeric', day: 'numeric', year: 'numeric' }) : 'N/A'}
                     </span>

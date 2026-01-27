@@ -428,11 +428,11 @@ export default function AttendancePage() {
 
   const getCellStyle = (state: string): string => {
     switch (state) {
-      case 'attended': return 'bg-green-600/30 text-green-300'
-      case 'late': return 'bg-yellow-600/30 text-yellow-300'
-      case 'benched': return 'bg-orange-600/30 text-orange-300'
-      case 'signed-up': return 'bg-blue-600/30 text-blue-300'
-      case 'no-show': return 'bg-red-600/30 text-red-300'
+      case 'attended': return 'bg-success/30 text-success'
+      case 'late': return 'bg-yellow-500/30 text-yellow-400'
+      case 'benched': return 'bg-orange-500/30 text-orange-400'
+      case 'signed-up': return 'bg-accent/30 text-accent'
+      case 'no-show': return 'bg-destructive/30 text-destructive'
       default: return 'bg-muted text-foreground-muted'
     }
   }

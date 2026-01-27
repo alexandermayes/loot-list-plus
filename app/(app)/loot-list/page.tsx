@@ -695,10 +695,10 @@ export default function LootList() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'approved': return 'bg-green-950/20 border-green-600 text-foreground'
-      case 'pending': return 'bg-yellow-950/20 border-yellow-600 text-foreground'
-      case 'needs_revision': return 'bg-orange-950/20 border-orange-600 text-foreground'
-      case 'rejected': return 'bg-red-950/20 border-red-600 text-foreground'
+      case 'approved': return 'bg-success/10 border-success text-foreground'
+      case 'pending': return 'bg-yellow-500/10 border-yellow-500 text-foreground'
+      case 'needs_revision': return 'bg-orange-500/10 border-orange-500 text-foreground'
+      case 'rejected': return 'bg-destructive/10 border-destructive text-foreground'
       default: return 'bg-background-elevated border-border text-muted-foreground'
     }
   }
@@ -706,7 +706,7 @@ export default function LootList() {
   const getStatusLabel = (status: string) => {
     switch (status) {
       case 'approved': return 'Approved'
-      case 'pending': return 'Pending Review'
+      case 'pending': return 'Pending'
       case 'needs_revision': return 'Needs Revision'
       case 'rejected': return 'Rejected'
       default: return 'Draft'

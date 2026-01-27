@@ -643,13 +643,25 @@ export default function DesignSystemPage() {
             </div>
 
             <div>
-              <h3 className="text-sm font-medium text-foreground-secondary mb-3 uppercase tracking-wider">Status Badges</h3>
+              <h3 className="text-sm font-medium text-foreground-secondary mb-3 uppercase tracking-wider">Submission Status Badges</h3>
               <div className="flex flex-wrap gap-3">
                 <StatusBadge status="approved" />
                 <StatusBadge status="pending" />
                 <StatusBadge status="needs_revision" />
                 <StatusBadge status="rejected" />
                 <StatusBadge status="draft" />
+              </div>
+            </div>
+
+            <div>
+              <h3 className="text-sm font-medium text-foreground-secondary mb-3 uppercase tracking-wider">Attendance Status Badges</h3>
+              <div className="flex flex-wrap gap-3">
+                <StatusBadge status="attended" />
+                <StatusBadge status="late" />
+                <StatusBadge status="benched" />
+                <StatusBadge status="signed_up" />
+                <StatusBadge status="no_show" />
+                <StatusBadge status="excused" />
               </div>
             </div>
           </div>

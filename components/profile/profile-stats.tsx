@@ -1,5 +1,6 @@
 import { HugeiconsIcon } from '@hugeicons/react'
 import { Award01Icon, Calendar01Icon, CheckListIcon, StarIcon } from '@hugeicons/core-free-icons'
+import { StatusBadge, type SubmissionStatus } from '@/components/ui/status-badge'
 
 interface ProfileStatsProps {
   attendanceScore: number
@@ -34,15 +35,6 @@ export function ProfileStats({
     }
   }
 
-  const getSubmissionBadge = (status: string | null) => {
-    if (status === 'approved') {
-      return 'px-3 py-1 bg-green-900/20 border border-green-600 rounded-full text-green-200 text-[13px]'
-    } else if (status === 'pending') {
-      return 'px-3 py-1 bg-yellow-900/20 border border-yellow-600 rounded-full text-yellow-200 text-[13px]'
-    } else {
-      return 'px-3 py-1 bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-full text-muted-foreground text-[13px]'
-    }
-  }
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -103,16 +95,20 @@ export function ProfileStats({
             </div>
             <div className="flex items-center justify-between">
               <span className="text-[13px] text-muted-foreground">Submission Status</span>
-              <span className={getSubmissionBadge(submissionStatus)}>
-                {submissionStatus ? submissionStatus.replace('_', ' ').toUpperCase() : 'No Submission'}
-              </span>
+              {submissionStatus ? (
+                <StatusBadge status={submissionStatus as SubmissionStatus} />
+              ) : (
+                <span className="px-3 py-1 bg-muted border border-border rounded-full text-muted-foreground text-[13px]">
+                  No Submission
+                </span>
+              )}
             </div>
             <div className="flex items-center justify-between">
               <span className="text-[13px] text-muted-foreground flex items-center gap-1">
                 <HugeiconsIcon icon={CheckListIcon} size={16} />
                 List Complete
               </span>
-              <span className={submissionStatus === 'approved' ? 'px-3 py-1 bg-green-900/20 border border-green-600 rounded-full text-green-200 text-[13px]' : 'px-3 py-1 bg-background-elevated border border-[rgba(255,255,255,0.1)] rounded-full text-muted-foreground text-[13px]'}>
+              <span className={submissionStatus === 'approved' ? 'px-3 py-1 bg-success/10 border border-success/20 rounded-full text-success text-[13px]' : 'px-3 py-1 bg-muted border border-border rounded-full text-muted-foreground text-[13px]'}>
                 {submissionStatus === 'approved' ? 'Yes' : 'No'}
               </span>
             </div>

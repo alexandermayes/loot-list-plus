@@ -501,11 +501,11 @@ export default function RaidTrackingPage() {
 
   const getCellStyle = (state: CellState) => {
     switch (state) {
-      case 'attended': return 'bg-green-600/30 border-green-600 text-green-300'
-      case 'late': return 'bg-yellow-600/30 border-yellow-600 text-yellow-300'
-      case 'benched': return 'bg-orange-600/30 border-orange-600 text-orange-300'
-      case 'signed-up': return 'bg-blue-600/30 border-blue-600 text-blue-300'
-      case 'no-show': return 'bg-red-600/30 border-red-600 text-red-300'
+      case 'attended': return 'bg-success/30 border-success text-success'
+      case 'late': return 'bg-yellow-500/30 border-yellow-500 text-yellow-400'
+      case 'benched': return 'bg-orange-500/30 border-orange-500 text-orange-400'
+      case 'signed-up': return 'bg-accent/30 border-accent text-accent'
+      case 'no-show': return 'bg-destructive/30 border-destructive text-destructive'
       default: return 'bg-background-elevated border-border'
     }
   }
@@ -1498,23 +1498,23 @@ export default function RaidTrackingPage() {
         <div className="flex items-center gap-4 text-[13px] flex-wrap">
           <span className="text-muted-foreground">Status Options:</span>
           <div className="flex items-center gap-1">
-            <div className="w-5 h-5 rounded border bg-green-600/30 border-green-600"></div>
+            <div className="w-5 h-5 rounded border bg-success/30 border-success"></div>
             <span className="text-muted-foreground">Attended</span>
           </div>
           <div className="flex items-center gap-1">
-            <div className="w-5 h-5 rounded border bg-yellow-600/30 border-yellow-600"></div>
+            <div className="w-5 h-5 rounded border bg-yellow-500/30 border-yellow-500"></div>
             <span className="text-muted-foreground">Late</span>
           </div>
           <div className="flex items-center gap-1">
-            <div className="w-5 h-5 rounded border bg-orange-600/30 border-orange-600"></div>
+            <div className="w-5 h-5 rounded border bg-orange-500/30 border-orange-500"></div>
             <span className="text-muted-foreground">Benched</span>
           </div>
           <div className="flex items-center gap-1">
-            <div className="w-5 h-5 rounded border bg-blue-600/30 border-blue-600"></div>
+            <div className="w-5 h-5 rounded border bg-accent/30 border-accent"></div>
             <span className="text-muted-foreground">Signed Up</span>
           </div>
           <div className="flex items-center gap-1">
-            <div className="w-5 h-5 rounded border bg-red-600/30 border-red-600"></div>
+            <div className="w-5 h-5 rounded border bg-destructive/30 border-destructive"></div>
             <span className="text-muted-foreground">No-Show</span>
           </div>
         </div>
@@ -1605,7 +1605,7 @@ export default function RaidTrackingPage() {
                         })}
                       </h3>
                       {raid.is_skipped && (
-                        <span className="px-3 py-1 rounded-full text-[11px] font-medium bg-red-600/30 text-red-300">
+                        <span className="px-3 py-1 rounded-full text-[11px] font-medium bg-destructive/30 text-destructive">
                           Skipped: {raid.skip_reason}
                         </span>
                       )}
@@ -1615,7 +1615,7 @@ export default function RaidTrackingPage() {
                         </span>
                       )}
                       {hasImportedData && !raid.is_skipped && (
-                        <span className="px-3 py-1 rounded-full text-[11px] font-medium bg-green-600/30 text-green-300 border border-green-600/50">
+                        <span className="px-3 py-1 rounded-full text-[11px] font-medium bg-success/30 text-success border border-success/50">
                           Imported
                         </span>
                       )}
@@ -1655,7 +1655,7 @@ export default function RaidTrackingPage() {
                       }}
                       className={`px-4 py-2 rounded-[52px] text-[13px] font-medium transition flex items-center gap-2 ${
                         hasImportedData
-                          ? 'bg-green-600/20 hover:bg-green-600/30 border border-green-600/50 text-green-300'
+                          ? 'bg-success/20 hover:bg-success/30 border border-success/50 text-success'
                           : 'bg-background-elevated hover:bg-muted border border-border text-foreground'
                       }`}
                     >
@@ -1667,7 +1667,7 @@ export default function RaidTrackingPage() {
                     onClick={() => toggleSkipDay(raid.id, raid.is_skipped)}
                     className={`px-4 py-2 rounded-[52px] text-[13px] font-medium transition ${
                       raid.is_skipped
-                        ? 'bg-red-600/30 text-red-300 hover:bg-red-600/40 border border-red-600'
+                        ? 'bg-destructive/30 text-destructive hover:bg-destructive/40 border border-destructive'
                         : 'bg-background-elevated text-foreground-muted hover:bg-muted border border-border'
                     }`}
                   >
@@ -1735,7 +1735,7 @@ export default function RaidTrackingPage() {
                                 <p className="font-medium text-muted-foreground">
                                   {attendee.character_name}
                                 </p>
-                                <span className="px-2 py-0.5 rounded-full text-[9px] font-medium bg-yellow-600/30 text-yellow-300 border border-yellow-600/50">
+                                <span className="px-2 py-0.5 rounded-full text-[9px] font-medium bg-yellow-500/30 text-yellow-400 border border-yellow-500/50">
                                   Pending
                                 </span>
                               </div>
