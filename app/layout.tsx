@@ -16,15 +16,23 @@ const poppins = Poppins({
 });
 
 export const metadata: Metadata = {
-  title: "LootList+ | WoW Loot Management",
-  description: "The ultimate loot tool for WoW guilds. Track attendance, manage loot lists, and streamline your raid's loot distribution.",
-  keywords: ["WoW", "loot management", "guild management", "raid loot", "loot tracking", "World of Warcraft"],
-  authors: [{ name: "LootList+" }],
-  metadataBase: new URL("https://www.lootlistplus.com"),
+  title: {
+    default: "LootList+ - Loot Management for WoW Classic Guilds",
+    template: "%s | LootList+",
+  },
+  description: "The ultimate loot management system for World of Warcraft Classic guilds. Track attendance, manage loot priority lists, and streamline raid loot distribution with Discord integration.",
+  keywords: ["WoW Classic", "loot management", "guild management", "raid loot", "loot tracking", "World of Warcraft", "loot council", "DKP alternative", "TBC Classic", "WotLK Classic"],
+  authors: [{ name: "LootList+", url: "https://lootlistplus.com" }],
+  creator: "LootList+",
+  publisher: "LootList+",
+  metadataBase: new URL("https://lootlistplus.com"),
+  alternates: {
+    canonical: "https://lootlistplus.com",
+  },
   openGraph: {
-    title: "LootList+ | WoW Loot Management",
-    description: "The ultimate loot tool for WoW guilds. Track attendance, manage loot lists, and streamline your raid's loot distribution.",
-    url: "https://www.lootlistplus.com",
+    title: "LootList+ - Loot Management for WoW Classic Guilds",
+    description: "The ultimate loot management system for World of Warcraft Classic guilds. Track attendance, manage loot priority lists, and streamline raid loot distribution.",
+    url: "https://lootlistplus.com",
     siteName: "LootList+",
     locale: "en_US",
     type: "website",
@@ -33,20 +41,95 @@ export const metadata: Metadata = {
         url: "/og-image.png",
         width: 1200,
         height: 630,
-        alt: "LootList+ - WoW Loot Management",
+        alt: "LootList+ - Loot Management for WoW Classic Guilds",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "LootList+ | WoW Loot Management",
-    description: "The ultimate loot tool for WoW guilds. Track attendance, manage loot lists, and streamline your raid's loot distribution.",
+    title: "LootList+ - Loot Management for WoW Classic Guilds",
+    description: "The ultimate loot management system for World of Warcraft Classic guilds. Track attendance, manage priority lists, and streamline loot distribution.",
     images: ["/og-image.png"],
   },
   icons: {
-    icon: "/favicon.png",
-    apple: "/favicon.png",
+    icon: [
+      { url: "/favicon-32x32.png", sizes: "32x32", type: "image/png" },
+      { url: "/favicon-16x16.png", sizes: "16x16", type: "image/png" },
+    ],
+    apple: [
+      { url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
+    ],
+    shortcut: "/favicon-32x32.png",
   },
+  manifest: "/site.webmanifest",
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
+  },
+  verification: {
+    // Add your Google Search Console verification code here if you have one
+    // google: "your-verification-code",
+  },
+  category: "gaming",
+};
+
+// JSON-LD Structured Data
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebSite",
+      "@id": "https://lootlistplus.com/#website",
+      "url": "https://lootlistplus.com",
+      "name": "LootList+",
+      "description": "Loot management system for World of Warcraft Classic guilds",
+      "publisher": {
+        "@id": "https://lootlistplus.com/#organization"
+      },
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": "https://lootlistplus.com/?q={search_term_string}",
+        "query-input": "required name=search_term_string"
+      }
+    },
+    {
+      "@type": "Organization",
+      "@id": "https://lootlistplus.com/#organization",
+      "name": "LootList+",
+      "url": "https://lootlistplus.com",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://lootlistplus.com/lootlist-icon.svg",
+        "width": 512,
+        "height": 512
+      },
+      "sameAs": []
+    },
+    {
+      "@type": "SoftwareApplication",
+      "name": "LootList+",
+      "operatingSystem": "Web",
+      "applicationCategory": "GameApplication",
+      "description": "The ultimate loot management system for World of Warcraft Classic guilds. Track attendance, manage loot priority lists, and streamline raid loot distribution with Discord integration.",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      },
+      "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingValue": "5",
+        "ratingCount": "1"
+      }
+    }
+  ]
 };
 
 export default function RootLayout({
@@ -57,6 +140,11 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
+        {/* JSON-LD Structured Data */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
         {/* Wowhead Tooltip Configuration */}
         <Script id="wowhead-config" strategy="beforeInteractive">
           {`
