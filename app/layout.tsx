@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter, Poppins } from "next/font/google";
+import { Poppins } from "next/font/google";
 import Script from "next/script";
 import { GuildContextProvider } from "./contexts/GuildContext";
 import { NotificationProvider } from "./contexts/NotificationContext";
@@ -8,11 +8,6 @@ import "./globals.css";
 
 export const dynamic = 'force-dynamic'
 
-const inter = Inter({
-  variable: "--font-inter",
-  subsets: ["latin"],
-});
-
 const poppins = Poppins({
   variable: "--font-poppins",
   subsets: ["latin"],
@@ -20,8 +15,28 @@ const poppins = Poppins({
 });
 
 export const metadata: Metadata = {
-  title: "LootList+",
-  description: "WoW Classic loot management system for <Big Yikes>",
+  title: "LootList+ | WoW Classic Loot Management",
+  description: "The ultimate loot council tool for WoW Classic guilds. Track attendance, manage loot lists, and streamline your raid's loot distribution.",
+  keywords: ["WoW Classic", "loot council", "guild management", "raid loot", "loot tracking", "World of Warcraft"],
+  authors: [{ name: "LootList+" }],
+  metadataBase: new URL("https://www.lootlistplus.com"),
+  openGraph: {
+    title: "LootList+ | WoW Classic Loot Management",
+    description: "The ultimate loot council tool for WoW Classic guilds. Track attendance, manage loot lists, and streamline your raid's loot distribution.",
+    url: "https://www.lootlistplus.com",
+    siteName: "LootList+",
+    locale: "en_US",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "LootList+ | WoW Classic Loot Management",
+    description: "The ultimate loot council tool for WoW Classic guilds. Track attendance, manage loot lists, and streamline your raid's loot distribution.",
+  },
+  icons: {
+    icon: "/lootlist-icon.svg",
+    apple: "/lootlist-icon.svg",
+  },
 };
 
 export default function RootLayout({
@@ -49,7 +64,7 @@ export default function RootLayout({
         />
       </head>
       <body
-        className={`${inter.variable} ${poppins.variable} antialiased font-sans`}
+        className={`${poppins.variable} antialiased font-sans`}
       >
         <NotificationProvider>
           <GuildContextProvider>
