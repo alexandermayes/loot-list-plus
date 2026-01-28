@@ -16,40 +16,67 @@ npm install -g artillery
 
 ## Quick Start
 
-### 1. Seed Test Data
-First, populate the database with test data:
+### Option A: Basic Load Testing (Single User)
 
 ```bash
-# Create test data (3 guilds, 40 members each, 100 submissions each)
+# Seed test data
 npm run seed:test
 
-# Create with custom amounts
-npx tsx scripts/seed-test-data.ts --guilds 5 --members 50 --submissions 200
-
-# Clean and recreate test data
-npm run seed:test:clean
-```
-
-### 2. Start the Dev Server
-```bash
+# Start dev server
 npm run dev
+
+# Run load test
+npm run loadtest:smoke
 ```
 
-### 3. Run Load Tests
+### Option B: Multi-User Load Testing (Recommended)
 
-**k6 (recommended):**
+This simulates real users with actual authentication - the most realistic test.
+
 ```bash
-# Smoke test (quick sanity check)
-npm run loadtest:smoke
+# Step 1: Create test users in Supabase (creates 20 users by default)
+npm run test:users:create
 
-# Full load test (runs all scenarios)
-npm run loadtest
+# Step 2: Seed data distributed across test users
+npm run seed:test:multi
 
-# Custom configuration
+# Step 3: Start the dev server
+npm run dev
+
+# Step 4: Run authenticated load test
+npm run loadtest:auth
+```
+
+**Customize:**
+```bash
+# Create more test users
+npx tsx scripts/create-test-users.ts --count 50
+
+# Seed more data
+npx tsx scripts/seed-test-data-multiuser.ts --guilds 5 --members 50 --submissions 200
+
+# Clean up test users (deletes users and their data)
+npm run test:users:clean
+```
+
+### Running Load Tests
+
+**Basic (unauthenticated):**
+```bash
+npm run loadtest:smoke     # Quick sanity check
+npm run loadtest           # Full test suite
+```
+
+**Authenticated (multi-user):**
+```bash
+npm run loadtest:auth          # Authenticated load test
+npm run loadtest:auth:stress   # Stress test with auth
+```
+
+**Custom:**
+```bash
 k6 run --vus 50 --duration 2m loadtest/k6-loadtest.js
-
-# With authentication (get token from browser devtools)
-k6 run -e AUTH_TOKEN=your-token -e GUILD_ID=your-guild-id loadtest/k6-loadtest.js
+k6 run --vus 30 --duration 5m -e SUPABASE_ANON_KEY=your-key loadtest/k6-loadtest-auth.js
 ```
 
 **Artillery:**

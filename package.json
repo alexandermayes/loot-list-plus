@@ -19,7 +19,13 @@
     "consolidate:items": "tsx scripts/consolidate-multi-boss-items.ts",
     "loadtest": "k6 run loadtest/k6-loadtest.js",
     "loadtest:smoke": "k6 run --vus 1 --duration 10s loadtest/k6-loadtest.js",
-    "loadtest:artillery": "artillery run loadtest/artillery.yml"
+    "loadtest:artillery": "artillery run loadtest/artillery.yml",
+    "loadtest:auth": "k6 run loadtest/k6-loadtest-auth.js",
+    "loadtest:auth:stress": "k6 run --env SCENARIO=stress loadtest/k6-loadtest-auth.js",
+    "test:users:create": "tsx scripts/create-test-users.ts",
+    "test:users:clean": "tsx scripts/create-test-users.ts --clean",
+    "seed:test:multi": "tsx scripts/seed-test-data-multiuser.ts",
+    "seed:test:multi:clean": "tsx scripts/seed-test-data-multiuser.ts --clean"
   },
   "dependencies": {
     "@hugeicons-pro/core-solid-rounded": "^3.1.0",

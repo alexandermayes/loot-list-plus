@@ -13,6 +13,9 @@
 # testing
 /coverage
 loadtest/results.json
+loadtest/results-auth.json
+loadtest/test-users.json
+loadtest/user-guild-map.json
 loadtest/*.html
 
 # next.js
