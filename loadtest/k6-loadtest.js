@@ -112,14 +112,14 @@ function getAuthHeaders() {
 
 // Main test function
 export default function () {
-  // Public endpoints (no auth required)
+  // Public endpoints (may redirect to login)
   group('Public Endpoints', () => {
-    // Health check / homepage
+    // Homepage - may redirect to login for unauthenticated users
     const homeRes = http.get(`${BASE_URL}/`)
     check(homeRes, {
-      'homepage status is 200': (r) => r.status === 200,
+      'homepage responds': (r) => r.status === 200 || r.status === 302 || r.status === 307 || r.status === 401,
     })
-    errorRate.add(homeRes.status !== 200)
+    errorRate.add(homeRes.status >= 500) // Only count server errors
     apiLatency.add(homeRes.timings.duration)
 
     sleep(0.5)
