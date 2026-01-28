@@ -2,7 +2,8 @@
  * k6 Authenticated Load Test for LootList+
  *
  * This test simulates real users by authenticating as different test users
- * and performing realistic actions.
+ * and performing realistic actions. Auth tokens are cached per VU to avoid
+ * hitting Supabase rate limits.
  *
  * Prerequisites:
  *   1. Run: npx tsx scripts/create-test-users.ts
@@ -26,6 +27,11 @@ const errorRate = new Rate('errors')
 const apiLatency = new Trend('api_latency')
 const authSuccess = new Counter('auth_success')
 const authFailure = new Counter('auth_failure')
+
+// VU-level state for caching auth tokens (persists across iterations within a VU)
+let vuAuth = null
+let vuUser = null
+let vuGuilds = null
 
 // Configuration
 const BASE_URL = __ENV.BASE_URL || 'http://localhost:3100'
@@ -158,21 +164,27 @@ export function setup() {
 
 // Main test function - each VU runs this
 export default function () {
-  // Each VU picks a random user from the pool
-  const userIndex = __VU % testUsers.length
-  const testUser = testUsers[userIndex]
+  // Cache auth per VU - only authenticate once per VU lifecycle
+  if (!vuAuth) {
+    // Each VU picks a user from the pool based on VU number
+    const userIndex = __VU % testUsers.length
+    vuUser = testUsers[userIndex]
 
-  // Authenticate
-  const auth = authenticateUser(testUser.email, testUser.password)
+    // Authenticate once and cache the token
+    vuAuth = authenticateUser(vuUser.email, vuUser.password)
 
-  if (!auth) {
-    errorRate.add(1)
-    sleep(1)
-    return
+    if (!vuAuth) {
+      errorRate.add(1)
+      sleep(1)
+      return
+    }
+
+    vuGuilds = getUserGuilds(vuAuth.user_id)
+    console.log(`VU ${__VU} authenticated as ${vuUser.email}`)
   }
 
-  const headers = getAuthHeaders(auth.access_token)
-  const userGuilds = getUserGuilds(auth.user_id)
+  const headers = getAuthHeaders(vuAuth.access_token)
+  const userGuilds = vuGuilds || []
 
   // Simulate realistic user journey
   group('Dashboard Load', () => {
