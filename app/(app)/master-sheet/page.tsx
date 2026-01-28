@@ -220,13 +220,15 @@ export default function MasterSheet() {
       }
 
       // Load raid tiers for active expansion (single join query)
+      // Officers can see all tiers (including disabled ones), members only see active tiers
       if (activeGuild?.active_expansion_id) {
-        const { data: tiersData } = await supabase
+        let tiersQuery = supabase
           .from('raid_tiers')
           .select(`
             id,
             name,
             is_active,
+            is_guild_active,
             master_sheet_visible,
             expansion:expansions!inner (
               id,
@@ -234,7 +236,13 @@ export default function MasterSheet() {
             )
           `)
           .eq('expansion.id', activeGuild.active_expansion_id)
-          .eq('is_guild_active', true)
+
+        // Only filter to active tiers for non-officers
+        if (!isOfficer) {
+          tiersQuery = tiersQuery.eq('is_guild_active', true)
+        }
+
+        const { data: tiersData } = await tiersQuery
 
         if (tiersData && tiersData.length > 0) {
           // Transform data to ensure expansion is a single object (Supabase returns it as array)
@@ -269,13 +277,21 @@ export default function MasterSheet() {
     }
 
     loadData()
-  }, [guildLoading, activeGuild, activeCharacter])
+  }, [guildLoading, activeGuild, activeCharacter, isOfficer])
 
   // Update master sheet visibility when selected tier changes
+  // Also reset to a valid tier if the selected tier doesn't exist in available tiers
   useEffect(() => {
-    if (selectedTierId && raidTiers.length > 0) {
+    if (raidTiers.length > 0) {
       const tier = raidTiers.find(t => t.id === selectedTierId)
-      setMasterSheetVisible(tier?.master_sheet_visible ?? false)
+      if (tier) {
+        setMasterSheetVisible(tier?.master_sheet_visible ?? false)
+      } else if (selectedTierId) {
+        // Selected tier doesn't exist in available tiers (e.g., disabled tier for non-officer)
+        // Reset to active tier or first available tier
+        const activeTier = raidTiers.find((t: any) => t.is_active) || raidTiers[0]
+        setSelectedTierId(activeTier.id)
+      }
     }
   }, [selectedTierId, raidTiers])
 
@@ -567,6 +583,7 @@ export default function MasterSheet() {
   })
 
   const selectedTier = raidTiers.find(t => t.id === selectedTierId)
+  const isSelectedTierDisabled = selectedTier?.is_guild_active === false
 
   const bossNames = Object.keys(groupedByBoss).sort((a, b) => getBossOrder(a) - getBossOrder(b))
 
@@ -851,22 +868,31 @@ export default function MasterSheet() {
               }}
             >
               <div className="flex gap-2 pr-3">
-                {raidTiers.map((tier: any) => (
-                  <button
-                    key={tier.id}
-                    onClick={() => setSelectedTierId(tier.id)}
-                    className={`px-5 py-2.5 rounded-[40px] whitespace-nowrap text-[13px] font-medium transition-all ${
-                      selectedTierId === tier.id
-                        ? 'bg-accent/20 border-[0.5px] border-accent/20 text-accent'
-                        : 'bg-background-elevated border border-border text-foreground hover:bg-muted'
-                    }`}
-                  >
-                    <span className="flex items-center gap-2">
-                      {tier.name}
-                      {tier.is_active && <StarFilledIcon size={14} />}
-                    </span>
-                  </button>
-                ))}
+                {raidTiers.map((tier: any) => {
+                  const isDisabled = tier.is_guild_active === false
+                  const isSelected = selectedTierId === tier.id
+                  return (
+                    <button
+                      key={tier.id}
+                      onClick={() => setSelectedTierId(tier.id)}
+                      className={`px-5 py-2.5 rounded-[40px] whitespace-nowrap text-[13px] font-medium transition-all ${
+                        isSelected
+                          ? isDisabled
+                            ? 'bg-muted/50 border-[0.5px] border-border text-muted-foreground'
+                            : 'bg-accent/20 border-[0.5px] border-accent/20 text-accent'
+                          : isDisabled
+                            ? 'bg-background-elevated/50 border border-border/50 text-muted-foreground hover:bg-muted/50 opacity-60'
+                            : 'bg-background-elevated border border-border text-foreground hover:bg-muted'
+                      }`}
+                    >
+                      <span className="flex items-center gap-2">
+                        {tier.name}
+                        {tier.is_active && <StarFilledIcon size={14} />}
+                        {isDisabled && <span className="text-[10px] uppercase tracking-wide">Off</span>}
+                      </span>
+                    </button>
+                  )
+                })}
               </div>
             </div>
           </div>
@@ -951,6 +977,21 @@ export default function MasterSheet() {
                     <p className="text-blue-200 font-semibold">Officer Preview</p>
                     <p className="text-blue-300 text-sm">
                       The master sheet is currently hidden from members. Only officers can see these rankings.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Officer Viewing Disabled Tier Badge */}
+            {isSelectedTierDisabled && isOfficer && (
+              <div className="bg-amber-950/50 border border-amber-600/50 rounded-xl p-4">
+                <div className="flex items-center gap-3">
+                  <span className="text-xl">⚠️</span>
+                  <div>
+                    <p className="text-amber-200 font-semibold">Disabled Raid Tier</p>
+                    <p className="text-amber-300 text-sm">
+                      This raid tier is disabled in expansion management. Only officers can see it.
                     </p>
                   </div>
                 </div>

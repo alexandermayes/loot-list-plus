@@ -261,44 +261,27 @@ export default function ExpansionDetailPage({ params }: { params: Promise<{ expa
     }
   }
 
-  const handleSetActive = async (tierId: string) => {
+  const handleToggleCurrent = async (tierId: string, currentValue: boolean) => {
     if (!activeGuild) return
     setUpdating(tierId)
     setMessage(null)
 
     try {
-      // Get all expansions for this guild
-      const { data: guildExpansions } = await supabase
-        .from('expansions')
-        .select('id')
-        .eq('guild_id', activeGuild.id)
-
-      if (!guildExpansions || guildExpansions.length === 0) {
-        throw new Error('No expansions found')
-      }
-
-      const expansionIds = guildExpansions.map(e => e.id)
-
-      // Deactivate all tiers across all expansions
-      const { error: deactivateError } = await supabase
+      // Toggle the is_active state for this tier
+      const { error } = await supabase
         .from('raid_tiers')
-        .update({ is_active: false })
-        .in('expansion_id', expansionIds)
-
-      if (deactivateError) throw deactivateError
-
-      // Activate the selected tier
-      const { error: activateError } = await supabase
-        .from('raid_tiers')
-        .update({ is_active: true })
+        .update({ is_active: !currentValue })
         .eq('id', tierId)
 
-      if (activateError) throw activateError
+      if (error) throw error
 
-      setMessage({ type: 'success', text: 'Current raid tier updated!' })
+      setMessage({
+        type: 'success',
+        text: !currentValue ? 'Raid tier marked as current' : 'Raid tier unmarked as current'
+      })
       await loadData()
     } catch (error: any) {
-      setMessage({ type: 'error', text: error.message || 'Failed to update active tier' })
+      setMessage({ type: 'error', text: error.message || 'Failed to update raid tier' })
     } finally {
       setUpdating(null)
     }
@@ -353,6 +336,7 @@ export default function ExpansionDetailPage({ params }: { params: Promise<{ expa
 
   const visuals = getExpansionVisuals(expansion.expansion_name)
   const activeGuildRaids = raidTiers.filter(t => t.is_guild_active).length
+  const currentRaids = raidTiers.filter(t => t.is_guild_active && t.is_active).length
 
   return (
     <div className="p-8 space-y-6">
@@ -412,7 +396,7 @@ export default function ExpansionDetailPage({ params }: { params: Promise<{ expa
               )}
             </div>
             <p className="text-[14px]" style={{ color: `${visuals.textColor}99` }}>
-              {raidTiers.length} raid tiers • {activeGuildRaids} active for guild
+              {raidTiers.length} raid tiers • {activeGuildRaids} active for guild{currentRaids > 0 && ` • ${currentRaids} current`}
             </p>
           </div>
         </div>
@@ -496,21 +480,7 @@ export default function ExpansionDetailPage({ params }: { params: Promise<{ expa
                       className="w-8 h-8 rounded-lg border-2 border-border/50 shadow-md"
                     />
                     <h3 className="text-foreground font-semibold text-[16px]">{tier.name}</h3>
-                    {tier.is_active && (
-                      <span className="px-2 py-0.5 bg-green-950/50 text-green-200 text-[10px] rounded-full border border-green-600/50 font-medium">
-                        Current
-                      </span>
-                    )}
                   </div>
-                  {tier.is_guild_active && !tier.is_active && (
-                    <Button
-                      size="sm"
-                      onClick={() => handleSetActive(tier.id)}
-                      loading={updating === tier.id}
-                    >
-                      Set as Current
-                    </Button>
-                  )}
                 </div>
 
                 {/* Active for Guild Toggle */}
@@ -541,6 +511,30 @@ export default function ExpansionDetailPage({ params }: { params: Promise<{ expa
                 {/* Only show other controls if guild active */}
                 {tier.is_guild_active && (
                   <>
+                    {/* Current Raid Toggle */}
+                    <div className="flex items-center justify-between p-3 bg-background-subtle rounded-lg mb-3">
+                      <div>
+                        <p className="text-foreground text-[13px] font-medium mb-0.5">Current raid</p>
+                        <p className="text-muted-foreground text-[11px]">
+                          {tier.is_active
+                            ? 'Marked as a current progression raid'
+                            : 'Not marked as current'}
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => handleToggleCurrent(tier.id, tier.is_active)}
+                        disabled={updating === tier.id}
+                        className={`relative w-12 h-6 rounded-full transition ${
+                          tier.is_active ? 'bg-green-600' : 'bg-border-strong'
+                        } disabled:opacity-50`}
+                      >
+                        <div
+                          className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${
+                            tier.is_active ? 'left-7' : 'left-1'
+                          }`}
+                        />
+                      </button>
+                    </div>
                     {/* Master Sheet Visibility Toggle */}
                     <div className="flex items-center justify-between p-3 bg-background-subtle rounded-lg mb-3">
                       <div>
