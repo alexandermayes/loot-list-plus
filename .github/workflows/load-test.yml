@@ -1,0 +1,247 @@
+# Load Testing CI Workflow
+#
+# Runs k6 load tests against the application.
+# Can be triggered manually or on PR to main branch.
+#
+# Usage:
+#   - Automatic: Opens PR against main → runs smoke test
+#   - Manual: Actions tab → "Load Test" → Run workflow
+#
+# Required secrets:
+#   - LOAD_TEST_URL: Target URL for load tests (e.g., staging URL)
+#   - SUPABASE_SERVICE_ROLE_KEY: (optional) For authenticated tests
+
+name: Load Test
+
+on:
+  # Manual trigger with inputs
+  workflow_dispatch:
+    inputs:
+      scenario:
+        description: 'Test scenario to run'
+        required: true
+        default: 'smoke'
+        type: choice
+        options:
+          - smoke
+          - load
+          - stress
+          - full
+      target_url:
+        description: 'Target URL (leave empty for default)'
+        required: false
+        type: string
+      vus:
+        description: 'Number of virtual users (for custom runs)'
+        required: false
+        default: '10'
+        type: string
+      duration:
+        description: 'Test duration (e.g., 30s, 1m, 5m)'
+        required: false
+        default: '30s'
+        type: string
+
+  # Run smoke test on PRs to main
+  pull_request:
+    branches: [main]
+    paths:
+      - 'app/api/**'
+      - 'loadtest/**'
+
+  # Run after deployment to main (if you have a deploy workflow)
+  # workflow_run:
+  #   workflows: ["Deploy"]
+  #   types: [completed]
+  #   branches: [main]
+
+env:
+  # Default target - override with secrets or inputs
+  DEFAULT_URL: 'http://localhost:3000'
+
+jobs:
+  load-test:
+    name: Run Load Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install k6
+        run: |
+          sudo gpg -k
+          sudo gpg --no-default-keyring --keyring /usr/share/keyrings/k6-archive-keyring.gpg --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys C5AD17C747E3415A3642D57D77C6C491D6AC1D69
+          echo "deb [signed-by=/usr/share/keyrings/k6-archive-keyring.gpg] https://dl.k6.io/deb stable main" | sudo tee /etc/apt/sources.list.d/k6.list
+          sudo apt-get update
+          sudo apt-get install k6
+
+      - name: Determine target URL
+        id: target
+        run: |
+          if [ -n "${{ github.event.inputs.target_url }}" ]; then
+            echo "url=${{ github.event.inputs.target_url }}" >> $GITHUB_OUTPUT
+          elif [ -n "${{ secrets.LOAD_TEST_URL }}" ]; then
+            echo "url=${{ secrets.LOAD_TEST_URL }}" >> $GITHUB_OUTPUT
+          else
+            echo "url=${{ env.DEFAULT_URL }}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Run smoke test (PR)
+        if: github.event_name == 'pull_request'
+        run: |
+          k6 run \
+            --vus 1 \
+            --duration 10s \
+            -e BASE_URL=${{ steps.target.outputs.url }} \
+            loadtest/k6-loadtest.js
+        continue-on-error: true
+
+      - name: Run selected scenario (manual)
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          SCENARIO="${{ github.event.inputs.scenario }}"
+          VUS="${{ github.event.inputs.vus }}"
+          DURATION="${{ github.event.inputs.duration }}"
+
+          case $SCENARIO in
+            smoke)
+              k6 run --vus 1 --duration 10s -e BASE_URL=${{ steps.target.outputs.url }} loadtest/k6-loadtest.js
+              ;;
+            load)
+              k6 run --vus 20 --duration 2m -e BASE_URL=${{ steps.target.outputs.url }} loadtest/k6-loadtest.js
+              ;;
+            stress)
+              k6 run --vus 50 --duration 3m -e BASE_URL=${{ steps.target.outputs.url }} loadtest/k6-loadtest.js
+              ;;
+            full)
+              k6 run -e BASE_URL=${{ steps.target.outputs.url }} loadtest/k6-loadtest.js
+              ;;
+            *)
+              k6 run --vus $VUS --duration $DURATION -e BASE_URL=${{ steps.target.outputs.url }} loadtest/k6-loadtest.js
+              ;;
+          esac
+        env:
+          K6_OUT: json=results.json
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: k6-results-${{ github.run_id }}
+          path: |
+            results.json
+            loadtest/results.json
+          if-no-files-found: ignore
+          retention-days: 30
+
+      - name: Post results to PR
+        if: github.event_name == 'pull_request' && always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+
+            let summary = '## Load Test Results\n\n';
+            summary += '| Metric | Value |\n|--------|-------|\n';
+
+            try {
+              const results = JSON.parse(fs.readFileSync('results.json', 'utf8'));
+              const metrics = results.metrics || {};
+
+              if (metrics.http_req_duration) {
+                summary += `| Avg Response Time | ${metrics.http_req_duration.values.avg?.toFixed(2) || 'N/A'}ms |\n`;
+                summary += `| P95 Response Time | ${metrics.http_req_duration.values['p(95)']?.toFixed(2) || 'N/A'}ms |\n`;
+                summary += `| P99 Response Time | ${metrics.http_req_duration.values['p(99)']?.toFixed(2) || 'N/A'}ms |\n`;
+              }
+              if (metrics.http_reqs) {
+                summary += `| Total Requests | ${metrics.http_reqs.values.count || 'N/A'} |\n`;
+              }
+              if (metrics.http_req_failed) {
+                summary += `| Failed Requests | ${(metrics.http_req_failed.values.rate * 100).toFixed(2)}% |\n`;
+              }
+            } catch (e) {
+              summary += '| Status | Smoke test completed |\n';
+            }
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: summary
+            });
+
+  # Optional: Run with seeded test data
+  load-test-with-data:
+    name: Load Test with Test Data
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.scenario == 'full'
+
+    services:
+      # If you want to run against a local database for isolated testing
+      # postgres:
+      #   image: supabase/postgres:15.1.0.117
+      #   env:
+      #     POSTGRES_PASSWORD: postgres
+      #   ports:
+      #     - 5432:5432
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install k6
+        run: |
+          sudo gpg -k
+          sudo gpg --no-default-keyring --keyring /usr/share/keyrings/k6-archive-keyring.gpg --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys C5AD17C747E3415A3642D57D77C6C491D6AC1D69
+          echo "deb [signed-by=/usr/share/keyrings/k6-archive-keyring.gpg] https://dl.k6.io/deb stable main" | sudo tee /etc/apt/sources.list.d/k6.list
+          sudo apt-get update
+          sudo apt-get install k6
+
+      - name: Seed test data
+        if: env.SUPABASE_SERVICE_ROLE_KEY != ''
+        run: npm run seed:test -- --guilds 2 --members 20 --submissions 50
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
+      - name: Run full load test
+        run: |
+          k6 run \
+            -e BASE_URL=${{ secrets.LOAD_TEST_URL || 'http://localhost:3000' }} \
+            -e GUILD_ID=${{ secrets.TEST_GUILD_ID }} \
+            loadtest/k6-loadtest.js
+        env:
+          K6_OUT: json=results.json
+
+      - name: Cleanup test data
+        if: always() && env.SUPABASE_SERVICE_ROLE_KEY != ''
+        run: npm run seed:test:clean
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: k6-full-results-${{ github.run_id }}
+          path: results.json
+          retention-days: 30

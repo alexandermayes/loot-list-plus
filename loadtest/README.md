@@ -108,3 +108,37 @@ errors.....................: 2.1%
 - **errors**: Custom error rate (includes logic errors)
 - **vus**: Concurrent virtual users
 - **iterations**: Total test iterations completed
+
+## CI Integration (GitHub Actions)
+
+Load tests can also run in CI via `.github/workflows/load-test.yml`.
+
+### Automatic Triggers
+- **PR to main**: Runs smoke test automatically when API routes or loadtest files change
+- **Manual**: Trigger from Actions tab with custom settings
+
+### Manual Workflow Dispatch
+1. Go to **Actions** tab in GitHub
+2. Select **"Load Test"** workflow
+3. Click **"Run workflow"**
+4. Choose scenario: `smoke`, `load`, `stress`, or `full`
+5. Optionally set custom VUs, duration, or target URL
+
+### Required Secrets
+| Secret | Description | Required |
+|--------|-------------|----------|
+| `LOAD_TEST_URL` | Target URL for tests (e.g., staging) | For remote tests |
+| `SUPABASE_URL` | Supabase project URL | For seeded tests |
+| `SUPABASE_SERVICE_ROLE_KEY` | Service role key | For seeded tests |
+| `TEST_GUILD_ID` | Guild ID for authenticated tests | Optional |
+
+### Example: Setting up for Vercel Preview
+```bash
+# In GitHub repo settings → Secrets → Actions
+LOAD_TEST_URL=https://your-app-preview.vercel.app
+```
+
+### CI Results
+- Results are uploaded as artifacts (retained 30 days)
+- PR comments show summary metrics
+- Check the Actions tab for detailed output
