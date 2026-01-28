@@ -8,14 +8,14 @@
 #   artillery run loadtest/artillery.yml
 #
 #   # Run with custom target
-#   artillery run -t http://localhost:3000 loadtest/artillery.yml
+#   artillery run -t http://localhost:3100 loadtest/artillery.yml
 #
 #   # Generate HTML report
 #   artillery run --output results.json loadtest/artillery.yml
 #   artillery report results.json
 
 config:
-  target: "http://localhost:3000"
+  target: "http://localhost:3100"
   phases:
     # Warm-up phase
     - duration: 30

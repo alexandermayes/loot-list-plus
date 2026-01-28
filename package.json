@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "preinstall": "[ -z \"$NPM_RC\" ] || echo \"$NPM_RC\" > .npmrc",
-    "dev": "next dev",
+    "dev": "next dev --port 3100",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",

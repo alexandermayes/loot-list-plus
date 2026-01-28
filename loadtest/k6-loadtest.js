@@ -18,7 +18,7 @@
  *   k6 run --out json=results.json loadtest/k6-loadtest.js
  *
  * Environment Variables:
- *   BASE_URL      - Target URL (default: http://localhost:3000)
+ *   BASE_URL      - Target URL (default: http://localhost:3100)
  *   GUILD_ID      - Test guild ID for authenticated tests
  *   AUTH_TOKEN    - Supabase auth token for authenticated tests
  */
@@ -32,7 +32,7 @@ const errorRate = new Rate('errors')
 const apiLatency = new Trend('api_latency')
 
 // Configuration
-const BASE_URL = __ENV.BASE_URL || 'http://localhost:3000'
+const BASE_URL = __ENV.BASE_URL || 'http://localhost:3100'
 const GUILD_ID = __ENV.GUILD_ID || ''
 const AUTH_TOKEN = __ENV.AUTH_TOKEN || ''
 

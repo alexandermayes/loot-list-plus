@@ -13,7 +13,7 @@
  *   k6 run --vus 20 --duration 2m loadtest/k6-loadtest-auth.js
  *
  * Environment Variables:
- *   BASE_URL - Target URL (default: http://localhost:3000)
+ *   BASE_URL - Target URL (default: http://localhost:3100)
  */
 
 import http from 'k6/http'
@@ -28,7 +28,7 @@ const authSuccess = new Counter('auth_success')
 const authFailure = new Counter('auth_failure')
 
 // Configuration
-const BASE_URL = __ENV.BASE_URL || 'http://localhost:3000'
+const BASE_URL = __ENV.BASE_URL || 'http://localhost:3100'
 
 // Load test users from JSON file (shared across all VUs)
 const testUsers = new SharedArray('users', function () {
