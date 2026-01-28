@@ -268,7 +268,73 @@ export async function POST(request: Request) {
       }
     }
 
-    return NextResponse.json({ success: true, linearIssueId })
+    // Create GitHub Issue if configured
+    const githubToken = process.env.GITHUB_TOKEN
+    const githubRepo = process.env.GITHUB_REPO // format: owner/repo
+    let githubIssueNumber = null
+
+    if (githubToken && githubRepo) {
+      try {
+        // Simplify browser/OS for GitHub
+        let browserOs = ''
+        if (userAgent) {
+          const browser = userAgent.includes('Chrome') ? 'Chrome' :
+                          userAgent.includes('Firefox') ? 'Firefox' :
+                          userAgent.includes('Safari') ? 'Safari' :
+                          userAgent.includes('Edge') ? 'Edge' : 'Other'
+          const os = userAgent.includes('Windows') ? 'Windows' :
+                     userAgent.includes('Mac') ? 'macOS' :
+                     userAgent.includes('Linux') ? 'Linux' :
+                     userAgent.includes('iPhone') ? 'iOS' :
+                     userAgent.includes('Android') ? 'Android' : 'Other'
+          browserOs = `${browser} / ${os}`
+        }
+
+        // Build markdown body for GitHub
+        const githubBody = [
+          '## Description',
+          description.trim(),
+          '',
+          '## Details',
+          `- **Submitted by:** ${userInfo}`,
+          `- **Page:** ${pageUrl || 'Unknown'}`,
+          browserOs ? `- **Browser/OS:** ${browserOs}` : '',
+          '',
+          '---',
+          '*Submitted via in-app feedback*'
+        ].filter(Boolean).join('\n')
+
+        // Create issue via GitHub REST API
+        const githubResponse = await fetch(`https://api.github.com/repos/${githubRepo}/issues`, {
+          method: 'POST',
+          headers: {
+            'Accept': 'application/vnd.github+json',
+            'Authorization': `Bearer ${githubToken}`,
+            'X-GitHub-Api-Version': '2022-11-28',
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            title: generatedTitle,
+            body: githubBody,
+            labels: ['bug', 'user-feedback']
+          })
+        })
+
+        if (githubResponse.ok) {
+          const githubData = await githubResponse.json()
+          githubIssueNumber = githubData.number
+          console.log('GitHub issue created:', githubIssueNumber)
+        } else {
+          const errorText = await githubResponse.text()
+          console.error('GitHub issue creation failed:', githubResponse.status, errorText)
+        }
+      } catch (githubError) {
+        console.error('Error creating GitHub issue:', githubError)
+        // Continue anyway - Discord was successful
+      }
+    }
+
+    return NextResponse.json({ success: true, linearIssueId, githubIssueNumber })
   } catch (error) {
     console.error('Error in feedback API:', error)
     return NextResponse.json(
