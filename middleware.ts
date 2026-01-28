@@ -18,44 +18,58 @@ if (!hasUpstashConfig && process.env.NODE_ENV === 'production') {
 }
 
 // Create rate limiters only if Redis is configured
-const redis = hasUpstashConfig
-  ? new Redis({
+let redis: Redis | null = null
+let rateLimiters: {
+  api: Ratelimit
+  auth: Ratelimit
+  admin: Ratelimit
+  feedback: Ratelimit
+} | null = null
+
+try {
+  if (hasUpstashConfig) {
+    redis = new Redis({
       url: process.env.UPSTASH_REDIS_REST_URL!,
       token: process.env.UPSTASH_REDIS_REST_TOKEN!,
     })
-  : null
 
-// Different rate limits for different route types
-const rateLimiters = redis ? {
-  // General API: 60 requests per minute
-  api: new Ratelimit({
-    redis,
-    limiter: Ratelimit.slidingWindow(60, '1 m'),
-    analytics: true,
-    prefix: 'ratelimit:api',
-  }),
-  // Auth endpoints: 10 requests per minute
-  auth: new Ratelimit({
-    redis,
-    limiter: Ratelimit.slidingWindow(10, '1 m'),
-    analytics: true,
-    prefix: 'ratelimit:auth',
-  }),
-  // Admin endpoints: 5 requests per minute
-  admin: new Ratelimit({
-    redis,
-    limiter: Ratelimit.slidingWindow(5, '1 m'),
-    analytics: true,
-    prefix: 'ratelimit:admin',
-  }),
-  // Feedback/public: 3 requests per minute
-  feedback: new Ratelimit({
-    redis,
-    limiter: Ratelimit.slidingWindow(3, '1 m'),
-    analytics: true,
-    prefix: 'ratelimit:feedback',
-  }),
-} : null
+    // Different rate limits for different route types
+    rateLimiters = {
+      // General API: 60 requests per minute
+      api: new Ratelimit({
+        redis,
+        limiter: Ratelimit.slidingWindow(60, '1 m'),
+        analytics: true,
+        prefix: 'ratelimit:api',
+      }),
+      // Auth endpoints: 10 requests per minute
+      auth: new Ratelimit({
+        redis,
+        limiter: Ratelimit.slidingWindow(10, '1 m'),
+        analytics: true,
+        prefix: 'ratelimit:auth',
+      }),
+      // Admin endpoints: 5 requests per minute
+      admin: new Ratelimit({
+        redis,
+        limiter: Ratelimit.slidingWindow(5, '1 m'),
+        analytics: true,
+        prefix: 'ratelimit:admin',
+      }),
+      // Feedback/public: 3 requests per minute
+      feedback: new Ratelimit({
+        redis,
+        limiter: Ratelimit.slidingWindow(3, '1 m'),
+        analytics: true,
+        prefix: 'ratelimit:feedback',
+      }),
+    }
+  }
+} catch (error) {
+  console.error('[Middleware] Failed to initialize rate limiters:', error)
+  redis = null
+  rateLimiters = null
+}
 
 // In-memory fallback for development
 const inMemoryStore = new Map<string, { count: number; resetTime: number }>()
@@ -135,20 +149,27 @@ export async function middleware(request: NextRequest) {
   const type = getRateLimitType(pathname)
   const identifier = `${type}:${ip}`
 
-  let success: boolean
-  let remaining: number
+  let success: boolean = true
+  let remaining: number = rateLimitConfig[type].limit
 
-  if (rateLimiters) {
-    // Use Upstash rate limiter
-    const result = await rateLimiters[type].limit(identifier)
-    success = result.success
-    remaining = result.remaining
-  } else {
-    // Use in-memory fallback for development
-    const config = rateLimitConfig[type]
-    const result = getInMemoryRateLimit(identifier, config.limit, config.windowMs)
-    success = result.success
-    remaining = result.remaining
+  try {
+    if (rateLimiters) {
+      // Use Upstash rate limiter
+      const result = await rateLimiters[type].limit(identifier)
+      success = result.success
+      remaining = result.remaining
+    } else {
+      // Use in-memory fallback for development
+      const config = rateLimitConfig[type]
+      const result = getInMemoryRateLimit(identifier, config.limit, config.windowMs)
+      success = result.success
+      remaining = result.remaining
+    }
+  } catch (error) {
+    // If rate limiting fails, allow the request through but log the error
+    console.error('[Middleware] Rate limiting error:', error)
+    success = true
+    remaining = rateLimitConfig[type].limit
   }
 
   // Add rate limit headers to response

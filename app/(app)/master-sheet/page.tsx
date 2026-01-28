@@ -10,11 +10,14 @@ import { getBossOrder, normalizeBossName } from '@/utils/bossOrder'
 import { getBossImage } from '@/utils/bossImages'
 import { StarFilledIcon } from '@/components/ui/icons'
 import { useGuildContext } from '@/app/contexts/GuildContext'
+import { useNotification } from '@/app/contexts/NotificationContext'
 import { ExpansionGuard } from '@/app/components/ExpansionGuard'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { TierTabsSkeleton, MasterSheetContentSkeleton } from '@/components/ui/skeletons'
 import { EmptyState } from '@/components/ui/empty-state'
-import { ScrollIcon } from '@hugeicons/core-free-icons'
+import { Button } from '@/components/ui/button'
+import { HugeiconsIcon } from '@hugeicons/react'
+import { ScrollIcon, ArrowUpRight01Icon } from '@hugeicons/core-free-icons'
 import { Heading } from '@/components/ui/typography'
 
 interface LootItem {
@@ -40,6 +43,7 @@ interface ItemRankings {
 
 export default function MasterSheet() {
   const { activeGuild, activeCharacter, loading: guildLoading, isOfficer } = useGuildContext()
+  const { showNotification } = useNotification()
   const [allItemRankings, setAllItemRankings] = useState<ItemRankings[]>([])
   const [initialLoading, setInitialLoading] = useState(true)
   const [contentLoading, setContentLoading] = useState(false)
@@ -53,6 +57,7 @@ export default function MasterSheet() {
   const [itemPriorities, setItemPriorities] = useState<Record<string, ItemPriority>>({})
   const [collapsedBosses, setCollapsedBosses] = useState<Set<string>>(new Set())
   const [tierScrollState, setTierScrollState] = useState({ left: false, right: true })
+  const [isExporting, setIsExporting] = useState(false)
   const tierScrollRef = useRef<HTMLDivElement>(null)
 
   const supabase = createClient()
@@ -468,9 +473,9 @@ export default function MasterSheet() {
             })
           }
 
-          // Sort by loot score (highest first) and take top 5
+          // Sort by loot score (highest first) - store all for export, slice during render
           rankings.sort((a, b) => b.loot_score - a.loot_score)
-          itemRankingsMap[item.id] = { item, rankings: rankings.slice(0, 5) }
+          itemRankingsMap[item.id] = { item, rankings }
         }
 
         // Convert to array and sort by boss name
@@ -592,18 +597,240 @@ export default function MasterSheet() {
     setCollapsedBosses(new Set())
   }
 
+  // Generate Gargul DFT export format from rankings data
+  const formatRankingsForGargul = (rankings: ItemRankings[]): string => {
+    return rankings.map(ir => {
+      const itemId = ir.item.wowhead_id
+
+      if (ir.rankings.length === 0) {
+        return `"${itemId}^DFTFC Priority:\nFree Roll;"`
+      }
+
+      const playerLines = ir.rankings.map(r => {
+        // Convert #RRGGBB to RRGGBB (strip #)
+        const colorHex = r.class_color.replace('#', '')
+        return `|cff${colorHex}${r.player_name}|r: ${Math.round(r.loot_score)}`
+      }).join('\n')
+
+      return `"${itemId}^DFTFC Priority:\n${playerLines};"`
+    }).join('\n')
+  }
+
+  // Fetch rankings for a single tier
+  const fetchTierRankings = async (tierId: string): Promise<ItemRankings[]> => {
+    if (!guildId || !guildSettings || !activeGuild) return []
+
+    // Get all loot items for this tier
+    const { data: itemsData } = await supabase
+      .from('loot_items')
+      .select('id, name, boss_name, item_slot, wowhead_id')
+      .eq('raid_tier_id', tierId)
+      .eq('is_available', true)
+      .order('boss_name')
+      .order('name')
+
+    if (!itemsData || itemsData.length === 0) return []
+
+    // Get all ranking submissions for all items at once
+    const itemIds = itemsData.map(i => i.id)
+    const { data: allRankingsData } = await supabase
+      .from('loot_submission_items')
+      .select('rank, slot, submission_id, loot_item_id')
+      .in('loot_item_id', itemIds)
+
+    if (!allRankingsData || allRankingsData.length === 0) {
+      return itemsData.map(item => ({ item, rankings: [] }))
+    }
+
+    // Get all submissions (only approved lists)
+    const submissionIds = [...new Set(allRankingsData.map(r => r.submission_id))]
+    const { data: subsData } = await supabase
+      .from('loot_submissions')
+      .select('id, status, character_id')
+      .in('id', submissionIds)
+      .eq('status', 'approved')
+
+    if (!subsData || subsData.length === 0) {
+      return itemsData.map(item => ({ item, rankings: [] }))
+    }
+
+    // Get all character info
+    const characterIds = [...new Set(subsData.map(s => s.character_id).filter(id => id !== null))]
+    if (characterIds.length === 0) {
+      return itemsData.map(item => ({ item, rankings: [] }))
+    }
+
+    const { data: charactersData } = await supabase
+      .from('characters')
+      .select(`
+        id,
+        name,
+        user_id,
+        spec_id,
+        class:wow_classes(name, color_hex),
+        spec:class_specs(id, name),
+        character_guild_memberships!inner(role)
+      `)
+      .in('id', characterIds)
+      .eq('character_guild_memberships.guild_id', activeGuild.id)
+
+    if (!charactersData) {
+      return itemsData.map(item => ({ item, rankings: [] }))
+    }
+
+    // Load item priorities for this tier
+    let prioritiesMap: Record<string, ItemPriority> = {}
+    try {
+      const prioResponse = await fetch(
+        `/api/prio-list?guild_id=${guildId}&raid_tier_id=${tierId}`
+      )
+      if (prioResponse.ok) {
+        const prioData = await prioResponse.json()
+        for (const prio of prioData.priorities || []) {
+          prioritiesMap[prio.item_id] = prio
+        }
+      }
+    } catch (err) {
+      console.error('Error loading item priorities:', err)
+    }
+
+    // Load loot history to filter out characters who already received items
+    const { data: lootHistoryData } = await supabase
+      .from('loot_history')
+      .select('character_id, loot_item_id')
+      .eq('guild_id', guildId)
+      .in('loot_item_id', itemIds)
+
+    const receivedItemsSet = new Set<string>(
+      (lootHistoryData || []).map(h => `${h.character_id}-${h.loot_item_id}`)
+    )
+
+    // Pre-calculate attendance for all characters
+    const attendanceCache: Record<string, number> = {}
+    const attendancePromises = charactersData.map(async (character) => {
+      const attendance = await calculateAttendance(character.user_id, character.id)
+      return { id: character.id, attendance }
+    })
+    const attendanceResults = await Promise.all(attendancePromises)
+    attendanceResults.forEach(({ id, attendance }) => {
+      attendanceCache[id] = attendance
+    })
+
+    // Build rankings for each item
+    const results: ItemRankings[] = []
+
+    for (const item of itemsData) {
+      const itemRankingsData = allRankingsData.filter(r => r.loot_item_id === item.id)
+      const rankings: PlayerRanking[] = []
+
+      for (const r of itemRankingsData) {
+        const sub = subsData.find(s => s.id === r.submission_id)
+        if (!sub) continue
+
+        const character = charactersData.find(c => c.id === sub.character_id)
+        if (!character) continue
+
+        // Skip if character has already received this item
+        if (receivedItemsSet.has(`${character.id}-${item.id}`)) continue
+
+        const attendance = attendanceCache[character.id] || 0
+        const characterRole = (character as any).character_guild_memberships?.[0]?.role || 'Member'
+        const roleModifier = getRankModifier(characterRole, guildSettings)
+
+        // Calculate priority bonus
+        const itemPriority = prioritiesMap[item.id]
+        const specId = (character as any).spec_id || null
+        const specName = (character as any).spec?.name || null
+        const className = (character.class as any)?.name || null
+
+        let specRole: string | null = null
+        if (specName && className) {
+          const fullSpecName = className === specName ? className : `${className} ${specName}`
+          const roles = getSpecRoles(fullSpecName)
+          specRole = roles.length > 0 ? roles[0] : null
+        }
+
+        const priorityBonus = calculatePriorityBonus(
+          itemPriority,
+          character.id,
+          specId,
+          specRole
+        )
+
+        const lootScore = calculateLootScore(r.rank, attendance, roleModifier, 0, priorityBonus)
+
+        rankings.push({
+          player_name: character.name || 'Unknown',
+          class_name: (character.class as any)?.name || 'Unknown',
+          class_color: (character.class as any)?.color_hex || '#888888',
+          loot_score: lootScore,
+          rank: r.rank
+        })
+      }
+
+      // Sort by loot score (highest first)
+      rankings.sort((a, b) => b.loot_score - a.loot_score)
+      results.push({ item, rankings })
+    }
+
+    return results
+  }
+
+  const handleExportToGargul = async () => {
+    if (!guildId || !guildSettings || raidTiers.length === 0) {
+      showNotification('error', 'Unable to export - missing data')
+      return
+    }
+
+    setIsExporting(true)
+
+    try {
+      // Fetch rankings for all active raid tiers
+      const allTiersRankings: ItemRankings[] = []
+
+      for (const tier of raidTiers) {
+        const tierRankings = await fetchTierRankings(tier.id)
+        allTiersRankings.push(...tierRankings)
+      }
+
+      const exportData = formatRankingsForGargul(allTiersRankings)
+      await navigator.clipboard.writeText(exportData)
+      showNotification('success', `Exported ${allTiersRankings.length} items from ${raidTiers.length} raid tiers to clipboard!`)
+    } catch (err) {
+      console.error('Export error:', err)
+      showNotification('error', 'Failed to export data')
+    } finally {
+      setIsExporting(false)
+    }
+  }
+
   return (
     <ExpansionGuard>
       <div className="font-poppins">
         {/* Header - Always visible */}
         <div className="p-8 pb-4">
-          <div>
-            <Heading level={1}>
-              Loot Rankings{!initialLoading && selectedTier && <span className="text-muted-foreground"> · {selectedTier.name}</span>}
-            </Heading>
-            <p className="text-muted-foreground mt-1 text-base">
-              Top 5 players for each item
-            </p>
+          <div className="flex items-start justify-between">
+            <div>
+              <Heading level={1}>
+                Loot Rankings{!initialLoading && selectedTier && <span className="text-muted-foreground"> · {selectedTier.name}</span>}
+              </Heading>
+              <p className="text-muted-foreground mt-1 text-base">
+                Top 5 players for each item
+              </p>
+            </div>
+            {isOfficer && (
+              <Button
+                onClick={handleExportToGargul}
+                disabled={contentLoading || raidTiers.length === 0 || isExporting}
+                loading={isExporting}
+                loadingText="Exporting..."
+                className="bg-violet-600 hover:bg-violet-500 text-white border-0 shadow-lg shadow-violet-900/30"
+              >
+                <img src="/icons/gargul.png" alt="Gargul" className="w-5 h-5" />
+                Export to Gargul
+                <HugeiconsIcon icon={ArrowUpRight01Icon} size={16} />
+              </Button>
+            )}
           </div>
         </div>
 
