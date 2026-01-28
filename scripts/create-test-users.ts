@@ -23,7 +23,13 @@ try {
   envFile.split('\n').forEach(line => {
     const [key, ...valueParts] = line.split('=')
     if (key && valueParts.length > 0) {
-      process.env[key.trim()] = valueParts.join('=').trim()
+      let value = valueParts.join('=').trim()
+      // Remove surrounding quotes if present
+      if ((value.startsWith('"') && value.endsWith('"')) ||
+          (value.startsWith("'") && value.endsWith("'"))) {
+        value = value.slice(1, -1)
+      }
+      process.env[key.trim()] = value
     }
   })
 } catch (error) {
