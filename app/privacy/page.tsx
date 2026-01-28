@@ -1,5 +1,6 @@
 import { Heading, Text } from '@/components/ui/typography'
 import type { Metadata } from 'next'
+import LegalNav from '@/app/components/LegalNav'
 
 export const metadata: Metadata = {
   title: 'Privacy Policy',
@@ -9,7 +10,8 @@ export const metadata: Metadata = {
 export default function PrivacyPolicyPage() {
   return (
     <div className="min-h-screen bg-background">
-      <div className="mx-auto max-w-4xl px-6 py-16">
+      <LegalNav />
+      <div className="mx-auto max-w-4xl px-6 py-12">
         <Heading level={1} className="mb-2">
           Privacy Policy
         </Heading>
