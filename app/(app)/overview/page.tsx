@@ -470,6 +470,7 @@ export default function Dashboard() {
         .filter((pair): pair is { itemId: string; rank: number } => pair !== null)
 
       // Batch fetch all same-rank submissions for all items in ONE query
+      // Note: Supabase returns joined relations as arrays
       let allSameRankSubmissions: Array<{
         loot_item_id: string
         rank: number
@@ -482,8 +483,26 @@ export default function Dashboard() {
             id: string
             name: string
             class: { color_hex: string } | null
-          } | null
-        } | null
+          } | {
+            id: string
+            name: string
+            class: { color_hex: string } | null
+          }[] | null
+        } | {
+          id: string
+          character_id: string
+          guild_id: string
+          status: string
+          character: {
+            id: string
+            name: string
+            class: { color_hex: string } | null
+          } | {
+            id: string
+            name: string
+            class: { color_hex: string } | null
+          }[] | null
+        }[] | null
       }> = []
 
       if (itemRankPairs.length > 0) {
