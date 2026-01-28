@@ -347,11 +347,11 @@ export default function Dashboard() {
       )
       setActionsNeeded(actions)
 
-      // Load loot priority items for current character
-      await loadLootPriority([activeCharacter.id])
-
-      // Load received items for current character
-      await loadReceivedItems(activeCharacter.id)
+      // Load loot priority and received items in parallel (performance optimization)
+      await Promise.all([
+        loadLootPriority([activeCharacter.id]),
+        loadReceivedItems(activeCharacter.id)
+      ])
 
     } catch (error) {
       console.error('Error loading dashboard data:', error)
@@ -382,21 +382,27 @@ export default function Dashboard() {
           const rollingWeeks = guildSettings.rolling_attendance_weeks || 4
           const startDate = new Date()
           startDate.setDate(startDate.getDate() - (rollingWeeks * 7))
+          const startDateISO = startDate.toISOString()
 
-          const { data: attendanceRecords, error: attError } = await supabase
-            .from('attendance_records')
-            .select('signed_up, attended, no_call_no_show')
-            .eq('character_id', characterId)
-            .gte('created_at', startDate.toISOString())
-
-          // Only proceed if no error (empty data is fine, errors are not)
-          if (!attError) {
-            const { data: totalRaidsData } = await supabase
+          // Fetch attendance records and raid events in parallel (both need same startDate)
+          const [attendanceResult, raidEventsResult] = await Promise.all([
+            supabase
+              .from('attendance_records')
+              .select('signed_up, attended, no_call_no_show')
+              .eq('character_id', characterId)
+              .gte('created_at', startDateISO),
+            supabase
               .from('raid_events')
               .select('raid_date')
               .eq('guild_id', activeGuild.id)
-              .gte('raid_date', startDate.toISOString())
+              .gte('raid_date', startDateISO)
+          ])
 
+          const { data: attendanceRecords, error: attError } = attendanceResult
+          const { data: totalRaidsData } = raidEventsResult
+
+          // Only proceed if no error (empty data is fine, errors are not)
+          if (!attError) {
             const uniqueRaids = new Set(totalRaidsData?.map(r => r.raid_date) || [])
             const totalRaids = uniqueRaids.size
 
@@ -455,36 +461,81 @@ export default function Dashboard() {
       // Build priority items with character's rank and competition info
       const priorityItems: LootPriorityItem[] = []
 
+      // Collect all item/rank pairs we need to check for ties (BATCHED - avoids N+1)
+      const itemRankPairs = items
+        .map(item => {
+          const charRanking = submissionItems.find(si => si.loot_item_id === item.id)
+          return charRanking ? { itemId: item.id, rank: charRanking.rank } : null
+        })
+        .filter((pair): pair is { itemId: string; rank: number } => pair !== null)
+
+      // Batch fetch all same-rank submissions for all items in ONE query
+      let allSameRankSubmissions: Array<{
+        loot_item_id: string
+        rank: number
+        submission: {
+          id: string
+          character_id: string
+          guild_id: string
+          status: string
+          character: {
+            id: string
+            name: string
+            class: { color_hex: string } | null
+          } | null
+        } | null
+      }> = []
+
+      if (itemRankPairs.length > 0) {
+        // Build OR conditions for each item/rank pair
+        const orConditions = itemRankPairs
+          .map(pair => `and(loot_item_id.eq.${pair.itemId},rank.eq.${pair.rank})`)
+          .join(',')
+
+        const { data: batchedSubmissions } = await supabase
+          .from('loot_submission_items')
+          .select(`
+            loot_item_id,
+            rank,
+            submission:loot_submissions!inner (
+              id,
+              character_id,
+              guild_id,
+              status,
+              character:characters (
+                id,
+                name,
+                class:wow_classes (
+                  color_hex
+                )
+              )
+            )
+          `)
+          .or(orConditions)
+          .eq('submission.guild_id', activeGuild.id)
+          .eq('submission.status', 'approved')
+
+        allSameRankSubmissions = (batchedSubmissions || []) as typeof allSameRankSubmissions
+      }
+
+      // Group submissions by item_id for quick lookup
+      const submissionsByItem = new Map<string, typeof allSameRankSubmissions>()
+      for (const sub of allSameRankSubmissions) {
+        const existing = submissionsByItem.get(sub.loot_item_id) || []
+        existing.push(sub)
+        submissionsByItem.set(sub.loot_item_id, existing)
+      }
+
       for (const item of items) {
         // Find this character's ranking for this item
         const charRanking = submissionItems.find(si => si.loot_item_id === item.id)
 
         if (charRanking) {
-          // Get characters with the same rank (for tie detection) within this guild
-          const { data: sameRankSubmissions } = await supabase
-            .from('loot_submission_items')
-            .select(`
-              submission:loot_submissions!inner (
-                id,
-                character_id,
-                guild_id,
-                status,
-                character:characters (
-                  id,
-                  name,
-                  class:wow_classes (
-                    color_hex
-                  )
-                )
-              )
-            `)
-            .eq('loot_item_id', item.id)
-            .eq('rank', charRanking.rank)
-            .eq('submission.guild_id', activeGuild.id)
-            .eq('submission.status', 'approved')
+          // Get same-rank submissions from our batched results
+          const sameRankSubmissions = submissionsByItem.get(item.id) || []
 
           // Filter out current character and build tied characters list
-          const tiedCharacters: TiedCharacter[] = (sameRankSubmissions || [])
+          const tiedCharacters: TiedCharacter[] = sameRankSubmissions
             .filter(sub => {
               const submission = Array.isArray(sub.submission) ? sub.submission[0] : sub.submission
               return submission?.character_id !== characterId

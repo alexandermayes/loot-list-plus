@@ -28,10 +28,6 @@ const apiLatency = new Trend('api_latency')
 const authSuccess = new Counter('auth_success')
 const authFailure = new Counter('auth_failure')
 
-// VU-level state for caching auth tokens (persists across iterations within a VU)
-let vuAuth = null
-let vuUser = null
-let vuGuilds = null
 
 // Configuration
 const BASE_URL = __ENV.BASE_URL || 'http://localhost:3100'
@@ -147,7 +143,8 @@ function getUserGuilds(userId) {
   return mapping ? mapping.guild_ids : []
 }
 
-// Setup function - runs once per VU
+// Setup function - runs once before all VUs start
+// Pre-authenticate all users to avoid rate limits during the test
 export function setup() {
   console.log(`Load testing ${BASE_URL}`)
   console.log(`Test users: ${testUsers.length}`)
@@ -159,32 +156,59 @@ export function setup() {
     console.error(`Target unreachable: ${res.status}`)
   }
 
-  return { startTime: new Date().toISOString() }
+  // Pre-authenticate all test users with staggered requests to avoid rate limits
+  console.log('Pre-authenticating test users...')
+  const authenticatedUsers = []
+
+  for (let i = 0; i < testUsers.length; i++) {
+    const user = testUsers[i]
+
+    // Stagger auth requests to avoid rate limits (1.5s between each)
+    if (i > 0) {
+      sleep(1.5)
+    }
+
+    const auth = authenticateUser(user.email, user.password)
+    if (auth) {
+      authenticatedUsers.push({
+        index: i,
+        email: user.email,
+        access_token: auth.access_token,
+        user_id: auth.user_id,
+        guilds: getUserGuilds(auth.user_id),
+      })
+      console.log(`  Authenticated: ${user.email}`)
+    } else {
+      console.error(`  Failed to authenticate: ${user.email}`)
+    }
+  }
+
+  console.log(`Pre-authenticated ${authenticatedUsers.length}/${testUsers.length} users`)
+
+  return {
+    startTime: new Date().toISOString(),
+    authenticatedUsers: authenticatedUsers,
+  }
 }
 
 // Main test function - each VU runs this
-export default function () {
-  // Cache auth per VU - only authenticate once per VU lifecycle
-  if (!vuAuth) {
-    // Each VU picks a user from the pool based on VU number
-    const userIndex = __VU % testUsers.length
-    vuUser = testUsers[userIndex]
+export default function (data) {
+  // Use pre-authenticated tokens from setup
+  const authenticatedUsers = data.authenticatedUsers
 
-    // Authenticate once and cache the token
-    vuAuth = authenticateUser(vuUser.email, vuUser.password)
-
-    if (!vuAuth) {
-      errorRate.add(1)
-      sleep(1)
-      return
-    }
-
-    vuGuilds = getUserGuilds(vuAuth.user_id)
-    console.log(`VU ${__VU} authenticated as ${vuUser.email}`)
+  if (!authenticatedUsers || authenticatedUsers.length === 0) {
+    console.error('No authenticated users available')
+    errorRate.add(1)
+    sleep(1)
+    return
   }
 
-  const headers = getAuthHeaders(vuAuth.access_token)
-  const userGuilds = vuGuilds || []
+  // Each VU picks a user from the pre-authenticated pool
+  const userIndex = __VU % authenticatedUsers.length
+  const user = authenticatedUsers[userIndex]
+
+  const headers = getAuthHeaders(user.access_token)
+  const userGuilds = user.guilds || []
 
   // Simulate realistic user journey
   group('Dashboard Load', () => {

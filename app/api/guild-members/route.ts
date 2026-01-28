@@ -143,18 +143,21 @@ export async function GET(request: NextRequest) {
     let displayNameMap = new Map<string, string>()
 
     if (userIds.length > 0) {
-      // Get user metadata for Discord names
-      const { data: usersData } = await serviceSupabase.auth.admin.listUsers()
+      // Fetch user metadata only for the specific users we need (instead of listing ALL users)
+      // This is O(guild_members) instead of O(all_users) - major performance improvement
+      const userPromises = userIds.map(userId =>
+        serviceSupabase.auth.admin.getUserById(userId)
+      )
+      const userResults = await Promise.all(userPromises)
 
-      if (usersData?.users) {
-        for (const authUser of usersData.users) {
-          if (userIds.includes(authUser.id)) {
-            const displayName = authUser.user_metadata?.custom_claims?.global_name
-              || authUser.user_metadata?.full_name
-              || authUser.user_metadata?.name
-              || 'Unknown User'
-            displayNameMap.set(authUser.id, displayName)
-          }
+      for (const result of userResults) {
+        if (result.data?.user) {
+          const authUser = result.data.user
+          const displayName = authUser.user_metadata?.custom_claims?.global_name
+            || authUser.user_metadata?.full_name
+            || authUser.user_metadata?.name
+            || 'Unknown User'
+          displayNameMap.set(authUser.id, displayName)
         }
       }
     }
