@@ -125,9 +125,25 @@ export default function ProfilePage() {
 
     setDeleting(true)
     try {
-      // TODO: Implement account deletion API
-      alert('Account deletion is not yet implemented. Please contact support.')
-      setDeleting(false)
+      const response = await fetch('/api/user/delete-account', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        if (data.owned_guilds) {
+          alert(`${data.message}\n\nPlease go to Admin > Guild Settings to delete or transfer these guilds first.`)
+        } else {
+          alert(data.error || 'Failed to delete account')
+        }
+        setDeleting(false)
+        return
+      }
+
+      // Account deleted successfully - redirect to home
+      window.location.href = '/'
     } catch (err) {
       console.error('Error deleting account:', err)
       alert('An error occurred while deleting your account')
