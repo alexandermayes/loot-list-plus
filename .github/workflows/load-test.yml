@@ -185,14 +185,14 @@ jobs:
     timeout-minutes: 30
     if: github.event_name == 'workflow_dispatch' && github.event.inputs.scenario == 'full'
 
-    services:
-      # If you want to run against a local database for isolated testing
-      # postgres:
-      #   image: supabase/postgres:15.1.0.117
-      #   env:
-      #     POSTGRES_PASSWORD: postgres
-      #   ports:
-      #     - 5432:5432
+    # services:
+    #   # If you want to run against a local database for isolated testing
+    #   postgres:
+    #     image: supabase/postgres:15.1.0.117
+    #     env:
+    #       POSTGRES_PASSWORD: postgres
+    #     ports:
+    #       - 5432:5432
 
     steps:
       - name: Checkout code
