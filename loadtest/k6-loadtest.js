@@ -94,7 +94,8 @@ export const options = {
   thresholds: {
     http_req_duration: ['p(95)<500', 'p(99)<1000'], // 95% < 500ms, 99% < 1s
     errors: ['rate<0.1'],                            // Error rate < 10%
-    http_req_failed: ['rate<0.05'],                  // HTTP failures < 5%
+    // Note: http_req_failed counts non-2xx as failures, but 401/302/307 are expected
+    // for unauthenticated tests. Only count 5xx as true failures via the 'errors' rate.
   },
 }
 
