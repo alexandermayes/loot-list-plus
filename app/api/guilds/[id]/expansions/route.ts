@@ -1,4 +1,4 @@
-import { createClient } from '@/utils/supabase/server'
+import { createClient, getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { NextRequest, NextResponse } from 'next/server'
 import { seedExpansionForGuild, getGuildExpansions, getAvailableExpansions } from '@/app/services/expansionSeeder'
@@ -12,14 +12,15 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const supabase = await createClient()
     const { id: guildId } = await params
 
-    // Check authentication
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    // Fast auth check using getSession (no network call)
+    const { user, error: authError } = await getAuthenticatedUser()
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+
+    const supabase = await createClient()
 
     // Get user's characters first
     const { data: userCharacters } = await supabase
@@ -79,7 +80,6 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const supabase = await createClient()
     const { id: guildId } = await params
     const body = await request.json()
     const { expansionName, setAsCurrent = true } = body
@@ -88,11 +88,13 @@ export async function POST(
       return NextResponse.json({ error: 'expansionName is required' }, { status: 400 })
     }
 
-    // Check authentication
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    // Fast auth check using getSession (no network call)
+    const { user, error: authError } = await getAuthenticatedUser()
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+
+    const supabase = await createClient()
 
     // Check if user is guild creator (always has officer permissions)
     const { data: guild } = await supabase

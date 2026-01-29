@@ -1,14 +1,20 @@
-import { createClient } from '@/utils/supabase/server'
+import { createClient, getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { NextRequest, NextResponse } from 'next/server'
 
 /**
  * PATCH /api/guilds/[id]/expansions/[expansionId]
- * Update an expansion (set as current, update raid_start_date)
+ * Update an expansion (set as current, update raid_start_date, raid schedule)
  *
  * Body: {
  *   setAsCurrent?: boolean
  *   raidStartDate?: string (ISO date format)
+ *   raidDaysPerWeek?: number (1-5)
+ *   firstRaidDay?: number (0-6, 0=Sunday)
+ *   secondRaidDay?: number | null
+ *   thirdRaidDay?: number | null
+ *   fourthRaidDay?: number | null
+ *   fifthRaidDay?: number | null
  * }
  */
 export async function PATCH(
@@ -16,16 +22,26 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string; expansionId: string }> }
 ) {
   try {
-    const supabase = await createClient()
     const { id: guildId, expansionId } = await params
     const body = await request.json()
-    const { setAsCurrent, raidStartDate } = body
+    const {
+      setAsCurrent,
+      raidStartDate,
+      raidDaysPerWeek,
+      firstRaidDay,
+      secondRaidDay,
+      thirdRaidDay,
+      fourthRaidDay,
+      fifthRaidDay
+    } = body
 
-    // Check authentication
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    // Fast auth check using getSession (no network call)
+    const { user, error: authError } = await getAuthenticatedUser()
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+
+    const supabase = await createClient()
 
     // Check if user is guild creator (always has officer permissions)
     const { data: guild } = await supabase
@@ -111,16 +127,41 @@ export async function PATCH(
       }
     }
 
-    // Update expansion's raid_start_date if provided
-    if (raidStartDate) {
+    // Build expansion update object
+    const expansionUpdate: Record<string, any> = {}
+
+    if (raidStartDate !== undefined) {
+      expansionUpdate.raid_start_date = raidStartDate
+    }
+    if (raidDaysPerWeek !== undefined) {
+      expansionUpdate.raid_days_per_week = raidDaysPerWeek
+    }
+    if (firstRaidDay !== undefined) {
+      expansionUpdate.first_raid_day = firstRaidDay
+    }
+    if (secondRaidDay !== undefined) {
+      expansionUpdate.second_raid_day = secondRaidDay
+    }
+    if (thirdRaidDay !== undefined) {
+      expansionUpdate.third_raid_day = thirdRaidDay
+    }
+    if (fourthRaidDay !== undefined) {
+      expansionUpdate.fourth_raid_day = fourthRaidDay
+    }
+    if (fifthRaidDay !== undefined) {
+      expansionUpdate.fifth_raid_day = fifthRaidDay
+    }
+
+    // Update expansion if any fields provided
+    if (Object.keys(expansionUpdate).length > 0) {
       const { error: updateExpError } = await serviceSupabase
         .from('expansions')
-        .update({ raid_start_date: raidStartDate })
+        .update(expansionUpdate)
         .eq('id', expansionId)
 
       if (updateExpError) {
-        console.error('Error updating raid start date:', updateExpError)
-        return NextResponse.json({ error: 'Failed to update raid start date' }, { status: 500 })
+        console.error('Error updating expansion:', updateExpError)
+        return NextResponse.json({ error: 'Failed to update expansion' }, { status: 500 })
       }
     }
 

@@ -1,16 +1,16 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@/utils/supabase/server'
+import { createClient, getAuthenticatedUser } from '@/utils/supabase/server'
 
 // GET - List Discord guilds user can join
 export async function GET() {
   try {
-    const supabase = await createClient()
-
-    // Check if user is authenticated
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    // Fast auth check using getSession (no network call)
+    const { user, error: authError } = await getAuthenticatedUser()
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+
+    const supabase = await createClient()
 
     // Check if user has Discord verification
     const { data: preferences } = await supabase

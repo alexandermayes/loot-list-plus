@@ -1,18 +1,17 @@
-import { createClient } from '@/utils/supabase/server'
+import { createClient, getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { NextRequest, NextResponse } from 'next/server'
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient()
     const { userIds } = await request.json()
 
     if (!userIds || !Array.isArray(userIds)) {
       return NextResponse.json({ error: 'userIds array required' }, { status: 400 })
     }
 
-    // Get current user to verify they're authenticated
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    // Fast auth check using getSession (no network call)
+    const { user, error: authError } = await getAuthenticatedUser()
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }

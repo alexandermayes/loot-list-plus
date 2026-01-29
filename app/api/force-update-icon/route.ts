@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@/utils/supabase/server'
+import { createClient, getAuthenticatedUser } from '@/utils/supabase/server'
 
 export async function GET() {
   // SECURITY: Restrict debug endpoint to development only
@@ -7,14 +7,14 @@ export async function GET() {
     return NextResponse.json({ error: 'Not available in production' }, { status: 404 })
   }
 
-  const supabase = await createClient()
-
   try {
-    // Get current user
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) {
+    // Fast auth check using getSession (no network call)
+    const { user, error: authError } = await getAuthenticatedUser()
+    if (authError || !user) {
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
     }
+
+    const supabase = await createClient()
 
     // Get user's active guild
     const { data: activeGuildData } = await supabase

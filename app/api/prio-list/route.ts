@@ -1,16 +1,19 @@
-import { createClient } from '@/utils/supabase/server'
+import { createClient, getAuthenticatedUser } from '@/utils/supabase/server'
 import { NextResponse } from 'next/server'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
 // GET - Fetch all item priorities for a guild/raid tier
+// Optimized: Fast auth (getSession), single membership check query
 export async function GET(request: Request) {
   try {
     const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
 
-    if (!user) {
+    // Fast auth check using getSession (no network call)
+    const { user, error: authError } = await getAuthenticatedUser()
+
+    if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
@@ -24,23 +27,19 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'guild_id is required' }, { status: 400 })
     }
 
-    // Verify user is a member of this guild
-    const { data: userCharacters } = await supabase
-      .from('characters')
-      .select('id')
-      .eq('user_id', user.id)
-
-    if (!userCharacters || userCharacters.length === 0) {
-      return NextResponse.json({ error: 'No characters found' }, { status: 403 })
-    }
-
-    const characterIds = userCharacters.map(c => c.id)
-
+    // Single query: Verify membership via inner join on characters
     const { data: membership } = await supabase
       .from('character_guild_memberships')
-      .select('id')
+      .select(`
+        id,
+        character:characters!inner (
+          id,
+          user_id
+        )
+      `)
       .eq('guild_id', guildId)
-      .in('character_id', characterIds)
+      .eq('character.user_id', user.id)
+      .eq('is_active', true)
       .limit(1)
 
     if (!membership || membership.length === 0) {
@@ -101,12 +100,13 @@ export async function GET(request: Request) {
 // POST - Create or update item priority
 export async function POST(request: Request) {
   try {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-
-    if (!user) {
+    // Fast auth check using getSession (no network call)
+    const { user, error: authError } = await getAuthenticatedUser()
+    if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+
+    const supabase = await createClient()
 
     const body = await request.json()
     const {
@@ -243,12 +243,13 @@ export async function POST(request: Request) {
 // DELETE - Remove item priority
 export async function DELETE(request: Request) {
   try {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-
-    if (!user) {
+    // Fast auth check using getSession (no network call)
+    const { user, error: authError } = await getAuthenticatedUser()
+    if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+
+    const supabase = await createClient()
 
     const { searchParams } = new URL(request.url)
     const guildId = searchParams.get('guild_id')

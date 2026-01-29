@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/utils/supabase/server'
+import { createClient, getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { verifyOfficerPermissions } from '@/utils/server-roles'
 import { ROLE_POSITIONS } from '@/utils/roles'
@@ -7,14 +7,13 @@ import { ROLE_POSITIONS } from '@/utils/roles'
 // GET - List all members of a guild (uses service role to bypass RLS)
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient()
-    const serviceSupabase = createServiceRoleClient()
-
-    // Check if user is authenticated
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    // Fast auth check using getSession (no network call)
+    const { user, error: authError } = await getAuthenticatedUser()
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+
+    const serviceSupabase = createServiceRoleClient()
 
     // Get guild_id from query params
     const { searchParams } = new URL(request.url)
@@ -208,14 +207,13 @@ export async function GET(request: NextRequest) {
 // PUT - Update member role
 export async function PUT(request: NextRequest) {
   try {
-    const supabase = await createClient()
-    const serviceSupabase = createServiceRoleClient()
-
-    // Check if user is authenticated
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    // Fast auth check using getSession (no network call)
+    const { user, error: authError } = await getAuthenticatedUser()
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+
+    const serviceSupabase = createServiceRoleClient()
 
     const body = await request.json()
     const { guild_id, target_user_id, character_ids, new_role } = body
@@ -259,14 +257,13 @@ export async function PUT(request: NextRequest) {
 // DELETE - Remove member from guild
 export async function DELETE(request: NextRequest) {
   try {
-    const supabase = await createClient()
-    const serviceSupabase = createServiceRoleClient()
-
-    // Check if user is authenticated
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    // Fast auth check using getSession (no network call)
+    const { user, error: authError } = await getAuthenticatedUser()
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+
+    const serviceSupabase = createServiceRoleClient()
 
     const { searchParams } = new URL(request.url)
     const guildId = searchParams.get('guild_id')

@@ -1,15 +1,14 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@/utils/supabase/server'
+import { createClient, getAuthenticatedUser } from '@/utils/supabase/server'
 
 export async function POST(request: Request) {
-  const supabase = await createClient()
-
-  // Get the authenticated user
-  const { data: { user }, error: authError } = await supabase.auth.getUser()
-
+  // Fast auth check using getSession (no network call)
+  const { user, error: authError } = await getAuthenticatedUser()
   if (authError || !user) {
     return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
   }
+
+  const supabase = await createClient()
 
   try {
     // Check if user logged in with Discord

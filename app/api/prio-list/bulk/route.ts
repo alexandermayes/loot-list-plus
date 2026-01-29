@@ -1,4 +1,4 @@
-import { createClient } from '@/utils/supabase/server'
+import { createClient, getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { NextResponse } from 'next/server'
 import { verifyOfficerPermissions } from '@/utils/server-roles'
@@ -17,13 +17,14 @@ interface BulkPriorityUpdate {
 // POST - Bulk update item priorities
 export async function POST(request: Request) {
   try {
-    const supabase = await createClient()
-    const serviceSupabase = createServiceRoleClient()
-    const { data: { user } } = await supabase.auth.getUser()
-
-    if (!user) {
+    // Fast auth check using getSession (no network call)
+    const { user, error: authError } = await getAuthenticatedUser()
+    if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+
+    const supabase = await createClient()
+    const serviceSupabase = createServiceRoleClient()
 
     const body = await request.json()
     const {

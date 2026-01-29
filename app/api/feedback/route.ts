@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@/utils/supabase/server'
+import { getAuthenticatedUser } from '@/utils/supabase/server'
 
 // LOW-04: Maximum request body size (5MB to accommodate screenshots)
 const MAX_BODY_SIZE = 5 * 1024 * 1024 // 5MB
@@ -43,11 +43,10 @@ export async function POST(request: Request) {
       )
     }
 
-    // Get user info if logged in
+    // Get user info if logged in (fast check, no network call)
     let userInfo = 'Anonymous'
     try {
-      const supabase = await createClient()
-      const { data: { user } } = await supabase.auth.getUser()
+      const { user } = await getAuthenticatedUser()
       if (user) {
         const displayName = user.user_metadata?.full_name ||
                            user.user_metadata?.name ||

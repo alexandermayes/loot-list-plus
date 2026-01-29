@@ -1,18 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/utils/supabase/server'
+import { createClient, getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { seedExpansionForGuild } from '@/app/services/expansionSeeder'
+import { getCached, invalidateCache, cacheKeys } from '@/utils/cache'
 
 // POST - Create a new guild
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient()
-
-    // Check if user is authenticated
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    // Fast auth check using getSession (no network call)
+    const { user, error: authError } = await getAuthenticatedUser()
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+
+    const supabase = await createClient()
 
     // Check if user has Discord verified
     const { data: prefs } = await supabase
@@ -252,6 +253,9 @@ export async function POST(request: NextRequest) {
 
     console.log('[GUILD CREATE] Guild creation complete!')
 
+    // Invalidate guilds cache after creating
+    await invalidateCache(cacheKeys.userGuilds(user.id))
+
     return NextResponse.json({
       success: true,
       guild: {
@@ -271,77 +275,61 @@ export async function POST(request: NextRequest) {
 }
 
 // GET - List user's guilds
+// Optimized: Fast auth (getSession), single query using inner join, Redis caching (60s TTL)
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient()
-
-    // Check if user is authenticated
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    // Fast auth check using getSession (no network call)
+    const { user, error: authError } = await getAuthenticatedUser()
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Get all characters for user
-    const { data: characters, error: charError } = await supabase
-      .from('characters')
-      .select('id, name')
-      .eq('user_id', user.id)
+    const supabase = await createClient()
 
-    if (charError) {
-      console.error('Error fetching characters:', charError)
-      return NextResponse.json(
-        { error: 'Failed to fetch characters' },
-        { status: 500 }
-      )
-    }
+    // Use cached data if available (30 second TTL)
+    const guilds = await getCached(
+      cacheKeys.userGuilds(user.id),
+      async () => {
+        const { data: memberships, error: memberError } = await supabase
+          .from('character_guild_memberships')
+          .select(`
+            id,
+            character_id,
+            role,
+            joined_at,
+            character:characters!inner (
+              id,
+              name,
+              user_id
+            ),
+            guild:guilds (
+              id,
+              name,
+              realm,
+              faction,
+              discord_server_id,
+              created_by,
+              is_active
+            )
+          `)
+          .eq('character.user_id', user.id)
+          .eq('is_active', true)
 
-    if (!characters || characters.length === 0) {
-      return NextResponse.json({ guilds: [] })
-    }
+        if (memberError) {
+          throw memberError
+        }
 
-    const characterIds = characters.map(c => c.id)
-
-    // Get all guild memberships for user's characters
-    const { data: memberships, error: memberError } = await supabase
-      .from('character_guild_memberships')
-      .select(`
-        id,
-        character_id,
-        role,
-        joined_at,
-        character:characters!inner (
-          id,
-          name
-        ),
-        guild:guilds (
-          id,
-          name,
-          realm,
-          faction,
-          discord_server_id,
-          created_by,
-          is_active
-        )
-      `)
-      .in('character_id', characterIds)
-      .eq('is_active', true)
-
-    if (memberError) {
-      console.error('Error fetching guilds:', memberError)
-      return NextResponse.json(
-        { error: 'Failed to fetch guilds' },
-        { status: 500 }
-      )
-    }
-
-    const guilds = memberships?.map((m: any) => ({
-      membership_id: m.id,
-      character_id: m.character_id,
-      character_name: m.character?.name || 'Unknown',
-      role: m.role,
-      joined_at: m.joined_at,
-      guild: m.guild
-    })) || []
+        return memberships?.map((m: any) => ({
+          membership_id: m.id,
+          character_id: m.character_id,
+          character_name: m.character?.name || 'Unknown',
+          role: m.role,
+          joined_at: m.joined_at,
+          guild: m.guild
+        })) || []
+      },
+      60 // 60 second cache
+    )
 
     return NextResponse.json({ guilds })
   } catch (error) {
@@ -356,13 +344,13 @@ export async function GET(request: NextRequest) {
 // DELETE - Delete a guild
 export async function DELETE(request: NextRequest) {
   try {
-    const supabase = await createClient()
-
-    // Check if user is authenticated
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    // Fast auth check using getSession (no network call)
+    const { user, error: authError } = await getAuthenticatedUser()
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+
+    const supabase = await createClient()
 
     // Parse request body
     const body = await request.json()

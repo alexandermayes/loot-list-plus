@@ -1,68 +1,54 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@/utils/supabase/server'
+import { createClient, getAuthenticatedUser } from '@/utils/supabase/server'
+import { getCached, invalidateCache, cacheKeys } from '@/utils/cache'
 
 /**
  * GET /api/characters
  * List all characters for the authenticated user
+ * Optimized: Fast auth (getSession), single query with spec join, Redis caching (60s TTL)
  */
 export async function GET() {
   try {
     const supabase = await createClient()
 
-    // Get authenticated user
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser()
+    // Fast auth check using getSession (no network call)
+    const { user, error: authError } = await getAuthenticatedUser()
 
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Fetch user's characters with class information
-    const { data: characters, error } = await supabase
-      .from('characters')
-      .select(`
-        *,
-        class:wow_classes(
-          id,
-          name,
-          color_hex
-        )
-      `)
-      .eq('user_id', user.id)
-      .order('is_main', { ascending: false })
-      .order('created_at', { ascending: true })
+    // Use cached data if available (30 second TTL)
+    const characters = await getCached(
+      cacheKeys.userCharacters(user.id),
+      async () => {
+        const { data, error } = await supabase
+          .from('characters')
+          .select(`
+            *,
+            class:wow_classes(
+              id,
+              name,
+              color_hex
+            ),
+            spec:class_specs(
+              id,
+              name
+            )
+          `)
+          .eq('user_id', user.id)
+          .order('is_main', { ascending: false })
+          .order('created_at', { ascending: true })
 
-    if (error) {
-      console.error('Error fetching characters:', error)
-      return NextResponse.json(
-        { error: 'Failed to fetch characters' },
-        { status: 500 }
-      )
-    }
+        if (error) {
+          throw error
+        }
+        return data || []
+      },
+      60 // 60 second cache
+    )
 
-    // Fetch specs separately for characters that have spec_id
-    let enrichedCharacters = characters || []
-    if (characters && characters.length > 0) {
-      const specIds = characters
-        .map(c => c.spec_id)
-        .filter(Boolean) as string[]
-
-      if (specIds.length > 0) {
-        const { data: specs } = await supabase
-          .from('class_specs')
-          .select('id, name')
-          .in('id', specIds)
-
-        enrichedCharacters = characters.map(char => ({
-          ...char,
-          spec: specs?.find(s => s.id === char.spec_id) || null
-        }))
-      }
-    }
-
-    return NextResponse.json({ characters: enrichedCharacters })
+    return NextResponse.json({ characters })
   } catch (error) {
     console.error('Error in GET /api/characters:', error)
     return NextResponse.json(
@@ -78,17 +64,13 @@ export async function GET() {
  */
 export async function POST(request: Request) {
   try {
-    const supabase = await createClient()
-
-    // Get authenticated user
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser()
-
+    // Fast auth check using getSession (no network call)
+    const { user, error: authError } = await getAuthenticatedUser()
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+
+    const supabase = await createClient()
 
     // Parse request body
     const body = await request.json()
@@ -178,6 +160,9 @@ export async function POST(request: Request) {
         spec
       }
     }
+
+    // Invalidate cache after creating character
+    await invalidateCache(cacheKeys.userCharacters(user.id))
 
     return NextResponse.json({ character: enrichedCharacter }, { status: 201 })
   } catch (error) {

@@ -1,19 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/utils/supabase/server'
+import { createClient, getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { verifyOfficerPermissions } from '@/utils/server-roles'
 
 // POST - Generate a new invite code
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient()
-    const serviceSupabase = createServiceRoleClient()
-
-    // Check if user is authenticated
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    // Fast auth check using getSession (no network call)
+    const { user, error: authError } = await getAuthenticatedUser()
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+
+    const supabase = await createClient()
+    const serviceSupabase = createServiceRoleClient()
 
     // Parse request body
     const body = await request.json()
@@ -100,14 +100,14 @@ export async function POST(request: NextRequest) {
 // GET - List guild's invite codes
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient()
-    const serviceSupabase = createServiceRoleClient()
-
-    // Check if user is authenticated
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    // Fast auth check using getSession (no network call)
+    const { user, error: authError } = await getAuthenticatedUser()
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+
+    const supabase = await createClient()
+    const serviceSupabase = createServiceRoleClient()
 
     // Get guild_id from query params
     const { searchParams } = new URL(request.url)
