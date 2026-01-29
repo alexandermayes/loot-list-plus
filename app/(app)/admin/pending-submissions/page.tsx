@@ -9,6 +9,7 @@ import { HugeiconsIcon } from '@hugeicons/react'
 import { Tick01Icon, Cancel01Icon, Clock01Icon, UserIcon, CheckmarkCircle01Icon } from '@hugeicons/core-free-icons'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Button } from '@/components/ui/button'
+import { useConfirm } from '@/components/ui/confirm-modal'
 import { Heading } from '@/components/ui/typography'
 import { PendingSubmissionsListSkeleton } from '@/components/ui/skeletons'
 
@@ -42,6 +43,7 @@ export default function PendingSubmissionsPage() {
   const router = useRouter()
   const { activeGuild, loading: guildLoading, isOfficer } = useGuildContext()
   const { showNotification } = useNotification()
+  const { confirm, ConfirmDialog } = useConfirm()
 
   useEffect(() => {
     document.title = 'LootList+ • Pending Submissions'
@@ -161,29 +163,33 @@ export default function PendingSubmissionsPage() {
     }
   }
 
-  const handleReject = async (submissionId: string) => {
-    if (!confirm('Are you sure you want to reject this submission? The player will need to resubmit.')) {
-      return
-    }
+  const handleReject = (submissionId: string) => {
+    confirm({
+      title: 'Reject Submission',
+      description: 'Are you sure you want to reject this submission? The player will need to resubmit.',
+      confirmLabel: 'Reject',
+      variant: 'danger',
+      onConfirm: async () => {
+        setProcessing(submissionId)
 
-    setProcessing(submissionId)
+        try {
+          const { error } = await supabase
+            .from('loot_submissions')
+            .update({ status: 'rejected', updated_at: new Date().toISOString() })
+            .eq('id', submissionId)
 
-    try {
-      const { error } = await supabase
-        .from('loot_submissions')
-        .update({ status: 'rejected', updated_at: new Date().toISOString() })
-        .eq('id', submissionId)
+          if (error) throw error
 
-      if (error) throw error
-
-      showNotification('success', 'Submission rejected')
-      await loadPendingSubmissions()
-    } catch (error: any) {
-      console.error('Error rejecting submission:', error)
-      showNotification('error', error.message || 'Failed to reject submission')
-    } finally {
-      setProcessing(null)
-    }
+          showNotification('success', 'Submission rejected')
+          await loadPendingSubmissions()
+        } catch (error: any) {
+          console.error('Error rejecting submission:', error)
+          showNotification('error', error.message || 'Failed to reject submission')
+        } finally {
+          setProcessing(null)
+        }
+      }
+    })
   }
 
   return (
@@ -304,6 +310,8 @@ export default function PendingSubmissionsPage() {
           </>
         )}
       </div>
+
+      {ConfirmDialog}
     </div>
   )
 }

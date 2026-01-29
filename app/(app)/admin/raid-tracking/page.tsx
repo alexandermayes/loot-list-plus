@@ -21,6 +21,7 @@ import {
   ModalFooter,
 } from '@/components/ui/modal'
 import { Button } from '@/components/ui/button'
+import { useConfirm } from '@/components/ui/confirm-modal'
 
 interface Member {
   character_id: string
@@ -96,6 +97,7 @@ export default function RaidTrackingPage() {
   const router = useRouter()
   const { activeGuild, isOfficer, loading: guildLoading, currentExpansion } = useGuildContext()
   const { showNotification } = useNotification()
+  const { confirm, ConfirmDialog } = useConfirm()
 
   useEffect(() => {
     document.title = 'LootList+ • Raid Tracking'
@@ -613,25 +615,30 @@ export default function RaidTrackingPage() {
     setSkipReason('')
   }
 
-  const deleteLootEntry = async (lootId: string, raidId: string) => {
-    const confirmed = window.confirm('Are you sure you want to remove this loot entry? This will restore the item to the master sheet.')
-    if (!confirmed) return
+  const deleteLootEntry = (lootId: string, raidId: string) => {
+    confirm({
+      title: 'Remove Loot Entry',
+      description: 'Are you sure you want to remove this loot entry? This will restore the item to the master sheet.',
+      confirmLabel: 'Remove',
+      variant: 'danger',
+      onConfirm: async () => {
+        const { error } = await supabase
+          .from('loot_history')
+          .delete()
+          .eq('id', lootId)
 
-    const { error } = await supabase
-      .from('loot_history')
-      .delete()
-      .eq('id', lootId)
+        if (error) {
+          showNotification('error', 'Failed to delete loot entry: ' + error.message)
+          return
+        }
 
-    if (error) {
-      showNotification('error', 'Failed to delete loot entry: ' + error.message)
-      return
-    }
-
-    // Update local state
-    setRaidLoot(prev => ({
-      ...prev,
-      [raidId]: prev[raidId]?.filter(l => l.id !== lootId) || []
-    }))
+        // Update local state
+        setRaidLoot(prev => ({
+          ...prev,
+          [raidId]: prev[raidId]?.filter(l => l.id !== lootId) || []
+        }))
+      }
+    })
   }
 
   const importSignups = async () => {
@@ -2012,6 +2019,8 @@ export default function RaidTrackingPage() {
           </Button>
         </ModalFooter>
       </Modal>
+
+      {ConfirmDialog}
     </div>
   )
 }

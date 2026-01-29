@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react'
 import { useGuildContext } from '@/app/contexts/GuildContext'
 import { useNotification } from '@/app/contexts/NotificationContext'
 import { Button } from '@/components/ui/button'
+import { useConfirm } from '@/components/ui/confirm-modal'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { Copy01Icon, Cancel01Icon, Add01Icon } from '@hugeicons/core-free-icons'
 
@@ -32,6 +33,7 @@ export default function InviteCodeManager() {
   const supabase = createClient()
   const { activeGuild } = useGuildContext()
   const { showNotification } = useNotification()
+  const { confirm, ConfirmDialog } = useConfirm()
 
   useEffect(() => {
     if (activeGuild) {
@@ -94,22 +96,28 @@ export default function InviteCodeManager() {
     }
   }
 
-  const handleDeactivateCode = async (codeId: string) => {
-    if (!confirm('Are you sure you want to deactivate this invite code?')) return
+  const handleDeactivateCode = (codeId: string) => {
+    confirm({
+      title: 'Deactivate Invite Code',
+      description: 'Are you sure you want to deactivate this invite code? It will no longer be usable.',
+      confirmLabel: 'Deactivate',
+      variant: 'warning',
+      onConfirm: async () => {
+        try {
+          const { error } = await supabase
+            .from('guild_invite_codes')
+            .update({ is_active: false })
+            .eq('id', codeId)
 
-    try {
-      const { error } = await supabase
-        .from('guild_invite_codes')
-        .update({ is_active: false })
-        .eq('id', codeId)
+          if (error) throw error
 
-      if (error) throw error
-
-      showNotification('success', 'Invite code deactivated')
-      await loadInviteCodes()
-    } catch (error: any) {
-      showNotification('error', error.message || 'Failed to deactivate code')
-    }
+          showNotification('success', 'Invite code deactivated')
+          await loadInviteCodes()
+        } catch (error: any) {
+          showNotification('error', error.message || 'Failed to deactivate code')
+        }
+      }
+    })
   }
 
   const copyToClipboard = (text: string) => {
@@ -256,6 +264,8 @@ export default function InviteCodeManager() {
           </div>
         )}
       </div>
+
+      {ConfirmDialog}
     </div>
   )
 }

@@ -16,6 +16,7 @@ import {
   ModalBody,
 } from '@/components/ui/modal'
 import { Button } from '@/components/ui/button'
+import { useConfirm } from '@/components/ui/confirm-modal'
 import { Heading } from '@/components/ui/typography'
 import { normalizeBossName } from '@/utils/bossOrder'
 import { getRaidIcon } from '@/utils/raidIcons'
@@ -87,6 +88,7 @@ export default function LootList() {
   const supabase = createClient()
   const router = useRouter()
   const searchParams = useSearchParams()
+  const { confirm, ConfirmDialog } = useConfirm()
 
   // Keep refs in sync
   useEffect(() => {
@@ -414,10 +416,14 @@ export default function LootList() {
   }, [])
 
   const handleClearList = useCallback(() => {
-    if (confirm('Are you sure you want to clear all ranked items? This cannot be undone.')) {
-      setRankings({})
-    }
-  }, [])
+    confirm({
+      title: 'Clear All Rankings',
+      description: 'Are you sure you want to clear all ranked items? This cannot be undone.',
+      confirmLabel: 'Clear All',
+      variant: 'danger',
+      onConfirm: () => setRankings({})
+    })
+  }, [confirm])
 
   const toggleErrorExpanded = useCallback((bracketName: string) => {
     setExpandedErrors(prev => {
@@ -573,16 +579,52 @@ export default function LootList() {
 
     try {
       // First verify the character is a member of this guild
+      // Get auth user for debugging
+      const { data: { user: authUser } } = await supabase.auth.getUser()
+      console.log('[LOOT-LIST DEBUG] Auth state:', {
+        authUserId: authUser?.id,
+        authUserEmail: authUser?.email,
+      })
+      console.log('[LOOT-LIST DEBUG] Checking membership:', {
+        characterId: activeCharacter.id,
+        characterName: activeCharacter.name,
+        characterUserId: activeCharacter.user_id,
+        guildId: guildId,
+        activeGuildFromContext: activeGuild?.id,
+        activeGuildName: activeGuild?.name,
+        userOwnsCharacter: authUser?.id === activeCharacter.user_id,
+      })
+
       const { data: membership, error: membershipError } = await supabase
         .from('character_guild_memberships')
-        .select('id')
+        .select('id, is_active')
         .eq('character_id', activeCharacter.id)
         .eq('guild_id', guildId)
         .maybeSingle()
 
+      console.log('[LOOT-LIST DEBUG] Membership result:', { membership, membershipError })
+
+      // If no membership found, also check all memberships for this character to help debug
+      if (!membership) {
+        const { data: allMemberships, error: allMembershipsError } = await supabase
+          .from('character_guild_memberships')
+          .select('id, guild_id, is_active')
+          .eq('character_id', activeCharacter.id)
+        console.log('[LOOT-LIST DEBUG] All memberships for character:', { allMemberships, allMembershipsError })
+      }
+
       if (membershipError || !membership) {
         console.error('Character is not a member of this guild. Membership check failed:', membershipError)
         showNotification('error', 'Your character needs to rejoin this guild. Please visit Guild Settings.')
+        savingInProgressRef.current = false
+        setAutoSaving(false)
+        return
+      }
+
+      // Also verify the membership is active
+      if (!membership.is_active) {
+        console.error('Character membership is not active')
+        showNotification('error', 'Your membership in this guild is inactive. Please contact an officer.')
         savingInProgressRef.current = false
         setAutoSaving(false)
         return
@@ -1582,6 +1624,9 @@ export default function LootList() {
             </div>
           </ModalBody>
         </Modal>
+
+        {/* Confirm Modal */}
+        {ConfirmDialog}
         </>
         )}
         </div>

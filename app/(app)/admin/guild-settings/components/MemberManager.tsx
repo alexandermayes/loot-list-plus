@@ -9,6 +9,7 @@ import { HugeiconsIcon } from '@hugeicons/react'
 import { UserBlock01Icon, Shield01Icon, UserIcon, CrownIcon } from '@hugeicons/core-free-icons'
 import { Select } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
+import { useConfirm } from '@/components/ui/confirm-modal'
 
 interface Character {
   id: string
@@ -47,6 +48,7 @@ export default function MemberManager() {
   const supabase = createClient()
   const { activeGuild } = useGuildContext()
   const { showNotification } = useNotification()
+  const { confirm, ConfirmDialog } = useConfirm()
 
   // Use SWR for cached guild members data
   const { data: membersData, isLoading: loading, mutate: refreshMembers } = useGuildMembers(
@@ -159,31 +161,37 @@ export default function MemberManager() {
     }
   }
 
-  const handleRemoveMember = async (userId: string, memberName: string) => {
-    if (!confirm(`Remove ${memberName} from the guild? They can rejoin with an invite code.`)) return
+  const handleRemoveMember = (userId: string, memberName: string) => {
+    confirm({
+      title: 'Remove Member',
+      description: `Remove ${memberName} from the guild? They can rejoin with an invite code.`,
+      confirmLabel: 'Remove',
+      variant: 'danger',
+      onConfirm: async () => {
+        try {
+          const member = members.find(m => m.user_id === userId)
+          if (!member) throw new Error('Member not found')
 
-    try {
-      const member = members.find(m => m.user_id === userId)
-      if (!member) throw new Error('Member not found')
+          const characterIds = member.characters.map(c => c.id)
 
-      const characterIds = member.characters.map(c => c.id)
+          const response = await fetch(
+            `/api/guild-members?guild_id=${activeGuild!.id}&target_user_id=${userId}&character_ids=${characterIds.join(',')}`,
+            { method: 'DELETE' }
+          )
 
-      const response = await fetch(
-        `/api/guild-members?guild_id=${activeGuild!.id}&target_user_id=${userId}&character_ids=${characterIds.join(',')}`,
-        { method: 'DELETE' }
-      )
+          if (!response.ok) {
+            const error = await response.json()
+            throw new Error(error.error || 'Failed to remove member')
+          }
 
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.error || 'Failed to remove member')
+          showNotification('success', `${memberName} has been removed from the guild`)
+          // Invalidate the SWR cache to refetch
+          await refreshMembers()
+        } catch (error: any) {
+          showNotification('error', error.message || 'Failed to remove member')
+        }
       }
-
-      showNotification('success', `${memberName} has been removed from the guild`)
-      // Invalidate the SWR cache to refetch
-      await refreshMembers()
-    } catch (error: any) {
-      showNotification('error', error.message || 'Failed to remove member')
-    }
+    })
   }
 
   const getJoinedViaText = (joinedVia: string) => {
@@ -200,13 +208,13 @@ export default function MemberManager() {
   }
 
   return (
-    <div className="p-6 space-y-4">
+    <div className="p-4 space-y-3">
       {loading ? (
         <p className="text-muted-foreground text-center py-4">Loading members...</p>
       ) : members.length === 0 ? (
         <p className="text-muted-foreground text-center py-4">No members found</p>
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-2">
           {sortedMembers.map((member) => {
             const mainChar = member.mainCharacter
             const hasCharacters = member.characters.length > 0
@@ -218,75 +226,53 @@ export default function MemberManager() {
 
             // Determine icon based on position (not name)
             const getRoleIcon = () => {
-              if (rolePosition === 100) return <HugeiconsIcon icon={CrownIcon} size={20} className="text-accent" />
-              if (rolePosition === 50) return <HugeiconsIcon icon={Shield01Icon} size={20} className="text-yellow-400" />
-              return <HugeiconsIcon icon={UserIcon} size={20} className="text-muted-foreground" />
+              if (rolePosition === 100) return <HugeiconsIcon icon={CrownIcon} size={16} className="text-accent" />
+              if (rolePosition === 50) return <HugeiconsIcon icon={Shield01Icon} size={16} className="text-yellow-400" />
+              return <HugeiconsIcon icon={UserIcon} size={16} className="text-muted-foreground" />
             }
 
             return (
               <div
                 key={member.user_id}
-                className="p-4 bg-background-inset border border-border rounded-xl hover:border-border-strong transition"
+                className="p-3 bg-background-inset border border-border rounded-lg hover:border-border-strong transition"
               >
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex items-start gap-4 flex-1 min-w-0">
-                    <div className="flex items-center justify-center w-10 h-10 rounded-full bg-background-elevated border border-border flex-shrink-0">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                    <div className="flex items-center justify-center w-8 h-8 rounded-full bg-background-elevated border border-border flex-shrink-0">
                       {getRoleIcon()}
                     </div>
 
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1 flex-wrap">
-                        <p className="font-semibold text-foreground text-[15px] whitespace-nowrap" style={{ color: mainChar?.class?.color_hex || '#fff' }}>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-semibold text-[13px]" style={{ color: mainChar?.class?.color_hex || '#fff' }}>
                           {displayName}
-                          {mainChar?.spec && mainChar?.class && (
-                            <span className="text-muted-foreground text-[13px] font-normal ml-2">
-                              • {mainChar.spec.name} {mainChar.class.name}
-                            </span>
-                          )}
-                        </p>
-                        {mainChar?.is_main && (
-                          <span className="px-2 py-0.5 bg-accent/20 text-accent text-[11px] rounded border border-accent/30 flex-shrink-0">
-                            Main
+                        </span>
+                        {mainChar?.spec && mainChar?.class && (
+                          <span className="text-muted-foreground text-[12px]">
+                            {mainChar.spec.name} {mainChar.class.name}
                           </span>
                         )}
-                      </div>
-
-                      {/* Show no characters message or list alt characters */}
-                      {!hasCharacters ? (
-                        <p className="text-foreground-muted text-[13px] italic">No characters</p>
-                      ) : member.characters.length > 1 ? (
-                        <div className="space-y-1">
-                          {member.characters
-                            .filter(char => char.id !== mainChar?.id)
-                            .map((char) => (
-                              <div key={char.id} className="flex items-center gap-2 text-[13px]">
-                                <span style={{ color: char.class?.color_hex || '#a1a1a1' }} className="font-medium">
-                                  {char.name}
-                                </span>
-                                {char.spec && char.class && (
-                                  <span className="text-muted-foreground">
-                                    • {char.spec.name} {char.class.name}
-                                  </span>
-                                )}
-                              </div>
-                            ))}
-                        </div>
-                      ) : null}
-
-                      <div className="flex items-center gap-3 text-[13px] text-muted-foreground mt-2">
-                        <span>{getJoinedViaText(member.joined_via)}</span>
-                        <span>•</span>
-                        <span>{new Date(member.joined_at).toLocaleDateString()}</span>
+                        {!hasCharacters && (
+                          <span className="text-muted-foreground text-[12px] italic">No characters</span>
+                        )}
+                        {member.characters.length > 1 && (
+                          <span className="text-muted-foreground text-[12px]">
+                            +{member.characters.length - 1} alt{member.characters.length > 2 ? 's' : ''}
+                          </span>
+                        )}
+                        <span className="text-muted-foreground text-[11px]">
+                          • {getJoinedViaText(member.joined_via)}
+                        </span>
                       </div>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2 flex-shrink-0">
+                  <div className="flex items-center gap-1.5 flex-shrink-0">
                     <Select
                       value={member.role}
                       onChange={(e) => handleChangeRole(member.user_id, e.target.value)}
                       size="sm"
-                      className="w-[140px]"
+                      className="w-[120px]"
                     >
                       {roles.map((role) => (
                         <option key={role.id} value={role.name} className="bg-background-elevated">
@@ -296,11 +282,11 @@ export default function MemberManager() {
                     </Select>
                     <Button
                       variant="secondary"
-                      size="icon"
+                      size="sm"
                       onClick={() => handleRemoveMember(member.user_id, displayName)}
-                      className="text-destructive hover:text-destructive"
+                      className="text-destructive hover:text-destructive h-9 w-9 p-0"
                     >
-                      <HugeiconsIcon icon={UserBlock01Icon} size={18} />
+                      <HugeiconsIcon icon={UserBlock01Icon} size={16} />
                     </Button>
                   </div>
                 </div>
@@ -310,14 +296,16 @@ export default function MemberManager() {
         </div>
       )}
 
-      <div className="pt-4 border-t border-border">
-        <p className="text-[13px] text-muted-foreground">
+      <div className="pt-3 border-t border-border">
+        <p className="text-[12px] text-muted-foreground">
           Total Members: {members.length} (Officers: {members.filter(m => {
             const roleInfo = roles.find(r => r.name === m.role)
             return (roleInfo?.position || 0) >= 50
           }).length})
         </p>
       </div>
+
+      {ConfirmDialog}
     </div>
   )
 }

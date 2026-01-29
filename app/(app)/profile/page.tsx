@@ -15,6 +15,7 @@ import {
   ModalFooter,
 } from '@/components/ui/modal'
 import { Button } from '@/components/ui/button'
+import { useConfirm } from '@/components/ui/confirm-modal'
 import { HugeiconsIcon } from '@hugeicons/react'
 import {
   UserIcon,
@@ -59,6 +60,7 @@ export default function ProfilePage() {
   }, [theme, selectedTheme])
   const { switchGuild } = useGuildContext()
   const { showNotification } = useNotification()
+  const { confirm, ConfirmDialog } = useConfirm()
   const supabase = createClient()
   const router = useRouter()
 
@@ -101,20 +103,23 @@ export default function ProfilePage() {
     }
   }
 
-  const handleDisconnectDiscord = async () => {
-    const confirmed = confirm(
-      'Are you sure you want to disconnect your Discord account? You will be logged out and need to sign in again to continue using LootList+.'
-    )
-    if (!confirmed) return
-
-    setDisconnecting(true)
-    try {
-      await supabase.auth.signOut()
-      router.push('/')
-    } catch (err) {
-      console.error('Error disconnecting:', err)
-      setDisconnecting(false)
-    }
+  const handleDisconnectDiscord = () => {
+    confirm({
+      title: 'Disconnect Discord',
+      description: 'Are you sure you want to disconnect your Discord account? You will be logged out and need to sign in again to continue using LootList+.',
+      confirmLabel: 'Disconnect',
+      variant: 'warning',
+      onConfirm: async () => {
+        setDisconnecting(true)
+        try {
+          await supabase.auth.signOut()
+          router.push('/')
+        } catch (err) {
+          console.error('Error disconnecting:', err)
+          setDisconnecting(false)
+        }
+      }
+    })
   }
 
   const handleDeleteAccount = async () => {
@@ -628,6 +633,8 @@ export default function ProfilePage() {
           </Button>
         </ModalFooter>
       </Modal>
+
+      {ConfirmDialog}
     </div>
   )
 }

@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react'
 import { useGuildContext } from '@/app/contexts/GuildContext'
 import { useNotification } from '@/app/contexts/NotificationContext'
 import { Button } from '@/components/ui/button'
+import { useConfirm } from '@/components/ui/confirm-modal'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { Add01Icon, Delete01Icon, Shield01Icon, UserIcon, Edit01Icon, Tick01Icon, Cancel01Icon, CrownIcon, ArrowUp01Icon, ArrowDown01Icon } from '@hugeicons/core-free-icons'
 
@@ -29,6 +30,7 @@ export default function RoleManager() {
   const supabase = createClient()
   const { activeGuild } = useGuildContext()
   const { showNotification } = useNotification()
+  const { confirm, ConfirmDialog } = useConfirm()
 
   useEffect(() => {
     if (activeGuild) {
@@ -142,22 +144,28 @@ export default function RoleManager() {
     setEditingRoleName('')
   }
 
-  const handleDeleteRole = async (roleId: string, roleName: string) => {
-    if (!confirm(`Delete the "${roleName}" role? Members with this role will need to be reassigned.`)) return
+  const handleDeleteRole = (roleId: string, roleName: string) => {
+    confirm({
+      title: 'Delete Role',
+      description: `Delete the "${roleName}" role? Members with this role will need to be reassigned.`,
+      confirmLabel: 'Delete',
+      variant: 'danger',
+      onConfirm: async () => {
+        try {
+          const { error } = await supabase
+            .from('guild_roles')
+            .delete()
+            .eq('id', roleId)
 
-    try {
-      const { error } = await supabase
-        .from('guild_roles')
-        .delete()
-        .eq('id', roleId)
+          if (error) throw error
 
-      if (error) throw error
-
-      showNotification('success', 'Role deleted successfully')
-      await loadRoles()
-    } catch (error: any) {
-      showNotification('error', error.message || 'Failed to delete role')
-    }
+          showNotification('success', 'Role deleted successfully')
+          await loadRoles()
+        } catch (error: any) {
+          showNotification('error', error.message || 'Failed to delete role')
+        }
+      }
+    })
   }
 
   const handleMoveRole = async (role: GuildRole, direction: 'up' | 'down') => {
@@ -345,6 +353,8 @@ export default function RoleManager() {
           </div>
         </>
       )}
+
+      {ConfirmDialog}
     </div>
   )
 }
