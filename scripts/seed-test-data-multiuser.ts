@@ -381,7 +381,7 @@ async function seedTestData(): Promise<void> {
           submission_id: submission.id,
           loot_item_id: item.id,
           rank: (index + 1) * 10, // 10, 20, 30, etc.
-          slot: index + 1,
+          slot: 1, // slot can only be 1 or 2 per DB constraint
         }))
 
         const { error: itemError } = await supabase
@@ -390,6 +390,8 @@ async function seedTestData(): Promise<void> {
 
         if (!itemError) {
           stats.submissions++
+        } else {
+          console.warn('Error inserting submission items:', itemError.message, itemError.code)
         }
       }
     }
