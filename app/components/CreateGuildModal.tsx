@@ -730,7 +730,7 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
                         className={`alliance-btn group relative px-3 py-2.5 rounded-lg border transition-all duration-300 flex items-center justify-center gap-2 overflow-hidden ${
                           faction === 'Alliance'
                             ? 'border-blue-500 bg-blue-500/20'
-                            : 'border-border-strong bg-background-elevated'
+                            : 'border-border-strong bg-background-elevated hover:bg-muted'
                         }`}
                       >
                         <img
@@ -747,7 +747,7 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
                         className={`horde-btn group relative px-3 py-2.5 rounded-lg border transition-all duration-300 flex items-center justify-center gap-2 overflow-hidden ${
                           faction === 'Horde'
                             ? 'border-red-500 bg-red-500/20'
-                            : 'border-border-strong bg-background-elevated'
+                            : 'border-border-strong bg-background-elevated hover:bg-muted'
                         }`}
                       >
                         <img

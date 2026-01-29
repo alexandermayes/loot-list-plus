@@ -7,6 +7,8 @@ import { useNotification } from '@/app/contexts/NotificationContext'
 import { useGuildMembers, invalidateGuildMembers } from '@/app/hooks/use-api'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { UserBlock01Icon, Shield01Icon, UserIcon, CrownIcon } from '@hugeicons/core-free-icons'
+import { Select } from '@/components/ui/select'
+import { Button } from '@/components/ui/button'
 
 interface Character {
   id: string
@@ -280,23 +282,26 @@ export default function MemberManager() {
                   </div>
 
                   <div className="flex items-center gap-2 flex-shrink-0">
-                    <select
+                    <Select
                       value={member.role}
                       onChange={(e) => handleChangeRole(member.user_id, e.target.value)}
-                      className="px-5 py-2.5 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[13px] font-medium focus:outline-none focus:border-accent cursor-pointer select-custom transition"
+                      size="sm"
+                      className="w-[140px]"
                     >
                       {roles.map((role) => (
                         <option key={role.id} value={role.name} className="bg-background-elevated">
                           {role.name}
                         </option>
                       ))}
-                    </select>
-                    <button
+                    </Select>
+                    <Button
+                      variant="secondary"
+                      size="icon"
                       onClick={() => handleRemoveMember(member.user_id, displayName)}
-                      className="p-2 bg-background-elevated hover:bg-destructive/10 border border-border hover:border-destructive/30 rounded-lg text-destructive hover:text-destructive transition"
+                      className="text-destructive hover:text-destructive"
                     >
-                      <HugeiconsIcon icon={UserBlock01Icon} size={16} />
-                    </button>
+                      <HugeiconsIcon icon={UserBlock01Icon} size={18} />
+                    </Button>
                   </div>
                 </div>
               </div>
