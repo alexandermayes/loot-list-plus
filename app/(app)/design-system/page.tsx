@@ -7,6 +7,7 @@ import { Select } from "@/components/ui/select";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { ClassificationBadge } from "@/components/ui/classification-badge";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { LoadingSpinner, Spinner } from "@/components/ui/loading-spinner";
@@ -1035,6 +1036,26 @@ export default function DesignSystemPage() {
                   </div>
                 </PreviewCard>
               </div>
+
+              {/* Item Classification */}
+              <div>
+                <SubsectionHeader title="Item Classification" description="Loot item classification badges with allocation costs" />
+                <PreviewCard>
+                  <div className="space-y-4">
+                    <div className="flex flex-wrap gap-3">
+                      <ClassificationBadge classification="Reserved" />
+                      <ClassificationBadge classification="Limited" />
+                      <ClassificationBadge classification="Unlimited" />
+                    </div>
+                    <div className="flex flex-wrap gap-3 items-center">
+                      <Text size="sm" color="muted">Compact:</Text>
+                      <ClassificationBadge classification="Reserved" compact />
+                      <ClassificationBadge classification="Limited" compact />
+                      <ClassificationBadge classification="Unlimited" compact />
+                    </div>
+                  </div>
+                </PreviewCard>
+              </div>
             </div>
           </Section>
 
@@ -1169,7 +1190,7 @@ export default function DesignSystemPage() {
                 <SubsectionHeader title="Card Variant" />
                 <EmptyState
                   icon={CheckmarkCircle01Icon}
-                  title="All caught up!"
+                  title="All caught up"
                   description="No pending items to review"
                   size="lg"
                   variant="card"

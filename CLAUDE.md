@@ -47,7 +47,7 @@ Font sizes: xs=10px, sm=12px, base=13px, md=14px, lg=16px, xl=18px, 2xl=20px, 3x
 - `Input`, `Textarea`, `Select` - variants: pill (default), rounded
 - `Card`, `CardHeader`, `CardTitle`, `CardDescription`, `CardContent`, `CardFooter`
 - `Modal`, `ModalHeader`, `ModalTitle`, `ModalDescription`, `ModalBody`, `ModalFooter`
-- `Badge`, `StatusBadge` - for status indicators
+- `Badge`, `StatusBadge`, `ClassificationBadge` - for status indicators
 - `LoadingSpinner`, `Spinner` - for loading states
 - `Skeleton` - for content placeholders
 - `EmptyState` - for empty data states (size: compact, default, lg)
@@ -99,6 +99,15 @@ warrior, paladin, hunter, rogue, priest, deathknight, shaman, mage, warlock, dru
 <StatusBadge status="pending" />
 <StatusBadge status="approved" />
 // Statuses: approved, pending, needs_revision, rejected, draft, attended, late, benched, no_show, signed_up, excused
+```
+
+**ClassificationBadge** - For loot item classifications:
+```tsx
+<ClassificationBadge classification="Reserved" />
+<ClassificationBadge classification="Limited" />
+<ClassificationBadge classification="Unlimited" />
+<ClassificationBadge classification="Reserved" compact /> // Single letter version
+// Classifications: Reserved (1pt, red), Limited (1pt, orange), Unlimited (0pt, green)
 ```
 
 **Dynamic color badges** - When you need a badge with a dynamic color (not a StatusBadge):

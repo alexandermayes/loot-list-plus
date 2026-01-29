@@ -1,14 +1,10 @@
 'use client'
 
-import { createClient } from '@/utils/supabase/client'
-import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import React, { useState, useMemo, useCallback, useEffect, memo } from 'react'
 import SearchableItemSelect from '@/app/components/SearchableItemSelect'
 import { useGuildContext } from '@/app/contexts/GuildContext'
 import { ExpansionGuard } from '@/app/components/ExpansionGuard'
-import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { TierTabsSkeleton, LootListContentSkeleton } from '@/components/ui/skeletons'
-import { useNotification } from '@/app/contexts/NotificationContext'
 import {
   Modal,
   ModalHeader,
@@ -21,369 +17,190 @@ import { Heading } from '@/components/ui/typography'
 import { normalizeBossName } from '@/utils/bossOrder'
 import { getRaidIcon } from '@/utils/raidIcons'
 import { StarFilledIcon, CheckFilledIcon, ClockFilledIcon, AlertFilledIcon, CancelFilledIcon } from '@/components/ui/icons'
-import { refreshWowheadTooltips } from '@/lib/wowhead'
+import { useLootList, type LootItem } from '@/app/contexts/LootListContext'
+import { ClassificationBadge } from '@/components/ui/classification-badge'
 
-interface LootItem {
-  id: string
-  name: string
-  boss_name: string
-  item_slot: string
-  wowhead_id: number
-  classification?: string // Reserved, Limited, Unlimited
-  item_type?: string // For duplicate detection
-  allocation_cost?: number // 0 or 1
-  roles?: string[] // Roles that can use this item
+// Helper function for rank colors - defined outside component for stability
+const getRankColor = (rank: number) => {
+  if (rank >= 48) return 'from-red-900 to-red-700' // Bracket 1
+  if (rank >= 45) return 'from-orange-900 to-orange-700' // Bracket 2
+  if (rank >= 42) return 'from-yellow-900 to-yellow-700' // Bracket 3
+  if (rank >= 39) return 'from-amber-900 to-amber-700' // Bracket 4
+  if (rank >= 25) return 'from-green-900 to-green-700' // No Bracket (Main-spec)
+  return 'from-blue-900 to-blue-700' // Off-spec
 }
 
-interface Submission {
-  id: string
-  status: string
-  submitted_at: string | null
-  review_notes: string | null
+// Type for tracking which items have errors
+type ItemError = {
+  rank: number
+  slot: 1 | 2
+  itemId: string
+  errorType: 'allocation' | 'duplicate_type' | 'duplicate_slot' | 'reserved_companion'
+  message: string
 }
+
+// RankRow component - defined outside main component to prevent remounting on parent re-renders
+interface RankRowProps {
+  rank: number
+  lootItems: LootItem[]
+  selectedItemId1: string | undefined
+  selectedItemId2: string | undefined
+  selectedItems: Set<string>
+  duplicateItems: string[]
+  onItemSelect: (rank: number, slot: number, itemId: string) => void
+  /** Errors affecting slot 1 */
+  slot1Errors?: ItemError[]
+  /** Errors affecting slot 2 */
+  slot2Errors?: ItemError[]
+}
+
+const RankRow = memo(function RankRow({
+  rank,
+  lootItems,
+  selectedItemId1,
+  selectedItemId2,
+  selectedItems,
+  duplicateItems,
+  onItemSelect,
+  slot1Errors = [],
+  slot2Errors = []
+}: RankRowProps) {
+  const selectedItem1 = selectedItemId1 ? lootItems.find(i => i.id === selectedItemId1) : null
+  const selectedItem2 = selectedItemId2 ? lootItems.find(i => i.id === selectedItemId2) : null
+  const isDuplicate1 = selectedItemId1 && duplicateItems.includes(selectedItemId1)
+  const isDuplicate2 = selectedItemId2 && duplicateItems.includes(selectedItemId2)
+
+  // Disable sibling slot if a Reserved item is selected
+  const isSlot1DisabledByReserved = selectedItem2?.classification === 'Reserved'
+  const isSlot2DisabledByReserved = selectedItem1?.classification === 'Reserved'
+
+  // Check if this row has errors
+  const hasSlot1Error = slot1Errors.length > 0
+  const hasSlot2Error = slot2Errors.length > 0
+  const hasRowError = isDuplicate1 || isDuplicate2 || hasSlot1Error || hasSlot2Error
+
+  // Get unique error messages for tooltips
+  const slot1ErrorMessages = [...new Set(slot1Errors.map(e => e.message))]
+  const slot2ErrorMessages = [...new Set(slot2Errors.map(e => e.message))]
+
+  return (
+    <tr className={`border-b border-border ${hasRowError ? 'bg-red-900/20' : ''}`}>
+      <td className={`px-3 py-2.5 font-semibold text-[13px] text-foreground bg-gradient-to-r ${getRankColor(rank)}`} rowSpan={1}>
+        {rank}
+      </td>
+      <td className={`px-3 py-2.5 ${hasSlot1Error ? 'relative' : ''}`}>
+        <SearchableItemSelect
+          items={lootItems}
+          value={selectedItemId1 || ''}
+          onChange={(value) => onItemSelect(rank, 1, value)}
+          disabled={selectedItems}
+          currentValue={selectedItemId1}
+          isSlotDisabled={isSlot1DisabledByReserved}
+        />
+        {hasSlot1Error && (
+          <div className="absolute -right-1 top-1/2 -translate-y-1/2 group">
+            <div className="w-5 h-5 rounded-full bg-destructive flex items-center justify-center text-destructive-foreground text-xs font-bold cursor-help">
+              !
+            </div>
+            <div className="absolute right-full mr-2 top-1/2 -translate-y-1/2 hidden group-hover:block z-50">
+              <div className="bg-destructive text-destructive-foreground text-xs px-2 py-1 rounded shadow-lg whitespace-nowrap">
+                {slot1ErrorMessages.map((msg, i) => (
+                  <div key={i}>{msg}</div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+      </td>
+      <td className="px-3 py-2.5">
+        {selectedItem1 ? (
+          <div className="flex items-center gap-2">
+            <p className="text-foreground-muted text-[12px]">{normalizeBossName(selectedItem1.boss_name)}</p>
+            {selectedItem1.classification && (
+              <ClassificationBadge classification={selectedItem1.classification as 'Reserved' | 'Limited' | 'Unlimited'} />
+            )}
+          </div>
+        ) : isSlot1DisabledByReserved ? (
+          <span className="text-muted-foreground text-[12px] italic">Reserved item in slot 2</span>
+        ) : <span className="text-foreground-muted text-[12px]">-</span>}
+      </td>
+      <td className={`px-3 py-2.5 ${hasSlot2Error ? 'relative' : ''}`}>
+        <SearchableItemSelect
+          items={lootItems}
+          value={selectedItemId2 || ''}
+          onChange={(value) => onItemSelect(rank, 2, value)}
+          disabled={selectedItems}
+          currentValue={selectedItemId2}
+          isSlotDisabled={isSlot2DisabledByReserved}
+        />
+        {hasSlot2Error && (
+          <div className="absolute -right-1 top-1/2 -translate-y-1/2 group">
+            <div className="w-5 h-5 rounded-full bg-destructive flex items-center justify-center text-destructive-foreground text-xs font-bold cursor-help">
+              !
+            </div>
+            <div className="absolute right-full mr-2 top-1/2 -translate-y-1/2 hidden group-hover:block z-50">
+              <div className="bg-destructive text-destructive-foreground text-xs px-2 py-1 rounded shadow-lg whitespace-nowrap">
+                {slot2ErrorMessages.map((msg, i) => (
+                  <div key={i}>{msg}</div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+      </td>
+      <td className="px-3 py-2.5">
+        {selectedItem2 ? (
+          <div className="flex items-center gap-2">
+            <p className="text-foreground-muted text-[12px]">{normalizeBossName(selectedItem2.boss_name)}</p>
+            {selectedItem2.classification && (
+              <ClassificationBadge classification={selectedItem2.classification as 'Reserved' | 'Limited' | 'Unlimited'} />
+            )}
+          </div>
+        ) : isSlot2DisabledByReserved ? (
+          <span className="text-muted-foreground text-[12px] italic">Reserved item in slot 1</span>
+        ) : <span className="text-foreground-muted text-[12px]">-</span>}
+      </td>
+    </tr>
+  )
+})
 
 export default function LootList() {
   const {
-    activeGuild,
-    activeCharacter,
-    loading: guildLoading,
-    currentExpansion,
     guildExpansions,
     viewingExpansionId,
     setViewingExpansion
   } = useGuildContext()
-  const { showNotification } = useNotification()
-  const [lootItems, setLootItems] = useState<LootItem[]>([])
-  const [submission, setSubmission] = useState<Submission | null>(null)
-  const [rankings, setRankings] = useState<Record<string, string>>({}) // "rank-slot" -> item_id (e.g., "50-1", "50-2")
-  const [initialLoading, setInitialLoading] = useState(true)
-  const [contentLoading, setContentLoading] = useState(false)
-  const [saving, setSaving] = useState(false)
-  const [raidTiers, setRaidTiers] = useState<any[]>([])
-  const [selectedTierDeadline, setSelectedTierDeadline] = useState<string | null>(null)
-  const [selectedTierId, setSelectedTierId] = useState<string | null>(() => {
-    // Try to read tier from URL on initial load
-    if (typeof window !== 'undefined') {
-      const params = new URLSearchParams(window.location.search)
-      return params.get('tier')
-    }
-    return null
-  })
-  const [tierSubmissionStatuses, setTierSubmissionStatuses] = useState<Record<string, any>>({})
-  const [guildId, setGuildId] = useState<string | null>(null)
-  const [user, setUser] = useState<any>(null)
-  const [member, setMember] = useState<any>(null)
-  const [enforceSlotRestrictions, setEnforceSlotRestrictions] = useState(true)
+
+  // Get all data and actions from context
+  const {
+    lootItems,
+    submission,
+    rankings,
+    raidTiers,
+    tierSubmissionStatuses,
+    selectedTierId,
+    selectedTierDeadline,
+    enforceSlotRestrictions,
+    isLoading,
+    isContentLoading,
+    isSaving,
+    hasChanges,
+    setSelectedTierId,
+    handleItemSelect,
+    clearAllRankings,
+    saveSubmission
+  } = useLootList()
+
+  // Local UI state
   const [showInstructionsModal, setShowInstructionsModal] = useState(false)
-  const [autoSaving, setAutoSaving] = useState(false)
-  const [lastSaved, setLastSaved] = useState<Date | null>(null)
-  const [initialLoadComplete, setInitialLoadComplete] = useState(false)
-  const [initialRankings, setInitialRankings] = useState<Record<string, string>>({}) // Track original rankings to detect changes
-  const [originalStatus, setOriginalStatus] = useState<string | null>(null) // Track original submission status
-  const [expandedErrors, setExpandedErrors] = useState<Set<string>>(new Set()) // Track which bracket errors are expanded
+  const [expandedErrors, setExpandedErrors] = useState<Set<string>>(new Set())
 
-  const rankingsRef = useRef(rankings)
-  const submissionRef = useRef(submission)
-  const savingInProgressRef = useRef(false)
-
-  const supabase = createClient()
-  const router = useRouter()
-  const searchParams = useSearchParams()
   const { confirm, ConfirmDialog } = useConfirm()
-
-  // Keep refs in sync
-  useEffect(() => {
-    rankingsRef.current = rankings
-  }, [rankings])
-
-  useEffect(() => {
-    submissionRef.current = submission
-  }, [submission])
 
   // Set page title
   useEffect(() => {
     document.title = 'LootList+ • Loot List'
   }, [])
-
-  // Define raid tier progression order (Classic + TBC + WotLK)
-  const getRaidTierOrder = (tierName: string): number => {
-    const order: Record<string, number> = {
-      // Classic
-      'Molten Core': 1, 'MC': 1,
-      'Onyxia\'s Lair': 2, 'Onyxia': 2,
-      'Blackwing Lair': 3, 'BWL': 3,
-      'Zul\'Gurub': 4, 'ZG': 4,
-      'Ruins of Ahn\'Qiraj': 5, 'AQ20': 5,
-      'Temple of Ahn\'Qiraj': 6, 'AQ40': 6,
-      'Naxxramas': 7, 'Naxx': 7,
-      // TBC
-      'Karazhan': 10, 'Kara': 10,
-      'Gruul\'s Lair': 11, 'Gruul': 11,
-      'Magtheridon\'s Lair': 12, 'Magtheridon': 12, 'Mag': 12,
-      'Serpentshrine Cavern': 20, 'SSC': 20,
-      'Tempest Keep: The Eye': 21, 'Tempest Keep': 21, 'The Eye': 21, 'TK': 21,
-      'Hyjal Summit': 30, 'Mount Hyjal': 30, 'Hyjal': 30,
-      'Black Temple': 31, 'BT': 31,
-      'Zul\'Aman': 32, 'ZA': 32,
-      'Sunwell Plateau': 33, 'Sunwell': 33, 'SWP': 33,
-      // WotLK
-      'Vault of Archavon': 40, 'VoA': 40,
-      'Obsidian Sanctum': 41, 'OS': 41,
-      'Eye of Eternity': 42, 'EoE': 42,
-      'Naxxramas (10)': 43, 'Naxxramas (25)': 44,
-      'Ulduar': 50,
-      'Trial of the Crusader': 60, 'ToC': 60,
-      'Trial of the Grand Crusader': 61, 'ToGC': 61,
-      'Onyxia\'s Lair (10)': 62, 'Onyxia\'s Lair (25)': 63,
-      'Icecrown Citadel': 70, 'ICC': 70,
-      'Ruby Sanctum': 80, 'RS': 80
-    }
-    return order[tierName] || 999 // Unknown tiers go to the end
-  }
-
-  // Helper to change tier and update URL without page reload
-  const changeTier = useCallback((tierId: string) => {
-    setSelectedTierId(tierId)
-    // Update URL with tier parameter without causing navigation/reload
-    const params = new URLSearchParams(searchParams.toString())
-    params.set('tier', tierId)
-    window.history.replaceState(null, '', `?${params.toString()}`)
-  }, [searchParams])
-
-  useEffect(() => {
-    const loadData = async () => {
-      // Wait for guild context to load
-      if (guildLoading) {
-        return
-      }
-
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) {
-        router.push('/')
-        return
-      }
-      setUser(user)
-
-      if (!activeGuild) {
-        setInitialLoading(false)
-        return
-      }
-
-      if (!activeCharacter) {
-        setInitialLoading(false)
-        return
-      }
-
-      setGuildId(activeGuild.id)
-      setMember({
-        character_name: activeCharacter.name,
-        role: 'Member', // Can be updated if needed from character_guild_memberships
-        class: activeCharacter.class,
-        class_id: activeCharacter.class_id
-      })
-
-      // Load guild settings to check slot restrictions
-      const { data: settingsData } = await supabase
-        .from('guild_settings')
-        .select('enforce_slot_restrictions')
-        .eq('guild_id', activeGuild.id)
-        .single()
-
-      // Default to true if setting doesn't exist
-      setEnforceSlotRestrictions(settingsData?.enforce_slot_restrictions ?? true)
-
-      // Get all raid tiers for the viewing expansion (or current expansion if not viewing a specific one)
-      const targetExpansionId = viewingExpansionId || currentExpansion?.expansion_id
-
-      if (!targetExpansionId) {
-        setInitialLoading(false)
-        return
-      }
-
-      const { data: tiersData } = await supabase
-        .from('raid_tiers')
-        .select('id, name, is_active, submission_deadline')
-        .eq('expansion_id', targetExpansionId)
-        .eq('is_guild_active', true)
-
-      if (!tiersData || tiersData.length === 0) {
-        setInitialLoading(false)
-        return
-      }
-
-      // Sort by Classic raid progression order
-      const sortedTiers = tiersData.sort((a: any, b: any) => {
-        return getRaidTierOrder(a.name) - getRaidTierOrder(b.name)
-      })
-
-      setRaidTiers(sortedTiers)
-
-      // Determine which tier to select
-      const tierIdFromUrl = searchParams.get('tier')
-      let tierToSelect: any
-
-      if (tierIdFromUrl && sortedTiers.some(t => t.id === tierIdFromUrl)) {
-        // URL has a valid tier, use it
-        tierToSelect = sortedTiers.find(t => t.id === tierIdFromUrl)!
-        // Only update state if it's different (avoid unnecessary re-renders)
-        if (selectedTierId !== tierToSelect.id) {
-          setSelectedTierId(tierToSelect.id)
-        }
-      } else if (selectedTierId && sortedTiers.some(t => t.id === selectedTierId)) {
-        // Already have a valid tier selected from initial state, keep it and update URL
-        const params = new URLSearchParams(searchParams.toString())
-        params.set('tier', selectedTierId)
-        router.replace(`?${params.toString()}`, { scroll: false })
-      } else {
-        // No valid tier yet, use default and update both state and URL
-        tierToSelect = sortedTiers.find(t => t.is_active) || sortedTiers[0]
-        setSelectedTierId(tierToSelect.id)
-        const params = new URLSearchParams(searchParams.toString())
-        params.set('tier', tierToSelect.id)
-        router.replace(`?${params.toString()}`, { scroll: false })
-      }
-
-      // Don't set loading to false here - let the tier data useEffect handle it
-      // This prevents a flicker where we show content briefly before loading tier data
-    }
-
-    loadData()
-  }, [guildLoading, activeGuild, activeCharacter, viewingExpansionId, currentExpansion])
-
-  // Load submission statuses for all tiers
-  useEffect(() => {
-    const loadSubmissionStatuses = async () => {
-      if (!activeCharacter || !guildId || raidTiers.length === 0) return
-
-      const tierIds = raidTiers.map(t => t.id)
-
-      const { data: submissions } = await supabase
-        .from('loot_submissions')
-        .select('raid_tier_id, status, submitted_at')
-        .eq('character_id', activeCharacter.id)
-        .eq('guild_id', guildId)
-        .in('raid_tier_id', tierIds)
-
-      // Build status map: { tierId: { status, submitted_at } }
-      const statusMap: Record<string, any> = {}
-      submissions?.forEach(sub => {
-        statusMap[sub.raid_tier_id] = {
-          status: sub.status,
-          submitted_at: sub.submitted_at
-        }
-      })
-
-      setTierSubmissionStatuses(statusMap)
-    }
-
-    loadSubmissionStatuses()
-  }, [activeCharacter, guildId, raidTiers])
-
-  // Load loot items and submission for selected tier
-  useEffect(() => {
-    const loadTierData = async () => {
-      if (!selectedTierId || !guildId || !activeCharacter) {
-        setLootItems([])
-        setSubmission(null)
-        setRankings({})
-        setSelectedTierDeadline(null)
-        return
-      }
-
-      setInitialLoadComplete(false)
-      setContentLoading(true)
-
-      try {
-        // Load selected tier's deadline
-        const selectedTier = raidTiers.find(t => t.id === selectedTierId)
-        setSelectedTierDeadline(selectedTier?.submission_deadline || null)
-
-        // Load loot items for this tier
-        const { data: itemsData } = await supabase
-          .from('loot_items')
-          .select(`
-            id, name, boss_name, item_slot, wowhead_id,
-            classification, item_type, allocation_cost, is_available, roles,
-            loot_item_classes(class_id, spec_id, spec_type)
-          `)
-          .eq('raid_tier_id', selectedTierId)
-          .eq('is_available', true)
-          .order('id')
-
-        if (itemsData) {
-          const filteredItems = itemsData.filter(item => {
-            const classes = item.loot_item_classes as any[]
-
-            // If no spec restrictions, show to anyone
-            if (classes.length === 0) return true
-
-            // If character has no spec set, show all items for their class
-            if (!activeCharacter.spec_id) {
-              return classes.some(c => c.class_id === activeCharacter.class_id)
-            }
-
-            // Check if character's specific spec is in primary or secondary list
-            const specMatch = classes.some(c => c.spec_id === activeCharacter.spec_id)
-            return specMatch
-          })
-          setLootItems(filteredItems)
-        }
-
-        // Load existing submission for this tier
-        const { data: subData } = await supabase
-          .from('loot_submissions')
-          .select('id, status, submitted_at, review_notes')
-          .eq('character_id', activeCharacter.id)
-          .eq('raid_tier_id', selectedTierId)
-          .eq('guild_id', guildId)
-          .maybeSingle()
-
-        if (subData) {
-          setSubmission(subData)
-
-          // Load existing rankings
-          const { data: rankingsData } = await supabase
-            .from('loot_submission_items')
-            .select('loot_item_id, rank, slot')
-            .eq('submission_id', subData.id)
-
-          if (rankingsData) {
-            const rankingsMap: Record<string, string> = {}
-
-            rankingsData.forEach(r => {
-              rankingsMap[`${r.rank}-${r.slot}`] = r.loot_item_id
-            })
-
-            setRankings(rankingsMap)
-            setInitialRankings(rankingsMap) // Store initial state to track changes
-            setOriginalStatus(subData.status) // Store original status
-          }
-        } else {
-          setSubmission(null)
-          setRankings({})
-          setInitialRankings({}) // Reset initial rankings when no submission
-          setOriginalStatus(null) // Reset original status
-        }
-      } catch (error) {
-        console.error('Error loading tier data:', error)
-      }
-
-      setContentLoading(false)
-      setInitialLoading(false)
-      setInitialLoadComplete(true)
-    }
-
-    loadTierData()
-  }, [selectedTierId, activeCharacter, guildId])
-
-  // Refresh Wowhead tooltips after items are loaded and loading is complete
-  // Uses centralized debounced refresh to prevent excessive API calls
-  useEffect(() => {
-    if (!contentLoading && lootItems.length > 0) {
-      // Use immediate refresh on initial load, debounced for subsequent updates
-      refreshWowheadTooltips(true)
-    }
-  }, [contentLoading, lootItems.length]) // Only trigger on loading state change and item count change, not on lootItems content change
 
   // Helper to check if we're past the submission deadline
   const isPastDeadline = (): boolean => {
@@ -391,37 +208,15 @@ export default function LootList() {
     return new Date() > new Date(selectedTierDeadline)
   }
 
-  // Helper function to get bracket name and ranks for a given rank
-  const getBracketForRank = (rank: number): { name: string, ranks: number[] } | null => {
-    if (rank >= 48 && rank <= 50) return { name: 'Bracket 1', ranks: [50, 49, 48] }
-    if (rank >= 45 && rank <= 47) return { name: 'Bracket 2', ranks: [47, 46, 45] }
-    if (rank >= 42 && rank <= 44) return { name: 'Bracket 3', ranks: [44, 43, 42] }
-    if (rank >= 39 && rank <= 41) return { name: 'Bracket 4', ranks: [41, 40, 39] }
-    return null // No bracket (ranks 38-25)
-  }
-
-  const handleItemSelect = useCallback((rank: number, slot: number, itemId: string) => {
-    const key = `${rank}-${slot}`
-    if (itemId === '') {
-      setRankings(prev => {
-        const newRankings = { ...prev }
-        delete newRankings[key]
-        return newRankings
-      })
-    } else {
-      setRankings(prev => ({ ...prev, [key]: itemId }))
-    }
-  }, [])
-
   const handleClearList = useCallback(() => {
     confirm({
-      title: 'Clear All Rankings',
+      title: 'Clear all rankings',
       description: 'Are you sure you want to clear all ranked items? This cannot be undone.',
       confirmLabel: 'Clear All',
       variant: 'danger',
-      onConfirm: () => setRankings({})
+      onConfirm: () => clearAllRankings()
     })
-  }, [confirm])
+  }, [confirm, clearAllRankings])
 
   const toggleErrorExpanded = useCallback((bracketName: string) => {
     setExpandedErrors(prev => {
@@ -434,303 +229,6 @@ export default function LootList() {
       return newSet
     })
   }, [])
-
-  const saveSubmission = async (submit: boolean) => {
-    if (!activeCharacter || !selectedTierId || !guildId) return
-
-    setSaving(true)
-
-    try {
-      let submissionId = submission?.id
-
-      if (!submissionId) {
-        const { data: newSub, error: subError } = await supabase
-          .from('loot_submissions')
-          .insert({
-            character_id: activeCharacter.id,
-            guild_id: guildId,
-            raid_tier_id: selectedTierId,
-            status: submit ? 'pending' : 'draft',
-            submitted_at: submit ? new Date().toISOString() : null
-          })
-          .select()
-          .single()
-
-        if (subError) throw subError
-        submissionId = newSub.id
-        setSubmission(newSub)
-      } else {
-        // If updating an existing submission, always set to pending when submitting
-        // (even if it was previously approved, it needs re-approval after changes)
-        const { error: updateError } = await supabase
-          .from('loot_submissions')
-          .update({
-            status: submit ? 'pending' : 'draft',
-            submitted_at: submit ? new Date().toISOString() : submission?.submitted_at,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', submissionId)
-
-        if (updateError) throw updateError
-
-        setSubmission(prev => prev ? {
-          ...prev,
-          status: submit ? 'pending' : 'draft',
-          submitted_at: submit ? new Date().toISOString() : prev.submitted_at,
-          updated_at: new Date().toISOString()
-        } : null)
-      }
-
-      // Delete existing rankings
-      await supabase
-        .from('loot_submission_items')
-        .delete()
-        .eq('submission_id', submissionId)
-
-      // Insert new rankings (convert from "rank-slot" format)
-      const rankingsToInsert = Object.entries(rankings).map(([key, loot_item_id]) => {
-        const [rankStr, slotStr] = key.split('-')
-        const rank = parseInt(rankStr)
-        const slot = parseInt(slotStr)
-
-        return {
-          submission_id: submissionId,
-          loot_item_id,
-          rank,
-          slot
-        }
-      })
-
-      if (rankingsToInsert.length > 0) {
-        const { error: itemsError } = await supabase
-          .from('loot_submission_items')
-          .insert(rankingsToInsert)
-
-        if (itemsError) throw itemsError
-      }
-
-      showNotification('success', submit ? 'Loot list submitted for review!' : 'Draft saved!')
-
-      // Update initial rankings and original status to reflect saved state
-      setInitialRankings({ ...rankings })
-      const newStatus = submit ? 'pending' : 'draft'
-      setOriginalStatus(newStatus)
-
-      // Refresh submission statuses after save
-      if (activeCharacter && guildId && raidTiers.length > 0) {
-        const tierIds = raidTiers.map(t => t.id)
-        const { data: submissions } = await supabase
-          .from('loot_submissions')
-          .select('raid_tier_id, status, submitted_at')
-          .eq('character_id', activeCharacter.id)
-          .eq('guild_id', guildId)
-          .in('raid_tier_id', tierIds)
-
-        const statusMap: Record<string, any> = {}
-        submissions?.forEach(sub => {
-          statusMap[sub.raid_tier_id] = {
-            status: sub.status,
-            submitted_at: sub.submitted_at
-          }
-        })
-        setTierSubmissionStatuses(statusMap)
-      }
-    } catch (error: any) {
-      showNotification('error', error.message || 'Failed to save')
-    }
-
-    setSaving(false)
-  }
-
-  // Auto-save function (saves as draft without notifications)
-  const autoSave = useCallback(async () => {
-    if (!activeCharacter || !selectedTierId || !guildId) return
-
-    // Prevent concurrent saves using ref (more reliable than state)
-    if (savingInProgressRef.current) {
-      console.log('Save already in progress, skipping...')
-      return
-    }
-
-    savingInProgressRef.current = true
-
-    const currentSubmission = submissionRef.current
-    const currentRankings = rankingsRef.current
-
-    // Determine if rankings have changed
-    const currentKeys = Object.keys(currentRankings).sort()
-    const initialKeys = Object.keys(initialRankings).sort()
-    const rankingsChanged = currentKeys.length !== initialKeys.length ||
-      currentKeys.some(key => currentRankings[key] !== initialRankings[key])
-
-    // Determine target status based on changes
-    let targetStatus = currentSubmission?.status || 'draft'
-    if (rankingsChanged && (currentSubmission?.status === 'approved' || currentSubmission?.status === 'pending')) {
-      // If there are changes and status is approved/pending, change to draft
-      targetStatus = 'draft'
-    } else if (!rankingsChanged && currentSubmission?.status === 'draft' && originalStatus && ['approved', 'pending'].includes(originalStatus)) {
-      // If no changes and status is draft but original was approved/pending, restore original
-      targetStatus = originalStatus
-    }
-
-    setAutoSaving(true)
-
-    try {
-      // First verify the character is a member of this guild
-      // Get auth user for debugging
-      const { data: { user: authUser } } = await supabase.auth.getUser()
-      console.log('[LOOT-LIST DEBUG] Auth state:', {
-        authUserId: authUser?.id,
-        authUserEmail: authUser?.email,
-      })
-      console.log('[LOOT-LIST DEBUG] Checking membership:', {
-        characterId: activeCharacter.id,
-        characterName: activeCharacter.name,
-        characterUserId: activeCharacter.user_id,
-        guildId: guildId,
-        activeGuildFromContext: activeGuild?.id,
-        activeGuildName: activeGuild?.name,
-        userOwnsCharacter: authUser?.id === activeCharacter.user_id,
-      })
-
-      const { data: membership, error: membershipError } = await supabase
-        .from('character_guild_memberships')
-        .select('id, is_active')
-        .eq('character_id', activeCharacter.id)
-        .eq('guild_id', guildId)
-        .maybeSingle()
-
-      console.log('[LOOT-LIST DEBUG] Membership result:', { membership, membershipError })
-
-      // If no membership found, also check all memberships for this character to help debug
-      if (!membership) {
-        const { data: allMemberships, error: allMembershipsError } = await supabase
-          .from('character_guild_memberships')
-          .select('id, guild_id, is_active')
-          .eq('character_id', activeCharacter.id)
-        console.log('[LOOT-LIST DEBUG] All memberships for character:', { allMemberships, allMembershipsError })
-      }
-
-      if (membershipError || !membership) {
-        console.error('Character is not a member of this guild. Membership check failed:', membershipError)
-        showNotification('error', 'Your character needs to rejoin this guild. Please visit Guild Settings.')
-        savingInProgressRef.current = false
-        setAutoSaving(false)
-        return
-      }
-
-      // Also verify the membership is active
-      if (!membership.is_active) {
-        console.error('Character membership is not active')
-        showNotification('error', 'Your membership in this guild is inactive. Please contact an officer.')
-        savingInProgressRef.current = false
-        setAutoSaving(false)
-        return
-      }
-
-      let submissionId = currentSubmission?.id
-
-      if (!submissionId) {
-        const { data: newSub, error: subError } = await supabase
-          .from('loot_submissions')
-          .insert({
-            character_id: activeCharacter.id,
-            guild_id: guildId,
-            raid_tier_id: selectedTierId,
-            status: targetStatus,
-            submitted_at: null
-          })
-          .select()
-          .single()
-
-        if (subError) {
-          console.error('Submission insert error:', subError)
-          throw new Error(subError.message || 'Failed to create submission')
-        }
-        submissionId = newSub.id
-        setSubmission(newSub)
-      } else {
-        const { error: updateError } = await supabase
-          .from('loot_submissions')
-          .update({
-            status: targetStatus,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', submissionId)
-
-        if (updateError) {
-          console.error('Submission update error:', updateError)
-          throw new Error(updateError.message || 'Failed to update submission')
-        }
-
-        // Update local submission state
-        setSubmission(prev => prev ? { ...prev, status: targetStatus } : null)
-      }
-
-      // Delete existing rankings - wait for it to complete
-      const { error: deleteError, count: deleteCount } = await supabase
-        .from('loot_submission_items')
-        .delete({ count: 'exact' })
-        .eq('submission_id', submissionId)
-
-      if (deleteError) {
-        console.error('Delete items error:', deleteError)
-        throw new Error(deleteError.message || 'Failed to delete existing rankings')
-      }
-
-      console.log(`Deleted ${deleteCount} existing items for submission ${submissionId}`)
-
-      // Insert new rankings (convert from "rank-slot" format)
-      const rankingsToInsert = Object.entries(currentRankings).map(([key, loot_item_id]) => {
-        const [rankStr, slotStr] = key.split('-')
-        const rank = parseInt(rankStr)
-        const slot = parseInt(slotStr)
-
-        return {
-          submission_id: submissionId,
-          loot_item_id,
-          rank,
-          slot
-        }
-      })
-
-      if (rankingsToInsert.length > 0) {
-        // Use upsert to handle any remaining duplicates gracefully
-        const { error: itemsError } = await supabase
-          .from('loot_submission_items')
-          .upsert(rankingsToInsert, {
-            onConflict: 'submission_id,rank,slot',
-            ignoreDuplicates: false
-          })
-
-        if (itemsError) {
-          console.error('Insert items error:', itemsError)
-          console.error('Attempted to insert:', rankingsToInsert.length, 'items')
-          throw new Error(itemsError.message || 'Failed to save rankings')
-        }
-      }
-
-      setLastSaved(new Date())
-    } catch (error: any) {
-      console.error('Auto-save failed:', error)
-      showNotification('error', error.message || 'Auto-save failed')
-    } finally {
-      // Always clear the save lock
-      savingInProgressRef.current = false
-      setAutoSaving(false)
-    }
-  }, [activeCharacter, selectedTierId, guildId, supabase, showNotification, initialRankings, originalStatus])
-
-  // Auto-save when rankings change (debounced)
-  useEffect(() => {
-    if (!activeCharacter || !selectedTierId || !guildId || !initialLoadComplete) return
-
-    const timer = setTimeout(() => {
-      autoSave()
-    }, 300) // 300ms debounce
-
-    return () => clearTimeout(timer)
-  }, [rankings, selectedTierId, activeCharacter, guildId, initialLoadComplete, autoSave])
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -759,18 +257,6 @@ export default function LootList() {
     [rankings]
   )
 
-  // Check if rankings have changed since initial load
-  const hasChanges = useMemo(() => {
-    const currentKeys = Object.keys(rankings).sort()
-    const initialKeys = Object.keys(initialRankings).sort()
-
-    // Different number of rankings = changed
-    if (currentKeys.length !== initialKeys.length) return true
-
-    // Check if any ranking values differ
-    return currentKeys.some(key => rankings[key] !== initialRankings[key])
-  }, [rankings, initialRankings])
-
   // Bracket validation
   type BracketValidation = {
     bracketName: string
@@ -778,20 +264,21 @@ export default function LootList() {
     maxPoints: number
     ranks: number[]
     violations: string[]
+    itemErrors: ItemError[]
   }
 
   const bracketValidations = useMemo((): BracketValidation[] => {
     const brackets: BracketValidation[] = [
-      { bracketName: 'Bracket 1 (50-48)', allocationPoints: 0, maxPoints: 3, ranks: [50, 49, 48], violations: [] },
-      { bracketName: 'Bracket 2 (47-45)', allocationPoints: 0, maxPoints: 3, ranks: [47, 46, 45], violations: [] },
-      { bracketName: 'Bracket 3 (44-42)', allocationPoints: 0, maxPoints: 3, ranks: [44, 43, 42], violations: [] },
-      { bracketName: 'Bracket 4 (41-39)', allocationPoints: 0, maxPoints: 3, ranks: [41, 40, 39], violations: [] },
+      { bracketName: 'Bracket 1 (50-48)', allocationPoints: 0, maxPoints: 3, ranks: [50, 49, 48], violations: [], itemErrors: [] },
+      { bracketName: 'Bracket 2 (47-45)', allocationPoints: 0, maxPoints: 3, ranks: [47, 46, 45], violations: [], itemErrors: [] },
+      { bracketName: 'Bracket 3 (44-42)', allocationPoints: 0, maxPoints: 3, ranks: [44, 43, 42], violations: [], itemErrors: [] },
+      { bracketName: 'Bracket 4 (41-39)', allocationPoints: 0, maxPoints: 3, ranks: [41, 40, 39], violations: [], itemErrors: [] },
     ]
 
     brackets.forEach(bracket => {
-      const itemTypesInBracket: Record<string, number> = {}
-      const itemSlotsInBracket: Record<string, number> = {}
-      const reservedItems: Array<{ rank: number, name: string }> = []
+      const itemTypesInBracket: Record<string, { count: number; items: Array<{ rank: number; slot: 1 | 2; itemId: string }> }> = {}
+      const itemSlotsInBracket: Record<string, { count: number; items: Array<{ rank: number; slot: 1 | 2; itemId: string }> }> = {}
+      const allocationItems: Array<{ rank: number; slot: 1 | 2; itemId: string; cost: number }> = []
 
       bracket.ranks.forEach(rank => {
         const item1Id = rankings[`${rank}-1`]
@@ -801,22 +288,29 @@ export default function LootList() {
         if (item1Id) {
           const item = lootItems.find(i => i.id === item1Id)
           if (item) {
-            // Add allocation cost
-            bracket.allocationPoints += item.allocation_cost || 0
+            // Track allocation cost items
+            const cost = item.allocation_cost || 0
+            bracket.allocationPoints += cost
+            if (cost > 0) {
+              allocationItems.push({ rank, slot: 1, itemId: item1Id, cost })
+            }
 
             // Track item types for duplicate detection
             if (item.item_type) {
-              itemTypesInBracket[item.item_type] = (itemTypesInBracket[item.item_type] || 0) + 1
+              if (!itemTypesInBracket[item.item_type]) {
+                itemTypesInBracket[item.item_type] = { count: 0, items: [] }
+              }
+              itemTypesInBracket[item.item_type].count++
+              itemTypesInBracket[item.item_type].items.push({ rank, slot: 1, itemId: item1Id })
             }
 
             // Track item slots for duplicate detection (if enabled)
             if (enforceSlotRestrictions && item.item_slot) {
-              itemSlotsInBracket[item.item_slot] = (itemSlotsInBracket[item.item_slot] || 0) + 1
-            }
-
-            // Track Reserved items
-            if (item.classification === 'Reserved') {
-              reservedItems.push({ rank, name: item.name })
+              if (!itemSlotsInBracket[item.item_slot]) {
+                itemSlotsInBracket[item.item_slot] = { count: 0, items: [] }
+              }
+              itemSlotsInBracket[item.item_slot].count++
+              itemSlotsInBracket[item.item_slot].items.push({ rank, slot: 1, itemId: item1Id })
             }
           }
         }
@@ -825,22 +319,29 @@ export default function LootList() {
         if (item2Id) {
           const item = lootItems.find(i => i.id === item2Id)
           if (item) {
-            // Add allocation cost
-            bracket.allocationPoints += item.allocation_cost || 0
+            // Track allocation cost items
+            const cost = item.allocation_cost || 0
+            bracket.allocationPoints += cost
+            if (cost > 0) {
+              allocationItems.push({ rank, slot: 2, itemId: item2Id, cost })
+            }
 
             // Track item types for duplicate detection
             if (item.item_type) {
-              itemTypesInBracket[item.item_type] = (itemTypesInBracket[item.item_type] || 0) + 1
+              if (!itemTypesInBracket[item.item_type]) {
+                itemTypesInBracket[item.item_type] = { count: 0, items: [] }
+              }
+              itemTypesInBracket[item.item_type].count++
+              itemTypesInBracket[item.item_type].items.push({ rank, slot: 2, itemId: item2Id })
             }
 
             // Track item slots for duplicate detection (if enabled)
             if (enforceSlotRestrictions && item.item_slot) {
-              itemSlotsInBracket[item.item_slot] = (itemSlotsInBracket[item.item_slot] || 0) + 1
-            }
-
-            // Track Reserved items
-            if (item.classification === 'Reserved') {
-              reservedItems.push({ rank, name: item.name })
+              if (!itemSlotsInBracket[item.item_slot]) {
+                itemSlotsInBracket[item.item_slot] = { count: 0, items: [] }
+              }
+              itemSlotsInBracket[item.item_slot].count++
+              itemSlotsInBracket[item.item_slot].items.push({ rank, slot: 2, itemId: item2Id })
             }
 
             // Check if Reserved item has a companion
@@ -848,29 +349,62 @@ export default function LootList() {
               const item1 = lootItems.find(i => i.id === item1Id)
               if (item1?.classification === 'Reserved' || item.classification === 'Reserved') {
                 bracket.violations.push(`Reserved items must be alone at rank ${rank}`)
+                // Add errors to both slots
+                bracket.itemErrors.push({
+                  rank, slot: 1, itemId: item1Id,
+                  errorType: 'reserved_companion',
+                  message: 'Reserved item must be alone'
+                })
+                bracket.itemErrors.push({
+                  rank, slot: 2, itemId: item2Id,
+                  errorType: 'reserved_companion',
+                  message: 'Reserved item must be alone'
+                })
               }
             }
           }
         }
       })
 
-      // Check allocation points
+      // Check allocation points and mark affected items
       if (bracket.allocationPoints > bracket.maxPoints) {
         bracket.violations.push(`Too many allocation points: ${bracket.allocationPoints}/${bracket.maxPoints}`)
+        // Mark all items that contribute to allocation as errors
+        allocationItems.forEach(item => {
+          bracket.itemErrors.push({
+            ...item,
+            errorType: 'allocation',
+            message: `Costs ${item.cost} point${item.cost > 1 ? 's' : ''} (${bracket.allocationPoints}/${bracket.maxPoints} total)`
+          })
+        })
       }
 
-      // Check for duplicate item types
-      Object.entries(itemTypesInBracket).forEach(([type, count]) => {
-        if (count > 1) {
-          bracket.violations.push(`Duplicate ${type} (${count} selected)`)
+      // Check for duplicate item types and mark affected items
+      Object.entries(itemTypesInBracket).forEach(([type, data]) => {
+        if (data.count > 1) {
+          bracket.violations.push(`Duplicate ${type} (${data.count} selected)`)
+          data.items.forEach(item => {
+            bracket.itemErrors.push({
+              ...item,
+              errorType: 'duplicate_type',
+              message: `Duplicate ${type}`
+            })
+          })
         }
       })
 
-      // Check for duplicate item slots (if enforcement is enabled)
+      // Check for duplicate item slots and mark affected items (if enforcement is enabled)
       if (enforceSlotRestrictions) {
-        Object.entries(itemSlotsInBracket).forEach(([slot, count]) => {
-          if (count > 1) {
-            bracket.violations.push(`Multiple ${slot} items (${count} selected) - only 1 allowed per bracket`)
+        Object.entries(itemSlotsInBracket).forEach(([slot, data]) => {
+          if (data.count > 1) {
+            bracket.violations.push(`Multiple ${slot} items (${data.count} selected) - only 1 allowed per bracket`)
+            data.items.forEach(item => {
+              bracket.itemErrors.push({
+                ...item,
+                errorType: 'duplicate_slot',
+                message: `Multiple ${slot} items`
+              })
+            })
           }
         })
       }
@@ -885,6 +419,19 @@ export default function LootList() {
     return bracketValidations.find(b => b.bracketName === bracketName)
   }
 
+  // Get errors for a specific rank and slot
+  const getSlotErrors = useCallback((rank: number, slot: 1 | 2): ItemError[] => {
+    const allErrors: ItemError[] = []
+    bracketValidations.forEach(bracket => {
+      bracket.itemErrors.forEach(error => {
+        if (error.rank === rank && error.slot === slot) {
+          allErrors.push(error)
+        }
+      })
+    })
+    return allErrors
+  }, [bracketValidations])
+
   // Group ranks by brackets (matching Google Sheet structure)
   const bracket1 = Array.from({ length: 3 }, (_, i) => 50 - i) // 50-48
   const bracket2 = Array.from({ length: 3 }, (_, i) => 47 - i) // 47-45
@@ -892,89 +439,6 @@ export default function LootList() {
   const bracket4 = Array.from({ length: 3 }, (_, i) => 41 - i) // 41-39
   const noBracket = Array.from({ length: 14 }, (_, i) => 38 - i) // 38-25
   const offSpec = Array.from({ length: 24 }, (_, i) => 24 - i) // 24-1
-
-  const getRankColor = (rank: number) => {
-    if (rank >= 48) return 'from-red-900 to-red-700' // Bracket 1
-    if (rank >= 45) return 'from-orange-900 to-orange-700' // Bracket 2
-    if (rank >= 42) return 'from-yellow-900 to-yellow-700' // Bracket 3
-    if (rank >= 39) return 'from-amber-900 to-amber-700' // Bracket 4
-    if (rank >= 25) return 'from-green-900 to-green-700' // No Bracket (Main-spec)
-    return 'from-blue-900 to-blue-700' // Off-spec
-  }
-
-  const getRankLabel = (rank: number) => {
-    if (rank >= 48) return 'Bracket 1'
-    if (rank >= 45) return 'Bracket 2'
-    if (rank >= 42) return 'Bracket 3'
-    if (rank >= 39) return 'Bracket 4'
-    if (rank >= 25) return 'No Bracket (Main-spec)'
-    return 'Off-spec'
-  }
-
-  const RankRow = React.memo(({ rank }: { rank: number }) => {
-    const selectedItemId1 = rankings[`${rank}-1`]
-    const selectedItemId2 = rankings[`${rank}-2`]
-    const selectedItem1 = selectedItemId1 ? lootItems.find(i => i.id === selectedItemId1) : null
-    const selectedItem2 = selectedItemId2 ? lootItems.find(i => i.id === selectedItemId2) : null
-    const isDuplicate1 = selectedItemId1 && duplicateItems.includes(selectedItemId1)
-    const isDuplicate2 = selectedItemId2 && duplicateItems.includes(selectedItemId2)
-
-    const getClassificationBadge = (classification?: string) => {
-      if (!classification) return null
-      const colors = {
-        Reserved: 'bg-error text-error-foreground',
-        Limited: 'bg-warning text-warning-foreground',
-        Unlimited: 'bg-success text-success-foreground'
-      }
-      return (
-        <span className={`text-xs px-2 py-0.5 rounded ${colors[classification as keyof typeof colors] || 'bg-gray-600'}`}>
-          {classification}
-        </span>
-      )
-    }
-
-    return (
-      <tr className={`border-b border-border ${(isDuplicate1 || isDuplicate2) ? 'bg-red-900/20' : ''}`}>
-        <td className={`px-3 py-2.5 font-semibold text-[13px] text-foreground bg-gradient-to-r ${getRankColor(rank)}`} rowSpan={1}>
-          {rank}
-        </td>
-        <td className="px-3 py-2.5">
-          <SearchableItemSelect
-            items={lootItems}
-            value={selectedItemId1 || ''}
-            onChange={(value) => handleItemSelect(rank, 1, value)}
-            disabled={selectedItems}
-            currentValue={rankings[`${rank}-1`]}
-          />
-        </td>
-        <td className="px-3 py-2.5">
-          {selectedItem1 ? (
-            <div className="flex items-center gap-2">
-              <p className="text-foreground-muted text-[12px]">{normalizeBossName(selectedItem1.boss_name)}</p>
-              {selectedItem1.classification && getClassificationBadge(selectedItem1.classification)}
-            </div>
-          ) : <span className="text-foreground-muted text-[12px]">-</span>}
-        </td>
-        <td className="px-3 py-2.5">
-          <SearchableItemSelect
-            items={lootItems}
-            value={selectedItemId2 || ''}
-            onChange={(value) => handleItemSelect(rank, 2, value)}
-            disabled={selectedItems}
-            currentValue={rankings[`${rank}-2`]}
-          />
-        </td>
-        <td className="px-3 py-2.5">
-          {selectedItem2 ? (
-            <div className="flex items-center gap-2">
-              <p className="text-foreground-muted text-[12px]">{normalizeBossName(selectedItem2.boss_name)}</p>
-              {selectedItem2.classification && getClassificationBadge(selectedItem2.classification)}
-            </div>
-          ) : <span className="text-foreground-muted text-[12px]">-</span>}
-        </td>
-      </tr>
-    )
-  })
 
   return (
     <ExpansionGuard>
@@ -985,7 +449,7 @@ export default function LootList() {
             <div>
               <Heading level={1}>Loot Lists</Heading>
               <p className="text-muted-foreground mt-1 text-base">
-                {initialLoading ? 'Loading raid tiers...' : `Rank your preferred items for ${raidTiers.find(t => t.id === selectedTierId)?.name || 'this raid tier'}`}
+                {isLoading ? 'Loading raid tiers...' : `Rank your preferred items for ${raidTiers.find(t => t.id === selectedTierId)?.name || 'this raid tier'}`}
                 {viewingExpansionId && (
                   <span className="ml-2 px-3 py-1 bg-blue-950/50 border border-blue-600/50 text-blue-300 text-xs font-medium rounded-full">
                     Viewing Past: {guildExpansions.find(e => e.expansion_id === viewingExpansionId)?.expansion_name}
@@ -994,14 +458,6 @@ export default function LootList() {
               </p>
             </div>
             <div className="flex items-center gap-3">
-              {/* Auto-save status */}
-              <div className="text-sm text-muted-foreground">
-                {autoSaving ? (
-                  <span>Saving...</span>
-                ) : lastSaved ? (
-                  <span>Saved {new Date(lastSaved).toLocaleTimeString()}</span>
-                ) : null}
-              </div>
               {/* How to Rank Button */}
               <Button variant="secondary" onClick={() => setShowInstructionsModal(true)}>
                 How to Rank
@@ -1040,7 +496,7 @@ export default function LootList() {
         )}
 
         {/* Raid Tier Tabs - Sticky */}
-        {initialLoading ? (
+        {isLoading ? (
           <div className="sticky top-0 z-20 px-8 py-1.5 bg-background">
             <TierTabsSkeleton />
           </div>
@@ -1048,7 +504,7 @@ export default function LootList() {
           <div className="sticky top-0 z-20 px-8 py-1.5 bg-background">
             <div className="flex items-center gap-3 overflow-x-auto">
               <div className="flex gap-2">
-                {raidTiers.map((tier: any) => {
+                {raidTiers.map((tier) => {
                   const status = tierSubmissionStatuses[tier.id]
                   const hasSubmission = !!status
                   const statusColor = hasSubmission
@@ -1066,7 +522,7 @@ export default function LootList() {
                   return (
                     <button
                       key={tier.id}
-                      onClick={() => changeTier(tier.id)}
+                      onClick={() => setSelectedTierId(tier.id)}
                       className={`px-5 py-2.5 rounded-[40px] whitespace-nowrap text-[13px] font-medium transition-all ${
                         selectedTierId === tier.id
                           ? 'bg-accent/20 border-[0.5px] border-accent/20 text-accent'
@@ -1097,7 +553,7 @@ export default function LootList() {
         {/* Main Content */}
         <div className="px-8 pt-1.5 pb-6 space-y-6">
         {/* Content Loading State */}
-        {(initialLoading || contentLoading) ? (
+        {(isLoading || isContentLoading) ? (
           <LootListContentSkeleton />
         ) : (
         <>
@@ -1141,7 +597,7 @@ export default function LootList() {
                     hasValidationErrors ||
                     (!hasChanges && (submission?.status === 'approved' || submission?.status === 'pending'))
                   }
-                  loading={saving}
+                  loading={isSaving}
                 >
                   Submit for Review
                 </Button>
@@ -1162,7 +618,7 @@ export default function LootList() {
             <div className="flex items-start gap-3">
               <span className="text-xl">⏰</span>
               <div>
-                <p className="font-semibold mb-1">Submission Deadline Passed</p>
+                <p className="font-semibold mb-1">Submission deadline passed</p>
                 <p className="text-sm">
                   The deadline for this raid tier was {new Date(selectedTierDeadline).toLocaleString()}.
                   You can still submit changes, but they will require officer approval before being visible on the master sheet.
@@ -1248,7 +704,18 @@ export default function LootList() {
               </thead>
               <tbody>
                 {bracket1.map(rank => (
-                  <RankRow key={rank} rank={rank} />
+                  <RankRow
+                    key={rank}
+                    rank={rank}
+                    lootItems={lootItems}
+                    selectedItemId1={rankings[`${rank}-1`]}
+                    selectedItemId2={rankings[`${rank}-2`]}
+                    selectedItems={selectedItems}
+                    duplicateItems={duplicateItems}
+                    onItemSelect={handleItemSelect}
+                    slot1Errors={getSlotErrors(rank, 1)}
+                    slot2Errors={getSlotErrors(rank, 2)}
+                  />
                 ))}
               </tbody>
             </table>
@@ -1324,7 +791,18 @@ export default function LootList() {
               </thead>
               <tbody>
                 {bracket2.map(rank => (
-                  <RankRow key={rank} rank={rank} />
+                  <RankRow
+                    key={rank}
+                    rank={rank}
+                    lootItems={lootItems}
+                    selectedItemId1={rankings[`${rank}-1`]}
+                    selectedItemId2={rankings[`${rank}-2`]}
+                    selectedItems={selectedItems}
+                    duplicateItems={duplicateItems}
+                    onItemSelect={handleItemSelect}
+                    slot1Errors={getSlotErrors(rank, 1)}
+                    slot2Errors={getSlotErrors(rank, 2)}
+                  />
                 ))}
               </tbody>
             </table>
@@ -1400,7 +878,18 @@ export default function LootList() {
               </thead>
               <tbody>
                 {bracket3.map(rank => (
-                  <RankRow key={rank} rank={rank} />
+                  <RankRow
+                    key={rank}
+                    rank={rank}
+                    lootItems={lootItems}
+                    selectedItemId1={rankings[`${rank}-1`]}
+                    selectedItemId2={rankings[`${rank}-2`]}
+                    selectedItems={selectedItems}
+                    duplicateItems={duplicateItems}
+                    onItemSelect={handleItemSelect}
+                    slot1Errors={getSlotErrors(rank, 1)}
+                    slot2Errors={getSlotErrors(rank, 2)}
+                  />
                 ))}
               </tbody>
             </table>
@@ -1476,7 +965,18 @@ export default function LootList() {
               </thead>
               <tbody>
                 {bracket4.map(rank => (
-                  <RankRow key={rank} rank={rank} />
+                  <RankRow
+                    key={rank}
+                    rank={rank}
+                    lootItems={lootItems}
+                    selectedItemId1={rankings[`${rank}-1`]}
+                    selectedItemId2={rankings[`${rank}-2`]}
+                    selectedItems={selectedItems}
+                    duplicateItems={duplicateItems}
+                    onItemSelect={handleItemSelect}
+                    slot1Errors={getSlotErrors(rank, 1)}
+                    slot2Errors={getSlotErrors(rank, 2)}
+                  />
                 ))}
               </tbody>
             </table>
@@ -1509,7 +1009,16 @@ export default function LootList() {
               </thead>
               <tbody>
                 {noBracket.map(rank => (
-                  <RankRow key={rank} rank={rank} />
+                  <RankRow
+                    key={rank}
+                    rank={rank}
+                    lootItems={lootItems}
+                    selectedItemId1={rankings[`${rank}-1`]}
+                    selectedItemId2={rankings[`${rank}-2`]}
+                    selectedItems={selectedItems}
+                    duplicateItems={duplicateItems}
+                    onItemSelect={handleItemSelect}
+                  />
                 ))}
               </tbody>
             </table>
@@ -1542,7 +1051,16 @@ export default function LootList() {
               </thead>
               <tbody>
                 {offSpec.map(rank => (
-                  <RankRow key={rank} rank={rank} />
+                  <RankRow
+                    key={rank}
+                    rank={rank}
+                    lootItems={lootItems}
+                    selectedItemId1={rankings[`${rank}-1`]}
+                    selectedItemId2={rankings[`${rank}-2`]}
+                    selectedItems={selectedItems}
+                    duplicateItems={duplicateItems}
+                    onItemSelect={handleItemSelect}
+                  />
                 ))}
               </tbody>
             </table>
@@ -1552,7 +1070,7 @@ export default function LootList() {
         {/* How to Rank Modal */}
         <Modal open={showInstructionsModal} onClose={() => setShowInstructionsModal(false)} size="lg">
           <ModalHeader onClose={() => setShowInstructionsModal(false)}>
-            <ModalTitle>How to Rank</ModalTitle>
+            <ModalTitle>How to rank</ModalTitle>
           </ModalHeader>
           <ModalBody className="space-y-4">
             {/* Core Structure */}

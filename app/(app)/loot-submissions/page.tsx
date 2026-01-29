@@ -8,6 +8,7 @@ import { useGuildContext } from '@/app/contexts/GuildContext'
 import { useNotification } from '@/app/contexts/NotificationContext'
 import { TierTabsSkeleton, SubmissionsListSkeleton } from '@/components/ui/skeletons'
 import { StatusBadge, type SubmissionStatus } from '@/components/ui/status-badge'
+import { ClassificationBadge } from '@/components/ui/classification-badge'
 import { EmptyState } from '@/components/ui/empty-state'
 import { ScrollIcon, AlertCircleIcon } from '@hugeicons/core-free-icons'
 import { HugeiconsIcon } from '@hugeicons/react'
@@ -654,18 +655,6 @@ export default function MasterLootPage() {
                       if (r >= 25) return 'from-green-900 to-green-700'
                       return 'from-blue-900 to-blue-700'
                     }
-                    const getClassificationBadge = (classification?: string) => {
-                      if (!classification || classification === 'Unlimited') return null
-                      const colors: Record<string, string> = {
-                        Reserved: 'bg-destructive/20 text-destructive border-destructive/30',
-                        Limited: 'bg-warning/20 text-warning border-warning/30'
-                      }
-                      return (
-                        <span className={`text-xs px-1.5 py-0.5 rounded border ${colors[classification] || ''}`}>
-                          {classification}
-                        </span>
-                      )
-                    }
                     const itemsArr = items as any[]
                     return (
                       <tr key={rank} className="border-b border-border">
@@ -680,7 +669,9 @@ export default function MasterLootPage() {
                                 wowheadId={itemsArr[0].loot_item?.wowhead_id}
                                 className="font-medium text-sm"
                               />
-                              {getClassificationBadge(itemsArr[0].loot_item?.classification)}
+                              {itemsArr[0].loot_item?.classification && (
+                                <ClassificationBadge classification={itemsArr[0].loot_item.classification as 'Reserved' | 'Limited' | 'Unlimited'} />
+                              )}
                             </div>
                           ) : <span className="text-muted-foreground text-sm">-</span>}
                         </td>
@@ -692,7 +683,9 @@ export default function MasterLootPage() {
                                 wowheadId={itemsArr[1].loot_item?.wowhead_id}
                                 className="font-medium text-sm"
                               />
-                              {getClassificationBadge(itemsArr[1].loot_item?.classification)}
+                              {itemsArr[1].loot_item?.classification && (
+                                <ClassificationBadge classification={itemsArr[1].loot_item.classification as 'Reserved' | 'Limited' | 'Unlimited'} />
+                              )}
                             </div>
                           ) : <span className="text-muted-foreground text-sm">-</span>}
                         </td>
