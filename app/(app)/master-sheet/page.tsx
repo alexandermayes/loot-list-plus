@@ -20,6 +20,7 @@ import { HugeiconsIcon } from '@hugeicons/react'
 import { ScrollIcon, ArrowUpRight01Icon, InformationCircleIcon } from '@hugeicons/core-free-icons'
 import { Heading } from '@/components/ui/typography'
 import ScoreBreakdownModal from '@/app/components/ScoreBreakdownModal'
+import ScoreComparisonModal from '@/app/components/ScoreComparisonModal'
 import { refreshWowheadTooltips } from '@/lib/wowhead'
 
 interface LootItem {
@@ -36,6 +37,12 @@ interface PlayerRanking {
   class_color: string
   loot_score: number
   rank: number
+  // Breakdown components for score comparison
+  attendance_score: number
+  role_modifier: number
+  priority_bonus: number
+  bad_luck_bonus: number
+  character_id: string
 }
 
 interface ItemRankings {
@@ -61,6 +68,12 @@ export default function MasterSheet() {
   const [tierScrollState, setTierScrollState] = useState({ left: false, right: true })
   const [isExporting, setIsExporting] = useState(false)
   const [showScoreBreakdown, setShowScoreBreakdown] = useState(false)
+  const [showScoreComparison, setShowScoreComparison] = useState(false)
+  const [comparisonData, setComparisonData] = useState<{
+    itemName: string
+    userRanking: PlayerRanking | null
+    winnerRanking: PlayerRanking | null
+  }>({ itemName: '', userRanking: null, winnerRanking: null })
   const tierScrollRef = useRef<HTMLDivElement>(null)
 
   const supabase = createClient()
@@ -481,14 +494,20 @@ export default function MasterSheet() {
               specRole
             )
 
-            const lootScore = calculateLootScore(r.rank, attendance, roleModifier, 0, priorityBonus)
+            const badLuckBonus = 0 // TODO: implement bad luck tracking
+            const lootScore = calculateLootScore(r.rank, attendance, roleModifier, badLuckBonus, priorityBonus)
 
             rankings.push({
               player_name: character.name || 'Unknown',
               class_name: (character.class as any)?.name || 'Unknown',
               class_color: (character.class as any)?.color_hex || '#888888',
               loot_score: lootScore,
-              rank: r.rank
+              rank: r.rank,
+              attendance_score: attendance,
+              role_modifier: roleModifier,
+              priority_bonus: priorityBonus,
+              bad_luck_bonus: badLuckBonus,
+              character_id: character.id,
             })
           }
 
@@ -776,14 +795,20 @@ export default function MasterSheet() {
           specRole
         )
 
-        const lootScore = calculateLootScore(r.rank, attendance, roleModifier, 0, priorityBonus)
+        const badLuckBonus = 0 // TODO: implement bad luck tracking
+        const lootScore = calculateLootScore(r.rank, attendance, roleModifier, badLuckBonus, priorityBonus)
 
         rankings.push({
           player_name: character.name || 'Unknown',
           class_name: (character.class as any)?.name || 'Unknown',
           class_color: (character.class as any)?.color_hex || '#888888',
           loot_score: lootScore,
-          rank: r.rank
+          rank: r.rank,
+          attendance_score: attendance,
+          role_modifier: roleModifier,
+          priority_bonus: priorityBonus,
+          bad_luck_bonus: badLuckBonus,
+          character_id: character.id,
         })
       }
 
@@ -1091,12 +1116,28 @@ export default function MasterSheet() {
                               </td>
                               {[0, 1, 2, 3, 4].map((index) => {
                                 const ranking = ir.rankings[index]
+                                const isCurrentUser = ranking && activeCharacter?.id === ranking.character_id
+                                const canCompare = isCurrentUser && index > 0 && ir.rankings[0]
                                 return (
                                   <td key={index} className="px-3 py-2.5 text-center">
                                     {ranking ? (
-                                      <div className="flex flex-col items-center">
+                                      <div
+                                        className={`flex flex-col items-center ${
+                                          isCurrentUser ? 'relative' : ''
+                                        } ${
+                                          canCompare ? 'cursor-pointer hover:bg-accent/10 rounded-lg p-1 -m-1 transition-colors' : ''
+                                        }`}
+                                        onClick={canCompare ? () => {
+                                          setComparisonData({
+                                            itemName: ir.item.name,
+                                            userRanking: ranking,
+                                            winnerRanking: ir.rankings[0],
+                                          })
+                                          setShowScoreComparison(true)
+                                        } : undefined}
+                                      >
                                         <span
-                                          className="text-[13px] font-medium"
+                                          className={`text-[13px] font-medium ${isCurrentUser ? 'underline decoration-dotted underline-offset-2' : ''}`}
                                           style={{ color: ranking.class_color }}
                                         >
                                           {ranking.player_name}
@@ -1104,6 +1145,9 @@ export default function MasterSheet() {
                                         <span className="text-[11px] text-foreground-muted">
                                           {Math.round(ranking.loot_score)}
                                         </span>
+                                        {canCompare && (
+                                          <span className="text-[10px] text-accent mt-0.5">Why?</span>
+                                        )}
                                       </div>
                                     ) : (
                                       <span className="text-muted-foreground">—</span>
@@ -1146,6 +1190,15 @@ export default function MasterSheet() {
           open={showScoreBreakdown}
           onClose={() => setShowScoreBreakdown(false)}
           guildSettings={guildSettings}
+        />
+
+        {/* Score Comparison Modal */}
+        <ScoreComparisonModal
+          open={showScoreComparison}
+          onClose={() => setShowScoreComparison(false)}
+          itemName={comparisonData.itemName}
+          userRanking={comparisonData.userRanking}
+          winnerRanking={comparisonData.winnerRanking}
         />
         </div>
       </div>
