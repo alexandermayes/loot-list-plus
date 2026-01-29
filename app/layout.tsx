@@ -4,6 +4,7 @@ import Script from "next/script";
 import { GuildContextProvider } from "./contexts/GuildContext";
 import { NotificationProvider } from "./contexts/NotificationContext";
 import { ThemeProvider } from "./components/ThemeProvider";
+import { SWRProvider } from "./components/SWRProvider";
 import NotificationContainer from "./components/NotificationContainer";
 import "./globals.css";
 
@@ -170,12 +171,14 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <NotificationProvider>
-            <GuildContextProvider>
-              <NotificationContainer />
-              {children}
-            </GuildContextProvider>
-          </NotificationProvider>
+          <SWRProvider>
+            <NotificationProvider>
+              <GuildContextProvider>
+                <NotificationContainer />
+                {children}
+              </GuildContextProvider>
+            </NotificationProvider>
+          </SWRProvider>
         </ThemeProvider>
       </body>
     </html>
