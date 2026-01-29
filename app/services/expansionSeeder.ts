@@ -3,6 +3,8 @@ import { classicRaids, Raid as ClassicRaid } from '@/data/classic-wow-raids'
 import { tbcRaids } from '@/data/tbc-raids'
 import { ITEM_CLASSIFICATIONS } from '@/data/classic-wow-item-classifications'
 import { TBC_ITEM_CLASSIFICATIONS } from '@/data/tbc-item-classifications'
+import { CLASSIC_ITEM_ROLES } from '@/data/classic-item-roles'
+import { TBC_ITEM_ROLES } from '@/data/tbc-item-roles'
 
 /**
  * Expansion Seeding Service
@@ -274,6 +276,13 @@ export async function seedExpansionForGuild(
           // Reserved and Limited items cost 1 allocation point, Unlimited costs 0
           const allocation_cost = (classification === 'Reserved' || classification === 'Limited') ? 1 : 0
 
+          // Look up roles from the appropriate mapping based on expansion
+          // Items without explicit mapping default to empty array (available to all specs)
+          const roleMap = expansionData.displayName === 'The Burning Crusade'
+            ? TBC_ITEM_ROLES
+            : CLASSIC_ITEM_ROLES
+          const roles = roleMap[item.name] || []
+
           return {
             raid_tier_id: tier.id,
             name: item.name,
@@ -282,7 +291,8 @@ export async function seedExpansionForGuild(
             boss_name: boss.name,
             is_available: true,
             classification,
-            allocation_cost
+            allocation_cost,
+            roles
           }
         })
       )
