@@ -234,7 +234,42 @@ async function seedTestData() {
       continue
     }
 
-    console.log(`  Expansion seeded with ID: ${expansionId}`)
+    console.log(`  Classic expansion seeded with ID: ${expansionId}`)
+
+    // Also seed TBC expansion
+    console.log(`  Seeding TBC expansion with full loot data...`)
+    const { expansionId: tbcExpansionId, error: tbcSeedError } = await seedExpansionForGuild(
+      supabase,
+      guild.id,
+      'The Burning Crusade',
+      false, // Don't set as current (Classic is current)
+      true   // useServiceRole
+    )
+
+    if (tbcSeedError || !tbcExpansionId) {
+      console.error('Failed to seed TBC expansion:', tbcSeedError)
+    } else {
+      console.log(`  TBC expansion seeded with ID: ${tbcExpansionId}`)
+
+      // Count TBC loot items
+      const { data: tbcTiers } = await supabase
+        .from('raid_tiers')
+        .select('id')
+        .eq('expansion_id', tbcExpansionId)
+
+      let tbcLootItems = 0
+      if (tbcTiers) {
+        for (const tier of tbcTiers) {
+          const { count } = await supabase
+            .from('loot_items')
+            .select('id', { count: 'exact', head: true })
+            .eq('raid_tier_id', tier.id)
+          tbcLootItems += count || 0
+        }
+      }
+      stats.lootItems += tbcLootItems
+      console.log(`  Created ${tbcLootItems} TBC loot items across ${tbcTiers?.length || 0} raid tiers`)
+    }
 
     // Get the first raid tier (Molten Core) for creating test submissions
     const { data: raidTier, error: tierError } = await supabase
