@@ -44,21 +44,14 @@ export default function LandingNav() {
           {/* Logo */}
           <button
             onClick={() => scrollToSection('hero')}
-            className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+            className="flex items-center hover:opacity-80 transition-opacity"
           >
-            <Image
-              src="/lootlist-icon.svg"
-              alt="LootList+"
-              width={28}
-              height={36}
-              className="h-7 w-auto"
-            />
             <Image
               src="/logo.svg"
               alt="LootList+"
               width={100}
               height={16}
-              className="h-4 w-auto hidden sm:block"
+              className="h-4 w-auto"
             />
           </button>
 
