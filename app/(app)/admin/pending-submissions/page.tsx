@@ -4,6 +4,7 @@ import { createClient } from '@/utils/supabase/client'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useGuildContext } from '@/app/contexts/GuildContext'
+import { useNotification } from '@/app/contexts/NotificationContext'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { Tick01Icon, Cancel01Icon, Clock01Icon, UserIcon, CheckmarkCircle01Icon } from '@hugeicons/core-free-icons'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -36,11 +37,11 @@ export default function PendingSubmissionsPage() {
   const [submissions, setSubmissions] = useState<PendingSubmission[]>([])
   const [loading, setLoading] = useState(true)
   const [processing, setProcessing] = useState<string | null>(null)
-  const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
 
   const supabase = createClient()
   const router = useRouter()
   const { activeGuild, loading: guildLoading, isOfficer } = useGuildContext()
+  const { showNotification } = useNotification()
 
   useEffect(() => {
     document.title = 'LootList+ • Pending Submissions'
@@ -93,7 +94,7 @@ export default function PendingSubmissionsPage() {
 
       if (error) {
         console.error('Error loading pending submissions:', error)
-        setMessage({ type: 'error', text: 'Failed to load pending submissions' })
+        showNotification('error', 'Failed to load pending submissions')
         return
       }
 
@@ -133,7 +134,7 @@ export default function PendingSubmissionsPage() {
       setSubmissions(submissionsWithCounts as PendingSubmission[])
     } catch (error) {
       console.error('Error loading pending submissions:', error)
-      setMessage({ type: 'error', text: 'Failed to load pending submissions' })
+      showNotification('error', 'Failed to load pending submissions')
     } finally {
       setLoading(false)
     }
@@ -141,7 +142,6 @@ export default function PendingSubmissionsPage() {
 
   const handleApprove = async (submissionId: string) => {
     setProcessing(submissionId)
-    setMessage(null)
 
     try {
       const { error } = await supabase
@@ -151,11 +151,11 @@ export default function PendingSubmissionsPage() {
 
       if (error) throw error
 
-      setMessage({ type: 'success', text: 'Submission approved!' })
+      showNotification('success', 'Submission approved!')
       await loadPendingSubmissions()
     } catch (error: any) {
       console.error('Error approving submission:', error)
-      setMessage({ type: 'error', text: error.message || 'Failed to approve submission' })
+      showNotification('error', error.message || 'Failed to approve submission')
     } finally {
       setProcessing(null)
     }
@@ -167,7 +167,6 @@ export default function PendingSubmissionsPage() {
     }
 
     setProcessing(submissionId)
-    setMessage(null)
 
     try {
       const { error } = await supabase
@@ -177,11 +176,11 @@ export default function PendingSubmissionsPage() {
 
       if (error) throw error
 
-      setMessage({ type: 'success', text: 'Submission rejected' })
+      showNotification('success', 'Submission rejected')
       await loadPendingSubmissions()
     } catch (error: any) {
       console.error('Error rejecting submission:', error)
-      setMessage({ type: 'error', text: error.message || 'Failed to reject submission' })
+      showNotification('error', error.message || 'Failed to reject submission')
     } finally {
       setProcessing(null)
     }
@@ -203,17 +202,6 @@ export default function PendingSubmissionsPage() {
           <PendingSubmissionsListSkeleton count={3} />
         ) : (
           <>
-            {/* Message */}
-            {message && (
-          <div className={`mb-6 p-4 rounded-xl ${
-            message.type === 'success'
-              ? 'bg-success/10 border border-success/50 text-success'
-              : 'bg-destructive/10 border border-destructive/50 text-destructive'
-          }`}>
-            {message.text}
-          </div>
-        )}
-
         {/* Submissions List */}
         {submissions.length === 0 ? (
           <EmptyState

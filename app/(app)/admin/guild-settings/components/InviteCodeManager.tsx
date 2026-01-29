@@ -3,6 +3,7 @@
 import { createClient } from '@/utils/supabase/client'
 import { useState, useEffect } from 'react'
 import { useGuildContext } from '@/app/contexts/GuildContext'
+import { useNotification } from '@/app/contexts/NotificationContext'
 import { Button } from '@/components/ui/button'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { Copy01Icon, Cancel01Icon, Add01Icon } from '@hugeicons/core-free-icons'
@@ -23,7 +24,6 @@ export default function InviteCodeManager() {
   const [loading, setLoading] = useState(true)
   const [generating, setGenerating] = useState(false)
   const [showGenerateForm, setShowGenerateForm] = useState(false)
-  const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
 
   // Form state
   const [expiresAt, setExpiresAt] = useState('')
@@ -31,6 +31,7 @@ export default function InviteCodeManager() {
 
   const supabase = createClient()
   const { activeGuild } = useGuildContext()
+  const { showNotification } = useNotification()
 
   useEffect(() => {
     if (activeGuild) {
@@ -60,7 +61,6 @@ export default function InviteCodeManager() {
     if (!activeGuild) return
 
     setGenerating(true)
-    setMessage(null)
 
     try {
       const response = await fetch('/api/guild-invites', {
@@ -78,17 +78,17 @@ export default function InviteCodeManager() {
       const data = await response.json()
 
       if (!response.ok) {
-        setMessage({ type: 'error', text: data.error || 'Failed to generate invite code' })
+        showNotification('error', data.error || 'Failed to generate invite code')
         return
       }
 
-      setMessage({ type: 'success', text: 'Invite code generated successfully!' })
+      showNotification('success', 'Invite code generated successfully!')
       setShowGenerateForm(false)
       setExpiresAt('')
       setMaxUses('')
       await loadInviteCodes()
     } catch (error: any) {
-      setMessage({ type: 'error', text: error.message || 'Failed to generate invite code' })
+      showNotification('error', error.message || 'Failed to generate invite code')
     } finally {
       setGenerating(false)
     }
@@ -105,17 +105,16 @@ export default function InviteCodeManager() {
 
       if (error) throw error
 
-      setMessage({ type: 'success', text: 'Invite code deactivated' })
+      showNotification('success', 'Invite code deactivated')
       await loadInviteCodes()
     } catch (error: any) {
-      setMessage({ type: 'error', text: error.message || 'Failed to deactivate code' })
+      showNotification('error', error.message || 'Failed to deactivate code')
     }
   }
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text)
-    setMessage({ type: 'success', text: 'Copied to clipboard!' })
-    setTimeout(() => setMessage(null), 2000)
+    showNotification('success', 'Copied to clipboard!', 2000)
   }
 
   return (
@@ -133,16 +132,6 @@ export default function InviteCodeManager() {
         </div>
       </div>
       <div className="p-6 space-y-4">
-        {message && (
-          <div className={`p-3 rounded-lg ${
-            message.type === 'success'
-              ? 'bg-success/10 border border-success/50 text-success'
-              : 'bg-destructive/10 border border-destructive/50 text-destructive'
-          }`}>
-            {message.text}
-          </div>
-        )}
-
         {/* Generate Form */}
         {showGenerateForm && (
           <div className="p-4 bg-background-subtle border border-border rounded-lg space-y-4">

@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { ProfileContentSkeleton } from '@/components/ui/skeletons'
 import { useGuildContext } from '@/app/contexts/GuildContext'
+import { useNotification } from '@/app/contexts/NotificationContext'
 import {
   Modal,
   ModalHeader,
@@ -57,6 +58,7 @@ export default function ProfilePage() {
     }
   }, [theme, selectedTheme])
   const { switchGuild } = useGuildContext()
+  const { showNotification } = useNotification()
   const supabase = createClient()
   const router = useRouter()
 
@@ -81,7 +83,7 @@ export default function ProfilePage() {
       const data = await response.json()
 
       if (!response.ok) {
-        alert(data.error || 'Failed to leave guild')
+        showNotification('error', data.error || 'Failed to leave guild')
         setLeaving(false)
         return
       }
@@ -94,7 +96,7 @@ export default function ProfilePage() {
       window.location.reload()
     } catch (err) {
       console.error('Error leaving guild:', err)
-      alert('An error occurred while leaving the guild')
+      showNotification('error', 'An error occurred while leaving the guild')
       setLeaving(false)
     }
   }
@@ -134,9 +136,9 @@ export default function ProfilePage() {
 
       if (!response.ok) {
         if (data.owned_guilds) {
-          alert(`${data.message}\n\nPlease go to Admin > Guild Settings to delete or transfer these guilds first.`)
+          showNotification('error', `${data.message} Please go to Admin > Guild Settings to delete or transfer these guilds first.`)
         } else {
-          alert(data.error || 'Failed to delete account')
+          showNotification('error', data.error || 'Failed to delete account')
         }
         setDeleting(false)
         return
@@ -146,7 +148,7 @@ export default function ProfilePage() {
       window.location.href = '/'
     } catch (err) {
       console.error('Error deleting account:', err)
-      alert('An error occurred while deleting your account')
+      showNotification('error', 'An error occurred while deleting your account')
       setDeleting(false)
     }
   }
@@ -518,10 +520,10 @@ export default function ProfilePage() {
                             <img
                               src={membership.guild.icon_url}
                               alt={membership.guild.name}
-                              className="w-12 h-12 rounded-full border border-border/50 shadow-sm"
+                              className="w-12 h-12 rounded-lg border border-border/50 shadow-sm"
                             />
                           ) : (
-                            <div className="w-12 h-12 bg-gradient-to-br from-accent/30 to-accent/10 rounded-full flex items-center justify-center border border-border/50 shadow-sm">
+                            <div className="w-12 h-12 bg-gradient-to-br from-accent/30 to-accent/10 rounded-lg flex items-center justify-center border border-border/50 shadow-sm">
                               <span className="text-accent font-bold text-lg">{membership.guild.name.charAt(0)}</span>
                             </div>
                           )}

@@ -12,7 +12,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { EyeIcon, ViewOffIcon, Notification01Icon, Shield01Icon, FloppyDiskIcon, CheckmarkCircle01Icon, RefreshIcon } from '@hugeicons/core-free-icons'
-import { Alert, AlertDescription } from '@/components/ui/alert'
+import { useNotification } from '@/app/contexts/NotificationContext'
 
 interface UserPreferences {
   show_email: boolean
@@ -34,8 +34,8 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [verifying, setVerifying] = useState(false)
-  const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
   const supabase = createClient()
+  const { showNotification } = useNotification()
   const router = useRouter()
 
   useEffect(() => {
@@ -80,7 +80,6 @@ export default function SettingsPage() {
     if (!preferences) return
 
     setSaving(true)
-    setMessage(null)
 
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
@@ -94,10 +93,9 @@ export default function SettingsPage() {
       })
 
     if (error) {
-      setMessage({ type: 'error', text: 'Failed to save preferences' })
+      showNotification('error', 'Failed to save preferences')
     } else {
-      setMessage({ type: 'success', text: 'Preferences saved successfully!' })
-      setTimeout(() => setMessage(null), 3000)
+      showNotification('success', 'Preferences saved successfully!', 3000)
     }
 
     setSaving(false)
@@ -111,7 +109,6 @@ export default function SettingsPage() {
 
   const verifyDiscord = async () => {
     setVerifying(true)
-    setMessage(null)
 
     try {
       const response = await fetch('/api/verify-discord', {
@@ -121,27 +118,17 @@ export default function SettingsPage() {
       const data = await response.json()
 
       if (response.ok) {
-        setMessage({
-          type: data.verified ? 'success' : 'error',
-          text: data.message
-        })
+        showNotification(data.verified ? 'success' : 'error', data.message)
 
         // Reload preferences to get updated verification status
         await loadPreferences()
       } else {
-        setMessage({
-          type: 'error',
-          text: data.error || 'Verification failed'
-        })
+        showNotification('error', data.error || 'Verification failed')
       }
     } catch (error) {
-      setMessage({
-        type: 'error',
-        text: 'Failed to verify Discord membership'
-      })
+      showNotification('error', 'Failed to verify Discord membership')
     } finally {
       setVerifying(false)
-      setTimeout(() => setMessage(null), 5000)
     }
   }
 
@@ -162,14 +149,6 @@ export default function SettingsPage() {
       />
 
       <main className="max-w-4xl mx-auto p-6 space-y-6">
-        {message && (
-          <Alert className={message.type === 'success' ? 'border-success bg-success/10' : 'border-destructive bg-destructive/10'}>
-            <AlertDescription className={message.type === 'success' ? 'text-success' : 'text-destructive'}>
-              {message.text}
-            </AlertDescription>
-          </Alert>
-        )}
-
         {/* Privacy Settings */}
         <Card>
           <CardHeader>

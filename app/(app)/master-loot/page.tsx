@@ -5,6 +5,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import type { User } from '@supabase/supabase-js'
 import { useGuildContext } from '@/app/contexts/GuildContext'
+import { useNotification } from '@/app/contexts/NotificationContext'
 import { SubmissionsListSkeleton, TierTabsSkeleton } from '@/components/ui/skeletons'
 import { Modal, ModalHeader, ModalTitle, ModalBody, ModalFooter } from '@/components/ui/modal'
 import { Button } from '@/components/ui/button'
@@ -57,13 +58,13 @@ export default function MasterLootPage() {
   const [filter, setFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all')
   const [user, setUser] = useState<User | null>(null)
   const [guildId, setGuildId] = useState<string | null>(null)
-  const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
   const [viewingSubmission, setViewingSubmission] = useState<string | null>(null)
   const [submissionDetails, setSubmissionDetails] = useState<any[]>([])
 
   const supabase = createClient()
   const router = useRouter()
   const { activeGuild, loading: guildLoading, isOfficer } = useGuildContext()
+  const { showNotification } = useNotification()
 
   useEffect(() => {
     document.title = 'LootList+ • Master Loot'
@@ -191,7 +192,6 @@ export default function MasterLootPage() {
 
   const handleReview = async (submissionId: string, status: 'approved' | 'rejected') => {
     setReviewing(submissionId)
-    setMessage(null)
 
     try {
       const { data, error } = await supabase
@@ -206,7 +206,7 @@ export default function MasterLootPage() {
 
       if (error) throw error
 
-      setMessage({ type: 'success', text: `Submission ${status} successfully` })
+      showNotification('success', `Submission ${status} successfully`)
       setReviewNotes('')
       setReviewing(null)
 
@@ -214,7 +214,7 @@ export default function MasterLootPage() {
         await loadSubmissions(guildId, activeTier.id)
       }
     } catch (error: any) {
-      setMessage({ type: 'error', text: error.message || 'Failed to update submission' })
+      showNotification('error', error.message || 'Failed to update submission')
       setReviewing(null)
     }
   }
@@ -266,16 +266,6 @@ export default function MasterLootPage() {
         </div>
       ) : (
         <>
-          {message && (
-        <div className={`p-4 rounded-xl ${
-          message.type === 'success'
-            ? 'bg-success/10 border border-success/50 text-success'
-            : 'bg-destructive/10 border border-destructive/50 text-destructive'
-        }`}>
-          <p className="text-[14px]">{message.text}</p>
-        </div>
-      )}
-
       {/* Submissions */}
       <div className="space-y-4">
           {/* Filters */}

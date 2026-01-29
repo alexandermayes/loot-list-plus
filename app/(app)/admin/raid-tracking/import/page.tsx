@@ -5,19 +5,20 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import type { User } from '@supabase/supabase-js'
 import { useGuildContext } from '@/app/contexts/GuildContext'
+import { useNotification } from '@/app/contexts/NotificationContext'
 import { Heading } from '@/components/ui/typography'
 
 export default function ImportPage() {
   const [loading, setLoading] = useState(false)
   const [user, setUser] = useState<User | null>(null)
   const [guildId, setGuildId] = useState<string | null>(null)
-  const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
   const [file, setFile] = useState<File | null>(null)
   const [importType, setImportType] = useState<'attendance' | 'loot_items' | 'members'>('attendance')
 
   const supabase = createClient()
   const router = useRouter()
   const { activeGuild, loading: guildLoading, isOfficer } = useGuildContext()
+  const { showNotification } = useNotification()
 
   // Set page title
   useEffect(() => {
@@ -82,7 +83,6 @@ export default function ImportPage() {
     if (!file || !guildId) return
 
     setLoading(true)
-    setMessage(null)
 
     try {
       const text = await file.text()
@@ -102,9 +102,9 @@ export default function ImportPage() {
         await importMembers(headers, rows.slice(1))
       }
 
-      setMessage({ type: 'success', text: 'Import completed successfully!' })
+      showNotification('success', 'Import completed successfully!')
     } catch (error: any) {
-      setMessage({ type: 'error', text: error.message || 'Failed to import data' })
+      showNotification('error', error.message || 'Failed to import data')
     }
 
     setLoading(false)
@@ -263,16 +263,6 @@ export default function ImportPage() {
           <Heading level={1}>Import Raid Data</Heading>
           <p className="text-muted-foreground mt-1 text-base">Import raid tracking data from CSV files</p>
         </div>
-
-        {message && (
-          <div className={`p-4 rounded-xl ${
-            message.type === 'success'
-              ? 'bg-success/10 border border-success/50 text-success'
-              : 'bg-destructive/10 border border-destructive/50 text-destructive'
-          }`}>
-            {message.text}
-          </div>
-        )}
 
         <div className="bg-background-elevated border border-border rounded-xl p-6">
           <h2 className="text-[24px] font-semibold text-foreground mb-4">Import Data from CSV</h2>
