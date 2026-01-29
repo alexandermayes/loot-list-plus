@@ -351,31 +351,45 @@ async function seedTestData(): Promise<void> {
       stats.memberships += memberships.length
     }
 
-    // Create loot submissions
+    // Create loot submissions (one per character with multiple items)
     if (items && items.length > 0 && characters.length > 0) {
-      const submissions = []
-      for (let s = 0; s < CONFIG.submissionsPerGuild; s++) {
-        const character = randomElement(characters)
-        const item = randomElement(items)
-        submissions.push({
-          guild_id: guild.id,
-          raid_tier_id: raidTier.id,
-          item_id: item.id,
-          character_id: character.id,
-          rank: Math.floor(Math.random() * 5) + 1,
-          notes: s % 10 === 0 ? 'Test submission note' : null,
-        })
-      }
-
-      // Insert in batches
-      for (let i = 0; i < submissions.length; i += 50) {
-        const batch = submissions.slice(i, i + 50)
-        const { error: subError } = await supabase
+      // Each character gets a submission with 3-6 ranked items
+      for (const character of characters) {
+        // Create the parent submission record
+        const { data: submission, error: subError } = await supabase
           .from('loot_submissions')
-          .insert(batch)
+          .insert({
+            guild_id: guild.id,
+            raid_tier_id: raidTier.id,
+            character_id: character.id,
+            status: 'pending',
+            submitted_at: new Date().toISOString(),
+          })
+          .select('id')
+          .single()
 
-        if (!subError) {
-          stats.submissions += batch.length
+        if (subError || !submission) {
+          console.warn('Error creating submission:', subError?.message)
+          continue
+        }
+
+        // Add 3-6 random items to this submission
+        const itemCount = Math.floor(Math.random() * 4) + 3
+        const shuffledItems = [...items].sort(() => Math.random() - 0.5).slice(0, itemCount)
+
+        const submissionItems = shuffledItems.map((item, index) => ({
+          submission_id: submission.id,
+          loot_item_id: item.id,
+          rank: (index + 1) * 10, // 10, 20, 30, etc.
+          slot: index + 1,
+        }))
+
+        const { error: itemError } = await supabase
+          .from('loot_submission_items')
+          .insert(submissionItems)
+
+        if (!itemError) {
+          stats.submissions++
         }
       }
     }

@@ -175,6 +175,7 @@ async function saveTestUsers(users: TestUser[]): Promise<void> {
   const output = {
     created_at: new Date().toISOString(),
     supabase_url: supabaseUrl,
+    supabase_anon_key: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
     user_count: users.length,
     users: users.map(u => ({
       id: u.id,

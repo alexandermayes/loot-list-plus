@@ -95,11 +95,17 @@ export const options = {
   },
 }
 
-// Get Supabase URL from test users file
-const SUPABASE_URL = new SharedArray('config', function () {
+// Get Supabase URL and anon key from test users file
+const SUPABASE_CONFIG = new SharedArray('config', function () {
   const data = JSON.parse(open('./test-users.json'))
-  return [data.supabase_url]
+  return [{
+    url: data.supabase_url,
+    anon_key: data.supabase_anon_key
+  }]
 })[0]
+
+const SUPABASE_URL = SUPABASE_CONFIG.url
+const SUPABASE_ANON_KEY = SUPABASE_CONFIG.anon_key || __ENV.SUPABASE_ANON_KEY
 
 // Authenticate user and get session token
 function authenticateUser(email, password) {
@@ -111,7 +117,7 @@ function authenticateUser(email, password) {
   }), {
     headers: {
       'Content-Type': 'application/json',
-      'apikey': __ENV.SUPABASE_ANON_KEY || '',
+      'apikey': SUPABASE_ANON_KEY,
     },
   })
 
