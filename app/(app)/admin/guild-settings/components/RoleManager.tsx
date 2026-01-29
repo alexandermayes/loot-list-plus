@@ -3,6 +3,7 @@
 import { createClient } from '@/utils/supabase/client'
 import { useState, useEffect } from 'react'
 import { useGuildContext } from '@/app/contexts/GuildContext'
+import { useNotification } from '@/app/contexts/NotificationContext'
 import { Button } from '@/components/ui/button'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { Add01Icon, Delete01Icon, Shield01Icon, UserIcon, Edit01Icon, Tick01Icon, Cancel01Icon, CrownIcon, ArrowUp01Icon, ArrowDown01Icon } from '@hugeicons/core-free-icons'
@@ -20,7 +21,6 @@ interface GuildRole {
 export default function RoleManager() {
   const [roles, setRoles] = useState<GuildRole[]>([])
   const [loading, setLoading] = useState(true)
-  const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
   const [newRoleName, setNewRoleName] = useState('')
   const [isAddingRole, setIsAddingRole] = useState(false)
   const [editingRoleId, setEditingRoleId] = useState<string | null>(null)
@@ -28,6 +28,7 @@ export default function RoleManager() {
 
   const supabase = createClient()
   const { activeGuild } = useGuildContext()
+  const { showNotification } = useNotification()
 
   useEffect(() => {
     if (activeGuild) {
@@ -50,12 +51,9 @@ export default function RoleManager() {
         console.error('Error loading roles:', error)
         // Check if it's because the table doesn't exist
         if (error.message?.includes('relation "public.guild_roles" does not exist')) {
-          setMessage({
-            type: 'error',
-            text: 'Guild roles table not found. Please run the migration in Supabase SQL Editor.'
-          })
+          showNotification('error', 'Guild roles table not found. Please run the migration in Supabase SQL Editor.')
         } else {
-          setMessage({ type: 'error', text: `Failed to load roles: ${error.message}` })
+          showNotification('error', `Failed to load roles: ${error.message}`)
         }
         return
       }
@@ -63,7 +61,7 @@ export default function RoleManager() {
       setRoles(data || [])
     } catch (error: any) {
       console.error('Error loading roles:', error)
-      setMessage({ type: 'error', text: error.message || 'Failed to load roles' })
+      showNotification('error', error.message || 'Failed to load roles')
     } finally {
       setLoading(false)
     }
@@ -71,12 +69,12 @@ export default function RoleManager() {
 
   const handleAddRole = async () => {
     if (!activeGuild || !newRoleName.trim()) {
-      setMessage({ type: 'error', text: 'Role name is required' })
+      showNotification('error', 'Role name is required')
       return
     }
 
     if (roles.length >= 10) {
-      setMessage({ type: 'error', text: 'Maximum of 10 roles allowed' })
+      showNotification('error', 'Maximum of 10 roles allowed')
       return
     }
 
@@ -100,12 +98,12 @@ export default function RoleManager() {
 
       if (error) throw error
 
-      setMessage({ type: 'success', text: 'Role created successfully' })
+      showNotification('success', 'Role created successfully')
       setNewRoleName('')
       setIsAddingRole(false)
       await loadRoles()
     } catch (error: any) {
-      setMessage({ type: 'error', text: error.message || 'Failed to create role' })
+      showNotification('error', error.message || 'Failed to create role')
     }
   }
 
@@ -116,7 +114,7 @@ export default function RoleManager() {
 
   const handleSaveEditRole = async (roleId: string) => {
     if (!editingRoleName.trim()) {
-      setMessage({ type: 'error', text: 'Role name is required' })
+      showNotification('error', 'Role name is required')
       return
     }
 
@@ -130,12 +128,12 @@ export default function RoleManager() {
 
       if (error) throw error
 
-      setMessage({ type: 'success', text: 'Role updated successfully' })
+      showNotification('success', 'Role updated successfully')
       setEditingRoleId(null)
       setEditingRoleName('')
       await loadRoles()
     } catch (error: any) {
-      setMessage({ type: 'error', text: error.message || 'Failed to update role' })
+      showNotification('error', error.message || 'Failed to update role')
     }
   }
 
@@ -155,10 +153,10 @@ export default function RoleManager() {
 
       if (error) throw error
 
-      setMessage({ type: 'success', text: 'Role deleted successfully' })
+      showNotification('success', 'Role deleted successfully')
       await loadRoles()
     } catch (error: any) {
-      setMessage({ type: 'error', text: error.message || 'Failed to delete role' })
+      showNotification('error', error.message || 'Failed to delete role')
     }
   }
 
@@ -194,7 +192,7 @@ export default function RoleManager() {
 
       await loadRoles()
     } catch (error: any) {
-      setMessage({ type: 'error', text: error.message || 'Failed to reorder roles' })
+      showNotification('error', error.message || 'Failed to reorder roles')
     }
   }
 
@@ -206,16 +204,6 @@ export default function RoleManager() {
 
   return (
     <div className="p-6 space-y-4">
-      {message && (
-        <div className={`p-3 rounded-lg ${
-          message.type === 'success'
-            ? 'bg-success/10 border border-success/50 text-success'
-            : 'bg-destructive/10 border border-destructive/50 text-destructive'
-        }`}>
-          {message.text}
-        </div>
-      )}
-
       {loading ? (
         <p className="text-muted-foreground text-center py-4">Loading roles...</p>
       ) : (

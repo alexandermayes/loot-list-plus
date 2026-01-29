@@ -4,8 +4,9 @@ import { createClient } from '@/utils/supabase/client'
 import { useState, useEffect, use } from 'react'
 import { useRouter } from 'next/navigation'
 import { useGuildContext } from '@/app/contexts/GuildContext'
+import { useNotification } from '@/app/contexts/NotificationContext'
 import { HugeiconsIcon } from '@hugeicons/react'
-import { ArrowLeft01Icon, Calendar01Icon, Tick01Icon } from '@hugeicons/core-free-icons'
+import { ArrowLeft01Icon, Tick01Icon } from '@hugeicons/core-free-icons'
 import { getExpansionVisuals } from '@/utils/expansionVisuals'
 import { getRaidIcon } from '@/utils/raidIcons'
 import { Button } from '@/components/ui/button'
@@ -32,13 +33,12 @@ export default function ExpansionDetailPage({ params }: { params: Promise<{ expa
   const [raidTiers, setRaidTiers] = useState<RaidTier[]>([])
   const [loading, setLoading] = useState(true)
   const [updating, setUpdating] = useState<string | null>(null)
-  const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
-  const [raidStartDate, setRaidStartDate] = useState('')
   const [deadlineInputs, setDeadlineInputs] = useState<Record<string, string>>({})
 
   const supabase = createClient()
   const router = useRouter()
   const { activeGuild, loading: guildLoading, isOfficer } = useGuildContext()
+  const { showNotification } = useNotification()
 
   useEffect(() => {
     if (expansion) {
@@ -105,22 +105,19 @@ export default function ExpansionDetailPage({ params }: { params: Promise<{ expa
 
       if (expError) {
         console.error('Error loading expansion:', expError)
-        setMessage({ type: 'error', text: 'Failed to load expansion' })
+        showNotification('error', 'Failed to load expansion')
         setLoading(false)
         return
       }
 
       const exp = expansions?.find((e: Expansion) => e.expansion_id === expansionId)
       if (!exp) {
-        setMessage({ type: 'error', text: 'Expansion not found' })
+        showNotification('error', 'Expansion not found')
         setLoading(false)
         return
       }
 
       setExpansion(exp)
-      if (exp.raid_start_date) {
-        setRaidStartDate(exp.raid_start_date)
-      }
 
       // Load raid tiers for this expansion
       const { data: tiersData, error: tiersError } = await supabase
@@ -153,43 +150,14 @@ export default function ExpansionDetailPage({ params }: { params: Promise<{ expa
       }
     } catch (error) {
       console.error('Error loading data:', error)
-      setMessage({ type: 'error', text: 'Failed to load data' })
+      showNotification('error', 'Failed to load data')
     } finally {
       setLoading(false)
     }
   }
 
-  const handleUpdateRaidStartDate = async () => {
-    if (!activeGuild || !raidStartDate) return
-
-    setUpdating('raid-start')
-    setMessage(null)
-
-    try {
-      const response = await fetch(`/api/guilds/${activeGuild.id}/expansions/${expansionId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ raidStartDate })
-      })
-
-      const data = await response.json()
-
-      if (!response.ok) {
-        setMessage({ type: 'error', text: data.error || 'Failed to update raid start date' })
-        return
-      }
-
-      setMessage({ type: 'success', text: 'Raid start date updated!' })
-    } catch (error: any) {
-      setMessage({ type: 'error', text: error.message || 'Failed to update' })
-    } finally {
-      setUpdating(null)
-    }
-  }
-
   const handleToggleGuildActive = async (tierId: string, currentValue: boolean) => {
     setUpdating(tierId)
-    setMessage(null)
 
     try {
       console.log('Toggling is_guild_active for tier:', tierId, 'from', currentValue, 'to', !currentValue)
@@ -205,10 +173,7 @@ export default function ExpansionDetailPage({ params }: { params: Promise<{ expa
       if (error) {
         // Check if it's a column not found error
         if (error.message?.includes('is_guild_active') || error.code === '42703') {
-          setMessage({
-            type: 'error',
-            text: 'Please run the database migration to enable this feature. See migrations/add_is_guild_active_to_raid_tiers.sql'
-          })
+          showNotification('error', 'Please run the database migration to enable this feature. See migrations/add_is_guild_active_to_raid_tiers.sql')
         } else {
           throw error
         }
@@ -217,21 +182,15 @@ export default function ExpansionDetailPage({ params }: { params: Promise<{ expa
 
       // Check if any rows were actually updated
       if (!data || data.length === 0) {
-        setMessage({
-          type: 'error',
-          text: 'Update failed - no rows affected. Check RLS policies.'
-        })
+        showNotification('error', 'Update failed - no rows affected. Check RLS policies.')
         return
       }
 
-      setMessage({
-        type: 'success',
-        text: !currentValue ? 'Raid activated for guild' : 'Raid deactivated for guild'
-      })
+      showNotification('success', !currentValue ? 'Raid activated for guild' : 'Raid deactivated for guild')
       await loadData()
     } catch (error: any) {
       console.error('Toggle error:', error)
-      setMessage({ type: 'error', text: error.message || 'Failed to update' })
+      showNotification('error', error.message || 'Failed to update')
     } finally {
       setUpdating(null)
     }
@@ -239,7 +198,6 @@ export default function ExpansionDetailPage({ params }: { params: Promise<{ expa
 
   const handleToggleMasterSheetVisibility = async (tierId: string, currentValue: boolean) => {
     setUpdating(tierId)
-    setMessage(null)
 
     try {
       const { error } = await supabase
@@ -249,13 +207,10 @@ export default function ExpansionDetailPage({ params }: { params: Promise<{ expa
 
       if (error) throw error
 
-      setMessage({
-        type: 'success',
-        text: !currentValue ? 'Rankings now visible to players' : 'Rankings hidden from players'
-      })
+      showNotification('success', !currentValue ? 'Rankings now visible to players' : 'Rankings hidden from players')
       await loadData()
     } catch (error: any) {
-      setMessage({ type: 'error', text: error.message || 'Failed to update visibility' })
+      showNotification('error', error.message || 'Failed to update visibility')
     } finally {
       setUpdating(null)
     }
@@ -264,7 +219,6 @@ export default function ExpansionDetailPage({ params }: { params: Promise<{ expa
   const handleToggleCurrent = async (tierId: string, currentValue: boolean) => {
     if (!activeGuild) return
     setUpdating(tierId)
-    setMessage(null)
 
     try {
       // Toggle the is_active state for this tier
@@ -275,13 +229,10 @@ export default function ExpansionDetailPage({ params }: { params: Promise<{ expa
 
       if (error) throw error
 
-      setMessage({
-        type: 'success',
-        text: !currentValue ? 'Raid tier marked as current' : 'Raid tier unmarked as current'
-      })
+      showNotification('success', !currentValue ? 'Raid tier marked as current' : 'Raid tier unmarked as current')
       await loadData()
     } catch (error: any) {
-      setMessage({ type: 'error', text: error.message || 'Failed to update raid tier' })
+      showNotification('error', error.message || 'Failed to update raid tier')
     } finally {
       setUpdating(null)
     }
@@ -289,7 +240,6 @@ export default function ExpansionDetailPage({ params }: { params: Promise<{ expa
 
   const handleUpdateDeadline = async (tierId: string, deadline: string | null) => {
     setUpdating(tierId)
-    setMessage(null)
 
     try {
       const { error } = await supabase
@@ -299,13 +249,10 @@ export default function ExpansionDetailPage({ params }: { params: Promise<{ expa
 
       if (error) throw error
 
-      setMessage({
-        type: 'success',
-        text: deadline ? 'Submission deadline updated' : 'Submission deadline cleared'
-      })
+      showNotification('success', deadline ? 'Submission deadline updated' : 'Submission deadline cleared')
       await loadData()
     } catch (error: any) {
-      setMessage({ type: 'error', text: error.message || 'Failed to update deadline' })
+      showNotification('error', error.message || 'Failed to update deadline')
     } finally {
       setUpdating(null)
     }
@@ -341,13 +288,13 @@ export default function ExpansionDetailPage({ params }: { params: Promise<{ expa
   return (
     <div className="p-8 space-y-6">
       {/* Back Button */}
-      <button
+      <Button
+        variant="secondary"
         onClick={() => router.push('/admin/expansions')}
-        className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition"
       >
         <HugeiconsIcon icon={ArrowLeft01Icon} size={16} />
         Back to Expansions
-      </button>
+      </Button>
 
       {/* Expansion Header */}
       <div
@@ -358,7 +305,7 @@ export default function ExpansionDetailPage({ params }: { params: Promise<{ expa
         }}
       >
         <div
-          className="absolute inset-0 opacity-30"
+          className="absolute inset-0 opacity-20"
           style={{ background: visuals.gradient }}
         />
 
@@ -377,14 +324,14 @@ export default function ExpansionDetailPage({ params }: { params: Promise<{ expa
           <div className="flex-1">
             <div className="flex items-center gap-3 mb-1">
               <h1
-                className="text-[28px] font-bold"
+                className="text-2xl font-bold"
                 style={{ color: visuals.textColor }}
               >
                 {expansion.expansion_name}
               </h1>
               {expansion.is_current && (
                 <span
-                  className="px-3 py-1 text-[11px] font-semibold rounded-full"
+                  className="px-3 py-1 text-xs font-semibold rounded-full"
                   style={{
                     backgroundColor: `${visuals.accentColor}20`,
                     color: visuals.accentColor,
@@ -395,62 +342,12 @@ export default function ExpansionDetailPage({ params }: { params: Promise<{ expa
                 </span>
               )}
             </div>
-            <p className="text-[14px]" style={{ color: `${visuals.textColor}99` }}>
+            <p className="text-sm" style={{ color: `${visuals.textColor}80` }}>
               {raidTiers.length} raid tiers • {activeGuildRaids} active for guild{currentRaids > 0 && ` • ${currentRaids} current`}
             </p>
           </div>
         </div>
-
-        {/* Raid Start Date */}
-        <div
-          className="relative flex items-end gap-3 mt-6 pt-4 border-t"
-          style={{ borderColor: `${visuals.borderColor}50` }}
-        >
-          <div className="flex-1">
-            <label
-              className="block text-[13px] font-medium mb-2"
-              style={{ color: visuals.textColor }}
-            >
-              <HugeiconsIcon icon={Calendar01Icon} size={16} className="inline mr-2" style={{ color: visuals.accentColor }} />
-              Raid Start Date
-            </label>
-            <input
-              type="date"
-              value={raidStartDate}
-              onChange={(e) => setRaidStartDate(e.target.value)}
-              className="w-full px-4 py-2 rounded-xl text-[14px] focus:outline-none transition"
-              style={{
-                backgroundColor: visuals.bgColor,
-                border: `1px solid ${visuals.borderColor}`,
-                color: visuals.textColor
-              }}
-            />
-          </div>
-          <button
-            onClick={handleUpdateRaidStartDate}
-            disabled={updating === 'raid-start' || !raidStartDate}
-            className="px-5 py-2 rounded-[52px] text-[13px] font-medium transition disabled:opacity-50"
-            style={{
-              backgroundColor: 'transparent',
-              border: `1px solid ${visuals.borderColor}`,
-              color: visuals.textColor
-            }}
-          >
-            {updating === 'raid-start' ? 'Saving...' : 'Save Date'}
-          </button>
-        </div>
       </div>
-
-      {/* Message */}
-      {message && (
-        <div className={`p-4 rounded-xl ${
-          message.type === 'success'
-            ? 'bg-success/10 border border-success/50 text-success'
-            : 'bg-destructive/10 border border-destructive/50 text-destructive'
-        }`}>
-          {message.text}
-        </div>
-      )}
 
       {/* Raid Tiers Section */}
       <div>

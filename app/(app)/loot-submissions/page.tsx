@@ -5,6 +5,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import type { User } from '@supabase/supabase-js'
 import { useGuildContext } from '@/app/contexts/GuildContext'
+import { useNotification } from '@/app/contexts/NotificationContext'
 import { TierTabsSkeleton, SubmissionsListSkeleton } from '@/components/ui/skeletons'
 import { StatusBadge, type SubmissionStatus } from '@/components/ui/status-badge'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -104,8 +105,7 @@ export default function MasterLootPage() {
   const [filter, setFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all')
   const [user, setUser] = useState<User | null>(null)
   const [guildId, setGuildId] = useState<string | null>(null)
-  const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
-  const [viewingSubmission, setViewingSubmission] = useState<string | null>(null)
+    const [viewingSubmission, setViewingSubmission] = useState<string | null>(null)
   const [submissionDetails, setSubmissionDetails] = useState<any[]>([])
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState<{ type: 'single' | 'pending' | 'all', id?: string } | null>(null)
@@ -114,6 +114,7 @@ export default function MasterLootPage() {
   const supabase = createClient()
   const router = useRouter()
   const { activeGuild, loading: guildLoading, isOfficer } = useGuildContext()
+  const { showNotification } = useNotification()
 
   useEffect(() => {
     document.title = 'LootList+ • Loot Submissions'
@@ -310,7 +311,6 @@ export default function MasterLootPage() {
 
   const handleReview = async (submissionId: string, status: 'approved' | 'rejected') => {
     setReviewing(submissionId)
-    setMessage(null)
 
     try {
       const { data, error } = await supabase
@@ -325,7 +325,7 @@ export default function MasterLootPage() {
 
       if (error) throw error
 
-      setMessage({ type: 'success', text: `Submission ${status} successfully` })
+      showNotification('success', `Submission ${status} successfully`)
       setReviewNotes('')
       setReviewing(null)
 
@@ -334,7 +334,7 @@ export default function MasterLootPage() {
         await loadSubmissions(guildId, tierId, activeTier === 'all' ? raidTiers : undefined)
       }
     } catch (error: any) {
-      setMessage({ type: 'error', text: error.message || 'Failed to update submission' })
+      showNotification('error', error.message || 'Failed to update submission')
       setReviewing(null)
     }
   }
@@ -370,7 +370,7 @@ export default function MasterLootPage() {
 
         if (error) throw error
 
-        setMessage({ type: 'success', text: 'Submission deleted successfully' })
+        showNotification('success', 'Submission deleted successfully')
         const tierId = activeTier === 'all' ? 'all' : activeTier.id
         await loadSubmissions(guildId, tierId, activeTier === 'all' ? raidTiers : undefined)
       } else {
@@ -392,7 +392,7 @@ export default function MasterLootPage() {
         }
 
         const result = await response.json()
-        setMessage({ type: 'success', text: `Deleted ${result.count} submission${result.count !== 1 ? 's' : ''}` })
+        showNotification('success', `Deleted ${result.count} submission${result.count !== 1 ? 's' : ''}`)
         const tierId = activeTier === 'all' ? 'all' : activeTier.id
         await loadSubmissions(guildId, tierId, activeTier === 'all' ? raidTiers : undefined)
       }
@@ -401,7 +401,7 @@ export default function MasterLootPage() {
       setDeleteTarget(null)
     } catch (error: any) {
       console.error('Error deleting submissions:', error)
-      setMessage({ type: 'error', text: error.message || 'Failed to delete submissions' })
+      showNotification('error', error.message || 'Failed to delete submissions')
     } finally {
       setDeleting(false)
     }
@@ -468,16 +468,6 @@ export default function MasterLootPage() {
         <SubmissionsListSkeleton count={5} />
       ) : (
         <>
-      {message && (
-        <div className={`p-4 rounded-xl ${
-          message.type === 'success'
-            ? 'bg-success/10 border border-success/50 text-success'
-            : 'bg-destructive/10 border border-destructive/50 text-destructive'
-        }`}>
-          <p className="text-sm">{message.text}</p>
-        </div>
-      )}
-
       {/* Submissions */}
       <div className="space-y-4">
           {/* Filters and Delete Actions */}

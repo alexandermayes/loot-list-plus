@@ -4,6 +4,7 @@ import { createClient } from '@/utils/supabase/client'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useGuildContext } from '@/app/contexts/GuildContext'
+import { useNotification } from '@/app/contexts/NotificationContext'
 import InviteCodeManager from './components/InviteCodeManager'
 import MemberManager from './components/MemberManager'
 import RoleManager from './components/RoleManager'
@@ -24,7 +25,6 @@ export default function GuildSettingsPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [user, setUser] = useState<any>(null)
-  const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
 
   // Form state
   const [guildName, setGuildName] = useState('')
@@ -40,6 +40,7 @@ export default function GuildSettingsPage() {
   const supabase = createClient()
   const router = useRouter()
   const { activeGuild, loading: guildLoading, isOfficer, refreshGuilds } = useGuildContext()
+  const { showNotification } = useNotification()
 
   // Set page title
   useEffect(() => {
@@ -94,12 +95,11 @@ export default function GuildSettingsPage() {
 
     // Validate required fields
     if (!realm.trim()) {
-      setMessage({ type: 'error', text: 'Please select a realm' })
+      showNotification('error', 'Please select a realm')
       return
     }
 
     setSaving(true)
-    setMessage(null)
 
     try {
       // Check if Discord Server ID changed and we should auto-fetch the icon
@@ -109,7 +109,7 @@ export default function GuildSettingsPage() {
 
       // Auto-fetch icon if server ID exists and icon is missing or changed
       if (shouldFetchIcon) {
-        setMessage({ type: 'success', text: 'Saving and fetching Discord icon...' })
+        showNotification('info', 'Saving and fetching Discord icon...')
 
         try {
           const response = await fetch(`/api/discord/guild-icon?serverId=${discordServerId.trim()}`)
@@ -151,14 +151,14 @@ export default function GuildSettingsPage() {
         }
       }
 
-      setMessage({ type: 'success', text: 'Guild information updated successfully' + (shouldFetchIcon && finalIconUrl ? ' (Discord icon fetched!)' : '') })
+      showNotification('success', 'Guild information updated successfully' + (shouldFetchIcon && finalIconUrl ? ' (Discord icon fetched!)' : ''))
 
       // Reload page to show updated guild info in sidebar
       setTimeout(() => {
         window.location.reload()
       }, 800)
     } catch (error: any) {
-      setMessage({ type: 'error', text: error.message || 'Failed to update guild information' })
+      showNotification('error', error.message || 'Failed to update guild information')
       setSaving(false)
     }
   }
@@ -176,7 +176,6 @@ export default function GuildSettingsPage() {
     }
 
     setDeleting(true)
-    setMessage(null)
 
     try {
       const response = await fetch('/api/guilds', {
@@ -193,7 +192,7 @@ export default function GuildSettingsPage() {
       // Force full page reload to guild select page
       window.location.href = '/guild-select'
     } catch (error: any) {
-      setMessage({ type: 'error', text: error.message || 'Failed to delete guild' })
+      showNotification('error', error.message || 'Failed to delete guild')
       setDeleting(false)
     }
   }
@@ -220,16 +219,6 @@ export default function GuildSettingsPage() {
           <GuildSettingsContentSkeleton />
         ) : (
           <>
-            {message && (
-          <div className={`p-4 rounded-xl ${
-            message.type === 'success'
-              ? 'bg-success/10 border border-success/50 text-success'
-              : 'bg-destructive/10 border border-destructive/50 text-destructive'
-          }`}>
-            {message.text}
-          </div>
-        )}
-
         {/* Guild Information and Members - Side by Side */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Basic Information */}

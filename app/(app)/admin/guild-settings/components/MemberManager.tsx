@@ -3,6 +3,8 @@
 import { createClient } from '@/utils/supabase/client'
 import { useState, useEffect, useMemo } from 'react'
 import { useGuildContext } from '@/app/contexts/GuildContext'
+import { useNotification } from '@/app/contexts/NotificationContext'
+import { useGuildMembers, invalidateGuildMembers } from '@/app/hooks/use-api'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { UserBlock01Icon, Shield01Icon, UserIcon, CrownIcon } from '@hugeicons/core-free-icons'
 
@@ -38,27 +40,37 @@ interface Member {
 }
 
 export default function MemberManager() {
-  const [members, setMembers] = useState<Member[]>([])
   const [roles, setRoles] = useState<GuildRole[]>([])
-  const [loading, setLoading] = useState(true)
-  const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
 
   const supabase = createClient()
   const { activeGuild } = useGuildContext()
+  const { showNotification } = useNotification()
 
-  // Load roles first
+  // Use SWR for cached guild members data
+  const { data: membersData, isLoading: loading, mutate: refreshMembers } = useGuildMembers(
+    activeGuild?.id || null
+  )
+
+  // Transform members data
+  const members: Member[] = useMemo(() => {
+    if (!membersData?.members) return []
+    return membersData.members.map((m: any) => ({
+      user_id: m.user_id,
+      role: m.role,
+      joined_at: m.joined_at,
+      joined_via: m.joined_via,
+      characters: m.characters,
+      mainCharacter: m.mainCharacter,
+      discordName: m.discordName
+    }))
+  }, [membersData])
+
+  // Load roles
   useEffect(() => {
     if (activeGuild) {
       loadRoles()
     }
   }, [activeGuild])
-
-  // Load members after roles are available
-  useEffect(() => {
-    if (activeGuild && roles.length > 0) {
-      loadMembers()
-    }
-  }, [activeGuild, roles])
 
   const loadRoles = async () => {
     if (!activeGuild) return
@@ -93,39 +105,6 @@ export default function MemberManager() {
         { id: '2', name: 'Officer', color_hex: '#fbbf24', position: 50, is_default: true },
         { id: '3', name: 'Guild Master', color_hex: '#ff8000', position: 100, is_default: true }
       ] as GuildRole[])
-    }
-  }
-
-  const loadMembers = async () => {
-    if (!activeGuild) return
-
-    setLoading(true)
-    try {
-      // Use API route that bypasses RLS to get all guild members
-      const response = await fetch(`/api/guild-members?guild_id=${activeGuild.id}`)
-
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.error || 'Failed to load members')
-      }
-
-      const { members: membersData } = await response.json()
-
-      const membersArray: Member[] = (membersData || []).map((m: any) => ({
-        user_id: m.user_id,
-        role: m.role,
-        joined_at: m.joined_at,
-        joined_via: m.joined_via,
-        characters: m.characters,
-        mainCharacter: m.mainCharacter,
-        discordName: m.discordName
-      }))
-
-      setMembers(membersArray)
-    } catch (error) {
-      console.error('Error loading members:', error)
-    } finally {
-      setLoading(false)
     }
   }
 
@@ -170,10 +149,11 @@ export default function MemberManager() {
         throw new Error(error.error || 'Failed to update role')
       }
 
-      setMessage({ type: 'success', text: `Role updated to ${newRole}` })
-      await loadMembers()
+      showNotification('success', `Role updated to ${newRole}`)
+      // Invalidate the SWR cache to refetch
+      await refreshMembers()
     } catch (error: any) {
-      setMessage({ type: 'error', text: error.message || 'Failed to update role' })
+      showNotification('error', error.message || 'Failed to update role')
     }
   }
 
@@ -196,10 +176,11 @@ export default function MemberManager() {
         throw new Error(error.error || 'Failed to remove member')
       }
 
-      setMessage({ type: 'success', text: `${memberName} has been removed from the guild` })
-      await loadMembers()
+      showNotification('success', `${memberName} has been removed from the guild`)
+      // Invalidate the SWR cache to refetch
+      await refreshMembers()
     } catch (error: any) {
-      setMessage({ type: 'error', text: error.message || 'Failed to remove member' })
+      showNotification('error', error.message || 'Failed to remove member')
     }
   }
 
@@ -218,16 +199,6 @@ export default function MemberManager() {
 
   return (
     <div className="p-6 space-y-4">
-      {message && (
-        <div className={`p-3 rounded-lg ${
-          message.type === 'success'
-            ? 'bg-success/10 border border-success/50 text-success'
-            : 'bg-destructive/10 border border-destructive/50 text-destructive'
-        }`}>
-          {message.text}
-        </div>
-      )}
-
       {loading ? (
         <p className="text-muted-foreground text-center py-4">Loading members...</p>
       ) : members.length === 0 ? (

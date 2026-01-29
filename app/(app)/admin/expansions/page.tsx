@@ -4,8 +4,9 @@ import { createClient } from '@/utils/supabase/client'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useGuildContext } from '@/app/contexts/GuildContext'
+import { useNotification } from '@/app/contexts/NotificationContext'
 import { HugeiconsIcon } from '@hugeicons/react'
-import { Add01Icon, Calendar01Icon, ArrowRight01Icon } from '@hugeicons/core-free-icons'
+import { Add01Icon, Calendar01Icon, ArrowRight01Icon, ArrowDown01Icon, ArrowUp01Icon, Settings01Icon } from '@hugeicons/core-free-icons'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Heading } from '@/components/ui/typography'
@@ -17,6 +18,36 @@ interface GuildExpansion {
   raid_start_date: string | null
   is_current: boolean
   created_at: string
+  raid_days_per_week: number | null
+  first_raid_day: number | null
+  second_raid_day: number | null
+  third_raid_day: number | null
+  fourth_raid_day: number | null
+  fifth_raid_day: number | null
+}
+
+interface RaidScheduleState {
+  raidDaysPerWeek: number
+  raidDays: (number | null)[]
+}
+
+const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+
+const getDayName = (dayIndex: number | null): string => {
+  if (dayIndex === null || dayIndex < 0 || dayIndex > 6) return ''
+  return DAY_NAMES[dayIndex]
+}
+
+const getRaidScheduleSummary = (exp: GuildExpansion): string => {
+  const days: string[] = []
+  if (exp.first_raid_day !== null) days.push(getDayName(exp.first_raid_day))
+  if (exp.second_raid_day !== null) days.push(getDayName(exp.second_raid_day))
+  if (exp.third_raid_day !== null) days.push(getDayName(exp.third_raid_day))
+  if (exp.fourth_raid_day !== null) days.push(getDayName(exp.fourth_raid_day))
+  if (exp.fifth_raid_day !== null) days.push(getDayName(exp.fifth_raid_day))
+
+  if (days.length === 0) return 'No schedule set'
+  return `${days.length} day${days.length > 1 ? 's' : ''}/week: ${days.join(', ')}`
 }
 
 interface AvailableExpansion {
@@ -30,12 +61,15 @@ export default function ExpansionsManagementPage() {
   const [loading, setLoading] = useState(true)
   const [adding, setAdding] = useState(false)
   const [updating, setUpdating] = useState<string | null>(null)
-  const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
   const [raidStartDates, setRaidStartDates] = useState<Record<string, string>>({})
+  const [expandedCards, setExpandedCards] = useState<Record<string, boolean>>({})
+  const [raidSchedules, setRaidSchedules] = useState<Record<string, RaidScheduleState>>({})
+  const [originalSchedules, setOriginalSchedules] = useState<Record<string, RaidScheduleState>>({})
 
   const supabase = createClient()
   const router = useRouter()
   const { activeGuild, loading: guildLoading, isOfficer } = useGuildContext()
+  const { showNotification } = useNotification()
 
   useEffect(() => {
     document.title = 'LootList+ • Manage Expansions'
@@ -64,18 +98,33 @@ export default function ExpansionsManagementPage() {
 
       if (expError) {
         console.error('Error loading expansions:', expError)
-        setMessage({ type: 'error', text: 'Failed to load expansions' })
+        showNotification('error', 'Failed to load expansions')
       } else {
         setGuildExpansions(expansions || [])
 
-        // Initialize raid start dates
+        // Initialize raid start dates and schedules
         const dates: Record<string, string> = {}
+        const schedules: Record<string, RaidScheduleState> = {}
         expansions?.forEach((exp: GuildExpansion) => {
           if (exp.raid_start_date) {
             dates[exp.expansion_id] = exp.raid_start_date
           }
+          // Initialize raid schedule state
+          const raidDays: (number | null)[] = [
+            exp.first_raid_day,
+            exp.second_raid_day,
+            exp.third_raid_day,
+            exp.fourth_raid_day,
+            exp.fifth_raid_day
+          ]
+          schedules[exp.expansion_id] = {
+            raidDaysPerWeek: exp.raid_days_per_week ?? 2,
+            raidDays
+          }
         })
         setRaidStartDates(dates)
+        setRaidSchedules(schedules)
+        setOriginalSchedules(JSON.parse(JSON.stringify(schedules)))
       }
 
       // Load available expansions
@@ -86,7 +135,7 @@ export default function ExpansionsManagementPage() {
       }
     } catch (error) {
       console.error('Error loading data:', error)
-      setMessage({ type: 'error', text: 'Failed to load data' })
+      showNotification('error', 'Failed to load data')
     } finally {
       setLoading(false)
     }
@@ -96,7 +145,6 @@ export default function ExpansionsManagementPage() {
     if (!activeGuild) return
 
     setAdding(true)
-    setMessage(null)
 
     try {
       const response = await fetch(`/api/guilds/${activeGuild.id}/expansions`, {
@@ -111,15 +159,15 @@ export default function ExpansionsManagementPage() {
       const data = await response.json()
 
       if (!response.ok) {
-        setMessage({ type: 'error', text: data.error || 'Failed to add expansion' })
+        showNotification('error', data.error || 'Failed to add expansion')
         return
       }
 
-      setMessage({ type: 'success', text: data.message || 'Expansion added successfully!' })
+      showNotification('success', data.message || 'Expansion added successfully!')
       await loadData()
     } catch (error: any) {
       console.error('Error adding expansion:', error)
-      setMessage({ type: 'error', text: error.message || 'Failed to add expansion' })
+      showNotification('error', error.message || 'Failed to add expansion')
     } finally {
       setAdding(false)
     }
@@ -129,7 +177,6 @@ export default function ExpansionsManagementPage() {
     if (!activeGuild) return
 
     setUpdating(expansionId)
-    setMessage(null)
 
     try {
       const response = await fetch(`/api/guilds/${activeGuild.id}/expansions/${expansionId}`, {
@@ -141,15 +188,15 @@ export default function ExpansionsManagementPage() {
       const data = await response.json()
 
       if (!response.ok) {
-        setMessage({ type: 'error', text: data.error || 'Failed to set current expansion' })
+        showNotification('error', data.error || 'Failed to set current expansion')
         return
       }
 
-      setMessage({ type: 'success', text: data.message || 'Current expansion updated!' })
+      showNotification('success', data.message || 'Current expansion updated!')
       await loadData()
     } catch (error: any) {
       console.error('Error setting current expansion:', error)
-      setMessage({ type: 'error', text: error.message || 'Failed to update' })
+      showNotification('error', error.message || 'Failed to update')
     } finally {
       setUpdating(null)
     }
@@ -159,7 +206,6 @@ export default function ExpansionsManagementPage() {
     if (!activeGuild || !raidStartDates[expansionId]) return
 
     setUpdating(expansionId)
-    setMessage(null)
 
     try {
       const response = await fetch(`/api/guilds/${activeGuild.id}/expansions/${expansionId}`, {
@@ -171,18 +217,129 @@ export default function ExpansionsManagementPage() {
       const data = await response.json()
 
       if (!response.ok) {
-        setMessage({ type: 'error', text: data.error || 'Failed to update raid start date' })
+        showNotification('error', data.error || 'Failed to update raid start date')
         return
       }
 
-      setMessage({ type: 'success', text: 'Raid start date updated!' })
+      showNotification('success', 'Raid start date updated!')
       await loadData()
     } catch (error: any) {
       console.error('Error updating raid start date:', error)
-      setMessage({ type: 'error', text: error.message || 'Failed to update' })
+      showNotification('error', error.message || 'Failed to update')
     } finally {
       setUpdating(null)
     }
+  }
+
+  const handleUpdateRaidSchedule = async (expansionId: string) => {
+    if (!activeGuild) return
+
+    const schedule = raidSchedules[expansionId]
+    if (!schedule) return
+
+    setUpdating(expansionId)
+
+    try {
+      const response = await fetch(`/api/guilds/${activeGuild.id}/expansions/${expansionId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          raidDaysPerWeek: schedule.raidDaysPerWeek,
+          firstRaidDay: schedule.raidDays[0],
+          secondRaidDay: schedule.raidDays[1],
+          thirdRaidDay: schedule.raidDays[2],
+          fourthRaidDay: schedule.raidDays[3],
+          fifthRaidDay: schedule.raidDays[4]
+        })
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        showNotification('error', data.error || 'Failed to update raid schedule')
+        return
+      }
+
+      showNotification('success', 'Raid schedule updated!')
+      // Update original to match current
+      setOriginalSchedules(prev => ({
+        ...prev,
+        [expansionId]: JSON.parse(JSON.stringify(schedule))
+      }))
+    } catch (error: any) {
+      console.error('Error updating raid schedule:', error)
+      showNotification('error', error.message || 'Failed to update')
+    } finally {
+      setUpdating(null)
+    }
+  }
+
+  const hasScheduleChanges = (expansionId: string): boolean => {
+    const current = raidSchedules[expansionId]
+    const original = originalSchedules[expansionId]
+    if (!current || !original) return false
+    if (current.raidDaysPerWeek !== original.raidDaysPerWeek) return true
+    return current.raidDays.some((day, idx) => day !== original.raidDays[idx])
+  }
+
+  const updateRaidDaysPerWeek = (expansionId: string, count: number) => {
+    setRaidSchedules(prev => {
+      const current = prev[expansionId]
+      if (!current) return prev
+
+      // When changing days per week, adjust the raidDays array
+      const newRaidDays = [...current.raidDays]
+      // Clear days beyond the new count
+      for (let i = count; i < 5; i++) {
+        newRaidDays[i] = null
+      }
+      // Ensure we have defaults for active days
+      for (let i = 0; i < count; i++) {
+        if (newRaidDays[i] === null) {
+          // Find next available day
+          const usedDays = new Set(newRaidDays.filter(d => d !== null))
+          for (let d = 0; d <= 6; d++) {
+            if (!usedDays.has(d)) {
+              newRaidDays[i] = d
+              break
+            }
+          }
+        }
+      }
+
+      return {
+        ...prev,
+        [expansionId]: {
+          raidDaysPerWeek: count,
+          raidDays: newRaidDays
+        }
+      }
+    })
+  }
+
+  const updateRaidDay = (expansionId: string, dayIndex: number, value: number) => {
+    setRaidSchedules(prev => {
+      const current = prev[expansionId]
+      if (!current) return prev
+
+      const newRaidDays = [...current.raidDays]
+      newRaidDays[dayIndex] = value
+
+      return {
+        ...prev,
+        [expansionId]: {
+          ...current,
+          raidDays: newRaidDays
+        }
+      }
+    })
+  }
+
+  const toggleExpanded = (expansionId: string) => {
+    setExpandedCards(prev => ({
+      ...prev,
+      [expansionId]: !prev[expansionId]
+    }))
   }
 
   // Get expansions that can be added (have data and not already added)
@@ -213,17 +370,6 @@ export default function ExpansionsManagementPage() {
         </p>
       </div>
 
-      {/* Message */}
-      {message && (
-        <div className={`p-4 rounded-xl ${
-          message.type === 'success'
-            ? 'bg-success/10 border border-success/50 text-success'
-            : 'bg-destructive/10 border border-destructive/50 text-destructive'
-        }`}>
-          {message.text}
-        </div>
-      )}
-
       {/* Guild Expansions */}
       {guildExpansions.length > 0 && (
         <div>
@@ -236,6 +382,10 @@ export default function ExpansionsManagementPage() {
               return 0
             }).map((exp) => {
               const visuals = getExpansionVisuals(exp.expansion_name)
+              const isExpanded = expandedCards[exp.expansion_id] || false
+              const schedule = raidSchedules[exp.expansion_id]
+              const hasChanges = hasScheduleChanges(exp.expansion_id)
+
               return (
                 <div
                   key={exp.expansion_id}
@@ -247,7 +397,7 @@ export default function ExpansionsManagementPage() {
                 >
                   {/* Subtle gradient overlay */}
                   <div
-                    className="absolute inset-0 opacity-30"
+                    className="absolute inset-0 opacity-20"
                     style={{ background: visuals.gradient }}
                   />
 
@@ -268,14 +418,14 @@ export default function ExpansionsManagementPage() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-3 mb-1">
                           <h3
-                            className="text-[18px] font-semibold truncate"
+                            className="text-lg font-semibold truncate"
                             style={{ color: visuals.textColor }}
                           >
                             {exp.expansion_name}
                           </h3>
                           {exp.is_current && (
                             <span
-                              className="px-3 py-1 text-[11px] font-semibold rounded-full flex-shrink-0"
+                              className="px-3 py-1 text-xs font-semibold rounded-full flex-shrink-0"
                               style={{
                                 backgroundColor: `${visuals.accentColor}20`,
                                 color: visuals.accentColor,
@@ -286,85 +436,174 @@ export default function ExpansionsManagementPage() {
                             </span>
                           )}
                         </div>
-                        <p className="text-[13px]" style={{ color: `${visuals.textColor}99` }}>
+                        <p className="text-sm" style={{ color: `${visuals.textColor}80` }}>
                           Added {new Date(exp.created_at).toLocaleDateString()}
                         </p>
                       </div>
 
                       {!exp.is_current && (
-                        <button
+                        <Button
                           onClick={() => handleSetCurrent(exp.expansion_id)}
                           disabled={updating === exp.expansion_id}
-                          className="px-5 py-2 rounded-[52px] text-[13px] font-medium transition disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
+                          variant="primary"
+                          size="sm"
+                          className="flex-shrink-0"
                           style={{
                             backgroundColor: visuals.accentColor,
-                            color: visuals.bgColor
+                            borderColor: visuals.accentColor
                           }}
                         >
                           {updating === exp.expansion_id ? 'Setting...' : 'Set as Current'}
-                        </button>
+                        </Button>
                       )}
                     </div>
 
-                    {/* Raid Start Date */}
+                    {/* Raid Schedule Accordion */}
                     <div
-                      className="flex items-end gap-3 pt-4 border-t"
-                      style={{ borderColor: `${visuals.borderColor}50` }}
+                      className="pt-4 border-t"
+                      style={{ borderColor: `${visuals.borderColor}40` }}
                     >
-                      <div className="flex-1">
-                        <label
-                          className="block text-[13px] font-medium mb-2"
-                          style={{ color: visuals.textColor }}
-                        >
-                          <HugeiconsIcon icon={Calendar01Icon} size={16} className="inline mr-2" style={{ color: visuals.accentColor }} />
-                          Raid Start Date
-                        </label>
-                        <input
-                          type="date"
-                          value={raidStartDates[exp.expansion_id] || ''}
-                          onChange={(e) => setRaidStartDates({
-                            ...raidStartDates,
-                            [exp.expansion_id]: e.target.value
-                          })}
-                          className="w-full px-4 py-2 rounded-xl text-[14px] focus:outline-none transition"
-                          style={{
-                            backgroundColor: `${visuals.bgColor}`,
-                            border: `1px solid ${visuals.borderColor}`,
-                            color: visuals.textColor
-                          }}
-                        />
-                      </div>
+                      {/* Accordion Header - clickable summary */}
                       <button
-                        onClick={() => handleUpdateRaidStartDate(exp.expansion_id)}
-                        disabled={updating === exp.expansion_id || !raidStartDates[exp.expansion_id]}
-                        className="px-5 py-2 rounded-[52px] text-[13px] font-medium transition disabled:opacity-50 disabled:cursor-not-allowed"
-                        style={{
-                          backgroundColor: 'transparent',
-                          border: `1px solid ${visuals.borderColor}`,
-                          color: visuals.textColor
-                        }}
+                        onClick={() => toggleExpanded(exp.expansion_id)}
+                        className="w-full flex items-center justify-between p-3 rounded-lg transition hover:bg-black/5"
                       >
-                        Save Date
+                        <div className="flex items-center gap-2">
+                          <HugeiconsIcon
+                            icon={Settings01Icon}
+                            size={16}
+                            style={{ color: `${visuals.textColor}80` }}
+                          />
+                          <span className="text-sm font-medium" style={{ color: visuals.textColor }}>
+                            Raid Schedule
+                          </span>
+                          <span className="text-sm" style={{ color: `${visuals.textColor}60` }}>
+                            — {getRaidScheduleSummary(exp)}
+                          </span>
+                        </div>
+                        <HugeiconsIcon
+                          icon={isExpanded ? ArrowUp01Icon : ArrowDown01Icon}
+                          size={16}
+                          style={{ color: `${visuals.textColor}60` }}
+                        />
                       </button>
+
+                      {/* Expanded Content */}
+                      {isExpanded && schedule && (
+                        <div className="mt-3 p-4 rounded-lg bg-background-elevated border border-border space-y-4">
+                          {/* Raid Start Date */}
+                          <div>
+                            <label className="block text-sm font-medium text-foreground mb-2">
+                              <HugeiconsIcon icon={Calendar01Icon} size={14} className="inline mr-2 text-muted-foreground" />
+                              Raid Start Date
+                            </label>
+                            <div className="flex items-center gap-3">
+                              <input
+                                type="date"
+                                value={raidStartDates[exp.expansion_id] || ''}
+                                onChange={(e) => setRaidStartDates({
+                                  ...raidStartDates,
+                                  [exp.expansion_id]: e.target.value
+                                })}
+                                className="flex-1 px-3 py-2 rounded-lg text-sm bg-background border border-border text-foreground focus:outline-none focus:ring-2 focus:ring-accent/50"
+                              />
+                              <Button
+                                onClick={() => handleUpdateRaidStartDate(exp.expansion_id)}
+                                disabled={updating === exp.expansion_id || !raidStartDates[exp.expansion_id]}
+                                variant="secondary"
+                                size="sm"
+                              >
+                                Save
+                              </Button>
+                            </div>
+                          </div>
+
+                          {/* Raid Days Per Week */}
+                          <div>
+                            <label className="block text-sm font-medium text-foreground mb-2">
+                              Days Per Week
+                            </label>
+                            <div className="flex gap-2">
+                              {[1, 2, 3, 4, 5].map((num) => (
+                                <button
+                                  key={num}
+                                  onClick={() => updateRaidDaysPerWeek(exp.expansion_id, num)}
+                                  className={`w-10 h-10 rounded-lg text-sm font-medium transition ${
+                                    schedule.raidDaysPerWeek === num
+                                      ? 'bg-accent text-white'
+                                      : 'bg-background border border-border text-foreground hover:border-accent/50'
+                                  }`}
+                                >
+                                  {num}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Raid Day Selectors */}
+                          <div>
+                            <label className="block text-sm font-medium text-foreground mb-2">
+                              Raid Days
+                            </label>
+                            <div className="grid grid-cols-2 gap-3">
+                              {Array.from({ length: schedule.raidDaysPerWeek }).map((_, idx) => (
+                                <div key={idx}>
+                                  <label className="block text-xs text-muted-foreground mb-1">
+                                    {idx === 0 ? 'First' : idx === 1 ? 'Second' : idx === 2 ? 'Third' : idx === 3 ? 'Fourth' : 'Fifth'} Day
+                                  </label>
+                                  <select
+                                    value={schedule.raidDays[idx] ?? ''}
+                                    onChange={(e) => updateRaidDay(exp.expansion_id, idx, parseInt(e.target.value))}
+                                    className="w-full px-3 py-2 rounded-lg text-sm bg-background border border-border text-foreground focus:outline-none focus:ring-2 focus:ring-accent/50"
+                                  >
+                                    {DAY_NAMES.map((day, dayIdx) => (
+                                      <option key={dayIdx} value={dayIdx}>
+                                        {day}
+                                      </option>
+                                    ))}
+                                  </select>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Save Schedule Button */}
+                          <div className="pt-2 border-t border-border">
+                            <Button
+                              onClick={() => handleUpdateRaidSchedule(exp.expansion_id)}
+                              disabled={updating === exp.expansion_id || !hasChanges}
+                              variant="primary"
+                              size="sm"
+                              loading={updating === exp.expansion_id}
+                            >
+                              Save Schedule
+                            </Button>
+                            {hasChanges && (
+                              <span className="ml-3 text-xs text-muted-foreground">
+                                Unsaved changes
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      )}
                     </div>
 
                     {/* Manage Raid Tiers Link */}
                     <Link
                       href={`/admin/expansions/${exp.expansion_id}`}
-                      className="flex items-center justify-between mt-4 p-3 rounded-xl transition hover:opacity-80"
+                      className="flex items-center justify-between mt-4 p-3 rounded-lg transition hover:bg-black/5"
                       style={{
-                        backgroundColor: `${visuals.accentColor}15`,
-                        border: `1px solid ${visuals.accentColor}30`
+                        border: `1px solid ${visuals.borderColor}40`
                       }}
                     >
                       <span
-                        className="text-[13px] font-medium"
-                        style={{ color: visuals.accentColor }}
+                        className="text-sm font-medium"
+                        style={{ color: visuals.textColor }}
                       >
                         Manage Raid Tiers
                       </span>
                       <HugeiconsIcon icon={ArrowRight01Icon} size={16}
-                        style={{ color: visuals.accentColor }}
+                        style={{ color: `${visuals.textColor}60` }}
                       />
                     </Link>
                   </div>
