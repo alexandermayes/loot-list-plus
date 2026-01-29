@@ -14,6 +14,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { readFileSync } from 'fs'
 import { resolve } from 'path'
+import { seedExpansionForGuild } from '../app/services/expansionSeeder'
 
 // Load .env.local
 const envPath = resolve(process.cwd(), '.env.local')
@@ -22,7 +23,13 @@ try {
   envFile.split('\n').forEach(line => {
     const [key, ...valueParts] = line.split('=')
     if (key && valueParts.length > 0) {
-      process.env[key.trim()] = valueParts.join('=').trim()
+      let value = valueParts.join('=').trim()
+      // Strip surrounding quotes
+      if ((value.startsWith('"') && value.endsWith('"')) ||
+          (value.startsWith("'") && value.endsWith("'"))) {
+        value = value.slice(1, -1)
+      }
+      process.env[key.trim()] = value
     }
   })
 } catch (error) {
@@ -148,6 +155,7 @@ async function seedTestData() {
     characters: 0,
     memberships: 0,
     submissions: 0,
+    lootItems: 0,
   }
 
   // Get an existing user to use as creator (or create a test user)
@@ -210,56 +218,62 @@ async function seedTestData() {
       { guild_id: guild.id, name: 'Guild Master', color_hex: '#ff8000', position: 100, is_default: true },
     ])
 
-    // Create expansion for the guild
-    const { data: expansion, error: expError } = await supabase
-      .from('expansions')
-      .insert({
-        guild_id: guild.id,
-        name: 'Classic WoW',
-      })
-      .select('id')
-      .single()
+    // Use the expansion seeder to create full expansion with all raids and loot items
+    // This includes proper classifications (Reserved/Limited/Unlimited) and role assignments
+    console.log(`  Seeding Classic expansion with full loot data...`)
+    const { expansionId, error: seedError } = await seedExpansionForGuild(
+      supabase,
+      guild.id,
+      'Classic',
+      true, // setAsCurrent
+      true  // useServiceRole - we're using service role key
+    )
 
-    if (expError || !expansion) {
-      console.error('Failed to create expansion:', expError)
+    if (seedError || !expansionId) {
+      console.error('Failed to seed expansion:', seedError)
       continue
     }
 
-    // Update guild with active expansion
-    await supabase
-      .from('guilds')
-      .update({ active_expansion_id: expansion.id })
-      .eq('id', guild.id)
+    console.log(`  Expansion seeded with ID: ${expansionId}`)
 
-    // Create raid tier
+    // Get the first raid tier (Molten Core) for creating test submissions
     const { data: raidTier, error: tierError } = await supabase
       .from('raid_tiers')
-      .insert({
-        expansion_id: expansion.id,
-        name: 'Molten Core',
-        is_active: true,
-      })
       .select('id')
+      .eq('expansion_id', expansionId)
+      .eq('name', 'Molten Core')
       .single()
 
     if (tierError || !raidTier) {
-      console.error('Failed to create raid tier:', tierError)
+      console.error('Failed to get raid tier:', tierError)
       continue
     }
 
-    // Create some loot items for the raid
-    const lootItems = [
-      { raid_tier_id: raidTier.id, name: 'Perdition\'s Blade', boss_name: 'Ragnaros', item_slot: 'Weapon', wowhead_id: 18816 },
-      { raid_tier_id: raidTier.id, name: 'Brutality Blade', boss_name: 'Ragnaros', item_slot: 'Weapon', wowhead_id: 18832 },
-      { raid_tier_id: raidTier.id, name: 'Thunderfury', boss_name: 'Geddon', item_slot: 'Weapon', wowhead_id: 19019 },
-      { raid_tier_id: raidTier.id, name: 'Sulfuras', boss_name: 'Ragnaros', item_slot: 'Weapon', wowhead_id: 17182 },
-      { raid_tier_id: raidTier.id, name: 'Staff of Dominance', boss_name: 'Golemagg', item_slot: 'Weapon', wowhead_id: 18842 },
-    ]
-
+    // Get loot items for creating test submissions
     const { data: items } = await supabase
       .from('loot_items')
-      .insert(lootItems)
       .select('id')
+      .eq('raid_tier_id', raidTier.id)
+      .limit(20) // Get a sample of items for submissions
+
+    // Count total loot items created for this guild (across all raid tiers)
+    const { data: allTiers } = await supabase
+      .from('raid_tiers')
+      .select('id')
+      .eq('expansion_id', expansionId)
+
+    let totalLootItems = 0
+    if (allTiers) {
+      for (const tier of allTiers) {
+        const { count } = await supabase
+          .from('loot_items')
+          .select('id', { count: 'exact', head: true })
+          .eq('raid_tier_id', tier.id)
+        totalLootItems += count || 0
+      }
+    }
+    stats.lootItems += totalLootItems
+    console.log(`  Created ${totalLootItems} loot items across ${allTiers?.length || 0} raid tiers`)
 
     // Create test characters and memberships
     const characters: { id: string }[] = []
@@ -391,6 +405,7 @@ async function main() {
   console.log('Seeding Complete!')
   console.log('='.repeat(60))
   console.log(`Guilds created:      ${stats.guilds}`)
+  console.log(`Loot items created:  ${stats.lootItems}`)
   console.log(`Characters created:  ${stats.characters}`)
   console.log(`Memberships created: ${stats.memberships}`)
   console.log(`Submissions created: ${stats.submissions}`)
