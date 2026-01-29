@@ -154,10 +154,10 @@ async function createTestUsers(): Promise<TestUser[]> {
         password: TEST_USER_PASSWORD,
       })
 
-      // Create user preferences
+      // Create user preferences with discord_verified for full access
       await supabase.from('user_preferences').insert({
         user_id: data.user.id,
-        theme: 'dark',
+        discord_verified: true,
       })
 
       if (i % 5 === 0) {
