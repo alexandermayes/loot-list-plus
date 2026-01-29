@@ -168,8 +168,6 @@ export default function ExpansionDetailPage({ params }: { params: Promise<{ expa
         .eq('id', tierId)
         .select()
 
-      console.log('Update result:', { data, error })
-
       if (error) {
         // Check if it's a column not found error
         if (error.message?.includes('is_guild_active') || error.code === '42703') {
@@ -200,16 +198,24 @@ export default function ExpansionDetailPage({ params }: { params: Promise<{ expa
     setUpdating(tierId)
 
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('raid_tiers')
         .update({ master_sheet_visible: !currentValue })
         .eq('id', tierId)
+        .select()
 
       if (error) throw error
+
+      // Check if any rows were actually updated
+      if (!data || data.length === 0) {
+        showNotification('error', 'Update failed - no rows affected. Check RLS policies.')
+        return
+      }
 
       showNotification('success', !currentValue ? 'Rankings now visible to players' : 'Rankings hidden from players')
       await loadData()
     } catch (error: any) {
+      console.error('Toggle visibility error:', error)
       showNotification('error', error.message || 'Failed to update visibility')
     } finally {
       setUpdating(null)

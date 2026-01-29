@@ -25,6 +25,7 @@ import { Heading } from '@/components/ui/typography'
 import { useGuildContext } from '@/app/contexts/GuildContext'
 import ItemLink from '@/app/components/ItemLink'
 import { calculateAttendanceScore, getRankModifier, calculateLootScore } from '@/utils/calculations'
+import { refreshWowheadTooltips } from '@/lib/wowhead'
 
 // Get WoWhead class icon URL
 function getClassIconUrl(className: string | undefined): string {
@@ -155,17 +156,10 @@ export default function Dashboard() {
   }, [searchParams, router])
 
   // Refresh Wowhead tooltips when loot priority or received items load
+  // Uses centralized debounced refresh to prevent excessive API calls
   useEffect(() => {
-    if ((lootPriority.length > 0 || receivedItems.length > 0) && typeof window !== 'undefined' && (window as any).$WowheadPower) {
-      const timer = setTimeout(() => {
-        try {
-          (window as any).$WowheadPower.refreshLinks()
-        } catch (e) {
-          console.error('Failed to refresh Wowhead links:', e)
-        }
-      }, 100)
-
-      return () => clearTimeout(timer)
+    if (lootPriority.length > 0 || receivedItems.length > 0) {
+      refreshWowheadTooltips()
     }
   }, [lootPriority, receivedItems])
 

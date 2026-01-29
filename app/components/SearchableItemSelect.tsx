@@ -10,6 +10,7 @@
 import { useState, useRef, useEffect } from 'react'
 import ItemLink from './ItemLink'
 import { getBossOrder, normalizeBossName } from '@/utils/bossOrder'
+import { refreshWowheadTooltips } from '@/lib/wowhead'
 
 interface Item {
   id: string
@@ -142,18 +143,9 @@ export default function SearchableItemSelect({
   }, [isOpen])
 
   // Refresh Wowhead tooltips when value changes or dropdown opens
+  // Uses centralized debounced refresh to prevent excessive API calls
   useEffect(() => {
-    if (typeof window !== 'undefined' && (window as any).$WowheadPower) {
-      const timer = setTimeout(() => {
-        try {
-          (window as any).$WowheadPower.refreshLinks()
-        } catch (e) {
-          // Silently fail if Wowhead not loaded
-        }
-      }, isOpen ? 50 : 10)
-
-      return () => clearTimeout(timer)
-    }
+    refreshWowheadTooltips()
   }, [value, isOpen])
 
   const handleSelect = (itemId: string) => {

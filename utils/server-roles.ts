@@ -60,29 +60,38 @@ export async function verifyOfficerPermissions(
 
   const characterIds = userCharacters.map((c: any) => c.id)
 
-  // Get user's membership in this guild
-  const { data: membership } = await serviceSupabase
+  // Get ALL of user's memberships in this guild (they may have multiple characters with different roles)
+  const { data: memberships } = await serviceSupabase
     .from('character_guild_memberships')
     .select('role')
     .eq('guild_id', guildId)
     .in('character_id', characterIds)
     .eq('is_active', true)
-    .limit(1)
-    .single()
 
-  if (!membership) {
+  if (!memberships || memberships.length === 0) {
     return { hasPermission: false, error: 'Not a member of this guild' }
   }
 
-  // Get guild roles to determine position
+  // Get guild roles to determine positions
   const roles = await getGuildRoles(serviceSupabase, guildId)
-  const position = getRolePositionFromRoles(membership.role, roles)
 
-  if (!isOfficerPosition(position)) {
-    return { hasPermission: false, role: membership.role, position, error: 'Insufficient permissions' }
+  // Find the highest position among all the user's character memberships
+  let highestRole = memberships[0].role
+  let highestPosition = getRolePositionFromRoles(memberships[0].role, roles)
+
+  for (const membership of memberships) {
+    const position = getRolePositionFromRoles(membership.role, roles)
+    if (position > highestPosition) {
+      highestPosition = position
+      highestRole = membership.role
+    }
   }
 
-  return { hasPermission: true, role: membership.role, position }
+  if (!isOfficerPosition(highestPosition)) {
+    return { hasPermission: false, role: highestRole, position: highestPosition, error: 'Insufficient permissions' }
+  }
+
+  return { hasPermission: true, role: highestRole, position: highestPosition }
 }
 
 /**
@@ -108,6 +117,7 @@ export async function verifyGuildMasterPermissions(
 
 /**
  * Get user's role and position in a guild
+ * Returns the highest role among all the user's characters
  */
 export async function getUserGuildRole(
   serviceSupabase: any,
@@ -126,23 +136,32 @@ export async function getUserGuildRole(
 
   const characterIds = userCharacters.map((c: any) => c.id)
 
-  // Get user's membership in this guild
-  const { data: membership } = await serviceSupabase
+  // Get ALL of user's memberships in this guild (they may have multiple characters with different roles)
+  const { data: memberships } = await serviceSupabase
     .from('character_guild_memberships')
     .select('role')
     .eq('guild_id', guildId)
     .in('character_id', characterIds)
     .eq('is_active', true)
-    .limit(1)
-    .single()
 
-  if (!membership) {
+  if (!memberships || memberships.length === 0) {
     return null
   }
 
-  // Get guild roles to determine position
+  // Get guild roles to determine positions
   const roles = await getGuildRoles(serviceSupabase, guildId)
-  const position = getRolePositionFromRoles(membership.role, roles)
 
-  return { role: membership.role, position }
+  // Find the highest position among all the user's character memberships
+  let highestRole = memberships[0].role
+  let highestPosition = getRolePositionFromRoles(memberships[0].role, roles)
+
+  for (const membership of memberships) {
+    const position = getRolePositionFromRoles(membership.role, roles)
+    if (position > highestPosition) {
+      highestPosition = position
+      highestRole = membership.role
+    }
+  }
+
+  return { role: highestRole, position: highestPosition }
 }

@@ -24,6 +24,7 @@ import { StarFilledIcon } from '@/components/ui/icons'
 import Link from 'next/link'
 import ItemLink from '@/app/components/ItemLink'
 import { normalizeBossName } from '@/utils/bossOrder'
+import { refreshWowheadTooltips } from '@/lib/wowhead'
 
 interface Submission {
   id: string
@@ -124,16 +125,10 @@ export default function MasterLootPage() {
   }, [])
 
   // Refresh Wowhead tooltips when submission details modal opens
+  // Uses centralized debounced refresh to prevent excessive API calls
   useEffect(() => {
-    if (submissionDetails.length > 0 && typeof window !== 'undefined' && (window as any).$WowheadPower) {
-      const timer = setTimeout(() => {
-        try {
-          (window as any).$WowheadPower.refreshLinks()
-        } catch (e) {
-          console.error('Failed to refresh Wowhead links:', e)
-        }
-      }, 100)
-      return () => clearTimeout(timer)
+    if (submissionDetails.length > 0) {
+      refreshWowheadTooltips()
     }
   }, [submissionDetails])
 

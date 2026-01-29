@@ -21,6 +21,7 @@ import { Heading } from '@/components/ui/typography'
 import { normalizeBossName } from '@/utils/bossOrder'
 import { getRaidIcon } from '@/utils/raidIcons'
 import { StarFilledIcon, CheckFilledIcon, ClockFilledIcon, AlertFilledIcon, CancelFilledIcon } from '@/components/ui/icons'
+import { refreshWowheadTooltips } from '@/lib/wowhead'
 
 interface LootItem {
   id: string
@@ -376,14 +377,11 @@ export default function LootList() {
   }, [selectedTierId, activeCharacter, guildId])
 
   // Refresh Wowhead tooltips after items are loaded and loading is complete
+  // Uses centralized debounced refresh to prevent excessive API calls
   useEffect(() => {
-    if (!contentLoading && lootItems.length > 0 && typeof window !== 'undefined' && (window as any).$WowheadPower) {
-      // Use longer delay to ensure DOM is fully settled and reduce flickering
-      const timer = setTimeout(() => {
-        (window as any).$WowheadPower.refreshLinks()
-      }, 300)
-
-      return () => clearTimeout(timer)
+    if (!contentLoading && lootItems.length > 0) {
+      // Use immediate refresh on initial load, debounced for subsequent updates
+      refreshWowheadTooltips(true)
     }
   }, [contentLoading, lootItems.length]) // Only trigger on loading state change and item count change, not on lootItems content change
 

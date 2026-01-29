@@ -20,6 +20,7 @@ import { HugeiconsIcon } from '@hugeicons/react'
 import { ScrollIcon, ArrowUpRight01Icon, InformationCircleIcon } from '@hugeicons/core-free-icons'
 import { Heading } from '@/components/ui/typography'
 import ScoreBreakdownModal from '@/app/components/ScoreBreakdownModal'
+import { refreshWowheadTooltips } from '@/lib/wowhead'
 
 interface LootItem {
   id: string
@@ -512,11 +513,10 @@ export default function MasterSheet() {
   }, [selectedTierId, guildId, guildSettings, masterSheetVisible, isOfficer])
 
   // Refresh Wowhead tooltips after items are loaded
+  // Uses centralized debounced refresh to prevent excessive API calls
   useEffect(() => {
-    if (allItemRankings.length > 0 && typeof window !== 'undefined' && (window as any).$WowheadPower) {
-      setTimeout(() => {
-        (window as any).$WowheadPower.refreshLinks()
-      }, 100)
+    if (allItemRankings.length > 0) {
+      refreshWowheadTooltips(true) // Immediate on initial load
     }
   }, [allItemRankings])
 

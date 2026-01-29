@@ -19,6 +19,7 @@ const PrioListItemModal = dynamic(() => import('@/app/components/PrioListItemMod
 import { getBossOrder, normalizeBossName } from '@/utils/bossOrder'
 import { getBossImage } from '@/utils/bossImages'
 import { StarFilledIcon } from '@/components/ui/icons'
+import { refreshWowheadTooltips } from '@/lib/wowhead'
 
 interface LootItem {
   id: string
@@ -296,11 +297,10 @@ export default function AdminPrioList() {
   }, [selectedTierId, activeGuild])
 
   // Refresh Wowhead tooltips
+  // Uses centralized debounced refresh to prevent excessive API calls
   useEffect(() => {
-    if (lootItems.length > 0 && typeof window !== 'undefined' && (window as any).$WowheadPower) {
-      setTimeout(() => {
-        (window as any).$WowheadPower.refreshLinks()
-      }, 100)
+    if (lootItems.length > 0) {
+      refreshWowheadTooltips(true)
     }
   }, [lootItems])
 

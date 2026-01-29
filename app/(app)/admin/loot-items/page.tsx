@@ -9,6 +9,7 @@ import { ExpansionGuard } from '@/app/components/ExpansionGuard'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { Heading } from '@/components/ui/typography'
 import { normalizeBossName } from '@/utils/bossOrder'
+import { refreshWowheadTooltips } from '@/lib/wowhead'
 
 interface LootItem {
   id: string
@@ -232,11 +233,10 @@ export default function AdminLootItems() {
   }, [guildLoading, activeGuild])
 
   // Refresh Wowhead tooltips after items are loaded
+  // Uses centralized debounced refresh to prevent excessive API calls
   useEffect(() => {
-    if (lootItems.length > 0 && typeof window !== 'undefined' && (window as any).$WowheadPower) {
-      setTimeout(() => {
-        (window as any).$WowheadPower.refreshLinks()
-      }, 100)
+    if (lootItems.length > 0) {
+      refreshWowheadTooltips(true)
     }
   }, [lootItems])
 

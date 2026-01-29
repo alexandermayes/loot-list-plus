@@ -16,6 +16,7 @@ import MultiSelectDropdown from '@/app/components/MultiSelectDropdown'
 import { specMapping } from '@/utils/spec-role-mapping'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { ArrowDown01Icon, ArrowUp01Icon } from '@hugeicons/core-free-icons'
+import { refreshWowheadTooltips } from '@/lib/wowhead'
 
 interface LootItem {
   id: string
@@ -226,25 +227,10 @@ export default function AdminLootItems() {
   }, [guildLoading, activeGuild])
 
   // Refresh Wowhead tooltips after items are loaded AND rendered
+  // Uses centralized debounced refresh to prevent excessive API calls
   useEffect(() => {
-    if (!loading && lootItems.length > 0 && typeof window !== 'undefined') {
-      let attempts = 0
-      const maxAttempts = 25 // Try for 5 seconds max
-
-      const refreshWowhead = () => {
-        if ((window as any).$WowheadPower) {
-          (window as any).$WowheadPower.refreshLinks()
-          console.log('🔄 Refreshed Wowhead tooltips')
-        } else if (attempts < maxAttempts) {
-          attempts++
-          setTimeout(refreshWowhead, 200)
-        } else {
-          console.warn('⚠️ Wowhead script did not load in time')
-        }
-      }
-
-      // Wait a bit longer for DOM to render
-      setTimeout(refreshWowhead, 300)
+    if (!loading && lootItems.length > 0) {
+      refreshWowheadTooltips(true) // Immediate on initial load
     }
   }, [lootItems, loading])
 
