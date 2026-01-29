@@ -22,7 +22,7 @@ export default function WelcomeScreen() {
   const [discordLoading, setDiscordLoading] = useState(false)
   const [availableGuilds, setAvailableGuilds] = useState<any[]>([])
   const [discordError, setDiscordError] = useState('')
-  const [joining, setJoining] = useState(false)
+  const [joiningGuildId, setJoiningGuildId] = useState<string | null>(null)
   const router = useRouter()
   const supabase = createClient()
 
@@ -100,7 +100,7 @@ export default function WelcomeScreen() {
   }
 
   const handleJoinDiscordGuild = async (guildId: string) => {
-    setJoining(true)
+    setJoiningGuildId(guildId)
     setDiscordError('')
 
     try {
@@ -116,7 +116,7 @@ export default function WelcomeScreen() {
 
       if (!response.ok) {
         setDiscordError(data.error || 'Failed to join guild')
-        setJoining(false)
+        setJoiningGuildId(null)
         return
       }
 
@@ -125,7 +125,7 @@ export default function WelcomeScreen() {
     } catch (err) {
       console.error('Error joining guild:', err)
       setDiscordError('An error occurred while joining the guild')
-      setJoining(false)
+      setJoiningGuildId(null)
     }
   }
 
@@ -167,7 +167,7 @@ export default function WelcomeScreen() {
       return
     }
 
-    setJoining(true)
+    setJoiningGuildId('code')
 
     try {
       const response = await fetch(`/api/guild-invites/${modalInviteCode.trim()}`, {
@@ -181,7 +181,7 @@ export default function WelcomeScreen() {
 
       if (!response.ok) {
         setDiscordError(data.error || 'Invalid invite code')
-        setJoining(false)
+        setJoiningGuildId(null)
         return
       }
 
@@ -189,7 +189,7 @@ export default function WelcomeScreen() {
       window.location.href = '/overview'
     } catch (err: any) {
       setDiscordError(err.message || 'Failed to join guild')
-      setJoining(false)
+      setJoiningGuildId(null)
     }
   }
 
@@ -414,7 +414,8 @@ export default function WelcomeScreen() {
                       <Button
                         size="sm"
                         onClick={() => handleJoinDiscordGuild(guild.id)}
-                        loading={joining}
+                        loading={joiningGuildId === guild.id}
+                        disabled={joiningGuildId !== null && joiningGuildId !== guild.id}
                         className="shrink-0"
                       >
                         Join
