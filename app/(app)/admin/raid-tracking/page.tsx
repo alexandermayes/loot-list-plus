@@ -10,6 +10,7 @@ import { ArrowDown01Icon, ArrowUp01Icon, Upload01Icon, Cancel01Icon, NextIcon } 
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { Heading } from '@/components/ui/typography'
 import { useGuildContext } from '@/app/contexts/GuildContext'
+import { useNotification } from '@/app/contexts/NotificationContext'
 import ItemLink from '@/app/components/ItemLink'
 import {
   Modal,
@@ -94,6 +95,7 @@ export default function RaidTrackingPage() {
   const supabase = createClient()
   const router = useRouter()
   const { activeGuild, isOfficer, loading: guildLoading, currentExpansion } = useGuildContext()
+  const { showNotification } = useNotification()
 
   useEffect(() => {
     document.title = 'LootList+ • Raid Tracking'
@@ -621,7 +623,7 @@ export default function RaidTrackingPage() {
       .eq('id', lootId)
 
     if (error) {
-      alert('Failed to delete loot entry: ' + error.message)
+      showNotification('error', 'Failed to delete loot entry: ' + error.message)
       return
     }
 
@@ -712,13 +714,9 @@ export default function RaidTrackingPage() {
 
     const typeLabel = importType === 'signup' ? 'signups' : 'attendance'
     if (matchedCount > 0 || unmatchedCount > 0) {
-      alert(
-        `Import complete!\n\n` +
-        `✓ ${matchedCount} matched ${typeLabel}\n` +
-        `⚠ ${unmatchedCount} unmatched (will be linked if they join)`
-      )
+      showNotification('success', `Import complete! ${matchedCount} matched ${typeLabel}, ${unmatchedCount} unmatched`)
     } else {
-      alert('No data to import')
+      showNotification('warning', 'No data to import')
     }
   }
 
@@ -1152,33 +1150,22 @@ export default function RaidTrackingPage() {
     setSignupsData('')
 
     // Show results
-    let message = 'Import complete!\n'
+    const parts: string[] = []
 
     if (attendanceData.trim()) {
-      message += `\nAttendance: ✓ ${results.attendance.success} matched`
-      if (results.attendance.failed > 0) message += `, ⚠ ${results.attendance.failed} unmatched`
+      parts.push(`Attendance: ${results.attendance.success} matched${results.attendance.failed > 0 ? `, ${results.attendance.failed} unmatched` : ''}`)
     }
 
     if (lootData.trim()) {
-      message += `\nLoot: ✓ ${results.loot.success} recorded`
-      if (results.loot.failed > 0) {
-        message += `, ⚠ ${results.loot.failed} failed`
-        if (results.loot.errors.length > 0) {
-          message += '\n\nLoot errors:'
-          results.loot.errors.slice(0, 5).forEach(e => message += `\n• ${e}`)
-          if (results.loot.errors.length > 5) {
-            message += `\n• ... and ${results.loot.errors.length - 5} more`
-          }
-        }
-      }
+      parts.push(`Loot: ${results.loot.success} recorded${results.loot.failed > 0 ? `, ${results.loot.failed} failed` : ''}`)
     }
 
     if (guildSettings?.use_signups && signupsData.trim()) {
-      message += `\nSignups: ✓ ${results.signups.success} matched`
-      if (results.signups.failed > 0) message += `, ⚠ ${results.signups.failed} unmatched`
+      parts.push(`Signups: ${results.signups.success} matched${results.signups.failed > 0 ? `, ${results.signups.failed} unmatched` : ''}`)
     }
 
-    alert(message)
+    const hasErrors = results.attendance.failed > 0 || results.loot.failed > 0 || results.signups.failed > 0
+    showNotification(hasErrors ? 'warning' : 'success', `Import complete! ${parts.join(' | ')}`)
   }
 
   // Parse Gargul loot export format: DATE;[ITEM_ID];CHARACTER_NAME
@@ -1345,15 +1332,10 @@ export default function RaidTrackingPage() {
     setImportType('attendance')
 
     // Show results
-    let message = `Loot import complete!\n\n✓ ${successCount} items recorded`
-    if (errorCount > 0) {
-      message += `\n\n⚠ ${errorCount} errors:`
-      errors.slice(0, 5).forEach(e => message += `\n• ${e}`)
-      if (errors.length > 5) {
-        message += `\n• ... and ${errors.length - 5} more`
-      }
-    }
-    alert(message)
+    showNotification(
+      errorCount > 0 ? 'warning' : 'success',
+      `Loot import complete! ${successCount} items recorded${errorCount > 0 ? `, ${errorCount} errors` : ''}`
+    )
   }
 
   // Handle item selection for unmatched items

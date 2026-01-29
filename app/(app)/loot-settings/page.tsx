@@ -5,6 +5,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import ItemLink from '@/app/components/ItemLink'
 import { useGuildContext } from '@/app/contexts/GuildContext'
+import { useNotification } from '@/app/contexts/NotificationContext'
 import { ExpansionGuard } from '@/app/components/ExpansionGuard'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { Modal, ModalHeader, ModalTitle, ModalDescription, ModalBody, ModalFooter } from '@/components/ui/modal'
@@ -13,6 +14,8 @@ import { Heading } from '@/components/ui/typography'
 import StyledSelect from '@/app/components/StyledSelect'
 import MultiSelectDropdown from '@/app/components/MultiSelectDropdown'
 import { specMapping } from '@/utils/spec-role-mapping'
+import { HugeiconsIcon } from '@hugeicons/react'
+import { ArrowDown01Icon, ArrowUp01Icon } from '@hugeicons/core-free-icons'
 
 interface LootItem {
   id: string
@@ -110,6 +113,7 @@ export default function AdminLootItems() {
   const [itemRoles, setItemRoles] = useState<Record<string, Set<string>>>({})
   const [showSettingsModal, setShowSettingsModal] = useState(false)
   const [savingSettings, setSavingSettings] = useState(false)
+  const [advancedExpanded, setAdvancedExpanded] = useState(false)
 
   // Guild Settings State
   const getDefaultResetDate = () => {
@@ -131,8 +135,8 @@ export default function AdminLootItems() {
 
     // Attendance Settings
     attendance_type: 'linear' as 'linear' | 'breakpoint',
-    rolling_attendance_weeks: 4,
-    use_signups: true,
+    rolling_attendance_weeks: 8,  // 8 weeks provides better data than 4
+    use_signups: false,  // Most guilds don't use formal signup systems
     signup_weight: 0.25,
 
     // Attendance Bonus Tiers
@@ -157,15 +161,15 @@ export default function AdminLootItems() {
     pass_item_bonus: false,
     pass_item_bonus_value: 0.0,
 
-    // Rank, Role, Class Bonuses
-    guild_rank_bonuses_enabled: true,
+    // Rank, Role, Class Bonuses - all OFF by default for simpler out-of-box experience
+    guild_rank_bonuses_enabled: false,
     number_of_ranks: 5,
     rank_modifiers: {} as Record<string, number>,
-    role_bonus_priority_single_item: true,
-    class_bonus_priority_single_item: true,
-    raid_roles_overall_bonus_priority: true,
-    single_raider_overall_bonus: true,
-    single_raider_bonus_single_item: true,
+    role_bonus_priority_single_item: false,
+    class_bonus_priority_single_item: false,
+    raid_roles_overall_bonus_priority: false,
+    single_raider_overall_bonus: false,
+    single_raider_bonus_single_item: false,
 
     // Donation Settings
     donation_bonuses_enabled: false,
@@ -182,6 +186,7 @@ export default function AdminLootItems() {
   const supabase = createClient()
   const router = useRouter()
   const { activeGuild, activeMember, loading: guildLoading, isOfficer } = useGuildContext()
+  const { showNotification } = useNotification()
 
   // Set page title
   useEffect(() => {
@@ -419,10 +424,10 @@ export default function AdminLootItems() {
       }
 
       setShowSettingsModal(false)
-      alert('Settings saved successfully!')
+      showNotification('success', 'Settings saved successfully!')
     } catch (error: any) {
       console.error('Error saving settings:', error)
-      alert(`Failed to save settings: ${error.message}`)
+      showNotification('error', `Failed to save settings: ${error.message}`)
     } finally {
       setSavingSettings(false)
     }
@@ -631,7 +636,7 @@ export default function AdminLootItems() {
         hint: error.hint,
         code: error.code
       })
-      alert(`Failed to update item availability: ${error.message}`)
+      showNotification('error', `Failed to update item availability: ${error.message}`)
       return
     }
 
@@ -661,7 +666,7 @@ export default function AdminLootItems() {
         hint: error.hint,
         code: error.code
       })
-      alert(`Failed to update item classification: ${error.message}`)
+      showNotification('error', `Failed to update item classification: ${error.message}`)
       return
     }
 
@@ -745,7 +750,7 @@ export default function AdminLootItems() {
         hint: error.hint,
         code: error.code
       })
-      alert(`Failed to add spec: ${error.message}`)
+      showNotification('error', `Failed to add spec: ${error.message}`)
       return
     }
 
@@ -947,7 +952,7 @@ export default function AdminLootItems() {
         details: error.details,
         code: error.code
       })
-      alert(`Failed to remove spec: ${error.message}`)
+      showNotification('error', `Failed to remove spec: ${error.message}`)
       return
     }
 
@@ -1709,556 +1714,469 @@ export default function AdminLootItems() {
               <div className="space-y-4 pb-6 border-b border-border-strong">
                 <div>
                   <h4 className="text-[18px] font-semibold text-foreground pb-2">General Settings</h4>
-                  <p className="text-muted-foreground text-[13px] mt-1">Configure your guild's raid schedule and how loot priority points are calculated and displayed. These settings establish the foundation for your loot system.</p>
+                  <p className="text-muted-foreground text-[13px] mt-1">Configure how loot priority scores are displayed.</p>
                 </div>
 
                 <div>
-                  <label className="block text-[13px] font-medium text-foreground mb-2">Date of 1st Full Raid Week (Reset Day)</label>
-                  <div className="relative date-picker-wrapper">
-                    <input
-                      type="date"
-                      value={settings.reset_date}
-                      onChange={(e) => setSettings({ ...settings, reset_date: e.target.value })}
-                      className="date-picker-input w-full px-4 py-2.5 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[13px] focus:outline-none focus:border-accent hover:bg-muted transition-colors cursor-pointer [color-scheme:dark]"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-[13px] font-medium text-foreground mb-2">Number of Raid Days a Week</label>
-                  <select
-                    value={settings.raid_days_per_week}
-                    onChange={(e) => setSettings({ ...settings, raid_days_per_week: Number(e.target.value) })}
-                    className="w-full pl-4 pr-12 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[13px] focus:outline-none focus:border-accent transition-colors select-custom-sm"
-                  >
-                    <option value="1">1</option>
-                    <option value="2">2</option>
-                    <option value="3">3</option>
-                    <option value="4">4</option>
-                    <option value="5">5</option>
-                  </select>
-                </div>
-
-                {/* Show raid day selections in 2-column grid */}
-                <div className="grid grid-cols-2 gap-4">
-                  {/* Always show 1st raid day */}
-                  <div>
-                    <label className="block text-[13px] font-medium text-foreground mb-2">1st Raid Day of the Week</label>
-                    <select
-                      value={settings.first_raid_day}
-                      onChange={(e) => setSettings({ ...settings, first_raid_day: Number(e.target.value) })}
-                      className="w-full pl-4 pr-12 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[13px] focus:outline-none focus:border-accent transition-colors select-custom-sm"
-                    >
-                      <option value="0">Sunday</option>
-                      <option value="1">Monday</option>
-                      <option value="2">Tuesday</option>
-                      <option value="3">Wednesday</option>
-                      <option value="4">Thursday</option>
-                      <option value="5">Friday</option>
-                      <option value="6">Saturday</option>
-                    </select>
-                  </div>
-
-                  {/* Show 2nd raid day if >= 2 */}
-                  {settings.raid_days_per_week >= 2 && (
-                    <div>
-                      <label className="block text-[13px] font-medium text-foreground mb-2">2nd Raid Day of the Week</label>
-                      <select
-                        value={settings.second_raid_day?.toString() || ''}
-                        onChange={(e) => setSettings({ ...settings, second_raid_day: e.target.value ? Number(e.target.value) : null })}
-                        className="w-full pl-4 pr-12 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[13px] focus:outline-none focus:border-accent transition-colors select-custom-sm"
-                      >
-                        <option value="">None</option>
-                        <option value="0">Sunday</option>
-                        <option value="1">Monday</option>
-                        <option value="2">Tuesday</option>
-                        <option value="3">Wednesday</option>
-                        <option value="4">Thursday</option>
-                        <option value="5">Friday</option>
-                        <option value="6">Saturday</option>
-                      </select>
-                    </div>
-                  )}
-                </div>
-
-                {/* Show 3rd and 4th raid days if >= 3 */}
-                {settings.raid_days_per_week >= 3 && (
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-[13px] font-medium text-foreground mb-2">3rd Raid Day of the Week</label>
-                      <select
-                        value={settings.third_raid_day?.toString() || ''}
-                        onChange={(e) => setSettings({ ...settings, third_raid_day: e.target.value ? Number(e.target.value) : null })}
-                        className="w-full pl-4 pr-12 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[13px] focus:outline-none focus:border-accent transition-colors select-custom-sm"
-                      >
-                        <option value="">None</option>
-                        <option value="0">Sunday</option>
-                        <option value="1">Monday</option>
-                        <option value="2">Tuesday</option>
-                        <option value="3">Wednesday</option>
-                        <option value="4">Thursday</option>
-                        <option value="5">Friday</option>
-                        <option value="6">Saturday</option>
-                      </select>
-                    </div>
-
-                    {/* Show 4th raid day if >= 4 */}
-                    {settings.raid_days_per_week >= 4 && (
-                      <div>
-                        <label className="block text-[13px] font-medium text-foreground mb-2">4th Raid Day of the Week</label>
-                        <select
-                          value={settings.fourth_raid_day?.toString() || ''}
-                          onChange={(e) => setSettings({ ...settings, fourth_raid_day: e.target.value ? Number(e.target.value) : null })}
-                          className="w-full pl-4 pr-12 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[13px] focus:outline-none focus:border-accent transition-colors select-custom-sm"
-                        >
-                          <option value="">None</option>
-                          <option value="0">Sunday</option>
-                          <option value="1">Monday</option>
-                          <option value="2">Tuesday</option>
-                          <option value="3">Wednesday</option>
-                          <option value="4">Thursday</option>
-                          <option value="5">Friday</option>
-                          <option value="6">Saturday</option>
-                        </select>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* Show 5th raid day if >= 5 */}
-                {settings.raid_days_per_week >= 5 && (
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-[13px] font-medium text-foreground mb-2">5th Raid Day of the Week</label>
-                      <select
-                        value={settings.fifth_raid_day?.toString() || ''}
-                        onChange={(e) => setSettings({ ...settings, fifth_raid_day: e.target.value ? Number(e.target.value) : null })}
-                        className="w-full pl-4 pr-12 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[13px] focus:outline-none focus:border-accent transition-colors select-custom-sm"
-                      >
-                        <option value="">None</option>
-                        <option value="0">Sunday</option>
-                        <option value="1">Monday</option>
-                        <option value="2">Tuesday</option>
-                        <option value="3">Wednesday</option>
-                        <option value="4">Thursday</option>
-                        <option value="5">Friday</option>
-                        <option value="6">Saturday</option>
-                      </select>
-                    </div>
-                  </div>
-                )}
-
-                <div>
-                  <label className="block text-[13px] font-medium text-foreground mb-2">Decimal Places</label>
+                  <label className="block text-[13px] font-medium text-foreground mb-2">Score Decimal Places</label>
                   <select
                     value={settings.decimal_places}
                     onChange={(e) => setSettings({ ...settings, decimal_places: Number(e.target.value) })}
                     className="w-full pl-4 pr-12 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[13px] focus:outline-none focus:border-accent transition-colors select-custom-sm"
                   >
-                    <option value="0">Ones</option>
-                    <option value="1">Tenths</option>
-                    <option value="2">Hundredths</option>
+                    <option value="0">Whole numbers (e.g., 42)</option>
+                    <option value="1">One decimal (e.g., 42.5)</option>
+                    <option value="2">Two decimals (e.g., 42.50)</option>
                   </select>
+                  <p className="text-muted-foreground text-[12px] mt-1">How precisely to display loot priority scores</p>
                 </div>
               </div>
 
-              {/* Attendance Settings */}
+              {/* Attendance Settings - Basic */}
               <div className="space-y-4 pb-6 border-b border-border-strong">
                 <div>
                   <h4 className="text-[18px] font-semibold text-foreground pb-2">Attendance</h4>
-                  <p className="text-muted-foreground text-[13px] mt-1">Control how attendance bonuses are calculated and awarded. Rewards consistent raiders while allowing flexibility for signups and absences. Set thresholds and penalties to match your guild's raiding culture.</p>
-                </div>
-
-                <div>
-                  <label className="block text-[13px] font-medium text-foreground mb-2">Type of Attendance Bonus</label>
-                  <select
-                    value={settings.attendance_type}
-                    onChange={(e) => setSettings({ ...settings, attendance_type: e.target.value as 'linear' | 'breakpoint' })}
-                    className="w-full pl-4 pr-12 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[13px] focus:outline-none focus:border-accent transition-colors select-custom-sm"
-                  >
-                    <option value="linear">Linear</option>
-                    <option value="breakpoint">Break Point</option>
-                  </select>
-                  <p className="text-muted-foreground text-[12px] mt-1">Choose how attendance bonus scales</p>
-                </div>
-
-                <div>
-                  <label className="block text-[13px] font-medium text-foreground mb-2">Rolling Attendance Period (Weeks)</label>
-                  <input
-                    type="number"
-                    min="1"
-                    value={settings.rolling_attendance_weeks}
-                    onChange={(e) => setSettings({ ...settings, rolling_attendance_weeks: Number(e.target.value) })}
-                    className="w-full px-4 py-2.5 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[13px] focus:outline-none focus:border-accent transition-colors"
-                  />
-                  <p className="text-muted-foreground text-[12px] mt-1">How long of a period to track attendance points</p>
+                  <p className="text-muted-foreground text-[13px] mt-1">Control how attendance bonuses are calculated. Consistent raiders get priority on loot.</p>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-[13px] font-medium text-foreground mb-2">Use Raid Signups for Attendance</label>
+                    <label className="block text-[13px] font-medium text-foreground mb-2">Type of Attendance Bonus</label>
                     <select
-                      value={settings.use_signups ? 'yes' : 'no'}
-                      onChange={(e) => setSettings({ ...settings, use_signups: e.target.value === 'yes' })}
+                      value={settings.attendance_type}
+                      onChange={(e) => setSettings({ ...settings, attendance_type: e.target.value as 'linear' | 'breakpoint' })}
                       className="w-full pl-4 pr-12 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[13px] focus:outline-none focus:border-accent transition-colors select-custom-sm"
                     >
-                      <option value="yes">Yes</option>
-                      <option value="no">No</option>
+                      <option value="linear">Linear</option>
+                      <option value="breakpoint">Break Point</option>
                     </select>
+                    <p className="text-muted-foreground text-[12px] mt-1">Choose how attendance bonus scales</p>
                   </div>
 
                   <div>
-                    <label className="block text-[13px] font-medium text-foreground mb-2">Signup % of Attendance (Decimal)</label>
-                    <input
-                      type="number"
-                      min="0"
-                      max="1"
-                      step="0.05"
-                      value={settings.signup_weight}
-                      onChange={(e) => setSettings({ ...settings, signup_weight: Number(e.target.value) })}
-                      disabled={!settings.use_signups}
-                      className="w-full pl-4 pr-12 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[13px] focus:outline-none focus:border-accent transition-colors select-custom-sm disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-background"
-                    />
-                  </div>
-                </div>
-
-                <div className="bg-background-elevated border border-border-strong p-4 rounded-xl space-y-3">
-                  <p className="text-[13px] font-medium text-foreground">Attendance Bonus Tiers</p>
-                  <div className="grid grid-cols-3 gap-3">
-                    <div>
-                      <label className="block text-[12px] text-muted-foreground mb-1">Max Attendance</label>
-                      <div className="flex gap-2">
-                        <input
-                          type="number"
-                          value={settings.max_attendance_bonus}
-                          onChange={(e) => setSettings({ ...settings, max_attendance_bonus: Number(e.target.value) })}
-                          placeholder="Points"
-                          className="w-full px-3 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[12px] focus:outline-none focus:border-accent transition-colors"
-                        />
-                        <input
-                          type="number"
-                          step="0.1"
-                          value={settings.max_attendance_threshold}
-                          onChange={(e) => setSettings({ ...settings, max_attendance_threshold: Number(e.target.value) })}
-                          placeholder="Threshold"
-                          className="w-full px-3 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[12px] focus:outline-none focus:border-accent transition-colors"
-                        />
-                      </div>
-                    </div>
-                    <div>
-                      <label className="block text-[12px] text-muted-foreground mb-1">Middle Attendance</label>
-                      <div className="flex gap-2">
-                        <input
-                          type="number"
-                          value={settings.middle_attendance_bonus}
-                          onChange={(e) => setSettings({ ...settings, middle_attendance_bonus: Number(e.target.value) })}
-                          placeholder="Points"
-                          className="w-full px-3 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[12px] focus:outline-none focus:border-accent transition-colors"
-                        />
-                        <input
-                          type="number"
-                          step="0.1"
-                          value={settings.middle_attendance_threshold}
-                          onChange={(e) => setSettings({ ...settings, middle_attendance_threshold: Number(e.target.value) })}
-                          placeholder="Threshold"
-                          className="w-full px-3 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[12px] focus:outline-none focus:border-accent transition-colors"
-                        />
-                      </div>
-                    </div>
-                    <div>
-                      <label className="block text-[12px] text-muted-foreground mb-1">Bottom Attendance</label>
-                      <div className="flex gap-2">
-                        <input
-                          type="number"
-                          value={settings.bottom_attendance_bonus}
-                          onChange={(e) => setSettings({ ...settings, bottom_attendance_bonus: Number(e.target.value) })}
-                          placeholder="Points"
-                          className="w-full px-3 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[12px] focus:outline-none focus:border-accent transition-colors"
-                        />
-                        <input
-                          type="number"
-                          step="0.1"
-                          value={settings.bottom_attendance_threshold}
-                          onChange={(e) => setSettings({ ...settings, bottom_attendance_threshold: Number(e.target.value) })}
-                          placeholder="Threshold"
-                          className="w-full px-3 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[12px] focus:outline-none focus:border-accent transition-colors"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-[13px] font-medium text-foreground mb-2">Minimum Raid Days Per Week</label>
-                    <select
-                      value={settings.minimum_raid_days_enabled ? 'yes' : 'no'}
-                      onChange={(e) => setSettings({ ...settings, minimum_raid_days_enabled: e.target.value === 'yes' })}
-                      className="w-full pl-4 pr-12 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[13px] focus:outline-none focus:border-accent transition-colors select-custom-sm"
-                    >
-                      <option value="yes">Yes</option>
-                      <option value="no">No</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-[13px] font-medium text-foreground mb-2">Minimum Number of Raids</label>
+                    <label className="block text-[13px] font-medium text-foreground mb-2">Rolling Attendance Period (Weeks)</label>
                     <input
                       type="number"
                       min="1"
-                      value={settings.minimum_raid_days}
-                      onChange={(e) => setSettings({ ...settings, minimum_raid_days: Number(e.target.value) })}
-                      disabled={!settings.minimum_raid_days_enabled}
-                      className="w-full px-4 py-2.5 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[13px] focus:outline-none focus:border-accent transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-background"
+                      value={settings.rolling_attendance_weeks}
+                      onChange={(e) => setSettings({ ...settings, rolling_attendance_weeks: Number(e.target.value) })}
+                      className="w-full px-4 py-2.5 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[13px] focus:outline-none focus:border-accent transition-colors"
                     />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-[13px] font-medium text-foreground mb-2">Late Show / Leave Early Penalty</label>
-                    <select
-                      value={settings.late_early_penalty_enabled ? 'yes' : 'no'}
-                      onChange={(e) => setSettings({ ...settings, late_early_penalty_enabled: e.target.value === 'yes' })}
-                      className="w-full pl-4 pr-12 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[13px] focus:outline-none focus:border-accent transition-colors select-custom-sm"
-                    >
-                      <option value="yes">Yes</option>
-                      <option value="no">No</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-[13px] font-medium text-foreground mb-2">Penalty Value</label>
-                    <input
-                      type="number"
-                      step="0.05"
-                      value={settings.late_early_penalty_value}
-                      onChange={(e) => setSettings({ ...settings, late_early_penalty_value: Number(e.target.value) })}
-                      disabled={!settings.late_early_penalty_enabled}
-                      className="w-full px-4 py-2.5 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[13px] focus:outline-none focus:border-accent transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-background"
-                    />
+                    <p className="text-muted-foreground text-[12px] mt-1">How many weeks to track attendance</p>
                   </div>
                 </div>
               </div>
 
-              {/* Bad Luck Prevention */}
-              <div className="space-y-4 pb-6 border-b border-border-strong">
-                <div>
-                  <h4 className="text-[18px] font-semibold text-foreground pb-2">Bad Luck Prevention</h4>
-                  <p className="text-muted-foreground text-[13px] mt-1">Provide bonus points to raiders who experience bad RNG luck. Rewards players who see their desired items drop but lose the roll, or who generously pass on items to help others progress.</p>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-[13px] font-medium text-foreground mb-2">Bonus for Seeing Item but Not Receiving</label>
-                    <select
-                      value={settings.see_item_bonus ? 'yes' : 'no'}
-                      onChange={(e) => setSettings({ ...settings, see_item_bonus: e.target.value === 'yes' })}
-                      className="w-full pl-4 pr-12 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[13px] focus:outline-none focus:border-accent transition-colors select-custom-sm"
-                    >
-                      <option value="yes">Yes</option>
-                      <option value="no">No</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-[13px] font-medium text-foreground mb-2">Bonus Value</label>
-                    <input
-                      type="number"
-                      value={settings.see_item_bonus_value}
-                      onChange={(e) => setSettings({ ...settings, see_item_bonus_value: Number(e.target.value) })}
-                      disabled={!settings.see_item_bonus}
-                      className="w-full px-4 py-2.5 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[13px] focus:outline-none focus:border-accent transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-background"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-[13px] font-medium text-foreground mb-2">Bonus for Passing an Item</label>
-                    <select
-                      value={settings.pass_item_bonus ? 'yes' : 'no'}
-                      onChange={(e) => setSettings({ ...settings, pass_item_bonus: e.target.value === 'yes' })}
-                      className="w-full pl-4 pr-12 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[13px] focus:outline-none focus:border-accent transition-colors select-custom-sm"
-                    >
-                      <option value="yes">Yes</option>
-                      <option value="no">No</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-[13px] font-medium text-foreground mb-2">Bonus Value</label>
-                    <input
-                      type="number"
-                      value={settings.pass_item_bonus_value}
-                      onChange={(e) => setSettings({ ...settings, pass_item_bonus_value: Number(e.target.value) })}
-                      disabled={!settings.pass_item_bonus}
-                      className="w-full px-4 py-2.5 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[13px] focus:outline-none focus:border-accent transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-background"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Rank, Role, Class Bonuses */}
+              {/* Advanced Settings - Collapsible */}
               <div className="space-y-4">
-                <div>
-                  <h4 className="text-[18px] font-semibold text-foreground pb-2">Rank, Role, Class, or Raider Additional Bonuses</h4>
-                  <p className="text-muted-foreground text-[13px] mt-1">Fine-tune priority systems to value guild rank, raid roles, class needs, or individual contributions. Use these settings to prioritize items for main tanks, reward long-term members, or incentivize donations and support roles.</p>
-                </div>
+                <button
+                  type="button"
+                  onClick={() => setAdvancedExpanded(!advancedExpanded)}
+                  className="w-full flex items-center justify-between py-3 px-4 bg-background-subtle hover:bg-background-elevated border border-border-strong rounded-xl transition-colors"
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="text-[16px] font-semibold text-foreground">Advanced Settings</span>
+                    <span className="text-[12px] text-muted-foreground">(optional)</span>
+                  </div>
+                  <HugeiconsIcon
+                    icon={advancedExpanded ? ArrowUp01Icon : ArrowDown01Icon}
+                    size={20}
+                    className="text-muted-foreground"
+                  />
+                </button>
 
-                <div>
-                  <label className="block text-[13px] font-medium text-foreground mb-2">Guild Ranks Give Bonuses (Positive or Negative)</label>
-                  <select
-                    value={settings.guild_rank_bonuses_enabled ? 'yes' : 'no'}
-                    onChange={(e) => setSettings({ ...settings, guild_rank_bonuses_enabled: e.target.value === 'yes' })}
-                    className="w-full pl-4 pr-12 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[13px] focus:outline-none focus:border-accent transition-colors select-custom-sm"
-                  >
-                    <option value="yes">Yes</option>
-                    <option value="no">No</option>
-                  </select>
-                </div>
+                {advancedExpanded && (
+                  <div className="space-y-6 pt-2">
+                    {/* Signups */}
+                    <div className="space-y-4 pb-6 border-b border-border-strong">
+                      <div>
+                        <h4 className="text-[16px] font-semibold text-foreground pb-2">Raid Signups</h4>
+                        <p className="text-muted-foreground text-[13px] mt-1">Track raid signups and give bonus attendance for early signups.</p>
+                      </div>
 
-                {settings.guild_rank_bonuses_enabled && (
-                  <div className="bg-background-elevated border border-border-strong p-4 rounded-xl space-y-3">
-                    <div className="flex items-center justify-between mb-2">
-                      <p className="text-[13px] font-medium text-foreground">Rank Bonuses</p>
-                      <p className="text-[11px] text-muted-foreground">Can be positive or negative. For negative, use - before number (e.g., -1)</p>
-                    </div>
-                    <div className="grid grid-cols-3 gap-3">
-                      {[...guildRoles].sort((a, b) => b.position - a.position).map((role) => (
-                        <div key={role.name}>
-                          <label className="block text-[12px] text-foreground-muted mb-1">{role.name}</label>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-[13px] font-medium text-foreground mb-2">Use Raid Signups for Attendance</label>
+                          <select
+                            value={settings.use_signups ? 'yes' : 'no'}
+                            onChange={(e) => setSettings({ ...settings, use_signups: e.target.value === 'yes' })}
+                            className="w-full pl-4 pr-12 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[13px] focus:outline-none focus:border-accent transition-colors select-custom-sm"
+                          >
+                            <option value="no">No</option>
+                            <option value="yes">Yes</option>
+                          </select>
+                        </div>
+
+                        <div>
+                          <label className="block text-[13px] font-medium text-foreground mb-2">Signup % of Attendance (Decimal)</label>
                           <input
                             type="number"
-                            step="0.1"
-                            value={settings.rank_modifiers[role.name] === 0 || settings.rank_modifiers[role.name] === undefined ? '' : settings.rank_modifiers[role.name]}
-                            onChange={(e) => {
-                              const newModifiers = { ...settings.rank_modifiers }
-                              if (e.target.value === '') {
-                                newModifiers[role.name] = 0
-                              } else {
-                                newModifiers[role.name] = Number(e.target.value)
-                              }
-                              setSettings({
-                                ...settings,
-                                rank_modifiers: newModifiers
-                              })
-                            }}
-                            placeholder="0"
-                            className="w-full px-3 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[12px] focus:outline-none focus:border-accent transition-colors"
+                            min="0"
+                            max="1"
+                            step="0.05"
+                            value={settings.signup_weight}
+                            onChange={(e) => setSettings({ ...settings, signup_weight: Number(e.target.value) })}
+                            disabled={!settings.use_signups}
+                            className="w-full pl-4 pr-12 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[13px] focus:outline-none focus:border-accent transition-colors select-custom-sm disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-background"
                           />
                         </div>
-                      ))}
+                      </div>
                     </div>
-                    <p className="text-[11px] text-accent mt-2">
-                      ⚠️ If "Yes" is selected, ensure you have assigned roles for each raider in the Master Loot sheet or calculations will not work.
-                    </p>
-                  </div>
-                )}
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-[13px] font-medium text-foreground mb-2">Role Bonus Priority on Single Item</label>
-                    <select
-                      value={settings.role_bonus_priority_single_item ? 'yes' : 'no'}
-                      onChange={(e) => setSettings({ ...settings, role_bonus_priority_single_item: e.target.value === 'yes' })}
-                      className="w-full pl-4 pr-12 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[13px] focus:outline-none focus:border-accent transition-colors select-custom-sm"
-                    >
-                      <option value="yes">Yes</option>
-                      <option value="no">No</option>
-                    </select>
-                  </div>
+                    {/* Attendance Bonus Tiers */}
+                    <div className="space-y-4 pb-6 border-b border-border-strong">
+                      <div>
+                        <h4 className="text-[16px] font-semibold text-foreground pb-2">Attendance Bonus Tiers</h4>
+                        <p className="text-muted-foreground text-[13px] mt-1">Configure bonus points for different attendance thresholds.</p>
+                      </div>
 
-                  <div>
-                    <label className="block text-[13px] font-medium text-foreground mb-2">Class Bonus Priority on Single Item</label>
-                    <select
-                      value={settings.class_bonus_priority_single_item ? 'yes' : 'no'}
-                      onChange={(e) => setSettings({ ...settings, class_bonus_priority_single_item: e.target.value === 'yes' })}
-                      className="w-full pl-4 pr-12 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[13px] focus:outline-none focus:border-accent transition-colors select-custom-sm"
-                    >
-                      <option value="yes">Yes</option>
-                      <option value="no">No</option>
-                    </select>
+                      <div className="bg-background-elevated border border-border-strong p-4 rounded-xl space-y-3">
+                        <div className="grid grid-cols-3 gap-3">
+                          <div>
+                            <label className="block text-[12px] text-muted-foreground mb-1">Max Attendance</label>
+                            <div className="flex gap-2">
+                              <input
+                                type="number"
+                                value={settings.max_attendance_bonus}
+                                onChange={(e) => setSettings({ ...settings, max_attendance_bonus: Number(e.target.value) })}
+                                placeholder="Points"
+                                className="w-full px-3 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[12px] focus:outline-none focus:border-accent transition-colors"
+                              />
+                              <input
+                                type="number"
+                                step="0.1"
+                                value={settings.max_attendance_threshold}
+                                onChange={(e) => setSettings({ ...settings, max_attendance_threshold: Number(e.target.value) })}
+                                placeholder="Threshold"
+                                className="w-full px-3 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[12px] focus:outline-none focus:border-accent transition-colors"
+                              />
+                            </div>
+                          </div>
+                          <div>
+                            <label className="block text-[12px] text-muted-foreground mb-1">Middle Attendance</label>
+                            <div className="flex gap-2">
+                              <input
+                                type="number"
+                                value={settings.middle_attendance_bonus}
+                                onChange={(e) => setSettings({ ...settings, middle_attendance_bonus: Number(e.target.value) })}
+                                placeholder="Points"
+                                className="w-full px-3 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[12px] focus:outline-none focus:border-accent transition-colors"
+                              />
+                              <input
+                                type="number"
+                                step="0.1"
+                                value={settings.middle_attendance_threshold}
+                                onChange={(e) => setSettings({ ...settings, middle_attendance_threshold: Number(e.target.value) })}
+                                placeholder="Threshold"
+                                className="w-full px-3 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[12px] focus:outline-none focus:border-accent transition-colors"
+                              />
+                            </div>
+                          </div>
+                          <div>
+                            <label className="block text-[12px] text-muted-foreground mb-1">Bottom Attendance</label>
+                            <div className="flex gap-2">
+                              <input
+                                type="number"
+                                value={settings.bottom_attendance_bonus}
+                                onChange={(e) => setSettings({ ...settings, bottom_attendance_bonus: Number(e.target.value) })}
+                                placeholder="Points"
+                                className="w-full px-3 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[12px] focus:outline-none focus:border-accent transition-colors"
+                              />
+                              <input
+                                type="number"
+                                step="0.1"
+                                value={settings.bottom_attendance_threshold}
+                                onChange={(e) => setSettings({ ...settings, bottom_attendance_threshold: Number(e.target.value) })}
+                                placeholder="Threshold"
+                                className="w-full px-3 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[12px] focus:outline-none focus:border-accent transition-colors"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Attendance Penalties */}
+                    <div className="space-y-4 pb-6 border-b border-border-strong">
+                      <div>
+                        <h4 className="text-[16px] font-semibold text-foreground pb-2">Attendance Penalties</h4>
+                        <p className="text-muted-foreground text-[13px] mt-1">Set minimum raid requirements and penalties for partial attendance.</p>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-[13px] font-medium text-foreground mb-2">Minimum Raid Days Per Week</label>
+                          <select
+                            value={settings.minimum_raid_days_enabled ? 'yes' : 'no'}
+                            onChange={(e) => setSettings({ ...settings, minimum_raid_days_enabled: e.target.value === 'yes' })}
+                            className="w-full pl-4 pr-12 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[13px] focus:outline-none focus:border-accent transition-colors select-custom-sm"
+                          >
+                            <option value="yes">Yes</option>
+                            <option value="no">No</option>
+                          </select>
+                        </div>
+
+                        <div>
+                          <label className="block text-[13px] font-medium text-foreground mb-2">Minimum Number of Raids</label>
+                          <input
+                            type="number"
+                            min="1"
+                            value={settings.minimum_raid_days}
+                            onChange={(e) => setSettings({ ...settings, minimum_raid_days: Number(e.target.value) })}
+                            disabled={!settings.minimum_raid_days_enabled}
+                            className="w-full px-4 py-2.5 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[13px] focus:outline-none focus:border-accent transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-background"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-[13px] font-medium text-foreground mb-2">Late Show / Leave Early Penalty</label>
+                          <select
+                            value={settings.late_early_penalty_enabled ? 'yes' : 'no'}
+                            onChange={(e) => setSettings({ ...settings, late_early_penalty_enabled: e.target.value === 'yes' })}
+                            className="w-full pl-4 pr-12 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[13px] focus:outline-none focus:border-accent transition-colors select-custom-sm"
+                          >
+                            <option value="yes">Yes</option>
+                            <option value="no">No</option>
+                          </select>
+                        </div>
+
+                        <div>
+                          <label className="block text-[13px] font-medium text-foreground mb-2">Penalty Value</label>
+                          <input
+                            type="number"
+                            step="0.05"
+                            value={settings.late_early_penalty_value}
+                            onChange={(e) => setSettings({ ...settings, late_early_penalty_value: Number(e.target.value) })}
+                            disabled={!settings.late_early_penalty_enabled}
+                            className="w-full px-4 py-2.5 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[13px] focus:outline-none focus:border-accent transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-background"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Bad Luck Prevention */}
+                    <div className="space-y-4 pb-6 border-b border-border-strong">
+                      <div>
+                        <h4 className="text-[16px] font-semibold text-foreground pb-2">Bad Luck Prevention</h4>
+                        <p className="text-muted-foreground text-[13px] mt-1">Provide bonus points to raiders who experience bad RNG luck. Rewards players who see their desired items drop but lose the roll, or who generously pass on items to help others progress.</p>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-[13px] font-medium text-foreground mb-2">Bonus for Seeing Item but Not Receiving</label>
+                          <select
+                            value={settings.see_item_bonus ? 'yes' : 'no'}
+                            onChange={(e) => setSettings({ ...settings, see_item_bonus: e.target.value === 'yes' })}
+                            className="w-full pl-4 pr-12 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[13px] focus:outline-none focus:border-accent transition-colors select-custom-sm"
+                          >
+                            <option value="yes">Yes</option>
+                            <option value="no">No</option>
+                          </select>
+                        </div>
+
+                        <div>
+                          <label className="block text-[13px] font-medium text-foreground mb-2">Bonus Value</label>
+                          <input
+                            type="number"
+                            value={settings.see_item_bonus_value}
+                            onChange={(e) => setSettings({ ...settings, see_item_bonus_value: Number(e.target.value) })}
+                            disabled={!settings.see_item_bonus}
+                            className="w-full px-4 py-2.5 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[13px] focus:outline-none focus:border-accent transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-background"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-[13px] font-medium text-foreground mb-2">Bonus for Passing an Item</label>
+                          <select
+                            value={settings.pass_item_bonus ? 'yes' : 'no'}
+                            onChange={(e) => setSettings({ ...settings, pass_item_bonus: e.target.value === 'yes' })}
+                            className="w-full pl-4 pr-12 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[13px] focus:outline-none focus:border-accent transition-colors select-custom-sm"
+                          >
+                            <option value="yes">Yes</option>
+                            <option value="no">No</option>
+                          </select>
+                        </div>
+
+                        <div>
+                          <label className="block text-[13px] font-medium text-foreground mb-2">Bonus Value</label>
+                          <input
+                            type="number"
+                            value={settings.pass_item_bonus_value}
+                            onChange={(e) => setSettings({ ...settings, pass_item_bonus_value: Number(e.target.value) })}
+                            disabled={!settings.pass_item_bonus}
+                            className="w-full px-4 py-2.5 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[13px] focus:outline-none focus:border-accent transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-background"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Rank, Role, Class Bonuses */}
+                    <div className="space-y-4">
+                      <div>
+                        <h4 className="text-[16px] font-semibold text-foreground pb-2">Rank, Role, Class Bonuses</h4>
+                        <p className="text-muted-foreground text-[13px] mt-1">Fine-tune priority systems to value guild rank, raid roles, class needs, or individual contributions.</p>
+                      </div>
+
+                      <div>
+                        <label className="block text-[13px] font-medium text-foreground mb-2">Guild Ranks Give Bonuses (Positive or Negative)</label>
+                        <select
+                          value={settings.guild_rank_bonuses_enabled ? 'yes' : 'no'}
+                          onChange={(e) => setSettings({ ...settings, guild_rank_bonuses_enabled: e.target.value === 'yes' })}
+                          className="w-full pl-4 pr-12 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[13px] focus:outline-none focus:border-accent transition-colors select-custom-sm"
+                        >
+                          <option value="no">No</option>
+                          <option value="yes">Yes</option>
+                        </select>
+                      </div>
+
+                      {settings.guild_rank_bonuses_enabled && (
+                        <div className="bg-background-elevated border border-border-strong p-4 rounded-xl space-y-3">
+                          <div className="flex items-center justify-between mb-2">
+                            <p className="text-[13px] font-medium text-foreground">Rank Bonuses</p>
+                            <p className="text-[11px] text-muted-foreground">Can be positive or negative. For negative, use - before number (e.g., -1)</p>
+                          </div>
+                          <div className="grid grid-cols-3 gap-3">
+                            {[...guildRoles].sort((a, b) => b.position - a.position).map((role) => (
+                              <div key={role.name}>
+                                <label className="block text-[12px] text-foreground-muted mb-1">{role.name}</label>
+                                <input
+                                  type="number"
+                                  step="0.1"
+                                  value={settings.rank_modifiers[role.name] === 0 || settings.rank_modifiers[role.name] === undefined ? '' : settings.rank_modifiers[role.name]}
+                                  onChange={(e) => {
+                                    const newModifiers = { ...settings.rank_modifiers }
+                                    if (e.target.value === '') {
+                                      newModifiers[role.name] = 0
+                                    } else {
+                                      newModifiers[role.name] = Number(e.target.value)
+                                    }
+                                    setSettings({
+                                      ...settings,
+                                      rank_modifiers: newModifiers
+                                    })
+                                  }}
+                                  placeholder="0"
+                                  className="w-full px-3 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[12px] focus:outline-none focus:border-accent transition-colors"
+                                />
+                              </div>
+                            ))}
+                          </div>
+                          <p className="text-[11px] text-accent mt-2">
+                            Ensure you have assigned roles for each raider in the Master Loot sheet or calculations will not work.
+                          </p>
+                        </div>
+                      )}
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-[13px] font-medium text-foreground mb-2">Role Bonus Priority on Single Item</label>
+                          <select
+                            value={settings.role_bonus_priority_single_item ? 'yes' : 'no'}
+                            onChange={(e) => setSettings({ ...settings, role_bonus_priority_single_item: e.target.value === 'yes' })}
+                            className="w-full pl-4 pr-12 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[13px] focus:outline-none focus:border-accent transition-colors select-custom-sm"
+                          >
+                            <option value="no">No</option>
+                            <option value="yes">Yes</option>
+                          </select>
+                        </div>
+
+                        <div>
+                          <label className="block text-[13px] font-medium text-foreground mb-2">Class Bonus Priority on Single Item</label>
+                          <select
+                            value={settings.class_bonus_priority_single_item ? 'yes' : 'no'}
+                            onChange={(e) => setSettings({ ...settings, class_bonus_priority_single_item: e.target.value === 'yes' })}
+                            className="w-full pl-4 pr-12 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[13px] focus:outline-none focus:border-accent transition-colors select-custom-sm"
+                          >
+                            <option value="no">No</option>
+                            <option value="yes">Yes</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-[13px] font-medium text-foreground mb-2">Raid Roles Overall Bonus Priority</label>
+                          <select
+                            value={settings.raid_roles_overall_bonus_priority ? 'yes' : 'no'}
+                            onChange={(e) => setSettings({ ...settings, raid_roles_overall_bonus_priority: e.target.value === 'yes' })}
+                            className="w-full pl-4 pr-12 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[13px] focus:outline-none focus:border-accent transition-colors select-custom-sm"
+                          >
+                            <option value="no">No</option>
+                            <option value="yes">Yes</option>
+                          </select>
+                        </div>
+
+                        <div>
+                          <label className="block text-[13px] font-medium text-foreground mb-2">Single Raider Overall Bonus</label>
+                          <select
+                            value={settings.single_raider_overall_bonus ? 'yes' : 'no'}
+                            onChange={(e) => setSettings({ ...settings, single_raider_overall_bonus: e.target.value === 'yes' })}
+                            className="w-full pl-4 pr-12 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[13px] focus:outline-none focus:border-accent transition-colors select-custom-sm"
+                          >
+                            <option value="no">No</option>
+                            <option value="yes">Yes</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-[13px] font-medium text-foreground mb-2">Single Raider Bonus on Single Item</label>
+                        <select
+                          value={settings.single_raider_bonus_single_item ? 'yes' : 'no'}
+                          onChange={(e) => setSettings({ ...settings, single_raider_bonus_single_item: e.target.value === 'yes' })}
+                          className="w-full pl-4 pr-12 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[13px] focus:outline-none focus:border-accent transition-colors select-custom-sm"
+                        >
+                          <option value="no">No</option>
+                          <option value="yes">Yes</option>
+                        </select>
+                      </div>
+
+                    <div className="grid grid-cols-3 gap-4">
+                      <div>
+                        <label className="block text-[13px] font-medium text-foreground mb-2">Donation Bonuses</label>
+                        <select
+                          value={settings.donation_bonuses_enabled ? 'yes' : 'no'}
+                          onChange={(e) => setSettings({ ...settings, donation_bonuses_enabled: e.target.value === 'yes' })}
+                          className="w-full pl-4 pr-12 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[13px] focus:outline-none focus:border-accent transition-colors select-custom-sm"
+                        >
+                          <option value="no">No</option>
+                          <option value="yes">Yes</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-[13px] font-medium text-foreground mb-2">Cap on Donation Points</label>
+                        <select
+                          value={settings.donation_cap_enabled ? 'yes' : 'no'}
+                          onChange={(e) => setSettings({ ...settings, donation_cap_enabled: e.target.value === 'yes' })}
+                          className="w-full pl-4 pr-12 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[13px] focus:outline-none focus:border-accent transition-colors select-custom-sm"
+                        >
+                          <option value="no">No</option>
+                          <option value="yes">Yes</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-[13px] font-medium text-foreground mb-2">Donation Bonus Type</label>
+                        <select
+                          value={settings.donation_bonus_type}
+                          onChange={(e) => setSettings({ ...settings, donation_bonus_type: e.target.value as 'permanent' | 'rolling' | 'hard-reset' })}
+                          className="w-full pl-4 pr-12 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[13px] focus:outline-none focus:border-accent transition-colors select-custom-sm"
+                        >
+                          <option value="permanent">Permanent</option>
+                          <option value="rolling">Rolling</option>
+                          <option value="hard-reset">Hard Reset</option>
+                        </select>
+                      </div>
+                    </div>
                   </div>
                 </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-[13px] font-medium text-foreground mb-2">Raid Roles Overall Bonus Priority</label>
-                    <select
-                      value={settings.raid_roles_overall_bonus_priority ? 'yes' : 'no'}
-                      onChange={(e) => setSettings({ ...settings, raid_roles_overall_bonus_priority: e.target.value === 'yes' })}
-                      className="w-full pl-4 pr-12 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[13px] focus:outline-none focus:border-accent transition-colors select-custom-sm"
-                    >
-                      <option value="yes">Yes</option>
-                      <option value="no">No</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-[13px] font-medium text-foreground mb-2">Single Raider Overall Bonus</label>
-                    <select
-                      value={settings.single_raider_overall_bonus ? 'yes' : 'no'}
-                      onChange={(e) => setSettings({ ...settings, single_raider_overall_bonus: e.target.value === 'yes' })}
-                      className="w-full pl-4 pr-12 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[13px] focus:outline-none focus:border-accent transition-colors select-custom-sm"
-                    >
-                      <option value="yes">Yes</option>
-                      <option value="no">No</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-[13px] font-medium text-foreground mb-2">Single Raider Bonus on Single Item</label>
-                  <select
-                    value={settings.single_raider_bonus_single_item ? 'yes' : 'no'}
-                    onChange={(e) => setSettings({ ...settings, single_raider_bonus_single_item: e.target.value === 'yes' })}
-                    className="w-full pl-4 pr-12 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[13px] focus:outline-none focus:border-accent transition-colors select-custom-sm"
-                  >
-                    <option value="yes">Yes</option>
-                    <option value="no">No</option>
-                  </select>
-                </div>
-
-                <div className="grid grid-cols-3 gap-4">
-                  <div>
-                    <label className="block text-[13px] font-medium text-foreground mb-2">Donation Bonuses</label>
-                    <select
-                      value={settings.donation_bonuses_enabled ? 'yes' : 'no'}
-                      onChange={(e) => setSettings({ ...settings, donation_bonuses_enabled: e.target.value === 'yes' })}
-                      className="w-full pl-4 pr-12 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[13px] focus:outline-none focus:border-accent transition-colors select-custom-sm"
-                    >
-                      <option value="yes">Yes</option>
-                      <option value="no">No</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-[13px] font-medium text-foreground mb-2">Cap on Donation Points</label>
-                    <select
-                      value={settings.donation_cap_enabled ? 'yes' : 'no'}
-                      onChange={(e) => setSettings({ ...settings, donation_cap_enabled: e.target.value === 'yes' })}
-                      className="w-full pl-4 pr-12 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[13px] focus:outline-none focus:border-accent transition-colors select-custom-sm"
-                    >
-                      <option value="yes">Yes</option>
-                      <option value="no">No</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-[13px] font-medium text-foreground mb-2">Donation Bonus Type</label>
-                    <select
-                      value={settings.donation_bonus_type}
-                      onChange={(e) => setSettings({ ...settings, donation_bonus_type: e.target.value as 'permanent' | 'rolling' | 'hard-reset' })}
-                      className="w-full pl-4 pr-12 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[13px] focus:outline-none focus:border-accent transition-colors select-custom-sm"
-                    >
-                      <option value="permanent">Permanent</option>
-                      <option value="rolling">Rolling</option>
-                      <option value="hard-reset">Hard Reset</option>
-                    </select>
-                  </div>
-                </div>
-              </div>
+              )}
+            </div>
         </ModalBody>
         <ModalFooter>
           <Button variant="secondary" onClick={() => setShowSettingsModal(false)} disabled={savingSettings}>
