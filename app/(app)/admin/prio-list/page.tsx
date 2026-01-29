@@ -474,7 +474,7 @@ export default function AdminPrioList() {
     <ExpansionGuard>
       <div className="font-poppins">
         {/* Header */}
-        <div className="p-8 pb-4">
+        <div className="p-8 pb-1.5">
           <Heading level={1}>Priority List</Heading>
           <p className="text-muted-foreground mt-1 text-base">
             Set role, class, and individual raider priorities for each item
@@ -483,7 +483,7 @@ export default function AdminPrioList() {
 
         {/* Raid Tier Tabs - Sticky */}
         {raidTiers.length > 0 && (
-          <div className="sticky top-0 z-20 px-8 py-3 bg-background">
+          <div className="sticky top-0 z-20 px-8 py-1.5 bg-background">
             <div
               ref={tierScrollRef}
               onScroll={handleTierScroll}
@@ -516,7 +516,7 @@ export default function AdminPrioList() {
         )}
 
         {/* Stats */}
-        <div className="px-8 pb-4">
+        <div className="px-8 py-1.5">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="bg-background-elevated border border-border rounded-xl p-4">
               <p className="text-muted-foreground text-sm">Total Items</p>
@@ -545,7 +545,7 @@ export default function AdminPrioList() {
 
         {/* Boss Quick Navigation - Sticky below tier tabs */}
         {!contentLoading && bossNames.length > 0 && (
-          <div className="sticky top-[64px] z-10 px-8 pt-3 pb-2 bg-background">
+          <div className="sticky top-[64px] z-10 px-8 py-1.5 bg-background">
             <div className="flex gap-3">
               {/* Search input */}
               <div className="flex-shrink-0 bg-background-elevated border border-border rounded-xl p-3 flex items-center">
@@ -600,7 +600,7 @@ export default function AdminPrioList() {
         )}
 
         {/* Main Content */}
-        <div className="px-8 pt-2 pb-8 space-y-6">
+        <div className="px-8 pt-1.5 pb-6 space-y-6">
 
         {/* Content Loading State */}
         {contentLoading ? (

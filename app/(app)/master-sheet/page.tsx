@@ -825,7 +825,7 @@ export default function MasterSheet() {
     <ExpansionGuard>
       <div className="font-poppins">
         {/* Header - Always visible */}
-        <div className="p-8 pb-4">
+        <div className="p-8 pb-1.5">
           <div className="flex items-start justify-between">
             <div>
               <Heading level={1}>
@@ -853,11 +853,11 @@ export default function MasterSheet() {
 
         {/* Raid Tier Tabs - Sticky */}
         {initialLoading ? (
-          <div className="sticky top-0 z-20 px-8 py-3 bg-background">
+          <div className="sticky top-0 z-20 px-8 py-1.5 bg-background">
             <TierTabsSkeleton />
           </div>
         ) : raidTiers.length > 0 && (
-          <div className="sticky top-0 z-20 px-8 py-3 bg-background">
+          <div className="sticky top-0 z-20 px-8 py-1.5 bg-background">
             <div
               ref={tierScrollRef}
               onScroll={handleTierScroll}
@@ -900,7 +900,7 @@ export default function MasterSheet() {
 
         {/* Boss Quick Navigation - Sticky below tier tabs */}
         {!initialLoading && !contentLoading && bossNames.length > 0 && (
-          <div className="sticky top-[64px] z-10 px-8 pt-3 pb-2 bg-background">
+          <div className="sticky top-[64px] z-10 px-8 py-1.5 bg-background">
             <div className="flex gap-3">
               {/* Boss chips container with horizontal scroll fade */}
               <div className="flex-1 min-w-0 bg-background-elevated border border-border rounded-xl p-3 overflow-hidden">
@@ -946,7 +946,7 @@ export default function MasterSheet() {
         )}
 
         {/* Main Content */}
-        <div className="px-8 pt-2 pb-8 space-y-6">
+        <div className="px-8 pt-1.5 pb-6 space-y-6">
 
         {/* Content Loading State */}
         {(initialLoading || contentLoading) ? (

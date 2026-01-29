@@ -940,7 +940,7 @@ export default function LootList() {
     <ExpansionGuard>
       <div className="font-poppins">
         {/* Header - Always visible */}
-        <div className="p-8 pb-4">
+        <div className="p-8 pb-1.5">
           <div className="flex items-start justify-between gap-4">
             <div>
               <Heading level={1}>Loot Lists</Heading>
@@ -968,47 +968,45 @@ export default function LootList() {
               </Button>
             </div>
           </div>
-
-          {/* Expansion Selector */}
-          {guildExpansions.length > 1 && (
-            <div className="flex items-center gap-3 overflow-x-auto pb-2 mt-4">
-              <span className="text-muted-foreground text-sm font-medium whitespace-nowrap">Expansion:</span>
-              <div className="flex gap-2">
-                {guildExpansions.map((expansion) => {
-                  const isViewing = viewingExpansionId === expansion.expansion_id
-                  const isCurrent = expansion.is_current && !viewingExpansionId
-
-                  return (
-                    <button
-                      key={expansion.expansion_id}
-                      onClick={() => setViewingExpansion(expansion.is_current ? null : expansion.expansion_id)}
-                      className={`px-5 py-2.5 rounded-[40px] whitespace-nowrap text-[13px] font-medium transition-all ${
-                        isViewing || isCurrent
-                          ? 'bg-accent/20 border-[0.5px] border-accent/20 text-accent'
-                          : 'bg-background-elevated border border-border text-foreground hover:bg-muted'
-                      }`}
-                    >
-                      <div className="flex items-center gap-2">
-                        <span>{expansion.expansion_name}</span>
-                        {expansion.is_current && <StarFilledIcon size={14} />}
-                      </div>
-                    </button>
-                  )
-                })}
-              </div>
-            </div>
-          )}
         </div>
+
+        {/* Expansion Selector */}
+        {guildExpansions.length > 1 && (
+          <div className="px-8 py-1.5 bg-background">
+            <div className="flex gap-2">
+              {guildExpansions.map((expansion) => {
+                const isViewing = viewingExpansionId === expansion.expansion_id
+                const isCurrent = expansion.is_current && !viewingExpansionId
+
+                return (
+                  <button
+                    key={expansion.expansion_id}
+                    onClick={() => setViewingExpansion(expansion.is_current ? null : expansion.expansion_id)}
+                    className={`px-5 py-2.5 rounded-[40px] whitespace-nowrap text-[13px] font-medium transition-all ${
+                      isViewing || isCurrent
+                        ? 'bg-accent/20 border-[0.5px] border-accent/20 text-accent'
+                        : 'bg-background-elevated border border-border text-foreground hover:bg-muted'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span>{expansion.expansion_name}</span>
+                      {expansion.is_current && <StarFilledIcon size={14} />}
+                    </div>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        )}
 
         {/* Raid Tier Tabs - Sticky */}
         {initialLoading ? (
-          <div className="sticky top-0 z-20 px-8 py-3 bg-background">
+          <div className="sticky top-0 z-20 px-8 py-1.5 bg-background">
             <TierTabsSkeleton />
           </div>
         ) : raidTiers.length > 0 && (
-          <div className="sticky top-0 z-20 px-8 py-3 bg-background">
+          <div className="sticky top-0 z-20 px-8 py-1.5 bg-background">
             <div className="flex items-center gap-3 overflow-x-auto">
-              <span className="text-muted-foreground text-sm font-medium whitespace-nowrap">Raid Tier:</span>
               <div className="flex gap-2">
                 {raidTiers.map((tier: any) => {
                   const status = tierSubmissionStatuses[tier.id]
@@ -1057,7 +1055,7 @@ export default function LootList() {
         )}
 
         {/* Main Content */}
-        <div className="px-8 pb-8 space-y-6">
+        <div className="px-8 pt-1.5 pb-6 space-y-6">
         {/* Content Loading State */}
         {(initialLoading || contentLoading) ? (
           <LootListContentSkeleton />

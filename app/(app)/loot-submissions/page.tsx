@@ -415,20 +415,19 @@ export default function MasterLootPage() {
   return (
     <div className="font-poppins">
       {/* Header - Always visible */}
-      <div className="p-8 pb-4">
+      <div className="p-8 pb-1.5">
         <Heading level={1}>Loot Submissions</Heading>
         <p className="text-muted-foreground mt-1 text-base">Review and manage character loot submissions</p>
       </div>
 
       {/* Raid Tier Selector - Sticky */}
       {initialLoading ? (
-        <div className="px-8 py-3 bg-background">
+        <div className="px-8 py-1.5 bg-background">
           <TierTabsSkeleton />
         </div>
       ) : raidTiers.length > 0 && (
-        <div className="sticky top-0 z-20 px-8 py-3 bg-background">
+        <div className="sticky top-0 z-20 px-8 py-1.5 bg-background">
           <div className="flex items-center gap-3 overflow-x-auto">
-            <span className="text-muted-foreground text-sm font-medium whitespace-nowrap">Raid Tier:</span>
             <div className="flex gap-2">
               {/* All Tiers Button */}
               <button
@@ -463,7 +462,7 @@ export default function MasterLootPage() {
       )}
 
       {/* Main Content */}
-      <div className="px-8 pb-8 space-y-6">
+      <div className="px-8 pt-1.5 pb-6 space-y-6">
       {initialLoading ? (
         <SubmissionsListSkeleton count={5} />
       ) : (
@@ -473,7 +472,6 @@ export default function MasterLootPage() {
           {/* Filters and Delete Actions */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <span className="text-muted-foreground text-sm font-medium whitespace-nowrap">Status:</span>
               <div className="flex gap-2">
               {(['all', 'pending', 'approved', 'rejected'] as const).map((status) => (
                 <button
