@@ -136,7 +136,7 @@ export default function JoinGuildPage() {
           <div className="flex items-center justify-center w-20 h-20 rounded-full bg-success/20 mx-auto">
             <HugeiconsIcon icon={Tick01Icon} size={40} className="text-success" />
           </div>
-          <h2 className="text-2xl font-bold text-foreground">Successfully Joined!</h2>
+          <h2 className="text-2xl font-bold text-foreground">Successfully joined</h2>
           <p className="text-muted-foreground">Redirecting...</p>
           <LoadingSpinner />
         </div>
@@ -173,7 +173,7 @@ export default function JoinGuildPage() {
         {/* Invite Code Form */}
         <Card>
           <CardHeader>
-            <CardTitle>Enter Invite Code</CardTitle>
+            <CardTitle>Enter invite code</CardTitle>
             <CardDescription>
               Your officer should have shared a 12-character code with you
             </CardDescription>
@@ -216,7 +216,7 @@ export default function JoinGuildPage() {
         {guildInfo && (
           <Card className="border-success/50 bg-success/10">
             <CardHeader>
-              <CardTitle className="text-success">Valid Invite Code!</CardTitle>
+              <CardTitle className="text-success">Valid invite code</CardTitle>
               <CardDescription>You can join this guild</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">

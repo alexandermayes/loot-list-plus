@@ -146,7 +146,7 @@ export default function RoleManager() {
 
   const handleDeleteRole = (roleId: string, roleName: string) => {
     confirm({
-      title: 'Delete Role',
+      title: 'Delete role',
       description: `Delete the "${roleName}" role? Members with this role will need to be reassigned.`,
       confirmLabel: 'Delete',
       variant: 'danger',

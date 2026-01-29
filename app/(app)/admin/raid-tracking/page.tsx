@@ -617,7 +617,7 @@ export default function RaidTrackingPage() {
 
   const deleteLootEntry = (lootId: string, raidId: string) => {
     confirm({
-      title: 'Remove Loot Entry',
+      title: 'Remove loot entry',
       description: 'Are you sure you want to remove this loot entry? This will restore the item to the master sheet.',
       confirmLabel: 'Remove',
       variant: 'danger',
@@ -1803,7 +1803,7 @@ export default function RaidTrackingPage() {
       {/* Skip Day Modal */}
       <Modal open={!!showSkipModal} onClose={() => setShowSkipModal(null)} size="sm">
         <ModalHeader onClose={() => setShowSkipModal(null)}>
-          <ModalTitle>Skip Raid Day</ModalTitle>
+          <ModalTitle>Skip raid day</ModalTitle>
           {showSkipModal && (
             <ModalDescription>
               {new Date(showSkipModal.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
@@ -1969,7 +1969,7 @@ export default function RaidTrackingPage() {
       {/* Loot Item Selection Modal */}
       <Modal open={!!showLootSelectionModal} onClose={skipLootItemSelection} size="default" zIndex={60}>
         <ModalHeader>
-          <ModalTitle>Item Not Found</ModalTitle>
+          <ModalTitle>Item not found</ModalTitle>
           {showLootSelectionModal && (
             <ModalDescription>
               Could not find item ID <span className="text-accent font-mono">[{showLootSelectionModal.itemId}]</span> for{' '}

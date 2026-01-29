@@ -479,7 +479,7 @@ export default function GuildSettingsPage() {
             {/* Roles Management Modal */}
             <Modal open={showRolesModal} onClose={() => setShowRolesModal(false)} size="lg">
               <ModalHeader onClose={() => setShowRolesModal(false)}>
-                <ModalTitle>Guild Roles</ModalTitle>
+                <ModalTitle>Guild roles</ModalTitle>
                 <ModalDescription>Create and manage custom roles for your guild members</ModalDescription>
               </ModalHeader>
               <ModalBody className="p-0">
@@ -490,7 +490,7 @@ export default function GuildSettingsPage() {
             {/* Transfer Ownership Modal */}
             <Modal open={showTransferModal} onClose={() => { setShowTransferModal(false); setSelectedNewOwner(''); }} size="default">
               <ModalHeader onClose={() => { setShowTransferModal(false); setSelectedNewOwner(''); }}>
-                <ModalTitle>Transfer Guild Ownership</ModalTitle>
+                <ModalTitle>Transfer guild ownership</ModalTitle>
                 <ModalDescription>
                   Select the member who will become the new guild owner. This action cannot be undone.
                 </ModalDescription>
@@ -507,7 +507,7 @@ export default function GuildSettingsPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="block text-[13px] font-medium text-foreground">Select New Owner</label>
+                  <label className="block text-[13px] font-medium text-foreground">Select new owner</label>
                   {eligibleNewOwners.length > 0 ? (
                     <Select
                       value={selectedNewOwner}

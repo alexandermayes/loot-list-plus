@@ -1292,7 +1292,7 @@ export default function AdminLootItems() {
         <div className="bg-background-elevated border border-border rounded-xl p-4">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
             <div>
-              <label className="block text-[12px] font-medium text-foreground-muted mb-2">Search Items</label>
+              <label className="block text-[12px] font-medium text-foreground-muted mb-2">Search items</label>
               <input
                 type="text"
                 value={searchTerm}
@@ -1704,7 +1704,7 @@ export default function AdminLootItems() {
                 </div>
 
                 <div>
-                  <label className="block text-[13px] font-medium text-foreground mb-2">Score Decimal Places</label>
+                  <label className="block text-[13px] font-medium text-foreground mb-2">Score decimal places</label>
                   <select
                     value={settings.decimal_places}
                     onChange={(e) => setSettings({ ...settings, decimal_places: Number(e.target.value) })}
@@ -1812,7 +1812,7 @@ export default function AdminLootItems() {
                     {/* Attendance Bonus Tiers */}
                     <div className="space-y-4 pb-6 border-b border-border-strong">
                       <div>
-                        <h4 className="text-[16px] font-semibold text-foreground pb-2">Attendance Bonus Tiers</h4>
+                        <h4 className="text-[16px] font-semibold text-foreground pb-2">Attendance bonus tiers</h4>
                         <p className="text-muted-foreground text-[13px] mt-1">Configure bonus points for different attendance thresholds.</p>
                       </div>
 
@@ -1945,7 +1945,7 @@ export default function AdminLootItems() {
                     {/* Bad Luck Prevention */}
                     <div className="space-y-4 pb-6 border-b border-border-strong">
                       <div>
-                        <h4 className="text-[16px] font-semibold text-foreground pb-2">Bad Luck Prevention</h4>
+                        <h4 className="text-[16px] font-semibold text-foreground pb-2">Bad luck prevention</h4>
                         <p className="text-muted-foreground text-[13px] mt-1">Provide bonus points to raiders who experience bad RNG luck. Rewards players who see their desired items drop but lose the roll, or who generously pass on items to help others progress.</p>
                       </div>
 
@@ -2147,7 +2147,7 @@ export default function AdminLootItems() {
                       </div>
 
                       <div>
-                        <label className="block text-[13px] font-medium text-foreground mb-2">Donation Bonus Type</label>
+                        <label className="block text-[13px] font-medium text-foreground mb-2">Donation bonus type</label>
                         <select
                           value={settings.donation_bonus_type}
                           onChange={(e) => setSettings({ ...settings, donation_bonus_type: e.target.value as 'permanent' | 'rolling' | 'hard-reset' })}

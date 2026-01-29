@@ -98,7 +98,7 @@ export default function InviteCodeManager() {
 
   const handleDeactivateCode = (codeId: string) => {
     confirm({
-      title: 'Deactivate Invite Code',
+      title: 'Deactivate invite code',
       description: 'Are you sure you want to deactivate this invite code? It will no longer be usable.',
       confirmLabel: 'Deactivate',
       variant: 'warning',
@@ -143,7 +143,7 @@ export default function InviteCodeManager() {
         {/* Generate Form */}
         {showGenerateForm && (
           <div className="p-4 bg-background-subtle border border-border rounded-lg space-y-4">
-            <h3 className="font-medium text-foreground text-[14px]">Generate New Invite Code</h3>
+            <h3 className="font-medium text-foreground text-[14px]">Generate new invite code</h3>
 
             <div className="space-y-2">
               <label htmlFor="expiresAt" className="block text-[13px] font-medium text-foreground">Expires At (Optional)</label>

@@ -239,7 +239,7 @@ export default function MemberManager() {
 
   const handleRemoveMember = (userId: string, memberName: string) => {
     confirm({
-      title: 'Remove Member',
+      title: 'Remove member',
       description: `Remove ${memberName} from the guild? They can rejoin with an invite code.`,
       confirmLabel: 'Remove',
       variant: 'danger',

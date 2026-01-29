@@ -165,7 +165,7 @@ export default function PendingSubmissionsPage() {
 
   const handleReject = (submissionId: string) => {
     confirm({
-      title: 'Reject Submission',
+      title: 'Reject submission',
       description: 'Are you sure you want to reject this submission? The player will need to resubmit.',
       confirmLabel: 'Reject',
       variant: 'danger',
@@ -213,7 +213,7 @@ export default function PendingSubmissionsPage() {
           <EmptyState
             icon={CheckmarkCircle01Icon}
             title="No pending submissions"
-            description="All submissions have been reviewed!"
+            description="All submissions have been reviewed"
             size="lg"
             variant="card"
           />

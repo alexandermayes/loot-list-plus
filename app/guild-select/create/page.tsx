@@ -489,7 +489,7 @@ export default function CreateGuildPage() {
               <p className="text-sm text-destructive">{nameError}</p>
             )}
             {!checkingName && nameAvailable === true && guildName.trim() && (
-              <p className="text-sm text-success">Guild name is available!</p>
+              <p className="text-sm text-success">Guild name is available</p>
             )}
           </div>
 
@@ -586,9 +586,9 @@ export default function CreateGuildPage() {
                   <div className="flex items-start gap-3">
                     <div className="text-success text-2xl">✅</div>
                     <div className="flex-1">
-                      <p className="font-semibold text-success text-lg">Bot is Installed!</p>
+                      <p className="font-semibold text-success text-lg">Bot installed</p>
                       <p className="text-sm text-success/80 mt-1">
-                        The LootList+ bot is active in your Discord server. You're all set!
+                        The LootList+ bot is active in your Discord server. You're all set.
                       </p>
                     </div>
                   </div>

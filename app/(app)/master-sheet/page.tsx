@@ -971,7 +971,7 @@ export default function MasterSheet() {
               <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
                 <span className="text-3xl">🔒</span>
               </div>
-              <h3 className="text-xl font-semibold text-foreground mb-2">Master Sheet Not Available</h3>
+              <h3 className="text-xl font-semibold text-foreground mb-2">Master sheet not available</h3>
               <p className="text-muted-foreground">
                 The loot rankings for this raid tier are currently hidden. Officers will make them visible once the submission deadline has passed.
               </p>
@@ -985,7 +985,7 @@ export default function MasterSheet() {
                 <div className="flex items-center gap-3">
                   <span className="text-xl">👁️</span>
                   <div>
-                    <p className="text-blue-200 font-semibold">Officer Preview</p>
+                    <p className="text-blue-200 font-semibold">Officer preview</p>
                     <p className="text-blue-300 text-sm">
                       The master sheet is currently hidden from members. Only officers can see these rankings.
                     </p>
@@ -1000,7 +1000,7 @@ export default function MasterSheet() {
                 <div className="flex items-center gap-3">
                   <span className="text-xl">⚠️</span>
                   <div>
-                    <p className="text-amber-200 font-semibold">Disabled Raid Tier</p>
+                    <p className="text-amber-200 font-semibold">Disabled raid tier</p>
                     <p className="text-amber-300 text-sm">
                       This raid tier is disabled in expansion management. Only officers can see it.
                     </p>

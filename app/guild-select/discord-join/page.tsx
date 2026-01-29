@@ -149,7 +149,7 @@ export default function DiscordJoinPage() {
           <div className="flex items-center justify-center w-20 h-20 rounded-full bg-success/20 mx-auto">
             <HugeiconsIcon icon={Tick01Icon} size={40} className="text-success" />
           </div>
-          <h2 className="text-2xl font-bold text-foreground">Successfully Joined!</h2>
+          <h2 className="text-2xl font-bold text-foreground">Successfully joined</h2>
           <p className="text-muted-foreground">Redirecting...</p>
           <LoadingSpinner />
         </div>
@@ -177,7 +177,7 @@ export default function DiscordJoinPage() {
             <div className="flex items-center justify-center w-16 h-16 rounded-full bg-warning/20 mx-auto mb-4">
               <HugeiconsIcon icon={UserGroupIcon} size={32} className="text-warning" />
             </div>
-            <Heading level={1} className="text-3xl text-primary">Discord Verification Required</Heading>
+            <Heading level={1} className="text-3xl text-primary">Discord verification required</Heading>
             <p className="text-muted-foreground">
               You need to verify your Discord account to join guilds automatically
             </p>
@@ -238,7 +238,7 @@ export default function DiscordJoinPage() {
         {availableGuilds.length === 0 ? (
           <Card>
             <CardHeader>
-              <CardTitle>No Guilds Found</CardTitle>
+              <CardTitle>No guilds found</CardTitle>
               <CardDescription>
                 We couldn't find any LootList+ guilds that match your Discord servers.
               </CardDescription>

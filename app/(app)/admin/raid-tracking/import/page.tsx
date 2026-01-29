@@ -260,12 +260,12 @@ export default function ImportPage() {
       <div className="p-8 space-y-6 font-poppins">
         {/* Header */}
         <div>
-          <Heading level={1}>Import Raid Data</Heading>
+          <Heading level={1}>Import raid data</Heading>
           <p className="text-muted-foreground mt-1 text-base">Import raid tracking data from CSV files</p>
         </div>
 
         <div className="bg-background-elevated border border-border rounded-xl p-6">
-          <h2 className="text-[24px] font-semibold text-foreground mb-4">Import Data from CSV</h2>
+          <h2 className="text-[24px] font-semibold text-foreground mb-4">Import data from CSV</h2>
 
           <div className="space-y-4">
             <div>

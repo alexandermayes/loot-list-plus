@@ -246,7 +246,7 @@ export default function Dashboard() {
       // Check if guild has active expansion set
       if (!activeGuild.active_expansion_id) {
         setRaidTiers([])
-        setError('⚠️ Your guild needs to select an expansion. Ask an officer to go to Manage Expansions.')
+        setError('Your guild needs to select an expansion. Ask an officer to go to Manage Expansions.')
         setLoading(false)
         return
       }
@@ -708,7 +708,7 @@ export default function Dashboard() {
               <div className="flex items-start gap-3">
                 <div className="text-accent mt-0.5">&#x26A0;&#xFE0F;</div>
                 <div className="flex-1">
-                  <p className="text-foreground font-semibold text-base">Action Required</p>
+                  <p className="text-foreground font-semibold text-base">Action required</p>
                   <p className="text-muted-foreground text-sm mt-1">{error}</p>
                   {isOfficer && (
                     <Button className="mt-3" onClick={() => router.push('/admin/expansions')}>
@@ -763,7 +763,7 @@ export default function Dashboard() {
                     </div>
                   )}
                   <div className="flex-1">
-                    <p className="text-sm text-muted-foreground">Current Character</p>
+                    <p className="text-sm text-muted-foreground">Current character</p>
                     <h2 className="text-[24px] font-bold" style={{ color: activeCharacter.class?.color_hex || '#fff' }}>
                       {activeCharacter.name}
                     </h2>
@@ -797,7 +797,7 @@ export default function Dashboard() {
                 <div className="bg-background-elevated border border-border rounded-xl p-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm text-muted-foreground">Completed Lists</p>
+                      <p className="text-sm text-muted-foreground">Completed lists</p>
                       <p className="text-[42px] font-bold text-foreground mt-2 leading-none">{stats.completedLists}</p>
                     </div>
                     <div className="w-12 h-12 bg-success/20 rounded-full flex items-center justify-center">
@@ -810,7 +810,7 @@ export default function Dashboard() {
                 <div className="bg-background-elevated border border-border rounded-xl p-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm text-muted-foreground">Pending Reviews</p>
+                      <p className="text-sm text-muted-foreground">Pending reviews</p>
                       <p className="text-[42px] font-bold text-foreground mt-2 leading-none">{stats.pendingReviews}</p>
                     </div>
                     <div className="w-12 h-12 bg-warning/20 rounded-full flex items-center justify-center">
@@ -823,7 +823,7 @@ export default function Dashboard() {
                 <div className="bg-background-elevated border border-border rounded-xl p-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm text-muted-foreground">Actions Needed</p>
+                      <p className="text-sm text-muted-foreground">Actions needed</p>
                       <p className="text-[42px] font-bold text-foreground mt-2 leading-none">{visibleActionsCount}</p>
                     </div>
                     <div className="w-12 h-12 bg-orange-500/20 rounded-full flex items-center justify-center">

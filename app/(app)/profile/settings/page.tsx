@@ -161,7 +161,7 @@ export default function SettingsPage() {
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <Label>Show Email Address</Label>
+                <Label>Show email address</Label>
                 <p className="text-sm text-muted-foreground">Display your email on your profile</p>
               </div>
               <Button
@@ -175,7 +175,7 @@ export default function SettingsPage() {
 
             <div className="flex items-center justify-between">
               <div>
-                <Label>Show Discord Username</Label>
+                <Label>Show Discord username</Label>
                 <p className="text-sm text-muted-foreground">Display your Discord username publicly</p>
               </div>
               <Button
@@ -189,7 +189,7 @@ export default function SettingsPage() {
 
             <div className="flex items-center justify-between">
               <div>
-                <Label>Show Attendance Stats</Label>
+                <Label>Show attendance stats</Label>
                 <p className="text-sm text-muted-foreground">Display your raid attendance statistics</p>
               </div>
               <Button
@@ -203,7 +203,7 @@ export default function SettingsPage() {
 
             <div className="flex items-center justify-between">
               <div>
-                <Label>Show Loot History</Label>
+                <Label>Show loot history</Label>
                 <p className="text-sm text-muted-foreground">Display items you've received</p>
               </div>
               <Button
@@ -229,7 +229,7 @@ export default function SettingsPage() {
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <Label>Loot Deadline Reminders</Label>
+                <Label>Loot deadline reminders</Label>
                 <p className="text-sm text-muted-foreground">Get notified before submission deadlines</p>
               </div>
               <Button
@@ -243,7 +243,7 @@ export default function SettingsPage() {
 
             <div className="flex items-center justify-between">
               <div>
-                <Label>Submission Status Updates</Label>
+                <Label>Submission status updates</Label>
                 <p className="text-sm text-muted-foreground">Notify when your submission is reviewed</p>
               </div>
               <Button
@@ -257,7 +257,7 @@ export default function SettingsPage() {
 
             <div className="flex items-center justify-between">
               <div>
-                <Label>New Raid Events</Label>
+                <Label>New raid events</Label>
                 <p className="text-sm text-muted-foreground">Get notified when new raids are scheduled</p>
               </div>
               <Button
@@ -282,7 +282,7 @@ export default function SettingsPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
-              <Label>Preferred Display Name (Optional)</Label>
+              <Label>Preferred display name (optional)</Label>
               <p className="text-sm text-muted-foreground mb-2">Override your Discord name</p>
               <input
                 type="text"

@@ -762,7 +762,7 @@ export default function MasterLootPage() {
               </p>
               <div className="bg-destructive/10 border border-destructive/30 rounded-xl p-3">
                 <p className="text-sm text-destructive font-medium">
-                  Warning: This action is permanent and cannot be undone.
+                  This is a permanent action.
                 </p>
               </div>
             </div>
