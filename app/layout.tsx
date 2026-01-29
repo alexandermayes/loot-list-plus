@@ -150,9 +150,9 @@ export default function RootLayout({
         <Script id="wowhead-config" strategy="beforeInteractive">
           {`
             var wowhead_tooltips = {
-              colorlinks: true,
-              iconizelinks: true,
-              renamelinks: true
+              colorlinks: false,
+              iconizelinks: false,
+              renamelinks: false
             };
           `}
         </Script>

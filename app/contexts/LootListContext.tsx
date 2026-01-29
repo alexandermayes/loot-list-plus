@@ -16,6 +16,7 @@ import {
   type RaidTier
 } from '@/app/hooks/use-api'
 import { refreshWowheadTooltips } from '@/lib/wowhead'
+import { preloadItemIcons } from '@/data/item-icons'
 
 // Define raid tier progression order (Classic + TBC + WotLK)
 const RAID_TIER_ORDER: Record<string, number> = {
@@ -259,12 +260,15 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
     }
   }, [submissionData])
 
-  // Refresh Wowhead tooltips when items load
+  // Preload icons and refresh Wowhead tooltips when items load
   useEffect(() => {
     if (!itemsLoading && itemsData?.items?.length) {
+      // Preload all item icons so they're cached before user interacts
+      const wowheadIds = itemsData.items.map(item => item.wowhead_id)
+      preloadItemIcons(wowheadIds)
       refreshWowheadTooltips(true)
     }
-  }, [itemsLoading, itemsData?.items?.length])
+  }, [itemsLoading, itemsData?.items])
 
   // Helper to change tier and update URL
   const setSelectedTierId = useCallback((tierId: string) => {
@@ -311,20 +315,12 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
 
   // Auto-save function - uses refs to avoid dependency cycles
   const doAutoSave = useCallback(async () => {
-    console.log('[AutoSave] Called')
-    if (!activeCharacter || !selectedTierId || !activeGuild?.id) {
-      console.log('[AutoSave] Skipped - missing context')
-      return
-    }
-    if (savingInProgressRef.current) {
-      console.log('[AutoSave] Skipped - already saving')
-      return
-    }
+    if (!activeCharacter || !selectedTierId || !activeGuild?.id) return
+    if (savingInProgressRef.current) return
 
     // Enforce minimum 2 second interval between saves
     const now = Date.now()
     if (lastSavedRef.current && (now - lastSavedRef.current.getTime()) < 2000) {
-      console.log('[AutoSave] Skipped - too soon since last save')
       return
     }
 
@@ -332,18 +328,15 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
 
     // Skip if we already saved this exact state (use value comparison, not JSON)
     if (lastSavedRankingsRef.current && rankingsEqual(lastSavedRankingsRef.current, currentRankings)) {
-      console.log('[AutoSave] Skipped - matches lastSaved')
       return
     }
 
     // Check if there are actual changes from initial
     const initial = initialRankingsRef.current
     if (rankingsEqual(initial, currentRankings)) {
-      console.log('[AutoSave] Skipped - matches initial')
       return
     }
 
-    console.log('[AutoSave] Proceeding with save')
     savingInProgressRef.current = true
 
     // Get current submission data from ref
@@ -460,13 +453,9 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
       const savedKeys = Object.keys(lastSaved)
       const matchesLastSaved = currentKeys.length === savedKeys.length &&
           currentKeys.every(key => rankings[key] === lastSaved[key])
-      console.log('[Debounce] Comparing with lastSaved:', { matchesLastSaved, rankingsKeys: currentKeys.length, savedKeys: savedKeys.length })
       if (matchesLastSaved) {
-        console.log('[Debounce] Skipped - matches lastSaved')
         return
       }
-    } else {
-      console.log('[Debounce] No lastSaved to compare')
     }
 
     // Also skip if rankings match initial state (nothing to save)
@@ -475,15 +464,11 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
     const initialKeys = Object.keys(initial)
     const matchesInitial = currentKeys.length === initialKeys.length &&
         currentKeys.every(key => rankings[key] === initial[key])
-    console.log('[Debounce] Comparing with initial:', { matchesInitial, rankingsKeys: currentKeys.length, initialKeys: initialKeys.length })
     if (matchesInitial) {
-      console.log('[Debounce] Skipped - matches initial')
       return
     }
 
-    console.log('[Debounce] Scheduling 1s timer')
     const timer = setTimeout(() => {
-      console.log('[Debounce] Timer fired')
       autoSaveRef.current()
     }, 1000) // 1 second debounce
 
