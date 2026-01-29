@@ -224,6 +224,11 @@ export async function PUT(request: NextRequest) {
 
     // Verify user has officer permissions (position >= 50)
     const verification = await verifyOfficerPermissions(serviceSupabase, user.id, guild_id)
+    console.log('[PUT /api/guild-members] Permission check:', {
+      userId: user.id,
+      guildId: guild_id,
+      verification
+    })
     if (!verification.hasPermission) {
       return NextResponse.json({ error: verification.error }, { status: 403 })
     }
