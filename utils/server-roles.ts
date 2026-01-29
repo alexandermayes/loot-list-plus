@@ -49,12 +49,10 @@ export async function verifyOfficerPermissions(
   guildId: string
 ): Promise<{ hasPermission: boolean; role?: string; position?: number; error?: string }> {
   // Get user's characters
-  const { data: userCharacters, error: charError } = await serviceSupabase
+  const { data: userCharacters } = await serviceSupabase
     .from('characters')
     .select('id')
     .eq('user_id', userId)
-
-  console.log('[verifyOfficerPermissions] User characters:', { userId, userCharacters, charError })
 
   if (!userCharacters || userCharacters.length === 0) {
     return { hasPermission: false, error: 'No characters found' }
@@ -63,14 +61,12 @@ export async function verifyOfficerPermissions(
   const characterIds = userCharacters.map((c: any) => c.id)
 
   // Get ALL of user's memberships in this guild (they may have multiple characters with different roles)
-  const { data: memberships, error: membershipError } = await serviceSupabase
+  const { data: memberships } = await serviceSupabase
     .from('character_guild_memberships')
-    .select('role, character_id')
+    .select('role')
     .eq('guild_id', guildId)
     .in('character_id', characterIds)
     .eq('is_active', true)
-
-  console.log('[verifyOfficerPermissions] Memberships:', { guildId, characterIds, memberships, membershipError })
 
   if (!memberships || memberships.length === 0) {
     return { hasPermission: false, error: 'Not a member of this guild' }
@@ -78,7 +74,6 @@ export async function verifyOfficerPermissions(
 
   // Get guild roles to determine positions
   const roles = await getGuildRoles(serviceSupabase, guildId)
-  console.log('[verifyOfficerPermissions] Guild roles:', roles)
 
   // Find the highest position among all the user's character memberships
   let highestRole = memberships[0].role
@@ -91,8 +86,6 @@ export async function verifyOfficerPermissions(
       highestRole = membership.role
     }
   }
-
-  console.log('[verifyOfficerPermissions] Result:', { highestRole, highestPosition, isOfficer: isOfficerPosition(highestPosition) })
 
   if (!isOfficerPosition(highestPosition)) {
     return { hasPermission: false, role: highestRole, position: highestPosition, error: 'Insufficient permissions' }
