@@ -190,6 +190,16 @@ module.exports = {
           "0%": { transform: "translateY(10px)", opacity: "0" },
           "100%": { transform: "translateY(0)", opacity: "1" },
         },
+        "gradient-x": {
+          "0%, 100%": {
+            "background-size": "200% 200%",
+            "background-position": "left center"
+          },
+          "50%": {
+            "background-size": "200% 200%",
+            "background-position": "right center"
+          },
+        },
       },
 
       // Animations
@@ -204,6 +214,7 @@ module.exports = {
         "fade-out": "fade-out 0.2s ease-out",
         "slide-in-top": "slide-in-from-top 0.2s ease-out",
         "slide-in-bottom": "slide-in-from-bottom 0.2s ease-out",
+        "gradient-x": "gradient-x 3s ease infinite",
       },
 
       // Box shadows
