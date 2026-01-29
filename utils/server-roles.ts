@@ -116,6 +116,147 @@ export async function verifyGuildMasterPermissions(
 }
 
 /**
+ * Check if a user is the guild creator/owner
+ */
+export async function isGuildCreator(
+  serviceSupabase: any,
+  userId: string,
+  guildId: string
+): Promise<boolean> {
+  const { data: guild } = await serviceSupabase
+    .from('guilds')
+    .select('created_by')
+    .eq('id', guildId)
+    .single()
+
+  return guild?.created_by === userId
+}
+
+/**
+ * Verify if a role change is allowed based on position hierarchy
+ * Rules:
+ * 1. Only the guild creator can promote someone TO Guild Master (position >= 100)
+ * 2. You cannot promote someone to a position higher than or equal to your own (unless you're the creator)
+ * 3. You cannot demote someone with a position higher than or equal to your own
+ * 4. You cannot change your own role to Guild Master (unless you're the creator)
+ */
+export async function verifyRoleChangePermissions(
+  serviceSupabase: any,
+  callerId: string,
+  targetUserId: string,
+  guildId: string,
+  newRoleName: string
+): Promise<{ allowed: boolean; error?: string }> {
+  // Get guild info including creator
+  const { data: guild } = await serviceSupabase
+    .from('guilds')
+    .select('created_by')
+    .eq('id', guildId)
+    .single()
+
+  if (!guild) {
+    return { allowed: false, error: 'Guild not found' }
+  }
+
+  const isCreator = guild.created_by === callerId
+
+  // Get guild roles to determine positions
+  const roles = await getGuildRoles(serviceSupabase, guildId)
+
+  // Get the new role's position
+  const newRolePosition = getRolePositionFromRoles(newRoleName, roles)
+
+  // Get caller's position
+  const callerRole = await getUserGuildRole(serviceSupabase, callerId, guildId)
+  if (!callerRole) {
+    return { allowed: false, error: 'Caller not a member of this guild' }
+  }
+
+  // Get target's current position
+  const targetRole = await getUserGuildRole(serviceSupabase, targetUserId, guildId)
+  if (!targetRole) {
+    return { allowed: false, error: 'Target not a member of this guild' }
+  }
+
+  // Rule 1: Only the guild creator can promote someone TO Guild Master level
+  if (isGuildMasterPosition(newRolePosition) && !isCreator) {
+    return { allowed: false, error: 'Only the guild owner can promote to Guild Master' }
+  }
+
+  // Guild creator can do anything
+  if (isCreator) {
+    return { allowed: true }
+  }
+
+  // Rule 2: Cannot promote to a position >= your own
+  if (newRolePosition >= callerRole.position) {
+    return { allowed: false, error: 'Cannot promote to a role at or above your own level' }
+  }
+
+  // Rule 3: Cannot change the role of someone with position >= your own
+  if (targetRole.position >= callerRole.position) {
+    return { allowed: false, error: 'Cannot change the role of someone at or above your level' }
+  }
+
+  return { allowed: true }
+}
+
+/**
+ * Verify if removing a member is allowed
+ * Rules:
+ * 1. Cannot remove the guild creator
+ * 2. Cannot remove someone with position >= your own (unless you're the creator)
+ */
+export async function verifyMemberRemovalPermissions(
+  serviceSupabase: any,
+  callerId: string,
+  targetUserId: string,
+  guildId: string
+): Promise<{ allowed: boolean; error?: string }> {
+  // Get guild info including creator
+  const { data: guild } = await serviceSupabase
+    .from('guilds')
+    .select('created_by')
+    .eq('id', guildId)
+    .single()
+
+  if (!guild) {
+    return { allowed: false, error: 'Guild not found' }
+  }
+
+  // Rule 1: Cannot remove the guild creator
+  if (targetUserId === guild.created_by) {
+    return { allowed: false, error: 'Cannot remove the guild owner' }
+  }
+
+  const isCreator = guild.created_by === callerId
+
+  // Guild creator can remove anyone (except themselves, checked above)
+  if (isCreator) {
+    return { allowed: true }
+  }
+
+  // Get caller's position
+  const callerRole = await getUserGuildRole(serviceSupabase, callerId, guildId)
+  if (!callerRole) {
+    return { allowed: false, error: 'Caller not a member of this guild' }
+  }
+
+  // Get target's position
+  const targetRole = await getUserGuildRole(serviceSupabase, targetUserId, guildId)
+  if (!targetRole) {
+    return { allowed: false, error: 'Target not a member of this guild' }
+  }
+
+  // Rule 2: Cannot remove someone with position >= your own
+  if (targetRole.position >= callerRole.position) {
+    return { allowed: false, error: 'Cannot remove someone at or above your level' }
+  }
+
+  return { allowed: true }
+}
+
+/**
  * Get user's role and position in a guild
  * Returns the highest role among all the user's characters
  */

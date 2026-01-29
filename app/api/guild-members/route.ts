@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient, getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
-import { verifyOfficerPermissions } from '@/utils/server-roles'
+import { verifyOfficerPermissions, verifyRoleChangePermissions, verifyMemberRemovalPermissions } from '@/utils/server-roles'
 import { ROLE_POSITIONS } from '@/utils/roles'
 
 // GET - List all members of a guild (uses service role to bypass RLS)
@@ -228,6 +228,18 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: verification.error }, { status: 403 })
     }
 
+    // Verify the role change is allowed based on position hierarchy
+    const roleChangeCheck = await verifyRoleChangePermissions(
+      serviceSupabase,
+      user.id,
+      target_user_id,
+      guild_id,
+      new_role
+    )
+    if (!roleChangeCheck.allowed) {
+      return NextResponse.json({ error: roleChangeCheck.error }, { status: 403 })
+    }
+
     // Update character_guild_memberships
     const { error: updateError } = await serviceSupabase
       .from('character_guild_memberships')
@@ -278,6 +290,17 @@ export async function DELETE(request: NextRequest) {
     const verification = await verifyOfficerPermissions(serviceSupabase, user.id, guildId)
     if (!verification.hasPermission) {
       return NextResponse.json({ error: verification.error }, { status: 403 })
+    }
+
+    // Verify the member removal is allowed based on position hierarchy
+    const removalCheck = await verifyMemberRemovalPermissions(
+      serviceSupabase,
+      user.id,
+      targetUserId,
+      guildId
+    )
+    if (!removalCheck.allowed) {
+      return NextResponse.json({ error: removalCheck.error }, { status: 403 })
     }
 
     // Set is_active = false on character_guild_memberships

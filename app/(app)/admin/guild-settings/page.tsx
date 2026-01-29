@@ -17,9 +17,12 @@ import {
   ModalTitle,
   ModalDescription,
   ModalBody,
+  ModalFooter,
 } from '@/components/ui/modal'
 import { Button } from '@/components/ui/button'
 import { Heading } from '@/components/ui/typography'
+import { useGuildMembers } from '@/app/hooks/use-api'
+import { Select } from '@/components/ui/select'
 
 export default function GuildSettingsPage() {
   const [loading, setLoading] = useState(true)
@@ -36,11 +39,20 @@ export default function GuildSettingsPage() {
   const [deleting, setDeleting] = useState(false)
   const [isGuildCreator, setIsGuildCreator] = useState(false)
   const [showRolesModal, setShowRolesModal] = useState(false)
+  const [showTransferModal, setShowTransferModal] = useState(false)
+  const [transferring, setTransferring] = useState(false)
+  const [selectedNewOwner, setSelectedNewOwner] = useState<string>('')
 
   const supabase = createClient()
   const router = useRouter()
   const { activeGuild, loading: guildLoading, isOfficer, refreshGuilds } = useGuildContext()
   const { showNotification } = useNotification()
+
+  // Fetch guild members for ownership transfer
+  const { data: membersData } = useGuildMembers(activeGuild?.id || null)
+  const guildMembers = membersData?.members || []
+  // Filter out current user from potential new owners
+  const eligibleNewOwners = guildMembers.filter((m: any) => m.user_id !== user?.id)
 
   // Set page title
   useEffect(() => {
@@ -93,6 +105,12 @@ export default function GuildSettingsPage() {
   const handleSaveBasicInfo = async () => {
     if (!activeGuild) return
 
+    // Only guild creator can update basic info
+    if (!isGuildCreator) {
+      showNotification('error', 'Only the guild owner can modify guild information')
+      return
+    }
+
     // Validate required fields
     if (!realm.trim()) {
       showNotification('error', 'Please select a realm')
@@ -127,28 +145,23 @@ export default function GuildSettingsPage() {
         }
       }
 
-      // Update basic guild info using RPC (bypasses RLS)
-      const { error } = await supabase.rpc('update_guild_info', {
-        p_guild_id: activeGuild.id,
-        p_name: guildName.trim(),
-        p_realm: realm.trim(), // Required field
-        p_faction: faction,
-        p_discord_server_id: discordServerId.trim() || null
+      // Update guild info via API (requires Guild Master permissions)
+      const response = await fetch('/api/guilds/info', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          guild_id: activeGuild.id,
+          name: guildName.trim(),
+          realm: realm.trim(),
+          faction,
+          discord_server_id: discordServerId.trim() || null,
+          icon_url: finalIconUrl
+        })
       })
 
-      if (error) throw error
-
-      // Update icon separately using RPC (bypasses RLS)
-      if (finalIconUrl) {
-        const { error: iconError } = await supabase.rpc('update_guild_icon', {
-          p_guild_id: activeGuild.id,
-          p_icon_url: finalIconUrl
-        })
-
-        if (iconError) {
-          console.error('Failed to update icon:', iconError)
-          // Don't fail the whole save if just the icon update fails
-        }
+      if (!response.ok) {
+        const data = await response.json()
+        throw new Error(data.error || 'Failed to update guild information')
       }
 
       showNotification('success', 'Guild information updated successfully' + (shouldFetchIcon && finalIconUrl ? ' (Discord icon fetched!)' : ''))
@@ -197,6 +210,39 @@ export default function GuildSettingsPage() {
     }
   }
 
+  const handleTransferOwnership = async () => {
+    if (!activeGuild || !selectedNewOwner) return
+
+    setTransferring(true)
+
+    try {
+      const response = await fetch('/api/guilds/transfer-ownership', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          guild_id: activeGuild.id,
+          new_owner_user_id: selectedNewOwner
+        })
+      })
+
+      if (!response.ok) {
+        const data = await response.json()
+        throw new Error(data.error || 'Failed to transfer ownership')
+      }
+
+      showNotification('success', 'Guild ownership transferred successfully')
+      setShowTransferModal(false)
+
+      // Reload to reflect the changes
+      setTimeout(() => {
+        window.location.reload()
+      }, 800)
+    } catch (error: any) {
+      showNotification('error', error.message || 'Failed to transfer ownership')
+      setTransferring(false)
+    }
+  }
+
   // Show unauthorized message if not officer (after loading completes)
   if (!loading && !guildLoading && (!activeGuild || !isOfficer)) {
     return (
@@ -225,7 +271,9 @@ export default function GuildSettingsPage() {
           <div className="bg-background-elevated border border-border rounded-xl overflow-hidden">
             <div className="p-6 border-b border-border">
               <h2 className="text-[24px] font-semibold text-foreground">Guild Information</h2>
-              <p className="text-muted-foreground text-[13px] mt-1">Update your guild's basic details</p>
+              <p className="text-muted-foreground text-[13px] mt-1">
+                {isGuildCreator ? "Update your guild's basic details" : "Only the guild owner can edit these settings"}
+              </p>
             </div>
             <div className="p-6 space-y-4">
               <div className="space-y-2">
@@ -235,7 +283,8 @@ export default function GuildSettingsPage() {
                   value={guildName}
                   onChange={(e) => setGuildName(e.target.value)}
                   placeholder="Enter guild name"
-                  className="w-full px-5 py-3 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[13px] focus:outline-none focus:border-accent"
+                  disabled={!isGuildCreator || saving}
+                  className={`w-full px-5 py-3 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[13px] focus:outline-none focus:border-accent ${!isGuildCreator ? 'opacity-60 cursor-not-allowed' : ''}`}
                 />
               </div>
 
@@ -246,7 +295,7 @@ export default function GuildSettingsPage() {
                   realm={realm}
                   onRegionChange={setRealmRegion}
                   onRealmChange={setRealm}
-                  disabled={saving}
+                  disabled={!isGuildCreator || saving}
                 />
               </div>
 
@@ -255,65 +304,69 @@ export default function GuildSettingsPage() {
                 <div className="grid grid-cols-2 gap-2">
                   <button
                     type="button"
-                    onClick={() => setFaction('Alliance')}
-                    disabled={saving}
+                    onClick={() => isGuildCreator && setFaction('Alliance')}
+                    disabled={!isGuildCreator || saving}
                     className={`alliance-btn group relative px-3 py-2.5 rounded-lg border transition-all duration-300 flex items-center justify-center gap-2 overflow-hidden ${
                       faction === 'Alliance'
                         ? 'border-blue-500 bg-blue-500/20'
                         : 'border-border-strong bg-background-elevated hover:bg-muted'
-                    }`}
+                    } ${!isGuildCreator ? 'opacity-60 cursor-not-allowed' : ''}`}
                   >
                     <img
                       src="https://wow.zamimg.com/images/wow/icons/large/inv_bannerpvp_02.jpg"
                       alt="Alliance"
-                      className={`w-6 h-6 rounded border border-border/50 shadow-sm relative z-10 transition-transform duration-300 ${faction === 'Alliance' ? 'scale-110' : 'group-hover:scale-110'}`}
+                      className={`w-6 h-6 rounded border border-border/50 shadow-sm relative z-10 transition-transform duration-300 ${faction === 'Alliance' ? 'scale-110' : isGuildCreator ? 'group-hover:scale-110' : ''}`}
                     />
-                    <span className={`font-medium text-[13px] relative z-10 transition-colors duration-300 ${faction === 'Alliance' ? 'text-blue-400' : 'text-foreground group-hover:text-blue-400'}`}>
+                    <span className={`font-medium text-[13px] relative z-10 transition-colors duration-300 ${faction === 'Alliance' ? 'text-blue-400' : isGuildCreator ? 'text-foreground group-hover:text-blue-400' : 'text-foreground'}`}>
                       Alliance
                     </span>
                   </button>
                   <button
                     type="button"
-                    onClick={() => setFaction('Horde')}
-                    disabled={saving}
+                    onClick={() => isGuildCreator && setFaction('Horde')}
+                    disabled={!isGuildCreator || saving}
                     className={`horde-btn group relative px-3 py-2.5 rounded-lg border transition-all duration-300 flex items-center justify-center gap-2 overflow-hidden ${
                       faction === 'Horde'
                         ? 'border-red-500 bg-red-500/20'
                         : 'border-border-strong bg-background-elevated hover:bg-muted'
-                    }`}
+                    } ${!isGuildCreator ? 'opacity-60 cursor-not-allowed' : ''}`}
                   >
                     <img
                       src="https://wow.zamimg.com/images/wow/icons/large/inv_bannerpvp_01.jpg"
                       alt="Horde"
-                      className={`w-6 h-6 rounded border border-border/50 shadow-sm relative z-10 transition-transform duration-300 ${faction === 'Horde' ? 'scale-110' : 'group-hover:scale-110'}`}
+                      className={`w-6 h-6 rounded border border-border/50 shadow-sm relative z-10 transition-transform duration-300 ${faction === 'Horde' ? 'scale-110' : isGuildCreator ? 'group-hover:scale-110' : ''}`}
                     />
-                    <span className={`font-medium text-[13px] relative z-10 transition-colors duration-300 ${faction === 'Horde' ? 'text-red-400' : 'text-foreground group-hover:text-red-400'}`}>
+                    <span className={`font-medium text-[13px] relative z-10 transition-colors duration-300 ${faction === 'Horde' ? 'text-red-400' : isGuildCreator ? 'text-foreground group-hover:text-red-400' : 'text-foreground'}`}>
                       Horde
                     </span>
                   </button>
                 </div>
-                <style jsx>{`
-                  .alliance-btn:hover {
-                    border-color: rgb(59, 130, 246);
-                    box-shadow: 0 0 20px rgba(59, 130, 246, 0.5), 0 0 40px rgba(59, 130, 246, 0.2);
-                    background: rgba(59, 130, 246, 0.15);
-                  }
-                  .horde-btn:hover {
-                    border-color: rgb(239, 68, 68);
-                    box-shadow: 0 0 20px rgba(239, 68, 68, 0.5), 0 0 40px rgba(239, 68, 68, 0.2);
-                    background: rgba(239, 68, 68, 0.15);
-                  }
-                `}</style>
+                {isGuildCreator && (
+                  <style jsx>{`
+                    .alliance-btn:hover:not(:disabled) {
+                      border-color: rgb(59, 130, 246);
+                      box-shadow: 0 0 20px rgba(59, 130, 246, 0.5), 0 0 40px rgba(59, 130, 246, 0.2);
+                      background: rgba(59, 130, 246, 0.15);
+                    }
+                    .horde-btn:hover:not(:disabled) {
+                      border-color: rgb(239, 68, 68);
+                      box-shadow: 0 0 20px rgba(239, 68, 68, 0.5), 0 0 40px rgba(239, 68, 68, 0.2);
+                      background: rgba(239, 68, 68, 0.15);
+                    }
+                  `}</style>
+                )}
               </div>
 
-              <Button
-                onClick={handleSaveBasicInfo}
-                disabled={!guildName.trim()}
-                loading={saving}
-                className="w-full"
-              >
-                Save Changes
-              </Button>
+              {isGuildCreator && (
+                <Button
+                  onClick={handleSaveBasicInfo}
+                  disabled={!guildName.trim()}
+                  loading={saving}
+                  className="w-full"
+                >
+                  Save Changes
+                </Button>
+              )}
             </div>
           </div>
 
@@ -344,7 +397,7 @@ export default function GuildSettingsPage() {
           <div className="p-6 border-b border-border">
             <h2 className="text-[24px] font-semibold text-foreground">Discord Integration</h2>
             <p className="text-muted-foreground text-[13px] mt-1">
-              Connect your Discord server to allow automatic guild joins
+              {isGuildCreator ? 'Connect your Discord server to allow automatic guild joins' : 'Only the guild owner can modify Discord settings'}
             </p>
           </div>
           <div className="p-6 space-y-4">
@@ -355,16 +408,19 @@ export default function GuildSettingsPage() {
                 value={discordServerId}
                 onChange={(e) => setDiscordServerId(e.target.value)}
                 placeholder="Enter Discord server ID"
-                className="w-full px-5 py-3 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[13px] focus:outline-none focus:border-accent"
+                disabled={!isGuildCreator || saving}
+                className={`w-full px-5 py-3 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[13px] focus:outline-none focus:border-accent ${!isGuildCreator ? 'opacity-60 cursor-not-allowed' : ''}`}
               />
               <p className="text-xs text-muted-foreground">
                 Enable Developer Mode in Discord, right-click your server, and select "Copy Server ID"
               </p>
             </div>
 
-            <Button variant="secondary" onClick={handleSaveBasicInfo} loading={saving}>
-              Save Changes
-            </Button>
+            {isGuildCreator && (
+              <Button variant="secondary" onClick={handleSaveBasicInfo} loading={saving}>
+                Save Changes
+              </Button>
+            )}
           </div>
         </div>
 
@@ -378,6 +434,26 @@ export default function GuildSettingsPage() {
               </p>
             </div>
             <div className="p-6 space-y-4">
+              {/* Transfer Ownership */}
+              <div className="rounded-lg border border-yellow-500/30 bg-yellow-500/10 p-4">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex-1">
+                    <h3 className="text-[16px] font-semibold text-yellow-500 mb-1">Transfer Ownership</h3>
+                    <p className="text-[13px] text-muted-foreground">
+                      Transfer guild ownership to another member. You will be demoted to Officer and lose owner privileges.
+                    </p>
+                  </div>
+                  <Button
+                    variant="secondary"
+                    onClick={() => setShowTransferModal(true)}
+                    className="shrink-0 border-yellow-500/50 text-yellow-500 hover:bg-yellow-500/10"
+                  >
+                    Transfer
+                  </Button>
+                </div>
+              </div>
+
+              {/* Delete Guild */}
               <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-4">
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1">
@@ -409,6 +485,64 @@ export default function GuildSettingsPage() {
               <ModalBody className="p-0">
                 <RoleManager />
               </ModalBody>
+            </Modal>
+
+            {/* Transfer Ownership Modal */}
+            <Modal open={showTransferModal} onClose={() => { setShowTransferModal(false); setSelectedNewOwner(''); }} size="default">
+              <ModalHeader onClose={() => { setShowTransferModal(false); setSelectedNewOwner(''); }}>
+                <ModalTitle>Transfer Guild Ownership</ModalTitle>
+                <ModalDescription>
+                  Select the member who will become the new guild owner. This action cannot be undone.
+                </ModalDescription>
+              </ModalHeader>
+              <ModalBody className="space-y-4">
+                <div className="rounded-lg border border-yellow-500/30 bg-yellow-500/10 p-4">
+                  <p className="text-[13px] text-yellow-500 font-medium mb-2">Warning:</p>
+                  <ul className="text-[13px] text-muted-foreground space-y-1 list-disc list-inside">
+                    <li>The new owner will have full control over the guild</li>
+                    <li>You will be demoted to Officer</li>
+                    <li>You will lose the ability to delete the guild or transfer ownership</li>
+                    <li>This action cannot be undone by you</li>
+                  </ul>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="block text-[13px] font-medium text-foreground">Select New Owner</label>
+                  {eligibleNewOwners.length > 0 ? (
+                    <Select
+                      value={selectedNewOwner}
+                      onChange={(e) => setSelectedNewOwner(e.target.value)}
+                      className="w-full"
+                    >
+                      <option value="">Select a member...</option>
+                      {eligibleNewOwners.map((member: any) => (
+                        <option key={member.user_id} value={member.user_id}>
+                          {member.mainCharacter?.name || member.discordName} ({member.role})
+                        </option>
+                      ))}
+                    </Select>
+                  ) : (
+                    <p className="text-[13px] text-muted-foreground">No other members available to transfer ownership to.</p>
+                  )}
+                </div>
+              </ModalBody>
+              <ModalFooter>
+                <Button
+                  variant="secondary"
+                  onClick={() => { setShowTransferModal(false); setSelectedNewOwner(''); }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="primary"
+                  onClick={handleTransferOwnership}
+                  disabled={!selectedNewOwner}
+                  loading={transferring}
+                  className="bg-yellow-500 hover:bg-yellow-600 text-black"
+                >
+                  Transfer Ownership
+                </Button>
+              </ModalFooter>
             </Modal>
           </>
         )}

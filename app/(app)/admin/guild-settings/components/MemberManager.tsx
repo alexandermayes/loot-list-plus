@@ -6,10 +6,11 @@ import { useGuildContext } from '@/app/contexts/GuildContext'
 import { useNotification } from '@/app/contexts/NotificationContext'
 import { useGuildMembers, invalidateGuildMembers } from '@/app/hooks/use-api'
 import { HugeiconsIcon } from '@hugeicons/react'
-import { UserBlock01Icon, Shield01Icon, UserIcon, CrownIcon } from '@hugeicons/core-free-icons'
+import { UserBlock01Icon, Shield01Icon, UserIcon, CrownIcon, StarIcon } from '@hugeicons/core-free-icons'
 import { Select } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
 import { useConfirm } from '@/components/ui/confirm-modal'
+import { ROLE_POSITIONS } from '@/utils/roles'
 
 interface Character {
   id: string
@@ -44,6 +45,8 @@ interface Member {
 
 export default function MemberManager() {
   const [roles, setRoles] = useState<GuildRole[]>([])
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null)
+  const [guildCreatorId, setGuildCreatorId] = useState<string | null>(null)
 
   const supabase = createClient()
   const { activeGuild } = useGuildContext()
@@ -68,6 +71,29 @@ export default function MemberManager() {
       discordName: m.discordName
     }))
   }, [membersData])
+
+  // Load current user
+  useEffect(() => {
+    const loadCurrentUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      setCurrentUserId(user?.id || null)
+    }
+    loadCurrentUser()
+  }, [])
+
+  // Load guild creator
+  useEffect(() => {
+    const loadGuildCreator = async () => {
+      if (!activeGuild) return
+      const { data } = await supabase
+        .from('guilds')
+        .select('created_by')
+        .eq('id', activeGuild.id)
+        .single()
+      setGuildCreatorId(data?.created_by || null)
+    }
+    loadGuildCreator()
+  }, [activeGuild])
 
   // Load roles
   useEffect(() => {
@@ -129,6 +155,56 @@ export default function MemberManager() {
       return aName.localeCompare(bName)
     })
   }, [members, roles])
+
+  // Get current user's highest role position
+  const currentUserPosition = useMemo(() => {
+    if (!currentUserId) return 0
+    const currentUserMember = members.find(m => m.user_id === currentUserId)
+    if (!currentUserMember) return 0
+    const roleInfo = roles.find(r => r.name === currentUserMember.role)
+    return roleInfo?.position || 0
+  }, [currentUserId, members, roles])
+
+  // Check if current user is the guild creator
+  const isCurrentUserCreator = currentUserId === guildCreatorId
+
+  // Get roles that can be assigned by the current user
+  const getAssignableRoles = (targetUserId: string, targetCurrentRole: string) => {
+    const targetRoleInfo = roles.find(r => r.name === targetCurrentRole)
+    const targetPosition = targetRoleInfo?.position || 0
+
+    return roles.filter(role => {
+      // Guild creator can assign any role
+      if (isCurrentUserCreator) return true
+
+      // Cannot assign Guild Master level roles (position >= 100)
+      if (role.position >= ROLE_POSITIONS.GUILD_MASTER) return false
+
+      // Cannot assign roles at or above your own position
+      if (role.position >= currentUserPosition) return false
+
+      // Cannot change roles for people at or above your level
+      if (targetPosition >= currentUserPosition) return false
+
+      return true
+    })
+  }
+
+  // Check if current user can modify a member
+  const canModifyMember = (targetUserId: string, targetRole: string) => {
+    // Cannot modify the guild creator
+    if (targetUserId === guildCreatorId) return false
+
+    // Guild creator can modify anyone
+    if (isCurrentUserCreator) return true
+
+    // Get target's position
+    const targetRoleInfo = roles.find(r => r.name === targetRole)
+    const targetPosition = targetRoleInfo?.position || 0
+
+    // Cannot modify people at or above your level
+    return targetPosition < currentUserPosition
+  }
 
   const handleChangeRole = async (userId: string, newRole: string) => {
     try {
@@ -219,6 +295,9 @@ export default function MemberManager() {
             const mainChar = member.mainCharacter
             const hasCharacters = member.characters.length > 0
             const displayName = mainChar?.name || member.discordName
+            const isGuildOwner = member.user_id === guildCreatorId
+            const canModify = canModifyMember(member.user_id, member.role)
+            const assignableRoles = getAssignableRoles(member.user_id, member.role)
 
             // Get role info from roles array to determine icon by position
             const memberRoleInfo = roles.find(r => r.name === member.role)
@@ -226,8 +305,8 @@ export default function MemberManager() {
 
             // Determine icon based on position (not name)
             const getRoleIcon = () => {
-              if (rolePosition === 100) return <HugeiconsIcon icon={CrownIcon} size={16} className="text-accent" />
-              if (rolePosition === 50) return <HugeiconsIcon icon={Shield01Icon} size={16} className="text-yellow-400" />
+              if (rolePosition >= ROLE_POSITIONS.GUILD_MASTER) return <HugeiconsIcon icon={CrownIcon} size={16} className="text-accent" />
+              if (rolePosition >= ROLE_POSITIONS.OFFICER) return <HugeiconsIcon icon={Shield01Icon} size={16} className="text-yellow-400" />
               return <HugeiconsIcon icon={UserIcon} size={16} className="text-muted-foreground" />
             }
 
@@ -247,6 +326,12 @@ export default function MemberManager() {
                         <span className="font-semibold text-[13px]" style={{ color: mainChar?.class?.color_hex || '#fff' }}>
                           {displayName}
                         </span>
+                        {isGuildOwner && (
+                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-accent/20 text-accent">
+                            <HugeiconsIcon icon={StarIcon} size={10} />
+                            Owner
+                          </span>
+                        )}
                         {mainChar?.spec && mainChar?.class && (
                           <span className="text-muted-foreground text-[12px]">
                             {mainChar.spec.name} {mainChar.class.name}
@@ -268,26 +353,42 @@ export default function MemberManager() {
                   </div>
 
                   <div className="flex items-center gap-1.5 flex-shrink-0">
-                    <Select
-                      value={member.role}
-                      onChange={(e) => handleChangeRole(member.user_id, e.target.value)}
-                      size="sm"
-                      className="w-[120px]"
-                    >
-                      {roles.map((role) => (
-                        <option key={role.id} value={role.name} className="bg-background-elevated">
-                          {role.name}
-                        </option>
-                      ))}
-                    </Select>
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      onClick={() => handleRemoveMember(member.user_id, displayName)}
-                      className="text-destructive hover:text-destructive h-9 w-9 p-0"
-                    >
-                      <HugeiconsIcon icon={UserBlock01Icon} size={16} />
-                    </Button>
+                    {canModify && assignableRoles.length > 0 ? (
+                      <Select
+                        value={member.role}
+                        onChange={(e) => handleChangeRole(member.user_id, e.target.value)}
+                        size="sm"
+                        className="w-[120px]"
+                      >
+                        {/* Always include current role so the select shows the correct value */}
+                        {!assignableRoles.find(r => r.name === member.role) && (
+                          <option value={member.role} className="bg-background-elevated">
+                            {member.role}
+                          </option>
+                        )}
+                        {assignableRoles.map((role) => (
+                          <option key={role.id} value={role.name} className="bg-background-elevated">
+                            {role.name}
+                          </option>
+                        ))}
+                      </Select>
+                    ) : (
+                      <span className="text-[12px] text-muted-foreground px-2 w-[120px] text-center">
+                        {member.role}
+                      </span>
+                    )}
+                    {canModify ? (
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => handleRemoveMember(member.user_id, displayName)}
+                        className="text-destructive hover:text-destructive h-9 w-9 p-0"
+                      >
+                        <HugeiconsIcon icon={UserBlock01Icon} size={16} />
+                      </Button>
+                    ) : (
+                      <div className="w-9" /> // Spacer to maintain alignment
+                    )}
                   </div>
                 </div>
               </div>
