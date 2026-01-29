@@ -10,9 +10,14 @@ import { Spinner } from "@/components/ui/loading-spinner"
  *
  * Variants:
  * - primary: Main CTA - dark in light mode, white in dark mode
+ * - primary-outline: Bordered primary for secondary emphasis
  * - secondary: Subtle elevated button with border
- * - destructive: Red for dangerous/delete actions
- * - success: Green for approve/confirm actions
+ * - destructive: Red for dangerous/delete actions (solid background)
+ * - destructive-outline: Subtle red border for secondary delete actions
+ * - destructive-ghost: Red text only for tertiary delete actions
+ * - success: Green for approve/confirm actions (solid background)
+ * - success-outline: Subtle green border for secondary confirm actions
+ * - success-ghost: Green text only for tertiary confirm actions
  * - outline: Bordered with transparent background
  * - ghost: No background, subtle hover state
  * - link: Text-only with underline on hover
@@ -33,6 +38,10 @@ const buttonVariants = cva(
         primary:
           "bg-primary text-primary-foreground hover:bg-primary/90 disabled:bg-muted disabled:text-muted-foreground",
 
+        // Primary Outline: Bordered primary for secondary emphasis
+        "primary-outline":
+          "border border-primary/50 text-primary bg-transparent hover:bg-primary/10 hover:border-primary disabled:opacity-50",
+
         // Secondary: Elevated surface with border
         secondary:
           "bg-background-elevated text-foreground border border-border hover:bg-muted hover:border-border-strong disabled:opacity-50",
@@ -41,9 +50,25 @@ const buttonVariants = cva(
         destructive:
           "bg-destructive text-destructive-foreground hover:bg-destructive/90 disabled:opacity-50",
 
+        // Destructive Outline: Subtle red border for secondary delete actions
+        "destructive-outline":
+          "border border-destructive/50 text-destructive bg-transparent hover:bg-destructive/10 hover:border-destructive disabled:opacity-50",
+
+        // Destructive Ghost: Red text only for tertiary delete actions
+        "destructive-ghost":
+          "text-destructive bg-transparent hover:bg-destructive/10 disabled:opacity-50",
+
         // Success: Green for approve/confirm actions
         success:
           "bg-success text-success-foreground hover:bg-success/90 disabled:opacity-50",
+
+        // Success Outline: Subtle green border for secondary confirm actions
+        "success-outline":
+          "border border-success/50 text-success bg-transparent hover:bg-success/10 hover:border-success disabled:opacity-50",
+
+        // Success Ghost: Green text only for tertiary confirm actions
+        "success-ghost":
+          "text-success bg-transparent hover:bg-success/10 disabled:opacity-50",
 
         // Outline: Bordered, transparent background
         outline:

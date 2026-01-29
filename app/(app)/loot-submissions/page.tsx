@@ -30,6 +30,8 @@ interface Submission {
   status: string
   submitted_at: string | null
   review_notes: string | null
+  tier_name?: string
+  tier_id?: string
   user: {
     id: string
     user_metadata: {
@@ -107,6 +109,7 @@ export default function MasterLootPage() {
   const [guildId, setGuildId] = useState<string | null>(null)
     const [viewingSubmission, setViewingSubmission] = useState<string | null>(null)
   const [submissionDetails, setSubmissionDetails] = useState<any[]>([])
+  const [loadingDetails, setLoadingDetails] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState<{ type: 'single' | 'pending' | 'all', id?: string } | null>(null)
   const [deleting, setDeleting] = useState(false)
@@ -203,7 +206,7 @@ export default function MasterLootPage() {
     }
   }, [guildLoading, activeGuild])
 
-  const loadSubmissions = useCallback(async (guildId: string, tierId: string | 'all', allTiers?: RaidTier[]) => {
+  const loadSubmissions = useCallback(async (guildId: string, tierId: string | 'all', allTiers?: RaidTier[], singleTier?: RaidTier) => {
     setContentLoading(true)
     if (tierId === 'all' && allTiers && allTiers.length > 0) {
       // Load submissions for all tiers
@@ -280,6 +283,8 @@ export default function MasterLootPage() {
       submitted_at: sub.submitted_at,
       review_notes: sub.review_notes,
       character_id: sub.character_id,
+      tier_name: singleTier?.name,
+      tier_id: singleTier?.id,
       member: sub.character_name ? {
         character_name: sub.character_name,
         role: 'Member',
@@ -302,9 +307,9 @@ export default function MasterLootPage() {
   useEffect(() => {
     if (guildId && activeTier) {
       if (activeTier === 'all') {
-        loadSubmissions(guildId, 'all', raidTiers)
+        loadSubmissions(guildId, 'all', raidTiers, undefined)
       } else {
-        loadSubmissions(guildId, activeTier.id)
+        loadSubmissions(guildId, activeTier.id, undefined, activeTier)
       }
     }
   }, [activeTier, guildId, raidTiers, loadSubmissions])
@@ -341,6 +346,8 @@ export default function MasterLootPage() {
 
   const viewSubmissionDetails = async (submissionId: string) => {
     setViewingSubmission(submissionId)
+    setSubmissionDetails([]) // Clear previous data immediately
+    setLoadingDetails(true)
 
     const { data: itemsData } = await supabase
       .from('loot_submission_items')
@@ -354,6 +361,7 @@ export default function MasterLootPage() {
     if (itemsData) {
       setSubmissionDetails(itemsData as any)
     }
+    setLoadingDetails(false)
   }
 
   const handleDeleteSubmissions = async () => {
@@ -490,7 +498,7 @@ export default function MasterLootPage() {
             </div>
             <div className="flex gap-2">
               <Button
-                variant="destructive"
+                variant="destructive-outline"
                 size="sm"
                 onClick={() => {
                   setDeleteTarget({ type: 'pending' })
@@ -500,7 +508,7 @@ export default function MasterLootPage() {
                 Delete Pending
               </Button>
               <Button
-                variant="destructive"
+                variant="destructive-outline"
                 size="sm"
                 onClick={() => {
                   setDeleteTarget({ type: 'all' })
@@ -527,18 +535,19 @@ export default function MasterLootPage() {
               filteredSubmissions.map((submission) => (
                 <div
                   key={submission.id}
-                  className="bg-background-elevated border border-border rounded-xl p-5 flex items-center justify-between hover:bg-muted transition-all"
+                  className="bg-background-elevated border border-border rounded-xl p-5 flex items-center justify-between hover:bg-muted transition-all cursor-pointer"
+                  onClick={() => viewSubmissionDetails(submission.id)}
                 >
                   <div className="flex items-center gap-3">
-                    <h3 className="text-[16px] font-semibold text-foreground">
+                    <h3
+                      className="text-[16px] font-semibold"
+                      style={{ color: submission.member?.class?.color_hex || 'var(--foreground)' }}
+                    >
                       {submission.member?.character_name || 'Unknown'}
                     </h3>
-                    {submission.member?.class && (
-                      <span
-                        className="px-3 py-1 rounded-full text-[12px] font-medium"
-                        style={{ backgroundColor: submission.member.class.color_hex, color: 'white' }}
-                      >
-                        {submission.member.class.name}
+                    {submission.tier_name && (
+                      <span className="text-muted-foreground text-[13px]">
+                        {submission.tier_name}
                       </span>
                     )}
                     <StatusBadge status={submission.status as SubmissionStatus} />
@@ -548,16 +557,20 @@ export default function MasterLootPage() {
                   </div>
                   <div className="flex gap-2">
                     <Button
-                      variant="secondary"
+                      variant="primary-outline"
                       size="sm"
-                      onClick={() => viewSubmissionDetails(submission.id)}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        viewSubmissionDetails(submission.id)
+                      }}
                     >
                       View Details
                     </Button>
                     <Button
-                      variant="destructive"
+                      variant="destructive-outline"
                       size="sm"
-                      onClick={() => {
+                      onClick={(e) => {
+                        e.stopPropagation()
                         setDeleteTarget({ type: 'single', id: submission.id })
                         setShowDeleteConfirm(true)
                       }}
@@ -577,10 +590,45 @@ export default function MasterLootPage() {
       {/* Submission Details Modal */}
       <Modal open={!!viewingSubmission} onClose={() => setViewingSubmission(null)} size="lg">
         <ModalHeader onClose={() => setViewingSubmission(null)}>
-          <ModalTitle>Submission details</ModalTitle>
+          {(() => {
+            const submission = viewingSubmission ? submissions.find(s => s.id === viewingSubmission) : null
+            return (
+              <div className="flex flex-col gap-1">
+                <ModalTitle>
+                  <span style={{ color: submission?.member?.class?.color_hex || 'inherit' }}>
+                    {submission?.member?.character_name || 'Unknown Character'}
+                  </span>
+                  {submission?.member?.class?.name && (
+                    <span className="text-muted-foreground font-normal text-base ml-2">
+                      {submission.member.class.name}
+                    </span>
+                  )}
+                </ModalTitle>
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  {submission?.tier_name && (
+                    <span>{submission.tier_name}</span>
+                  )}
+                  {submission?.tier_name && submission?.submitted_at && <span>•</span>}
+                  {submission?.submitted_at && (
+                    <span>Submitted {new Date(submission.submitted_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                  )}
+                  {submission?.status && (
+                    <>
+                      <span>•</span>
+                      <StatusBadge status={submission.status as SubmissionStatus} />
+                    </>
+                  )}
+                </div>
+              </div>
+            )
+          })()}
         </ModalHeader>
         <ModalBody className="p-0">
-          {submissionDetails.length === 0 ? (
+          {loadingDetails ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent"></div>
+            </div>
+          ) : submissionDetails.length === 0 ? (
             <p className="text-muted-foreground text-center py-8">No items in this submission</p>
           ) : (
             <table className="w-full">
@@ -660,38 +708,31 @@ export default function MasterLootPage() {
             </table>
           )}
         </ModalBody>
-        <ModalFooter className="justify-between">
-          <div className="flex gap-3">
-            {viewingSubmission && submissions.find(s => s.id === viewingSubmission)?.status === 'pending' && (
-              <>
-                <Button
-                  variant="success"
-                  onClick={() => {
-                    handleReview(viewingSubmission, 'approved')
-                    setViewingSubmission(null)
-                  }}
-                  disabled={reviewing === viewingSubmission}
-                  loading={reviewing === viewingSubmission}
-                >
-                  Approve
-                </Button>
-                <Button
-                  variant="destructive"
-                  onClick={() => {
-                    handleReview(viewingSubmission, 'rejected')
-                    setViewingSubmission(null)
-                  }}
-                  disabled={reviewing === viewingSubmission}
-                >
-                  Reject
-                </Button>
-              </>
-            )}
-          </div>
-          <Button variant="secondary" onClick={() => setViewingSubmission(null)}>
-            Close
-          </Button>
-        </ModalFooter>
+        {viewingSubmission && submissions.find(s => s.id === viewingSubmission)?.status === 'pending' && (
+          <ModalFooter>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                handleReview(viewingSubmission, 'rejected')
+                setViewingSubmission(null)
+              }}
+              disabled={reviewing === viewingSubmission}
+            >
+              Reject
+            </Button>
+            <Button
+              variant="success"
+              onClick={() => {
+                handleReview(viewingSubmission, 'approved')
+                setViewingSubmission(null)
+              }}
+              disabled={reviewing === viewingSubmission}
+              loading={reviewing === viewingSubmission}
+            >
+              Approve
+            </Button>
+          </ModalFooter>
+        )}
       </Modal>
 
       {/* Delete Confirmation Modal */}

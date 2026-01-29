@@ -685,14 +685,35 @@ export default function DesignSystemPage() {
               <div>
                 <SubsectionHeader title="Variants" />
                 <PreviewCard>
-                  <div className="flex flex-wrap gap-4 items-center">
-                    <Button variant="primary">Primary</Button>
-                    <Button variant="secondary">Secondary</Button>
-                    <Button variant="destructive">Destructive</Button>
-                    <Button variant="outline">Outline</Button>
-                    <Button variant="ghost">Ghost</Button>
-                    <Button variant="accent">Accent</Button>
-                    <Button variant="link">Link</Button>
+                  <div className="space-y-4">
+                    <div>
+                      <Text size="xs" color="muted" className="mb-2 uppercase tracking-wide">Standard</Text>
+                      <div className="flex flex-wrap gap-3 items-center">
+                        <Button variant="primary">Primary</Button>
+                        <Button variant="primary-outline">Primary Outline</Button>
+                        <Button variant="secondary">Secondary</Button>
+                        <Button variant="outline">Outline</Button>
+                        <Button variant="ghost">Ghost</Button>
+                        <Button variant="accent">Accent</Button>
+                        <Button variant="link">Link</Button>
+                      </div>
+                    </div>
+                    <div>
+                      <Text size="xs" color="muted" className="mb-2 uppercase tracking-wide">Destructive (Red)</Text>
+                      <div className="flex flex-wrap gap-3 items-center">
+                        <Button variant="destructive">Destructive</Button>
+                        <Button variant="destructive-outline">Destructive Outline</Button>
+                        <Button variant="destructive-ghost">Destructive Ghost</Button>
+                      </div>
+                    </div>
+                    <div>
+                      <Text size="xs" color="muted" className="mb-2 uppercase tracking-wide">Success (Green)</Text>
+                      <div className="flex flex-wrap gap-3 items-center">
+                        <Button variant="success">Success</Button>
+                        <Button variant="success-outline">Success Outline</Button>
+                        <Button variant="success-ghost">Success Ghost</Button>
+                      </div>
+                    </div>
                   </div>
                 </PreviewCard>
               </div>
