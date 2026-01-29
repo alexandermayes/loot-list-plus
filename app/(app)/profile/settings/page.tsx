@@ -93,9 +93,9 @@ export default function SettingsPage() {
       })
 
     if (error) {
-      showNotification('error', 'Failed to save preferences')
+      showNotification('error', 'Couldn\'t save preferences. Try again.')
     } else {
-      showNotification('success', 'Preferences saved successfully!', 3000)
+      showNotification('success', 'Preferences saved', 3000)
     }
 
     setSaving(false)
@@ -123,10 +123,10 @@ export default function SettingsPage() {
         // Reload preferences to get updated verification status
         await loadPreferences()
       } else {
-        showNotification('error', data.error || 'Verification failed')
+        showNotification('error', data.error || 'Couldn\'t verify Discord. Try again.')
       }
     } catch (error) {
-      showNotification('error', 'Failed to verify Discord membership')
+      showNotification('error', 'Couldn\'t verify Discord. Try again.')
     } finally {
       setVerifying(false)
     }

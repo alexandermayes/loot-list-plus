@@ -164,14 +164,14 @@ export default function GuildSettingsPage() {
         throw new Error(data.error || 'Failed to update guild information')
       }
 
-      showNotification('success', 'Guild information updated successfully' + (shouldFetchIcon && finalIconUrl ? ' (Discord icon fetched!)' : ''))
+      showNotification('success', 'Guild settings saved' + (shouldFetchIcon && finalIconUrl ? '. Discord icon updated.' : ''))
 
       // Reload page to show updated guild info in sidebar
       setTimeout(() => {
         window.location.reload()
       }, 800)
     } catch (error: any) {
-      showNotification('error', error.message || 'Failed to update guild information')
+      showNotification('error', error.message || 'Couldn\'t update guild. Try again.')
       setSaving(false)
     }
   }
@@ -181,7 +181,7 @@ export default function GuildSettingsPage() {
 
     const confirmText = `DELETE ${activeGuild.name}`
     const userInput = prompt(
-      `⚠️ DANGER: This will permanently delete "${activeGuild.name}" and ALL associated data including loot lists, attendance, and settings.\n\nThis action CANNOT be undone.\n\nType "${confirmText}" to confirm:`
+      `This will permanently delete "${activeGuild.name}" and all associated data including loot lists, attendance, and settings.\n\nThis cannot be undone.\n\nType "${confirmText}" to confirm:`
     )
 
     if (userInput !== confirmText) {
@@ -205,7 +205,7 @@ export default function GuildSettingsPage() {
       // Force full page reload to guild select page
       window.location.href = '/guild-select'
     } catch (error: any) {
-      showNotification('error', error.message || 'Failed to delete guild')
+      showNotification('error', error.message || 'Couldn\'t delete guild. Try again.')
       setDeleting(false)
     }
   }
@@ -230,7 +230,7 @@ export default function GuildSettingsPage() {
         throw new Error(data.error || 'Failed to transfer ownership')
       }
 
-      showNotification('success', 'Guild ownership transferred successfully')
+      showNotification('success', 'Ownership transferred. You are now an Officer.')
       setShowTransferModal(false)
 
       // Reload to reflect the changes
@@ -238,7 +238,7 @@ export default function GuildSettingsPage() {
         window.location.reload()
       }, 800)
     } catch (error: any) {
-      showNotification('error', error.message || 'Failed to transfer ownership')
+      showNotification('error', error.message || 'Couldn\'t transfer ownership. Try again.')
       setTransferring(false)
     }
   }

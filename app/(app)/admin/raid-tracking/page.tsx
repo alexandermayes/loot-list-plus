@@ -628,7 +628,7 @@ export default function RaidTrackingPage() {
           .eq('id', lootId)
 
         if (error) {
-          showNotification('error', 'Failed to delete loot entry: ' + error.message)
+          showNotification('error', error.message || 'Couldn\'t delete loot entry. Try again.')
           return
         }
 
@@ -721,7 +721,7 @@ export default function RaidTrackingPage() {
 
     const typeLabel = importType === 'signup' ? 'signups' : 'attendance'
     if (matchedCount > 0 || unmatchedCount > 0) {
-      showNotification('success', `Import complete! ${matchedCount} matched ${typeLabel}, ${unmatchedCount} unmatched`)
+      showNotification('success', `Import complete: ${matchedCount} matched ${typeLabel}, ${unmatchedCount} unmatched`)
     } else {
       showNotification('warning', 'No data to import')
     }

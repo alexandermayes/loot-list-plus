@@ -80,17 +80,17 @@ export default function InviteCodeManager() {
       const data = await response.json()
 
       if (!response.ok) {
-        showNotification('error', data.error || 'Failed to generate invite code')
+        showNotification('error', data.error || 'Couldn\'t generate invite code. Try again.')
         return
       }
 
-      showNotification('success', 'Invite code generated successfully!')
+      showNotification('success', 'Invite code created')
       setShowGenerateForm(false)
       setExpiresAt('')
       setMaxUses('')
       await loadInviteCodes()
     } catch (error: any) {
-      showNotification('error', error.message || 'Failed to generate invite code')
+      showNotification('error', error.message || 'Couldn\'t generate invite code. Try again.')
     } finally {
       setGenerating(false)
     }
@@ -114,7 +114,7 @@ export default function InviteCodeManager() {
           showNotification('success', 'Invite code deactivated')
           await loadInviteCodes()
         } catch (error: any) {
-          showNotification('error', error.message || 'Failed to deactivate code')
+          showNotification('error', error.message || 'Couldn\'t deactivate code. Try again.')
         }
       }
     })
@@ -122,7 +122,7 @@ export default function InviteCodeManager() {
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text)
-    showNotification('success', 'Copied to clipboard!', 2000)
+    showNotification('success', 'Copied to clipboard', 2000)
   }
 
   return (

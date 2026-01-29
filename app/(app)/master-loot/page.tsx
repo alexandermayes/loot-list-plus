@@ -206,7 +206,7 @@ export default function MasterLootPage() {
 
       if (error) throw error
 
-      showNotification('success', `Submission ${status} successfully`)
+      showNotification('success', `Submission ${status}`)
       setReviewNotes('')
       setReviewing(null)
 
@@ -214,7 +214,7 @@ export default function MasterLootPage() {
         await loadSubmissions(guildId, activeTier.id)
       }
     } catch (error: any) {
-      showNotification('error', error.message || 'Failed to update submission')
+      showNotification('error', error.message || 'Couldn\'t update submission. Try again.')
       setReviewing(null)
     }
   }

@@ -105,7 +105,7 @@ export default function ExpansionDetailPage({ params }: { params: Promise<{ expa
 
       if (expError) {
         console.error('Error loading expansion:', expError)
-        showNotification('error', 'Failed to load expansion')
+        showNotification('error', 'Couldn\'t load expansion. Check your connection and try again.')
         setLoading(false)
         return
       }
@@ -150,7 +150,7 @@ export default function ExpansionDetailPage({ params }: { params: Promise<{ expa
       }
     } catch (error) {
       console.error('Error loading data:', error)
-      showNotification('error', 'Failed to load data')
+      showNotification('error', 'Couldn\'t load data. Check your connection and try again.')
     } finally {
       setLoading(false)
     }
@@ -188,7 +188,7 @@ export default function ExpansionDetailPage({ params }: { params: Promise<{ expa
       await loadData()
     } catch (error: any) {
       console.error('Toggle error:', error)
-      showNotification('error', error.message || 'Failed to update')
+      showNotification('error', error.message || 'Couldn\'t update raid. Try again.')
     } finally {
       setUpdating(null)
     }
@@ -216,7 +216,7 @@ export default function ExpansionDetailPage({ params }: { params: Promise<{ expa
       await loadData()
     } catch (error: any) {
       console.error('Toggle visibility error:', error)
-      showNotification('error', error.message || 'Failed to update visibility')
+      showNotification('error', error.message || 'Couldn\'t update visibility. Try again.')
     } finally {
       setUpdating(null)
     }
@@ -238,7 +238,7 @@ export default function ExpansionDetailPage({ params }: { params: Promise<{ expa
       showNotification('success', !currentValue ? 'Raid tier marked as current' : 'Raid tier unmarked as current')
       await loadData()
     } catch (error: any) {
-      showNotification('error', error.message || 'Failed to update raid tier')
+      showNotification('error', error.message || 'Couldn\'t update raid tier. Try again.')
     } finally {
       setUpdating(null)
     }
@@ -258,7 +258,7 @@ export default function ExpansionDetailPage({ params }: { params: Promise<{ expa
       showNotification('success', deadline ? 'Submission deadline updated' : 'Submission deadline cleared')
       await loadData()
     } catch (error: any) {
-      showNotification('error', error.message || 'Failed to update deadline')
+      showNotification('error', error.message || 'Couldn\'t update deadline. Try again.')
     } finally {
       setUpdating(null)
     }

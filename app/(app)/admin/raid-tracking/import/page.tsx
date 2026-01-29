@@ -102,9 +102,9 @@ export default function ImportPage() {
         await importMembers(headers, rows.slice(1))
       }
 
-      showNotification('success', 'Import completed successfully!')
+      showNotification('success', 'Import complete')
     } catch (error: any) {
-      showNotification('error', error.message || 'Failed to import data')
+      showNotification('error', error.message || 'Couldn\'t import data. Try again.')
     }
 
     setLoading(false)

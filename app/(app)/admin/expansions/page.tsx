@@ -98,7 +98,7 @@ export default function ExpansionsManagementPage() {
 
       if (expError) {
         console.error('Error loading expansions:', expError)
-        showNotification('error', 'Failed to load expansions')
+        showNotification('error', 'Couldn\'t load expansions. Check your connection and try again.')
       } else {
         setGuildExpansions(expansions || [])
 
@@ -135,7 +135,7 @@ export default function ExpansionsManagementPage() {
       }
     } catch (error) {
       console.error('Error loading data:', error)
-      showNotification('error', 'Failed to load data')
+      showNotification('error', 'Couldn\'t load data. Check your connection and try again.')
     } finally {
       setLoading(false)
     }
@@ -159,15 +159,15 @@ export default function ExpansionsManagementPage() {
       const data = await response.json()
 
       if (!response.ok) {
-        showNotification('error', data.error || 'Failed to add expansion')
+        showNotification('error', data.error || 'Couldn\'t add expansion. Try again.')
         return
       }
 
-      showNotification('success', data.message || 'Expansion added successfully!')
+      showNotification('success', data.message || 'Expansion added')
       await loadData()
     } catch (error: any) {
       console.error('Error adding expansion:', error)
-      showNotification('error', error.message || 'Failed to add expansion')
+      showNotification('error', error.message || 'Couldn\'t add expansion. Try again.')
     } finally {
       setAdding(false)
     }
@@ -188,15 +188,15 @@ export default function ExpansionsManagementPage() {
       const data = await response.json()
 
       if (!response.ok) {
-        showNotification('error', data.error || 'Failed to set current expansion')
+        showNotification('error', data.error || 'Couldn\'t set current expansion. Try again.')
         return
       }
 
-      showNotification('success', data.message || 'Current expansion updated!')
+      showNotification('success', data.message || 'Expansion updated')
       await loadData()
     } catch (error: any) {
       console.error('Error setting current expansion:', error)
-      showNotification('error', error.message || 'Failed to update')
+      showNotification('error', error.message || 'Couldn\'t update expansion. Try again.')
     } finally {
       setUpdating(null)
     }
@@ -217,15 +217,15 @@ export default function ExpansionsManagementPage() {
       const data = await response.json()
 
       if (!response.ok) {
-        showNotification('error', data.error || 'Failed to update raid start date')
+        showNotification('error', data.error || 'Couldn\'t update raid start date. Try again.')
         return
       }
 
-      showNotification('success', 'Raid start date updated!')
+      showNotification('success', 'Raid start date updated')
       await loadData()
     } catch (error: any) {
       console.error('Error updating raid start date:', error)
-      showNotification('error', error.message || 'Failed to update')
+      showNotification('error', error.message || 'Couldn\'t update. Try again.')
     } finally {
       setUpdating(null)
     }
@@ -256,11 +256,11 @@ export default function ExpansionsManagementPage() {
       const data = await response.json()
 
       if (!response.ok) {
-        showNotification('error', data.error || 'Failed to update raid schedule')
+        showNotification('error', data.error || 'Couldn\'t update raid schedule. Try again.')
         return
       }
 
-      showNotification('success', 'Raid schedule updated!')
+      showNotification('success', 'Raid schedule updated')
       // Update original to match current
       setOriginalSchedules(prev => ({
         ...prev,
@@ -268,7 +268,7 @@ export default function ExpansionsManagementPage() {
       }))
     } catch (error: any) {
       console.error('Error updating raid schedule:', error)
-      showNotification('error', error.message || 'Failed to update')
+      showNotification('error', error.message || 'Couldn\'t update. Try again.')
     } finally {
       setUpdating(null)
     }

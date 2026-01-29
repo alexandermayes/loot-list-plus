@@ -325,7 +325,7 @@ export default function MasterLootPage() {
 
       if (error) throw error
 
-      showNotification('success', `Submission ${status} successfully`)
+      showNotification('success', `Submission ${status}`)
       setReviewNotes('')
       setReviewing(null)
 
@@ -334,7 +334,7 @@ export default function MasterLootPage() {
         await loadSubmissions(guildId, tierId, activeTier === 'all' ? raidTiers : undefined)
       }
     } catch (error: any) {
-      showNotification('error', error.message || 'Failed to update submission')
+      showNotification('error', error.message || 'Couldn\'t update submission. Try again.')
       setReviewing(null)
     }
   }
@@ -373,7 +373,7 @@ export default function MasterLootPage() {
 
         if (error) throw error
 
-        showNotification('success', 'Submission deleted successfully')
+        showNotification('success', 'Submission deleted')
         const tierId = activeTier === 'all' ? 'all' : activeTier.id
         await loadSubmissions(guildId, tierId, activeTier === 'all' ? raidTiers : undefined)
       } else {
@@ -404,7 +404,7 @@ export default function MasterLootPage() {
       setDeleteTarget(null)
     } catch (error: any) {
       console.error('Error deleting submissions:', error)
-      showNotification('error', error.message || 'Failed to delete submissions')
+      showNotification('error', error.message || 'Couldn\'t delete submissions. Try again.')
     } finally {
       setDeleting(false)
     }

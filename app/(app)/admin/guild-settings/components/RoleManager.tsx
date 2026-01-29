@@ -55,7 +55,7 @@ export default function RoleManager() {
         if (error.message?.includes('relation "public.guild_roles" does not exist')) {
           showNotification('error', 'Guild roles table not found. Please run the migration in Supabase SQL Editor.')
         } else {
-          showNotification('error', `Failed to load roles: ${error.message}`)
+          showNotification('error', error.message || 'Couldn\'t load roles. Try again.')
         }
         return
       }
@@ -63,7 +63,7 @@ export default function RoleManager() {
       setRoles(data || [])
     } catch (error: any) {
       console.error('Error loading roles:', error)
-      showNotification('error', error.message || 'Failed to load roles')
+      showNotification('error', error.message || 'Couldn\'t load roles. Try again.')
     } finally {
       setLoading(false)
     }
@@ -100,12 +100,12 @@ export default function RoleManager() {
 
       if (error) throw error
 
-      showNotification('success', 'Role created successfully')
+      showNotification('success', 'Role created')
       setNewRoleName('')
       setIsAddingRole(false)
       await loadRoles()
     } catch (error: any) {
-      showNotification('error', error.message || 'Failed to create role')
+      showNotification('error', error.message || 'Couldn\'t create role. Try again.')
     }
   }
 
@@ -130,12 +130,12 @@ export default function RoleManager() {
 
       if (error) throw error
 
-      showNotification('success', 'Role updated successfully')
+      showNotification('success', 'Role saved')
       setEditingRoleId(null)
       setEditingRoleName('')
       await loadRoles()
     } catch (error: any) {
-      showNotification('error', error.message || 'Failed to update role')
+      showNotification('error', error.message || 'Couldn\'t save role. Try again.')
     }
   }
 
@@ -159,10 +159,10 @@ export default function RoleManager() {
 
           if (error) throw error
 
-          showNotification('success', 'Role deleted successfully')
+          showNotification('success', 'Role deleted')
           await loadRoles()
         } catch (error: any) {
-          showNotification('error', error.message || 'Failed to delete role')
+          showNotification('error', error.message || 'Couldn\'t delete role. Try again.')
         }
       }
     })
@@ -200,7 +200,7 @@ export default function RoleManager() {
 
       await loadRoles()
     } catch (error: any) {
-      showNotification('error', error.message || 'Failed to reorder roles')
+      showNotification('error', error.message || 'Couldn\'t reorder roles. Try again.')
     }
   }
 

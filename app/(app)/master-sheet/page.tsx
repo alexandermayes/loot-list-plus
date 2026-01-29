@@ -814,10 +814,10 @@ export default function MasterSheet() {
 
       const exportData = formatRankingsForGargul(allTiersRankings)
       await navigator.clipboard.writeText(exportData)
-      showNotification('success', `Exported ${allTiersRankings.length} items from ${raidTiers.length} raid tiers to clipboard!`)
+      showNotification('success', `Exported ${allTiersRankings.length} items from ${raidTiers.length} raid tiers to clipboard`)
     } catch (err) {
       console.error('Export error:', err)
-      showNotification('error', 'Failed to export data')
+      showNotification('error', 'Couldn\'t export data. Try again.')
     } finally {
       setIsExporting(false)
     }

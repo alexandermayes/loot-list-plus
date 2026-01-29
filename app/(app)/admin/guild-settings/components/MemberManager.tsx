@@ -229,11 +229,11 @@ export default function MemberManager() {
         throw new Error(error.error || 'Failed to update role')
       }
 
-      showNotification('success', `Role updated to ${newRole}`)
+      showNotification('success', `Role changed to ${newRole}`)
       // Invalidate the SWR cache to refetch
       await refreshMembers()
     } catch (error: any) {
-      showNotification('error', error.message || 'Failed to update role')
+      showNotification('error', error.message || 'Couldn\'t update role. Try again.')
     }
   }
 
@@ -260,11 +260,11 @@ export default function MemberManager() {
             throw new Error(error.error || 'Failed to remove member')
           }
 
-          showNotification('success', `${memberName} has been removed from the guild`)
+          showNotification('success', `${memberName} removed from guild`)
           // Invalidate the SWR cache to refetch
           await refreshMembers()
         } catch (error: any) {
-          showNotification('error', error.message || 'Failed to remove member')
+          showNotification('error', error.message || 'Couldn\'t remove member. Try again.')
         }
       }
     })

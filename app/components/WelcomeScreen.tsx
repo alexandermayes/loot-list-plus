@@ -84,7 +84,7 @@ export default function WelcomeScreen() {
       if (!response.ok) {
         const errorMessage = response.status === 429
           ? 'Discord rate limit reached. Please wait a moment and try again.'
-          : data.error || 'Failed to load guilds'
+          : data.error || 'Couldn\'t load guilds. Check your connection and try again.'
         setDiscordError(errorMessage)
         setDiscordLoading(false)
         return
@@ -94,7 +94,7 @@ export default function WelcomeScreen() {
       setDiscordLoading(false)
     } catch (err) {
       console.error('Error loading guilds:', err)
-      setDiscordError('Failed to load available guilds')
+      setDiscordError('Couldn\'t load guilds. Check your connection and try again.')
       setDiscordLoading(false)
     }
   }
@@ -115,7 +115,7 @@ export default function WelcomeScreen() {
       const data = await response.json()
 
       if (!response.ok) {
-        setDiscordError(data.error || 'Failed to join guild')
+        setDiscordError(data.error || 'Couldn\'t join guild. Try again.')
         setJoiningGuildId(null)
         return
       }
@@ -124,7 +124,7 @@ export default function WelcomeScreen() {
       window.location.href = '/overview'
     } catch (err) {
       console.error('Error joining guild:', err)
-      setDiscordError('An error occurred while joining the guild')
+      setDiscordError('Couldn\'t join guild. Check your connection and try again.')
       setJoiningGuildId(null)
     }
   }
@@ -157,7 +157,7 @@ export default function WelcomeScreen() {
       // Success! Redirect to dashboard
       window.location.href = '/overview'
     } catch (err: any) {
-      setError(err.message || 'Failed to join guild')
+      setError(err.message || 'Couldn\'t join guild. Check your connection and try again.')
       setLoading(false)
     }
   }
@@ -188,7 +188,7 @@ export default function WelcomeScreen() {
       // Success! Redirect to dashboard
       window.location.href = '/overview'
     } catch (err: any) {
-      setDiscordError(err.message || 'Failed to join guild')
+      setDiscordError(err.message || 'Couldn\'t join guild. Check your connection and try again.')
       setJoiningGuildId(null)
     }
   }

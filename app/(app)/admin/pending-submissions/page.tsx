@@ -96,7 +96,7 @@ export default function PendingSubmissionsPage() {
 
       if (error) {
         console.error('Error loading pending submissions:', error)
-        showNotification('error', 'Failed to load pending submissions')
+        showNotification('error', 'Couldn\'t load submissions. Check your connection and try again.')
         return
       }
 
@@ -136,7 +136,7 @@ export default function PendingSubmissionsPage() {
       setSubmissions(submissionsWithCounts as PendingSubmission[])
     } catch (error) {
       console.error('Error loading pending submissions:', error)
-      showNotification('error', 'Failed to load pending submissions')
+      showNotification('error', 'Couldn\'t load submissions. Check your connection and try again.')
     } finally {
       setLoading(false)
     }
@@ -153,11 +153,11 @@ export default function PendingSubmissionsPage() {
 
       if (error) throw error
 
-      showNotification('success', 'Submission approved!')
+      showNotification('success', 'Submission approved')
       await loadPendingSubmissions()
     } catch (error: any) {
       console.error('Error approving submission:', error)
-      showNotification('error', error.message || 'Failed to approve submission')
+      showNotification('error', error.message || 'Couldn\'t approve submission. Try again.')
     } finally {
       setProcessing(null)
     }
@@ -184,7 +184,7 @@ export default function PendingSubmissionsPage() {
           await loadPendingSubmissions()
         } catch (error: any) {
           console.error('Error rejecting submission:', error)
-          showNotification('error', error.message || 'Failed to reject submission')
+          showNotification('error', error.message || 'Couldn\'t reject submission. Try again.')
         } finally {
           setProcessing(null)
         }

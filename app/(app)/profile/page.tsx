@@ -85,7 +85,7 @@ export default function ProfilePage() {
       const data = await response.json()
 
       if (!response.ok) {
-        showNotification('error', data.error || 'Failed to leave guild')
+        showNotification('error', data.error || 'Couldn\'t leave guild. Try again or contact an officer.')
         setLeaving(false)
         return
       }
@@ -98,7 +98,7 @@ export default function ProfilePage() {
       window.location.reload()
     } catch (err) {
       console.error('Error leaving guild:', err)
-      showNotification('error', 'An error occurred while leaving the guild')
+      showNotification('error', 'Couldn\'t leave guild. Check your connection and try again.')
       setLeaving(false)
     }
   }
@@ -125,7 +125,7 @@ export default function ProfilePage() {
   const handleDeleteAccount = async () => {
     const confirmText = 'DELETE MY ACCOUNT'
     const userInput = prompt(
-      `⚠️ DANGER: This will permanently delete your account and ALL associated data including characters, loot lists, and guild memberships.\n\nThis action CANNOT be undone.\n\nType "${confirmText}" to confirm:`
+      `This will permanently delete your account and all associated data including characters, loot lists, and guild memberships.\n\nThis cannot be undone.\n\nType "${confirmText}" to confirm:`
     )
 
     if (userInput !== confirmText) return
@@ -141,9 +141,9 @@ export default function ProfilePage() {
 
       if (!response.ok) {
         if (data.owned_guilds) {
-          showNotification('error', `${data.message} Please go to Admin > Guild Settings to delete or transfer these guilds first.`)
+          showNotification('error', `${data.message} Go to Admin > Guild Settings to delete or transfer these guilds first.`)
         } else {
-          showNotification('error', data.error || 'Failed to delete account')
+          showNotification('error', data.error || 'Couldn\'t delete account. Try again or contact support.')
         }
         setDeleting(false)
         return
@@ -153,7 +153,7 @@ export default function ProfilePage() {
       window.location.href = '/'
     } catch (err) {
       console.error('Error deleting account:', err)
-      showNotification('error', 'An error occurred while deleting your account')
+      showNotification('error', 'Couldn\'t delete account. Check your connection and try again.')
       setDeleting(false)
     }
   }
@@ -366,7 +366,7 @@ export default function ProfilePage() {
                     loading={disconnecting}
                     className="shrink-0"
                   >
-                    Disconnect
+                    Disconnect Discord
                   </Button>
                 </div>
               </div>
@@ -582,10 +582,10 @@ export default function ProfilePage() {
                   <div className="mb-4 rounded-full bg-muted p-3">
                     <HugeiconsIcon icon={Shield01Icon} size={24} className="text-muted-foreground" />
                   </div>
-                  <h3 className="text-lg font-semibold text-foreground mb-1">No guilds</h3>
-                  <p className="text-sm text-muted-foreground max-w-sm mb-4">You're not a member of any guilds yet.</p>
+                  <h3 className="text-lg font-semibold text-foreground mb-1">No guilds yet</h3>
+                  <p className="text-sm text-muted-foreground max-w-sm mb-4">Join a guild to start tracking loot with your team.</p>
                   <Button variant="secondary" onClick={() => router.push('/guild-select')}>
-                    Join a Guild
+                    Find a guild
                   </Button>
                 </div>
               )}

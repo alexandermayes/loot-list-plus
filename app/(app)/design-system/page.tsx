@@ -1207,10 +1207,10 @@ export default function DesignSystemPage() {
                 <SubsectionHeader title="Toast Notifications" description="Global messages that auto-dismiss" />
                 <PreviewCard>
                   <div className="flex flex-wrap gap-3">
-                    <Button variant="success" size="sm" onClick={() => showNotification('success', 'Changes saved!')}>
+                    <Button variant="success" size="sm" onClick={() => showNotification('success', 'Changes saved')}>
                       Success
                     </Button>
-                    <Button variant="destructive" size="sm" onClick={() => showNotification('error', 'Something went wrong')}>
+                    <Button variant="destructive" size="sm" onClick={() => showNotification('error', 'Couldn\'t save changes. Try again.')}>
                       Error
                     </Button>
                     <Button variant="secondary" size="sm" onClick={() => showNotification('warning', 'Session expiring soon')}>
@@ -1231,7 +1231,7 @@ export default function DesignSystemPage() {
                     <AlertDescription>Your loot list has been submitted for review.</AlertDescription>
                   </Alert>
                   <Alert variant="destructive">
-                    <AlertDescription>Failed to save changes. Please check your connection.</AlertDescription>
+                    <AlertDescription>Couldn't save changes. Check your connection and try again.</AlertDescription>
                   </Alert>
                   <Alert variant="warning">
                     <AlertDescription>This action cannot be undone.</AlertDescription>
@@ -1248,7 +1248,7 @@ export default function DesignSystemPage() {
                 <div className="space-y-3 text-sm">
                   <div>
                     <p className="font-medium mb-1">Toast (temporary):</p>
-                    <code className="text-accent text-xs">{"showNotification('success', 'Saved!')"}</code>
+                    <code className="text-accent text-xs">{"showNotification('success', 'Saved')"}</code>
                   </div>
                   <div>
                     <p className="font-medium mb-1">Alert (persistent):</p>

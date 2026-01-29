@@ -410,10 +410,10 @@ export default function AdminLootItems() {
       }
 
       setShowSettingsModal(false)
-      showNotification('success', 'Settings saved successfully!')
+      showNotification('success', 'Settings saved')
     } catch (error: any) {
       console.error('Error saving settings:', error)
-      showNotification('error', `Failed to save settings: ${error.message}`)
+      showNotification('error', error.message || 'Couldn\'t save settings. Try again.')
     } finally {
       setSavingSettings(false)
     }
@@ -622,7 +622,7 @@ export default function AdminLootItems() {
         hint: error.hint,
         code: error.code
       })
-      showNotification('error', `Failed to update item availability: ${error.message}`)
+      showNotification('error', error.message || 'Couldn\'t update availability. Try again.')
       return
     }
 
@@ -652,7 +652,7 @@ export default function AdminLootItems() {
         hint: error.hint,
         code: error.code
       })
-      showNotification('error', `Failed to update item classification: ${error.message}`)
+      showNotification('error', error.message || 'Couldn\'t update classification. Try again.')
       return
     }
 
@@ -736,7 +736,7 @@ export default function AdminLootItems() {
         hint: error.hint,
         code: error.code
       })
-      showNotification('error', `Failed to add spec: ${error.message}`)
+      showNotification('error', error.message || 'Couldn\'t add spec. Try again.')
       return
     }
 
@@ -938,7 +938,7 @@ export default function AdminLootItems() {
         details: error.details,
         code: error.code
       })
-      showNotification('error', `Failed to remove spec: ${error.message}`)
+      showNotification('error', error.message || 'Couldn\'t remove spec. Try again.')
       return
     }
 
