@@ -54,7 +54,7 @@ export default function ScoreBreakdownModal({ open, onClose, guildSettings }: Sc
   return (
     <Modal open={open} onClose={onClose} size="lg">
       <ModalHeader onClose={onClose}>
-        <ModalTitle>How Loot Scores Work</ModalTitle>
+        <ModalTitle>How loot scores work</ModalTitle>
         <ModalDescription>Understanding how your priority is calculated</ModalDescription>
       </ModalHeader>
       <ModalBody className="space-y-4">
@@ -74,7 +74,7 @@ export default function ScoreBreakdownModal({ open, onClose, guildSettings }: Sc
                 <HugeiconsIcon icon={Target01Icon} size={18} className="text-yellow-500" />
               </div>
               <div>
-                <h3 className="text-foreground font-medium text-[14px]">Item Rank</h3>
+                <h3 className="text-foreground font-medium text-[14px]">Item rank</h3>
                 <p className="text-muted-foreground text-[12px]">1-5 points</p>
               </div>
             </div>
@@ -90,7 +90,7 @@ export default function ScoreBreakdownModal({ open, onClose, guildSettings }: Sc
                 <HugeiconsIcon icon={Calendar03Icon} size={18} className="text-blue-500" />
               </div>
               <div>
-                <h3 className="text-foreground font-medium text-[14px]">Attendance Score</h3>
+                <h3 className="text-foreground font-medium text-[14px]">Attendance score</h3>
                 <p className="text-muted-foreground text-[12px]">0-{attendanceMax} points</p>
               </div>
             </div>
@@ -127,7 +127,7 @@ export default function ScoreBreakdownModal({ open, onClose, guildSettings }: Sc
                 <HugeiconsIcon icon={UserIcon} size={18} className="text-purple-500" />
               </div>
               <div>
-                <h3 className="text-foreground font-medium text-[14px]">Role Modifier</h3>
+                <h3 className="text-foreground font-medium text-[14px]">Role modifier</h3>
                 <p className="text-muted-foreground text-[12px]">Based on guild rank</p>
               </div>
             </div>
@@ -151,7 +151,7 @@ export default function ScoreBreakdownModal({ open, onClose, guildSettings }: Sc
                 <HugeiconsIcon icon={SparklesIcon} size={18} className="text-red-500" />
               </div>
               <div>
-                <h3 className="text-foreground font-medium text-[14px]">Bad Luck Bonus</h3>
+                <h3 className="text-foreground font-medium text-[14px]">Bad luck bonus</h3>
                 <p className="text-muted-foreground text-[12px]">0-{blbMax} points max</p>
               </div>
             </div>
@@ -167,7 +167,7 @@ export default function ScoreBreakdownModal({ open, onClose, guildSettings }: Sc
                 <HugeiconsIcon icon={Award01Icon} size={18} className="text-green-500" />
               </div>
               <div>
-                <h3 className="text-foreground font-medium text-[14px]">Priority Bonus</h3>
+                <h3 className="text-foreground font-medium text-[14px]">Priority bonus</h3>
                 <p className="text-muted-foreground text-[12px]">Stacking bonuses</p>
               </div>
             </div>

@@ -144,7 +144,7 @@ export function EditCharacterModal({ isOpen, onClose, character, onSuccess }: Ed
       const data = await response.json()
 
       if (!response.ok) {
-        setError(data.error || 'Failed to update character')
+        setError(data.error || 'Couldn\'t save changes. Check the name and try again.')
         setSaving(false)
         return
       }
@@ -155,7 +155,7 @@ export function EditCharacterModal({ isOpen, onClose, character, onSuccess }: Ed
       onSuccess?.()
     } catch (err) {
       console.error('Error updating character:', err)
-      setError('An error occurred while updating the character')
+      setError('Couldn\'t save changes. Check your connection and try again.')
       setSaving(false)
     }
   }
@@ -185,7 +185,7 @@ export function EditCharacterModal({ isOpen, onClose, character, onSuccess }: Ed
       const data = await response.json()
 
       if (!response.ok) {
-        setError(data.error || 'Failed to delete character')
+        setError(data.error || 'Couldn\'t delete character. Try again or contact an officer.')
         setDeleting(false)
         return
       }
@@ -194,7 +194,7 @@ export function EditCharacterModal({ isOpen, onClose, character, onSuccess }: Ed
       window.location.href = '/overview'
     } catch (err) {
       console.error('Error deleting character:', err)
-      setError('An error occurred while deleting the character')
+      setError('Couldn\'t delete character. Check your connection and try again.')
       setDeleting(false)
     }
   }
@@ -283,7 +283,7 @@ export function EditCharacterModal({ isOpen, onClose, character, onSuccess }: Ed
 
           {/* Main/Alt Toggle */}
           <div>
-            <Label className="mb-3">Character Type</Label>
+            <Label className="mb-3">Character type</Label>
             <div className="relative flex bg-background-subtle border border-border-strong rounded-[52px] p-1">
               {/* Sliding indicator */}
               <div
@@ -315,14 +315,14 @@ export function EditCharacterModal({ isOpen, onClose, character, onSuccess }: Ed
           {/* Guild Info */}
           {guildCount > 0 && (
             <div className="text-[13px] text-muted-foreground bg-background-elevated border border-border-strong rounded-xl p-4">
-              <p className="font-medium text-foreground mb-1">Guild Memberships</p>
+              <p className="font-medium text-foreground mb-1">Guild memberships</p>
               <p>This character is a member of {guildCount} guild{guildCount !== 1 ? 's' : ''}</p>
             </div>
           )}
 
           {/* Delete Section */}
           <div className="border-t border-border-strong pt-5">
-            <p className="text-[13px] font-medium text-destructive mb-2">Danger Zone</p>
+            <p className="text-[13px] font-medium text-destructive mb-2">Danger zone</p>
             <p className="text-[12px] text-muted-foreground mb-3">
               Deleting a character will remove all loot submissions and guild memberships.
             </p>

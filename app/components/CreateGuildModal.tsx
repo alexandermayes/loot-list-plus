@@ -453,7 +453,7 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
                 <div className="relative flex flex-col flex-1 min-h-0 -mt-6 -mx-6">
                   {/* Scrollable Server Selection */}
                   <div className={`flex-1 overflow-y-auto min-h-0 px-6 pt-6 ${getActiveServerId() ? (botInstalled ? 'pb-24' : 'pb-36') : 'pb-6'}`}>
-                    <Label className="mb-3">Select Your Discord Server</Label>
+                    <Label className="mb-3">Select your Discord server</Label>
 
                     {discordError ? (
                       <div className="p-4 bg-warning/10 border border-warning/50 rounded-xl">
@@ -590,7 +590,7 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
                                 <HugeiconsIcon icon={Tick01Icon} size={20} className="text-success" />
                               </div>
                               <div>
-                                <p className="text-[14px] font-medium text-success">Bot Connected!</p>
+                                <p className="text-[14px] font-medium text-success">Bot connected</p>
                                 <p className="text-[12px] text-success/70">LootList+ bot is in your server</p>
                               </div>
                             </div>
@@ -601,7 +601,7 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
                                   <span className="text-[16px]">🤖</span>
                                 </div>
                                 <div>
-                                  <p className="text-[14px] font-medium text-foreground">Add LootList+ Bot</p>
+                                  <p className="text-[14px] font-medium text-foreground">Add LootList+ bot</p>
                                   <p className="text-[12px] text-muted-foreground">Required for Discord integration</p>
                                 </div>
                               </div>
@@ -656,12 +656,12 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
                       )}
                     </div>
                     {nameError && <p className="text-[12px] text-destructive mt-1">{nameError}</p>}
-                    {nameAvailable === true && <p className="text-[12px] text-success mt-1">Name is available!</p>}
+                    {nameAvailable === true && <p className="text-[12px] text-success mt-1">Name is available</p>}
                   </div>
 
                   {/* Expansion */}
                   <div>
-                    <Label className="mb-2">Starting Expansion</Label>
+                    <Label className="mb-2">Starting expansion</Label>
                     <div className="grid grid-cols-5 gap-2">
                       {EXPANSIONS.map((exp) => (
                         <div key={exp.id} className="relative group">

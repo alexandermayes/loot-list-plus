@@ -193,7 +193,7 @@ export default function OnboardingModal({ open, onClose }: OnboardingModalProps)
                           <li>Find your guild</li>
                           <li>Register your character</li>
                           <li>Submit your loot list</li>
-                          <li>Get your loot!</li>
+                          <li>Get your loot</li>
                         </ol>
                       </div>
                     </div>
@@ -320,7 +320,7 @@ export default function OnboardingModal({ open, onClose }: OnboardingModalProps)
                 </Button>
               ) : (
                 <Button onClick={handleClose} className="flex-1 relative overflow-hidden group">
-                  <span className="relative z-10">Got it!</span>
+                  <span className="relative z-10">Got it</span>
                   {/* Shine effect */}
                   <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 bg-gradient-to-r from-transparent via-white/20 to-transparent" />
                 </Button>

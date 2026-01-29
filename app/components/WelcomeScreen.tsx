@@ -386,7 +386,7 @@ export default function WelcomeScreen() {
             </div>
           ) : (
             <div className="space-y-4">
-              <h3 className="font-bold text-[16px] text-foreground">Available Guilds</h3>
+              <h3 className="font-bold text-[16px] text-foreground">Available guilds</h3>
               <div className="space-y-3">
                 {availableGuilds.map((guild) => (
                   <div

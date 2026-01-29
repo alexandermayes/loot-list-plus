@@ -158,7 +158,7 @@ export function CreateCharacterModal({ isOpen, onClose, onSuccess, suggestedName
       const data = await response.json()
 
       if (!response.ok) {
-        setError(data.error || 'Failed to create character')
+        setError(data.error || 'Couldn\'t create character. Check the name and try again.')
         setLoading(false)
         return
       }
@@ -239,7 +239,7 @@ export function CreateCharacterModal({ isOpen, onClose, onSuccess, suggestedName
       window.location.reload()
     } catch (err) {
       console.error('Error creating character:', err)
-      setError('An error occurred while creating the character')
+      setError('Couldn\'t create character. Check your connection and try again.')
       setLoading(false)
     }
   }
@@ -321,7 +321,7 @@ export function CreateCharacterModal({ isOpen, onClose, onSuccess, suggestedName
 
           {/* Main/Alt Toggle */}
           <div>
-            <Label className="mb-3">Character Type</Label>
+            <Label className="mb-3">Character type</Label>
             <div className="relative flex bg-background-subtle border border-border-strong rounded-[52px] p-1">
               {/* Sliding indicator */}
               <div

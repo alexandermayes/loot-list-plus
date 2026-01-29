@@ -27,6 +27,7 @@ interface SearchableItemSelectProps {
   placeholder?: string
   disabled?: Set<string>
   currentValue?: string
+  isSlotDisabled?: boolean
 }
 
 export default function SearchableItemSelect({
@@ -35,13 +36,14 @@ export default function SearchableItemSelect({
   onChange,
   placeholder = 'Select item',
   disabled = new Set(),
-  currentValue
+  currentValue,
+  isSlotDisabled = false
 }: SearchableItemSelectProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [search, setSearch] = useState('')
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 })
   const dropdownRef = useRef<HTMLDivElement>(null)
-  const buttonRef = useRef<HTMLButtonElement>(null)
+  const buttonRef = useRef<HTMLDivElement>(null)
   const searchInputRef = useRef<HTMLInputElement>(null)
   const dropdownContentRef = useRef<HTMLDivElement>(null)
 
@@ -124,6 +126,7 @@ export default function SearchableItemSelect({
 
   // Handle opening the dropdown with position calculation
   const handleOpen = () => {
+    if (isSlotDisabled) return
     if (buttonRef.current) {
       const rect = buttonRef.current.getBoundingClientRect()
       setDropdownPosition({
@@ -162,12 +165,30 @@ export default function SearchableItemSelect({
 
   return (
     <div className="relative" ref={dropdownRef}>
-      {/* Trigger Button */}
-      <button
+      {/* Trigger Container */}
+      <div
         ref={buttonRef}
-        type="button"
-        onClick={() => isOpen ? setIsOpen(false) : handleOpen()}
-        className="w-full px-3 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-left focus:outline-none focus:border-accent flex items-center justify-between gap-2"
+        role="combobox"
+        aria-expanded={isOpen}
+        aria-haspopup="listbox"
+        aria-disabled={isSlotDisabled}
+        tabIndex={isSlotDisabled ? -1 : 0}
+        onClick={() => {
+          if (isSlotDisabled) return
+          isOpen ? setIsOpen(false) : handleOpen()
+        }}
+        onKeyDown={(e) => {
+          if (isSlotDisabled) return
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault()
+            isOpen ? setIsOpen(false) : handleOpen()
+          }
+        }}
+        className={`w-full px-3 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-left focus:outline-none flex items-center justify-between gap-2 ${
+          isSlotDisabled
+            ? 'opacity-50 cursor-not-allowed text-muted-foreground'
+            : 'text-foreground focus:border-accent cursor-pointer'
+        }`}
       >
         <span className="truncate flex items-center gap-2 min-w-0">
           {selectedItem ? (
@@ -183,16 +204,34 @@ export default function SearchableItemSelect({
             <span className="truncate">{placeholder}</span>
           )}
         </span>
-        <svg
-          className="w-4 h-4 flex-shrink-0 transition-transform"
-          style={{ transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-        </svg>
-      </button>
+        <div className="flex items-center gap-1 flex-shrink-0">
+          {/* Clear button (X) - only show when item is selected */}
+          {selectedItem && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation()
+                handleClear()
+              }}
+              className="p-1 hover:bg-muted rounded-full transition-colors"
+              aria-label="Clear selection"
+            >
+              <svg className="w-3.5 h-3.5 text-muted-foreground hover:text-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          )}
+          <svg
+            className="w-4 h-4 transition-transform"
+            style={{ transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
+        </div>
+      </div>
 
       {/* Dropdown */}
       {isOpen && dropdownPosition.width > 0 && (
@@ -217,20 +256,6 @@ export default function SearchableItemSelect({
               className="w-full px-3 py-2 bg-background-subtle border border-border rounded-md text-foreground text-sm focus:outline-none focus:border-accent"
             />
           </div>
-
-          {/* Clear Option */}
-          {value && (
-            <button
-              onMouseDown={(e) => {
-                e.preventDefault()
-                e.stopPropagation()
-                handleClear()
-              }}
-              className="w-full px-3 py-2 text-left hover:bg-muted text-muted-foreground text-sm border-b border-border"
-            >
-              -- Clear Selection --
-            </button>
-          )}
 
           {/* Items List */}
           <div className="max-h-80 overflow-y-auto">

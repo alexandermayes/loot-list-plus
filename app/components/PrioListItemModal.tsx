@@ -247,7 +247,7 @@ export function PrioListItemModal({
         {/* Role Priority */}
         <div className="space-y-3">
           <div>
-            <Label className="mb-1">Role Priority</Label>
+            <Label className="mb-1">Role priority</Label>
             <p className="text-foreground-muted text-[12px]">
               Select roles and set point values for this item
             </p>
@@ -290,7 +290,7 @@ export function PrioListItemModal({
         {/* Class/Spec Priority */}
         <div className="space-y-3">
           <div>
-            <Label className="mb-1">Class/Spec Priority</Label>
+            <Label className="mb-1">Class/spec priority</Label>
             <p className="text-foreground-muted text-[12px]">
               Select specs and set point values for this item
             </p>
@@ -339,7 +339,7 @@ export function PrioListItemModal({
         {/* Individual Raiders */}
         <div className="space-y-3">
           <div>
-            <Label className="mb-1">Individual Raiders</Label>
+            <Label className="mb-1">Individual raiders</Label>
             <p className="text-foreground-muted text-[12px]">
               Select specific raiders and set point values for this item
             </p>
