@@ -82,8 +82,39 @@ showNotification('success', 'Changes saved!')
 
 ### WoW Class Colors
 
-Use `text-class-{className}` and `bg-class-{className}`:
+Tailwind utilities: `text-class-{className}` and `bg-class-{className}`:
 warrior, paladin, hunter, rogue, priest, deathknight, shaman, mage, warlock, druid
+
+**Character names** - Color with class color directly (preferred over separate class badges):
+```tsx
+<span style={{ color: character.class?.color_hex }}>
+  {character.name}
+</span>
+```
+
+### Badges
+
+**StatusBadge** - For submission/attendance statuses:
+```tsx
+<StatusBadge status="pending" />
+<StatusBadge status="approved" />
+// Statuses: approved, pending, needs_revision, rejected, draft, attended, late, benched, no_show, signed_up, excused
+```
+
+**Dynamic color badges** - When you need a badge with a dynamic color (not a StatusBadge):
+```tsx
+// Use semi-transparent background with colored text for readability
+<span
+  className="px-2.5 py-0.5 rounded-full text-xs font-semibold border"
+  style={{
+    backgroundColor: `${colorHex}20`,
+    color: colorHex,
+    borderColor: `${colorHex}40`
+  }}
+>
+  {label}
+</span>
+```
 
 ## Code Patterns
 
@@ -118,3 +149,135 @@ warrior, paladin, hunter, rogue, priest, deathknight, shaman, mage, warlock, dru
   </ModalFooter>
 </Modal>
 ```
+
+## Content Design
+
+**Voice:** Sound like the guild officer who has their shit together: knowledgeable, direct, and fair. Speak gamer fluently without trying too hard.
+
+### Principles
+
+- **Clarity first** - Raiders scan between pulls. They need to grok it instantly.
+- **Be specific about numbers** - Never vague about scores, points, or rankings
+- **Confident but not arrogant** - Technical when needed, plain when possible
+- **Never corporate, never cringe** - No marketing hype, no excessive slang
+
+### What to Avoid
+
+- Em dashes (use commas or periods instead)
+- Excessive Gen Z slang (no "slay," "bestie," "no cap")
+- Marketing hype ("revolutionary," "game-changing")
+- Condescension (assume users understand WoW)
+- Exclamation points in errors or bad news
+
+### Capitalization
+
+**Sentence case by default.** Reserve capitals for:
+- Proper nouns: LootList+, Discord, WoW
+- Branded terms: Loot Score, Master Sheet
+- Role names: Officer, Guild Master, Trial
+
+**WoW terms:** Follow Blizzard conventions:
+- Class/spec names: lowercase (warrior, holy, balance)
+- Raid names: capitalized (Firelands, Blackwing Descent)
+- Item names: as displayed in-game
+
+### Numbers
+
+Always use figures in UI (not spelled out):
+- `50 items` not "fifty items"
+- `4-week window` not "four-week window"
+- `+1 bonus` not "plus one bonus"
+
+| Element | Format | Example |
+|---------|--------|---------|
+| Scores | Plain number | 58 |
+| Rankings | #N or Nth | #1, 2nd priority |
+| Attendance | X/Y or X pts | 6/8 pts |
+| Modifiers | +N or -N | -1 (trial penalty) |
+| Percentages | N% | 87% attendance |
+
+### Punctuation
+
+- **No Oxford comma** in simple series: "Ranking, attendance and modifiers"
+- **Apostrophes:** "the raider's score" / "the officers' decision" / "DKPs" (no apostrophe for plurals)
+- **Exclamation points:** Max one per screen, only for celebrations ("Grats!")
+
+### CTAs (Calls to Action)
+
+Start with a verb. Be specific about what happens.
+
+| Weak | Better | Best |
+|------|--------|------|
+| Submit | Save list | Save and notify officers |
+| OK | Got it | View my score |
+| Cancel | Go back | Keep editing |
+| Yes | Confirm | Remove item |
+
+**Destructive actions:** Be explicit ("Delete list" not "Remove"), restate in confirm dialogs.
+
+### Error Messages
+
+Every error should say: what happened + what to do about it.
+
+| Vague | Specific |
+|-------|----------|
+| Error | Couldn't load your loot list. Check your connection. |
+| Invalid input | Item names must match the WoW database. Check spelling. |
+| Something went wrong | Sync failed. Your changes are saved locally. |
+| Try again later | Server maintenance until 3:00 PM PST. |
+
+### Empty States
+
+Guide users to the next action:
+- "No items ranked yet. Time to hit the loot tables."
+- "No raids logged yet. Your score updates after first pull."
+- "Looking empty in here. Invite your guildies to get started."
+
+### Success Messages
+
+Brief confirmation with a little personality:
+- "List saved. You're locked in."
+- "Attendance synced. Looking good."
+- "Item added to position #12"
+- "Grats! You won the roll."
+
+### Confirmation Dialogs
+
+State the action, the consequence, then the options:
+```
+Title: Remove Dragonwrath from your list?
+Body: This will move all items below it up one rank.
+Primary: Remove item
+Secondary: Keep item
+```
+
+### LootList+ Terminology
+
+**Branded terms (capitalize):**
+- **Loot Score** - Combined number from ranking + attendance + modifiers
+- **Loot List** - A raider's ranked item list (up to 50 items)
+- **Master Sheet** - Compiled view of all raiders' lists
+
+**Common terms (lowercase):**
+- attendance, attendance points, ranking, priority
+- modifier, bonus, penalty, override
+- sick day, excused absence
+
+### WoW Lingo (Use Sparingly)
+
+Fair game in the right context:
+- grats, guildies, bis, prog, parse, pug, pull
+
+Avoid deeper cuts casual raiders might not know: pumper, sweaty, zug.
+
+### Content Checklist
+
+Before shipping UI copy:
+- [ ] Is every word necessary?
+- [ ] Can a raider understand this between pulls?
+- [ ] Numbers formatted consistently?
+- [ ] Sentence case (not Title Case)?
+- [ ] No em dashes?
+- [ ] No marketing hype or cringe slang?
+- [ ] CTA clearly states what happens?
+- [ ] Error messages specific and actionable?
