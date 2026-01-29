@@ -17,8 +17,9 @@ import { TierTabsSkeleton, MasterSheetContentSkeleton } from '@/components/ui/sk
 import { EmptyState } from '@/components/ui/empty-state'
 import { Button } from '@/components/ui/button'
 import { HugeiconsIcon } from '@hugeicons/react'
-import { ScrollIcon, ArrowUpRight01Icon } from '@hugeicons/core-free-icons'
+import { ScrollIcon, ArrowUpRight01Icon, InformationCircleIcon } from '@hugeicons/core-free-icons'
 import { Heading } from '@/components/ui/typography'
+import ScoreBreakdownModal from '@/app/components/ScoreBreakdownModal'
 
 interface LootItem {
   id: string
@@ -58,6 +59,7 @@ export default function MasterSheet() {
   const [collapsedBosses, setCollapsedBosses] = useState<Set<string>>(new Set())
   const [tierScrollState, setTierScrollState] = useState({ left: false, right: true })
   const [isExporting, setIsExporting] = useState(false)
+  const [showScoreBreakdown, setShowScoreBreakdown] = useState(false)
   const tierScrollRef = useRef<HTMLDivElement>(null)
 
   const supabase = createClient()
@@ -835,19 +837,28 @@ export default function MasterSheet() {
                 Top 5 players for each item
               </p>
             </div>
-            {isOfficer && (
+            <div className="flex items-center gap-2">
               <Button
-                onClick={handleExportToGargul}
-                disabled={contentLoading || raidTiers.length === 0 || isExporting}
-                loading={isExporting}
-                loadingText="Exporting..."
-                className="bg-violet-600 hover:bg-violet-500 text-white border-0 shadow-lg shadow-violet-900/30"
+                variant="secondary"
+                onClick={() => setShowScoreBreakdown(true)}
               >
-                <img src="/icons/gargul.png" alt="Gargul" className="w-5 h-5" />
-                Export to Gargul
-                <HugeiconsIcon icon={ArrowUpRight01Icon} size={16} />
+                <HugeiconsIcon icon={InformationCircleIcon} size={18} />
+                How Scores Work
               </Button>
-            )}
+              {isOfficer && (
+                <Button
+                  onClick={handleExportToGargul}
+                  disabled={contentLoading || raidTiers.length === 0 || isExporting}
+                  loading={isExporting}
+                  loadingText="Exporting..."
+                  className="bg-violet-600 hover:bg-violet-500 text-white border-0 shadow-lg shadow-violet-900/30"
+                >
+                  <img src="/icons/gargul.png" alt="Gargul" className="w-5 h-5" />
+                  Export to Gargul
+                  <HugeiconsIcon icon={ArrowUpRight01Icon} size={16} />
+                </Button>
+              )}
+            </div>
           </div>
         </div>
 
@@ -1129,6 +1140,13 @@ export default function MasterSheet() {
             )}
           </div>
         </div>
+
+        {/* Score Breakdown Modal */}
+        <ScoreBreakdownModal
+          open={showScoreBreakdown}
+          onClose={() => setShowScoreBreakdown(false)}
+          guildSettings={guildSettings}
+        />
         </div>
       </div>
     </ExpansionGuard>
