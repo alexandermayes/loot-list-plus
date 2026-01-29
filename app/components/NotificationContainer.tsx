@@ -62,7 +62,7 @@ export default function NotificationContainer() {
             key={notification.id}
             className={`
               pointer-events-auto
-              flex items-center gap-3 px-4 py-3 rounded-xl border shadow-lg
+              flex items-center gap-3 px-4 py-3 rounded-xl border shadow-lg backdrop-blur-md bg-background/80
               ${getNotificationStyles(notification.type)}
               transition-all duration-300 ease-out
               ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4'}
