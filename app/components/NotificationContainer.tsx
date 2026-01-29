@@ -6,18 +6,18 @@ import { HugeiconsIcon } from '@hugeicons/react'
 import { CheckmarkCircle01Icon, Cancel01Icon, AlertCircleIcon, InformationCircleIcon } from '@hugeicons/core-free-icons'
 
 /**
- * Toast notification styles using design tokens
+ * Toast notification styles - matches inline alert styling
  */
 const getNotificationStyles = (type: NotificationType) => {
   switch (type) {
     case 'success':
-      return 'bg-success/95 border-success text-success-foreground'
+      return 'bg-success/10 border-success/30 text-success'
     case 'error':
-      return 'bg-destructive/95 border-destructive text-destructive-foreground'
+      return 'bg-destructive/10 border-destructive/30 text-destructive'
     case 'warning':
-      return 'bg-warning/95 border-warning text-warning-foreground'
+      return 'bg-yellow-500/10 border-yellow-500/30 text-yellow-500'
     case 'info':
-      return 'bg-accent/95 border-accent text-accent-foreground'
+      return 'bg-accent/10 border-accent/30 text-accent'
   }
 }
 
@@ -62,7 +62,7 @@ export default function NotificationContainer() {
             key={notification.id}
             className={`
               pointer-events-auto
-              flex items-center gap-3 px-4 py-3 rounded-lg border-2 shadow-lg
+              flex items-center gap-3 px-4 py-3 rounded-xl border shadow-lg
               ${getNotificationStyles(notification.type)}
               transition-all duration-300 ease-out
               ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4'}
