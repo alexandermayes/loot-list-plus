@@ -8,8 +8,11 @@ import WelcomeScreen from '@/app/components/WelcomeScreen'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { UserIcon, CheckmarkCircle01Icon, AlertCircleIcon, Award01Icon, Cancel01Icon, Add01Icon } from '@hugeicons/core-free-icons'
 
-// Lazy load modal to reduce initial bundle size
+// Lazy load modals to reduce initial bundle size
 const CreateCharacterModal = dynamic(() => import('@/app/components/CreateCharacterModal').then(mod => ({ default: mod.CreateCharacterModal })), {
+  loading: () => null
+})
+const OnboardingModal = dynamic(() => import('@/app/components/OnboardingModal'), {
   loading: () => null
 })
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
@@ -124,6 +127,7 @@ export default function Dashboard() {
   const [actionsNeeded, setActionsNeeded] = useState<LootSubmission[]>([])
   const [dismissedActions, setDismissedActions] = useState<Set<string>>(new Set())
   const [showCreateCharacterModal, setShowCreateCharacterModal] = useState(false)
+  const [showOnboarding, setShowOnboarding] = useState(false)
 
   // Stats state
   const [stats, setStats] = useState({
@@ -178,6 +182,21 @@ export default function Dashboard() {
       }
     }
   }, [])
+
+  // Show onboarding modal for first-time users
+  useEffect(() => {
+    if (typeof window !== 'undefined' && activeGuild && activeCharacter && !loading) {
+      const hasSeenOnboarding = localStorage.getItem('lootlist_onboarding_seen')
+      if (!hasSeenOnboarding) {
+        setShowOnboarding(true)
+      }
+    }
+  }, [activeGuild, activeCharacter, loading])
+
+  const handleCloseOnboarding = () => {
+    localStorage.setItem('lootlist_onboarding_seen', 'true')
+    setShowOnboarding(false)
+  }
 
   // Set greeting once when component mounts
   useEffect(() => {
@@ -1001,6 +1020,12 @@ export default function Dashboard() {
         isOpen={showCreateCharacterModal}
         onClose={() => setShowCreateCharacterModal(false)}
         suggestedName={activeCharacter?.name}
+      />
+
+      {/* Onboarding Modal for new users */}
+      <OnboardingModal
+        open={showOnboarding}
+        onClose={handleCloseOnboarding}
       />
     </div>
   )
