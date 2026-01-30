@@ -45,7 +45,7 @@ Replace:
 ## Step 3: How Verification Works
 
 ### User Flow:
-1. User logs in with Discord OAuth (grants `identify`, `email`, and `guilds` permissions)
+1. User logs in with Discord OAuth (grants `identify` and `guilds` permissions)
 2. User goes to Profile Settings (`/profile/settings`)
 3. User clicks "Verify Discord Server Membership" button
 4. System checks if user is a member of the guild's Discord server
