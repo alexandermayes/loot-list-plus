@@ -17,6 +17,8 @@ import { Heading } from '@/components/ui/typography'
 import { normalizeBossName } from '@/utils/bossOrder'
 import { getRaidIcon } from '@/utils/raidIcons'
 import { StarFilledIcon, CheckFilledIcon, ClockFilledIcon, AlertFilledIcon, CancelFilledIcon } from '@/components/ui/icons'
+import { HugeiconsIcon } from '@hugeicons/react'
+import { InformationCircleIcon } from '@hugeicons/core-free-icons'
 import { useLootList, type LootItem } from '@/app/contexts/LootListContext'
 import { ClassificationBadge } from '@/components/ui/classification-badge'
 
@@ -452,8 +454,8 @@ export default function LootList() {
             </div>
             <div className="flex items-center gap-3">
               {/* How to Rank Button */}
-              <Button variant="secondary" onClick={() => setShowInstructionsModal(true)}>
-                How to Rank
+              <Button variant="secondary" onClick={() => setShowInstructionsModal(true)} title="How to Rank">
+                <HugeiconsIcon icon={InformationCircleIcon} size={18} />
               </Button>
             </div>
           </div>
