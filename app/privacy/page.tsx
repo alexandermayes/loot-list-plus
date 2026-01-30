@@ -16,7 +16,7 @@ export default function PrivacyPolicyPage() {
           Privacy Policy
         </Heading>
         <Text color="secondary" className="mb-8">
-          Last updated: January 27, 2025
+          Last updated: January 30, 2025
         </Text>
 
         <div className="space-y-8 text-foreground">
@@ -40,7 +40,10 @@ export default function PrivacyPolicyPage() {
             <Heading level={3} className="mt-6">
               2.1 Information from Discord OAuth
             </Heading>
-            <Text>When you log in via Discord, we collect:</Text>
+            <Text>
+              When you log in via Discord, we request the minimum permissions needed to provide the
+              Service. We collect:
+            </Text>
             <ul className="ml-6 list-disc space-y-2">
               <li>
                 <Text>Discord user ID</Text>
@@ -52,12 +55,13 @@ export default function PrivacyPolicyPage() {
                 <Text>Discord avatar URL</Text>
               </li>
               <li>
-                <Text>Email address (if provided in your Discord account)</Text>
-              </li>
-              <li>
                 <Text>List of Discord servers you belong to (to match guild memberships)</Text>
               </li>
             </ul>
+            <Text className="mt-4">
+              We do NOT request access to your email address from Discord. Email is optional and
+              only collected if you choose to provide it directly within LootList+.
+            </Text>
 
             <Heading level={3} className="mt-6">
               2.2 Information You Provide

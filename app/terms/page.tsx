@@ -16,7 +16,7 @@ export default function TermsOfServicePage() {
           Terms of Service
         </Heading>
         <Text color="secondary" className="mb-8">
-          Last updated: January 27, 2025
+          Last updated: January 30, 2025
         </Text>
 
         <div className="space-y-8 text-foreground">
