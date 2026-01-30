@@ -138,6 +138,159 @@ export function useGuildMembers(guildId: string | null, options?: SWRConfigurati
   )
 }
 
+// === Loot List Hooks ===
+
+export interface LootItem {
+  id: string
+  name: string
+  boss_name: string
+  item_slot: string
+  wowhead_id: number
+  classification?: string
+  item_type?: string
+  allocation_cost?: number
+  roles?: string[]
+  loot_item_classes?: {
+    class_id: string
+    spec_id: string | null
+    spec_type: string | null
+  }[]
+}
+
+export interface LootSubmission {
+  id: string
+  status: string
+  submitted_at: string | null
+  review_notes: string | null
+}
+
+export interface RaidTier {
+  id: string
+  name: string
+  is_active: boolean
+  submission_deadline: string | null
+}
+
+/**
+ * Fetch loot items for a specific raid tier
+ * @param tierId - The raid tier ID
+ * @param characterId - The character ID (for spec filtering on server)
+ */
+export function useLootItems(
+  tierId: string | null,
+  characterId: string | null,
+  options?: SWRConfiguration
+) {
+  return useSWR<{ items: LootItem[] }>(
+    tierId && characterId ? `/api/loot-items?tier_id=${tierId}&character_id=${characterId}` : null,
+    fetcher,
+    {
+      ...swrConfig,
+      revalidateOnFocus: false, // Prevent refetch on tab switch
+      dedupingInterval: 10000, // Longer dedup for loot items
+      ...options,
+    }
+  )
+}
+
+/**
+ * Fetch raid tiers for an expansion
+ * @param expansionId - The expansion ID
+ * @param guildId - The guild ID
+ */
+export function useRaidTiers(
+  expansionId: string | null,
+  guildId: string | null,
+  options?: SWRConfiguration
+) {
+  return useSWR<{ tiers: RaidTier[] }>(
+    expansionId && guildId ? `/api/raid-tiers?expansion_id=${expansionId}&guild_id=${guildId}` : null,
+    fetcher,
+    {
+      ...swrConfig,
+      revalidateOnFocus: false,
+      dedupingInterval: 30000, // Tiers change rarely
+      ...options,
+    }
+  )
+}
+
+/**
+ * Fetch loot submission for a character/tier
+ * @param characterId - The character ID
+ * @param tierId - The raid tier ID
+ * @param guildId - The guild ID
+ */
+export function useLootSubmission(
+  characterId: string | null,
+  tierId: string | null,
+  guildId: string | null,
+  options?: SWRConfiguration
+) {
+  return useSWR<{ submission: LootSubmission | null; rankings: Record<string, string> }>(
+    characterId && tierId && guildId
+      ? `/api/loot-submissions?character_id=${characterId}&tier_id=${tierId}&guild_id=${guildId}`
+      : null,
+    fetcher,
+    {
+      ...swrConfig,
+      revalidateOnFocus: false,
+      revalidateIfStale: false, // Don't auto-revalidate - we manage saves manually
+      revalidateOnReconnect: false,
+      dedupingInterval: 30000, // 30 second deduping to prevent rapid refetches
+      ...options,
+    }
+  )
+}
+
+/**
+ * Fetch submission statuses for all tiers
+ * @param characterId - The character ID
+ * @param guildId - The guild ID
+ * @param tierIds - Array of tier IDs to fetch statuses for
+ */
+export function useTierSubmissionStatuses(
+  characterId: string | null,
+  guildId: string | null,
+  tierIds: string[],
+  options?: SWRConfiguration
+) {
+  const key = characterId && guildId && tierIds.length > 0
+    ? `/api/loot-submissions/statuses?character_id=${characterId}&guild_id=${guildId}&tier_ids=${tierIds.join(',')}`
+    : null
+
+  return useSWR<{ statuses: Record<string, { status: string; submitted_at: string | null }> }>(
+    key,
+    fetcher,
+    {
+      ...swrConfig,
+      revalidateOnFocus: false,
+      ...options,
+    }
+  )
+}
+
+/**
+ * Invalidate loot items cache for a tier
+ */
+export function invalidateLootItems(tierId: string, characterId: string) {
+  return mutate(`/api/loot-items?tier_id=${tierId}&character_id=${characterId}`)
+}
+
+/**
+ * Invalidate loot submission cache
+ */
+export function invalidateLootSubmission(characterId: string, tierId: string, guildId: string) {
+  return mutate(`/api/loot-submissions?character_id=${characterId}&tier_id=${tierId}&guild_id=${guildId}`)
+}
+
+/**
+ * Invalidate tier submission statuses cache
+ */
+export function invalidateTierSubmissionStatuses(characterId: string, guildId: string, tierIds: string[]) {
+  return mutate(`/api/loot-submissions/statuses?character_id=${characterId}&guild_id=${guildId}&tier_ids=${tierIds.join(',')}`)
+}
+
 // === Prio List Hooks ===
 
 export interface PrioListItem {

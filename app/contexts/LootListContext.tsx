@@ -391,10 +391,12 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
       }
 
       // Delete existing rankings
-      await supabase
+      const { error: deleteError } = await supabase
         .from('loot_submission_items')
         .delete()
         .eq('submission_id', submissionId)
+
+      if (deleteError) throw new Error(`Failed to delete items: ${deleteError.message}`)
 
       // Insert new rankings
       const rankingsToInsert = Object.entries(currentRankings).map(([key, loot_item_id]) => {
@@ -516,10 +518,12 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
       }
 
       // Delete and re-insert rankings
-      await supabase
+      const { error: deleteError } = await supabase
         .from('loot_submission_items')
         .delete()
         .eq('submission_id', submissionId)
+
+      if (deleteError) throw new Error(`Failed to delete items: ${deleteError.message}`)
 
       const rankingsToInsert = Object.entries(rankings).map(([key, loot_item_id]) => {
         const [rankStr, slotStr] = key.split('-')
