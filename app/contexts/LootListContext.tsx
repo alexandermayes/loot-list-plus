@@ -55,6 +55,13 @@ function getRaidTierOrder(tierName: string): number {
   return RAID_TIER_ORDER[tierName] || 999
 }
 
+interface BisImportResult {
+  success: boolean
+  importedCount: number
+  error?: string
+  code?: string
+}
+
 interface LootListContextType {
   // Data
   lootItems: LootItem[]
@@ -70,6 +77,7 @@ interface LootListContextType {
   isLoading: boolean
   isContentLoading: boolean
   isSaving: boolean
+  isImportingBis: boolean
 
   // Computed
   hasChanges: boolean
@@ -82,6 +90,7 @@ interface LootListContextType {
   clearAllRankings: () => void
   saveSubmission: (submit: boolean) => Promise<void>
   refreshData: () => void
+  importBisItems: () => Promise<BisImportResult>
 }
 
 const LootListContext = createContext<LootListContextType | null>(null)
@@ -112,6 +121,7 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
   const [originalStatus, setOriginalStatus] = useState<string | null>(null)
   const [enforceSlotRestrictions, setEnforceSlotRestrictions] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
+  const [isImportingBis, setIsImportingBis] = useState(false)
   const [initialLoadComplete, setInitialLoadComplete] = useState(false)
 
   // Refs for stable callbacks and preventing save loops
@@ -305,6 +315,95 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
     localChangesRef.current = true
     setRankings({})
   }, [])
+
+  // Import BIS items into rankings
+  const importBisItems = useCallback(async (): Promise<BisImportResult> => {
+    if (!activeCharacter || !selectedTierId) {
+      return { success: false, importedCount: 0, error: 'No character or tier selected' }
+    }
+
+    setIsImportingBis(true)
+
+    try {
+      const response = await fetch(
+        `/api/bis-items?tier_id=${selectedTierId}&character_id=${activeCharacter.id}`
+      )
+      const data = await response.json()
+
+      if (!response.ok) {
+        return {
+          success: false,
+          importedCount: 0,
+          error: data.error || 'Failed to fetch BIS items',
+          code: data.code
+        }
+      }
+
+      if (!data.items || data.items.length === 0) {
+        return {
+          success: false,
+          importedCount: 0,
+          error: 'No BIS items found for your spec in this raid',
+          code: 'NO_ITEMS'
+        }
+      }
+
+      // Build a set of valid item IDs for this tier
+      const validItemIds = new Set((itemsData?.items || []).map(item => item.id))
+
+      // Sort BIS items by priority (BIS first, then alt)
+      const sortedBisItems = [...data.items].sort((a: any, b: any) => {
+        if (a.priority !== b.priority) {
+          return a.priority === 'bis' ? -1 : 1
+        }
+        return 0
+      })
+
+      // Fill both columns starting from rank 50 (top/highest priority)
+      // Pattern: rank 50 slot 1, rank 50 slot 2, rank 49 slot 1, rank 49 slot 2, etc.
+      const newRankings: Record<string, string> = {}
+      let rank = 50
+      let slot = 1
+      let importedCount = 0
+
+      for (const bisItem of sortedBisItems) {
+        // Skip if item not available in this tier
+        if (!validItemIds.has(bisItem.loot_item_id)) continue
+
+        // Stop if we've filled all ranks down to 1
+        if (rank < 1) break
+
+        // Add item to current position
+        newRankings[`${rank}-${slot}`] = bisItem.loot_item_id
+        importedCount++
+
+        // Move to next slot: 1 -> 2, then 2 -> 1 (next rank down)
+        if (slot === 1) {
+          slot = 2
+        } else {
+          slot = 1
+          rank--
+        }
+      }
+
+      // Mark that user made local changes
+      localChangesRef.current = true
+
+      // Set the new rankings
+      setRankings(newRankings)
+
+      return { success: true, importedCount }
+    } catch (error) {
+      console.error('Error importing BIS items:', error)
+      return {
+        success: false,
+        importedCount: 0,
+        error: error instanceof Error ? error.message : 'Failed to import BIS items'
+      }
+    } finally {
+      setIsImportingBis(false)
+    }
+  }, [activeCharacter, selectedTierId, itemsData?.items])
 
   // Check for changes
   const hasChanges = useMemo(() => {
@@ -598,6 +697,7 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
     isLoading,
     isContentLoading,
     isSaving,
+    isImportingBis,
 
     // Computed
     hasChanges,
@@ -609,7 +709,8 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
     handleItemSelect,
     clearAllRankings,
     saveSubmission,
-    refreshData
+    refreshData,
+    importBisItems
   }
 
   return (

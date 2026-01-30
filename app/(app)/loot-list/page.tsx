@@ -20,6 +20,7 @@ import { StarFilledIcon, CheckFilledIcon, ClockFilledIcon, AlertFilledIcon, Canc
 import { HugeiconsIcon } from '@hugeicons/react'
 import { InformationCircleIcon } from '@hugeicons/core-free-icons'
 import { useLootList, type LootItem } from '@/app/contexts/LootListContext'
+import { useNotification } from '@/app/contexts/NotificationContext'
 import { ClassificationBadge } from '@/components/ui/classification-badge'
 
 // Helper function for rank colors - defined outside component for stability
@@ -175,11 +176,13 @@ export default function LootList() {
     isLoading,
     isContentLoading,
     isSaving,
+    isImportingBis,
     hasChanges,
     setSelectedTierId,
     handleItemSelect,
     clearAllRankings,
-    saveSubmission
+    saveSubmission,
+    importBisItems
   } = useLootList()
 
   // Local UI state
@@ -187,6 +190,7 @@ export default function LootList() {
   const [expandedErrors, setExpandedErrors] = useState<Set<string>>(new Set())
 
   const { confirm, ConfirmDialog } = useConfirm()
+  const { showNotification } = useNotification()
 
   // Set page title
   useEffect(() => {
@@ -247,6 +251,33 @@ export default function LootList() {
     Object.values(rankings).filter((itemId, index, arr) => arr.indexOf(itemId) !== index),
     [rankings]
   )
+
+  const handleImportBis = useCallback(async () => {
+    // Warn if there are existing rankings
+    if (rankedCount > 0) {
+      confirm({
+        title: 'Import BIS items',
+        description: 'This will replace your current rankings with Best-in-Slot items for your spec. Continue?',
+        confirmLabel: 'Import BIS',
+        variant: 'default',
+        onConfirm: async () => {
+          const result = await importBisItems()
+          if (result.success) {
+            showNotification('success', `Imported ${result.importedCount} BIS items`)
+          } else {
+            showNotification('error', result.error || 'Failed to import BIS items')
+          }
+        }
+      })
+    } else {
+      const result = await importBisItems()
+      if (result.success) {
+        showNotification('success', `Imported ${result.importedCount} BIS items`)
+      } else {
+        showNotification('error', result.error || 'Failed to import BIS items')
+      }
+    }
+  }, [confirm, importBisItems, showNotification, rankedCount])
 
   // Bracket validation
   type BracketValidation = {
@@ -578,6 +609,17 @@ export default function LootList() {
               </div>
               <div className="flex flex-wrap items-center gap-2 sm:gap-4">
                 <span className="text-sm opacity-75">{rankedCount} items ranked</span>
+                {/* Import BIS Button */}
+                <Button
+                  variant="secondary"
+                  onClick={handleImportBis}
+                  loading={isImportingBis}
+                  size="sm"
+                  className="sm:size-default"
+                >
+                  <span className="hidden sm:inline">Import BIS</span>
+                  <span className="sm:hidden">BIS</span>
+                </Button>
                 {/* Clear List Button */}
                 {rankedCount > 0 && (
                   <Button variant="destructive" onClick={handleClearList} size="sm" className="sm:size-default">
