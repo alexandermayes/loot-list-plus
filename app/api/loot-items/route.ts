@@ -1,6 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
+import {
+  CLASS_PROFICIENCIES,
+  canWearArmorType,
+  canUseWeaponType,
+  isClassAgnosticSlot,
+  type WowClassName,
+  type ArmorType,
+  type WeaponType,
+} from '@/data/class-proficiencies'
+import { getItemTypeInfo, inferArmorType, inferWeaponType } from '@/data/item-types'
+import { isTokenSlot, canClassUseToken } from '@/data/token-class-mapping'
 
 interface LootItemClassRestriction {
   class_id: string
@@ -27,10 +38,10 @@ export async function GET(request: NextRequest) {
 
     const supabase = createServiceRoleClient()
 
-    // Get character info for spec filtering
+    // Get character info for spec filtering (including class name for proficiencies)
     const { data: character, error: charError } = await supabase
       .from('characters')
-      .select('id, class_id, spec_id, user_id')
+      .select('id, class_id, spec_id, user_id, wow_classes(name)')
       .eq('id', characterId)
       .single()
 
@@ -49,6 +60,7 @@ export async function GET(request: NextRequest) {
       .select(`
         id, name, boss_name, item_slot, wowhead_id,
         classification, item_type, allocation_cost, is_available, roles,
+        armor_type, weapon_type,
         loot_item_classes(class_id, spec_id, spec_type)
       `)
       .eq('raid_tier_id', tierId)
@@ -60,20 +72,81 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to fetch loot items' }, { status: 500 })
     }
 
-    // Filter items based on character's class/spec
+    // Get character's class name for proficiency filtering
+    // wow_classes is a single object from the foreign key join (not an array)
+    const wowClass = character.wow_classes as { name: string } | { name: string }[] | null
+    const className = (Array.isArray(wowClass) ? wowClass[0]?.name : wowClass?.name) as WowClassName | undefined
+
+    // Filter items based on character's class/spec AND class proficiencies
     const filteredItems = (items || []).filter(item => {
       const classes = item.loot_item_classes as LootItemClassRestriction[]
 
-      // If no spec restrictions, show to anyone
-      if (classes.length === 0) return true
-
-      // If character has no spec set, show all items for their class
-      if (!character.spec_id) {
-        return classes.some(c => c.class_id === character.class_id)
+      // First, check guild prio restrictions
+      let passesClassRestriction = true
+      if (classes.length > 0) {
+        // If character has no spec set, show all items for their class
+        if (!character.spec_id) {
+          passesClassRestriction = classes.some(c => c.class_id === character.class_id)
+        } else {
+          // Check if character's specific spec is in primary or secondary list
+          passesClassRestriction = classes.some(c => c.spec_id === character.spec_id)
+        }
       }
 
-      // Check if character's specific spec is in primary or secondary list
-      return classes.some(c => c.spec_id === character.spec_id)
+      if (!passesClassRestriction) return false
+
+      // Second, check token class restrictions (tokens are class-specific)
+      // This is a fallback safety check - loot_item_classes should already restrict tokens
+      if (className && isTokenSlot(item.item_slot)) {
+        if (!canClassUseToken(item.name, className)) {
+          return false
+        }
+        // Tokens don't need armor/weapon proficiency checks
+        return true
+      }
+
+      // Third, check class proficiencies (armor/weapon types the class can equip)
+      if (className && CLASS_PROFICIENCIES[className]) {
+        // Skip proficiency checks for class-agnostic slots (Neck, Back, Trinket, etc.)
+        if (isClassAgnosticSlot(item.item_slot)) {
+          return true
+        }
+
+        // Get item's armor/weapon type from DB or lookup table or inference
+        let armorType = item.armor_type as ArmorType | null
+        let weaponType = item.weapon_type as WeaponType | null
+
+        // If not in DB, try lookup table
+        if (!armorType && !weaponType) {
+          const typeInfo = getItemTypeInfo(item.wowhead_id)
+          if (typeInfo) {
+            armorType = typeInfo.armor_type || null
+            weaponType = typeInfo.weapon_type || null
+          }
+        }
+
+        // If still unknown, try to infer from item name
+        if (!armorType && !weaponType) {
+          armorType = inferArmorType(item.item_slot, item.name) || null
+          weaponType = inferWeaponType(item.item_slot, item.name) || null
+        }
+
+        // Check armor proficiency
+        if (armorType) {
+          if (!canWearArmorType(className, armorType)) {
+            return false
+          }
+        }
+
+        // Check weapon proficiency
+        if (weaponType) {
+          if (!canUseWeaponType(className, weaponType)) {
+            return false
+          }
+        }
+      }
+
+      return true
     })
 
     // If guildId provided, fetch consensus counts (how many OTHER guildmates ranked each item)

@@ -148,6 +148,8 @@ export interface LootItem {
   wowhead_id: number
   classification?: string
   item_type?: string
+  armor_type?: string  // Cloth, Leather, Mail, Plate
+  weapon_type?: string // Dagger, One-Handed Sword, Staff, etc.
   allocation_cost?: number
   roles?: string[]
   loot_item_classes?: {

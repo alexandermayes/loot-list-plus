@@ -1,0 +1,152 @@
+/**
+ * Token Class Mappings for WoW Classic / TBC / WotLK
+ *
+ * Tier tokens are class-restricted - only certain classes can use each token type.
+ * This mapping defines which classes can use each token category.
+ *
+ * Used for:
+ * - Validating token assignments
+ * - Seeding loot_item_classes entries for new tokens
+ * - Filtering tokens in the UI
+ */
+
+import type { WowClassName } from './class-proficiencies'
+
+/**
+ * Token type to class mapping
+ * Key: Token suffix/identifier (from item name)
+ * Value: Array of classes that can use tokens of this type
+ */
+export const TOKEN_CLASS_MAPPING: Record<string, WowClassName[]> = {
+  // ============================================================================
+  // TBC TIER 4 TOKENS (Karazhan, Gruul's Lair, Magtheridon's Lair)
+  // ============================================================================
+  'Fallen Hero': ['Hunter', 'Mage', 'Warlock'],
+  'Fallen Champion': ['Paladin', 'Rogue', 'Shaman'],
+  'Fallen Defender': ['Warrior', 'Priest', 'Druid'],
+
+  // ============================================================================
+  // TBC TIER 5 TOKENS (Serpentshrine Cavern, Tempest Keep)
+  // ============================================================================
+  'Vanquished Hero': ['Hunter', 'Mage', 'Warlock'],
+  'Vanquished Champion': ['Paladin', 'Rogue', 'Shaman'],
+  'Vanquished Defender': ['Warrior', 'Priest', 'Druid'],
+
+  // ============================================================================
+  // TBC TIER 6 TOKENS (Black Temple, Mount Hyjal, Sunwell Plateau)
+  // ============================================================================
+  'Forgotten Conqueror': ['Paladin', 'Priest', 'Warlock'],
+  'Forgotten Protector': ['Hunter', 'Shaman', 'Warrior'],
+  'Forgotten Vanquisher': ['Mage', 'Druid', 'Rogue'],
+
+  // ============================================================================
+  // CLASSIC TIER 3 TOKENS (Naxxramas - Desecrated items)
+  // Each token type maps to specific classes
+  // ============================================================================
+  // Desecrated Breastplate/Pauldrons/etc - Warrior
+  'Desecrated Breastplate': ['Warrior'],
+  'Desecrated Pauldrons': ['Warrior'],
+  'Desecrated Helmet': ['Warrior'],
+  'Desecrated Gauntlets': ['Warrior'],
+  'Desecrated Legplates': ['Warrior'],
+  'Desecrated Waistguard': ['Warrior'],
+  'Desecrated Wristguards': ['Warrior'],
+  'Desecrated Sabatons': ['Warrior'],
+
+  // Desecrated Tunic/Spaulders/etc - Rogue
+  'Desecrated Tunic': ['Rogue'],
+  'Desecrated Spaulders': ['Rogue'],
+  'Desecrated Headpiece': ['Rogue'],
+  'Desecrated Handguards': ['Rogue'],
+  'Desecrated Leggings': ['Rogue'],
+  'Desecrated Belt': ['Rogue'],
+  'Desecrated Bracers': ['Rogue'],
+  'Desecrated Boots': ['Rogue'],
+
+  // Desecrated Robe/Mantle/etc - Priest, Mage, Warlock
+  'Desecrated Robe': ['Priest', 'Mage', 'Warlock'],
+  'Desecrated Mantle': ['Priest', 'Mage', 'Warlock'],
+  'Desecrated Circlet': ['Priest', 'Mage', 'Warlock'],
+  'Desecrated Gloves': ['Priest', 'Mage', 'Warlock'],
+  'Desecrated Pants': ['Priest', 'Mage', 'Warlock'],
+  'Desecrated Bindings': ['Priest', 'Mage', 'Warlock'],
+  'Desecrated Sandals': ['Priest', 'Mage', 'Warlock'],
+  'Desecrated Girdle': ['Priest', 'Mage', 'Warlock'],
+
+  // ============================================================================
+  // CLASSIC AQ40 TOKENS (Temple of Ahn'Qiraj)
+  // ============================================================================
+  // Imperial Qiraji items - various class restrictions
+  'Imperial Qiraji Armaments': ['Warrior', 'Paladin', 'Hunter', 'Rogue'],
+  'Imperial Qiraji Regalia': ['Priest', 'Mage', 'Warlock', 'Druid', 'Shaman'],
+
+  // ============================================================================
+  // WOTLK TIER 7 TOKENS (Naxxramas 25, Obsidian Sanctum)
+  // ============================================================================
+  'Heroic Conqueror': ['Paladin', 'Priest', 'Warlock'],
+  'Heroic Protector': ['Hunter', 'Shaman', 'Warrior'],
+  'Heroic Vanquisher': ['Mage', 'Druid', 'Rogue'],
+  'Valorous Conqueror': ['Paladin', 'Priest', 'Warlock'],
+  'Valorous Protector': ['Hunter', 'Shaman', 'Warrior'],
+  'Valorous Vanquisher': ['Mage', 'Druid', 'Rogue'],
+
+  // ============================================================================
+  // WOTLK TIER 8 TOKENS (Ulduar)
+  // ============================================================================
+  'Conqueror of Ulduar': ['Paladin', 'Priest', 'Warlock'],
+  'Protector of Ulduar': ['Hunter', 'Shaman', 'Warrior'],
+  'Vanquisher of Ulduar': ['Mage', 'Druid', 'Rogue'],
+
+  // ============================================================================
+  // WOTLK TIER 9 TOKENS (Trial of the Crusader)
+  // ============================================================================
+  'Regalia of the Grand Conqueror': ['Paladin', 'Priest', 'Warlock'],
+  'Regalia of the Grand Protector': ['Hunter', 'Shaman', 'Warrior'],
+  'Regalia of the Grand Vanquisher': ['Mage', 'Druid', 'Rogue'],
+  'Trophy of the Crusade': ['Warrior', 'Paladin', 'Hunter', 'Rogue', 'Priest', 'Shaman', 'Mage', 'Warlock', 'Druid'],
+
+  // ============================================================================
+  // WOTLK TIER 10 TOKENS (Icecrown Citadel)
+  // ============================================================================
+  'Conquerors Mark of Sanctification': ['Paladin', 'Priest', 'Warlock'],
+  'Protectors Mark of Sanctification': ['Hunter', 'Shaman', 'Warrior'],
+  'Vanquishers Mark of Sanctification': ['Mage', 'Druid', 'Rogue'],
+}
+
+/**
+ * Get classes that can use a token based on its name
+ * Searches for token type keywords in the item name
+ */
+export function getTokenClasses(tokenName: string): WowClassName[] | undefined {
+  // Check each token type against the item name
+  for (const [tokenType, classes] of Object.entries(TOKEN_CLASS_MAPPING)) {
+    if (tokenName.includes(tokenType)) {
+      return classes
+    }
+  }
+  return undefined
+}
+
+/**
+ * Check if a class can use a specific token
+ */
+export function canClassUseToken(tokenName: string, className: WowClassName): boolean {
+  const allowedClasses = getTokenClasses(tokenName)
+  if (!allowedClasses) {
+    // Unknown token type - allow all classes (safe default)
+    return true
+  }
+  return allowedClasses.includes(className)
+}
+
+/**
+ * Token slot identifiers used in the database
+ */
+export const TOKEN_SLOTS = ['Token'] as const
+
+/**
+ * Check if an item slot is a token slot
+ */
+export function isTokenSlot(slot: string): boolean {
+  return TOKEN_SLOTS.includes(slot as typeof TOKEN_SLOTS[number])
+}
