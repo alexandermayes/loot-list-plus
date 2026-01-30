@@ -19,6 +19,7 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams
     const tierId = searchParams.get('tier_id')
     const characterId = searchParams.get('character_id')
+    const guildId = searchParams.get('guild_id')
 
     if (!tierId || !characterId) {
       return NextResponse.json({ error: 'tier_id and character_id are required' }, { status: 400 })
@@ -75,7 +76,52 @@ export async function GET(request: NextRequest) {
       return classes.some(c => c.spec_id === character.spec_id)
     })
 
-    return NextResponse.json({ items: filteredItems })
+    // If guildId provided, fetch consensus counts (how many OTHER guildmates ranked each item)
+    let consensusCounts: Record<string, number> = {}
+
+    if (guildId && filteredItems.length > 0) {
+      const itemIds = filteredItems.map(item => item.id)
+
+      // Query approved submissions from other characters in the guild for this tier
+      const { data: submissionItems } = await supabase
+        .from('loot_submission_items')
+        .select(`
+          loot_item_id,
+          loot_submissions!inner(character_id, status, guild_id, raid_tier_id)
+        `)
+        .in('loot_item_id', itemIds)
+        .eq('loot_submissions.raid_tier_id', tierId)
+        .eq('loot_submissions.guild_id', guildId)
+        .eq('loot_submissions.status', 'approved')
+        .neq('loot_submissions.character_id', characterId)
+
+      // Count unique characters per item
+      if (submissionItems) {
+        const charactersByItem: Record<string, Set<string>> = {}
+        submissionItems.forEach((si: any) => {
+          const itemId = si.loot_item_id
+          const charId = si.loot_submissions?.character_id
+          if (itemId && charId) {
+            if (!charactersByItem[itemId]) {
+              charactersByItem[itemId] = new Set()
+            }
+            charactersByItem[itemId].add(charId)
+          }
+        })
+        // Convert sets to counts
+        Object.entries(charactersByItem).forEach(([itemId, chars]) => {
+          consensusCounts[itemId] = chars.size
+        })
+      }
+    }
+
+    // Merge consensus counts into response
+    const itemsWithConsensus = filteredItems.map(item => ({
+      ...item,
+      consensus_count: consensusCounts[item.id] || 0
+    }))
+
+    return NextResponse.json({ items: itemsWithConsensus })
   } catch (error) {
     console.error('Error in GET /api/loot-items:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

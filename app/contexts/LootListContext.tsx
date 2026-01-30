@@ -167,7 +167,8 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
 
   const { data: itemsData, isLoading: itemsLoading } = useLootItems(
     selectedTierId,
-    activeCharacter?.id || null
+    activeCharacter?.id || null,
+    activeGuild?.id || null
   )
 
   const { data: submissionData, isLoading: submissionLoading, mutate: mutateSubmission } = useLootSubmission(

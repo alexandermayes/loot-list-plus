@@ -18,6 +18,7 @@ interface Item {
   wowhead_id: number
   boss_name: string
   classification?: string
+  consensus_count?: number  // Number of other guildmates who ranked this item
 }
 
 interface SearchableItemSelectProps {
@@ -298,6 +299,11 @@ export default function SearchableItemSelect({
                         <span className="truncate flex-1 min-w-0">
                           <ItemLink name={item.name} wowheadId={item.wowhead_id} clickable={false} />
                         </span>
+                        {item.consensus_count && item.consensus_count > 0 && (
+                          <span className="text-xs text-muted-foreground flex-shrink-0">
+                            {item.consensus_count} ranked
+                          </span>
+                        )}
                         {item.classification && item.classification !== 'Unlimited' && (
                           <span className="text-xs text-muted-foreground flex-shrink-0">
                             [{item.classification}]

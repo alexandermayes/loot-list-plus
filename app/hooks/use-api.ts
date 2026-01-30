@@ -155,6 +155,7 @@ export interface LootItem {
     spec_id: string | null
     spec_type: string | null
   }[]
+  consensus_count?: number  // Number of OTHER guildmates who ranked this item
 }
 
 export interface LootSubmission {
@@ -175,14 +176,20 @@ export interface RaidTier {
  * Fetch loot items for a specific raid tier
  * @param tierId - The raid tier ID
  * @param characterId - The character ID (for spec filtering on server)
+ * @param guildId - The guild ID (for consensus counts from other guildmates)
  */
 export function useLootItems(
   tierId: string | null,
   characterId: string | null,
+  guildId?: string | null,
   options?: SWRConfiguration
 ) {
+  const url = tierId && characterId
+    ? `/api/loot-items?tier_id=${tierId}&character_id=${characterId}${guildId ? `&guild_id=${guildId}` : ''}`
+    : null
+
   return useSWR<{ items: LootItem[] }>(
-    tierId && characterId ? `/api/loot-items?tier_id=${tierId}&character_id=${characterId}` : null,
+    url,
     fetcher,
     {
       ...swrConfig,
@@ -264,7 +271,8 @@ export function useTierSubmissionStatuses(
     fetcher,
     {
       ...swrConfig,
-      revalidateOnFocus: false,
+      revalidateOnFocus: true, // Refresh when user returns to tab to show status changes
+      refreshInterval: 30000, // Also refresh every 30 seconds to catch officer updates
       ...options,
     }
   )
