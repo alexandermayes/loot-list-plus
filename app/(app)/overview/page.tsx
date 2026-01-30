@@ -966,9 +966,9 @@ export default function Dashboard() {
                     className="bg-background-inset border border-border rounded-xl p-4 hover:border-accent/50 transition cursor-pointer"
                     onClick={() => router.push('/loot-list')}
                   >
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <span
                             className="font-semibold text-base"
                             style={{ color: submission.character.class?.color_hex || '#fff' }}
@@ -985,7 +985,7 @@ export default function Dashboard() {
                             : 'Address feedback and resubmit'}
                         </p>
                       </div>
-                      <div className="ml-4 flex items-center gap-2">
+                      <div className="flex items-center gap-2 self-end sm:self-auto">
                         <Button
                           variant="ghost"
                           size="sm"
