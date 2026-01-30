@@ -436,10 +436,10 @@ export default function MasterLootPage() {
               {/* All Tiers Button */}
               <button
                 onClick={() => setActiveTier('all')}
-                className={`px-5 py-2.5 rounded-[40px] whitespace-nowrap text-[13px] font-medium transition-all ${
+                className={`px-5 py-2.5 rounded-[40px] whitespace-nowrap text-[13px] font-medium transition-all border ${
                   activeTier === 'all'
-                    ? 'bg-accent/20 border-[0.5px] border-accent/20 text-accent'
-                    : 'bg-background-elevated border border-border text-foreground hover:bg-muted'
+                    ? 'bg-accent/20 border-accent/20 text-accent'
+                    : 'bg-background-elevated border-border text-foreground hover:bg-muted'
                 }`}
               >
                 All
@@ -448,10 +448,10 @@ export default function MasterLootPage() {
                 <button
                   key={tier.id}
                   onClick={() => setActiveTier(tier)}
-                  className={`px-5 py-2.5 rounded-[40px] whitespace-nowrap text-[13px] font-medium transition-all ${
+                  className={`px-5 py-2.5 rounded-[40px] whitespace-nowrap text-[13px] font-medium transition-all border ${
                     activeTier !== 'all' && activeTier?.id === tier.id
-                      ? 'bg-accent/20 border-[0.5px] border-accent/20 text-accent'
-                      : 'bg-background-elevated border border-border text-foreground hover:bg-muted'
+                      ? 'bg-accent/20 border-accent/20 text-accent'
+                      : 'bg-background-elevated border-border text-foreground hover:bg-muted'
                   }`}
                 >
                   <div className="flex items-center gap-2">
@@ -481,10 +481,10 @@ export default function MasterLootPage() {
                 <button
                   key={status}
                   onClick={() => setFilter(status)}
-                  className={`px-5 py-2.5 rounded-[40px] text-[13px] font-medium transition-all whitespace-nowrap ${
+                  className={`px-5 py-2.5 rounded-[40px] text-[13px] font-medium transition-all whitespace-nowrap border ${
                     filter === status
-                      ? 'bg-accent/20 border-[0.5px] border-accent/20 text-accent'
-                      : 'bg-background-elevated text-foreground hover:bg-muted border border-border'
+                      ? 'bg-accent/20 border-accent/20 text-accent'
+                      : 'bg-background-elevated text-foreground hover:bg-muted border-border'
                   }`}
                 >
                   {status.charAt(0).toUpperCase() + status.slice(1)}

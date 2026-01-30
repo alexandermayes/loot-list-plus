@@ -278,10 +278,10 @@ export default function ProfilePage() {
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            className={`px-5 py-2.5 rounded-[40px] whitespace-nowrap text-[13px] font-medium transition-all flex items-center gap-2 ${
+            className={`px-5 py-2.5 rounded-[40px] whitespace-nowrap text-[13px] font-medium transition-all flex items-center gap-2 border ${
               activeTab === tab.id
-                ? 'bg-accent/20 border-[0.5px] border-accent/20 text-accent'
-                : 'bg-background-elevated border border-border text-foreground hover:bg-muted'
+                ? 'bg-accent/20 border-accent/20 text-accent'
+                : 'bg-background-elevated border-border text-foreground hover:bg-muted'
             }`}
           >
             <HugeiconsIcon icon={tab.icon} size={16} />

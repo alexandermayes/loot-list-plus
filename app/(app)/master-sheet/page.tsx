@@ -1062,14 +1062,14 @@ export default function MasterSheet() {
                       <button
                         key={tier.id}
                         onClick={() => setSelectedTierId(tier.id)}
-                        className={`px-5 py-2.5 rounded-[40px] whitespace-nowrap text-[13px] font-medium transition-all ${
+                        className={`px-5 py-2.5 rounded-[40px] whitespace-nowrap text-[13px] font-medium transition-all border ${
                           isSelected
                             ? isDisabled
-                              ? 'bg-muted/50 border-[0.5px] border-border text-muted-foreground'
-                              : 'bg-accent/20 border-[0.5px] border-accent/20 text-accent'
+                              ? 'bg-muted/50 border-border text-muted-foreground'
+                              : 'bg-accent/20 border-accent/20 text-accent'
                             : isDisabled
-                              ? 'bg-background-elevated/50 border border-border/50 text-muted-foreground hover:bg-muted/50 opacity-60'
-                              : 'bg-background-elevated border border-border text-foreground hover:bg-muted'
+                              ? 'bg-background-elevated/50 border-border/50 text-muted-foreground hover:bg-muted/50 opacity-60'
+                              : 'bg-background-elevated border-border text-foreground hover:bg-muted'
                         }`}
                       >
                         <span className="flex items-center gap-2">

@@ -471,10 +471,10 @@ export default function LootList() {
                   <button
                     key={expansion.expansion_id}
                     onClick={() => setViewingExpansion(expansion.is_current ? null : expansion.expansion_id)}
-                    className={`px-5 py-2.5 rounded-[40px] whitespace-nowrap text-[13px] font-medium transition-all ${
+                    className={`px-5 py-2.5 rounded-[40px] whitespace-nowrap text-[13px] font-medium transition-all border ${
                       isViewing || isCurrent
-                        ? 'bg-accent/20 border-[0.5px] border-accent/20 text-accent'
-                        : 'bg-background-elevated border border-border text-foreground hover:bg-muted'
+                        ? 'bg-accent/20 border-accent/20 text-accent'
+                        : 'bg-background-elevated border-border text-foreground hover:bg-muted'
                     }`}
                   >
                     <div className="flex items-center gap-2">
@@ -516,10 +516,10 @@ export default function LootList() {
                     <button
                       key={tier.id}
                       onClick={() => setSelectedTierId(tier.id)}
-                      className={`px-5 py-2.5 rounded-[40px] whitespace-nowrap text-[13px] font-medium transition-all ${
+                      className={`px-5 py-2.5 rounded-[40px] whitespace-nowrap text-[13px] font-medium transition-all border ${
                         selectedTierId === tier.id
-                          ? 'bg-accent/20 border-[0.5px] border-accent/20 text-accent'
-                          : 'bg-background-elevated border border-border text-foreground hover:bg-muted'
+                          ? 'bg-accent/20 border-accent/20 text-accent'
+                          : 'bg-background-elevated border-border text-foreground hover:bg-muted'
                       }`}
                     >
                       <div className="flex items-center gap-2">
