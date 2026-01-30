@@ -6,6 +6,7 @@ import { createClient } from '@/utils/supabase/client'
 import { useRouter } from 'next/navigation'
 import dynamic from 'next/dynamic'
 import Image from 'next/image'
+import Link from 'next/link'
 import Sidebar from '@/app/components/Sidebar'
 import { MobileMenuButton } from '@/app/components/MobileMenuButton'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
@@ -86,16 +87,74 @@ function AppLayoutContent({
 
       {/* Mobile Header */}
       {isMobile && (
-        <header className="fixed top-0 left-0 right-0 h-14 bg-background-elevated border-b border-border z-30 flex items-center px-4 gap-3">
-          <MobileMenuButton />
-          <Image
-            src="/logo.svg"
-            alt="LootList+"
-            width={102}
-            height={16}
-            className="logo-adaptive h-4 w-auto"
-            priority
-          />
+        <header className="fixed top-0 left-0 right-0 h-14 bg-background-elevated border-b border-border z-30 flex items-center justify-between px-4">
+          {/* Left side: Menu + Logo */}
+          <div className="flex items-center gap-3">
+            <MobileMenuButton />
+            <Image
+              src="/logo.svg"
+              alt="LootList+"
+              width={102}
+              height={16}
+              className="logo-adaptive h-4 w-auto"
+              priority
+            />
+          </div>
+
+          {/* Right side: Help, Discord, Profile */}
+          <div className="flex items-center gap-1">
+            <Link
+              href="/help"
+              className="p-2 rounded-full hover:bg-muted transition"
+              aria-label="Help"
+            >
+              <Image
+                src="/icons/help.svg"
+                alt="Help"
+                width={20}
+                height={20}
+                className="w-5 h-5 icon-adaptive"
+              />
+            </Link>
+            <a
+              href="https://discord.gg/WWaUQZMz9M"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="p-2 rounded-full hover:bg-muted transition"
+              aria-label="Join Discord"
+            >
+              <Image
+                src="/icons/discord-large.svg"
+                alt="Discord"
+                width={20}
+                height={20}
+                className="w-5 h-5 icon-adaptive"
+              />
+            </a>
+            <Link
+              href="/profile"
+              className="p-2 rounded-full hover:bg-muted transition"
+              aria-label="Profile"
+            >
+              {user?.user_metadata?.avatar_url ? (
+                <Image
+                  src={user.user_metadata.avatar_url.startsWith('http')
+                    ? user.user_metadata.avatar_url
+                    : `https://cdn.discordapp.com/avatars/${user.user_metadata.provider_id}/${user.user_metadata.avatar_url}.png`}
+                  alt="Profile"
+                  width={24}
+                  height={24}
+                  className="w-6 h-6 rounded-full border border-border"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement
+                    target.src = 'https://cdn.discordapp.com/embed/avatars/0.png'
+                  }}
+                />
+              ) : (
+                <div className="w-6 h-6 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 border border-border" />
+              )}
+            </Link>
+          </div>
         </header>
       )}
 

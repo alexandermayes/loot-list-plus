@@ -11,6 +11,8 @@ import { useSidebar } from '../contexts/SidebarContext'
 import { Modal, ModalHeader, ModalBody } from '@/components/ui/modal'
 import { Button } from '@/components/ui/button'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
+import { HugeiconsIcon } from '@hugeicons/react'
+import { Cancel01Icon } from '@hugeicons/core-free-icons'
 
 // Lazy load modal to reduce initial bundle size
 const CreateGuildModal = dynamic(() => import('./CreateGuildModal').then(mod => ({ default: mod.CreateGuildModal })), {
@@ -353,28 +355,46 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange, 
       )}
       {/* Logo with scroll fade gradient - positioned to overlay scroll content */}
       <div
-        className="absolute top-0 left-0 right-0 flex flex-col items-start justify-center px-[10px] py-[36px] z-10 pointer-events-none"
-        style={{ background: 'linear-gradient(to bottom, hsl(var(--background-subtle)) 69.886%, hsl(var(--background-subtle) / 0) 100%)', width: isMobileOverlay ? MOBILE_SIDEBAR_WIDTH : sidebarWidth }}
+        className={`absolute top-0 left-0 right-0 flex flex-col items-start justify-center z-10 pointer-events-none ${
+          isMobileOverlay ? 'px-4 py-[10px]' : 'px-[10px] py-[36px]'
+        }`}
+        style={{
+          background: 'linear-gradient(to bottom, hsl(var(--background-subtle)) 69.886%, hsl(var(--background-subtle) / 0) 100%)',
+          width: isMobileOverlay ? MOBILE_SIDEBAR_WIDTH : sidebarWidth,
+        }}
       >
-        <div className="px-[12px] pointer-events-auto">
+        {/* Close button for mobile overlay - matches hamburger button position */}
+        {isMobileOverlay ? (
           <button
-            onClick={() => handleNavClick('overview')}
-            className="cursor-pointer hover:opacity-80 transition"
+            onClick={onNavigate}
+            className="w-10 h-10 flex items-center justify-center rounded-lg hover:bg-muted transition pointer-events-auto"
+            aria-label="Close menu"
           >
-            <Image
-              src="/logo.svg"
-              alt="LootList+"
-              width={102}
-              height={16}
-              className="logo-adaptive h-4 w-auto"
-              priority
-            />
+            <HugeiconsIcon icon={Cancel01Icon} size={24} className="text-foreground" />
           </button>
-        </div>
+        ) : (
+          <div className="px-[12px] pointer-events-auto">
+            <button
+              onClick={() => handleNavClick('overview')}
+              className="cursor-pointer hover:opacity-80 transition"
+            >
+              <Image
+                src="/logo.svg"
+                alt="LootList+"
+                width={102}
+                height={16}
+                className="logo-adaptive h-4 w-auto"
+                priority
+              />
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Main Navigation - Scrollable (extends to bottom) */}
-      <div className="flex-1 flex flex-col gap-6 min-h-0 overflow-y-auto sidebar-scrollable px-2.5 pb-[170px] pt-[88px]">
+      <div className={`flex-1 flex flex-col gap-6 min-h-0 overflow-y-auto sidebar-scrollable px-2.5 ${
+        isMobileOverlay ? 'pt-[60px] pb-6' : 'pt-[88px] pb-[170px]'
+      }`}>
         {/* Guild Selector */}
         <div className="flex flex-col gap-[4px]">
           <div className="px-3">
@@ -578,12 +598,12 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange, 
               key={item.view}
               onClick={() => handleNavClick(item.view)}
               disabled={!activeGuild}
-              className={`w-full px-3.5 py-2.5 flex items-center gap-3 rounded-[40px] transition font-poppins font-medium text-[13px] ${
+              className={`w-full px-3.5 py-2.5 flex items-center gap-3 rounded-[40px] transition font-poppins font-medium text-[13px] border-[0.5px] ${
                 !activeGuild
-                  ? 'opacity-20 cursor-not-allowed text-foreground'
+                  ? 'opacity-20 cursor-not-allowed text-foreground border-transparent'
                   : isActive(item.view)
-                  ? 'bg-accent/20 border-[0.5px] border-accent/20 text-accent'
-                  : 'text-foreground hover:bg-muted'
+                  ? 'bg-accent/20 border-accent/20 text-accent'
+                  : 'text-foreground hover:bg-muted border-transparent'
               }`}
             >
               <Image
@@ -613,10 +633,10 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange, 
               <button
                 key={item.view}
                 onClick={() => handleNavClick(item.view)}
-                className={`w-full px-3.5 py-[10px] flex items-center gap-3 rounded-[40px] transition font-poppins font-medium text-[13px] text-left ${
+                className={`w-full px-3.5 py-[10px] flex items-center gap-3 rounded-[40px] transition font-poppins font-medium text-[13px] text-left border-[0.5px] ${
                   isActive(item.view)
-                    ? 'bg-accent/20 border-[0.5px] border-accent/20 text-accent'
-                    : 'text-foreground hover:bg-muted'
+                    ? 'bg-accent/20 border-accent/20 text-accent'
+                    : 'text-foreground hover:bg-muted border-transparent'
                 }`}
               >
                 <Image
@@ -637,101 +657,104 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange, 
       </div>
 
       {/* Bottom Section - Fixed at bottom, overlays scrollable area */}
-      <div
-        className="absolute bottom-0 left-0 right-0 flex flex-col gap-0 z-10 bg-background-subtle border-t border-border p-[10px]"
-        style={{ width: isMobileOverlay ? MOBILE_SIDEBAR_WIDTH : sidebarWidth }}
-      >
-        <button
-          onClick={() => {
-            router.push('/help')
-            onNavigate?.()
-          }}
-          className={`w-full px-3.5 py-2 flex items-center gap-3 rounded-[40px] transition font-poppins font-medium text-[13px] ${
-            pathname?.startsWith('/help')
-              ? 'bg-accent/20 border-[0.5px] border-accent/20 text-accent'
-              : 'text-foreground hover:bg-muted'
-          }`}
+      {/* Hidden on mobile since Help, Discord, Profile are in the mobile header */}
+      {!isMobileOverlay && (
+        <div
+          className="absolute bottom-0 left-0 right-0 flex flex-col gap-0 z-10 bg-background-subtle border-t border-border p-[10px]"
+          style={{ width: sidebarWidth }}
         >
-          <Image
-            src="/icons/help.svg"
-            alt="Help"
-            width={20}
-            height={20}
-            className={`w-5 h-5 ${pathname?.startsWith('/help') ? '' : 'icon-adaptive'}`}
-            style={pathname?.startsWith('/help') ? { filter: 'invert(55%) sepia(89%) saturate(2274%) hue-rotate(1deg) brightness(101%) contrast(105%)' } : undefined}
-          />
-          <span className="whitespace-nowrap">Help</span>
-        </button>
-
-        <a
-          href="https://discord.gg/WWaUQZMz9M"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="w-full px-3.5 py-2 flex items-center gap-3 rounded-[40px] transition font-poppins font-medium text-[13px] text-foreground hover:bg-muted"
-        >
-          <Image
-            src="/icons/discord-large.svg"
-            alt="Discord"
-            width={20}
-            height={20}
-            className="icon-adaptive w-5 h-5"
-          />
-          <span className="whitespace-nowrap">Join Discord</span>
-        </a>
-
-        {/* User Profile Card */}
-        {loading ? (
-          /* Loading skeleton for user profile */
-          <div className="w-full bg-background-elevated border border-muted rounded-xl px-3.5 py-2 flex items-center gap-3 mt-2 animate-pulse">
-            <div className="w-5 h-5 rounded-full bg-border-strong shrink-0 border border-border" />
-            <div className="flex-1 min-w-0 space-y-1.5">
-              <div className="h-3 bg-border-strong rounded w-20" />
-              <div className="h-2 bg-border-strong rounded w-12" />
-            </div>
-          </div>
-        ) : (
           <button
             onClick={() => {
-              router.push('/profile')
+              router.push('/help')
               onNavigate?.()
             }}
-            className="w-full bg-background-elevated border border-muted rounded-xl px-3.5 py-2 flex items-center gap-3 hover:bg-muted transition mt-2"
+            className={`w-full px-3.5 py-2 flex items-center gap-3 rounded-[40px] transition font-poppins font-medium text-[13px] border-[0.5px] ${
+              pathname?.startsWith('/help')
+                ? 'bg-accent/20 border-accent/20 text-accent'
+                : 'text-foreground hover:bg-muted border-transparent'
+            }`}
           >
-            {user?.user_metadata?.avatar_url ? (
-              <Image
-                src={user.user_metadata.avatar_url.startsWith('http')
-                  ? user.user_metadata.avatar_url
-                  : `https://cdn.discordapp.com/avatars/${user.user_metadata.provider_id}/${user.user_metadata.avatar_url}.png`}
-                alt="Avatar"
-                width={20}
-                height={20}
-                className="w-5 h-5 rounded-full shrink-0 border border-border"
-                onError={(e) => {
-                  const target = e.target as HTMLImageElement
-                  target.src = 'https://cdn.discordapp.com/embed/avatars/0.png'
-                }}
-              />
-            ) : (
-              <div className="w-5 h-5 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 shrink-0 border border-border" />
-            )}
-            <div className="flex-1 text-left pb-[2px] pt-0 px-0 leading-[normal] min-w-0">
-              <p className="font-poppins font-medium text-[13px] text-foreground w-full truncate">
-                {user?.user_metadata?.custom_claims?.global_name || user?.user_metadata?.full_name || activeMember?.character_name || 'User'}
-              </p>
-              <p className="font-poppins font-normal text-[10px] text-muted-foreground w-full truncate">
-                {activeMember?.role || 'Member'}
-              </p>
-            </div>
             <Image
-              src="/icons/settings-user.svg"
-              alt="Settings"
+              src="/icons/help.svg"
+              alt="Help"
               width={20}
               height={20}
-              className="icon-adaptive w-5 h-5 shrink-0"
+              className={`w-5 h-5 ${pathname?.startsWith('/help') ? '' : 'icon-adaptive'}`}
+              style={pathname?.startsWith('/help') ? { filter: 'invert(55%) sepia(89%) saturate(2274%) hue-rotate(1deg) brightness(101%) contrast(105%)' } : undefined}
             />
+            <span className="whitespace-nowrap">Help</span>
           </button>
-        )}
-      </div>
+
+          <a
+            href="https://discord.gg/WWaUQZMz9M"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-full px-3.5 py-2 flex items-center gap-3 rounded-[40px] transition font-poppins font-medium text-[13px] text-foreground hover:bg-muted"
+          >
+            <Image
+              src="/icons/discord-large.svg"
+              alt="Discord"
+              width={20}
+              height={20}
+              className="icon-adaptive w-5 h-5"
+            />
+            <span className="whitespace-nowrap">Join Discord</span>
+          </a>
+
+          {/* User Profile Card */}
+          {loading ? (
+            /* Loading skeleton for user profile */
+            <div className="w-full bg-background-elevated border border-muted rounded-xl px-3.5 py-2 flex items-center gap-3 mt-2 animate-pulse">
+              <div className="w-5 h-5 rounded-full bg-border-strong shrink-0 border border-border" />
+              <div className="flex-1 min-w-0 space-y-1.5">
+                <div className="h-3 bg-border-strong rounded w-20" />
+                <div className="h-2 bg-border-strong rounded w-12" />
+              </div>
+            </div>
+          ) : (
+            <button
+              onClick={() => {
+                router.push('/profile')
+                onNavigate?.()
+              }}
+              className="w-full bg-background-elevated border border-muted rounded-xl px-3.5 py-2 flex items-center gap-3 hover:bg-muted transition mt-2"
+            >
+              {user?.user_metadata?.avatar_url ? (
+                <Image
+                  src={user.user_metadata.avatar_url.startsWith('http')
+                    ? user.user_metadata.avatar_url
+                    : `https://cdn.discordapp.com/avatars/${user.user_metadata.provider_id}/${user.user_metadata.avatar_url}.png`}
+                  alt="Avatar"
+                  width={20}
+                  height={20}
+                  className="w-5 h-5 rounded-full shrink-0 border border-border"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement
+                    target.src = 'https://cdn.discordapp.com/embed/avatars/0.png'
+                  }}
+                />
+              ) : (
+                <div className="w-5 h-5 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 shrink-0 border border-border" />
+              )}
+              <div className="flex-1 text-left pb-[2px] pt-0 px-0 leading-[normal] min-w-0">
+                <p className="font-poppins font-medium text-[13px] text-foreground w-full truncate">
+                  {user?.user_metadata?.custom_claims?.global_name || user?.user_metadata?.full_name || activeMember?.character_name || 'User'}
+                </p>
+                <p className="font-poppins font-normal text-[10px] text-muted-foreground w-full truncate">
+                  {activeMember?.role || 'Member'}
+                </p>
+              </div>
+              <Image
+                src="/icons/settings-user.svg"
+                alt="Settings"
+                width={20}
+                height={20}
+                className="icon-adaptive w-5 h-5 shrink-0"
+              />
+            </button>
+          )}
+        </div>
+      )}
     </aside>
 
     {/* Create Guild Modal */}
