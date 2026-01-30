@@ -89,6 +89,11 @@ export default function LandingHero() {
                 See Features
               </button>
             </motion.div>
+
+            {/* Privacy note */}
+            <motion.p variants={heroFadeIn} className="mt-4 text-xs text-foreground-muted">
+              Sign in with Discord — we only use it for identity, email is optional.
+            </motion.p>
           </div>
         </div>
       </motion.div>
