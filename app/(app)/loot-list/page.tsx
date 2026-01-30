@@ -454,8 +454,9 @@ export default function LootList() {
             </div>
             <div className="flex items-center gap-3">
               {/* How to Rank Button */}
-              <Button variant="secondary" onClick={() => setShowInstructionsModal(true)} title="How to Rank">
+              <Button variant="secondary" onClick={() => setShowInstructionsModal(true)}>
                 <HugeiconsIcon icon={InformationCircleIcon} size={18} />
+                How to Rank
               </Button>
             </div>
           </div>
