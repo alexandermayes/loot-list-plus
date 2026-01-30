@@ -73,13 +73,13 @@
 
     /* Status Colors */
     --success: 142 71% 45%;
-    --success-foreground: 0 0% 100%;
+    --success-foreground: 142 71% 10%;
     --warning: 45 93% 47%;
     --warning-foreground: 220 20% 4%;
     --error: 0 72% 51%;
-    --error-foreground: 0 0% 100%;
+    --error-foreground: 0 72% 15%;
     --info: 217 91% 60%;
-    --info-foreground: 0 0% 100%;
+    --info-foreground: 217 91% 15%;
 
     /* Discord */
     --discord: 235 86% 65%;
@@ -147,13 +147,13 @@
 
     /* Status Colors */
     --success: 142 71% 45%;
-    --success-foreground: 0 0% 100%;
+    --success-foreground: 142 71% 10%;
     --warning: 45 93% 47%;
     --warning-foreground: 220 20% 4%;
     --error: 0 84% 60%;
-    --error-foreground: 0 0% 100%;
+    --error-foreground: 0 72% 15%;
     --info: 217 91% 60%;
-    --info-foreground: 0 0% 100%;
+    --info-foreground: 217 91% 15%;
 
     /* Discord */
     --discord: 235 86% 65%;

@@ -217,6 +217,13 @@ module.exports = {
         "gradient-x": "gradient-x 3s ease infinite",
       },
 
+      // Accent color for form controls (checkboxes, radios, range inputs)
+      accentColor: {
+        success: "hsl(var(--success))",
+        accent: "hsl(var(--accent))",
+        destructive: "hsl(var(--destructive))",
+      },
+
       // Box shadows
       boxShadow: {
         'glow-accent': '0 0 20px rgba(255, 128, 0, 0.3)',

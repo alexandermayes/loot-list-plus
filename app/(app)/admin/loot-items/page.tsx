@@ -397,7 +397,7 @@ export default function AdminLootItems() {
 
   return (
     <ExpansionGuard>
-      <div className="p-8 space-y-6 font-poppins">
+      <div className="p-4 sm:p-6 lg:p-8 space-y-6 font-poppins">
         {/* Header */}
         <div>
           <Heading level={1}>Loot Items</Heading>
@@ -406,7 +406,7 @@ export default function AdminLootItems() {
 
         {/* Filters */}
         <div className="bg-background-elevated border border-border rounded-xl p-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-[13px] font-medium text-foreground mb-2">Search Items</label>
               <input
@@ -434,7 +434,7 @@ export default function AdminLootItems() {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
           <div className="bg-background-elevated border border-border rounded-xl p-4">
             <p className="text-muted-foreground text-sm">Total Items</p>
             <p className="text-2xl font-bold text-foreground">{filteredItems.length}</p>
@@ -460,9 +460,9 @@ export default function AdminLootItems() {
         </div>
 
         {/* Items Table */}
-        <div className="bg-background-elevated border border-border rounded-xl overflow-visible">
-          <div className="overflow-x-auto rounded-xl">
-            <table className="w-full">
+        <div className="bg-background-elevated border border-border rounded-xl overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[900px]">
               <thead>
                 <tr className="bg-muted border-b border-border">
                   <th className="px-4 py-3 text-left text-sm font-semibold text-muted-foreground">Available</th>
@@ -479,20 +479,12 @@ export default function AdminLootItems() {
                 {filteredItems.map((item) => (
                   <tr key={item.id} className="hover:bg-muted">
                     <td className="px-4 py-3">
-                      <button
-                        onClick={() => toggleAvailability(item.id, item.is_available)}
-                        className={`w-6 h-6 rounded ${
-                          item.is_available
-                            ? 'bg-success hover:bg-success/90'
-                            : 'bg-muted hover:bg-border-strong'
-                        } flex items-center justify-center`}
-                      >
-                        {item.is_available && (
-                          <svg className="w-4 h-4 text-success-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                          </svg>
-                        )}
-                      </button>
+                      <input
+                        type="checkbox"
+                        checked={item.is_available}
+                        onChange={() => toggleAvailability(item.id, item.is_available)}
+                        className="w-4 h-4 rounded border-border-strong bg-background-elevated accent-success cursor-pointer focus:ring-2 focus:ring-success/30 focus:ring-offset-0"
+                      />
                     </td>
                     <td className="px-4 py-3 text-foreground">
                       <ItemLink name={item.name} wowheadId={item.wowhead_id} />
@@ -504,7 +496,7 @@ export default function AdminLootItems() {
                       <select
                         value={item.classification}
                         onChange={(e) => updateClassification(item.id, e.target.value)}
-                        className="px-3 py-1 bg-background-elevated border border-border rounded text-foreground text-sm focus:outline-none focus:border-accent cursor-pointer select-custom-sm"
+                        className="px-3 py-1.5 bg-background-elevated border border-border-strong rounded-md text-foreground text-[13px] focus:outline-none focus:border-accent cursor-pointer select-custom-sm"
                       >
                         <option value="Reserved" className="bg-background-elevated text-foreground">Reserved</option>
                         <option value="Limited" className="bg-background-elevated text-foreground">Limited</option>
@@ -520,7 +512,7 @@ export default function AdminLootItems() {
                               addSpec(item.id, e.target.value, 'primary')
                             }
                           }}
-                          className="w-full px-2 py-1 bg-background-elevated border border-border rounded text-foreground text-xs focus:outline-none focus:border-accent cursor-pointer select-custom-xs"
+                          className="w-full px-2.5 py-1 bg-background-elevated border border-border-strong rounded-md text-foreground text-[11px] focus:outline-none focus:border-accent cursor-pointer select-custom-xs"
                         >
                           <option value="">+ Add Primary Spec...</option>
                           {getClassSpecOptions().map(opt => {
@@ -568,7 +560,7 @@ export default function AdminLootItems() {
                               addSpec(item.id, e.target.value, 'secondary')
                             }
                           }}
-                          className="w-full px-2 py-1 bg-background-elevated border border-border rounded text-foreground text-xs focus:outline-none focus:border-accent cursor-pointer select-custom-xs"
+                          className="w-full px-2.5 py-1 bg-background-elevated border border-border-strong rounded-md text-foreground text-[11px] focus:outline-none focus:border-accent cursor-pointer select-custom-xs"
                         >
                           <option value="">+ Add Secondary Spec...</option>
                           {getClassSpecOptions().map(opt => {

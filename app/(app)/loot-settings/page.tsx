@@ -115,6 +115,8 @@ export default function AdminLootItems() {
   const [showSettingsModal, setShowSettingsModal] = useState(false)
   const [savingSettings, setSavingSettings] = useState(false)
   const [advancedExpanded, setAdvancedExpanded] = useState(false)
+  const [initialSettings, setInitialSettings] = useState<typeof settings | null>(null)
+  const [initialGuildRoles, setInitialGuildRoles] = useState<typeof guildRoles | null>(null)
 
   // Guild Settings State
   const getDefaultResetDate = () => {
@@ -189,15 +191,24 @@ export default function AdminLootItems() {
   const { activeGuild, activeMember, loading: guildLoading, isOfficer } = useGuildContext()
   const { showNotification } = useNotification()
 
+  // Check if settings have unsaved changes
+  const hasSettingsChanges = initialSettings !== null && (
+    JSON.stringify(settings) !== JSON.stringify(initialSettings) ||
+    JSON.stringify(guildRoles) !== JSON.stringify(initialGuildRoles)
+  )
+
   // Set page title
   useEffect(() => {
     document.title = 'LootList+ • Master Loot'
   }, [])
 
-  // Lock body scroll when settings modal is open
+  // Lock body scroll when settings modal is open and capture initial values
   useEffect(() => {
     if (showSettingsModal) {
       document.body.style.overflow = 'hidden'
+      // Capture initial settings when modal opens for change detection
+      setInitialSettings(JSON.parse(JSON.stringify(settings)))
+      setInitialGuildRoles(JSON.parse(JSON.stringify(guildRoles)))
     } else {
       document.body.style.overflow = ''
     }
@@ -1269,7 +1280,7 @@ export default function AdminLootItems() {
 
   return (
     <ExpansionGuard>
-      <div className="p-8 space-y-6 font-poppins">
+      <div className="p-4 sm:p-6 lg:p-8 space-y-6 font-poppins">
         {/* Header with Settings Button */}
         <div className="flex items-center justify-between">
           <div>
@@ -1426,20 +1437,12 @@ export default function AdminLootItems() {
                 {paginatedItems.map((item) => (
                   <tr key={item.id} className="hover:bg-muted/50">
                     <td className="px-4 py-2.5">
-                      <button
-                        onClick={() => toggleAvailability(item.id, item.is_available)}
-                        className={`w-4 h-4 rounded ${
-                          item.is_available
-                            ? 'bg-success hover:bg-success/90'
-                            : 'bg-muted hover:bg-border-strong'
-                        } flex items-center justify-center`}
-                      >
-                        {item.is_available && (
-                          <svg className="w-2.5 h-2.5 text-success-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                          </svg>
-                        )}
-                      </button>
+                      <input
+                        type="checkbox"
+                        checked={item.is_available}
+                        onChange={() => toggleAvailability(item.id, item.is_available)}
+                        className="w-4 h-4 rounded border-border-strong bg-background-elevated accent-success cursor-pointer focus:ring-2 focus:ring-success/30 focus:ring-offset-0"
+                      />
                     </td>
                     <td className="px-4 py-2.5 text-[13px] text-foreground">
                       <div className="truncate overflow-hidden">
@@ -2168,7 +2171,7 @@ export default function AdminLootItems() {
           <Button variant="secondary" onClick={() => setShowSettingsModal(false)} disabled={savingSettings}>
             Cancel
           </Button>
-          <Button onClick={saveSettings} loading={savingSettings}>
+          <Button onClick={saveSettings} loading={savingSettings} disabled={!hasSettingsChanges}>
             Save Settings
           </Button>
         </ModalFooter>

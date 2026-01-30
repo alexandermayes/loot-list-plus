@@ -28,6 +28,8 @@ interface SearchableItemSelectProps {
   disabled?: Set<string>
   currentValue?: string
   isSlotDisabled?: boolean
+  /** Shows error styling on the dropdown */
+  hasError?: boolean
 }
 
 export default function SearchableItemSelect({
@@ -37,7 +39,8 @@ export default function SearchableItemSelect({
   placeholder = 'Select item',
   disabled = new Set(),
   currentValue,
-  isSlotDisabled = false
+  isSlotDisabled = false,
+  hasError = false
 }: SearchableItemSelectProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [search, setSearch] = useState('')
@@ -184,10 +187,12 @@ export default function SearchableItemSelect({
             isOpen ? setIsOpen(false) : handleOpen()
           }
         }}
-        className={`w-full px-3 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-left focus:outline-none flex items-center justify-between gap-2 ${
+        className={`w-full px-3 py-2 bg-background-elevated border rounded-[52px] text-left focus:outline-none flex items-center justify-between gap-2 ${
           isSlotDisabled
-            ? 'opacity-50 cursor-not-allowed text-muted-foreground'
-            : 'text-foreground focus:border-accent cursor-pointer'
+            ? 'opacity-50 cursor-not-allowed text-muted-foreground border-border-strong'
+            : hasError
+              ? 'text-foreground cursor-pointer border-destructive border-2 focus:border-destructive'
+              : 'text-foreground focus:border-accent cursor-pointer border-border-strong'
         }`}
       >
         <span className="truncate flex items-center gap-2 min-w-0">
@@ -253,14 +258,14 @@ export default function SearchableItemSelect({
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search items..."
-              className="w-full px-3 py-2 bg-background-subtle border border-border rounded-md text-foreground text-sm focus:outline-none focus:border-accent"
+              className="w-full px-3 py-2 bg-background-subtle border border-border rounded-md text-foreground text-[13px] focus:outline-none focus:border-accent"
             />
           </div>
 
           {/* Items List */}
           <div className="max-h-80 overflow-y-auto">
             {filteredItems.length === 0 ? (
-              <div className="px-3 py-4 text-center text-muted-foreground text-sm">
+              <div className="px-3 py-4 text-center text-muted-foreground text-[13px]">
                 No items found
               </div>
             ) : (
