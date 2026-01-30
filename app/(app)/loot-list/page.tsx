@@ -154,6 +154,7 @@ const RankRow = memo(function RankRow({
 
 export default function LootList() {
   const {
+    activeCharacter,
     guildExpansions,
     viewingExpansionId,
     setViewingExpansion
@@ -435,7 +436,11 @@ export default function LootList() {
         <div className="p-4 sm:p-6 lg:p-8 pb-1.5">
           <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
             <div>
-              <Heading level={1}>Loot Lists</Heading>
+              <Heading level={1}>
+                Loot Lists{activeCharacter && (
+                  <> for <span style={{ color: activeCharacter.class?.color_hex }}>{activeCharacter.name}</span></>
+                )}
+              </Heading>
               <p className="text-muted-foreground mt-1 text-base">
                 {isLoading ? 'Loading raid tiers...' : `Rank your preferred items for ${raidTiers.find(t => t.id === selectedTierId)?.name || 'this raid tier'}`}
                 {viewingExpansionId && (
