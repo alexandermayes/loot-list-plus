@@ -27,7 +27,6 @@ import {
   ComputerIcon,
   PaintBoardIcon,
   Notification01Icon,
-  Mail01Icon,
   LinkSquare02Icon,
   Delete02Icon,
   Calendar01Icon,
@@ -293,30 +292,6 @@ export default function ProfilePage() {
       {/* Tab Content */}
       {activeTab === 'account' && (
         <div className="space-y-6">
-          {/* Email Settings - Coming Soon */}
-          <div className="bg-background-elevated border border-border rounded-xl overflow-hidden opacity-60">
-            <div className="px-6 py-4 border-b border-border">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-[18px] font-semibold text-foreground">Email Settings</h2>
-                  <p className="text-muted-foreground text-[13px] mt-1">Manage your email address for notifications</p>
-                </div>
-                <span className="px-3 py-1 bg-muted border border-border rounded-full text-muted-foreground text-[12px]">
-                  Coming Soon
-                </span>
-              </div>
-            </div>
-            <div className="p-6">
-              <div className="flex flex-col items-center justify-center py-8 text-center">
-                <div className="mb-4 rounded-full bg-muted p-3">
-                  <HugeiconsIcon icon={Mail01Icon} size={24} className="text-muted-foreground" />
-                </div>
-                <h3 className="text-lg font-semibold text-foreground mb-1">Email settings coming soon</h3>
-                <p className="text-sm text-muted-foreground max-w-sm">You'll be able to add and verify an email address for receiving notifications.</p>
-              </div>
-            </div>
-          </div>
-
           {/* Notifications - Coming Soon */}
           <div className="bg-background-elevated border border-border rounded-xl overflow-hidden opacity-60">
             <div className="px-6 py-4 border-b border-border">

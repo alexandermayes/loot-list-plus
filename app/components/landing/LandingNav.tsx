@@ -23,7 +23,7 @@ export default function LandingNav() {
       provider: 'discord',
       options: {
         redirectTo: `${window.location.origin}/auth/callback`,
-        scopes: 'identify email guilds guilds.members.read'
+        scopes: 'identify guilds'
       }
     })
   }
@@ -89,8 +89,8 @@ export default function LandingNav() {
               height={18}
               className="w-4 h-4 md:w-[18px] md:h-[18px] brightness-0"
             />
-            <span className="hidden sm:inline">Get Started</span>
-            <span className="sm:hidden">Start</span>
+            <span className="hidden sm:inline">Login</span>
+            <span className="sm:hidden">Login</span>
           </button>
         </nav>
       </div>

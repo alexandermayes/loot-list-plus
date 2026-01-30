@@ -23,7 +23,7 @@ export default function LandingCTA({ onLogin }: LandingCTAProps) {
         provider: 'discord',
         options: {
           redirectTo: `${window.location.origin}/auth/callback`,
-          scopes: 'identify email guilds guilds.members.read'
+          scopes: 'identify guilds'
         }
       })
     }

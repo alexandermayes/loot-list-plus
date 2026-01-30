@@ -3,10 +3,23 @@
 import { motion } from 'framer-motion'
 import Image from 'next/image'
 import { heroFadeIn, staggerContainer, scrollToSection } from '@/lib/animations'
+import { createClient } from '@/utils/supabase/client'
 import { ArrowDown01Icon } from '@hugeicons/core-free-icons'
 import { HugeiconsIcon } from '@hugeicons/react'
 
 export default function LandingHero() {
+  const supabase = createClient()
+
+  const handleDiscordLogin = async () => {
+    await supabase.auth.signInWithOAuth({
+      provider: 'discord',
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`,
+        scopes: 'identify guilds'
+      }
+    })
+  }
+
   return (
     <section id="hero" className="relative min-h-screen w-full overflow-hidden">
       {/* Background Image */}
@@ -64,10 +77,10 @@ export default function LandingHero() {
             {/* CTA Buttons */}
             <motion.div variants={heroFadeIn} className="flex flex-col sm:flex-row gap-4 justify-center">
               <button
-                onClick={() => scrollToSection('cta')}
+                onClick={handleDiscordLogin}
                 className="px-8 py-4 bg-primary hover:bg-primary/90 text-primary-foreground font-poppins font-semibold text-base rounded-[52px] transition-all duration-200 active:scale-[0.98] shadow-lg hover:shadow-xl"
               >
-                Get Started Free
+                Try for free
               </button>
               <button
                 onClick={() => scrollToSection('features')}

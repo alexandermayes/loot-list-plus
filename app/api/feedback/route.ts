@@ -50,7 +50,6 @@ export async function POST(request: Request) {
       if (user) {
         const displayName = user.user_metadata?.full_name ||
                            user.user_metadata?.name ||
-                           user.email?.split('@')[0] ||
                            'Unknown User'
         userInfo = `${displayName} (${user.id.slice(0, 8)}...)`
       }

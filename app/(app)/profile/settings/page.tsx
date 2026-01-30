@@ -15,7 +15,6 @@ import { EyeIcon, ViewOffIcon, Notification01Icon, Shield01Icon, FloppyDiskIcon,
 import { useNotification } from '@/app/contexts/NotificationContext'
 
 interface UserPreferences {
-  show_email: boolean
   show_discord_username: boolean
   show_attendance_stats: boolean
   show_loot_history: boolean
@@ -41,7 +40,6 @@ export default function SettingsPage() {
 
   // Check if form has unsaved changes
   const hasChanges = preferences && initialPreferences && (
-    preferences.show_email !== initialPreferences.show_email ||
     preferences.show_discord_username !== initialPreferences.show_discord_username ||
     preferences.show_attendance_stats !== initialPreferences.show_attendance_stats ||
     preferences.show_loot_history !== initialPreferences.show_loot_history ||
@@ -75,7 +73,6 @@ export default function SettingsPage() {
     } else if (error?.code === 'PGRST116') {
       // No preferences yet, create default
       const defaultPrefs: Partial<UserPreferences> = {
-        show_email: false,
         show_discord_username: true,
         show_attendance_stats: true,
         show_loot_history: true,
@@ -177,20 +174,6 @@ export default function SettingsPage() {
             <CardDescription>Control what information is visible to other members</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <Label>Show email address</Label>
-                <p className="text-sm text-muted-foreground">Display your email on your profile</p>
-              </div>
-              <Button
-                variant={preferences?.show_email ? "default" : "outline"}
-                size="sm"
-                onClick={() => updatePreference('show_email', !preferences?.show_email)}
-              >
-                {preferences?.show_email ? <HugeiconsIcon icon={EyeIcon} size={16} /> : <HugeiconsIcon icon={ViewOffIcon} size={16} />}
-              </Button>
-            </div>
-
             <div className="flex items-center justify-between">
               <div>
                 <Label>Show Discord username</Label>

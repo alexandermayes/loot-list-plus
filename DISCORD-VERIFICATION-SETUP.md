@@ -45,7 +45,7 @@ Replace:
 ## Step 3: How Verification Works
 
 ### User Flow:
-1. User logs in with Discord OAuth (grants `guilds` and `guilds.members.read` permissions)
+1. User logs in with Discord OAuth (grants `identify`, `email`, and `guilds` permissions)
 2. User goes to Profile Settings (`/profile/settings`)
 3. User clicks "Verify Discord Server Membership" button
 4. System checks if user is a member of the guild's Discord server
@@ -61,13 +61,11 @@ Replace:
 
 ## Step 4: OAuth Scopes
 
-The following Discord OAuth scopes are required (already configured in `app/page.tsx`):
-- `identify` - Basic Discord user info
-- `email` - User's email address
-- `guilds` - List of Discord servers the user is in
-- `guilds.members.read` - Read guild membership info
+The following Discord OAuth scopes are configured (in the landing page components):
+- `identify` - Basic Discord user info (username, avatar, banner)
+- `guilds` - List of Discord servers the user is in (for "Join via Discord" feature)
 
-**Important:** Users need to re-authenticate (sign out and sign back in) for the new scopes to take effect if they signed up before these scopes were added.
+**Note:** Users who signed up before the `guilds` scope was added may need to re-authenticate (sign out and sign back in) for the new scope to take effect.
 
 ## Verification Badge Display
 

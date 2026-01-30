@@ -72,16 +72,20 @@ You can request additional Discord OAuth scopes:
 
 ## Current Implementation
 
-In your `app/page.tsx`:
+In the landing page components (`LandingHero.tsx`, `LandingNav.tsx`, `LandingCTA.tsx`):
 ```typescript
 await supabase.auth.signInWithOAuth({
   provider: 'discord',
   options: {
     redirectTo: `${window.location.origin}/auth/callback`,
-    scopes: 'identify email' // Add more scopes if needed
+    scopes: 'identify guilds'
   }
 })
 ```
+
+**Scopes used:**
+- `identify` - Basic user info (username, ID, avatar, banner)
+- `guilds` - List of user's Discord servers (for "Join via Discord" auto-matching)
 
 ## Recommended Profile Fields
 
