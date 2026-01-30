@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import { createClient } from '@/utils/supabase/client'
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
@@ -1027,7 +1028,7 @@ export default function MasterSheet() {
                   loadingText="Exporting..."
                   className="bg-violet-600 hover:bg-violet-500 text-white border-0 shadow-lg shadow-violet-900/30"
                 >
-                  <img src="/icons/gargul.png" alt="Gargul" className="w-5 h-5" />
+                  <Image src="/icons/gargul.png" alt="Gargul" width={20} height={20} priority />
                   <span className="hidden sm:inline">Export to Gargul</span>
                   <span className="sm:hidden">Export</span>
                   <HugeiconsIcon icon={ArrowUpRight01Icon} size={16} />
@@ -1043,12 +1044,37 @@ export default function MasterSheet() {
             <TierTabsSkeleton />
           </div>
         ) : raidTiers.length > 0 && (
-          <div className="sticky top-0 z-20 px-4 sm:px-6 lg:px-8 py-1.5 bg-background">
+          <div className="sticky top-14 sm:top-0 z-20 px-4 sm:px-6 lg:px-8 py-1.5 bg-background">
             <div className="flex items-center gap-3">
+              {/* Mobile: Dropdown selector */}
+              <div className="sm:hidden flex-1">
+                <select
+                  value={selectedTierId || ''}
+                  onChange={(e) => setSelectedTierId(e.target.value)}
+                  className="w-full px-4 py-2.5 bg-background-elevated border border-border rounded-xl text-[13px] font-medium text-foreground appearance-none cursor-pointer"
+                  style={{
+                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%239ca3af'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
+                    backgroundRepeat: 'no-repeat',
+                    backgroundPosition: 'right 12px center',
+                    backgroundSize: '16px',
+                    paddingRight: '40px'
+                  }}
+                >
+                  {raidTiers.map((tier: any) => {
+                    const isDisabled = tier.is_guild_active === false
+                    return (
+                      <option key={tier.id} value={tier.id}>
+                        {tier.name}{tier.is_active ? ' ★' : ''}{isDisabled ? ' (Off)' : ''}
+                      </option>
+                    )
+                  })}
+                </select>
+              </div>
+              {/* Desktop: Horizontal tabs */}
               <div
                 ref={tierScrollRef}
                 onScroll={handleTierScroll}
-                className="flex-1 min-w-0 overflow-x-auto scrollbar-hide"
+                className="hidden sm:block flex-1 min-w-0 overflow-x-auto scrollbar-hide"
                 style={{
                   maskImage: `linear-gradient(to right, ${tierScrollState.left ? 'transparent' : 'black'}, black ${tierScrollState.left ? '24px' : '0px'}, black calc(100% - ${tierScrollState.right ? '24px' : '0px'}), ${tierScrollState.right ? 'transparent' : 'black'})`,
                   WebkitMaskImage: `linear-gradient(to right, ${tierScrollState.left ? 'transparent' : 'black'}, black ${tierScrollState.left ? '24px' : '0px'}, black calc(100% - ${tierScrollState.right ? '24px' : '0px'}), ${tierScrollState.right ? 'transparent' : 'black'})`
@@ -1084,28 +1110,49 @@ export default function MasterSheet() {
               </div>
               {/* Officer View Toggle */}
               {isOfficer && (
-                <div className="flex-shrink-0 flex bg-background-elevated border border-border rounded-[40px] p-0.5">
-                  <button
-                    onClick={() => setViewMode('rankings')}
-                    className={`px-5 py-2 rounded-[40px] text-[13px] font-medium transition-all ${
-                      viewMode === 'rankings'
-                        ? 'bg-accent/20 text-accent'
-                        : 'text-muted-foreground hover:text-foreground'
-                    }`}
-                  >
-                    Rankings
-                  </button>
-                  <button
-                    onClick={() => setViewMode('aggregate')}
-                    className={`px-5 py-2 rounded-[40px] text-[13px] font-medium transition-all ${
-                      viewMode === 'aggregate'
-                        ? 'bg-accent/20 text-accent'
-                        : 'text-muted-foreground hover:text-foreground'
-                    }`}
-                  >
-                    Summary
-                  </button>
-                </div>
+                <>
+                  {/* Mobile: Dropdown */}
+                  <div className="sm:hidden">
+                    <select
+                      value={viewMode}
+                      onChange={(e) => setViewMode(e.target.value as 'rankings' | 'aggregate')}
+                      className="px-4 py-2.5 bg-background-elevated border border-border rounded-xl text-[13px] font-medium text-foreground appearance-none cursor-pointer"
+                      style={{
+                        backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%239ca3af'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
+                        backgroundRepeat: 'no-repeat',
+                        backgroundPosition: 'right 12px center',
+                        backgroundSize: '16px',
+                        paddingRight: '40px'
+                      }}
+                    >
+                      <option value="rankings">Rankings</option>
+                      <option value="aggregate">Summary</option>
+                    </select>
+                  </div>
+                  {/* Desktop: Toggle buttons */}
+                  <div className="hidden sm:flex flex-shrink-0 bg-background-elevated border border-border rounded-[40px] p-0.5">
+                    <button
+                      onClick={() => setViewMode('rankings')}
+                      className={`px-5 py-2 rounded-[40px] text-[13px] font-medium transition-all ${
+                        viewMode === 'rankings'
+                          ? 'bg-accent/20 text-accent'
+                          : 'text-muted-foreground hover:text-foreground'
+                      }`}
+                    >
+                      Rankings
+                    </button>
+                    <button
+                      onClick={() => setViewMode('aggregate')}
+                      className={`px-5 py-2 rounded-[40px] text-[13px] font-medium transition-all ${
+                        viewMode === 'aggregate'
+                          ? 'bg-accent/20 text-accent'
+                          : 'text-muted-foreground hover:text-foreground'
+                      }`}
+                    >
+                      Summary
+                    </button>
+                  </div>
+                </>
               )}
             </div>
           </div>
@@ -1113,8 +1160,44 @@ export default function MasterSheet() {
 
         {/* Boss Quick Navigation - Sticky below tier tabs (rankings view only) */}
         {!initialLoading && !contentLoading && bossNames.length > 0 && viewMode === 'rankings' && (
-          <div className="sticky top-[64px] z-10 px-4 sm:px-6 lg:px-8 py-1.5 bg-background">
-            <div className="flex flex-col sm:flex-row gap-3">
+          <div className="sticky top-[108px] sm:top-[64px] z-10 px-4 sm:px-6 lg:px-8 py-1.5 bg-background">
+            {/* Mobile: Dropdown + Expand/Collapse */}
+            <div className="sm:hidden flex gap-2">
+              <select
+                onChange={(e) => {
+                  if (e.target.value) scrollToBoss(e.target.value)
+                  e.target.value = '' // Reset to placeholder
+                }}
+                defaultValue=""
+                className="flex-1 px-4 py-2.5 bg-background-elevated border border-border rounded-xl text-[13px] font-medium text-foreground appearance-none cursor-pointer"
+                style={{
+                  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%239ca3af'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
+                  backgroundRepeat: 'no-repeat',
+                  backgroundPosition: 'right 12px center',
+                  backgroundSize: '16px',
+                  paddingRight: '40px'
+                }}
+              >
+                <option value="" disabled>Jump to boss...</option>
+                {bossNames.map((boss) => (
+                  <option key={boss} value={boss}>{boss}</option>
+                ))}
+              </select>
+              <button
+                onClick={expandAll}
+                className="px-3 py-2 bg-background-elevated hover:bg-muted border border-border rounded-xl text-sm font-medium text-muted-foreground hover:text-foreground whitespace-nowrap transition"
+              >
+                Expand
+              </button>
+              <button
+                onClick={collapseAll}
+                className="px-3 py-2 bg-background-elevated hover:bg-muted border border-border rounded-xl text-sm font-medium text-muted-foreground hover:text-foreground whitespace-nowrap transition"
+              >
+                Collapse
+              </button>
+            </div>
+            {/* Desktop: Horizontal chips + Expand/Collapse */}
+            <div className="hidden sm:flex gap-3">
               {/* Boss chips container with horizontal scroll fade */}
               <div className="flex-1 min-w-0 bg-background-elevated border border-border rounded-xl p-3 overflow-hidden">
                 <div
@@ -1139,7 +1222,7 @@ export default function MasterSheet() {
               </div>
               {/* Expand/Collapse container */}
               <div className="flex-shrink-0 bg-background-elevated border border-border rounded-xl p-3">
-                <div className="flex gap-2 h-full items-center justify-center sm:justify-start">
+                <div className="flex gap-2 h-full items-center justify-start">
                   <button
                     onClick={expandAll}
                     className="px-4 py-2 bg-background-inset hover:bg-muted border border-border rounded-[40px] text-sm font-medium text-muted-foreground hover:text-foreground whitespace-nowrap transition"
