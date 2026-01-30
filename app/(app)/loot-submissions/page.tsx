@@ -700,8 +700,8 @@ export default function MasterLootPage() {
           <ModalFooter>
             <Button
               variant="destructive"
-              onClick={() => {
-                handleReview(viewingSubmission, 'rejected')
+              onClick={async () => {
+                await handleReview(viewingSubmission, 'rejected')
                 setViewingSubmission(null)
               }}
               disabled={reviewing === viewingSubmission}
@@ -710,8 +710,8 @@ export default function MasterLootPage() {
             </Button>
             <Button
               variant="success"
-              onClick={() => {
-                handleReview(viewingSubmission, 'approved')
+              onClick={async () => {
+                await handleReview(viewingSubmission, 'approved')
                 setViewingSubmission(null)
               }}
               disabled={reviewing === viewingSubmission}
