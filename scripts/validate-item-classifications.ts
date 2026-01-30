@@ -177,7 +177,7 @@ async function validateItems() {
     for (const [issueType, items] of Object.entries(byIssue)) {
       console.log(`\n📋 ${issueType} (${items.length} items):`)
       items.forEach(item => {
-        console.log(`   ${item.wowheadId}: ${item.name} (${item.slot})`)
+        console.log(`   ${item.wowheadId}: ${item.itemName} (${item.slot})`)
       })
     }
 
