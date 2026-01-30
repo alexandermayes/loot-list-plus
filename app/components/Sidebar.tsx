@@ -21,9 +21,13 @@ interface SidebarProps {
   user?: any
   currentView?: string
   onViewChange?: (view: string) => void
+  isMobileOverlay?: boolean
+  onNavigate?: () => void
 }
 
-export default function Sidebar({ user, currentView = 'overview', onViewChange }: SidebarProps) {
+const MOBILE_SIDEBAR_WIDTH = 280
+
+export default function Sidebar({ user, currentView = 'overview', onViewChange, isMobileOverlay = false, onNavigate }: SidebarProps) {
   const router = useRouter()
   const pathname = usePathname()
   const { activeGuild, userGuilds, switchGuild, hasMultipleGuilds, isOfficer, activeMember, loading } = useGuildContext()
@@ -246,6 +250,7 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange }
     if (!activeGuild) {
       if (view === 'overview') {
         router.push('/overview')
+        onNavigate?.()
       }
       return
     }
@@ -269,6 +274,9 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange }
       }
       router.push(routeMap[view] || '/overview')
     }
+
+    // Close mobile menu after navigation
+    onNavigate?.()
   }
 
   const navItems = [
@@ -324,23 +332,29 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange }
 
     <aside
       ref={sidebarRef}
-      className={`fixed left-0 top-0 h-screen bg-background-subtle flex flex-col px-0 pb-0 z-50 ${isResizing ? '' : 'transition-[width] duration-150'}`}
-      style={{ width: sidebarWidth }}
+      className={`fixed left-0 top-0 h-screen bg-background-subtle flex flex-col px-0 pb-0 ${
+        isMobileOverlay
+          ? 'z-50 animate-in slide-in-from-left duration-200'
+          : `z-50 ${isResizing ? '' : 'transition-[width] duration-150'}`
+      }`}
+      style={{ width: isMobileOverlay ? MOBILE_SIDEBAR_WIDTH : sidebarWidth }}
     >
-      {/* Resize Handle */}
-      <div
-        onMouseDown={handleMouseDown}
-        className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize z-30 group"
-      >
-        {/* Visible line */}
-        <div className={`absolute right-0 top-0 bottom-0 w-px transition-colors ${isResizing ? 'bg-primary' : 'bg-border group-hover:bg-foreground/30'}`} />
-        {/* Wider hit area */}
-        <div className="absolute right-[-2px] top-0 bottom-0 w-[5px]" />
-      </div>
+      {/* Resize Handle - hidden on mobile */}
+      {!isMobileOverlay && (
+        <div
+          onMouseDown={handleMouseDown}
+          className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize z-30 group"
+        >
+          {/* Visible line */}
+          <div className={`absolute right-0 top-0 bottom-0 w-px transition-colors ${isResizing ? 'bg-primary' : 'bg-border group-hover:bg-foreground/30'}`} />
+          {/* Wider hit area */}
+          <div className="absolute right-[-2px] top-0 bottom-0 w-[5px]" />
+        </div>
+      )}
       {/* Logo with scroll fade gradient - positioned to overlay scroll content */}
       <div
         className="absolute top-0 left-0 right-0 flex flex-col items-start justify-center px-[10px] py-[36px] z-10 pointer-events-none"
-        style={{ background: 'linear-gradient(to bottom, hsl(var(--background-subtle)) 69.886%, hsl(var(--background-subtle) / 0) 100%)', width: sidebarWidth }}
+        style={{ background: 'linear-gradient(to bottom, hsl(var(--background-subtle)) 69.886%, hsl(var(--background-subtle) / 0) 100%)', width: isMobileOverlay ? MOBILE_SIDEBAR_WIDTH : sidebarWidth }}
       >
         <div className="px-[12px] pointer-events-auto">
           <button
@@ -625,10 +639,13 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange }
       {/* Bottom Section - Fixed at bottom, overlays scrollable area */}
       <div
         className="absolute bottom-0 left-0 right-0 flex flex-col gap-0 z-10 bg-background-subtle border-t border-border p-[10px]"
-        style={{ width: sidebarWidth }}
+        style={{ width: isMobileOverlay ? MOBILE_SIDEBAR_WIDTH : sidebarWidth }}
       >
         <button
-          onClick={() => router.push('/help')}
+          onClick={() => {
+            router.push('/help')
+            onNavigate?.()
+          }}
           className={`w-full px-3.5 py-2 flex items-center gap-3 rounded-[40px] transition font-poppins font-medium text-[13px] ${
             pathname?.startsWith('/help')
               ? 'bg-accent/20 border-[0.5px] border-accent/20 text-accent'
@@ -674,7 +691,10 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange }
           </div>
         ) : (
           <button
-            onClick={() => router.push('/profile')}
+            onClick={() => {
+              router.push('/profile')
+              onNavigate?.()
+            }}
             className="w-full bg-background-elevated border border-muted rounded-xl px-3.5 py-2 flex items-center gap-3 hover:bg-muted transition mt-2"
           >
             {user?.user_metadata?.avatar_url ? (

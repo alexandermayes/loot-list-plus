@@ -38,9 +38,9 @@ export default function ManageCharactersPage() {
   }
 
   return (
-    <div className="p-8 space-y-6">
+    <div className="p-4 sm:p-6 lg:p-8 space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <Heading level={1}>My Characters</Heading>
           <p className="text-muted-foreground mt-1 text-base">
@@ -50,7 +50,7 @@ export default function ManageCharactersPage() {
 
         <button
           onClick={() => setShowCreateModal(true)}
-          className="px-6 py-3 bg-primary hover:bg-primary/90 rounded-[52px] text-primary-foreground font-medium text-[16px] transition flex items-center gap-2"
+          className="px-6 py-3 bg-primary hover:bg-primary/90 rounded-[52px] text-primary-foreground font-medium text-[16px] transition flex items-center justify-center gap-2 w-full sm:w-auto"
         >
           <HugeiconsIcon icon={Add01Icon} size={20} />
           Create Character
@@ -86,7 +86,7 @@ export default function ManageCharactersPage() {
               <h2 className="text-[18px] font-semibold text-foreground mb-4 px-2">
                 Main Characters
               </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 {userCharacters
                   .filter(c => c.is_main)
                   .map(character => (
@@ -108,7 +108,7 @@ export default function ManageCharactersPage() {
               <h2 className="text-[18px] font-semibold text-foreground mb-4 px-2">
                 Alt Characters
               </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 {userCharacters
                   .filter(c => !c.is_main)
                   .map(character => (

@@ -33,6 +33,21 @@ export default function EditCharacterPage() {
   const [specId, setSpecId] = useState('')
   const [isMain, setIsMain] = useState(false)
 
+  // Initial values for change detection
+  const [initialValues, setInitialValues] = useState({
+    name: '',
+    classId: '',
+    specId: '',
+    isMain: false
+  })
+
+  // Check if form has unsaved changes
+  const hasChanges =
+    name !== initialValues.name ||
+    classId !== initialValues.classId ||
+    specId !== initialValues.specId ||
+    isMain !== initialValues.isMain
+
   const [classes, setClasses] = useState<WowClass[]>([])
   const [classSpecs, setClassSpecs] = useState<ClassSpec[]>([])
   const [loading, setLoading] = useState(true)
@@ -100,6 +115,14 @@ export default function EditCharacterPage() {
     setClassId(char.class_id || '')
     setSpecId(char.spec_id || '')
     setIsMain(char.is_main)
+
+    // Store initial values for change detection
+    setInitialValues({
+      name: char.name,
+      classId: char.class_id || '',
+      specId: char.spec_id || '',
+      isMain: char.is_main
+    })
     setLoading(false)
   }
 
@@ -218,7 +241,7 @@ export default function EditCharacterPage() {
 
   if (!character) {
     return (
-      <div className="min-h-screen bg-background-subtle p-8">
+      <div className="min-h-screen bg-background-subtle p-4 sm:p-6 lg:p-8">
         <div className="max-w-2xl mx-auto">
           <div className="bg-background-elevated border border-border rounded-xl p-12 text-center">
             <h2 className="text-[24px] font-bold text-foreground mb-4">Character not found</h2>
@@ -235,7 +258,7 @@ export default function EditCharacterPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background-subtle p-8">
+    <div className="min-h-screen bg-background-subtle p-4 sm:p-6 lg:p-8">
       <div className="max-w-2xl mx-auto">
         {/* Header */}
         <div className="mb-8">
@@ -363,24 +386,22 @@ export default function EditCharacterPage() {
           </div>
 
           {/* Action Buttons */}
-          <div className="flex items-center justify-between mt-8">
-            <div className="flex items-center gap-4">
-              <button
-                type="submit"
-                disabled={saving}
-                className="px-8 py-3 bg-primary hover:bg-primary/90 rounded-[52px] text-primary-foreground font-medium text-[16px] transition disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {saving ? 'Saving...' : 'Save Changes'}
-              </button>
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4 mt-8">
+            <button
+              type="submit"
+              disabled={saving || !hasChanges}
+              className="px-8 py-3 bg-primary hover:bg-primary/90 rounded-[52px] text-primary-foreground font-medium text-[16px] transition disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {saving ? 'Saving...' : 'Save Changes'}
+            </button>
 
-              <button
-                type="button"
-                onClick={() => router.push('/characters/manage')}
-                className="px-8 py-3 bg-background-elevated hover:bg-muted border border-border rounded-[52px] text-foreground font-medium text-[16px] transition"
-              >
-                Cancel
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={() => router.push('/characters/manage')}
+              className="px-8 py-3 bg-background-elevated hover:bg-muted border border-border rounded-[52px] text-foreground font-medium text-[16px] transition"
+            >
+              Cancel
+            </button>
           </div>
         </form>
 
@@ -414,11 +435,11 @@ export default function EditCharacterPage() {
                   autoFocus
                 />
               </div>
-              <div className="flex items-center gap-4">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4">
                 <button
                   onClick={handleDelete}
                   disabled={deleting || deleteConfirmName.toLowerCase() !== character?.name.toLowerCase()}
-                  className="px-6 py-3 bg-destructive hover:bg-destructive/90 rounded-[52px] text-destructive-foreground font-medium text-[14px] transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                  className="px-6 py-3 bg-destructive hover:bg-destructive/90 rounded-[52px] text-destructive-foreground font-medium text-[14px] transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
                   <HugeiconsIcon icon={Delete01Icon} size={16} />
                   {deleting ? 'Deleting...' : 'Delete Forever'}

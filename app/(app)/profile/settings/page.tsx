@@ -31,12 +31,26 @@ interface UserPreferences {
 
 export default function SettingsPage() {
   const [preferences, setPreferences] = useState<UserPreferences | null>(null)
+  const [initialPreferences, setInitialPreferences] = useState<UserPreferences | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [verifying, setVerifying] = useState(false)
   const supabase = createClient()
   const { showNotification } = useNotification()
   const router = useRouter()
+
+  // Check if form has unsaved changes
+  const hasChanges = preferences && initialPreferences && (
+    preferences.show_email !== initialPreferences.show_email ||
+    preferences.show_discord_username !== initialPreferences.show_discord_username ||
+    preferences.show_attendance_stats !== initialPreferences.show_attendance_stats ||
+    preferences.show_loot_history !== initialPreferences.show_loot_history ||
+    preferences.notify_loot_deadline !== initialPreferences.notify_loot_deadline ||
+    preferences.notify_submission_status !== initialPreferences.notify_submission_status ||
+    preferences.notify_new_raids !== initialPreferences.notify_new_raids ||
+    preferences.preferred_display_name !== initialPreferences.preferred_display_name ||
+    preferences.bio !== initialPreferences.bio
+  )
 
   useEffect(() => {
     loadPreferences()
@@ -57,6 +71,7 @@ export default function SettingsPage() {
 
     if (data) {
       setPreferences(data)
+      setInitialPreferences(data)
     } else if (error?.code === 'PGRST116') {
       // No preferences yet, create default
       const defaultPrefs: Partial<UserPreferences> = {
@@ -71,6 +86,7 @@ export default function SettingsPage() {
         bio: null,
       }
       setPreferences(defaultPrefs as UserPreferences)
+      setInitialPreferences(defaultPrefs as UserPreferences)
     }
 
     setLoading(false)
@@ -96,6 +112,8 @@ export default function SettingsPage() {
       showNotification('error', 'Couldn\'t save preferences. Try again.')
     } else {
       showNotification('success', 'Preferences saved', 3000)
+      // Update initial values to reflect saved state
+      setInitialPreferences(preferences)
     }
 
     setSaving(false)
@@ -148,7 +166,7 @@ export default function SettingsPage() {
         backUrl="/profile"
       />
 
-      <main className="max-w-4xl mx-auto p-6 space-y-6">
+      <main className="max-w-4xl mx-auto p-4 sm:p-6 space-y-6">
         {/* Privacy Settings */}
         <Card>
           <CardHeader>
@@ -355,11 +373,13 @@ export default function SettingsPage() {
         </Card>
 
         {/* Save Button */}
-        <div className="flex justify-end">
+        <div className="flex justify-center sm:justify-end">
           <Button
             onClick={savePreferences}
             loading={saving}
+            disabled={!hasChanges}
             size="lg"
+            className="w-full sm:w-auto"
           >
             <HugeiconsIcon icon={FloppyDiskIcon} size={16} />
             Save Preferences

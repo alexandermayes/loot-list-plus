@@ -193,7 +193,7 @@ export default function PendingSubmissionsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background-subtle p-8">
+    <div className="min-h-screen bg-background-subtle p-4 sm:p-6 lg:p-8">
       <div className="max-w-6xl mx-auto">
         {/* Header - Always visible */}
         <div className="mb-8">
@@ -222,9 +222,9 @@ export default function PendingSubmissionsPage() {
             {submissions.map((submission) => (
               <div
                 key={submission.id}
-                className="p-6 bg-background-elevated border border-border rounded-xl"
+                className="p-4 sm:p-6 bg-background-elevated border border-border rounded-xl"
               >
-                <div className="flex items-start justify-between gap-4">
+                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
                   {/* Submission Info */}
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-3">
@@ -275,11 +275,12 @@ export default function PendingSubmissionsPage() {
                   </div>
 
                   {/* Action Buttons */}
-                  <div className="flex items-center gap-3">
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
                     <Button
                       variant="success"
                       onClick={() => handleApprove(submission.id)}
                       loading={processing === submission.id}
+                      className="justify-center"
                     >
                       <HugeiconsIcon icon={Tick01Icon} size={16} />
                       Approve
@@ -288,6 +289,7 @@ export default function PendingSubmissionsPage() {
                       variant="destructive"
                       onClick={() => handleReject(submission.id)}
                       disabled={processing === submission.id}
+                      className="justify-center"
                     >
                       <HugeiconsIcon icon={Cancel01Icon} size={16} />
                       Reject

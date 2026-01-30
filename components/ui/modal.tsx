@@ -28,7 +28,7 @@ const ModalBackdrop = React.forwardRef<
   <div
     ref={ref}
     className={cn(
-      "fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4",
+      "fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-4",
       className
     )}
     onClick={(e) => {
@@ -68,11 +68,15 @@ interface ModalContainerProps
 }
 
 const ModalContainer = React.forwardRef<HTMLDivElement, ModalContainerProps>(
-  ({ className, size, maxHeight = "85vh", onClick, ...props }, ref) => (
+  ({ className, size, maxHeight, onClick, ...props }, ref) => (
     <div
       ref={ref}
-      className={cn(modalContainerVariants({ size }), className)}
-      style={{ maxHeight }}
+      className={cn(
+        modalContainerVariants({ size }),
+        !maxHeight && "max-h-[95vh] sm:max-h-[85vh]",
+        className
+      )}
+      style={maxHeight ? { maxHeight } : undefined}
       onClick={(e) => {
         e.stopPropagation()
         onClick?.(e)
@@ -94,7 +98,7 @@ const ModalHeader = React.forwardRef<HTMLDivElement, ModalHeaderProps>(
     <div
       ref={ref}
       className={cn(
-        "p-6 border-b border-border flex items-start justify-between gap-4 flex-shrink-0",
+        "p-4 sm:p-6 border-b border-border flex items-start justify-between gap-4 flex-shrink-0",
         className
       )}
       {...props}
@@ -146,7 +150,7 @@ const ModalBody = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <div
     ref={ref}
-    className={cn("p-6 flex-1 overflow-y-auto", className)}
+    className={cn("p-4 sm:p-6 flex-1 overflow-y-auto", className)}
     {...props}
   />
 ))
@@ -160,7 +164,7 @@ const ModalFooter = React.forwardRef<
   <div
     ref={ref}
     className={cn(
-      "p-6 border-t border-border flex items-center justify-end gap-3 flex-shrink-0",
+      "p-4 sm:p-6 border-t border-border flex items-center justify-end gap-3 flex-shrink-0",
       className
     )}
     {...props}

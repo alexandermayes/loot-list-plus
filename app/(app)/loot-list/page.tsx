@@ -79,7 +79,7 @@ const RankRow = memo(function RankRow({
   const hasSlot2Error = slot2Errors.length > 0
   const hasRowError = isDuplicate1 || isDuplicate2 || hasSlot1Error || hasSlot2Error
 
-  // Get unique error messages for tooltips
+  // Get unique error messages for display below dropdown
   const slot1ErrorMessages = [...new Set(slot1Errors.map(e => e.message))]
   const slot2ErrorMessages = [...new Set(slot2Errors.map(e => e.message))]
 
@@ -88,29 +88,23 @@ const RankRow = memo(function RankRow({
       <td className={`px-3 py-2.5 font-semibold text-[13px] text-foreground bg-gradient-to-r ${getRankColor(rank)}`} rowSpan={1}>
         {rank}
       </td>
-      <td className={`px-3 py-2.5 ${hasSlot1Error ? 'relative' : ''}`}>
-        <SearchableItemSelect
-          items={lootItems}
-          value={selectedItemId1 || ''}
-          onChange={(value) => onItemSelect(rank, 1, value)}
-          disabled={selectedItems}
-          currentValue={selectedItemId1}
-          isSlotDisabled={isSlot1DisabledByReserved}
-        />
-        {hasSlot1Error && (
-          <div className="absolute -right-1 top-1/2 -translate-y-1/2 group">
-            <div className="w-5 h-5 rounded-full bg-destructive flex items-center justify-center text-destructive-foreground text-xs font-bold cursor-help">
-              !
-            </div>
-            <div className="absolute right-full mr-2 top-1/2 -translate-y-1/2 hidden group-hover:block z-50">
-              <div className="bg-destructive text-destructive-foreground text-xs px-2 py-1 rounded shadow-lg whitespace-nowrap">
-                {slot1ErrorMessages.map((msg, i) => (
-                  <div key={i}>{msg}</div>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
+      <td className="px-3 py-2.5">
+        <div className="space-y-1">
+          <SearchableItemSelect
+            items={lootItems}
+            value={selectedItemId1 || ''}
+            onChange={(value) => onItemSelect(rank, 1, value)}
+            disabled={selectedItems}
+            currentValue={selectedItemId1}
+            isSlotDisabled={isSlot1DisabledByReserved}
+            hasError={hasSlot1Error}
+          />
+          {hasSlot1Error && (
+            <p className="text-destructive text-[11px] pl-3">
+              {slot1ErrorMessages.join(' · ')}
+            </p>
+          )}
+        </div>
       </td>
       <td className="px-3 py-2.5">
         {selectedItem1 ? (
@@ -124,29 +118,23 @@ const RankRow = memo(function RankRow({
           <span className="text-muted-foreground text-[12px] italic">Reserved item in slot 2</span>
         ) : <span className="text-foreground-muted text-[12px]">-</span>}
       </td>
-      <td className={`px-3 py-2.5 ${hasSlot2Error ? 'relative' : ''}`}>
-        <SearchableItemSelect
-          items={lootItems}
-          value={selectedItemId2 || ''}
-          onChange={(value) => onItemSelect(rank, 2, value)}
-          disabled={selectedItems}
-          currentValue={selectedItemId2}
-          isSlotDisabled={isSlot2DisabledByReserved}
-        />
-        {hasSlot2Error && (
-          <div className="absolute -right-1 top-1/2 -translate-y-1/2 group">
-            <div className="w-5 h-5 rounded-full bg-destructive flex items-center justify-center text-destructive-foreground text-xs font-bold cursor-help">
-              !
-            </div>
-            <div className="absolute right-full mr-2 top-1/2 -translate-y-1/2 hidden group-hover:block z-50">
-              <div className="bg-destructive text-destructive-foreground text-xs px-2 py-1 rounded shadow-lg whitespace-nowrap">
-                {slot2ErrorMessages.map((msg, i) => (
-                  <div key={i}>{msg}</div>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
+      <td className="px-3 py-2.5">
+        <div className="space-y-1">
+          <SearchableItemSelect
+            items={lootItems}
+            value={selectedItemId2 || ''}
+            onChange={(value) => onItemSelect(rank, 2, value)}
+            disabled={selectedItems}
+            currentValue={selectedItemId2}
+            isSlotDisabled={isSlot2DisabledByReserved}
+            hasError={hasSlot2Error}
+          />
+          {hasSlot2Error && (
+            <p className="text-destructive text-[11px] pl-3">
+              {slot2ErrorMessages.join(' · ')}
+            </p>
+          )}
+        </div>
       </td>
       <td className="px-3 py-2.5">
         {selectedItem2 ? (
@@ -353,12 +341,12 @@ export default function LootList() {
                 bracket.itemErrors.push({
                   rank, slot: 1, itemId: item1Id,
                   errorType: 'reserved_companion',
-                  message: 'Reserved item must be alone'
+                  message: 'Remove one item from this rank'
                 })
                 bracket.itemErrors.push({
                   rank, slot: 2, itemId: item2Id,
                   errorType: 'reserved_companion',
-                  message: 'Reserved item must be alone'
+                  message: 'Remove one item from this rank'
                 })
               }
             }
@@ -374,7 +362,7 @@ export default function LootList() {
           bracket.itemErrors.push({
             ...item,
             errorType: 'allocation',
-            message: `Costs ${item.cost} point${item.cost > 1 ? 's' : ''} (${bracket.allocationPoints}/${bracket.maxPoints} total)`
+            message: `Remove a Limited or Reserved item`
           })
         })
       }
@@ -387,7 +375,7 @@ export default function LootList() {
             bracket.itemErrors.push({
               ...item,
               errorType: 'duplicate_type',
-              message: `Duplicate ${type}`
+              message: `Change one ${type} item`
             })
           })
         }
@@ -402,7 +390,7 @@ export default function LootList() {
               bracket.itemErrors.push({
                 ...item,
                 errorType: 'duplicate_slot',
-                message: `Multiple ${slot} items`
+                message: `Change one ${slot} item`
               })
             })
           }
@@ -444,8 +432,8 @@ export default function LootList() {
     <ExpansionGuard>
       <div className="font-poppins">
         {/* Header - Always visible */}
-        <div className="p-8 pb-1.5">
-          <div className="flex items-start justify-between gap-4">
+        <div className="p-4 sm:p-6 lg:p-8 pb-1.5">
+          <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
             <div>
               <Heading level={1}>Loot Lists</Heading>
               <p className="text-muted-foreground mt-1 text-base">
@@ -468,8 +456,8 @@ export default function LootList() {
 
         {/* Expansion Selector */}
         {guildExpansions.length > 1 && (
-          <div className="px-8 py-1.5 bg-background">
-            <div className="flex gap-2">
+          <div className="px-4 sm:px-6 lg:px-8 py-1.5 bg-background">
+            <div className="flex gap-2 overflow-x-auto">
               {guildExpansions.map((expansion) => {
                 const isViewing = viewingExpansionId === expansion.expansion_id
                 const isCurrent = expansion.is_current && !viewingExpansionId
@@ -497,11 +485,11 @@ export default function LootList() {
 
         {/* Raid Tier Tabs - Sticky */}
         {isLoading ? (
-          <div className="sticky top-0 z-20 px-8 py-1.5 bg-background">
+          <div className="sticky top-0 z-20 px-4 sm:px-6 lg:px-8 py-1.5 bg-background">
             <TierTabsSkeleton />
           </div>
         ) : raidTiers.length > 0 && (
-          <div className="sticky top-0 z-20 px-8 py-1.5 bg-background">
+          <div className="sticky top-0 z-20 px-4 sm:px-6 lg:px-8 py-1.5 bg-background">
             <div className="flex items-center gap-3 overflow-x-auto">
               <div className="flex gap-2">
                 {raidTiers.map((tier) => {
@@ -551,7 +539,7 @@ export default function LootList() {
         )}
 
         {/* Main Content */}
-        <div className="px-8 pt-1.5 pb-6 space-y-6">
+        <div className="px-4 sm:px-6 lg:px-8 pt-1.5 pb-6 space-y-6">
         {/* Content Loading State */}
         {(isLoading || isContentLoading) ? (
           <LootListContentSkeleton />
@@ -559,8 +547,8 @@ export default function LootList() {
         <>
         {/* Status Banner */}
         {selectedTierId && (
-          <div className={`rounded-xl p-6 border ${submission ? getStatusColor(submission.status) : getStatusColor('draft')}`}>
-            <div className="flex items-center justify-between">
+          <div className={`rounded-xl p-4 sm:p-6 border ${submission ? getStatusColor(submission.status) : getStatusColor('draft')}`}>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div className="flex items-center gap-3">
                 <img
                   src={getRaidIcon(raidTiers.find(t => t.id === selectedTierId)?.name || '')}
@@ -580,12 +568,13 @@ export default function LootList() {
                   </p>
                 </div>
               </div>
-              <div className="flex items-center gap-4">
+              <div className="flex flex-wrap items-center gap-2 sm:gap-4">
                 <span className="text-sm opacity-75">{rankedCount} items ranked</span>
                 {/* Clear List Button */}
                 {rankedCount > 0 && (
-                  <Button variant="destructive" onClick={handleClearList}>
-                    Clear List
+                  <Button variant="destructive" onClick={handleClearList} size="sm" className="sm:size-default">
+                    <span className="hidden sm:inline">Clear List</span>
+                    <span className="sm:hidden">Clear</span>
                   </Button>
                 )}
                 {/* Submit for Review Button */}

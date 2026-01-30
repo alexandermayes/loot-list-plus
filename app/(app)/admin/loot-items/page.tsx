@@ -404,6 +404,32 @@ export default function AdminLootItems() {
           <p className="text-muted-foreground mt-1 text-base">Manage loot items for your guild</p>
         </div>
 
+        {/* Stats */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+          <div className="bg-background-elevated border border-border rounded-xl p-4">
+            <p className="text-muted-foreground text-sm">Total Items</p>
+            <p className="text-2xl font-bold text-foreground">{filteredItems.length}</p>
+          </div>
+          <div className="bg-background-elevated border border-border rounded-xl p-4">
+            <p className="text-muted-foreground text-sm">Available</p>
+            <p className="text-2xl font-bold text-green-400">
+              {filteredItems.filter(i => i.is_available).length}
+            </p>
+          </div>
+          <div className="bg-background-elevated border border-border rounded-xl p-4">
+            <p className="text-muted-foreground text-sm">Reserved</p>
+            <p className="text-2xl font-bold text-red-400">
+              {filteredItems.filter(i => i.classification === 'Reserved').length}
+            </p>
+          </div>
+          <div className="bg-background-elevated border border-border rounded-xl p-4">
+            <p className="text-muted-foreground text-sm">Limited</p>
+            <p className="text-2xl font-bold text-yellow-400">
+              {filteredItems.filter(i => i.classification === 'Limited').length}
+            </p>
+          </div>
+        </div>
+
         {/* Filters */}
         <div className="bg-background-elevated border border-border rounded-xl p-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -433,46 +459,20 @@ export default function AdminLootItems() {
           </div>
         </div>
 
-        {/* Stats */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
-          <div className="bg-background-elevated border border-border rounded-xl p-4">
-            <p className="text-muted-foreground text-sm">Total Items</p>
-            <p className="text-2xl font-bold text-foreground">{filteredItems.length}</p>
-          </div>
-          <div className="bg-background-elevated border border-border rounded-xl p-4">
-            <p className="text-muted-foreground text-sm">Available</p>
-            <p className="text-2xl font-bold text-green-400">
-              {filteredItems.filter(i => i.is_available).length}
-            </p>
-          </div>
-          <div className="bg-background-elevated border border-border rounded-xl p-4">
-            <p className="text-muted-foreground text-sm">Reserved</p>
-            <p className="text-2xl font-bold text-red-400">
-              {filteredItems.filter(i => i.classification === 'Reserved').length}
-            </p>
-          </div>
-          <div className="bg-background-elevated border border-border rounded-xl p-4">
-            <p className="text-muted-foreground text-sm">Limited</p>
-            <p className="text-2xl font-bold text-yellow-400">
-              {filteredItems.filter(i => i.classification === 'Limited').length}
-            </p>
-          </div>
-        </div>
-
         {/* Items Table */}
         <div className="bg-background-elevated border border-border rounded-xl overflow-hidden">
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto max-h-[calc(100vh-400px)]">
             <table className="w-full min-w-[900px]">
-              <thead>
+              <thead className="sticky top-0 z-10">
                 <tr className="bg-muted border-b border-border">
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-muted-foreground">Available</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-muted-foreground">Item Name</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-muted-foreground">Boss</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-muted-foreground">Slot</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-muted-foreground">Raid</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-muted-foreground">Classification</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-muted-foreground">Primary Specs</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-muted-foreground">Secondary Specs</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-muted-foreground bg-muted">Available</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-muted-foreground bg-muted">Item Name</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-muted-foreground bg-muted">Boss</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-muted-foreground bg-muted">Slot</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-muted-foreground bg-muted">Raid</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-muted-foreground bg-muted">Classification</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-muted-foreground bg-muted">Primary Specs</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-muted-foreground bg-muted">Secondary Specs</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">

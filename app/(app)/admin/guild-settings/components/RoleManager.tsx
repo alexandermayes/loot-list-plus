@@ -19,7 +19,11 @@ interface GuildRole {
   created_at: string
 }
 
-export default function RoleManager() {
+interface RoleManagerProps {
+  onRolesChanged?: () => void
+}
+
+export default function RoleManager({ onRolesChanged }: RoleManagerProps) {
   const [roles, setRoles] = useState<GuildRole[]>([])
   const [loading, setLoading] = useState(true)
   const [newRoleName, setNewRoleName] = useState('')
@@ -104,6 +108,7 @@ export default function RoleManager() {
       setNewRoleName('')
       setIsAddingRole(false)
       await loadRoles()
+      onRolesChanged?.()
     } catch (error: any) {
       showNotification('error', error.message || 'Couldn\'t create role. Try again.')
     }
@@ -134,6 +139,7 @@ export default function RoleManager() {
       setEditingRoleId(null)
       setEditingRoleName('')
       await loadRoles()
+      onRolesChanged?.()
     } catch (error: any) {
       showNotification('error', error.message || 'Couldn\'t save role. Try again.')
     }
@@ -161,6 +167,7 @@ export default function RoleManager() {
 
           showNotification('success', 'Role deleted')
           await loadRoles()
+          onRolesChanged?.()
         } catch (error: any) {
           showNotification('error', error.message || 'Couldn\'t delete role. Try again.')
         }
@@ -199,6 +206,7 @@ export default function RoleManager() {
       }
 
       await loadRoles()
+      onRolesChanged?.()
     } catch (error: any) {
       showNotification('error', error.message || 'Couldn\'t reorder roles. Try again.')
     }

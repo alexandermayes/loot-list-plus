@@ -680,7 +680,7 @@ export default function Dashboard() {
   const isLoading = loading || guildLoading
 
   return (
-    <div className="p-8 space-y-6 font-poppins">
+    <div className="p-4 sm:p-6 lg:p-8 space-y-6 font-poppins">
       {/* Header - Always visible but stable during loading */}
       <div>
         <Heading level={1}>
@@ -792,7 +792,7 @@ export default function Dashboard() {
               </div>
 
               {/* Stats Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:flex-1">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 lg:flex-1">
                 {/* Completed Lists */}
                 <div className="bg-background-elevated border border-border rounded-xl p-6">
                   <div className="flex items-center justify-between">

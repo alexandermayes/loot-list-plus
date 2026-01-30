@@ -242,9 +242,9 @@ export default function MasterLootPage() {
   })
 
   return (
-    <div className="p-8 space-y-6 font-poppins">
+    <div className="p-4 sm:p-6 lg:p-8 space-y-6 font-poppins">
       {/* Header with Settings Button - Always visible */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <Heading level={1}>Master Loot</Heading>
           <p className="text-muted-foreground mt-1 text-base">Manage loot submissions and available items</p>
@@ -269,7 +269,7 @@ export default function MasterLootPage() {
       {/* Submissions */}
       <div className="space-y-4">
           {/* Filters */}
-          <div className="flex gap-2">
+          <div className="flex gap-2 overflow-x-auto pb-2">
             {(['all', 'pending', 'approved', 'rejected'] as const).map((status) => (
               <button
                 key={status}
@@ -295,21 +295,21 @@ export default function MasterLootPage() {
               filteredSubmissions.map((submission) => (
                 <div
                   key={submission.id}
-                  className="bg-background-elevated border border-border rounded-xl p-5 flex items-center justify-between hover:bg-muted transition"
+                  className="bg-background-elevated border border-border rounded-xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-muted transition"
                 >
-                  <div className="flex items-center gap-3">
-                    <h3 className="text-[20px] font-semibold text-foreground">
+                  <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                    <h3 className="text-[16px] sm:text-[20px] font-semibold text-foreground">
                       {submission.member?.character_name || 'Unknown'}
                     </h3>
                     {submission.member?.class && (
                       <span
-                        className="px-3 py-1 rounded-full text-[12px] font-medium"
+                        className="px-2 sm:px-3 py-1 rounded-full text-[11px] sm:text-[12px] font-medium"
                         style={{ backgroundColor: submission.member.class.color_hex, color: 'white' }}
                       >
                         {submission.member.class.name}
                       </span>
                     )}
-                    <span className={`px-3 py-1 rounded-full text-[12px] font-medium ${
+                    <span className={`px-2 sm:px-3 py-1 rounded-full text-[11px] sm:text-[12px] font-medium ${
                       submission.status === 'approved' ? 'bg-success/30 text-success' :
                       submission.status === 'rejected' ? 'bg-destructive/30 text-destructive' :
                       submission.status === 'draft' ? 'bg-warning/30 text-warning' :
@@ -317,13 +317,13 @@ export default function MasterLootPage() {
                     }`}>
                       {submission.status}
                     </span>
-                    <span className="text-muted-foreground text-[14px]">
-                      {submission.item_count} items • Submitted {submission.submitted_at ? new Date(submission.submitted_at).toLocaleDateString('en-US', { month: 'numeric', day: 'numeric', year: 'numeric' }) : 'N/A'}
+                    <span className="text-muted-foreground text-[12px] sm:text-[14px]">
+                      {submission.item_count} items • {submission.submitted_at ? new Date(submission.submitted_at).toLocaleDateString('en-US', { month: 'numeric', day: 'numeric', year: 'numeric' }) : 'N/A'}
                     </span>
                   </div>
                   <button
                     onClick={() => viewSubmissionDetails(submission.id)}
-                    className="px-5 py-2 bg-muted hover:bg-muted border border-border rounded-lg text-foreground text-[14px] font-medium transition"
+                    className="w-full sm:w-auto px-4 sm:px-5 py-2 bg-muted hover:bg-muted border border-border rounded-lg text-foreground text-[13px] sm:text-[14px] font-medium transition"
                   >
                     View Details
                   </button>

@@ -1480,7 +1480,7 @@ export default function RaidTrackingPage() {
   ))
 
   return (
-    <div className="p-8 space-y-6 font-poppins">
+    <div className="p-4 sm:p-6 lg:p-8 space-y-6 font-poppins">
       {/* Header */}
       <div>
         <Heading level={1}>Raid Tracking</Heading>
@@ -1494,7 +1494,7 @@ export default function RaidTrackingPage() {
 
       {/* Legend */}
       {!raidStartDateInFuture && (
-        <div className="flex items-center gap-4 text-[13px] flex-wrap">
+        <div className="flex items-center gap-3 sm:gap-4 text-[12px] sm:text-[13px] flex-wrap">
           <span className="text-muted-foreground">Status Options:</span>
           <div className="flex items-center gap-1">
             <div className="w-5 h-5 rounded border bg-success/30 border-success"></div>
@@ -1585,8 +1585,8 @@ export default function RaidTrackingPage() {
               className="bg-background-elevated border border-border rounded-xl overflow-hidden"
             >
               {/* Raid Header */}
-              <div className="px-6 py-4 flex items-center justify-between">
-                <div className="flex items-center gap-4">
+              <div className="px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
+                <div className="flex items-center gap-3 sm:gap-4">
                   <button
                     onClick={() => toggleRaidExpanded(raid.id)}
                     className="text-foreground hover:text-accent transition"
@@ -1627,7 +1627,7 @@ export default function RaidTrackingPage() {
                     )}
                   </div>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-2 flex-shrink-0">
                   {!raid.is_skipped && (
                     <button
                       onClick={async () => {
@@ -1652,19 +1652,20 @@ export default function RaidTrackingPage() {
                           setShowImportModal({ raidId: raid.id, date: raid.raid_date, isEdit: false })
                         }
                       }}
-                      className={`px-4 py-2 rounded-[52px] text-[13px] font-medium transition flex items-center gap-2 ${
+                      className={`px-3 sm:px-4 py-2 rounded-[52px] text-[12px] sm:text-[13px] font-medium transition flex items-center gap-1 sm:gap-2 ${
                         hasImportedData
                           ? 'bg-success/20 hover:bg-success/30 border border-success/50 text-success'
                           : 'bg-background-elevated hover:bg-muted border border-border text-foreground'
                       }`}
                     >
                       <HugeiconsIcon icon={Upload01Icon} size={16} />
-                      {hasImportedData ? 'Edit Import' : 'Import Data'}
+                      <span className="hidden sm:inline">{hasImportedData ? 'Edit Import' : 'Import Data'}</span>
+                      <span className="sm:hidden">{hasImportedData ? 'Edit' : 'Import'}</span>
                     </button>
                   )}
                   <button
                     onClick={() => toggleSkipDay(raid.id, raid.is_skipped)}
-                    className={`px-4 py-2 rounded-[52px] text-[13px] font-medium transition ${
+                    className={`px-3 sm:px-4 py-2 rounded-[52px] text-[12px] sm:text-[13px] font-medium transition ${
                       raid.is_skipped
                         ? 'bg-destructive/30 text-destructive hover:bg-destructive/40 border border-destructive'
                         : 'bg-background-elevated text-foreground-muted hover:bg-muted border border-border'
@@ -1677,7 +1678,7 @@ export default function RaidTrackingPage() {
 
               {/* Expanded Member List */}
               {isExpanded && !raid.is_skipped && (
-                <div className="border-t border-border px-6 py-4">
+                <div className="border-t border-border px-4 sm:px-6 py-4">
                   {members.length === 0 && (!unlinkedAttendees[raid.id] || unlinkedAttendees[raid.id].length === 0) ? (
                     /* Empty State */
                     <div className="text-center py-12">
@@ -1851,7 +1852,7 @@ export default function RaidTrackingPage() {
         </ModalHeader>
         <ModalBody className="space-y-6">
           {/* Attendance & Loot Side by Side */}
-          <div className="grid grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
             {/* Attendance Section */}
             <div className="space-y-3">
               <div>

@@ -156,7 +156,7 @@ export default function CreateCharacterPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background-subtle p-8">
+    <div className="min-h-screen bg-background-subtle p-4 sm:p-6 lg:p-8">
       <div className="max-w-2xl mx-auto">
         {/* Header */}
         <div className="mb-8">
@@ -284,7 +284,7 @@ export default function CreateCharacterPage() {
           </div>
 
           {/* Action Buttons */}
-          <div className="flex items-center gap-4 mt-8">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4 mt-8">
             <button
               type="submit"
               disabled={loading}

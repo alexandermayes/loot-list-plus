@@ -106,7 +106,7 @@ export default function HelpPage() {
   }, [searchQuery])
 
   return (
-    <div className="p-8 max-w-5xl mx-auto">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-5xl mx-auto">
       {/* Header */}
       <div className="text-center mb-10">
         <Heading level={1} className="mb-3">

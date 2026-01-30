@@ -21,6 +21,7 @@ import { ScrollIcon, ArrowUpRight01Icon, InformationCircleIcon } from '@hugeicon
 import { Heading } from '@/components/ui/typography'
 import ScoreBreakdownModal from '@/app/components/ScoreBreakdownModal'
 import ScoreComparisonModal from '@/app/components/ScoreComparisonModal'
+import LootListSummaryView, { LootListAggregateItem } from '@/app/components/LootListSummaryView'
 import { refreshWowheadTooltips } from '@/lib/wowhead'
 
 interface LootItem {
@@ -74,6 +75,11 @@ export default function MasterSheet() {
     userRanking: PlayerRanking | null
     winnerRanking: PlayerRanking | null
   }>({ itemName: '', userRanking: null, winnerRanking: null })
+  // Officer aggregate view state
+  const [viewMode, setViewMode] = useState<'rankings' | 'aggregate'>('rankings')
+  const [aggregateItems, setAggregateItems] = useState<LootListAggregateItem[]>([])
+  const [aggregateLoading, setAggregateLoading] = useState(false)
+  const [aggregateBossFilter, setAggregateBossFilter] = useState<string | null>(null)
   const tierScrollRef = useRef<HTMLDivElement>(null)
 
   const supabase = createClient()
@@ -539,6 +545,146 @@ export default function MasterSheet() {
     }
   }, [allItemRankings])
 
+  // Load aggregate loot list data when officer switches to aggregate view
+  useEffect(() => {
+    const loadAggregateData = async () => {
+      if (viewMode !== 'aggregate' || !selectedTierId || !guildId || !isOfficer) {
+        return
+      }
+
+      setAggregateLoading(true)
+
+      try {
+        // Get all loot items for this tier
+        const { data: itemsData } = await supabase
+          .from('loot_items')
+          .select('id, name, boss_name, item_slot, wowhead_id, classification')
+          .eq('raid_tier_id', selectedTierId)
+          .eq('is_available', true)
+          .order('boss_name')
+          .order('name')
+
+        if (!itemsData || itemsData.length === 0) {
+          setAggregateItems([])
+          setAggregateLoading(false)
+          return
+        }
+
+        const itemIds = itemsData.map(i => i.id)
+
+        // Get all submission items for these items
+        const { data: submissionItemsData } = await supabase
+          .from('loot_submission_items')
+          .select('loot_item_id, rank, slot, submission_id')
+          .in('loot_item_id', itemIds)
+
+        if (!submissionItemsData || submissionItemsData.length === 0) {
+          setAggregateItems([])
+          setAggregateLoading(false)
+          return
+        }
+
+        // Get approved submissions only
+        const submissionIds = [...new Set(submissionItemsData.map(si => si.submission_id))]
+        const { data: submissionsData } = await supabase
+          .from('loot_submissions')
+          .select('id, character_id, status')
+          .in('id', submissionIds)
+          .eq('status', 'approved')
+
+        if (!submissionsData || submissionsData.length === 0) {
+          setAggregateItems([])
+          setAggregateLoading(false)
+          return
+        }
+
+        const approvedSubmissionIds = new Set(submissionsData.map(s => s.id))
+
+        // Get character info
+        const characterIds = [...new Set(submissionsData.map(s => s.character_id).filter(id => id !== null))]
+        const { data: charactersData } = await supabase
+          .from('characters')
+          .select('id, name, class:wow_classes(name, color_hex)')
+          .in('id', characterIds)
+
+        // Get loot history for awarded count
+        const { data: lootHistoryData } = await supabase
+          .from('loot_history')
+          .select('loot_item_id')
+          .eq('guild_id', guildId)
+          .in('loot_item_id', itemIds)
+
+        // Count awards per item
+        const awardedCounts: Record<string, number> = {}
+        for (const h of lootHistoryData || []) {
+          awardedCounts[h.loot_item_id] = (awardedCounts[h.loot_item_id] || 0) + 1
+        }
+
+        // Build aggregate data
+        const aggregateMap: Record<string, LootListAggregateItem> = {}
+
+        for (const item of itemsData) {
+          aggregateMap[item.id] = {
+            item_id: item.id,
+            item_name: item.name,
+            boss_name: item.boss_name,
+            item_slot: item.item_slot,
+            wowhead_id: item.wowhead_id,
+            classification: item.classification || 'common',
+            total_lists: 0,
+            already_awarded: awardedCounts[item.id] || 0,
+            players: [],
+            average_rank: 0,
+          }
+        }
+
+        // Populate players for each item
+        for (const si of submissionItemsData) {
+          if (!approvedSubmissionIds.has(si.submission_id)) continue
+
+          const submission = submissionsData.find(s => s.id === si.submission_id)
+          if (!submission) continue
+
+          const character = charactersData?.find(c => c.id === submission.character_id)
+          if (!character) continue
+
+          const aggregate = aggregateMap[si.loot_item_id]
+          if (!aggregate) continue
+
+          aggregate.players.push({
+            character_id: character.id,
+            character_name: character.name || 'Unknown',
+            class_name: (character.class as any)?.name || 'Unknown',
+            class_color: (character.class as any)?.color_hex || '#888888',
+            primary_rank: si.slot,
+            item_rank: si.rank,
+          })
+        }
+
+        // Calculate totals and averages
+        for (const item of Object.values(aggregateMap)) {
+          item.total_lists = item.players.length
+          if (item.players.length > 0) {
+            const totalRank = item.players.reduce((sum, p) => sum + p.item_rank, 0)
+            item.average_rank = totalRank / item.players.length
+          }
+        }
+
+        // Filter out items with no loot lists and convert to array
+        const aggregateArray = Object.values(aggregateMap).filter(item => item.total_lists > 0)
+        setAggregateItems(aggregateArray)
+
+      } catch (err) {
+        console.error('Error loading aggregate data:', err)
+        setAggregateItems([])
+      }
+
+      setAggregateLoading(false)
+    }
+
+    loadAggregateData()
+  }, [viewMode, selectedTierId, guildId, isOfficer])
+
   // Handle tier switching from query params
   useEffect(() => {
     const tierId = searchParams.get('tier')
@@ -852,23 +998,26 @@ export default function MasterSheet() {
     <ExpansionGuard>
       <div className="font-poppins">
         {/* Header - Always visible */}
-        <div className="p-8 pb-1.5">
-          <div className="flex items-start justify-between">
+        <div className="p-4 sm:p-6 lg:p-8 pb-1.5">
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
             <div>
               <Heading level={1}>
                 Loot Rankings{!initialLoading && selectedTier && <span className="text-muted-foreground"> · {selectedTier.name}</span>}
               </Heading>
               <p className="text-muted-foreground mt-1 text-base">
-                Top 5 players for each item
+                {viewMode === 'aggregate' && isOfficer
+                  ? 'Most wanted items across the guild'
+                  : 'Top 5 players for each item'}
               </p>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
               <Button
                 variant="secondary"
                 onClick={() => setShowScoreBreakdown(true)}
               >
                 <HugeiconsIcon icon={InformationCircleIcon} size={18} />
-                How Scores Work
+                <span className="hidden sm:inline">How Scores Work</span>
+                <span className="sm:hidden">Scores</span>
               </Button>
               {isOfficer && (
                 <Button
@@ -879,7 +1028,8 @@ export default function MasterSheet() {
                   className="bg-violet-600 hover:bg-violet-500 text-white border-0 shadow-lg shadow-violet-900/30"
                 >
                   <img src="/icons/gargul.png" alt="Gargul" className="w-5 h-5" />
-                  Export to Gargul
+                  <span className="hidden sm:inline">Export to Gargul</span>
+                  <span className="sm:hidden">Export</span>
                   <HugeiconsIcon icon={ArrowUpRight01Icon} size={16} />
                 </Button>
               )}
@@ -889,55 +1039,82 @@ export default function MasterSheet() {
 
         {/* Raid Tier Tabs - Sticky */}
         {initialLoading ? (
-          <div className="sticky top-0 z-20 px-8 py-1.5 bg-background">
+          <div className="sticky top-0 z-20 px-4 sm:px-6 lg:px-8 py-1.5 bg-background">
             <TierTabsSkeleton />
           </div>
         ) : raidTiers.length > 0 && (
-          <div className="sticky top-0 z-20 px-8 py-1.5 bg-background">
-            <div
-              ref={tierScrollRef}
-              onScroll={handleTierScroll}
-              className="overflow-x-auto scrollbar-hide"
-              style={{
-                maskImage: `linear-gradient(to right, ${tierScrollState.left ? 'transparent' : 'black'}, black ${tierScrollState.left ? '24px' : '0px'}, black calc(100% - ${tierScrollState.right ? '24px' : '0px'}), ${tierScrollState.right ? 'transparent' : 'black'})`,
-                WebkitMaskImage: `linear-gradient(to right, ${tierScrollState.left ? 'transparent' : 'black'}, black ${tierScrollState.left ? '24px' : '0px'}, black calc(100% - ${tierScrollState.right ? '24px' : '0px'}), ${tierScrollState.right ? 'transparent' : 'black'})`
-              }}
-            >
-              <div className="flex gap-2 pr-3">
-                {raidTiers.map((tier: any) => {
-                  const isDisabled = tier.is_guild_active === false
-                  const isSelected = selectedTierId === tier.id
-                  return (
-                    <button
-                      key={tier.id}
-                      onClick={() => setSelectedTierId(tier.id)}
-                      className={`px-5 py-2.5 rounded-[40px] whitespace-nowrap text-[13px] font-medium transition-all ${
-                        isSelected
-                          ? isDisabled
-                            ? 'bg-muted/50 border-[0.5px] border-border text-muted-foreground'
-                            : 'bg-accent/20 border-[0.5px] border-accent/20 text-accent'
-                          : isDisabled
-                            ? 'bg-background-elevated/50 border border-border/50 text-muted-foreground hover:bg-muted/50 opacity-60'
-                            : 'bg-background-elevated border border-border text-foreground hover:bg-muted'
-                      }`}
-                    >
-                      <span className="flex items-center gap-2">
-                        {tier.name}
-                        {tier.is_active && <StarFilledIcon size={14} />}
-                        {isDisabled && <span className="text-[10px] uppercase tracking-wide">Off</span>}
-                      </span>
-                    </button>
-                  )
-                })}
+          <div className="sticky top-0 z-20 px-4 sm:px-6 lg:px-8 py-1.5 bg-background">
+            <div className="flex items-center gap-3">
+              <div
+                ref={tierScrollRef}
+                onScroll={handleTierScroll}
+                className="flex-1 min-w-0 overflow-x-auto scrollbar-hide"
+                style={{
+                  maskImage: `linear-gradient(to right, ${tierScrollState.left ? 'transparent' : 'black'}, black ${tierScrollState.left ? '24px' : '0px'}, black calc(100% - ${tierScrollState.right ? '24px' : '0px'}), ${tierScrollState.right ? 'transparent' : 'black'})`,
+                  WebkitMaskImage: `linear-gradient(to right, ${tierScrollState.left ? 'transparent' : 'black'}, black ${tierScrollState.left ? '24px' : '0px'}, black calc(100% - ${tierScrollState.right ? '24px' : '0px'}), ${tierScrollState.right ? 'transparent' : 'black'})`
+                }}
+              >
+                <div className="flex gap-2 pr-3">
+                  {raidTiers.map((tier: any) => {
+                    const isDisabled = tier.is_guild_active === false
+                    const isSelected = selectedTierId === tier.id
+                    return (
+                      <button
+                        key={tier.id}
+                        onClick={() => setSelectedTierId(tier.id)}
+                        className={`px-5 py-2.5 rounded-[40px] whitespace-nowrap text-[13px] font-medium transition-all ${
+                          isSelected
+                            ? isDisabled
+                              ? 'bg-muted/50 border-[0.5px] border-border text-muted-foreground'
+                              : 'bg-accent/20 border-[0.5px] border-accent/20 text-accent'
+                            : isDisabled
+                              ? 'bg-background-elevated/50 border border-border/50 text-muted-foreground hover:bg-muted/50 opacity-60'
+                              : 'bg-background-elevated border border-border text-foreground hover:bg-muted'
+                        }`}
+                      >
+                        <span className="flex items-center gap-2">
+                          {tier.name}
+                          {tier.is_active && <StarFilledIcon size={14} />}
+                          {isDisabled && <span className="text-[10px] uppercase tracking-wide">Off</span>}
+                        </span>
+                      </button>
+                    )
+                  })}
+                </div>
               </div>
+              {/* Officer View Toggle */}
+              {isOfficer && (
+                <div className="flex-shrink-0 flex bg-background-elevated border border-border rounded-[40px] p-0.5">
+                  <button
+                    onClick={() => setViewMode('rankings')}
+                    className={`px-5 py-2 rounded-[40px] text-[13px] font-medium transition-all ${
+                      viewMode === 'rankings'
+                        ? 'bg-accent/20 text-accent'
+                        : 'text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    Rankings
+                  </button>
+                  <button
+                    onClick={() => setViewMode('aggregate')}
+                    className={`px-5 py-2 rounded-[40px] text-[13px] font-medium transition-all ${
+                      viewMode === 'aggregate'
+                        ? 'bg-accent/20 text-accent'
+                        : 'text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    Summary
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         )}
 
-        {/* Boss Quick Navigation - Sticky below tier tabs */}
-        {!initialLoading && !contentLoading && bossNames.length > 0 && (
-          <div className="sticky top-[64px] z-10 px-8 py-1.5 bg-background">
-            <div className="flex gap-3">
+        {/* Boss Quick Navigation - Sticky below tier tabs (rankings view only) */}
+        {!initialLoading && !contentLoading && bossNames.length > 0 && viewMode === 'rankings' && (
+          <div className="sticky top-[64px] z-10 px-4 sm:px-6 lg:px-8 py-1.5 bg-background">
+            <div className="flex flex-col sm:flex-row gap-3">
               {/* Boss chips container with horizontal scroll fade */}
               <div className="flex-1 min-w-0 bg-background-elevated border border-border rounded-xl p-3 overflow-hidden">
                 <div
@@ -962,7 +1139,7 @@ export default function MasterSheet() {
               </div>
               {/* Expand/Collapse container */}
               <div className="flex-shrink-0 bg-background-elevated border border-border rounded-xl p-3">
-                <div className="flex gap-2 h-full items-center">
+                <div className="flex gap-2 h-full items-center justify-center sm:justify-start">
                   <button
                     onClick={expandAll}
                     className="px-4 py-2 bg-background-inset hover:bg-muted border border-border rounded-[40px] text-sm font-medium text-muted-foreground hover:text-foreground whitespace-nowrap transition"
@@ -982,7 +1159,7 @@ export default function MasterSheet() {
         )}
 
         {/* Main Content */}
-        <div className="px-8 pt-1.5 pb-6 space-y-6">
+        <div className="px-4 sm:px-6 lg:px-8 pt-1.5 pb-6 space-y-6">
 
         {/* Content Loading State */}
         {(initialLoading || contentLoading) ? (
@@ -1034,6 +1211,17 @@ export default function MasterSheet() {
               </div>
             )}
 
+            {/* Aggregate View (Officer Only) */}
+            {viewMode === 'aggregate' && isOfficer ? (
+              <LootListSummaryView
+                items={aggregateItems}
+                loading={aggregateLoading}
+                bosses={[...new Set(aggregateItems.map(i => i.boss_name))].sort()}
+                selectedBoss={aggregateBossFilter}
+                onBossFilter={setAggregateBossFilter}
+              />
+            ) : (
+            <>
             {/* Loot Table */}
             {Object.keys(groupedByBoss).length === 0 ? (
               <EmptyState
@@ -1084,8 +1272,8 @@ export default function MasterSheet() {
 
                   {/* Items Table - Collapsible */}
                   {!isCollapsed && (
-                    <div className="border-t border-border">
-                      <table className="w-full">
+                    <div className="border-t border-border overflow-x-auto">
+                      <table className="w-full min-w-[800px]">
                         <thead>
                           <tr className="bg-background-subtle">
                             <th className="px-5 py-2.5 text-left text-[12px] font-medium text-foreground-muted w-[280px]">Item</th>
@@ -1166,12 +1354,15 @@ export default function MasterSheet() {
             })}
           </div>
             )}
+            </>
+            )}
           </>
         )}
         </>
         )}
 
-        {/* Legend */}
+        {/* Legend (rankings view only) */}
+        {viewMode === 'rankings' && (
         <div className="bg-background-elevated border border-border rounded-xl p-4">
           <div className="flex items-center justify-between">
             <p className="text-foreground-muted text-[12px]">
@@ -1184,6 +1375,7 @@ export default function MasterSheet() {
             )}
           </div>
         </div>
+        )}
 
         {/* Score Breakdown Modal */}
         <ScoreBreakdownModal

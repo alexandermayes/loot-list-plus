@@ -257,7 +257,7 @@ export default function ImportPage() {
   }
 
   return (
-      <div className="p-8 space-y-6 font-poppins">
+      <div className="p-4 sm:p-6 lg:p-8 space-y-6 font-poppins">
         {/* Header */}
         <div>
           <Heading level={1}>Import raid data</Heading>

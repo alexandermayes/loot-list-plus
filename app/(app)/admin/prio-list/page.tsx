@@ -474,7 +474,7 @@ export default function AdminPrioList() {
     <ExpansionGuard>
       <div className="font-poppins">
         {/* Header */}
-        <div className="p-8 pb-1.5">
+        <div className="p-4 sm:p-6 lg:p-8 pb-1.5">
           <Heading level={1}>Priority List</Heading>
           <p className="text-muted-foreground mt-1 text-base">
             Set role, class, and individual raider priorities for each item
@@ -483,7 +483,7 @@ export default function AdminPrioList() {
 
         {/* Raid Tier Tabs - Sticky */}
         {raidTiers.length > 0 && (
-          <div className="sticky top-0 z-20 px-8 py-1.5 bg-background">
+          <div className="sticky top-0 z-20 px-4 sm:px-6 lg:px-8 py-1.5 bg-background">
             <div
               ref={tierScrollRef}
               onScroll={handleTierScroll}
@@ -516,8 +516,8 @@ export default function AdminPrioList() {
         )}
 
         {/* Stats */}
-        <div className="px-8 py-1.5">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="px-4 sm:px-6 lg:px-8 py-1.5">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
             <div className="bg-background-elevated border border-border rounded-xl p-4">
               <p className="text-muted-foreground text-sm">Total Items</p>
               <p className="text-2xl font-bold text-foreground">{filteredItems.length}</p>
@@ -545,8 +545,8 @@ export default function AdminPrioList() {
 
         {/* Boss Quick Navigation - Sticky below tier tabs */}
         {!contentLoading && bossNames.length > 0 && (
-          <div className="sticky top-[64px] z-10 px-8 py-1.5 bg-background">
-            <div className="flex gap-3">
+          <div className="sticky top-[64px] z-10 px-4 sm:px-6 lg:px-8 py-1.5 bg-background">
+            <div className="flex flex-col sm:flex-row gap-3">
               {/* Search input */}
               <div className="flex-shrink-0 bg-background-elevated border border-border rounded-xl p-3 flex items-center">
                 <input
@@ -554,11 +554,11 @@ export default function AdminPrioList() {
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   placeholder="Search items..."
-                  className="w-[160px] px-3 py-1.5 bg-background-elevated border border-border rounded-[40px] text-foreground text-xs focus:outline-none focus:border-accent placeholder:text-foreground-muted"
+                  className="w-full sm:w-[160px] px-3 py-1.5 bg-background-elevated border border-border rounded-[40px] text-foreground text-xs focus:outline-none focus:border-accent placeholder:text-foreground-muted"
                 />
               </div>
               {/* Boss chips container with horizontal scroll fade */}
-              <div className="flex-1 min-w-0 bg-background-elevated border border-border rounded-xl p-3 overflow-hidden">
+              <div className="flex-1 min-w-0 bg-background-elevated border border-border rounded-xl p-3 overflow-hidden hidden sm:block">
                 <div
                   className="overflow-x-auto scrollbar-hide"
                   style={{
@@ -600,7 +600,7 @@ export default function AdminPrioList() {
         )}
 
         {/* Main Content */}
-        <div className="px-8 pt-1.5 pb-6 space-y-6">
+        <div className="px-4 sm:px-6 lg:px-8 pt-1.5 pb-6 space-y-6">
 
         {/* Content Loading State */}
         {contentLoading ? (
@@ -661,8 +661,8 @@ export default function AdminPrioList() {
 
                   {/* Items Table - Collapsible */}
                   {!isCollapsed && (
-                    <div className="border-t border-border">
-                      <table className="w-full">
+                    <div className="border-t border-border overflow-x-auto">
+                      <table className="w-full min-w-[600px]">
                         <thead>
                           <tr className="bg-background-subtle">
                             <th className="px-5 py-2.5 text-left text-[12px] font-medium text-foreground-muted">Item</th>

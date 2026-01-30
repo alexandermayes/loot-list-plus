@@ -466,7 +466,7 @@ export default function AttendancePage() {
   }
 
   return (
-    <div className="p-8 space-y-6 font-poppins">
+    <div className="p-4 sm:p-6 lg:p-8 space-y-6 font-poppins">
       {/* Header - Always visible */}
       <div>
         <Heading level={1}>Attendance</Heading>
@@ -490,7 +490,7 @@ export default function AttendancePage() {
             </span>
             <span className="text-foreground-muted text-[13px]">• Your Attendance</span>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             <div className="bg-background-elevated border border-border rounded-xl p-6">
               <p className="text-muted-foreground text-sm mb-1">
                 Attendance Credit (Previous {guildSettings?.rolling_attendance_weeks || 4} Weeks)
@@ -525,9 +525,9 @@ export default function AttendancePage() {
 
       {/* Guild Attendance Table */}
       <div className="bg-background-elevated border border-border rounded-xl overflow-hidden">
-        <div className="p-4 border-b border-border flex items-center justify-between">
+        <div className="p-4 border-b border-border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <h2 className="text-foreground font-semibold">Guild Attendance</h2>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <span className="text-[12px] text-foreground-muted">Sort:</span>
             <button
               onClick={() => toggleSort('score')}

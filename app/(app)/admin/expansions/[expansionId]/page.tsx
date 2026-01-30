@@ -292,7 +292,7 @@ export default function ExpansionDetailPage({ params }: { params: Promise<{ expa
   const currentRaids = raidTiers.filter(t => t.is_guild_active && t.is_active).length
 
   return (
-    <div className="p-8 space-y-6">
+    <div className="p-4 sm:p-6 lg:p-8 space-y-6">
       {/* Back Button */}
       <Button
         variant="secondary"
@@ -364,7 +364,7 @@ export default function ExpansionDetailPage({ params }: { params: Promise<{ expa
             <p className="text-foreground-muted">No raid tiers found for this expansion</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {raidTiers.map((tier) => (
               <div
                 key={tier.id}

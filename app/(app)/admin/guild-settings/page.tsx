@@ -36,10 +36,26 @@ export default function GuildSettingsPage() {
   const [faction, setFaction] = useState<'Alliance' | 'Horde'>('Alliance')
   const [discordServerId, setDiscordServerId] = useState('')
   const [guildIconUrl, setGuildIconUrl] = useState<string | null>(null)
+
+  // Initial values for change detection
+  const [initialValues, setInitialValues] = useState({
+    guildName: '',
+    realm: '',
+    faction: 'Alliance' as 'Alliance' | 'Horde',
+    discordServerId: ''
+  })
+
+  // Check if form has unsaved changes
+  const hasChanges =
+    guildName !== initialValues.guildName ||
+    realm !== initialValues.realm ||
+    faction !== initialValues.faction ||
+    discordServerId !== initialValues.discordServerId
   const [deleting, setDeleting] = useState(false)
   const [isGuildCreator, setIsGuildCreator] = useState(false)
   const [showRolesModal, setShowRolesModal] = useState(false)
   const [showTransferModal, setShowTransferModal] = useState(false)
+  const [roleRefreshKey, setRoleRefreshKey] = useState(0)
   const [transferring, setTransferring] = useState(false)
   const [selectedNewOwner, setSelectedNewOwner] = useState<string>('')
 
@@ -90,6 +106,14 @@ export default function GuildSettingsPage() {
       setFaction(activeGuild.faction as 'Alliance' | 'Horde')
       setDiscordServerId(activeGuild.discord_server_id || '')
       setGuildIconUrl((activeGuild as any).icon_url || null)
+
+      // Store initial values for change detection
+      setInitialValues({
+        guildName: activeGuild.name,
+        realm: activeGuild.realm || '',
+        faction: activeGuild.faction as 'Alliance' | 'Horde',
+        discordServerId: activeGuild.discord_server_id || ''
+      })
 
       // Check if user is the guild creator
       setIsGuildCreator(activeGuild.created_by === user.id)
@@ -253,7 +277,7 @@ export default function GuildSettingsPage() {
   }
 
   return (
-      <div className="p-8 space-y-6 font-poppins">
+      <div className="p-4 sm:p-6 lg:p-8 space-y-6 font-poppins">
         {/* Header - Always visible */}
         <div>
           <Heading level={1}>Guild Settings</Heading>
@@ -360,7 +384,7 @@ export default function GuildSettingsPage() {
               {isGuildCreator && (
                 <Button
                   onClick={handleSaveBasicInfo}
-                  disabled={!guildName.trim()}
+                  disabled={!guildName.trim() || !hasChanges}
                   loading={saving}
                   className="w-full"
                 >
@@ -384,7 +408,7 @@ export default function GuildSettingsPage() {
               </div>
             </div>
             <div className="overflow-y-auto flex-1">
-              <MemberManager />
+              <MemberManager key={roleRefreshKey} />
             </div>
           </div>
         </div>
@@ -417,7 +441,7 @@ export default function GuildSettingsPage() {
             </div>
 
             {isGuildCreator && (
-              <Button variant="secondary" onClick={handleSaveBasicInfo} loading={saving}>
+              <Button variant="secondary" onClick={handleSaveBasicInfo} disabled={!hasChanges} loading={saving}>
                 Save Changes
               </Button>
             )}
@@ -436,7 +460,7 @@ export default function GuildSettingsPage() {
             <div className="p-6 space-y-4">
               {/* Transfer Ownership */}
               <div className="rounded-lg border border-yellow-500/30 bg-yellow-500/10 p-4">
-                <div className="flex items-start justify-between gap-4">
+                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
                   <div className="flex-1">
                     <h3 className="text-[16px] font-semibold text-yellow-500 mb-1">Transfer Ownership</h3>
                     <p className="text-[13px] text-muted-foreground">
@@ -446,7 +470,7 @@ export default function GuildSettingsPage() {
                   <Button
                     variant="secondary"
                     onClick={() => setShowTransferModal(true)}
-                    className="shrink-0 border-yellow-500/50 text-yellow-500 hover:bg-yellow-500/10"
+                    className="shrink-0 border-yellow-500/50 text-yellow-500 hover:bg-yellow-500/10 w-full sm:w-auto"
                   >
                     Transfer
                   </Button>
@@ -455,7 +479,7 @@ export default function GuildSettingsPage() {
 
               {/* Delete Guild */}
               <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-4">
-                <div className="flex items-start justify-between gap-4">
+                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
                   <div className="flex-1">
                     <h3 className="text-[16px] font-semibold text-destructive mb-1">Delete this guild</h3>
                     <p className="text-[13px] text-muted-foreground">
@@ -466,7 +490,7 @@ export default function GuildSettingsPage() {
                     variant="destructive"
                     onClick={handleDeleteGuild}
                     loading={deleting}
-                    className="shrink-0"
+                    className="shrink-0 w-full sm:w-auto"
                   >
                     Delete Guild
                   </Button>
@@ -483,7 +507,7 @@ export default function GuildSettingsPage() {
                 <ModalDescription>Create and manage custom roles for your guild members</ModalDescription>
               </ModalHeader>
               <ModalBody className="p-0">
-                <RoleManager />
+                <RoleManager onRolesChanged={() => setRoleRefreshKey(k => k + 1)} />
               </ModalBody>
             </Modal>
 

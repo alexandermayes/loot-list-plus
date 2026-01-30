@@ -213,7 +213,7 @@ export default function DesignSystemPage() {
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="sticky top-0 z-40 bg-background/95 backdrop-blur border-b border-border">
-        <div className="max-w-7xl mx-auto px-8 h-16 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div>
             <h1 className="text-xl font-bold text-foreground">Design System</h1>
             <p className="text-sm text-muted-foreground">LootList+ Component Library</p>
@@ -259,7 +259,7 @@ export default function DesignSystemPage() {
         </aside>
 
         {/* Main Content */}
-        <main className="flex-1 px-8 py-8 space-y-16 min-w-0">
+        <main className="flex-1 px-4 sm:px-6 lg:px-8 py-8 space-y-16 min-w-0">
 
           {/* ============================================== */}
           {/* FOUNDATIONS */}
@@ -276,7 +276,7 @@ export default function DesignSystemPage() {
               {/* Backgrounds */}
               <div>
                 <SubsectionHeader title="Backgrounds" />
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   <div className="space-y-2">
                     <div className="h-20 rounded-xl bg-background border border-border flex items-center justify-center">
                       <span className="text-xs text-foreground-secondary">background</span>
@@ -301,7 +301,7 @@ export default function DesignSystemPage() {
               {/* Accent & Status */}
               <div>
                 <SubsectionHeader title="Accent & Status" />
-                <div className="grid grid-cols-5 gap-4">
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
                   {[
                     { name: 'accent', bg: 'bg-accent', fg: 'text-accent-foreground', desc: 'Primary brand', hex: '#ff8000' },
                     { name: 'success', bg: 'bg-success', fg: 'text-success-foreground', desc: 'Positive actions', hex: 'green' },
@@ -404,7 +404,7 @@ export default function DesignSystemPage() {
                   title="Text Component"
                   description="Body text with size, weight, and color variants"
                 />
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   <PreviewCard>
                     <LabelText className="mb-3">Sizes</LabelText>
                     <div className="space-y-2">
@@ -493,7 +493,7 @@ export default function DesignSystemPage() {
               {/* Common Patterns */}
               <div>
                 <SubsectionHeader title="Common Patterns" />
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                   <PreviewCard>
                     <LabelText className="mb-3">Page Layout</LabelText>
                     <div className="border border-dashed border-accent/50 rounded-lg">
@@ -778,7 +778,7 @@ export default function DesignSystemPage() {
               {/* Input Variants */}
               <div>
                 <SubsectionHeader title="Input" />
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                   <PreviewCard>
                     <div className="space-y-4">
                       <div className="space-y-2">
@@ -810,7 +810,7 @@ export default function DesignSystemPage() {
               <div>
                 <SubsectionHeader title="Input Sizes" />
                 <PreviewCard>
-                  <div className="grid grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                     <div className="space-y-2">
                       <Label size="sm">Small</Label>
                       <Input size="sm" placeholder="Small..." />
@@ -831,7 +831,7 @@ export default function DesignSystemPage() {
               <div>
                 <SubsectionHeader title="Select" />
                 <PreviewCard>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label>Pill Select</Label>
                       <Select>
@@ -856,7 +856,7 @@ export default function DesignSystemPage() {
               <div>
                 <SubsectionHeader title="Textarea" />
                 <PreviewCard>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label>Pill Textarea</Label>
                       <Textarea placeholder="Enter message..." />
@@ -878,7 +878,7 @@ export default function DesignSystemPage() {
               description="Elevated surfaces with subtle borders"
             />
 
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               <Card>
                 <CardHeader>
                   <CardTitle>Basic Card</CardTitle>
@@ -1126,7 +1126,7 @@ export default function DesignSystemPage() {
               {/* Skeletons */}
               <div>
                 <SubsectionHeader title="Skeleton Loaders" description="Placeholder shapes for content loading" />
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                   <PreviewCard>
                     <LabelText className="mb-3">Text Placeholders</LabelText>
                     <div className="space-y-2">
@@ -1164,7 +1164,7 @@ export default function DesignSystemPage() {
               {/* Sizes */}
               <div>
                 <SubsectionHeader title="Size Variants" />
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   {[
                     { size: 'compact' as const, label: 'compact' },
                     { size: 'default' as const, label: 'default' },
@@ -1353,7 +1353,7 @@ export default function DesignSystemPage() {
             />
 
             <PreviewCard>
-              <div className="grid grid-cols-5 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
                 {[
                   { name: 'Warrior', class: 'warrior' },
                   { name: 'Paladin', class: 'paladin' },

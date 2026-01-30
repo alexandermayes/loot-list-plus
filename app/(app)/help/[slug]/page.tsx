@@ -236,7 +236,7 @@ export default function HelpArticlePage() {
 
   if (!articleData) {
     return (
-      <div className="p-8 flex items-center justify-center">
+      <div className="p-4 sm:p-6 lg:p-8 flex items-center justify-center">
         <Text color="muted">Loading...</Text>
       </div>
     )
@@ -245,12 +245,14 @@ export default function HelpArticlePage() {
   const { article, category } = articleData
 
   return (
-    <div className="p-8 flex">
-      {/* Sidebar */}
-      <Sidebar currentSlug={slug} onNavigate={(newSlug) => router.push(`/help/${newSlug}`)} />
+    <div className="p-4 sm:p-6 lg:p-8 flex flex-col lg:flex-row">
+      {/* Sidebar - hidden on mobile, shown on desktop */}
+      <div className="hidden lg:block">
+        <Sidebar currentSlug={slug} onNavigate={(newSlug) => router.push(`/help/${newSlug}`)} />
+      </div>
 
       {/* Main Content */}
-      <main className="flex-1 pl-8 max-w-3xl">
+      <main className="flex-1 lg:pl-8 max-w-3xl">
         {/* Breadcrumb */}
         <div className="flex items-center gap-2 mb-6">
           <button

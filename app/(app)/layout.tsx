@@ -5,7 +5,9 @@ import { useEffect, useState } from 'react'
 import { createClient } from '@/utils/supabase/client'
 import { useRouter } from 'next/navigation'
 import dynamic from 'next/dynamic'
+import Image from 'next/image'
 import Sidebar from '@/app/components/Sidebar'
+import { MobileMenuButton } from '@/app/components/MobileMenuButton'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { Bug01Icon } from '@hugeicons/core-free-icons'
@@ -26,7 +28,7 @@ function AppLayoutContent({
   const [loading, setLoading] = useState(true)
   const [showFeedbackModal, setShowFeedbackModal] = useState(false)
   const supabase = createClient()
-  const { sidebarWidth, isResizing } = useSidebar()
+  const { sidebarWidth, isResizing, isMobile, isMobileMenuOpen, closeMobileMenu } = useSidebar()
 
   // Map pathname to currentView for sidebar highlighting
   const getCurrentView = () => {
@@ -63,14 +65,51 @@ function AppLayoutContent({
 
   return (
     <div className="min-h-screen bg-background-elevated">
-      <Sidebar user={user} currentView={getCurrentView()} />
+      {/* Desktop Sidebar - hidden on mobile/tablet */}
+      {!isMobile && (
+        <Sidebar user={user} currentView={getCurrentView()} />
+      )}
+
+      {/* Mobile/Tablet Sidebar Overlay */}
+      {isMobile && isMobileMenuOpen && (
+        <>
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 bg-black/50 z-40 transition-opacity"
+            onClick={closeMobileMenu}
+            aria-hidden="true"
+          />
+          {/* Sidebar */}
+          <Sidebar user={user} currentView={getCurrentView()} isMobileOverlay onNavigate={closeMobileMenu} />
+        </>
+      )}
+
+      {/* Mobile Header */}
+      {isMobile && (
+        <header className="fixed top-0 left-0 right-0 h-14 bg-background-elevated border-b border-border z-30 flex items-center px-4 gap-3">
+          <MobileMenuButton />
+          <Image
+            src="/logo.svg"
+            alt="LootList+"
+            width={102}
+            height={16}
+            className="logo-adaptive h-4 w-auto"
+            priority
+          />
+        </header>
+      )}
 
       {/* Main Content */}
       <main
         className={`min-h-screen bg-background ${isResizing ? '' : 'transition-[margin-left] duration-150'}`}
-        style={{ marginLeft: sidebarWidth }}
+        style={{ marginLeft: isMobile ? 0 : sidebarWidth }}
       >
-        {children}
+        {/* Max-width container for content */}
+        <div className={`w-full ${isMobile ? 'pt-14' : ''}`}>
+          <div className="max-w-7xl mx-auto">
+            {children}
+          </div>
+        </div>
       </main>
 
       {/* Floating Bug Report Button */}

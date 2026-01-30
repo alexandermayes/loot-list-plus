@@ -45,6 +45,21 @@ export function EditCharacterModal({ isOpen, onClose, character, onSuccess }: Ed
   const [specId, setSpecId] = useState('')
   const [isMain, setIsMain] = useState(false)
 
+  // Initial values for change detection
+  const [initialValues, setInitialValues] = useState({
+    name: '',
+    classId: '',
+    specId: '',
+    isMain: false
+  })
+
+  // Check if form has unsaved changes
+  const hasChanges =
+    name !== initialValues.name ||
+    classId !== initialValues.classId ||
+    specId !== initialValues.specId ||
+    isMain !== initialValues.isMain
+
   const [classes, setClasses] = useState<WowClass[]>([])
   const [classSpecs, setClassSpecs] = useState<ClassSpec[]>([])
   const [saving, setSaving] = useState(false)
@@ -62,6 +77,13 @@ export function EditCharacterModal({ isOpen, onClose, character, onSuccess }: Ed
       setClassId(character.class_id || '')
       setSpecId(character.spec_id || '')
       setIsMain(character.is_main)
+      // Store initial values for change detection
+      setInitialValues({
+        name: character.name,
+        classId: character.class_id || '',
+        specId: character.spec_id || '',
+        isMain: character.is_main
+      })
       setError('')
       setShowDeleteConfirm(false)
       setDeleteConfirmName('')
@@ -394,6 +416,7 @@ export function EditCharacterModal({ isOpen, onClose, character, onSuccess }: Ed
             type="submit"
             variant="primary"
             loading={saving}
+            disabled={!hasChanges}
           >
             Save Changes
           </Button>

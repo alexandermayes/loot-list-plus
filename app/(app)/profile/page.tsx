@@ -221,7 +221,7 @@ export default function ProfilePage() {
 
   if (loading) {
     return (
-      <div className="p-8 space-y-6 font-poppins">
+      <div className="p-4 sm:p-6 lg:p-8 space-y-6 font-poppins">
         {/* Header skeleton shown during load */}
         <ProfileContentSkeleton />
       </div>
@@ -243,18 +243,18 @@ export default function ProfilePage() {
   ]
 
   return (
-    <div className="p-8 space-y-6 font-poppins">
+    <div className="p-4 sm:p-6 lg:p-8 space-y-6 font-poppins">
       {/* Header */}
-      <div className="bg-background-elevated border border-border rounded-xl p-6">
-        <div className="flex items-center gap-6">
+      <div className="bg-background-elevated border border-border rounded-xl p-4 sm:p-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6">
           <img
             src={avatarUrl}
             alt="Avatar"
-            className="w-20 h-20 rounded-full border-2 border-border/50 shadow-md"
+            className="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-2 border-border/50 shadow-md"
           />
-          <div className="flex-1">
-            <h1 className="text-[28px] font-bold text-foreground">{displayName}</h1>
-            <div className="flex items-center gap-4 mt-1 text-[13px] text-muted-foreground">
+          <div className="flex-1 min-w-0">
+            <h1 className="text-xl sm:text-[28px] font-bold text-foreground">{displayName}</h1>
+            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 mt-1 text-[13px] text-muted-foreground">
               <div className="flex items-center gap-1.5">
                 <HugeiconsIcon icon={Calendar01Icon} size={14} />
                 <span>Member since {new Date(user?.created_at).toLocaleDateString()}</span>
@@ -265,7 +265,7 @@ export default function ProfilePage() {
               </div>
             </div>
           </div>
-          <Button variant="secondary" onClick={handleLogout}>
+          <Button variant="secondary" onClick={handleLogout} className="w-full sm:w-auto">
             <HugeiconsIcon icon={Logout01Icon} size={16} />
             Log Out
           </Button>
@@ -347,10 +347,10 @@ export default function ProfilePage() {
               <h2 className="text-[18px] font-semibold text-destructive">Danger Zone</h2>
               <p className="text-muted-foreground text-[13px] mt-1">Irreversible and destructive actions</p>
             </div>
-            <div className="p-6 space-y-4">
+            <div className="p-4 sm:p-6 space-y-4">
               {/* Disconnect Discord */}
               <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-4">
-                <div className="flex items-start justify-between gap-4">
+                <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
                       <HugeiconsIcon icon={LinkSquare02Icon} size={18} className="text-destructive" />
@@ -364,7 +364,7 @@ export default function ProfilePage() {
                     variant="destructive"
                     onClick={handleDisconnectDiscord}
                     loading={disconnecting}
-                    className="shrink-0"
+                    className="shrink-0 w-full sm:w-auto"
                   >
                     Disconnect Discord
                   </Button>
@@ -373,7 +373,7 @@ export default function ProfilePage() {
 
               {/* Delete Account */}
               <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-4">
-                <div className="flex items-start justify-between gap-4">
+                <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
                       <HugeiconsIcon icon={Delete02Icon} size={18} className="text-destructive" />
@@ -387,7 +387,7 @@ export default function ProfilePage() {
                     variant="destructive"
                     onClick={handleDeleteAccount}
                     loading={deleting}
-                    className="shrink-0"
+                    className="shrink-0 w-full sm:w-auto"
                   >
                     Delete Account
                   </Button>

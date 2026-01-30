@@ -419,19 +419,19 @@ export default function MasterLootPage() {
   return (
     <div className="font-poppins">
       {/* Header - Always visible */}
-      <div className="p-8 pb-1.5">
+      <div className="p-4 sm:p-6 lg:p-8 pb-1.5">
         <Heading level={1}>Loot Submissions</Heading>
         <p className="text-muted-foreground mt-1 text-base">Review and manage character loot submissions</p>
       </div>
 
       {/* Raid Tier Selector - Sticky */}
       {initialLoading ? (
-        <div className="px-8 py-1.5 bg-background">
+        <div className="px-4 sm:px-6 lg:px-8 py-1.5 bg-background">
           <TierTabsSkeleton />
         </div>
       ) : raidTiers.length > 0 && (
-        <div className="sticky top-0 z-20 px-8 py-1.5 bg-background">
-          <div className="flex items-center gap-3 overflow-x-auto">
+        <div className="sticky top-0 z-20 px-4 sm:px-6 lg:px-8 py-1.5 bg-background">
+          <div className="flex items-center gap-3 overflow-x-auto pb-1">
             <div className="flex gap-2">
               {/* All Tiers Button */}
               <button
@@ -466,7 +466,7 @@ export default function MasterLootPage() {
       )}
 
       {/* Main Content */}
-      <div className="px-8 pt-1.5 pb-6 space-y-6">
+      <div className="px-4 sm:px-6 lg:px-8 pt-1.5 pb-6 space-y-6">
       {initialLoading ? (
         <SubmissionsListSkeleton count={5} />
       ) : (
@@ -474,14 +474,14 @@ export default function MasterLootPage() {
       {/* Submissions */}
       <div className="space-y-4">
           {/* Filters and Delete Actions */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="flex gap-2">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-3 w-full sm:w-auto">
+              <div className="flex gap-2 overflow-x-auto pb-1 sm:pb-0 w-full sm:w-auto">
               {(['all', 'pending', 'approved', 'rejected'] as const).map((status) => (
                 <button
                   key={status}
                   onClick={() => setFilter(status)}
-                  className={`px-5 py-2.5 rounded-[40px] text-[13px] font-medium transition-all ${
+                  className={`px-5 py-2.5 rounded-[40px] text-[13px] font-medium transition-all whitespace-nowrap ${
                     filter === status
                       ? 'bg-accent/20 border-[0.5px] border-accent/20 text-accent'
                       : 'bg-background-elevated text-foreground hover:bg-muted border border-border'
@@ -492,7 +492,7 @@ export default function MasterLootPage() {
               ))}
               </div>
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-shrink-0">
               <Button
                 variant="destructive-outline"
                 size="sm"
@@ -531,10 +531,10 @@ export default function MasterLootPage() {
               filteredSubmissions.map((submission) => (
                 <div
                   key={submission.id}
-                  className="bg-background-elevated border border-border rounded-xl p-5 flex items-center justify-between hover:bg-muted transition-all cursor-pointer"
+                  className="bg-background-elevated border border-border rounded-xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 hover:bg-muted transition-all cursor-pointer"
                   onClick={() => viewSubmissionDetails(submission.id)}
                 >
-                  <div className="flex items-center gap-3">
+                  <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                     <h3
                       className="text-[16px] font-semibold"
                       style={{ color: submission.member?.class?.color_hex || 'var(--foreground)' }}
@@ -551,7 +551,7 @@ export default function MasterLootPage() {
                       {submission.item_count} items • Submitted {submission.submitted_at ? new Date(submission.submitted_at).toLocaleDateString('en-US', { month: 'numeric', day: 'numeric', year: 'numeric' }) : 'N/A'}
                     </span>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 flex-shrink-0">
                     <Button
                       variant="primary-outline"
                       size="sm"

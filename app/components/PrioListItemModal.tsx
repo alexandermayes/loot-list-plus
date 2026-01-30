@@ -99,6 +99,21 @@ export function PrioListItemModal({
   // Notes
   const [notes, setNotes] = useState(priority?.notes || '')
 
+  // Initial values for change detection
+  const [initialValues] = useState({
+    rolePriorities: priority?.role_priorities || {},
+    classPriorities: priority?.class_priorities || {},
+    characterPriorities: priority?.character_priorities || {},
+    notes: priority?.notes || ''
+  })
+
+  // Check if form has unsaved changes
+  const hasChanges =
+    JSON.stringify(rolePriorities) !== JSON.stringify(initialValues.rolePriorities) ||
+    JSON.stringify(classPriorities) !== JSON.stringify(initialValues.classPriorities) ||
+    JSON.stringify(characterPriorities) !== JSON.stringify(initialValues.characterPriorities) ||
+    notes !== initialValues.notes
+
   // Convert to Sets for MultiSelectDropdown
   const selectedRoles = new Set(Object.keys(rolePriorities))
   const selectedSpecs = new Set(Object.keys(classPriorities))
@@ -408,7 +423,7 @@ export function PrioListItemModal({
         <Button variant="secondary" onClick={onClose}>
           Cancel
         </Button>
-        <Button variant="primary" onClick={handleSave} loading={saving}>
+        <Button variant="primary" onClick={handleSave} loading={saving} disabled={!hasChanges}>
           Save Priority
         </Button>
       </ModalFooter>

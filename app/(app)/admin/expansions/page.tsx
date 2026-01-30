@@ -361,7 +361,7 @@ export default function ExpansionsManagementPage() {
   }
 
   return (
-    <div className="p-8 space-y-6">
+    <div className="p-4 sm:p-6 lg:p-8 space-y-6">
       {/* Header */}
       <div>
         <Heading level={1}>Manage Expansions</Heading>
@@ -374,7 +374,7 @@ export default function ExpansionsManagementPage() {
       {guildExpansions.length > 0 && (
         <div>
           <h2 className="text-[20px] font-semibold text-foreground mb-4">Your Expansions</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {/* Sort so current expansion is first */}
             {[...guildExpansions].sort((a, b) => {
               if (a.is_current && !b.is_current) return -1
@@ -618,7 +618,7 @@ export default function ExpansionsManagementPage() {
       {addableExpansions.length > 0 && (
         <div>
           <h2 className="text-[20px] font-semibold text-foreground mb-4">Add Expansion</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {addableExpansions.map((exp) => {
               const visuals = getExpansionVisuals(exp.name)
               return (
