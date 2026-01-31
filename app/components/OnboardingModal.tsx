@@ -135,7 +135,7 @@ export default function OnboardingModal({ open, onClose }: OnboardingModalProps)
               </div>
 
               <h2 className="text-xl font-semibold text-foreground mb-1">
-                Welcome to LootList+!
+                Welcome to LootList+
               </h2>
               <p className="text-foreground-secondary text-[14px]">
                 Here&apos;s how the loot system works
