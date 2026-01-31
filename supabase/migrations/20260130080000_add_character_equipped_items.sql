@@ -34,7 +34,8 @@ CREATE POLICY "Users can view equipped items for guild characters"
   USING (
     EXISTS (
       SELECT 1 FROM characters c
-      JOIN guild_members gm ON gm.guild_id = c.guild_id
+      JOIN character_guild_memberships cgm ON cgm.character_id = c.id
+      JOIN guild_members gm ON gm.guild_id = cgm.guild_id
       WHERE c.id = character_equipped_items.character_id
       AND gm.user_id = auth.uid()
     )
@@ -66,19 +67,23 @@ CREATE POLICY "Officers can manage guild characters' equipped items"
   USING (
     EXISTS (
       SELECT 1 FROM characters c
-      JOIN guild_members gm ON gm.guild_id = c.guild_id
+      JOIN character_guild_memberships cgm ON cgm.character_id = c.id
+      JOIN guild_members gm ON gm.guild_id = cgm.guild_id
+      JOIN guild_roles gr ON gr.guild_id = gm.guild_id AND gr.name = gm.role
       WHERE c.id = character_equipped_items.character_id
       AND gm.user_id = auth.uid()
-      AND gm.role IN ('officer', 'guild_master')
+      AND gr.position >= 50
     )
   )
   WITH CHECK (
     EXISTS (
       SELECT 1 FROM characters c
-      JOIN guild_members gm ON gm.guild_id = c.guild_id
+      JOIN character_guild_memberships cgm ON cgm.character_id = c.id
+      JOIN guild_members gm ON gm.guild_id = cgm.guild_id
+      JOIN guild_roles gr ON gr.guild_id = gm.guild_id AND gr.name = gm.role
       WHERE c.id = character_equipped_items.character_id
       AND gm.user_id = auth.uid()
-      AND gm.role IN ('officer', 'guild_master')
+      AND gr.position >= 50
     )
   );
 
