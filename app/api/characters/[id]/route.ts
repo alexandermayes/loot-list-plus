@@ -58,7 +58,14 @@ export async function GET(
       }
     }
 
-    return NextResponse.json({ character: enrichedCharacter })
+    return NextResponse.json(
+      { character: enrichedCharacter },
+      {
+        headers: {
+          'Cache-Control': 'private, max-age=60, stale-while-revalidate=120'
+        }
+      }
+    )
   } catch (error) {
     console.error('Error in GET /api/characters/[id]:', error)
     return NextResponse.json(

@@ -205,15 +205,20 @@ export default function MasterLootPage() {
   const loadSubmissions = useCallback(async (guildId: string, tierId: string | 'all', allTiers?: RaidTier[], singleTier?: RaidTier) => {
     setContentLoading(true)
     if (tierId === 'all' && allTiers && allTiers.length > 0) {
-      // Load submissions for all tiers
-      const allSubmissions: any[] = []
-      for (const tier of allTiers) {
-        const { data: submissionsData, error } = await supabase
-          .rpc('get_guild_submissions', {
-            p_guild_id: guildId,
-            p_raid_tier_id: tier.id
-          })
+      // Load submissions for all tiers in parallel
+      const results = await Promise.all(
+        allTiers.map(tier =>
+          supabase
+            .rpc('get_guild_submissions', {
+              p_guild_id: guildId,
+              p_raid_tier_id: tier.id
+            })
+            .then(({ data, error }) => ({ data, error, tier }))
+        )
+      )
 
+      const allSubmissions: any[] = []
+      results.forEach(({ data: submissionsData, error, tier }) => {
         if (!error && submissionsData) {
           // Add tier info to each submission
           const withTierInfo = submissionsData.map((sub: any) => ({
@@ -223,7 +228,7 @@ export default function MasterLootPage() {
           }))
           allSubmissions.push(...withTierInfo)
         }
-      }
+      })
 
       // Transform and set submissions
       const formattedSubmissions = allSubmissions.map((sub: any) => ({

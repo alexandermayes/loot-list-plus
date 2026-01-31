@@ -194,7 +194,14 @@ export async function GET(request: NextRequest) {
       consensus_count: consensusCounts[item.id] || 0
     }))
 
-    return NextResponse.json({ items: itemsWithConsensus })
+    return NextResponse.json(
+      { items: itemsWithConsensus },
+      {
+        headers: {
+          'Cache-Control': 'private, max-age=60, stale-while-revalidate=120'
+        }
+      }
+    )
   } catch (error) {
     console.error('Error in GET /api/loot-items:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

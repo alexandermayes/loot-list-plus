@@ -191,14 +191,21 @@ export async function GET(request: NextRequest) {
       return a.slot.localeCompare(b.slot)
     })
 
-    return NextResponse.json({
-      spec_name: bisSpecKey,
-      tier_name: tier.name,
-      items: matchedItems,
-      total_bis_items: Object.values(bisData).flat().length,
-      matched_count: matchedItems.length,
-      unmatched_count: unmatchedBisItems.length
-    })
+    return NextResponse.json(
+      {
+        spec_name: bisSpecKey,
+        tier_name: tier.name,
+        items: matchedItems,
+        total_bis_items: Object.values(bisData).flat().length,
+        matched_count: matchedItems.length,
+        unmatched_count: unmatchedBisItems.length
+      },
+      {
+        headers: {
+          'Cache-Control': 'private, max-age=300, stale-while-revalidate=600'
+        }
+      }
+    )
   } catch (error) {
     console.error('Error in GET /api/bis-items:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

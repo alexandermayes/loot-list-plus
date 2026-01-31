@@ -19,19 +19,17 @@ export async function POST(request: NextRequest) {
     // Create admin client for fetching user metadata
     const supabaseAdmin = createServiceRoleClient()
 
-    // Fetch all users and extract their metadata
-    const { data: { users }, error: usersError } = await supabaseAdmin.auth.admin.listUsers()
-
-    if (usersError) {
-      console.error('Error fetching users:', usersError)
-      return NextResponse.json({ error: 'Failed to fetch users' }, { status: 500 })
-    }
+    // Fetch only the requested users (not all users)
+    const userResults = await Promise.all(
+      userIds.map(id => supabaseAdmin.auth.admin.getUserById(id))
+    )
 
     // Create map of user IDs to display names
     const displayNames: Record<string, string> = {}
 
-    users?.forEach(u => {
-      if (userIds.includes(u.id)) {
+    userResults.forEach(result => {
+      if (result.data?.user) {
+        const u = result.data.user
         displayNames[u.id] = u.user_metadata?.custom_claims?.global_name ||
                             u.user_metadata?.full_name ||
                             u.user_metadata?.name ||
