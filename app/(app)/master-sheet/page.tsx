@@ -19,6 +19,7 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { Button } from '@/components/ui/button'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { ScrollIcon, ArrowUpRight01Icon, InformationCircleIcon } from '@hugeicons/core-free-icons'
+import { HorizontalScroll } from '@/components/ui/horizontal-scroll'
 import { Heading } from '@/components/ui/typography'
 import ScoreBreakdownModal from '@/app/components/ScoreBreakdownModal'
 import ScoreComparisonModal from '@/app/components/ScoreComparisonModal'
@@ -67,7 +68,6 @@ export default function MasterSheet() {
   const [masterSheetVisible, setMasterSheetVisible] = useState<boolean>(false)
   const [itemPriorities, setItemPriorities] = useState<Record<string, ItemPriority>>({})
   const [collapsedBosses, setCollapsedBosses] = useState<Set<string>>(new Set())
-  const [tierScrollState, setTierScrollState] = useState({ left: false, right: true })
   const [isExporting, setIsExporting] = useState(false)
   const [showScoreBreakdown, setShowScoreBreakdown] = useState(false)
   const [showScoreComparison, setShowScoreComparison] = useState(false)
@@ -81,7 +81,6 @@ export default function MasterSheet() {
   const [aggregateItems, setAggregateItems] = useState<LootListAggregateItem[]>([])
   const [aggregateLoading, setAggregateLoading] = useState(false)
   const [aggregateBossFilter, setAggregateBossFilter] = useState<string | null>(null)
-  const tierScrollRef = useRef<HTMLDivElement>(null)
 
   const supabase = createClient()
   const router = useRouter()
@@ -92,29 +91,6 @@ export default function MasterSheet() {
   useEffect(() => {
     document.title = 'LootList+ • Loot Rankings'
   }, [])
-
-  // Handle tier scroll to show/hide fades
-  const handleTierScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
-    const el = e.currentTarget
-    const scrollLeft = el.scrollLeft
-    const maxScroll = el.scrollWidth - el.clientWidth
-    setTierScrollState({
-      left: scrollLeft > 5,
-      right: scrollLeft < maxScroll - 5
-    })
-  }, [])
-
-  // Check initial tier scroll state
-  useEffect(() => {
-    const el = tierScrollRef.current
-    if (el) {
-      const maxScroll = el.scrollWidth - el.clientWidth
-      setTierScrollState({
-        left: el.scrollLeft > 5,
-        right: maxScroll > 5
-      })
-    }
-  }, [raidTiers])
 
   // Define raid tier progression order (Classic + TBC + WotLK)
   const getRaidTierOrder = (tierName: string): number => {
@@ -1071,15 +1047,7 @@ export default function MasterSheet() {
                 </select>
               </div>
               {/* Desktop: Horizontal tabs */}
-              <div
-                ref={tierScrollRef}
-                onScroll={handleTierScroll}
-                className="hidden sm:block flex-1 min-w-0 overflow-x-auto scrollbar-hide"
-                style={{
-                  maskImage: `linear-gradient(to right, ${tierScrollState.left ? 'transparent' : 'black'}, black ${tierScrollState.left ? '24px' : '0px'}, black calc(100% - ${tierScrollState.right ? '24px' : '0px'}), ${tierScrollState.right ? 'transparent' : 'black'})`,
-                  WebkitMaskImage: `linear-gradient(to right, ${tierScrollState.left ? 'transparent' : 'black'}, black ${tierScrollState.left ? '24px' : '0px'}, black calc(100% - ${tierScrollState.right ? '24px' : '0px'}), ${tierScrollState.right ? 'transparent' : 'black'})`
-                }}
-              >
+              <HorizontalScroll containerClassName="hidden sm:flex flex-1 min-w-0">
                 <div className="flex gap-2 pr-3">
                   {raidTiers.map((tier: any) => {
                     const isDisabled = tier.is_guild_active === false
@@ -1107,7 +1075,7 @@ export default function MasterSheet() {
                     )
                   })}
                 </div>
-              </div>
+              </HorizontalScroll>
               {/* Officer View Toggle */}
               {isOfficer && (
                 <>

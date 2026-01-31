@@ -301,6 +301,53 @@ export function invalidateTierSubmissionStatuses(characterId: string, guildId: s
   return mutate(`/api/loot-submissions/statuses?character_id=${characterId}&guild_id=${guildId}&tier_ids=${tierIds.join(',')}`)
 }
 
+// === Character Gear Hooks ===
+
+export interface EquippedItem {
+  id: string
+  slot: string
+  wowhead_id: number
+  item_name: string | null
+  enchant_id: number | null
+  gem_ids: number[] | null
+  imported_at: string
+}
+
+export interface AwardedItem {
+  wowhead_id: number
+  item_name: string | null
+  slot: string | null
+  awarded_date: string
+  source: 'loot_history'
+}
+
+/**
+ * Fetch equipped items for a character (imported from WowSims)
+ * @param characterId - The character ID
+ */
+export function useCharacterGear(
+  characterId: string | null,
+  options?: SWRConfiguration
+) {
+  return useSWR<{ character_id: string; items: EquippedItem[]; awarded_items?: AwardedItem[]; count: number }>(
+    characterId ? `/api/character-gear?character_id=${characterId}` : null,
+    fetcher,
+    {
+      ...swrConfig,
+      revalidateOnFocus: false,
+      dedupingInterval: 30000, // Gear changes rarely
+      ...options,
+    }
+  )
+}
+
+/**
+ * Invalidate character gear cache
+ */
+export function invalidateCharacterGear(characterId: string) {
+  return mutate(`/api/character-gear?character_id=${characterId}`)
+}
+
 // === Prio List Hooks ===
 
 export interface PrioListItem {

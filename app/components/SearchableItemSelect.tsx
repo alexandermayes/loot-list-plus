@@ -31,6 +31,8 @@ interface SearchableItemSelectProps {
   isSlotDisabled?: boolean
   /** Shows error styling on the dropdown */
   hasError?: boolean
+  /** Set of wowhead_ids that the user already owns (imported from WowSims) */
+  ownedWowheadIds?: Set<number>
 }
 
 export default function SearchableItemSelect({
@@ -41,7 +43,8 @@ export default function SearchableItemSelect({
   disabled = new Set(),
   currentValue,
   isSlotDisabled = false,
-  hasError = false
+  hasError = false,
+  ownedWowheadIds = new Set()
 }: SearchableItemSelectProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [search, setSearch] = useState('')
@@ -281,6 +284,7 @@ export default function SearchableItemSelect({
                   {/* Boss Items */}
                   {itemsByBoss[boss].map(item => {
                     const isDisabled = disabled.has(item.id) && currentValue !== item.id
+                    const isOwned = ownedWowheadIds.has(item.wowhead_id)
                     return (
                       <button
                         key={item.id}
@@ -299,6 +303,11 @@ export default function SearchableItemSelect({
                         <span className="truncate flex-1 min-w-0">
                           <ItemLink name={item.name} wowheadId={item.wowhead_id} clickable={false} />
                         </span>
+                        {isOwned && (
+                          <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-success/20 text-success flex-shrink-0">
+                            Owned
+                          </span>
+                        )}
                         {item.consensus_count && item.consensus_count > 0 && (
                           <span className="text-xs text-muted-foreground flex-shrink-0">
                             {item.consensus_count} ranked

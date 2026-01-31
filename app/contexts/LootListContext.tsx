@@ -10,10 +10,13 @@ import {
   useRaidTiers,
   useLootSubmission,
   useTierSubmissionStatuses,
+  useCharacterGear,
   invalidateTierSubmissionStatuses,
+  invalidateCharacterGear,
   type LootItem,
   type LootSubmission,
-  type RaidTier
+  type RaidTier,
+  type EquippedItem
 } from '@/app/hooks/use-api'
 import { refreshWowheadTooltips } from '@/lib/wowhead'
 import { preloadItemIcons } from '@/data/item-icons'
@@ -72,12 +75,15 @@ interface LootListContextType {
   selectedTierId: string | null
   selectedTierDeadline: string | null
   enforceSlotRestrictions: boolean
+  equippedItems: EquippedItem[]
+  equippedWowheadIds: Set<number>
 
   // Loading states
   isLoading: boolean
   isContentLoading: boolean
   isSaving: boolean
   isImportingBis: boolean
+  isGearLoading: boolean
 
   // Computed
   hasChanges: boolean
@@ -91,6 +97,7 @@ interface LootListContextType {
   saveSubmission: (submit: boolean) => Promise<void>
   refreshData: () => void
   importBisItems: () => Promise<BisImportResult>
+  refreshGear: () => void
 }
 
 const LootListContext = createContext<LootListContextType | null>(null)
@@ -186,6 +193,29 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
     selectedTierId,
     activeGuild?.id || null
   )
+
+  // Fetch equipped items for the character (from WowSims import)
+  const { data: gearData, isLoading: gearLoading, mutate: mutateGear } = useCharacterGear(
+    activeCharacter?.id || null
+  )
+
+  // Create a Set of wowhead IDs for quick lookup (includes both WowSims imports and loot history awards)
+  const equippedWowheadIds = useMemo(() => {
+    const ids = new Set<number>()
+    // Add items from WowSims import
+    if (gearData?.items) {
+      for (const item of gearData.items) {
+        ids.add(item.wowhead_id)
+      }
+    }
+    // Add items from loot history (raid tracking awards)
+    if (gearData?.awarded_items) {
+      for (const item of gearData.awarded_items) {
+        ids.add(item.wowhead_id)
+      }
+    }
+    return ids
+  }, [gearData?.items, gearData?.awarded_items])
 
   // Keep submissionDataRef in sync (must be after submissionData is declared)
   useEffect(() => {
@@ -348,8 +378,13 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
         }
       }
 
-      // Build a set of valid item IDs for this tier
-      const validItemIds = new Set((itemsData?.items || []).map(item => item.id))
+      // Build maps of valid item IDs for this tier
+      const validItems = new Map<string, number>() // id -> wowhead_id
+      const itemClassifications = new Map<string, string | undefined>() // id -> classification
+      for (const item of (itemsData?.items || [])) {
+        validItems.set(item.id, item.wowhead_id)
+        itemClassifications.set(item.id, item.classification)
+      }
 
       // Sort BIS items by priority (BIS first, then alt)
       const sortedBisItems = [...data.items].sort((a: any, b: any) => {
@@ -361,28 +396,59 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
 
       // Fill both columns starting from rank 50 (top/highest priority)
       // Pattern: rank 50 slot 1, rank 50 slot 2, rank 49 slot 1, rank 49 slot 2, etc.
+      // Skip items that the user already owns (based on equipped gear from WowSims import)
+      // Reserved items must be alone at their rank (no companion item)
       const newRankings: Record<string, string> = {}
       let rank = 50
       let slot = 1
       let importedCount = 0
+      let skippedOwned = 0
 
       for (const bisItem of sortedBisItems) {
         // Skip if item not available in this tier
-        if (!validItemIds.has(bisItem.loot_item_id)) continue
+        const wowheadId = validItems.get(bisItem.loot_item_id)
+        if (wowheadId === undefined) continue
+
+        // Skip items the user already owns (imported from WowSims)
+        if (equippedWowheadIds.has(wowheadId)) {
+          skippedOwned++
+          continue
+        }
 
         // Stop if we've filled all ranks down to 1
         if (rank < 1) break
 
-        // Add item to current position
-        newRankings[`${rank}-${slot}`] = bisItem.loot_item_id
-        importedCount++
+        const classification = itemClassifications.get(bisItem.loot_item_id)
+        const isReserved = classification === 'Reserved'
 
-        // Move to next slot: 1 -> 2, then 2 -> 1 (next rank down)
-        if (slot === 1) {
-          slot = 2
-        } else {
-          slot = 1
+        // Reserved items must be alone at their rank
+        if (isReserved) {
+          // If we're at slot 2, move to slot 1 of next rank
+          if (slot === 2) {
+            slot = 1
+            rank--
+          }
+          if (rank < 1) break
+
+          // Place Reserved item in slot 1
+          newRankings[`${rank}-1`] = bisItem.loot_item_id
+          importedCount++
+
+          // Move to next rank (Reserved items get their own rank)
           rank--
+          slot = 1
+        } else {
+          // Normal item placement
+          newRankings[`${rank}-${slot}`] = bisItem.loot_item_id
+          importedCount++
+
+          // Move to next slot: 1 -> 2, then 2 -> 1 (next rank down)
+          if (slot === 1) {
+            slot = 2
+          } else {
+            slot = 1
+            rank--
+          }
         }
       }
 
@@ -403,7 +469,7 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setIsImportingBis(false)
     }
-  }, [activeCharacter, selectedTierId, itemsData?.items])
+  }, [activeCharacter, selectedTierId, itemsData?.items, equippedWowheadIds])
 
   // Check for changes
   const hasChanges = useMemo(() => {
@@ -672,6 +738,14 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
     mutateSubmission()
   }, [mutateSubmission])
 
+  // Refresh character gear data
+  const refreshGear = useCallback(() => {
+    if (activeCharacter?.id) {
+      invalidateCharacterGear(activeCharacter.id)
+      mutateGear()
+    }
+  }, [activeCharacter?.id, mutateGear])
+
   // Get selected tier deadline
   const selectedTierDeadline = useMemo(() => {
     const tier = sortedTiers.find(t => t.id === selectedTierId)
@@ -692,12 +766,15 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
     selectedTierId,
     selectedTierDeadline,
     enforceSlotRestrictions,
+    equippedItems: gearData?.items || [],
+    equippedWowheadIds,
 
     // Loading states
     isLoading,
     isContentLoading,
     isSaving,
     isImportingBis,
+    isGearLoading: gearLoading,
 
     // Computed
     hasChanges,
@@ -710,7 +787,8 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
     clearAllRankings,
     saveSubmission,
     refreshData,
-    importBisItems
+    importBisItems,
+    refreshGear
   }
 
   return (

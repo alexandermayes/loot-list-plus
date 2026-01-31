@@ -22,8 +22,7 @@ import { InformationCircleIcon } from '@hugeicons/core-free-icons'
 import { useLootList, type LootItem } from '@/app/contexts/LootListContext'
 import { useNotification } from '@/app/contexts/NotificationContext'
 import { ClassificationBadge } from '@/components/ui/classification-badge'
-import { WowSimsImportModal } from '@/app/components/WowSimsImportModal'
-import { Upload02Icon } from '@hugeicons/core-free-icons'
+import { BisImportModal } from '@/app/components/BisImportModal'
 import { HorizontalScroll } from '@/components/ui/horizontal-scroll'
 
 // Helper function for rank colors - defined outside component for stability
@@ -197,7 +196,7 @@ export default function LootList() {
 
   // Local UI state
   const [showInstructionsModal, setShowInstructionsModal] = useState(false)
-  const [showGearImportModal, setShowGearImportModal] = useState(false)
+  const [showBisImportModal, setShowBisImportModal] = useState(false)
   const [expandedErrors, setExpandedErrors] = useState<Set<string>>(new Set())
 
   const { confirm, ConfirmDialog } = useConfirm()
@@ -262,33 +261,6 @@ export default function LootList() {
     Object.values(rankings).filter((itemId, index, arr) => arr.indexOf(itemId) !== index),
     [rankings]
   )
-
-  const handleImportBis = useCallback(async () => {
-    // Warn if there are existing rankings
-    if (rankedCount > 0) {
-      confirm({
-        title: 'Import BIS items',
-        description: 'This will replace your current rankings with Best-in-Slot items for your spec. Continue?',
-        confirmLabel: 'Import BIS',
-        variant: 'default',
-        onConfirm: async () => {
-          const result = await importBisItems()
-          if (result.success) {
-            showNotification('success', `Imported ${result.importedCount} BIS items`)
-          } else {
-            showNotification('error', result.error || 'Failed to import BIS items')
-          }
-        }
-      })
-    } else {
-      const result = await importBisItems()
-      if (result.success) {
-        showNotification('success', `Imported ${result.importedCount} BIS items`)
-      } else {
-        showNotification('error', result.error || 'Failed to import BIS items')
-      }
-    }
-  }, [confirm, importBisItems, showNotification, rankedCount])
 
   // Bracket validation
   type BracketValidation = {
@@ -674,35 +646,19 @@ export default function LootList() {
                   </p>
                 </div>
               </div>
-              <div className="flex flex-wrap items-center gap-2 sm:gap-4">
+              <div className="flex flex-wrap items-center gap-3">
                 <span className="text-sm opacity-75">{rankedCount} items ranked</span>
-                {/* Import Gear Button */}
-                <Button
-                  variant="ghost"
-                  onClick={() => setShowGearImportModal(true)}
-                  size="sm"
-                  className="sm:size-default"
-                  title="Import your current gear from WowSims"
-                >
-                  <HugeiconsIcon icon={Upload02Icon} size={16} />
-                  <span className="hidden sm:inline">Import Gear</span>
-                </Button>
                 {/* Import BIS Button */}
                 <Button
                   variant="secondary"
-                  onClick={handleImportBis}
-                  loading={isImportingBis}
-                  size="sm"
-                  className="sm:size-default"
+                  onClick={() => setShowBisImportModal(true)}
                 >
-                  <span className="hidden sm:inline">Import BIS</span>
-                  <span className="sm:hidden">BIS</span>
+                  Import BIS
                 </Button>
                 {/* Clear List Button */}
                 {rankedCount > 0 && (
-                  <Button variant="destructive" onClick={handleClearList} size="sm" className="sm:size-default">
-                    <span className="hidden sm:inline">Clear List</span>
-                    <span className="sm:hidden">Clear</span>
+                  <Button variant="destructive" onClick={handleClearList}>
+                    Clear List
                   </Button>
                 )}
                 {/* Submit for Review Button */}
@@ -1267,17 +1223,19 @@ export default function LootList() {
         {/* Confirm Modal */}
         {ConfirmDialog}
 
-        {/* WowSims Import Modal */}
+        {/* BIS Import Modal */}
         {activeCharacter && (
-          <WowSimsImportModal
-            isOpen={showGearImportModal}
-            onClose={() => setShowGearImportModal(false)}
+          <BisImportModal
+            isOpen={showBisImportModal}
+            onClose={() => setShowBisImportModal(false)}
             characterId={activeCharacter.id}
             characterName={activeCharacter.name}
-            onSuccess={() => {
-              refreshGear()
-              showNotification('success', 'Gear imported successfully')
-            }}
+            hasGearImported={equippedWowheadIds.size > 0}
+            gearItemCount={equippedWowheadIds.size}
+            rankedCount={rankedCount}
+            onImportBis={importBisItems}
+            onGearImported={refreshGear}
+            isImportingBis={isImportingBis}
           />
         )}
         </>
