@@ -22,6 +22,9 @@ import { InformationCircleIcon } from '@hugeicons/core-free-icons'
 import { useLootList, type LootItem } from '@/app/contexts/LootListContext'
 import { useNotification } from '@/app/contexts/NotificationContext'
 import { ClassificationBadge } from '@/components/ui/classification-badge'
+import { WowSimsImportModal } from '@/app/components/WowSimsImportModal'
+import { Upload02Icon } from '@hugeicons/core-free-icons'
+import { HorizontalScroll } from '@/components/ui/horizontal-scroll'
 
 // Helper function for rank colors - defined outside component for stability
 const getRankColor = (rank: number) => {
@@ -55,6 +58,8 @@ interface RankRowProps {
   slot1Errors?: ItemError[]
   /** Errors affecting slot 2 */
   slot2Errors?: ItemError[]
+  /** Set of wowhead_ids that the user already owns (imported from WowSims) */
+  ownedWowheadIds?: Set<number>
 }
 
 const RankRow = memo(function RankRow({
@@ -66,7 +71,8 @@ const RankRow = memo(function RankRow({
   duplicateItems,
   onItemSelect,
   slot1Errors = [],
-  slot2Errors = []
+  slot2Errors = [],
+  ownedWowheadIds = new Set()
 }: RankRowProps) {
   const selectedItem1 = selectedItemId1 ? lootItems.find(i => i.id === selectedItemId1) : null
   const selectedItem2 = selectedItemId2 ? lootItems.find(i => i.id === selectedItemId2) : null
@@ -101,6 +107,7 @@ const RankRow = memo(function RankRow({
             currentValue={selectedItemId1}
             isSlotDisabled={isSlot1DisabledByReserved}
             hasError={hasSlot1Error}
+            ownedWowheadIds={ownedWowheadIds}
           />
           {hasSlot1Error && (
             <p className="text-destructive text-[11px] pl-3">
@@ -131,6 +138,7 @@ const RankRow = memo(function RankRow({
             currentValue={selectedItemId2}
             isSlotDisabled={isSlot2DisabledByReserved}
             hasError={hasSlot2Error}
+            ownedWowheadIds={ownedWowheadIds}
           />
           {hasSlot2Error && (
             <p className="text-destructive text-[11px] pl-3">
@@ -173,6 +181,7 @@ export default function LootList() {
     selectedTierId,
     selectedTierDeadline,
     enforceSlotRestrictions,
+    equippedWowheadIds,
     isLoading,
     isContentLoading,
     isSaving,
@@ -182,11 +191,13 @@ export default function LootList() {
     handleItemSelect,
     clearAllRankings,
     saveSubmission,
-    importBisItems
+    importBisItems,
+    refreshGear
   } = useLootList()
 
   // Local UI state
   const [showInstructionsModal, setShowInstructionsModal] = useState(false)
+  const [showGearImportModal, setShowGearImportModal] = useState(false)
   const [expandedErrors, setExpandedErrors] = useState<Set<string>>(new Set())
 
   const { confirm, ConfirmDialog } = useConfirm()
@@ -496,7 +507,32 @@ export default function LootList() {
         {/* Expansion Selector */}
         {guildExpansions.length > 1 && (
           <div className="px-4 sm:px-6 lg:px-8 py-1.5 bg-background">
-            <div className="flex gap-2 overflow-x-auto">
+            {/* Mobile: Dropdown selector */}
+            <div className="sm:hidden">
+              <select
+                value={viewingExpansionId || guildExpansions.find(e => e.is_current)?.expansion_id || ''}
+                onChange={(e) => {
+                  const expansion = guildExpansions.find(exp => exp.expansion_id === e.target.value)
+                  setViewingExpansion(expansion?.is_current ? null : e.target.value)
+                }}
+                className="w-full px-4 py-2.5 bg-background-elevated border border-border rounded-xl text-[13px] font-medium text-foreground appearance-none cursor-pointer"
+                style={{
+                  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%239ca3af'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
+                  backgroundRepeat: 'no-repeat',
+                  backgroundPosition: 'right 12px center',
+                  backgroundSize: '16px',
+                  paddingRight: '40px'
+                }}
+              >
+                {guildExpansions.map((expansion) => (
+                  <option key={expansion.expansion_id} value={expansion.expansion_id}>
+                    {expansion.expansion_name}{expansion.is_current ? ' ★' : ''}
+                  </option>
+                ))}
+              </select>
+            </div>
+            {/* Desktop: Horizontal scroll tabs */}
+            <div className="hidden sm:flex gap-2 overflow-x-auto">
               {guildExpansions.map((expansion) => {
                 const isViewing = viewingExpansionId === expansion.expansion_id
                 const isCurrent = expansion.is_current && !viewingExpansionId
@@ -529,50 +565,81 @@ export default function LootList() {
           </div>
         ) : raidTiers.length > 0 && (
           <div className="sticky top-0 z-20 px-4 sm:px-6 lg:px-8 py-1.5 bg-background">
-            <div className="flex items-center gap-3 overflow-x-auto">
-              <div className="flex gap-2">
+            {/* Mobile: Dropdown selector */}
+            <div className="sm:hidden">
+              <select
+                value={selectedTierId || ''}
+                onChange={(e) => setSelectedTierId(e.target.value)}
+                className="w-full px-4 py-2.5 bg-background-elevated border border-border rounded-xl text-[13px] font-medium text-foreground appearance-none cursor-pointer"
+                style={{
+                  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%239ca3af'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
+                  backgroundRepeat: 'no-repeat',
+                  backgroundPosition: 'right 12px center',
+                  backgroundSize: '16px',
+                  paddingRight: '40px'
+                }}
+              >
                 {raidTiers.map((tier) => {
                   const status = tierSubmissionStatuses[tier.id]
-                  const hasSubmission = !!status
-                  const statusColor = hasSubmission
-                    ? status.status === 'approved'
-                      ? 'text-green-400'
-                      : status.status === 'pending'
-                      ? 'text-yellow-400'
-                      : status.status === 'needs_revision'
-                      ? 'text-orange-400'
-                      : status.status === 'rejected'
-                      ? 'text-red-400'
-                      : 'text-gray-400'
-                    : ''
-
+                  const statusEmoji = status?.status === 'approved' ? ' ✓' :
+                                      status?.status === 'pending' ? ' ⏳' :
+                                      status?.status === 'needs_revision' ? ' ⚠' :
+                                      status?.status === 'rejected' ? ' ✗' : ''
                   return (
-                    <button
-                      key={tier.id}
-                      onClick={() => setSelectedTierId(tier.id)}
-                      className={`px-5 py-2.5 rounded-[40px] whitespace-nowrap text-[13px] font-medium transition-all border ${
-                        selectedTierId === tier.id
-                          ? 'bg-accent/20 border-accent/20 text-accent'
-                          : 'bg-background-elevated border-border text-foreground hover:bg-muted'
-                      }`}
-                    >
-                      <div className="flex items-center gap-2">
-                        <span>{tier.name}</span>
-                        {tier.is_active && <StarFilledIcon size={14} />}
-                        {hasSubmission && (
-                          <span className={statusColor}>
-                            {status.status === 'approved' ? <CheckFilledIcon size={14} /> :
-                             status.status === 'pending' ? <ClockFilledIcon size={14} /> :
-                             status.status === 'needs_revision' ? <AlertFilledIcon size={14} /> :
-                             status.status === 'rejected' ? <CancelFilledIcon size={14} /> :
-                             <span className="w-2 h-2 rounded-full bg-current inline-block" />}
-                          </span>
-                        )}
-                      </div>
-                    </button>
+                    <option key={tier.id} value={tier.id}>
+                      {tier.name}{tier.is_active ? ' ★' : ''}{statusEmoji}
+                    </option>
                   )
                 })}
-              </div>
+              </select>
+            </div>
+            {/* Desktop: Horizontal scroll tabs */}
+            <div className="hidden sm:block">
+              <HorizontalScroll>
+                <div className="flex gap-2">
+                  {raidTiers.map((tier) => {
+                    const status = tierSubmissionStatuses[tier.id]
+                    const hasSubmission = !!status
+                    const statusColor = hasSubmission
+                      ? status.status === 'approved'
+                        ? 'text-green-400'
+                        : status.status === 'pending'
+                        ? 'text-yellow-400'
+                        : status.status === 'needs_revision'
+                        ? 'text-orange-400'
+                        : status.status === 'rejected'
+                        ? 'text-red-400'
+                        : 'text-gray-400'
+                      : ''
+
+                    return (
+                      <button
+                        key={tier.id}
+                        onClick={() => setSelectedTierId(tier.id)}
+                        className={`px-5 py-2.5 rounded-[40px] whitespace-nowrap text-[13px] font-medium transition-all border ${
+                          selectedTierId === tier.id
+                            ? 'bg-accent/20 border-accent/20 text-accent'
+                            : 'bg-background-elevated border-border text-foreground hover:bg-muted'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <span>{tier.name}</span>
+                          {tier.is_active && <StarFilledIcon size={14} />}
+                          {hasSubmission && (
+                            <span className={statusColor}>
+                              {status.status === 'approved' ? <CheckFilledIcon size={14} /> :
+                               status.status === 'pending' ? <ClockFilledIcon size={14} /> :
+                               status.status === 'needs_revision' ? <AlertFilledIcon size={14} /> :
+                               status.status === 'rejected' ? <CancelFilledIcon size={14} /> :
+                               <span className="w-2 h-2 rounded-full bg-current inline-block" />}
+                            </span>
+                          )}
+                        </div>
+                      </button>
+                    )
+                  })}
+                </div>
+              </HorizontalScroll>
             </div>
           </div>
         )}
@@ -609,6 +676,17 @@ export default function LootList() {
               </div>
               <div className="flex flex-wrap items-center gap-2 sm:gap-4">
                 <span className="text-sm opacity-75">{rankedCount} items ranked</span>
+                {/* Import Gear Button */}
+                <Button
+                  variant="ghost"
+                  onClick={() => setShowGearImportModal(true)}
+                  size="sm"
+                  className="sm:size-default"
+                  title="Import your current gear from WowSims"
+                >
+                  <HugeiconsIcon icon={Upload02Icon} size={16} />
+                  <span className="hidden sm:inline">Import Gear</span>
+                </Button>
                 {/* Import BIS Button */}
                 <Button
                   variant="secondary"
@@ -754,6 +832,7 @@ export default function LootList() {
                     onItemSelect={handleItemSelect}
                     slot1Errors={getSlotErrors(rank, 1)}
                     slot2Errors={getSlotErrors(rank, 2)}
+                    ownedWowheadIds={equippedWowheadIds}
                   />
                 ))}
               </tbody>
@@ -841,6 +920,7 @@ export default function LootList() {
                     onItemSelect={handleItemSelect}
                     slot1Errors={getSlotErrors(rank, 1)}
                     slot2Errors={getSlotErrors(rank, 2)}
+                    ownedWowheadIds={equippedWowheadIds}
                   />
                 ))}
               </tbody>
@@ -928,6 +1008,7 @@ export default function LootList() {
                     onItemSelect={handleItemSelect}
                     slot1Errors={getSlotErrors(rank, 1)}
                     slot2Errors={getSlotErrors(rank, 2)}
+                    ownedWowheadIds={equippedWowheadIds}
                   />
                 ))}
               </tbody>
@@ -1015,6 +1096,7 @@ export default function LootList() {
                     onItemSelect={handleItemSelect}
                     slot1Errors={getSlotErrors(rank, 1)}
                     slot2Errors={getSlotErrors(rank, 2)}
+                    ownedWowheadIds={equippedWowheadIds}
                   />
                 ))}
               </tbody>
@@ -1057,6 +1139,7 @@ export default function LootList() {
                     selectedItems={selectedItems}
                     duplicateItems={duplicateItems}
                     onItemSelect={handleItemSelect}
+                    ownedWowheadIds={equippedWowheadIds}
                   />
                 ))}
               </tbody>
@@ -1099,6 +1182,7 @@ export default function LootList() {
                     selectedItems={selectedItems}
                     duplicateItems={duplicateItems}
                     onItemSelect={handleItemSelect}
+                    ownedWowheadIds={equippedWowheadIds}
                   />
                 ))}
               </tbody>
@@ -1182,6 +1266,20 @@ export default function LootList() {
 
         {/* Confirm Modal */}
         {ConfirmDialog}
+
+        {/* WowSims Import Modal */}
+        {activeCharacter && (
+          <WowSimsImportModal
+            isOpen={showGearImportModal}
+            onClose={() => setShowGearImportModal(false)}
+            characterId={activeCharacter.id}
+            characterName={activeCharacter.name}
+            onSuccess={() => {
+              refreshGear()
+              showNotification('success', 'Gear imported successfully')
+            }}
+          />
+        )}
         </>
         )}
         </div>

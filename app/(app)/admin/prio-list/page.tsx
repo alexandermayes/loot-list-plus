@@ -19,6 +19,7 @@ const PrioListItemModal = dynamic(() => import('@/app/components/PrioListItemMod
 import { getBossOrder, normalizeBossName } from '@/utils/bossOrder'
 import { getBossImage } from '@/utils/bossImages'
 import { StarFilledIcon } from '@/components/ui/icons'
+import { HorizontalScroll } from '@/components/ui/horizontal-scroll'
 import { refreshWowheadTooltips } from '@/lib/wowhead'
 
 interface LootItem {
@@ -118,31 +119,6 @@ export default function AdminPrioList() {
   const [selectedItem, setSelectedItem] = useState<LootItem | null>(null)
   const [showModal, setShowModal] = useState(false)
   const [collapsedBosses, setCollapsedBosses] = useState<Set<string>>(new Set())
-  const [tierScrollState, setTierScrollState] = useState({ left: false, right: true })
-  const tierScrollRef = useRef<HTMLDivElement>(null)
-
-  // Handle tier scroll to show/hide fades
-  const handleTierScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
-    const el = e.currentTarget
-    const scrollLeft = el.scrollLeft
-    const maxScroll = el.scrollWidth - el.clientWidth
-    setTierScrollState({
-      left: scrollLeft > 5,
-      right: scrollLeft < maxScroll - 5
-    })
-  }, [])
-
-  // Check initial tier scroll state
-  useEffect(() => {
-    const el = tierScrollRef.current
-    if (el) {
-      const maxScroll = el.scrollWidth - el.clientWidth
-      setTierScrollState({
-        left: el.scrollLeft > 5,
-        right: maxScroll > 5
-      })
-    }
-  }, [raidTiers])
 
   const supabase = createClient()
   const router = useRouter()
@@ -484,33 +460,49 @@ export default function AdminPrioList() {
         {/* Raid Tier Tabs - Sticky */}
         {raidTiers.length > 0 && (
           <div className="sticky top-0 z-20 px-4 sm:px-6 lg:px-8 py-1.5 bg-background">
-            <div
-              ref={tierScrollRef}
-              onScroll={handleTierScroll}
-              className="overflow-x-auto scrollbar-hide"
-              style={{
-                maskImage: `linear-gradient(to right, ${tierScrollState.left ? 'transparent' : 'black'}, black ${tierScrollState.left ? '24px' : '0px'}, black calc(100% - ${tierScrollState.right ? '24px' : '0px'}), ${tierScrollState.right ? 'transparent' : 'black'})`,
-                WebkitMaskImage: `linear-gradient(to right, ${tierScrollState.left ? 'transparent' : 'black'}, black ${tierScrollState.left ? '24px' : '0px'}, black calc(100% - ${tierScrollState.right ? '24px' : '0px'}), ${tierScrollState.right ? 'transparent' : 'black'})`
-              }}
-            >
-              <div className="flex gap-2 pr-3">
+            {/* Mobile: Dropdown selector */}
+            <div className="sm:hidden">
+              <select
+                value={selectedTierId || ''}
+                onChange={(e) => setSelectedTierId(e.target.value)}
+                className="w-full px-4 py-2.5 bg-background-elevated border border-border rounded-xl text-[13px] font-medium text-foreground appearance-none cursor-pointer"
+                style={{
+                  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%239ca3af'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
+                  backgroundRepeat: 'no-repeat',
+                  backgroundPosition: 'right 12px center',
+                  backgroundSize: '16px',
+                  paddingRight: '40px'
+                }}
+              >
                 {raidTiers.map((tier) => (
-                  <button
-                    key={tier.id}
-                    onClick={() => setSelectedTierId(tier.id)}
-                    className={`px-5 py-2.5 rounded-[40px] whitespace-nowrap text-[13px] font-medium transition-all border ${
-                      selectedTierId === tier.id
-                        ? 'bg-accent/20 border-accent/20 text-accent'
-                        : 'bg-background-elevated border-border text-foreground hover:bg-muted'
-                    }`}
-                  >
-                    <span className="flex items-center gap-2">
-                      {tier.name}
-                      {tier.is_active && <StarFilledIcon size={14} />}
-                    </span>
-                  </button>
+                  <option key={tier.id} value={tier.id}>
+                    {tier.name}{tier.is_active ? ' ★' : ''}
+                  </option>
                 ))}
-              </div>
+              </select>
+            </div>
+            {/* Desktop: Horizontal scroll tabs */}
+            <div className="hidden sm:block">
+              <HorizontalScroll>
+                <div className="flex gap-2 pr-3">
+                  {raidTiers.map((tier) => (
+                    <button
+                      key={tier.id}
+                      onClick={() => setSelectedTierId(tier.id)}
+                      className={`px-5 py-2.5 rounded-[40px] whitespace-nowrap text-[13px] font-medium transition-all border ${
+                        selectedTierId === tier.id
+                          ? 'bg-accent/20 border-accent/20 text-accent'
+                          : 'bg-background-elevated border-border text-foreground hover:bg-muted'
+                      }`}
+                    >
+                      <span className="flex items-center gap-2">
+                        {tier.name}
+                        {tier.is_active && <StarFilledIcon size={14} />}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </HorizontalScroll>
             </div>
           </div>
         )}
@@ -545,10 +537,48 @@ export default function AdminPrioList() {
 
         {/* Boss Quick Navigation - Sticky below tier tabs */}
         {!contentLoading && bossNames.length > 0 && (
-          <div className="sticky top-[64px] z-10 px-4 sm:px-6 lg:px-8 py-1.5 bg-background">
+          <div className="sticky top-[52px] sm:top-[64px] z-10 px-4 sm:px-6 lg:px-8 py-1.5 bg-background">
             <div className="flex flex-col sm:flex-row gap-3">
-              {/* Search input */}
-              <div className="flex-shrink-0 bg-background-elevated border border-border rounded-xl p-3 flex items-center">
+              {/* Mobile: Search + Boss dropdown row */}
+              <div className="sm:hidden flex gap-2">
+                {/* Search input */}
+                <div className="flex-1 bg-background-elevated border border-border rounded-xl p-2">
+                  <input
+                    type="text"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    placeholder="Search..."
+                    className="w-full px-3 py-1.5 bg-background-elevated border border-border rounded-[40px] text-foreground text-xs focus:outline-none focus:border-accent placeholder:text-foreground-muted"
+                  />
+                </div>
+                {/* Boss dropdown */}
+                <div className="flex-1 bg-background-elevated border border-border rounded-xl p-2">
+                  <select
+                    onChange={(e) => {
+                      const element = document.getElementById(`boss-${e.target.value.replace(/\s+/g, '-')}`)
+                      if (element) {
+                        element.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                      }
+                    }}
+                    defaultValue=""
+                    className="w-full px-3 py-1.5 bg-background-elevated border border-border rounded-[40px] text-foreground text-xs appearance-none cursor-pointer"
+                    style={{
+                      backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%239ca3af'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
+                      backgroundRepeat: 'no-repeat',
+                      backgroundPosition: 'right 8px center',
+                      backgroundSize: '14px',
+                      paddingRight: '28px'
+                    }}
+                  >
+                    <option value="" disabled>Jump to boss...</option>
+                    {bossNames.map((boss) => (
+                      <option key={boss} value={boss}>{boss}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              {/* Desktop: Search input */}
+              <div className="hidden sm:flex flex-shrink-0 bg-background-elevated border border-border rounded-xl p-3 items-center">
                 <input
                   type="text"
                   value={searchTerm}
@@ -557,7 +587,7 @@ export default function AdminPrioList() {
                   className="w-full sm:w-[160px] px-3 py-1.5 bg-background-elevated border border-border rounded-[40px] text-foreground text-xs focus:outline-none focus:border-accent placeholder:text-foreground-muted"
                 />
               </div>
-              {/* Boss chips container with horizontal scroll fade */}
+              {/* Desktop: Boss chips container with horizontal scroll fade */}
               <div className="flex-1 min-w-0 bg-background-elevated border border-border rounded-xl p-3 overflow-hidden hidden sm:block">
                 <div
                   className="overflow-x-auto scrollbar-hide"
