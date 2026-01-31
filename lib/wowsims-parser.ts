@@ -165,6 +165,50 @@ export interface ParseResult {
 }
 
 /**
+ * Extract items array from wowsims equipment object format
+ * Equipment object has slot names as keys with item objects as values
+ */
+function extractItemsFromEquipment(equipment: Record<string, unknown> | undefined): unknown[] {
+  if (!equipment) return []
+
+  const items: unknown[] = []
+  const slotMapping: Record<string, WowSimsSlot> = {
+    head: 'HEAD',
+    neck: 'NECK',
+    shoulder: 'SHOULDER',
+    back: 'BACK',
+    chest: 'CHEST',
+    wrist: 'WRIST',
+    hands: 'HANDS',
+    waist: 'WAIST',
+    legs: 'LEGS',
+    feet: 'FEET',
+    finger1: 'FINGER1',
+    finger2: 'FINGER2',
+    trinket1: 'TRINKET1',
+    trinket2: 'TRINKET2',
+    mainHand: 'MAIN_HAND',
+    offHand: 'OFF_HAND',
+    ranged: 'RANGED',
+  }
+
+  for (const [key, value] of Object.entries(equipment)) {
+    if (value && typeof value === 'object') {
+      const item = value as Record<string, unknown>
+      const slot = slotMapping[key]
+      if (slot && item.id) {
+        items.push({
+          ...item,
+          slot,
+        })
+      }
+    }
+  }
+
+  return items
+}
+
+/**
  * Parse and validate WowSims JSON export
  */
 export function parseWowSimsExport(jsonString: string): ParseResult {
@@ -189,15 +233,49 @@ export function parseWowSimsExport(jsonString: string): ParseResult {
 
   const exportData = data as Record<string, unknown>
 
-  // Check for character data
-  if (!exportData.character || typeof exportData.character !== 'object') {
+  // Handle different export formats:
+  // Format 1: { character: {...}, items: [...] } (standard)
+  // Format 2: { name: "...", gameClass: "...", equipment: {...} } (wowsims website)
+  // Format 3: { player: { character: {...}, equipment: {...} } } (full sim export)
+
+  let character: Record<string, unknown>
+  let itemsSource: unknown
+
+  if (exportData.character && typeof exportData.character === 'object') {
+    // Standard format: { character: {...}, items: [...] }
+    character = exportData.character as Record<string, unknown>
+    itemsSource = exportData.items
+  } else if (exportData.player && typeof exportData.player === 'object') {
+    // Full sim export format: { player: { character: {...}, equipment: {...} } }
+    const player = exportData.player as Record<string, unknown>
+    if (player.character && typeof player.character === 'object') {
+      character = player.character as Record<string, unknown>
+      // Equipment might be in player.equipment or player.equipment.items
+      const equipment = player.equipment as Record<string, unknown> | undefined
+      itemsSource = equipment?.items || extractItemsFromEquipment(equipment)
+    } else if (player.name && player.class) {
+      // Player object IS the character
+      character = player
+      const equipment = player.equipment as Record<string, unknown> | undefined
+      itemsSource = equipment?.items || extractItemsFromEquipment(equipment)
+    } else {
+      return {
+        success: false,
+        error: 'Missing character data in export. Try using the WowSims Exporter addon in-game.',
+      }
+    }
+  } else if (exportData.name && (exportData.gameClass || exportData.class)) {
+    // Root is the character object
+    character = exportData
+    // Items might be in equipment object
+    const equipment = exportData.equipment as Record<string, unknown> | undefined
+    itemsSource = exportData.items || equipment?.items || extractItemsFromEquipment(equipment)
+  } else {
     return {
       success: false,
-      error: 'Missing character data in export.',
+      error: 'Missing character data in export. Try using the WowSims Exporter addon in-game.',
     }
   }
-
-  const character = exportData.character as Record<string, unknown>
 
   // Validate character fields
   if (typeof character.name !== 'string' || !character.name) {
@@ -207,23 +285,25 @@ export function parseWowSimsExport(jsonString: string): ParseResult {
     }
   }
 
-  if (typeof character.gameClass !== 'string' || !character.gameClass) {
+  // Handle both 'gameClass' (addon) and 'class' (website) property names
+  const classValue = character.gameClass || character.class
+  if (typeof classValue !== 'string' || !classValue) {
     return {
       success: false,
       error: 'Missing character class in export.',
     }
   }
 
-  const className = WOWSIMS_CLASS_MAP[character.gameClass.toUpperCase()]
+  const className = WOWSIMS_CLASS_MAP[classValue.toUpperCase()]
   if (!className) {
     return {
       success: false,
-      error: `Unknown class: ${character.gameClass}`,
+      error: `Unknown class: ${classValue}`,
     }
   }
 
   // Check for items
-  if (!Array.isArray(exportData.items)) {
+  if (!Array.isArray(itemsSource)) {
     return {
       success: false,
       error: 'Missing items array in export.',
@@ -234,7 +314,7 @@ export function parseWowSimsExport(jsonString: string): ParseResult {
   const items: ParsedGearItem[] = []
   const seenSlots = new Set<string>()
 
-  for (const item of exportData.items) {
+  for (const item of itemsSource) {
     if (!item || typeof item !== 'object') continue
 
     const itemData = item as Record<string, unknown>
