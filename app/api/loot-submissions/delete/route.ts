@@ -15,10 +15,47 @@ export async function DELETE(request: Request) {
     const serviceSupabase = createServiceRoleClient()
 
     const body = await request.json()
-    const { guild_id, target } = body
+    const { guild_id, target, submission_id } = body
 
-    if (!guild_id || !target) {
-      return NextResponse.json({ error: 'guild_id and target are required' }, { status: 400 })
+    if (!guild_id) {
+      return NextResponse.json({ error: 'guild_id is required' }, { status: 400 })
+    }
+
+    // Support single submission deletion via submission_id
+    if (submission_id) {
+      // Verify user has officer permissions
+      const verification = await verifyOfficerPermissions(serviceSupabase, user.id, guild_id)
+      if (!verification.hasPermission) {
+        return NextResponse.json({ error: 'Only officers can delete loot lists' }, { status: 403 })
+      }
+
+      // Delete single submission
+      const { data, error } = await serviceSupabase
+        .from('loot_submissions')
+        .delete()
+        .eq('id', submission_id)
+        .eq('guild_id', guild_id)
+        .select('id')
+
+      if (error) {
+        console.error('Error deleting single submission:', error)
+        return NextResponse.json({ error: 'Failed to delete submission' }, { status: 500 })
+      }
+
+      if (!data || data.length === 0) {
+        return NextResponse.json({ error: 'Submission not found or already deleted' }, { status: 404 })
+      }
+
+      return NextResponse.json({
+        success: true,
+        count: 1,
+        message: 'Submission deleted'
+      })
+    }
+
+    // Bulk delete requires target parameter
+    if (!target) {
+      return NextResponse.json({ error: 'target is required for bulk deletion' }, { status: 400 })
     }
 
     if (target !== 'pending' && target !== 'all') {

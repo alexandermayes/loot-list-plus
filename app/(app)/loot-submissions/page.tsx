@@ -337,7 +337,7 @@ export default function MasterLootPage() {
 
       if (guildId && activeTier) {
         const tierId = activeTier === 'all' ? 'all' : activeTier.id
-        await loadSubmissions(guildId, tierId, activeTier === 'all' ? raidTiers : undefined)
+        await loadSubmissions(guildId, tierId, activeTier === 'all' ? raidTiers : undefined, activeTier === 'all' ? undefined : activeTier)
       }
     } catch (error: any) {
       showNotification('error', error.message || 'Couldn\'t update submission. Try again.')
@@ -370,41 +370,39 @@ export default function MasterLootPage() {
 
     setDeleting(true)
     try {
-      if (deleteTarget.type === 'single' && deleteTarget.id) {
-        // Delete single submission
-        const { error } = await supabase
-          .from('loot_submissions')
-          .delete()
-          .eq('id', deleteTarget.id)
-
-        if (error) throw error
-
-        showNotification('success', 'Submission deleted')
-        const tierId = activeTier === 'all' ? 'all' : activeTier.id
-        await loadSubmissions(guildId, tierId, activeTier === 'all' ? raidTiers : undefined)
-      } else {
-        // Bulk delete (pending or all)
-        const response = await fetch('/api/loot-submissions/delete', {
-          method: 'DELETE',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            guild_id: guildId,
-            target: deleteTarget.type === 'pending' ? 'pending' : 'all'
-          })
-        })
-
-        if (!response.ok) {
-          const errorData = await response.json()
-          throw new Error(errorData.error || 'Failed to delete submissions')
-        }
-
-        const result = await response.json()
-        showNotification('success', `Deleted ${result.count} submission${result.count !== 1 ? 's' : ''}`)
-        const tierId = activeTier === 'all' ? 'all' : activeTier.id
-        await loadSubmissions(guildId, tierId, activeTier === 'all' ? raidTiers : undefined)
+      // Build request body based on deletion type
+      const requestBody: { guild_id: string; submission_id?: string; target?: string } = {
+        guild_id: guildId
       }
+
+      if (deleteTarget.type === 'single' && deleteTarget.id) {
+        requestBody.submission_id = deleteTarget.id
+      } else {
+        requestBody.target = deleteTarget.type === 'pending' ? 'pending' : 'all'
+      }
+
+      const response = await fetch('/api/loot-submissions/delete', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(requestBody)
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to delete submission')
+      }
+
+      const result = await response.json()
+      if (deleteTarget.type === 'single') {
+        showNotification('success', 'Submission deleted')
+      } else {
+        showNotification('success', `Deleted ${result.count} submission${result.count !== 1 ? 's' : ''}`)
+      }
+
+      const tierId = activeTier === 'all' ? 'all' : activeTier.id
+      await loadSubmissions(guildId, tierId, activeTier === 'all' ? raidTiers : undefined, activeTier === 'all' ? undefined : activeTier)
 
       setShowDeleteConfirm(false)
       setDeleteTarget(null)
