@@ -273,6 +273,7 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange, 
         'loot-settings': '/loot-settings',
         'raid-tracking': '/admin/raid-tracking',
         'prio-list': '/admin/prio-list',
+        'audit-log': '/admin/audit-log',
       }
       router.push(routeMap[view] || '/overview')
     }
@@ -295,6 +296,7 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange, 
     { name: 'Master Loot', view: 'loot-settings', icon: '/icons/loot-lists.svg' },
     { name: 'Priority List', view: 'prio-list', icon: '/icons/master-sheet.svg' },
     { name: 'Raid Tracking', view: 'raid-tracking', icon: '/icons/raid-tracking.svg' },
+    { name: 'Audit Log', view: 'audit-log', icon: '/icons/master-sheet.svg' },
   ] : []
 
   const isActive = (view: string) => {
@@ -313,6 +315,7 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange, 
       'loot-settings': '/loot-settings',
       'raid-tracking': '/admin/raid-tracking',
       'prio-list': '/admin/prio-list',
+      'audit-log': '/admin/audit-log',
     }
     return pathname === routeMap[view]
   }
