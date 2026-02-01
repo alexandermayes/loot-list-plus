@@ -1128,7 +1128,7 @@ export default function MasterSheet() {
 
         {/* Boss Quick Navigation - Sticky below tier tabs (rankings view only) */}
         {!initialLoading && !contentLoading && bossNames.length > 0 && viewMode === 'rankings' && (
-          <div className="sticky top-[108px] sm:top-[64px] z-10 px-4 sm:px-6 lg:px-8 py-1.5 bg-background">
+          <div className="sticky top-[108px] sm:top-[50px] z-10 px-4 sm:px-6 lg:px-8 py-1.5 bg-background">
             {/* Mobile: Dropdown + Expand/Collapse */}
             <div className="sm:hidden flex gap-2">
               <select

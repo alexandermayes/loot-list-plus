@@ -537,7 +537,7 @@ export default function AdminPrioList() {
 
         {/* Boss Quick Navigation - Sticky below tier tabs */}
         {!contentLoading && bossNames.length > 0 && (
-          <div className="sticky top-[52px] sm:top-[64px] z-10 px-4 sm:px-6 lg:px-8 py-1.5 bg-background">
+          <div className="sticky top-[52px] sm:top-[50px] z-10 px-4 sm:px-6 lg:px-8 py-1.5 bg-background">
             <div className="flex flex-col sm:flex-row gap-3">
               {/* Mobile: Search + Boss dropdown row */}
               <div className="sm:hidden flex gap-2">
