@@ -69,6 +69,14 @@ export default function AttendancePage() {
   const [memberRole, setMemberRole] = useState('')
   const [guildSettings, setGuildSettings] = useState<any>(null)
   const [expansionStartDate, setExpansionStartDate] = useState<string | null>(null)
+  const [expansionRaidSchedule, setExpansionRaidSchedule] = useState<{
+    raid_days_per_week: number
+    first_raid_day: number | null
+    second_raid_day: number | null
+    third_raid_day: number | null
+    fourth_raid_day: number | null
+    fifth_raid_day: number | null
+  } | null>(null)
 
   // Guild attendance state
   const [guildRaiders, setGuildRaiders] = useState<GuildRaider[]>([])
@@ -96,7 +104,8 @@ export default function AttendancePage() {
 
   // Calculate the most recent tracked week (the week just before current week)
   const mostRecentTrackedWeek = useMemo(() => {
-    const firstRaidDay = guildSettings?.first_raid_day ?? 0
+    // Use expansion's first raid day, fallback to guild settings
+    const firstRaidDay = expansionRaidSchedule?.first_raid_day ?? guildSettings?.first_raid_day ?? 0
     const today = new Date()
     const currentDay = today.getDay()
     const daysToSubtract = (currentDay - firstRaidDay + 7) % 7
@@ -105,13 +114,14 @@ export default function AttendancePage() {
     // Go back one week to get the most recent completed/tracked week
     currentWeekStartDate.setDate(currentWeekStartDate.getDate() - 7)
     return currentWeekStartDate.toISOString().split('T')[0]
-  }, [guildSettings])
+  }, [expansionRaidSchedule, guildSettings])
 
   // Group raid events by week
   const raidsByWeek = useMemo((): WeekGroup[] => {
     if (guildRaidEvents.length === 0) return []
 
-    const firstRaidDay = guildSettings?.first_raid_day ?? 0
+    // Use expansion's first raid day, fallback to guild settings
+    const firstRaidDay = expansionRaidSchedule?.first_raid_day ?? guildSettings?.first_raid_day ?? 0
     const grouped: Record<string, RaidEvent[]> = {}
 
     guildRaidEvents.forEach(raid => {
@@ -131,7 +141,7 @@ export default function AttendancePage() {
         isMostRecent: weekStart === mostRecentTrackedWeek,
         raids: raids.sort((a, b) => a.raid_date.localeCompare(b.raid_date))
       }))
-  }, [guildRaidEvents, guildSettings, mostRecentTrackedWeek])
+  }, [guildRaidEvents, expansionRaidSchedule, guildSettings, mostRecentTrackedWeek])
 
   // Sort raiders
   const sortedRaiders = useMemo(() => {
@@ -202,15 +212,28 @@ export default function AttendancePage() {
         .single()
 
       let raidStartDate: string | null = null
+      let expansionRaidDays: typeof expansionRaidSchedule = null
       if (guildData?.active_expansion_id) {
         const { data: expansionData } = await supabase
           .from('expansions')
-          .select('raid_start_date')
+          .select('raid_start_date, raid_days_per_week, first_raid_day, second_raid_day, third_raid_day, fourth_raid_day, fifth_raid_day')
           .eq('id', guildData.active_expansion_id)
           .single()
 
         raidStartDate = expansionData?.raid_start_date || null
         setExpansionStartDate(raidStartDate)
+
+        if (expansionData) {
+          expansionRaidDays = {
+            raid_days_per_week: expansionData.raid_days_per_week ?? 2,
+            first_raid_day: expansionData.first_raid_day,
+            second_raid_day: expansionData.second_raid_day,
+            third_raid_day: expansionData.third_raid_day,
+            fourth_raid_day: expansionData.fourth_raid_day,
+            fifth_raid_day: expansionData.fifth_raid_day
+          }
+          setExpansionRaidSchedule(expansionRaidDays)
+        }
       }
 
       // Get character's role in the guild
@@ -231,7 +254,8 @@ export default function AttendancePage() {
       // Calculate rolling attendance window
       // The window is the X PREVIOUS completed weeks, NOT including the current week
       const weeks = settingsData?.rolling_attendance_weeks || 4
-      const firstRaidDay = settingsData?.first_raid_day ?? 0
+      // Use expansion's first raid day, fallback to guild settings, then default to 0
+      const firstRaidDay = expansionRaidDays?.first_raid_day ?? settingsData?.first_raid_day ?? 0
 
       // Calculate the start of the current week
       const today = new Date()
@@ -264,15 +288,17 @@ export default function AttendancePage() {
         .eq('is_skipped', false)
         .order('raid_date', { ascending: true })
 
-      // Filter to only show raid days that match the guild's configured schedule
+      // Filter to only show raid days that match the expansion's configured schedule
+      // Use expansion raid days if available, otherwise fall back to guild settings
+      const raidDaysSource = expansionRaidDays || settingsData
       const raidDays = [
-        settingsData?.first_raid_day,
-        settingsData?.second_raid_day,
-        settingsData?.third_raid_day,
-        settingsData?.fourth_raid_day,
-        settingsData?.fifth_raid_day
+        raidDaysSource?.first_raid_day,
+        raidDaysSource?.second_raid_day,
+        raidDaysSource?.third_raid_day,
+        raidDaysSource?.fourth_raid_day,
+        raidDaysSource?.fifth_raid_day
       ].filter(day => day !== null && day !== undefined)
-        .slice(0, settingsData?.raid_days_per_week || 2)
+        .slice(0, raidDaysSource?.raid_days_per_week || 2)
 
       const filteredRaidEvents = (raidEventsData || []).filter(event => {
         const eventDate = new Date(event.raid_date + 'T00:00:00')

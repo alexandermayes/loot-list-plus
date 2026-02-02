@@ -243,9 +243,12 @@ export default function RaidTrackingPage() {
   }, [guildLoading, activeGuild, isOfficer, currentExpansion])
 
   const generateRaidDates = async (guildId: string, settings: any, expansion: any) => {
-    const { raid_days_per_week, first_raid_day, second_raid_day, third_raid_day, fourth_raid_day, fifth_raid_day } = settings
+    // Use expansion raid schedule if available, fall back to guild settings for backwards compatibility
+    const raidScheduleSource = expansion?.raid_days_per_week != null ? expansion : settings
+    const { raid_days_per_week, first_raid_day, second_raid_day, third_raid_day, fourth_raid_day, fifth_raid_day } = raidScheduleSource
 
-    console.log('🔧 Generating raid dates with settings:', {
+    console.log('🔧 Generating raid dates with schedule:', {
+      source: expansion?.raid_days_per_week != null ? 'expansion' : 'guild_settings',
       raid_days_per_week,
       first_raid_day,
       second_raid_day,

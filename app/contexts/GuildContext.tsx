@@ -84,6 +84,13 @@ export interface GuildExpansion {
   raid_start_date: string | null
   is_current: boolean
   created_at: string
+  // Raid schedule settings
+  raid_days_per_week: number
+  first_raid_day: number | null
+  second_raid_day: number | null
+  third_raid_day: number | null
+  fourth_raid_day: number | null
+  fifth_raid_day: number | null
 }
 
 export interface GuildContextType {
