@@ -437,7 +437,7 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange, 
               </div>
             </Button>
           ) : (
-            <div className="flex items-center gap-2">
+            <div className="flex items-stretch gap-2">
               <Button
                 variant="ghost"
                 onClick={() => setGuildDropdownOpen(!guildDropdownOpen)}
@@ -473,9 +473,8 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange, 
               {isOfficer && (
                 <Button
                   variant="ghost"
-                  size="icon"
                   onClick={() => handleNavClick('guild-settings')}
-                  className="shrink-0 w-11 bg-background-elevated border border-border rounded-[12px] hover:bg-muted transition self-stretch"
+                  className="shrink-0 w-12 h-auto bg-background-elevated border border-border rounded-[12px] hover:bg-muted transition"
                   title="Guild Settings"
                 >
                   <HugeiconsIcon icon={Settings01Icon} size={18} className="text-muted-foreground" />
