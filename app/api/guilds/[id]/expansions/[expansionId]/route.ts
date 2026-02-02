@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from 'next/server'
 
 /**
  * PATCH /api/guilds/[id]/expansions/[expansionId]
- * Update an expansion (set as current, update raid_start_date, raid schedule)
+ * Update an expansion (set as current, update raid_start_date, raid schedule, timezone)
  *
  * Body: {
  *   setAsCurrent?: boolean
@@ -15,6 +15,7 @@ import { NextRequest, NextResponse } from 'next/server'
  *   thirdRaidDay?: number | null
  *   fourthRaidDay?: number | null
  *   fifthRaidDay?: number | null
+ *   timezone?: string (IANA timezone, e.g. 'America/New_York')
  * }
  */
 export async function PATCH(
@@ -32,7 +33,8 @@ export async function PATCH(
       secondRaidDay,
       thirdRaidDay,
       fourthRaidDay,
-      fifthRaidDay
+      fifthRaidDay,
+      timezone
     } = body
 
     // Fast auth check using getSession (no network call)
@@ -150,6 +152,9 @@ export async function PATCH(
     }
     if (fifthRaidDay !== undefined) {
       expansionUpdate.fifth_raid_day = fifthRaidDay
+    }
+    if (timezone !== undefined) {
+      expansionUpdate.timezone = timezone
     }
 
     // Update expansion if any fields provided

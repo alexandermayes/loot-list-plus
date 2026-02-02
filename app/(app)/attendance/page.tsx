@@ -76,6 +76,7 @@ export default function AttendancePage() {
     third_raid_day: number | null
     fourth_raid_day: number | null
     fifth_raid_day: number | null
+    timezone: string
   } | null>(null)
 
   // Guild attendance state
@@ -216,7 +217,7 @@ export default function AttendancePage() {
       if (guildData?.active_expansion_id) {
         const { data: expansionData } = await supabase
           .from('expansions')
-          .select('raid_start_date, raid_days_per_week, first_raid_day, second_raid_day, third_raid_day, fourth_raid_day, fifth_raid_day')
+          .select('raid_start_date, raid_days_per_week, first_raid_day, second_raid_day, third_raid_day, fourth_raid_day, fifth_raid_day, timezone')
           .eq('id', guildData.active_expansion_id)
           .single()
 
@@ -230,7 +231,8 @@ export default function AttendancePage() {
             second_raid_day: expansionData.second_raid_day,
             third_raid_day: expansionData.third_raid_day,
             fourth_raid_day: expansionData.fourth_raid_day,
-            fifth_raid_day: expansionData.fifth_raid_day
+            fifth_raid_day: expansionData.fifth_raid_day,
+            timezone: expansionData.timezone ?? 'America/New_York'
           }
           setExpansionRaidSchedule(expansionRaidDays)
         }

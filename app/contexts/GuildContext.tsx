@@ -91,6 +91,7 @@ export interface GuildExpansion {
   third_raid_day: number | null
   fourth_raid_day: number | null
   fifth_raid_day: number | null
+  timezone: string
 }
 
 export interface GuildContextType {

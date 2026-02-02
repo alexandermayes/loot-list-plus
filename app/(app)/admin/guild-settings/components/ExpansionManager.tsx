@@ -22,6 +22,7 @@ interface GuildExpansion {
   third_raid_day: number | null
   fourth_raid_day: number | null
   fifth_raid_day: number | null
+  timezone: string
 }
 
 interface RaidScheduleState {
@@ -30,6 +31,30 @@ interface RaidScheduleState {
 }
 
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+
+const COMMON_TIMEZONES = [
+  { value: 'America/New_York', label: 'US Eastern (New York)' },
+  { value: 'America/Chicago', label: 'US Central (Chicago)' },
+  { value: 'America/Denver', label: 'US Mountain (Denver)' },
+  { value: 'America/Los_Angeles', label: 'US Pacific (Los Angeles)' },
+  { value: 'Europe/London', label: 'UK (London)' },
+  { value: 'Europe/Paris', label: 'Central Europe (Paris)' },
+  { value: 'Europe/Berlin', label: 'Central Europe (Berlin)' },
+  { value: 'Australia/Sydney', label: 'Australia Eastern (Sydney)' },
+  { value: 'Australia/Perth', label: 'Australia Western (Perth)' },
+  { value: 'Asia/Tokyo', label: 'Japan (Tokyo)' },
+  { value: 'Asia/Seoul', label: 'Korea (Seoul)' },
+  { value: 'Asia/Singapore', label: 'Singapore' },
+  { value: 'UTC', label: 'UTC' },
+]
+
+const getBrowserTimezone = (): string => {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone
+  } catch {
+    return 'America/New_York'
+  }
+}
 
 const getDayName = (dayIndex: number | null): string => {
   if (dayIndex === null || dayIndex < 0 || dayIndex > 6) return ''
@@ -63,9 +88,10 @@ export default function ExpansionManager() {
   const [expandedCards, setExpandedCards] = useState<Record<string, boolean>>({})
   const [raidSchedules, setRaidSchedules] = useState<Record<string, RaidScheduleState>>({})
   const [originalSchedules, setOriginalSchedules] = useState<Record<string, RaidScheduleState>>({})
+  const [timezones, setTimezones] = useState<Record<string, string>>({})
 
   const supabase = createClient()
-  const { activeGuild } = useGuildContext()
+  const { activeGuild, refreshExpansions } = useGuildContext()
   const { showNotification } = useNotification()
 
   const loadData = useCallback(async () => {
@@ -83,9 +109,10 @@ export default function ExpansionManager() {
       } else {
         setGuildExpansions(expansions || [])
 
-        // Initialize raid start dates and schedules
+        // Initialize raid start dates, schedules, and timezones
         const dates: Record<string, string> = {}
         const schedules: Record<string, RaidScheduleState> = {}
+        const tzs: Record<string, string> = {}
         expansions?.forEach((exp: GuildExpansion) => {
           if (exp.raid_start_date) {
             dates[exp.expansion_id] = exp.raid_start_date
@@ -102,10 +129,13 @@ export default function ExpansionManager() {
             raidDaysPerWeek: exp.raid_days_per_week ?? 2,
             raidDays
           }
+          // Initialize timezone
+          tzs[exp.expansion_id] = exp.timezone || getBrowserTimezone()
         })
         setRaidStartDates(dates)
         setRaidSchedules(schedules)
         setOriginalSchedules(JSON.parse(JSON.stringify(schedules)))
+        setTimezones(tzs)
       }
 
       // Load available expansions
@@ -182,6 +212,8 @@ export default function ExpansionManager() {
 
       showNotification('success', data.message || 'Expansion updated')
       await loadData()
+      // Refresh GuildContext so other pages get the updated current expansion
+      await refreshExpansions()
     } catch (error: unknown) {
       console.error('Error setting current expansion:', error)
       const message = error instanceof Error ? error.message : 'Couldn\'t update expansion. Try again.'
@@ -212,6 +244,8 @@ export default function ExpansionManager() {
 
       showNotification('success', 'Raid start date updated')
       await loadData()
+      // Refresh GuildContext so other pages get the updated raid start date
+      await refreshExpansions()
     } catch (error: unknown) {
       console.error('Error updating raid start date:', error)
       const message = error instanceof Error ? error.message : 'Couldn\'t update. Try again.'
@@ -256,10 +290,49 @@ export default function ExpansionManager() {
         ...prev,
         [expansionId]: JSON.parse(JSON.stringify(schedule))
       }))
+      // Refresh GuildContext so other pages get the updated expansion data
+      await refreshExpansions()
     } catch (error: unknown) {
       console.error('Error updating raid schedule:', error)
       const message = error instanceof Error ? error.message : 'Couldn\'t update. Try again.'
       showNotification('error', message)
+    } finally {
+      setUpdating(null)
+    }
+  }
+
+  const handleUpdateTimezone = async (expansionId: string, newTimezone: string) => {
+    if (!activeGuild) return
+
+    // Update local state immediately for responsiveness
+    setTimezones(prev => ({ ...prev, [expansionId]: newTimezone }))
+    setUpdating(expansionId)
+
+    try {
+      const response = await fetch(`/api/guilds/${activeGuild.id}/expansions/${expansionId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ timezone: newTimezone })
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        showNotification('error', data.error || 'Couldn\'t update timezone. Try again.')
+        // Revert on error
+        await loadData()
+        return
+      }
+
+      showNotification('success', 'Timezone updated')
+      // Refresh GuildContext so other pages get the updated timezone
+      await refreshExpansions()
+    } catch (error: unknown) {
+      console.error('Error updating timezone:', error)
+      const message = error instanceof Error ? error.message : 'Couldn\'t update. Try again.'
+      showNotification('error', message)
+      // Revert on error
+      await loadData()
     } finally {
       setUpdating(null)
     }
@@ -499,6 +572,32 @@ export default function ExpansionManager() {
                                 Save
                               </Button>
                             </div>
+                          </div>
+
+                          {/* Timezone */}
+                          <div>
+                            <label className="block text-sm font-medium text-foreground mb-2">
+                              Timezone
+                            </label>
+                            <select
+                              value={timezones[exp.expansion_id] || 'America/New_York'}
+                              onChange={(e) => handleUpdateTimezone(exp.expansion_id, e.target.value)}
+                              disabled={updating === exp.expansion_id}
+                              className="w-full px-3 py-2 rounded-lg text-sm bg-background border border-border text-foreground focus:outline-none focus:ring-2 focus:ring-accent/50"
+                            >
+                              {COMMON_TIMEZONES.map((tz) => (
+                                <option key={tz.value} value={tz.value}>
+                                  {tz.label}
+                                </option>
+                              ))}
+                              {/* Include current timezone if not in common list */}
+                              {timezones[exp.expansion_id] &&
+                               !COMMON_TIMEZONES.find(tz => tz.value === timezones[exp.expansion_id]) && (
+                                <option value={timezones[exp.expansion_id]}>
+                                  {timezones[exp.expansion_id]}
+                                </option>
+                              )}
+                            </select>
                           </div>
 
                           {/* Raid Days Per Week */}
