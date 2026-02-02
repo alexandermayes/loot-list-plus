@@ -414,43 +414,11 @@ export default function GuildSettingsPage() {
           </div>
         </div>
 
-        {/* Invite Codes */}
-        <InviteCodeManager />
-
-        {/* Discord Integration */}
-        <div className="bg-background-elevated border border-border rounded-xl overflow-hidden">
-          <div className="p-6 border-b border-border">
-            <h2 className="text-[24px] font-semibold text-foreground">Discord Integration</h2>
-            <p className="text-muted-foreground text-[13px] mt-1">
-              {isGuildCreator ? 'Connect your Discord server to allow automatic guild joins' : 'Only the guild owner can modify Discord settings'}
-            </p>
-          </div>
-          <div className="p-6 space-y-4">
-            <div className="space-y-2">
-              <label htmlFor="discordServerId" className="block text-[13px] font-medium text-foreground">Discord Server ID</label>
-              <input
-                id="discordServerId"
-                value={discordServerId}
-                onChange={(e) => setDiscordServerId(e.target.value)}
-                placeholder="Enter Discord server ID"
-                disabled={!isGuildCreator || saving}
-                className={`w-full px-5 py-3 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[13px] focus:outline-none focus:border-accent ${!isGuildCreator ? 'opacity-60 cursor-not-allowed' : ''}`}
-              />
-              <p className="text-xs text-muted-foreground">
-                Enable Developer Mode in Discord, right-click your server, and select "Copy Server ID"
-              </p>
-            </div>
-
-            {isGuildCreator && (
-              <Button variant="secondary" onClick={handleSaveBasicInfo} disabled={!hasChanges} loading={saving}>
-                Save Changes
-              </Button>
-            )}
-          </div>
-        </div>
-
         {/* Expansions */}
         <ExpansionManager />
+
+        {/* Invite Codes */}
+        <InviteCodeManager />
 
         {/* Danger Zone - Only visible to guild creator */}
         {isGuildCreator && (
