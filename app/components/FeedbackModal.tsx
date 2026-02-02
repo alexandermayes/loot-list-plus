@@ -180,14 +180,16 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
                     <HugeiconsIcon icon={Camera01Icon} size={16} className="text-muted-foreground" />
                     Screenshot
                   </Label>
-                  <button
+                  <Button
                     type="button"
+                    variant="link"
+                    size="sm"
                     onClick={captureScreenshot}
                     disabled={capturing}
-                    className="text-[12px] text-accent hover:text-accent/80 transition disabled:opacity-50"
+                    className="text-[12px] h-auto p-0"
                   >
                     {capturing ? 'Capturing...' : 'Retake'}
-                  </button>
+                  </Button>
                 </div>
                 <div className="relative bg-background-elevated border border-border-strong rounded-xl overflow-hidden aspect-video">
                   {capturing ? (

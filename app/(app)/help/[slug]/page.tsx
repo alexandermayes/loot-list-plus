@@ -179,18 +179,20 @@ function Sidebar({
               </div>
               <div className="space-y-1 ml-6">
                 {category.articles.map((article) => (
-                  <button
+                  <Button
                     key={article.slug}
+                    variant="ghost"
+                    size="sm"
                     onClick={() => onNavigate(article.slug)}
                     className={cn(
-                      'block w-full text-left text-sm py-1.5 px-2 rounded-md transition-colors',
+                      'w-full justify-start text-sm py-1.5 px-2',
                       article.slug === currentSlug
                         ? 'bg-accent/10 text-accent font-medium'
                         : 'text-muted-foreground hover:text-foreground hover:bg-muted'
                     )}
                   >
                     {article.title}
-                  </button>
+                  </Button>
                 ))}
               </div>
             </div>
@@ -255,12 +257,14 @@ export default function HelpArticlePage() {
       <main className="flex-1 lg:pl-8 max-w-3xl">
         {/* Breadcrumb */}
         <div className="flex items-center gap-2 mb-6">
-          <button
+          <Button
+            variant="link"
+            size="sm"
             onClick={() => router.push('/help')}
-            className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+            className="text-sm text-muted-foreground hover:text-foreground p-0 h-auto"
           >
             Help Center
-          </button>
+          </Button>
           <span className="text-muted-foreground">/</span>
           <span className="text-sm text-muted-foreground">{category.title}</span>
           <span className="text-muted-foreground">/</span>
@@ -275,9 +279,10 @@ export default function HelpArticlePage() {
         {/* Navigation */}
         <div className="flex items-center justify-between mt-12 pt-6 border-t border-border">
           {prev ? (
-            <button
+            <Button
+              variant="ghost"
               onClick={() => router.push(`/help/${prev.slug}`)}
-              className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors group"
+              className="flex items-center gap-2 text-muted-foreground hover:text-foreground group h-auto py-2"
             >
               <HugeiconsIcon
                 icon={ArrowLeft01Icon}
@@ -288,15 +293,16 @@ export default function HelpArticlePage() {
                 <span className="text-xs block">Previous</span>
                 <span className="text-sm font-medium text-foreground">{prev.title}</span>
               </div>
-            </button>
+            </Button>
           ) : (
             <div />
           )}
 
           {next ? (
-            <button
+            <Button
+              variant="ghost"
               onClick={() => router.push(`/help/${next.slug}`)}
-              className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors group"
+              className="flex items-center gap-2 text-muted-foreground hover:text-foreground group h-auto py-2"
             >
               <div className="text-right">
                 <span className="text-xs block">Next</span>
@@ -307,7 +313,7 @@ export default function HelpArticlePage() {
                 size={16}
                 className="group-hover:translate-x-1 transition-transform"
               />
-            </button>
+            </Button>
           ) : (
             <div />
           )}

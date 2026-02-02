@@ -102,12 +102,14 @@ export default function OnboardingModal({ open, onClose }: OnboardingModalProps)
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 bg-accent/30 rounded-full blur-3xl" />
 
             {/* Close button */}
-            <button
+            <Button
+              variant="ghost"
+              size="icon"
               onClick={handleClose}
-              className="absolute top-4 right-4 z-10 p-1.5 rounded-full bg-background/50 hover:bg-background/80 text-foreground-secondary hover:text-foreground transition-colors"
+              className="absolute top-4 right-4 z-10 w-8 h-8 min-h-0 rounded-full bg-background/50 hover:bg-background/80 text-foreground-secondary hover:text-foreground"
             >
               <HugeiconsIcon icon={Cancel01Icon} size={18} />
-            </button>
+            </Button>
 
             {/* Header content */}
             <div className="relative z-10 flex flex-col items-center pt-8 pb-6 px-6">
@@ -287,16 +289,17 @@ export default function OnboardingModal({ open, onClose }: OnboardingModalProps)
             {/* Step indicators */}
             <div className="flex justify-center gap-2">
               {Array.from({ length: TOTAL_STEPS }).map((_, i) => (
-                <button
+                <Button
                   key={i}
+                  variant="ghost"
                   onClick={() => {
                     setDirection(i > step ? 1 : -1)
                     setStep(i)
                   }}
-                  className={`w-2 h-2 rounded-full transition-all duration-200 ${
+                  className={`p-0 min-h-0 h-2 rounded-full transition-all duration-200 ${
                     i === step
                       ? 'bg-accent w-6'
-                      : 'bg-foreground/20 hover:bg-foreground/40'
+                      : 'bg-foreground/20 hover:bg-foreground/40 w-2'
                   }`}
                 />
               ))}

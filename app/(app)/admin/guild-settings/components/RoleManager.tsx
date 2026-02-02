@@ -6,6 +6,8 @@ import { useGuildContext } from '@/app/contexts/GuildContext'
 import { useNotification } from '@/app/contexts/NotificationContext'
 import { Button } from '@/components/ui/button'
 import { useConfirm } from '@/components/ui/confirm-modal'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { Add01Icon, Delete01Icon, Shield01Icon, UserIcon, Edit01Icon, Tick01Icon, Cancel01Icon, CrownIcon, ArrowUp01Icon, ArrowDown01Icon } from '@hugeicons/core-free-icons'
 
@@ -236,13 +238,14 @@ export default function RoleManager({ onRolesChanged }: RoleManagerProps) {
                   {isEditing ? (
                     // Edit mode
                     <div className="space-y-3">
-                      <input
+                      <Input
                         type="text"
                         value={editingRoleName}
                         onChange={(e) => setEditingRoleName(e.target.value)}
                         placeholder="Role name"
                         maxLength={50}
-                        className="w-full px-3 py-2 bg-background-elevated border border-border rounded-lg text-foreground text-[13px] focus:outline-none focus:border-ring"
+                        variant="rounded"
+                        size="sm"
                       />
                       <div className="flex gap-2">
                         <Button size="sm" onClick={() => handleSaveEditRole(role.id)} className="flex-1">
@@ -276,35 +279,39 @@ export default function RoleManager({ onRolesChanged }: RoleManagerProps) {
                         {/* Move up/down buttons - only for Member and custom roles (not position 100 or 50) */}
                         {role.position !== 100 && role.position !== 50 && (
                           <div className="flex gap-1">
-                            <button
+                            <Button
+                              variant="secondary"
+                              size="icon"
                               onClick={() => handleMoveRole(role, 'up')}
                               disabled={roles.filter(r => r.position !== 100 && r.position !== 50).findIndex(r => r.id === role.id) === 0}
-                              className="p-2 bg-background-elevated hover:bg-muted border border-border rounded-lg text-foreground hover:text-foreground transition disabled:opacity-30 disabled:cursor-not-allowed"
                             >
                               <HugeiconsIcon icon={ArrowUp01Icon} size={16} />
-                            </button>
-                            <button
+                            </Button>
+                            <Button
+                              variant="secondary"
+                              size="icon"
                               onClick={() => handleMoveRole(role, 'down')}
                               disabled={roles.filter(r => r.position !== 100 && r.position !== 50).findIndex(r => r.id === role.id) === roles.filter(r => r.position !== 100 && r.position !== 50).length - 1}
-                              className="p-2 bg-background-elevated hover:bg-muted border border-border rounded-lg text-foreground hover:text-foreground transition disabled:opacity-30 disabled:cursor-not-allowed"
                             >
                               <HugeiconsIcon icon={ArrowDown01Icon} size={16} />
-                            </button>
+                            </Button>
                           </div>
                         )}
-                        <button
+                        <Button
+                          variant="secondary"
+                          size="icon"
                           onClick={() => handleStartEditRole(role)}
-                          className="p-2 bg-background-elevated hover:bg-muted border border-border rounded-lg text-foreground hover:text-foreground transition"
                         >
                           <HugeiconsIcon icon={Edit01Icon} size={16} />
-                        </button>
+                        </Button>
                         {!role.is_default && (
-                          <button
+                          <Button
+                            variant="destructive-outline"
+                            size="icon"
                             onClick={() => handleDeleteRole(role.id, role.name)}
-                            className="p-2 bg-background-elevated hover:bg-destructive/10 border border-border hover:border-destructive/30 rounded-lg text-destructive hover:text-destructive transition"
                           >
                             <HugeiconsIcon icon={Delete01Icon} size={16} />
-                          </button>
+                          </Button>
                         )}
                       </div>
                     </div>
@@ -324,14 +331,15 @@ export default function RoleManager({ onRolesChanged }: RoleManagerProps) {
           {isAddingRole && (
             <div className="p-4 bg-background-subtle border border-border rounded-lg space-y-3">
               <div>
-                <label className="block text-[13px] text-muted-foreground mb-2">Role Name</label>
-                <input
+                <Label className="mb-2">Role Name</Label>
+                <Input
                   type="text"
                   value={newRoleName}
                   onChange={(e) => setNewRoleName(e.target.value)}
                   placeholder="e.g., Raider, Trial, Core"
                   maxLength={50}
-                  className="w-full px-3 py-2 bg-background-elevated border border-border rounded-lg text-foreground text-[13px] focus:outline-none focus:border-ring"
+                  variant="rounded"
+                  size="sm"
                 />
               </div>
 

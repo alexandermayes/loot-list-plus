@@ -7,6 +7,7 @@ import { CharacterCard } from '@/app/components/CharacterCard'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { Add01Icon } from '@hugeicons/core-free-icons'
 import { Heading } from '@/components/ui/typography'
+import { Button } from '@/components/ui/button'
 
 // Lazy load modals to reduce initial bundle size
 const CreateCharacterModal = dynamic(() => import('@/app/components/CreateCharacterModal').then(mod => ({ default: mod.CreateCharacterModal })), {
@@ -48,13 +49,14 @@ export default function ManageCharactersPage() {
           </p>
         </div>
 
-        <button
+        <Button
+          variant="primary"
           onClick={() => setShowCreateModal(true)}
-          className="px-6 py-3 bg-primary hover:bg-primary/90 rounded-[52px] text-primary-foreground font-medium text-[16px] transition flex items-center justify-center gap-2 w-full sm:w-auto"
+          className="rounded-[52px] w-full sm:w-auto"
         >
           <HugeiconsIcon icon={Add01Icon} size={20} />
           Create Character
-        </button>
+        </Button>
       </div>
 
       {/* Characters List */}
@@ -70,12 +72,13 @@ export default function ManageCharactersPage() {
             <p className="text-[14px] text-foreground-muted mb-6">
               Create your first character to start managing loot lists and joining guilds
             </p>
-            <button
+            <Button
+              variant="primary"
               onClick={() => setShowCreateModal(true)}
-              className="px-8 py-3 bg-primary hover:bg-primary/90 rounded-[52px] text-primary-foreground font-medium text-[16px] transition"
+              className="rounded-[52px]"
             >
               Create Your First Character
-            </button>
+            </Button>
           </div>
         </div>
       ) : (

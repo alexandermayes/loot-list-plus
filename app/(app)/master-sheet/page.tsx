@@ -2,13 +2,14 @@
 
 import Image from 'next/image'
 import { createClient } from '@/utils/supabase/client'
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import ItemLink from '@/app/components/ItemLink'
 import { calculateAttendanceScore, getRankModifier, calculateLootScore, calculatePriorityBonus, getTrialPenalty, type ItemPriority } from '@/utils/calculations'
 import { getSpecRoles } from '@/utils/spec-role-mapping'
 import { getBossOrder, normalizeBossName } from '@/utils/bossOrder'
 import { getBossImage } from '@/utils/bossImages'
+import { getRaidShorthand } from '@/utils/raidIcons'
 import { StarFilledIcon } from '@/components/ui/icons'
 import { useGuildContext } from '@/app/contexts/GuildContext'
 import { useNotification } from '@/app/contexts/NotificationContext'
@@ -17,6 +18,7 @@ import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { TierTabsSkeleton, MasterSheetContentSkeleton } from '@/components/ui/skeletons'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Button } from '@/components/ui/button'
+import { Select } from '@/components/ui/select'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { ScrollIcon, ArrowUpRight01Icon, InformationCircleIcon } from '@hugeicons/core-free-icons'
 import { HorizontalScroll } from '@/components/ui/horizontal-scroll'
@@ -32,6 +34,7 @@ interface LootItem {
   boss_name: string
   item_slot: string
   wowhead_id: number
+  raid_tier_id?: string
 }
 
 interface PlayerRanking {
@@ -66,7 +69,8 @@ export default function MasterSheet() {
   const [member, setMember] = useState<any>(null)
   const [guildSettings, setGuildSettings] = useState<any>(null)
   const [raidTiers, setRaidTiers] = useState<any[]>([])
-  const [selectedTierId, setSelectedTierId] = useState<string | null>(null)
+  const [phases, setPhases] = useState<number[]>([])
+  const [selectedPhase, setSelectedPhase] = useState<number | null>(null)
   const [masterSheetVisible, setMasterSheetVisible] = useState<boolean>(false)
   const [itemPriorities, setItemPriorities] = useState<Record<string, ItemPriority>>({})
   const [collapsedBosses, setCollapsedBosses] = useState<Set<string>>(new Set())
@@ -228,6 +232,7 @@ export default function MasterSheet() {
           .select(`
             id,
             name,
+            phase,
             is_active,
             is_guild_active,
             master_sheet_visible,
@@ -259,16 +264,21 @@ export default function MasterSheet() {
 
           setRaidTiers(sortedTiers)
 
-          // Only set default tier if we don't have one selected yet
-          if (!selectedTierId) {
-            // Check if there's a tier in the query params first
-            const tierFromUrl = searchParams.get('tier')
-            if (tierFromUrl && sortedTiers.find((t: any) => t.id === tierFromUrl)) {
-              setSelectedTierId(tierFromUrl)
+          // Extract unique phases from tiers
+          const uniquePhases = [...new Set(sortedTiers.map((t: any) => t.phase).filter((p: number | null) => p !== null))] as number[]
+          uniquePhases.sort((a, b) => a - b)
+          setPhases(uniquePhases)
+
+          // Only set default phase if we don't have one selected yet
+          if (selectedPhase === null && uniquePhases.length > 0) {
+            // Check if there's a phase in the query params first
+            const phaseFromUrl = searchParams.get('phase')
+            if (phaseFromUrl && uniquePhases.includes(parseInt(phaseFromUrl))) {
+              setSelectedPhase(parseInt(phaseFromUrl))
             } else {
-              // Otherwise use active tier or first tier
-              const activeTier = sortedTiers.find((t: any) => t.is_active) || sortedTiers[0]
-              setSelectedTierId(activeTier.id)
+              // Otherwise use phase with an active tier or first phase
+              const activeTierPhase = sortedTiers.find((t: any) => t.is_active)?.phase
+              setSelectedPhase(activeTierPhase ?? uniquePhases[0])
             }
           }
         }
@@ -280,26 +290,32 @@ export default function MasterSheet() {
     loadData()
   }, [guildLoading, activeGuild, activeCharacter, isOfficer])
 
-  // Update master sheet visibility when selected tier changes
-  // Also reset to a valid tier if the selected tier doesn't exist in available tiers
-  useEffect(() => {
-    if (raidTiers.length > 0) {
-      const tier = raidTiers.find(t => t.id === selectedTierId)
-      if (tier) {
-        setMasterSheetVisible(tier?.master_sheet_visible ?? false)
-      } else if (selectedTierId) {
-        // Selected tier doesn't exist in available tiers (e.g., disabled tier for non-officer)
-        // Reset to active tier or first available tier
-        const activeTier = raidTiers.find((t: any) => t.is_active) || raidTiers[0]
-        setSelectedTierId(activeTier.id)
-      }
-    }
-  }, [selectedTierId, raidTiers])
+  // Get tiers for the currently selected phase (memoized to prevent infinite loops)
+  const phaseTiers = useMemo(() => {
+    return raidTiers.filter(t => t.phase === selectedPhase)
+  }, [raidTiers, selectedPhase])
 
-  // Load all item rankings when tier is selected
+  // Update master sheet visibility when selected phase changes
+  // Master sheet is visible if ANY tier in the phase has it visible
+  useEffect(() => {
+    if (phaseTiers.length > 0) {
+      const anyVisible = phaseTiers.some((t: any) => t.master_sheet_visible)
+      setMasterSheetVisible(anyVisible)
+    } else if (selectedPhase !== null && phases.length > 0 && !phases.includes(selectedPhase)) {
+      // Selected phase doesn't exist, reset to first available phase
+      setSelectedPhase(phases[0])
+    }
+  }, [selectedPhase, phaseTiers, phases])
+
+  // Load all item rankings when phase is selected
   useEffect(() => {
     const loadAllRankings = async () => {
-      if (!selectedTierId || !guildId || !guildSettings) {
+      // Get active tier IDs for this phase
+      const activeTierIds = phaseTiers
+        .filter(t => t.is_guild_active !== false)
+        .map(t => t.id)
+
+      if (selectedPhase === null || !guildId || !guildSettings || activeTierIds.length === 0) {
         setAllItemRankings([])
         return
       }
@@ -314,11 +330,11 @@ export default function MasterSheet() {
       setContentLoading(true)
 
       try {
-        // Get all loot items for this tier
+        // Get all loot items for all active tiers in this phase
         const { data: itemsData } = await supabase
           .from('loot_items')
-          .select('id, name, boss_name, item_slot, wowhead_id')
-          .eq('raid_tier_id', selectedTierId)
+          .select('id, name, boss_name, item_slot, wowhead_id, raid_tier_id')
+          .in('raid_tier_id', activeTierIds)
           .eq('is_available', true)
           .order('boss_name')
           .order('name')
@@ -397,16 +413,18 @@ export default function MasterSheet() {
           return
         }
 
-        // Load item priorities for this tier
+        // Load item priorities for all tiers in this phase
         let prioritiesMap: Record<string, ItemPriority> = {}
         try {
-          const prioResponse = await fetch(
-            `/api/prio-list?guild_id=${guildId}&raid_tier_id=${selectedTierId}`
-          )
-          if (prioResponse.ok) {
-            const prioData = await prioResponse.json()
-            for (const prio of prioData.priorities || []) {
-              prioritiesMap[prio.item_id] = prio
+          for (const tierId of activeTierIds) {
+            const prioResponse = await fetch(
+              `/api/prio-list?guild_id=${guildId}&raid_tier_id=${tierId}`
+            )
+            if (prioResponse.ok) {
+              const prioData = await prioResponse.json()
+              for (const prio of prioData.priorities || []) {
+                prioritiesMap[prio.item_id] = prio
+              }
             }
           }
         } catch (err) {
@@ -522,7 +540,7 @@ export default function MasterSheet() {
     }
 
     loadAllRankings()
-  }, [selectedTierId, guildId, guildSettings, masterSheetVisible, isOfficer])
+  }, [selectedPhase, phaseTiers, guildId, guildSettings, masterSheetVisible, isOfficer])
 
   // Refresh Wowhead tooltips after items are loaded
   // Uses centralized debounced refresh to prevent excessive API calls
@@ -535,18 +553,23 @@ export default function MasterSheet() {
   // Load aggregate loot list data when officer switches to aggregate view
   useEffect(() => {
     const loadAggregateData = async () => {
-      if (viewMode !== 'aggregate' || !selectedTierId || !guildId || !isOfficer) {
+      // Get active tier IDs for this phase
+      const activeTierIds = phaseTiers
+        .filter(t => t.is_guild_active !== false)
+        .map(t => t.id)
+
+      if (viewMode !== 'aggregate' || selectedPhase === null || !guildId || !isOfficer || activeTierIds.length === 0) {
         return
       }
 
       setAggregateLoading(true)
 
       try {
-        // Get all loot items for this tier
+        // Get all loot items for all active tiers in this phase
         const { data: itemsData } = await supabase
           .from('loot_items')
-          .select('id, name, boss_name, item_slot, wowhead_id, classification')
-          .eq('raid_tier_id', selectedTierId)
+          .select('id, name, boss_name, item_slot, wowhead_id, classification, raid_tier_id')
+          .in('raid_tier_id', activeTierIds)
           .eq('is_available', true)
           .order('boss_name')
           .order('name')
@@ -670,31 +693,32 @@ export default function MasterSheet() {
     }
 
     loadAggregateData()
-  }, [viewMode, selectedTierId, guildId, isOfficer])
+  }, [viewMode, selectedPhase, phaseTiers, guildId, isOfficer])
 
-  // Handle tier switching from query params
+  // Handle phase switching from query params
   useEffect(() => {
-    const tierId = searchParams.get('tier')
+    const phaseParam = searchParams.get('phase')
     const itemId = searchParams.get('item')
 
-    // If we have a tier parameter, switch to it and store scroll target
-    if (tierId && raidTiers.length > 0) {
-      const tierExists = raidTiers.find(t => t.id === tierId)
-      if (tierExists && tierId !== selectedTierId) {
+    // If we have a phase parameter, switch to it and store scroll target
+    if (phaseParam && phases.length > 0) {
+      const phaseNum = parseInt(phaseParam)
+      const phaseExists = phases.includes(phaseNum)
+      if (phaseExists && phaseNum !== selectedPhase) {
         if (itemId) {
           scrollPendingRef.current = itemId
         }
-        setSelectedTierId(tierId)
-      } else if (tierExists && tierId === selectedTierId && itemId) {
-        // Already on correct tier, just need to scroll
+        setSelectedPhase(phaseNum)
+      } else if (phaseExists && phaseNum === selectedPhase && itemId) {
+        // Already on correct phase, just need to scroll
         scrollPendingRef.current = itemId
       }
-    } else if (itemId && !tierId) {
-      // No tier specified, just scroll to item
+    } else if (itemId && !phaseParam) {
+      // No phase specified, just scroll to item
       scrollPendingRef.current = itemId
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchParams, selectedTierId, raidTiers.length])
+  }, [searchParams, selectedPhase, phases.length])
 
   // Scroll to item when items are loaded
   useEffect(() => {
@@ -736,8 +760,10 @@ export default function MasterSheet() {
     groupedByBoss[boss].push(ir)
   })
 
-  const selectedTier = raidTiers.find(t => t.id === selectedTierId)
-  const isSelectedTierDisabled = selectedTier?.is_guild_active === false
+  // Check if any tier in the selected phase is disabled (for officer warning)
+  const hasDisabledTiers = phaseTiers.some(t => t.is_guild_active === false)
+  // Get active tiers for display in header
+  const activePhaseTiers = phaseTiers.filter(t => t.is_guild_active !== false)
 
   const bossNames = Object.keys(groupedByBoss).sort((a, b) => getBossOrder(a) - getBossOrder(b))
 
@@ -997,7 +1023,7 @@ export default function MasterSheet() {
           <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
             <div>
               <Heading level={1}>
-                Loot Rankings{!initialLoading && selectedTier && <span className="text-muted-foreground"> · {selectedTier.name}</span>}
+                Loot Rankings{!initialLoading && selectedPhase !== null && <span className="text-muted-foreground"> · P{selectedPhase}{activePhaseTiers.length > 0 ? ` ${activePhaseTiers.map(t => getRaidShorthand(t.name)).join(', ')}` : ''}</span>}
               </Heading>
               <p className="text-muted-foreground mt-1 text-base">
                 {viewMode === 'aggregate' && isOfficer
@@ -1032,64 +1058,77 @@ export default function MasterSheet() {
           </div>
         </div>
 
-        {/* Raid Tier Tabs - Sticky */}
+        {/* Phase Tabs - Sticky */}
         {initialLoading ? (
           <div className="sticky top-0 z-20 px-4 sm:px-6 lg:px-8 py-1.5 bg-background">
             <TierTabsSkeleton />
           </div>
-        ) : raidTiers.length > 0 && (
+        ) : phases.length > 0 && (
           <div className="sticky top-14 sm:top-0 z-20 px-4 sm:px-6 lg:px-8 py-1.5 bg-background">
             <div className="flex items-center gap-3">
               {/* Mobile: Dropdown selector */}
               <div className="sm:hidden flex-1">
-                <select
-                  value={selectedTierId || ''}
-                  onChange={(e) => setSelectedTierId(e.target.value)}
-                  className="w-full px-4 py-2.5 bg-background-elevated border border-border rounded-xl text-[13px] font-medium text-foreground appearance-none cursor-pointer"
-                  style={{
-                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%239ca3af'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
-                    backgroundRepeat: 'no-repeat',
-                    backgroundPosition: 'right 12px center',
-                    backgroundSize: '16px',
-                    paddingRight: '40px'
-                  }}
+                <Select
+                  variant="rounded"
+                  size="sm"
+                  value={selectedPhase ?? ''}
+                  onChange={(e) => setSelectedPhase(parseInt(e.target.value))}
+                  className="w-full bg-background-elevated font-medium"
                 >
-                  {raidTiers.map((tier: any) => {
-                    const isDisabled = tier.is_guild_active === false
+                  {phases.map((phase) => {
+                    const tiersInPhase = raidTiers.filter(t => t.phase === phase)
+                    const activeTiersInPhase = tiersInPhase.filter(t => t.is_guild_active !== false)
+                    const hasActiveTier = tiersInPhase.some(t => t.is_active)
+                    const allDisabled = tiersInPhase.every(t => t.is_guild_active === false)
+                    const raidNames = activeTiersInPhase.map(t => getRaidShorthand(t.name)).join(', ')
                     return (
-                      <option key={tier.id} value={tier.id}>
-                        {tier.name}{tier.is_active ? ' ★' : ''}{isDisabled ? ' (Off)' : ''}
+                      <option key={phase} value={phase}>
+                        P{phase} {raidNames}{hasActiveTier ? ' ★' : ''}{allDisabled ? ' (Off)' : ''}
                       </option>
                     )
                   })}
-                </select>
+                </Select>
               </div>
               {/* Desktop: Horizontal tabs */}
               <HorizontalScroll containerClassName="hidden sm:flex flex-1 min-w-0">
                 <div className="flex gap-2 pr-3">
-                  {raidTiers.map((tier: any) => {
-                    const isDisabled = tier.is_guild_active === false
-                    const isSelected = selectedTierId === tier.id
+                  {phases.map((phase) => {
+                    const tiersInPhase = raidTiers.filter(t => t.phase === phase)
+                    const activeTiersInPhase = tiersInPhase.filter(t => t.is_guild_active !== false)
+                    const hasActiveTier = tiersInPhase.some(t => t.is_active)
+                    const allDisabled = tiersInPhase.every(t => t.is_guild_active === false)
+                    const isSelected = selectedPhase === phase
+                    const raidNames = activeTiersInPhase.map(t => getRaidShorthand(t.name)).join(', ')
                     return (
-                      <button
-                        key={tier.id}
-                        onClick={() => setSelectedTierId(tier.id)}
+                      <Button
+                        key={phase}
+                        variant="ghost"
+                        onClick={() => setSelectedPhase(phase)}
                         className={`px-5 py-2.5 rounded-[40px] whitespace-nowrap text-[13px] font-medium transition-all border ${
                           isSelected
-                            ? isDisabled
+                            ? allDisabled
                               ? 'bg-muted/50 border-border text-muted-foreground'
                               : 'bg-accent/20 border-accent/20 text-accent'
-                            : isDisabled
+                            : allDisabled
                               ? 'bg-background-elevated/50 border-border/50 text-muted-foreground hover:bg-muted/50 opacity-60'
                               : 'bg-background-elevated border-border text-foreground hover:bg-muted'
                         }`}
                       >
                         <span className="flex items-center gap-2">
-                          {tier.name}
-                          {tier.is_active && <StarFilledIcon size={14} />}
-                          {isDisabled && <span className="text-[10px] uppercase tracking-wide">Off</span>}
+                          <span className={`px-1.5 py-0.5 rounded text-[11px] font-bold ${
+                            isSelected
+                              ? allDisabled
+                                ? 'bg-muted text-muted-foreground'
+                                : 'bg-accent/30 text-accent'
+                              : allDisabled
+                                ? 'bg-foreground/5 text-muted-foreground'
+                                : 'bg-foreground/10 text-foreground-secondary'
+                          }`}>P{phase}</span>
+                          <span>{raidNames}</span>
+                          {hasActiveTier && <StarFilledIcon size={14} />}
+                          {allDisabled && <span className="text-[10px] uppercase tracking-wide">Off</span>}
                         </span>
-                      </button>
+                      </Button>
                     )
                   })}
                 </div>
@@ -1099,25 +1138,21 @@ export default function MasterSheet() {
                 <>
                   {/* Mobile: Dropdown */}
                   <div className="sm:hidden">
-                    <select
+                    <Select
+                      variant="rounded"
+                      size="sm"
                       value={viewMode}
                       onChange={(e) => setViewMode(e.target.value as 'rankings' | 'aggregate')}
-                      className="px-4 py-2.5 bg-background-elevated border border-border rounded-xl text-[13px] font-medium text-foreground appearance-none cursor-pointer"
-                      style={{
-                        backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%239ca3af'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
-                        backgroundRepeat: 'no-repeat',
-                        backgroundPosition: 'right 12px center',
-                        backgroundSize: '16px',
-                        paddingRight: '40px'
-                      }}
+                      className="bg-background-elevated font-medium"
                     >
                       <option value="rankings">Rankings</option>
                       <option value="aggregate">Summary</option>
-                    </select>
+                    </Select>
                   </div>
                   {/* Desktop: Toggle buttons */}
                   <div className="hidden sm:flex flex-shrink-0 bg-background-elevated border border-border rounded-[40px] p-0.5">
-                    <button
+                    <Button
+                      variant="ghost"
                       onClick={() => setViewMode('rankings')}
                       className={`px-5 py-2 rounded-[40px] text-[13px] font-medium transition-all ${
                         viewMode === 'rankings'
@@ -1126,8 +1161,9 @@ export default function MasterSheet() {
                       }`}
                     >
                       Rankings
-                    </button>
-                    <button
+                    </Button>
+                    <Button
+                      variant="ghost"
                       onClick={() => setViewMode('aggregate')}
                       className={`px-5 py-2 rounded-[40px] text-[13px] font-medium transition-all ${
                         viewMode === 'aggregate'
@@ -1136,7 +1172,7 @@ export default function MasterSheet() {
                       }`}
                     >
                       Summary
-                    </button>
+                    </Button>
                   </div>
                 </>
               )}
@@ -1149,38 +1185,35 @@ export default function MasterSheet() {
           <div className="sticky top-[108px] sm:top-[50px] z-10 px-4 sm:px-6 lg:px-8 py-1.5 bg-background">
             {/* Mobile: Dropdown + Expand/Collapse */}
             <div className="sm:hidden flex gap-2">
-              <select
+              <Select
+                variant="rounded"
+                size="sm"
                 onChange={(e) => {
                   if (e.target.value) scrollToBoss(e.target.value)
                   e.target.value = '' // Reset to placeholder
                 }}
                 defaultValue=""
-                className="flex-1 px-4 py-2.5 bg-background-elevated border border-border rounded-xl text-[13px] font-medium text-foreground appearance-none cursor-pointer"
-                style={{
-                  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%239ca3af'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
-                  backgroundRepeat: 'no-repeat',
-                  backgroundPosition: 'right 12px center',
-                  backgroundSize: '16px',
-                  paddingRight: '40px'
-                }}
+                className="flex-1 bg-background-elevated font-medium"
               >
                 <option value="" disabled>Jump to boss...</option>
                 {bossNames.map((boss) => (
                   <option key={boss} value={boss}>{boss}</option>
                 ))}
-              </select>
-              <button
+              </Select>
+              <Button
+                variant="secondary"
+                size="sm"
                 onClick={expandAll}
-                className="px-3 py-2 bg-background-elevated hover:bg-muted border border-border rounded-xl text-sm font-medium text-muted-foreground hover:text-foreground whitespace-nowrap transition"
               >
                 Expand
-              </button>
-              <button
+              </Button>
+              <Button
+                variant="secondary"
+                size="sm"
                 onClick={collapseAll}
-                className="px-3 py-2 bg-background-elevated hover:bg-muted border border-border rounded-xl text-sm font-medium text-muted-foreground hover:text-foreground whitespace-nowrap transition"
               >
                 Collapse
-              </button>
+              </Button>
             </div>
             {/* Desktop: Horizontal chips + Expand/Collapse */}
             <div className="hidden sm:flex gap-3">
@@ -1195,13 +1228,14 @@ export default function MasterSheet() {
                 >
                   <div className="flex gap-2 px-3">
                     {bossNames.map((boss) => (
-                      <button
+                      <Button
                         key={boss}
+                        variant="ghost"
                         onClick={() => scrollToBoss(boss)}
                         className="px-4 py-2 bg-background-inset hover:bg-muted border border-border rounded-[40px] text-sm font-medium text-foreground whitespace-nowrap transition"
                       >
                         {boss}
-                      </button>
+                      </Button>
                     ))}
                   </div>
                 </div>
@@ -1209,18 +1243,22 @@ export default function MasterSheet() {
               {/* Expand/Collapse container */}
               <div className="flex-shrink-0 bg-background-elevated border border-border rounded-xl p-3">
                 <div className="flex gap-2 h-full items-center justify-start">
-                  <button
+                  <Button
+                    variant="ghost"
+                    size="sm"
                     onClick={expandAll}
-                    className="px-4 py-2 bg-background-inset hover:bg-muted border border-border rounded-[40px] text-sm font-medium text-muted-foreground hover:text-foreground whitespace-nowrap transition"
+                    className="rounded-[40px]"
                   >
                     Expand All
-                  </button>
-                  <button
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
                     onClick={collapseAll}
-                    className="px-4 py-2 bg-background-inset hover:bg-muted border border-border rounded-[40px] text-sm font-medium text-muted-foreground hover:text-foreground whitespace-nowrap transition"
+                    className="rounded-[40px]"
                   >
                     Collapse All
-                  </button>
+                  </Button>
                 </div>
               </div>
             </div>
@@ -1265,15 +1303,15 @@ export default function MasterSheet() {
               </div>
             )}
 
-            {/* Officer Viewing Disabled Tier Badge */}
-            {isSelectedTierDisabled && isOfficer && (
+            {/* Officer Viewing Disabled Tiers Badge */}
+            {hasDisabledTiers && isOfficer && (
               <div className="bg-amber-950/50 border border-amber-600/50 rounded-xl p-4">
                 <div className="flex items-center gap-3">
                   <span className="text-xl">⚠️</span>
                   <div>
-                    <p className="text-amber-200 font-semibold">Disabled raid tier</p>
+                    <p className="text-amber-200 font-semibold">Some raid tiers disabled</p>
                     <p className="text-amber-300 text-sm">
-                      This raid tier is disabled in expansion management. Only officers can see it.
+                      One or more raid tiers in this phase are disabled. Their items won't appear in member views.
                     </p>
                   </div>
                 </div>
@@ -1310,9 +1348,10 @@ export default function MasterSheet() {
                   className="bg-background-elevated border border-border rounded-xl overflow-hidden scroll-mt-[140px]"
                 >
                   {/* Boss Header - Clickable */}
-                  <button
+                  <Button
+                    variant="ghost"
                     onClick={() => toggleBossCollapse(boss)}
-                    className="w-full px-5 py-3 flex items-center justify-between hover:bg-muted transition-colors"
+                    className="w-full px-5 py-3 flex items-center justify-between hover:bg-muted transition-colors rounded-none"
                   >
                     <div className="flex items-center gap-3">
                       {getBossImage(boss) && (
@@ -1337,7 +1376,7 @@ export default function MasterSheet() {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                       </svg>
                     </div>
-                  </button>
+                  </Button>
 
                   {/* Items Table - Collapsible */}
                   {!isCollapsed && (

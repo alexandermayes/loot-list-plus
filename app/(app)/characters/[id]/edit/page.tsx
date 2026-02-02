@@ -7,6 +7,10 @@ import { createClient } from '@/utils/supabase/client'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { ArrowLeft01Icon, Delete01Icon } from '@hugeicons/core-free-icons'
 import { Heading } from '@/components/ui/typography'
+import { Input } from '@/components/ui/input'
+import { Select } from '@/components/ui/select'
+import { Button } from '@/components/ui/button'
+import { Label } from '@/components/ui/label'
 
 interface WowClass {
   id: string
@@ -245,12 +249,13 @@ export default function EditCharacterPage() {
         <div className="max-w-2xl mx-auto">
           <div className="bg-background-elevated border border-border rounded-xl p-12 text-center">
             <h2 className="text-[24px] font-bold text-foreground mb-4">Character not found</h2>
-            <button
+            <Button
+              variant="primary"
+              size="lg"
               onClick={() => router.push('/characters/manage')}
-              className="px-8 py-3 bg-primary hover:bg-primary/90 rounded-[52px] text-primary-foreground font-medium text-[16px] transition"
             >
               Back to Characters
-            </button>
+            </Button>
           </div>
         </div>
       </div>
@@ -262,13 +267,14 @@ export default function EditCharacterPage() {
       <div className="max-w-2xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <button
+          <Button
+            variant="ghost"
             onClick={() => router.push('/characters/manage')}
-            className="mb-4 flex items-center gap-2 text-muted-foreground hover:text-foreground transition"
+            className="mb-4 px-0"
           >
             <HugeiconsIcon icon={ArrowLeft01Icon} size={16} />
             <span className="text-[14px]">Back to Characters</span>
-          </button>
+          </Button>
 
           <Heading level={1}>Edit Character</Heading>
           <p className="text-muted-foreground mt-1 text-base">
@@ -288,14 +294,13 @@ export default function EditCharacterPage() {
           <div className="space-y-6">
             {/* Character Name */}
             <div>
-              <label className="block text-foreground text-[14px] font-medium mb-2">
+              <Label size="lg" className="block mb-2">
                 Character Name <span className="text-destructive">*</span>
-              </label>
-              <input
+              </Label>
+              <Input
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full px-4 py-3 bg-background-subtle border border-border rounded-xl text-foreground text-[14px] focus:outline-none focus:border-accent transition"
                 placeholder="Enter character name"
                 required
               />
@@ -303,13 +308,12 @@ export default function EditCharacterPage() {
 
             {/* Class */}
             <div>
-              <label className="block text-foreground text-[14px] font-medium mb-2">
+              <Label size="lg" className="block mb-2">
                 Class <span className="text-destructive">*</span>
-              </label>
-              <select
+              </Label>
+              <Select
                 value={classId}
                 onChange={(e) => handleClassChange(e.target.value)}
-                className="w-full px-4 py-3 bg-background-subtle border border-border rounded-xl text-foreground text-[14px] focus:outline-none focus:border-accent transition"
                 required
               >
                 <option value="">Select a class</option>
@@ -318,19 +322,18 @@ export default function EditCharacterPage() {
                     {cls.name}
                   </option>
                 ))}
-              </select>
+              </Select>
             </div>
 
             {/* Spec */}
             {classId && getAvailableSpecs().length > 0 && (
               <div>
-                <label className="block text-foreground text-[14px] font-medium mb-2">
+                <Label size="lg" className="block mb-2">
                   Specialization (Optional)
-                </label>
-                <select
+                </Label>
+                <Select
                   value={specId}
                   onChange={(e) => setSpecId(e.target.value)}
-                  className="w-full px-4 py-3 bg-background-subtle border border-border rounded-xl text-foreground text-[14px] focus:outline-none focus:border-accent transition"
                 >
                   <option value="">Select a specialization</option>
                   {getAvailableSpecs().map((spec) => (
@@ -338,38 +341,32 @@ export default function EditCharacterPage() {
                       {spec.name}
                     </option>
                   ))}
-                </select>
+                </Select>
               </div>
             )}
 
             {/* Main/Alt Toggle */}
             <div>
-              <label className="block text-foreground text-[14px] font-medium mb-3">
+              <Label size="lg" className="block mb-3">
                 Character Type
-              </label>
+              </Label>
               <div className="flex gap-3">
-                <button
+                <Button
                   type="button"
+                  variant={isMain ? 'accent' : 'secondary'}
                   onClick={() => setIsMain(true)}
-                  className={`flex-1 px-6 py-3 rounded-xl text-[14px] font-medium transition ${
-                    isMain
-                      ? 'bg-accent text-foreground'
-                      : 'bg-background-subtle border border-border text-muted-foreground hover:border-border-strong'
-                  }`}
+                  className="flex-1"
                 >
                   Main
-                </button>
-                <button
+                </Button>
+                <Button
                   type="button"
+                  variant={!isMain ? 'accent' : 'secondary'}
                   onClick={() => setIsMain(false)}
-                  className={`flex-1 px-6 py-3 rounded-xl text-[14px] font-medium transition ${
-                    !isMain
-                      ? 'bg-accent text-foreground'
-                      : 'bg-background-subtle border border-border text-muted-foreground hover:border-border-strong'
-                  }`}
+                  className="flex-1"
                 >
                   Alt
-                </button>
+                </Button>
               </div>
               <p className="text-[12px] text-muted-foreground mt-2">
                 You can only have one main character. Setting this as main will change your current main to an alt.
@@ -387,21 +384,25 @@ export default function EditCharacterPage() {
 
           {/* Action Buttons */}
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4 mt-8">
-            <button
+            <Button
               type="submit"
-              disabled={saving || !hasChanges}
-              className="px-8 py-3 bg-primary hover:bg-primary/90 rounded-[52px] text-primary-foreground font-medium text-[16px] transition disabled:opacity-50 disabled:cursor-not-allowed"
+              variant="primary"
+              size="lg"
+              disabled={!hasChanges}
+              loading={saving}
+              loadingText="Saving..."
             >
-              {saving ? 'Saving...' : 'Save Changes'}
-            </button>
+              Save Changes
+            </Button>
 
-            <button
+            <Button
               type="button"
+              variant="secondary"
+              size="lg"
               onClick={() => router.push('/characters/manage')}
-              className="px-8 py-3 bg-background-elevated hover:bg-muted border border-border rounded-[52px] text-foreground font-medium text-[16px] transition"
             >
               Cancel
-            </button>
+            </Button>
           </div>
         </form>
 
@@ -413,44 +414,46 @@ export default function EditCharacterPage() {
           </p>
 
           {!showDeleteConfirm ? (
-            <button
+            <Button
+              variant="destructive-outline"
               onClick={() => setShowDeleteConfirm(true)}
-              className="px-6 py-3 bg-destructive/10 hover:bg-destructive/20 border border-destructive rounded-[52px] text-destructive font-medium text-[14px] transition flex items-center gap-2"
             >
               <HugeiconsIcon icon={Delete01Icon} size={16} />
               Delete Character
-            </button>
+            </Button>
           ) : (
             <div className="space-y-4">
               <div className="p-4 bg-destructive/10 border border-destructive/50 rounded-xl">
                 <p className="text-destructive text-[14px] mb-3">
                   To confirm deletion, type <span className="font-bold text-foreground">{character?.name}</span> below:
                 </p>
-                <input
+                <Input
                   type="text"
                   value={deleteConfirmName}
                   onChange={(e) => setDeleteConfirmName(e.target.value)}
                   placeholder="Type character name to confirm"
-                  className="w-full px-4 py-3 bg-background-subtle border border-destructive/50 rounded-xl text-foreground text-[14px] focus:outline-none focus:border-destructive transition"
+                  className="border-destructive/50 focus:border-destructive"
                   autoFocus
                 />
               </div>
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4">
-                <button
+                <Button
+                  variant="destructive"
                   onClick={handleDelete}
-                  disabled={deleting || deleteConfirmName.toLowerCase() !== character?.name.toLowerCase()}
-                  className="px-6 py-3 bg-destructive hover:bg-destructive/90 rounded-[52px] text-destructive-foreground font-medium text-[14px] transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  disabled={deleteConfirmName.toLowerCase() !== character?.name.toLowerCase()}
+                  loading={deleting}
+                  loadingText="Deleting..."
                 >
                   <HugeiconsIcon icon={Delete01Icon} size={16} />
-                  {deleting ? 'Deleting...' : 'Delete Forever'}
-                </button>
-                <button
+                  Delete Forever
+                </Button>
+                <Button
+                  variant="secondary"
                   onClick={handleCancelDelete}
                   disabled={deleting}
-                  className="px-6 py-3 bg-background-elevated hover:bg-muted border border-border rounded-[52px] text-foreground font-medium text-[14px] transition"
                 >
                   Cancel
-                </button>
+                </Button>
               </div>
             </div>
           )}

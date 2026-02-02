@@ -7,6 +7,8 @@ import ItemLink from '@/app/components/ItemLink'
 import { useGuildContext } from '@/app/contexts/GuildContext'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { Button } from '@/components/ui/button'
+import { Select } from '@/components/ui/select'
+import { Input } from '@/components/ui/input'
 import { allRoles, getRoleDisplayName, type Role } from '@/utils/spec-role-mapping'
 
 // Lazy load the modal to reduce initial bundle size
@@ -19,6 +21,13 @@ import { StarFilledIcon } from '@/components/ui/icons'
 import { HorizontalScroll } from '@/components/ui/horizontal-scroll'
 import { refreshWowheadTooltips } from '@/lib/wowhead'
 
+interface RaidTier {
+  id: string
+  name: string
+  is_active: boolean
+  phase: number | null
+}
+
 interface LootItem {
   id: string
   name: string
@@ -28,6 +37,7 @@ interface LootItem {
   classification: string
   is_available: boolean
   raid_tier_id: string
+  raid_tier_name?: string
 }
 
 interface ItemPriority {
@@ -110,14 +120,29 @@ export default function PriorityListTab() {
   const [initialLoading, setInitialLoading] = useState(true)
   const [contentLoading, setContentLoading] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
-  const [raidTiers, setRaidTiers] = useState<any[]>([])
-  const [selectedTierId, setSelectedTierId] = useState<string | null>(null)
+  const [raidTiers, setRaidTiers] = useState<RaidTier[]>([])
+  const [selectedPhase, setSelectedPhase] = useState<number | null>(null)
   const [selectedItem, setSelectedItem] = useState<LootItem | null>(null)
   const [showModal, setShowModal] = useState(false)
   const [collapsedBosses, setCollapsedBosses] = useState<Set<string>>(new Set())
+  const [collapsedRaids, setCollapsedRaids] = useState<Set<string>>(new Set())
 
   const supabase = createClient()
   const { activeGuild, loading: guildLoading, isOfficer } = useGuildContext()
+
+  // Get unique phases from raid tiers
+  const availablePhases = useMemo(() => {
+    const phases = new Set<number>()
+    raidTiers.forEach(tier => {
+      if (tier.phase !== null) phases.add(tier.phase)
+    })
+    return Array.from(phases).sort((a, b) => a - b)
+  }, [raidTiers])
+
+  // Get tiers for the currently selected phase
+  const phaseTiers = useMemo(() => {
+    return raidTiers.filter(t => t.phase === selectedPhase)
+  }, [raidTiers, selectedPhase])
 
   // Load all data
   useEffect(() => {
@@ -131,7 +156,7 @@ export default function PriorityListTab() {
         if (activeGuild.active_expansion_id) {
           const { data: tiersData, error: tiersError } = await supabase
             .from('raid_tiers')
-            .select('id, name, is_active')
+            .select('id, name, is_active, phase')
             .eq('expansion_id', activeGuild.active_expansion_id)
             .eq('is_guild_active', true)
 
@@ -145,9 +170,10 @@ export default function PriorityListTab() {
               getRaidTierOrder(a.name) - getRaidTierOrder(b.name)
             )
             setRaidTiers(sortedTiers)
-            // Set initial tier to active or first
+            // Set initial phase to current (active tier's phase) or first available
             const activeTier = sortedTiers.find(t => t.is_active) || sortedTiers[0]
-            setSelectedTierId(activeTier.id)
+            const initialPhase = activeTier?.phase ?? sortedTiers[0]?.phase ?? 1
+            setSelectedPhase(initialPhase)
           }
         }
 
@@ -217,40 +243,50 @@ export default function PriorityListTab() {
     loadData()
   }, [guildLoading, activeGuild])
 
-  // Load items and priorities when tier changes
+  // Load items and priorities when phase changes
   useEffect(() => {
     const loadItemsAndPriorities = async () => {
-      if (!selectedTierId || !activeGuild) return
+      if (selectedPhase === null || !activeGuild || phaseTiers.length === 0) return
 
       setContentLoading(true)
 
       try {
-        // Load loot items for this tier
+        // Get tier IDs for this phase
+        const tierIds = phaseTiers.map(t => t.id)
+
+        // Load loot items for all tiers in this phase
         const { data: itemsData } = await supabase
           .from('loot_items')
           .select('id, name, boss_name, item_slot, wowhead_id, classification, is_available, raid_tier_id')
-          .eq('raid_tier_id', selectedTierId)
+          .in('raid_tier_id', tierIds)
           .eq('is_available', true)
           .order('boss_name')
           .order('name')
 
         if (itemsData) {
-          setLootItems(itemsData)
+          // Add raid tier name to each item for grouping
+          const itemsWithTierName = itemsData.map(item => ({
+            ...item,
+            raid_tier_name: phaseTiers.find(t => t.id === item.raid_tier_id)?.name
+          }))
+          setLootItems(itemsWithTierName)
         }
 
-        // Load existing priorities
-        const response = await fetch(
-          `/api/prio-list?guild_id=${activeGuild.id}&raid_tier_id=${selectedTierId}`
-        )
+        // Load existing priorities for all tiers in this phase
+        const allPriorities: Record<string, ItemPriority> = {}
+        for (const tier of phaseTiers) {
+          const response = await fetch(
+            `/api/prio-list?guild_id=${activeGuild.id}&raid_tier_id=${tier.id}`
+          )
 
-        if (response.ok) {
-          const data = await response.json()
-          const prioMap: Record<number, ItemPriority> = {}
-          for (const prio of data.priorities || []) {
-            prioMap[prio.item_id] = prio
+          if (response.ok) {
+            const data = await response.json()
+            for (const prio of data.priorities || []) {
+              allPriorities[prio.item_id] = prio
+            }
           }
-          setPriorities(prioMap)
         }
+        setPriorities(allPriorities)
       } catch (error) {
         console.error('Error loading items and priorities:', error)
       }
@@ -259,7 +295,7 @@ export default function PriorityListTab() {
     }
 
     loadItemsAndPriorities()
-  }, [selectedTierId, activeGuild])
+  }, [selectedPhase, activeGuild, phaseTiers])
 
   // Refresh Wowhead tooltips
   useEffect(() => {
@@ -276,7 +312,24 @@ export default function PriorityListTab() {
     )
   }, [lootItems, searchTerm])
 
-  // Group items by boss (normalize names to merge multi-boss encounters like Opera Event)
+  // Group items by raid tier, then by boss (normalize names to merge multi-boss encounters like Opera Event)
+  const groupedByRaidTier = useMemo(() => {
+    const groups: Record<string, Record<string, LootItem[]>> = {}
+    filteredItems.forEach(item => {
+      const tierName = item.raid_tier_name || 'Unknown Raid'
+      const boss = normalizeBossName(item.boss_name)
+      if (!groups[tierName]) {
+        groups[tierName] = {}
+      }
+      if (!groups[tierName][boss]) {
+        groups[tierName][boss] = []
+      }
+      groups[tierName][boss].push(item)
+    })
+    return groups
+  }, [filteredItems])
+
+  // Flat list of all bosses for navigation (grouped by boss name)
   const groupedByBoss = useMemo(() => {
     const groups: Record<string, LootItem[]> = {}
     filteredItems.forEach(item => {
@@ -301,6 +354,18 @@ export default function PriorityListTab() {
     })
   }
 
+  const toggleRaidCollapse = (raidName: string) => {
+    setCollapsedRaids(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(raidName)) {
+        newSet.delete(raidName)
+      } else {
+        newSet.add(raidName)
+      }
+      return newSet
+    })
+  }
+
   const collapseAll = () => {
     const bossNames = Object.keys(groupedByBoss).sort((a, b) => getBossOrder(a) - getBossOrder(b))
     setCollapsedBosses(new Set(bossNames))
@@ -316,7 +381,7 @@ export default function PriorityListTab() {
   }
 
   const handleSavePriority = async (priority: Partial<ItemPriority>) => {
-    if (!selectedItem || !activeGuild || !selectedTierId) return
+    if (!selectedItem || !activeGuild) return
 
     try {
       const response = await fetch('/api/prio-list', {
@@ -325,7 +390,7 @@ export default function PriorityListTab() {
         body: JSON.stringify({
           guild_id: activeGuild.id,
           item_id: selectedItem.id,
-          raid_tier_id: selectedTierId,
+          raid_tier_id: selectedItem.raid_tier_id,
           ...priority
         })
       })
@@ -344,12 +409,12 @@ export default function PriorityListTab() {
     }
   }
 
-  const handleClearPriority = async (itemId: string) => {
-    if (!activeGuild || !selectedTierId) return
+  const handleClearPriority = async (itemId: string, raidTierId: string) => {
+    if (!activeGuild) return
 
     try {
       const response = await fetch(
-        `/api/prio-list?guild_id=${activeGuild.id}&item_id=${itemId}&raid_tier_id=${selectedTierId}`,
+        `/api/prio-list?guild_id=${activeGuild.id}&item_id=${itemId}&raid_tier_id=${raidTierId}`,
         { method: 'DELETE' }
       )
 
@@ -410,8 +475,8 @@ export default function PriorityListTab() {
     )
   }
 
-  // Show message if no raid tiers are available
-  if (raidTiers.length === 0) {
+  // Show message if no phases are available
+  if (availablePhases.length === 0) {
     return (
       <div className="bg-background-elevated border border-border rounded-xl p-8 text-center">
         <p className="text-foreground font-medium mb-2">No raid tiers available</p>
@@ -426,50 +491,52 @@ export default function PriorityListTab() {
 
   return (
     <div className="space-y-6">
-      {/* Raid Tier Tabs */}
-      {raidTiers.length > 0 && (
+      {/* Phase Tabs */}
+      {availablePhases.length > 0 && (
         <div>
           {/* Mobile: Dropdown selector */}
           <div className="sm:hidden">
-            <select
-              value={selectedTierId || ''}
-              onChange={(e) => setSelectedTierId(e.target.value)}
-              className="w-full px-4 py-2.5 bg-background-elevated border border-border rounded-xl text-[13px] font-medium text-foreground appearance-none cursor-pointer"
-              style={{
-                backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%239ca3af'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
-                backgroundRepeat: 'no-repeat',
-                backgroundPosition: 'right 12px center',
-                backgroundSize: '16px',
-                paddingRight: '40px'
-              }}
+            <Select
+              variant="rounded"
+              size="sm"
+              value={selectedPhase ?? ''}
+              onChange={(e) => setSelectedPhase(parseInt(e.target.value))}
             >
-              {raidTiers.map((tier) => (
-                <option key={tier.id} value={tier.id}>
-                  {tier.name}{tier.is_active ? ' ★' : ''}
-                </option>
-              ))}
-            </select>
+              {availablePhases.map((phase) => {
+                const isCurrentPhase = phaseTiers.some(t => t.is_active)
+                return (
+                  <option key={phase} value={phase}>
+                    Phase {phase}{selectedPhase === phase && isCurrentPhase ? ' ★' : ''}
+                  </option>
+                )
+              })}
+            </Select>
           </div>
           {/* Desktop: Horizontal scroll tabs */}
           <div className="hidden sm:block">
             <HorizontalScroll>
               <div className="flex gap-2 pr-3">
-                {raidTiers.map((tier) => (
-                  <button
-                    key={tier.id}
-                    onClick={() => setSelectedTierId(tier.id)}
-                    className={`px-5 py-2.5 rounded-[40px] whitespace-nowrap text-[13px] font-medium transition-all border ${
-                      selectedTierId === tier.id
-                        ? 'bg-accent/20 border-accent/20 text-accent'
-                        : 'bg-background-elevated border-border text-foreground hover:bg-muted'
-                    }`}
-                  >
-                    <span className="flex items-center gap-2">
-                      {tier.name}
-                      {tier.is_active && <StarFilledIcon size={14} />}
-                    </span>
-                  </button>
-                ))}
+                {availablePhases.map((phase) => {
+                  const phaseHasActiveTier = raidTiers.filter(t => t.phase === phase).some(t => t.is_active)
+                  return (
+                    <Button
+                      key={phase}
+                      variant={selectedPhase === phase ? 'accent' : 'secondary'}
+                      size="sm"
+                      onClick={() => setSelectedPhase(phase)}
+                      className={`rounded-[40px] whitespace-nowrap ${
+                        selectedPhase === phase
+                          ? 'bg-accent/20 border-accent/20 text-accent'
+                          : ''
+                      }`}
+                    >
+                      <span className="flex items-center gap-2">
+                        Phase {phase}
+                        {phaseHasActiveTier && <StarFilledIcon size={14} />}
+                      </span>
+                    </Button>
+                  )
+                })}
               </div>
             </HorizontalScroll>
           </div>
@@ -509,17 +576,20 @@ export default function PriorityListTab() {
           <div className="sm:hidden flex gap-2">
             {/* Search input */}
             <div className="flex-1 bg-background-elevated border border-border rounded-xl p-2">
-              <input
+              <Input
+                variant="rounded"
+                size="sm"
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="Search..."
-                className="w-full px-3 py-1.5 bg-background-elevated border border-border rounded-[40px] text-foreground text-xs focus:outline-none focus:border-accent placeholder:text-foreground-muted"
               />
             </div>
             {/* Boss dropdown */}
             <div className="flex-1 bg-background-elevated border border-border rounded-xl p-2">
-              <select
+              <Select
+                variant="rounded"
+                size="sm"
                 onChange={(e) => {
                   const element = document.getElementById(`prio-boss-${e.target.value.replace(/\s+/g, '-')}`)
                   if (element) {
@@ -527,30 +597,24 @@ export default function PriorityListTab() {
                   }
                 }}
                 defaultValue=""
-                className="w-full px-3 py-1.5 bg-background-elevated border border-border rounded-[40px] text-foreground text-xs appearance-none cursor-pointer"
-                style={{
-                  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%239ca3af'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
-                  backgroundRepeat: 'no-repeat',
-                  backgroundPosition: 'right 8px center',
-                  backgroundSize: '14px',
-                  paddingRight: '28px'
-                }}
               >
                 <option value="" disabled>Jump to boss...</option>
                 {bossNames.map((boss) => (
                   <option key={boss} value={boss}>{boss}</option>
                 ))}
-              </select>
+              </Select>
             </div>
           </div>
           {/* Desktop: Search input */}
           <div className="hidden sm:flex flex-shrink-0 bg-background-elevated border border-border rounded-xl p-3 items-center">
-            <input
+            <Input
+              variant="rounded"
+              size="sm"
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Search items..."
-              className="w-full sm:w-[160px] px-3 py-1.5 bg-background-elevated border border-border rounded-[40px] text-foreground text-xs focus:outline-none focus:border-accent placeholder:text-foreground-muted"
+              className="w-full sm:w-[160px]"
             />
           </div>
           {/* Desktop: Boss chips container with horizontal scroll fade */}
@@ -564,18 +628,20 @@ export default function PriorityListTab() {
             >
               <div className="flex gap-2 px-3">
                 {bossNames.map((boss) => (
-                  <button
+                  <Button
                     key={boss}
+                    variant="secondary"
+                    size="sm"
                     onClick={() => {
                       const element = document.getElementById(`prio-boss-${boss.replace(/\s+/g, '-')}`)
                       if (element) {
                         element.scrollIntoView({ behavior: 'smooth', block: 'start' })
                       }
                     }}
-                    className="px-4 py-2 bg-background-inset hover:bg-muted border border-border rounded-[40px] text-sm font-medium text-foreground whitespace-nowrap transition"
+                    className="rounded-[40px] whitespace-nowrap"
                   >
                     {boss}
-                  </button>
+                  </Button>
                 ))}
               </div>
             </div>
@@ -604,114 +670,156 @@ export default function PriorityListTab() {
         </div>
       ) : (
         <>
-          {/* Items by Boss */}
-          {bossNames.length === 0 ? (
+          {/* Items by Raid Tier, then by Boss */}
+          {Object.keys(groupedByRaidTier).length === 0 ? (
             <div className="bg-background-elevated border border-border rounded-xl p-8 text-center">
-              <p className="text-muted-foreground">No items found for this raid tier</p>
+              <p className="text-muted-foreground">No items found for this phase</p>
             </div>
           ) : (
-            <div className="space-y-3">
-              {bossNames.map((boss) => {
-                const isCollapsed = collapsedBosses.has(boss)
-                const bossItems = groupedByBoss[boss]
+            <div className="space-y-4">
+              {/* Sort raid tiers by progression order */}
+              {Object.keys(groupedByRaidTier)
+                .sort((a, b) => getRaidTierOrder(a) - getRaidTierOrder(b))
+                .map((raidName) => {
+                  const raidBosses = groupedByRaidTier[raidName]
+                  const bossList = Object.keys(raidBosses).sort((a, b) => getBossOrder(a) - getBossOrder(b))
+                  const isRaidCollapsed = collapsedRaids.has(raidName)
+                  const totalItems = Object.values(raidBosses).reduce((sum, items) => sum + items.length, 0)
 
-                return (
-                  <div
-                    key={boss}
-                    id={`prio-boss-${boss.replace(/\s+/g, '-')}`}
-                    className="bg-background-elevated border border-border rounded-xl overflow-hidden scroll-mt-[140px]"
-                  >
-                    {/* Boss Header - Clickable */}
-                    <button
-                      onClick={() => toggleBossCollapse(boss)}
-                      className="w-full px-5 py-3 flex items-center justify-between hover:bg-muted transition-colors"
-                    >
-                      <div className="flex items-center gap-3">
-                        {getBossImage(boss) && (
-                          <img
-                            src={getBossImage(boss)!}
-                            alt={boss}
-                            className="w-6 h-6 rounded border border-border/50 shadow-sm"
-                          />
-                        )}
-                        <h2 className="text-[15px] font-semibold text-foreground">{boss}</h2>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <span className="text-[12px] text-foreground-muted font-medium">
-                          {bossItems.length} item{bossItems.length !== 1 ? 's' : ''}
-                        </span>
-                        <svg
-                          className={`w-4 h-4 text-muted-foreground transition-transform ${isCollapsed ? '' : 'rotate-90'}`}
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
+                  return (
+                    <div key={raidName} className="space-y-3">
+                      {/* Raid Header - only show if multiple raids in phase */}
+                      {phaseTiers.length > 1 && (
+                        <Button
+                          variant="ghost"
+                          onClick={() => toggleRaidCollapse(raidName)}
+                          className="w-full flex items-center justify-start gap-3 px-4 py-2 bg-background-subtle border border-border rounded-lg hover:bg-muted"
                         >
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                        </svg>
-                      </div>
-                    </button>
+                          <svg
+                            className={`w-4 h-4 text-muted-foreground transition-transform ${isRaidCollapsed ? '' : 'rotate-90'}`}
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                          </svg>
+                          <span className="text-[14px] font-semibold text-foreground">{raidName}</span>
+                          <span className="text-[12px] text-foreground-muted">
+                            {totalItems} item{totalItems !== 1 ? 's' : ''}
+                          </span>
+                        </Button>
+                      )}
 
-                    {/* Items Table - Collapsible */}
-                    {!isCollapsed && (
-                      <div className="border-t border-border overflow-x-auto">
-                        <table className="w-full min-w-[600px]">
-                          <thead>
-                            <tr className="bg-background-subtle">
-                              <th className="px-5 py-2.5 text-left text-[12px] font-medium text-foreground-muted">Item</th>
-                              <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted w-[100px]">Slot</th>
-                              <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted">Priority Summary</th>
-                              <th className="px-3 py-2.5 text-center text-[12px] font-medium text-foreground-muted w-[180px]">Actions</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-border">
-                            {bossItems.map((item) => {
-                              const hasPriority = !!priorities[item.id]
-                              const summary = getPrioritySummary(item.id)
+                      {/* Bosses within this raid */}
+                      {!isRaidCollapsed && (
+                        <div className="space-y-3">
+                          {bossList.map((boss) => {
+                            const isCollapsed = collapsedBosses.has(boss)
+                            const bossItems = raidBosses[boss]
 
-                              return (
-                                <tr
-                                  key={item.id}
-                                  className={`transition-all hover:bg-muted ${hasPriority ? 'bg-green-900/10' : ''}`}
+                            return (
+                              <div
+                                key={`${raidName}-${boss}`}
+                                id={`prio-boss-${boss.replace(/\s+/g, '-')}`}
+                                className="bg-background-elevated border border-border rounded-xl overflow-hidden scroll-mt-[140px]"
+                              >
+                                {/* Boss Header - Clickable */}
+                                <Button
+                                  variant="ghost"
+                                  onClick={() => toggleBossCollapse(boss)}
+                                  className="w-full px-5 py-3 flex items-center justify-between hover:bg-muted rounded-none"
                                 >
-                                  <td className="px-5 py-2.5">
-                                    <ItemLink
-                                      name={item.name}
-                                      wowheadId={item.wowhead_id}
-                                      className="font-medium text-[13px]"
-                                    />
-                                  </td>
-                                  <td className="px-3 py-2.5 text-[12px] text-foreground-muted">
-                                    {item.item_slot}
-                                  </td>
-                                  <td className="px-3 py-2.5">
-                                    {summary ? (
-                                      <span className="text-[12px] text-green-400">{summary}</span>
-                                    ) : (
-                                      <span className="text-[12px] text-muted-foreground italic">No priorities set</span>
+                                  <div className="flex items-center gap-3">
+                                    {getBossImage(boss) && (
+                                      <img
+                                        src={getBossImage(boss)!}
+                                        alt={boss}
+                                        className="w-6 h-6 rounded border border-border/50 shadow-sm"
+                                      />
                                     )}
-                                  </td>
-                                  <td className="px-3 py-2.5 text-center">
-                                    <div className="flex items-center justify-center gap-2">
-                                      <Button variant="secondary" size="sm" onClick={() => handleEditItem(item)}>
-                                        {hasPriority ? 'Edit' : 'Set Priority'}
-                                      </Button>
-                                      {hasPriority && (
-                                        <Button variant="ghost" size="sm" onClick={() => handleClearPriority(item.id)} className="text-muted-foreground hover:text-destructive hover:bg-destructive/10">
-                                          Clear
-                                        </Button>
-                                      )}
-                                    </div>
-                                  </td>
-                                </tr>
-                              )
-                            })}
-                          </tbody>
-                        </table>
-                      </div>
-                    )}
-                  </div>
-                )
-              })}
+                                    <h2 className="text-[15px] font-semibold text-foreground">{boss}</h2>
+                                  </div>
+                                  <div className="flex items-center gap-3">
+                                    <span className="text-[12px] text-foreground-muted font-medium">
+                                      {bossItems.length} item{bossItems.length !== 1 ? 's' : ''}
+                                    </span>
+                                    <svg
+                                      className={`w-4 h-4 text-muted-foreground transition-transform ${isCollapsed ? '' : 'rotate-90'}`}
+                                      fill="none"
+                                      stroke="currentColor"
+                                      viewBox="0 0 24 24"
+                                    >
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                    </svg>
+                                  </div>
+                                </Button>
+
+                                {/* Items Table - Collapsible */}
+                                {!isCollapsed && (
+                                  <div className="border-t border-border overflow-x-auto">
+                                    <table className="w-full min-w-[600px]">
+                                      <thead>
+                                        <tr className="bg-background-subtle">
+                                          <th className="px-5 py-2.5 text-left text-[12px] font-medium text-foreground-muted">Item</th>
+                                          <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted w-[100px]">Slot</th>
+                                          <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted">Priority Summary</th>
+                                          <th className="px-3 py-2.5 text-center text-[12px] font-medium text-foreground-muted w-[180px]">Actions</th>
+                                        </tr>
+                                      </thead>
+                                      <tbody className="divide-y divide-border">
+                                        {bossItems.map((item) => {
+                                          const hasPriority = !!priorities[item.id]
+                                          const summary = getPrioritySummary(item.id)
+
+                                          return (
+                                            <tr
+                                              key={item.id}
+                                              className={`transition-all hover:bg-muted ${hasPriority ? 'bg-green-900/10' : ''}`}
+                                            >
+                                              <td className="px-5 py-2.5">
+                                                <ItemLink
+                                                  name={item.name}
+                                                  wowheadId={item.wowhead_id}
+                                                  className="font-medium text-[13px]"
+                                                />
+                                              </td>
+                                              <td className="px-3 py-2.5 text-[12px] text-foreground-muted">
+                                                {item.item_slot}
+                                              </td>
+                                              <td className="px-3 py-2.5">
+                                                {summary ? (
+                                                  <span className="text-[12px] text-green-400">{summary}</span>
+                                                ) : (
+                                                  <span className="text-[12px] text-muted-foreground italic">No priorities set</span>
+                                                )}
+                                              </td>
+                                              <td className="px-3 py-2.5 text-center">
+                                                <div className="flex items-center justify-center gap-2">
+                                                  <Button variant="secondary" size="sm" onClick={() => handleEditItem(item)}>
+                                                    {hasPriority ? 'Edit' : 'Set Priority'}
+                                                  </Button>
+                                                  {hasPriority && (
+                                                    <Button variant="ghost" size="sm" onClick={() => handleClearPriority(item.id, item.raid_tier_id)} className="text-muted-foreground hover:text-destructive hover:bg-destructive/10">
+                                                      Clear
+                                                    </Button>
+                                                  )}
+                                                </div>
+                                              </td>
+                                            </tr>
+                                          )
+                                        })}
+                                      </tbody>
+                                    </table>
+                                  </div>
+                                )}
+                              </div>
+                            )
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
             </div>
           )}
 

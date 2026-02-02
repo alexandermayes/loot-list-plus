@@ -12,10 +12,11 @@ import {
   ModalBody,
 } from '@/components/ui/modal'
 import { Button } from '@/components/ui/button'
+import { Select } from '@/components/ui/select'
 import { useConfirm } from '@/components/ui/confirm-modal'
 import { Heading } from '@/components/ui/typography'
 import { normalizeBossName } from '@/utils/bossOrder'
-import { getRaidIcon } from '@/utils/raidIcons'
+import { getRaidIcon, getRaidShorthand } from '@/utils/raidIcons'
 import { StarFilledIcon, CheckFilledIcon, ClockFilledIcon, AlertFilledIcon, CancelFilledIcon } from '@/components/ui/icons'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { InformationCircleIcon } from '@hugeicons/core-free-icons'
@@ -176,9 +177,11 @@ export default function LootList() {
     submission,
     rankings,
     raidTiers,
-    tierSubmissionStatuses,
-    selectedTierId,
-    selectedTierDeadline,
+    phaseTiers,
+    phases,
+    phaseSubmissionStatuses,
+    selectedPhase,
+    phaseDeadline,
     enforceSlotRestrictions,
     equippedWowheadIds,
     isLoading,
@@ -186,7 +189,7 @@ export default function LootList() {
     isSaving,
     isImportingBis,
     hasChanges,
-    setSelectedTierId,
+    setSelectedPhase,
     handleItemSelect,
     clearAllRankings,
     saveSubmission,
@@ -209,8 +212,8 @@ export default function LootList() {
 
   // Helper to check if we're past the submission deadline
   const isPastDeadline = (): boolean => {
-    if (!selectedTierDeadline) return false
-    return new Date() > new Date(selectedTierDeadline)
+    if (!phaseDeadline) return false
+    return new Date() > new Date(phaseDeadline)
   }
 
   const handleClearList = useCallback(() => {
@@ -458,7 +461,7 @@ export default function LootList() {
                 )}
               </Heading>
               <p className="text-muted-foreground mt-1 text-base">
-                {isLoading ? 'Loading raid tiers...' : `Rank your preferred items for ${raidTiers.find(t => t.id === selectedTierId)?.name || 'this raid tier'}`}
+                {isLoading ? 'Loading phases...' : `Rank your preferred items for Phase ${selectedPhase}${phaseTiers.length > 0 ? ` (${phaseTiers.map(t => t.name).join(', ')})` : ''}`}
                 {viewingExpansionId && (
                   <span className="ml-2 px-3 py-1 bg-blue-950/50 border border-blue-600/50 text-blue-300 text-xs font-medium rounded-full">
                     Viewing Past: {guildExpansions.find(e => e.expansion_id === viewingExpansionId)?.expansion_name}
@@ -481,19 +484,13 @@ export default function LootList() {
           <div className="px-4 sm:px-6 lg:px-8 py-1.5 bg-background">
             {/* Mobile: Dropdown selector */}
             <div className="sm:hidden">
-              <select
+              <Select
+                variant="rounded"
+                size="sm"
                 value={viewingExpansionId || guildExpansions.find(e => e.is_current)?.expansion_id || ''}
                 onChange={(e) => {
                   const expansion = guildExpansions.find(exp => exp.expansion_id === e.target.value)
                   setViewingExpansion(expansion?.is_current ? null : e.target.value)
-                }}
-                className="w-full px-4 py-2.5 bg-background-elevated border border-border rounded-xl text-[13px] font-medium text-foreground appearance-none cursor-pointer"
-                style={{
-                  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%239ca3af'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
-                  backgroundRepeat: 'no-repeat',
-                  backgroundPosition: 'right 12px center',
-                  backgroundSize: '16px',
-                  paddingRight: '40px'
                 }}
               >
                 {guildExpansions.map((expansion) => (
@@ -501,7 +498,7 @@ export default function LootList() {
                     {expansion.expansion_name}{expansion.is_current ? ' ★' : ''}
                   </option>
                 ))}
-              </select>
+              </Select>
             </div>
             {/* Desktop: Horizontal scroll tabs */}
             <div className="hidden sm:flex gap-2 overflow-x-auto">
@@ -510,67 +507,66 @@ export default function LootList() {
                 const isCurrent = expansion.is_current && !viewingExpansionId
 
                 return (
-                  <button
+                  <Button
                     key={expansion.expansion_id}
+                    variant={isViewing || isCurrent ? 'accent' : 'secondary'}
                     onClick={() => setViewingExpansion(expansion.is_current ? null : expansion.expansion_id)}
-                    className={`px-5 py-2.5 rounded-[40px] whitespace-nowrap text-[13px] font-medium transition-all border ${
+                    className={`px-5 py-2.5 rounded-[40px] whitespace-nowrap text-[13px] font-medium ${
                       isViewing || isCurrent
                         ? 'bg-accent/20 border-accent/20 text-accent'
-                        : 'bg-background-elevated border-border text-foreground hover:bg-muted'
+                        : ''
                     }`}
                   >
                     <div className="flex items-center gap-2">
                       <span>{expansion.expansion_name}</span>
                       {expansion.is_current && <StarFilledIcon size={14} />}
                     </div>
-                  </button>
+                  </Button>
                 )
               })}
             </div>
           </div>
         )}
 
-        {/* Raid Tier Tabs - Sticky */}
+        {/* Phase Tabs - Sticky */}
         {isLoading ? (
           <div className="sticky top-0 z-20 px-4 sm:px-6 lg:px-8 py-1.5 bg-background">
             <TierTabsSkeleton />
           </div>
-        ) : raidTiers.length > 0 && (
+        ) : phases.length > 0 && (
           <div className="sticky top-0 z-20 px-4 sm:px-6 lg:px-8 py-1.5 bg-background">
             {/* Mobile: Dropdown selector */}
             <div className="sm:hidden">
-              <select
-                value={selectedTierId || ''}
-                onChange={(e) => setSelectedTierId(e.target.value)}
-                className="w-full px-4 py-2.5 bg-background-elevated border border-border rounded-xl text-[13px] font-medium text-foreground appearance-none cursor-pointer"
-                style={{
-                  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%239ca3af'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
-                  backgroundRepeat: 'no-repeat',
-                  backgroundPosition: 'right 12px center',
-                  backgroundSize: '16px',
-                  paddingRight: '40px'
-                }}
+              <Select
+                variant="rounded"
+                size="sm"
+                value={selectedPhase ?? ''}
+                onChange={(e) => setSelectedPhase(parseInt(e.target.value))}
               >
-                {raidTiers.map((tier) => {
-                  const status = tierSubmissionStatuses[tier.id]
+                {phases.map((phase) => {
+                  const status = phaseSubmissionStatuses[phase]
                   const statusEmoji = status?.status === 'approved' ? ' ✓' :
                                       status?.status === 'pending' ? ' ⏳' :
                                       status?.status === 'needs_revision' ? ' ⚠' :
                                       status?.status === 'rejected' ? ' ✗' : ''
+                  const tiersInPhase = raidTiers.filter(t => t.phase === phase)
+                  const activeTiersInPhase = tiersInPhase.filter(t => t.is_guild_active !== false)
+                  const hasActiveTier = tiersInPhase.some(t => t.is_guild_active)
+                  const raidNames = activeTiersInPhase.map(t => getRaidShorthand(t.name)).join(', ')
                   return (
-                    <option key={tier.id} value={tier.id}>
-                      {tier.name}{tier.is_active ? ' ★' : ''}{statusEmoji}
+                    <option key={phase} value={phase}>
+                      P{phase} {raidNames}{hasActiveTier ? ' ★' : ''}{statusEmoji}
                     </option>
                   )
                 })}
-              </select>
+              </Select>
             </div>
             {/* Desktop: Horizontal scroll tabs */}
             <div className="hidden sm:block">
               <HorizontalScroll>
                 <div className="flex gap-2">
-                  {raidTiers.map((tier) => {
-                    const status = tierSubmissionStatuses[tier.id]
+                  {phases.map((phase) => {
+                    const status = phaseSubmissionStatuses[phase]
                     const hasSubmission = !!status
                     const statusColor = hasSubmission
                       ? status.status === 'approved'
@@ -583,20 +579,30 @@ export default function LootList() {
                         ? 'text-red-400'
                         : 'text-gray-400'
                       : ''
+                    const tiersInPhase = raidTiers.filter(t => t.phase === phase)
+                    const activeTiersInPhase = tiersInPhase.filter(t => t.is_guild_active !== false)
+                    const hasActiveTier = tiersInPhase.some(t => t.is_guild_active)
+                    const raidNames = activeTiersInPhase.map(t => getRaidShorthand(t.name)).join(', ')
 
                     return (
-                      <button
-                        key={tier.id}
-                        onClick={() => setSelectedTierId(tier.id)}
-                        className={`px-5 py-2.5 rounded-[40px] whitespace-nowrap text-[13px] font-medium transition-all border ${
-                          selectedTierId === tier.id
+                      <Button
+                        key={phase}
+                        variant={selectedPhase === phase ? 'accent' : 'secondary'}
+                        onClick={() => setSelectedPhase(phase)}
+                        className={`px-4 py-2.5 rounded-[40px] whitespace-nowrap text-[13px] font-medium ${
+                          selectedPhase === phase
                             ? 'bg-accent/20 border-accent/20 text-accent'
-                            : 'bg-background-elevated border-border text-foreground hover:bg-muted'
+                            : ''
                         }`}
                       >
                         <div className="flex items-center gap-2">
-                          <span>{tier.name}</span>
-                          {tier.is_active && <StarFilledIcon size={14} />}
+                          <span className={`px-1.5 py-0.5 rounded text-[11px] font-bold ${
+                            selectedPhase === phase
+                              ? 'bg-accent/30 text-accent'
+                              : 'bg-foreground/10 text-foreground-secondary'
+                          }`}>P{phase}</span>
+                          <span>{raidNames}</span>
+                          {hasActiveTier && <StarFilledIcon size={14} />}
                           {hasSubmission && (
                             <span className={statusColor}>
                               {status.status === 'approved' ? <CheckFilledIcon size={14} /> :
@@ -607,7 +613,7 @@ export default function LootList() {
                             </span>
                           )}
                         </div>
-                      </button>
+                      </Button>
                     )
                   })}
                 </div>
@@ -624,24 +630,34 @@ export default function LootList() {
         ) : (
         <>
         {/* Status Banner */}
-        {selectedTierId && (
+        {selectedPhase !== null && (
           <div className={`rounded-xl p-4 sm:p-6 border ${submission ? getStatusColor(submission.status) : getStatusColor('draft')}`}>
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div className="flex items-center gap-3">
-                <img
-                  src={getRaidIcon(raidTiers.find(t => t.id === selectedTierId)?.name || '')}
-                  alt=""
-                  className="w-10 h-10 rounded-lg border-2 border-border/50 shadow-md"
-                />
+                {/* Show first active tier's raid icon, or first tier if none active */}
+                {phaseTiers.length > 0 && (
+                  <img
+                    src={getRaidIcon(phaseTiers.find(t => t.is_guild_active)?.name || phaseTiers[0]?.name || '')}
+                    alt=""
+                    className="w-10 h-10 rounded-lg border-2 border-border/50 shadow-md"
+                  />
+                )}
                 <div>
-                  <h2 className="font-semibold text-lg text-foreground">{raidTiers.find(t => t.id === selectedTierId)?.name || 'Raid Tier'}</h2>
+                  <h2 className="font-semibold text-lg text-foreground">
+                    Phase {selectedPhase}
+                    {phaseTiers.length > 0 && (
+                      <span className="font-normal text-muted-foreground text-sm ml-2">
+                        ({phaseTiers.filter(t => t.is_guild_active).map(t => t.name).join(', ') || 'No active raids'})
+                      </span>
+                    )}
+                  </h2>
                   <p className="text-sm text-muted-foreground mt-0.5">
                     {submission ? getStatusLabel(submission.status) : 'Draft'}
                     {submission?.submitted_at && (
                       <span> · Submitted {new Date(submission.submitted_at).toLocaleDateString()}</span>
                     )}
-                    {selectedTierDeadline && !isPastDeadline() && (
-                      <span> · Due {new Date(selectedTierDeadline).toLocaleString()}</span>
+                    {phaseDeadline && !isPastDeadline() && (
+                      <span> · Due {new Date(phaseDeadline).toLocaleString()}</span>
                     )}
                   </p>
                 </div>
@@ -686,14 +702,14 @@ export default function LootList() {
 
 
         {/* Deadline Warning */}
-        {selectedTierDeadline && isPastDeadline() && (
+        {phaseDeadline && isPastDeadline() && (
           <div className="bg-yellow-900/50 border border-yellow-500 rounded-xl p-4 text-yellow-200">
             <div className="flex items-start gap-3">
               <span className="text-xl">⏰</span>
               <div>
                 <p className="font-semibold mb-1">Submission deadline passed</p>
                 <p className="text-sm">
-                  The deadline for this raid tier was {new Date(selectedTierDeadline).toLocaleString()}.
+                  The deadline for Phase {selectedPhase} was {new Date(phaseDeadline).toLocaleString()}.
                   You can still submit changes, but they will require officer approval before being visible on the master sheet.
                 </p>
               </div>
@@ -731,15 +747,16 @@ export default function LootList() {
                 const isExpanded = expandedErrors.has(bracketName)
                 return validation && validation.violations.length > 0 ? (
                   <div className="flex flex-col items-end gap-2">
-                    <button
+                    <Button
+                      variant="destructive"
                       onClick={() => toggleErrorExpanded(bracketName)}
-                      className="flex items-center gap-2 bg-red-500 hover:bg-red-600 border-2 border-red-300 px-3 py-1.5 rounded-lg font-bold text-foreground shadow-lg animate-pulse transition-colors cursor-pointer"
+                      className="flex items-center gap-2 bg-red-500 hover:bg-red-600 border-2 border-red-300 px-3 py-1.5 rounded-lg font-bold text-foreground shadow-lg animate-pulse"
                     >
                       <span className="text-sm whitespace-nowrap">
                         {validation.violations.length} {validation.violations.length === 1 ? 'Error' : 'Errors'}
                       </span>
                       <span className="text-xs">{isExpanded ? '▼' : '▶'}</span>
-                    </button>
+                    </Button>
                     {isExpanded && (
                       <div className="bg-red-600 border-2 border-red-400 rounded-lg px-3 py-2 shadow-lg max-w-md">
                         <ul className="space-y-1 text-sm font-semibold text-foreground">
@@ -819,15 +836,16 @@ export default function LootList() {
                 const isExpanded = expandedErrors.has(bracketName)
                 return validation && validation.violations.length > 0 ? (
                   <div className="flex flex-col items-end gap-2">
-                    <button
+                    <Button
+                      variant="destructive"
                       onClick={() => toggleErrorExpanded(bracketName)}
-                      className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 border-2 border-orange-300 px-3 py-1.5 rounded-lg font-bold text-foreground shadow-lg animate-pulse transition-colors cursor-pointer"
+                      className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 border-2 border-orange-300 px-3 py-1.5 rounded-lg font-bold text-foreground shadow-lg animate-pulse"
                     >
                       <span className="text-sm whitespace-nowrap">
                         {validation.violations.length} {validation.violations.length === 1 ? 'Error' : 'Errors'}
                       </span>
                       <span className="text-xs">{isExpanded ? '▼' : '▶'}</span>
-                    </button>
+                    </Button>
                     {isExpanded && (
                       <div className="bg-orange-600 border-2 border-orange-400 rounded-lg px-3 py-2 shadow-lg max-w-md">
                         <ul className="space-y-1 text-sm font-semibold text-foreground">
@@ -907,15 +925,16 @@ export default function LootList() {
                 const isExpanded = expandedErrors.has(bracketName)
                 return validation && validation.violations.length > 0 ? (
                   <div className="flex flex-col items-end gap-2">
-                    <button
+                    <Button
+                      variant="destructive"
                       onClick={() => toggleErrorExpanded(bracketName)}
-                      className="flex items-center gap-2 bg-yellow-500 hover:bg-yellow-600 border-2 border-yellow-300 px-3 py-1.5 rounded-lg font-bold text-foreground shadow-lg animate-pulse transition-colors cursor-pointer"
+                      className="flex items-center gap-2 bg-yellow-500 hover:bg-yellow-600 border-2 border-yellow-300 px-3 py-1.5 rounded-lg font-bold text-foreground shadow-lg animate-pulse"
                     >
                       <span className="text-sm whitespace-nowrap">
                         {validation.violations.length} {validation.violations.length === 1 ? 'Error' : 'Errors'}
                       </span>
                       <span className="text-xs">{isExpanded ? '▼' : '▶'}</span>
-                    </button>
+                    </Button>
                     {isExpanded && (
                       <div className="bg-yellow-600 border-2 border-yellow-400 rounded-lg px-3 py-2 shadow-lg max-w-md">
                         <ul className="space-y-1 text-sm font-semibold text-foreground">
@@ -995,15 +1014,16 @@ export default function LootList() {
                 const isExpanded = expandedErrors.has(bracketName)
                 return validation && validation.violations.length > 0 ? (
                   <div className="flex flex-col items-end gap-2">
-                    <button
+                    <Button
+                      variant="destructive"
                       onClick={() => toggleErrorExpanded(bracketName)}
-                      className="flex items-center gap-2 bg-amber-500 hover:bg-amber-600 border-2 border-amber-300 px-3 py-1.5 rounded-lg font-bold text-foreground shadow-lg animate-pulse transition-colors cursor-pointer"
+                      className="flex items-center gap-2 bg-amber-500 hover:bg-amber-600 border-2 border-amber-300 px-3 py-1.5 rounded-lg font-bold text-foreground shadow-lg animate-pulse"
                     >
                       <span className="text-sm whitespace-nowrap">
                         {validation.violations.length} {validation.violations.length === 1 ? 'Error' : 'Errors'}
                       </span>
                       <span className="text-xs">{isExpanded ? '▼' : '▶'}</span>
-                    </button>
+                    </Button>
                     {isExpanded && (
                       <div className="bg-amber-600 border-2 border-amber-400 rounded-lg px-3 py-2 shadow-lg max-w-md">
                         <ul className="space-y-1 text-sm font-semibold text-foreground">

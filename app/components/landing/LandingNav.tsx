@@ -5,6 +5,7 @@ import { motion } from 'framer-motion'
 import Image from 'next/image'
 import { scrollToSection } from '@/lib/animations'
 import { createClient } from '@/utils/supabase/client'
+import { Button } from '@/components/ui/button'
 
 export default function LandingNav() {
   const [scrolled, setScrolled] = useState(false)
@@ -42,9 +43,10 @@ export default function LandingNav() {
       <div className="max-w-7xl mx-auto px-6 md:px-12 lg:px-20">
         <nav className="flex items-center justify-between h-16 md:h-20">
           {/* Logo */}
-          <button
+          <Button
+            variant="ghost"
             onClick={() => scrollToSection('hero')}
-            className="flex items-center hover:opacity-80 transition-opacity"
+            className="p-0 h-auto hover:bg-transparent hover:opacity-80"
           >
             <Image
               src="/logo.svg"
@@ -53,34 +55,39 @@ export default function LandingNav() {
               height={16}
               className="h-4 w-auto"
             />
-          </button>
+          </Button>
 
           {/* Nav Links - Hidden on mobile */}
           <div className="hidden md:flex items-center gap-10">
-            <button
+            <Button
+              variant="ghost"
               onClick={() => scrollToSection('features')}
-              className="text-base font-medium text-foreground hover:text-accent transition-colors"
+              className="p-0 h-auto text-base font-medium text-foreground hover:text-accent hover:bg-transparent"
             >
               Features
-            </button>
-            <button
+            </Button>
+            <Button
+              variant="ghost"
               onClick={() => scrollToSection('how-it-works')}
-              className="text-base font-medium text-foreground hover:text-accent transition-colors"
+              className="p-0 h-auto text-base font-medium text-foreground hover:text-accent hover:bg-transparent"
             >
               How It Works
-            </button>
-            <button
+            </Button>
+            <Button
+              variant="ghost"
               onClick={() => scrollToSection('testimonials')}
-              className="text-base font-medium text-foreground hover:text-accent transition-colors"
+              className="p-0 h-auto text-base font-medium text-foreground hover:text-accent hover:bg-transparent"
             >
               Testimonials
-            </button>
+            </Button>
           </div>
 
           {/* CTA Button */}
-          <button
+          <Button
+            variant="primary"
+            size="sm"
             onClick={handleDiscordLogin}
-            className="inline-flex items-center gap-2 px-5 py-2.5 md:px-6 md:py-3 bg-white hover:bg-white/90 text-background font-poppins font-semibold text-sm rounded-full transition-all duration-200 active:scale-[0.98] shadow-md"
+            className="bg-white hover:bg-white/90 text-background font-poppins font-semibold shadow-md"
           >
             <Image
               src="/discord-icon.svg"
@@ -89,9 +96,8 @@ export default function LandingNav() {
               height={18}
               className="w-4 h-4 md:w-[18px] md:h-[18px] brightness-0"
             />
-            <span className="hidden sm:inline">Login</span>
-            <span className="sm:hidden">Login</span>
-          </button>
+            <span>Login</span>
+          </Button>
         </nav>
       </div>
     </motion.header>

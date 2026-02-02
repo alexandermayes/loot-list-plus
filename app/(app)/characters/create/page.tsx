@@ -7,6 +7,10 @@ import { createClient } from '@/utils/supabase/client'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { ArrowLeft01Icon } from '@hugeicons/core-free-icons'
 import { Heading } from '@/components/ui/typography'
+import { Input } from '@/components/ui/input'
+import { Select } from '@/components/ui/select'
+import { Button } from '@/components/ui/button'
+import { Label } from '@/components/ui/label'
 
 interface WowClass {
   id: string
@@ -160,13 +164,14 @@ export default function CreateCharacterPage() {
       <div className="max-w-2xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <button
+          <Button
+            variant="ghost"
             onClick={() => router.back()}
-            className="mb-4 flex items-center gap-2 text-muted-foreground hover:text-foreground transition"
+            className="mb-4 px-0"
           >
             <HugeiconsIcon icon={ArrowLeft01Icon} size={16} />
             <span className="text-[14px]">Back</span>
-          </button>
+          </Button>
 
           <Heading level={1}>Create Character</Heading>
           <p className="text-muted-foreground mt-1 text-base">
@@ -186,14 +191,13 @@ export default function CreateCharacterPage() {
           <div className="space-y-6">
             {/* Character Name */}
             <div>
-              <label className="block text-foreground text-[14px] font-medium mb-2">
+              <Label size="lg" className="block mb-2">
                 Character Name <span className="text-destructive">*</span>
-              </label>
-              <input
+              </Label>
+              <Input
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full px-4 py-3 bg-background-subtle border border-border rounded-xl text-foreground text-[14px] focus:outline-none focus:border-accent transition"
                 placeholder="Enter character name"
                 required
               />
@@ -201,13 +205,12 @@ export default function CreateCharacterPage() {
 
             {/* Class */}
             <div>
-              <label className="block text-foreground text-[14px] font-medium mb-2">
+              <Label size="lg" className="block mb-2">
                 Class <span className="text-destructive">*</span>
-              </label>
-              <select
+              </Label>
+              <Select
                 value={classId}
                 onChange={(e) => handleClassChange(e.target.value)}
-                className="w-full px-4 py-3 bg-background-subtle border border-border rounded-xl text-foreground text-[14px] focus:outline-none focus:border-accent transition"
                 required
               >
                 <option value="">Select a class</option>
@@ -216,19 +219,18 @@ export default function CreateCharacterPage() {
                     {cls.name}
                   </option>
                 ))}
-              </select>
+              </Select>
             </div>
 
             {/* Spec */}
             {classId && getAvailableSpecs().length > 0 && (
               <div>
-                <label className="block text-foreground text-[14px] font-medium mb-2">
+                <Label size="lg" className="block mb-2">
                   Specialization (Optional)
-                </label>
-                <select
+                </Label>
+                <Select
                   value={specId}
                   onChange={(e) => setSpecId(e.target.value)}
-                  className="w-full px-4 py-3 bg-background-subtle border border-border rounded-xl text-foreground text-[14px] focus:outline-none focus:border-accent transition"
                 >
                   <option value="">Select a specialization</option>
                   {getAvailableSpecs().map((spec) => (
@@ -236,38 +238,32 @@ export default function CreateCharacterPage() {
                       {spec.name}
                     </option>
                   ))}
-                </select>
+                </Select>
               </div>
             )}
 
             {/* Main/Alt Toggle */}
             <div>
-              <label className="block text-foreground text-[14px] font-medium mb-3">
+              <Label size="lg" className="block mb-3">
                 Character Type
-              </label>
+              </Label>
               <div className="flex gap-3">
-                <button
+                <Button
                   type="button"
+                  variant={isMain ? 'accent' : 'secondary'}
                   onClick={() => setIsMain(true)}
-                  className={`flex-1 px-6 py-3 rounded-xl text-[14px] font-medium transition ${
-                    isMain
-                      ? 'bg-accent text-foreground'
-                      : 'bg-background-subtle border border-border text-muted-foreground hover:border-border-strong'
-                  }`}
+                  className="flex-1"
                 >
                   Main
-                </button>
-                <button
+                </Button>
+                <Button
                   type="button"
+                  variant={!isMain ? 'accent' : 'secondary'}
                   onClick={() => setIsMain(false)}
-                  className={`flex-1 px-6 py-3 rounded-xl text-[14px] font-medium transition ${
-                    !isMain
-                      ? 'bg-accent text-foreground'
-                      : 'bg-background-subtle border border-border text-muted-foreground hover:border-border-strong'
-                  }`}
+                  className="flex-1"
                 >
                   Alt
-                </button>
+                </Button>
               </div>
               <p className="text-[12px] text-muted-foreground mt-2">
                 You can only have one main character. Setting this as main will change your current main to an alt.
@@ -285,21 +281,24 @@ export default function CreateCharacterPage() {
 
           {/* Action Buttons */}
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4 mt-8">
-            <button
+            <Button
               type="submit"
-              disabled={loading}
-              className="px-8 py-3 bg-primary hover:bg-primary/90 rounded-[52px] text-primary-foreground font-medium text-[16px] transition disabled:opacity-50 disabled:cursor-not-allowed"
+              variant="primary"
+              size="lg"
+              loading={loading}
+              loadingText="Creating..."
             >
-              {loading ? 'Creating...' : 'Create Character'}
-            </button>
+              Create Character
+            </Button>
 
-            <button
+            <Button
               type="button"
+              variant="secondary"
+              size="lg"
               onClick={() => router.back()}
-              className="px-8 py-3 bg-background-elevated hover:bg-muted border border-border rounded-[52px] text-foreground font-medium text-[16px] transition"
             >
               Cancel
-            </button>
+            </Button>
           </div>
         </form>
       </div>

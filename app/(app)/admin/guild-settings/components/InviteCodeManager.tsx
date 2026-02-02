@@ -6,6 +6,8 @@ import { useGuildContext } from '@/app/contexts/GuildContext'
 import { useNotification } from '@/app/contexts/NotificationContext'
 import { Button } from '@/components/ui/button'
 import { useConfirm } from '@/components/ui/confirm-modal'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { Copy01Icon, Cancel01Icon, Add01Icon } from '@hugeicons/core-free-icons'
 
@@ -146,26 +148,28 @@ export default function InviteCodeManager() {
             <h3 className="font-medium text-foreground text-[14px]">Generate new invite code</h3>
 
             <div className="space-y-2">
-              <label htmlFor="expiresAt" className="block text-[13px] font-medium text-foreground">Expires At (Optional)</label>
-              <input
+              <Label htmlFor="expiresAt">Expires At (Optional)</Label>
+              <Input
                 id="expiresAt"
                 type="datetime-local"
                 value={expiresAt}
                 onChange={(e) => setExpiresAt(e.target.value)}
-                className="w-full px-5 py-3 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[13px] focus:outline-none focus:border-accent"
+                variant="rounded"
+                size="sm"
               />
             </div>
 
             <div className="space-y-2">
-              <label htmlFor="maxUses" className="block text-[13px] font-medium text-foreground">Max Uses (Optional)</label>
-              <input
+              <Label htmlFor="maxUses">Max Uses (Optional)</Label>
+              <Input
                 id="maxUses"
                 type="number"
-                min="1"
+                min={1}
                 value={maxUses}
                 onChange={(e) => setMaxUses(e.target.value)}
                 placeholder="Unlimited if empty"
-                className="w-full px-5 py-3 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[13px] focus:outline-none focus:border-accent"
+                variant="rounded"
+                size="sm"
               />
             </div>
 
@@ -235,27 +239,32 @@ export default function InviteCodeManager() {
                       </div>
 
                       <div className="flex items-center gap-2">
-                        <input
+                        <Input
                           value={code.share_url}
                           readOnly
-                          className="flex-1 px-3 py-2 bg-background-elevated border border-border-strong rounded-lg text-foreground text-[13px] font-mono focus:outline-none"
+                          variant="rounded"
+                          size="sm"
+                          className="flex-1 font-mono"
                         />
-                        <button
+                        <Button
+                          variant="secondary"
+                          size="icon"
                           onClick={() => copyToClipboard(code.share_url)}
-                          className="p-2 bg-background-elevated hover:bg-muted border border-border rounded-lg text-foreground transition"
                         >
                           <HugeiconsIcon icon={Copy01Icon} size={16} />
-                        </button>
+                        </Button>
                       </div>
                     </div>
 
                     {code.is_active && !isExpired && !isMaxedOut && (
-                      <button
+                      <Button
+                        variant="destructive-outline"
+                        size="icon"
                         onClick={() => handleDeactivateCode(code.id)}
-                        className="ml-4 p-2 bg-background-elevated hover:bg-destructive/10 border border-border hover:border-destructive/30 rounded-lg text-destructive hover:text-destructive transition"
+                        className="ml-4"
                       >
                         <HugeiconsIcon icon={Cancel01Icon} size={16} />
-                      </button>
+                      </Button>
                     )}
                   </div>
                 </div>

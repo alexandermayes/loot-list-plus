@@ -8,6 +8,7 @@ import { ArrowLeft01Icon, Logout01Icon, ArrowDown01Icon, Tick01Icon } from '@hug
 import { useGuildContext } from '../contexts/GuildContext'
 import { useState, useRef, useEffect } from 'react'
 import Image from 'next/image'
+import { Button } from '@/components/ui/button'
 
 interface NavigationProps {
   user: User | null
@@ -66,13 +67,14 @@ export default function Navigation({
       <div className="max-w-6xl mx-auto flex items-center justify-between">
         <div className="flex items-center gap-4">
           {showBack && (
-            <button
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={() => router.push(backUrl)}
-              className="text-muted-foreground hover:text-foreground transition flex items-center gap-2"
             >
               <HugeiconsIcon icon={ArrowLeft01Icon} size={16} />
               Back
-            </button>
+            </Button>
           )}
           <Image
             src="/logo.svg"
@@ -94,13 +96,14 @@ export default function Navigation({
         {/* Guild Switcher */}
         {activeGuild && hasMultipleGuilds && !guildLoading && (
           <div className="relative" ref={dropdownRef}>
-            <button
+            <Button
+              variant="outline"
               onClick={() => setDropdownOpen(!dropdownOpen)}
-              className="flex items-center gap-2 px-4 py-2 rounded-[52px] bg-background-elevated border border-border-strong hover:bg-muted focus:outline-none focus:border-accent transition"
+              className="rounded-[52px] bg-background-elevated border-border-strong"
             >
               <span className="text-sm font-medium text-foreground">{activeGuild.name}</span>
               <HugeiconsIcon icon={ArrowDown01Icon} size={16} className="text-muted-foreground" />
-            </button>
+            </Button>
 
             {dropdownOpen && (
               <div className="absolute top-full mt-2 left-0 w-64 bg-background-elevated border border-border-strong rounded-lg shadow-lg z-50">
@@ -109,12 +112,13 @@ export default function Navigation({
                     Your Guilds
                   </div>
                   {userGuilds.map((guild) => (
-                    <button
+                    <Button
                       key={guild.guild.id}
+                      variant="ghost"
                       onClick={() => handleSwitchGuild(guild.guild.id)}
-                      className="w-full flex items-center justify-between px-3 py-2 rounded hover:bg-muted transition text-left"
+                      className="w-full justify-between px-3 py-2 h-auto"
                     >
-                      <div className="flex flex-col">
+                      <div className="flex flex-col items-start">
                         <span className="text-sm font-medium text-foreground">{guild.guild.name}</span>
                         {guild.guild.realm && (
                           <span className="text-xs text-muted-foreground">{guild.guild.realm}</span>
@@ -123,25 +127,26 @@ export default function Navigation({
                       {activeGuild.id === guild.guild.id && (
                         <HugeiconsIcon icon={Tick01Icon} size={16} className="text-success" />
                       )}
-                    </button>
+                    </Button>
                   ))}
                   <div className="border-t border-border mt-2 pt-2">
-                    <button
+                    <Button
+                      variant="ghost"
                       onClick={() => {
                         setDropdownOpen(false)
                         router.push('/guild-select')
                       }}
-                      className="w-full px-3 py-2 flex items-center gap-3 hover:bg-muted rounded-lg transition text-left"
+                      className="w-full px-3 py-2 justify-start h-auto"
                     >
                       <svg className="w-5 h-5 shrink-0 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
                       </svg>
-                      <div className="flex-1">
+                      <div className="flex-1 text-left">
                         <p className="font-poppins font-medium text-[13px] text-primary">
                           Join a guild
                         </p>
                       </div>
-                    </button>
+                    </Button>
                   </div>
                 </div>
               </div>
@@ -152,9 +157,10 @@ export default function Navigation({
         <div className="flex items-center gap-4">
           {(characterName || user) && (
             <>
-              <button
+              <Button
+                variant="ghost"
                 onClick={() => router.push('/profile')}
-                className="flex items-center gap-3 hover:opacity-80 transition"
+                className="h-auto py-1 px-2"
               >
                 <div className="text-right">
                   <p className="text-foreground font-medium">
@@ -182,16 +188,17 @@ export default function Navigation({
                     }}
                   />
                 )}
-              </button>
+              </Button>
             </>
           )}
-          <button
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={handleLogout}
-            className="text-muted-foreground hover:text-foreground transition flex items-center gap-2"
           >
             <HugeiconsIcon icon={Logout01Icon} size={16} />
             Sign Out
-          </button>
+          </Button>
         </div>
       </div>
     </header>

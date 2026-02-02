@@ -274,18 +274,19 @@ export default function ProfilePage() {
       {/* Tab Navigation */}
       <div className="flex items-center gap-2 overflow-x-auto pb-1">
         {tabs.map((tab) => (
-          <button
+          <Button
             key={tab.id}
+            variant={activeTab === tab.id ? 'accent' : 'secondary'}
             onClick={() => setActiveTab(tab.id)}
-            className={`px-5 py-2.5 rounded-[40px] whitespace-nowrap text-[13px] font-medium transition-all flex items-center gap-2 border ${
+            className={`px-5 py-2.5 rounded-[40px] whitespace-nowrap text-[13px] font-medium ${
               activeTab === tab.id
                 ? 'bg-accent/20 border-accent/20 text-accent'
-                : 'bg-background-elevated border-border text-foreground hover:bg-muted'
+                : ''
             }`}
           >
             <HugeiconsIcon icon={tab.icon} size={16} />
             {tab.label}
-          </button>
+          </Button>
         ))}
       </div>
 
@@ -404,12 +405,14 @@ export default function ProfilePage() {
                       transitionTimingFunction: 'ease-out'
                     }}
                   />
-                  <button
+                  <Button
+                    variant="ghost"
+                    size="icon"
                     onClick={() => {
                       setSelectedTheme('system')
                       setTheme('system')
                     }}
-                    className={`relative z-10 w-10 h-8 flex items-center justify-center rounded-full text-[13px] font-medium transition-colors duration-200 ${
+                    className={`relative z-10 w-10 h-8 rounded-full ${
                       (selectedTheme || theme) === 'system'
                         ? 'text-accent'
                         : 'text-muted-foreground hover:text-foreground'
@@ -417,13 +420,15 @@ export default function ProfilePage() {
                     title="System"
                   >
                     <HugeiconsIcon icon={ComputerIcon} size={16} />
-                  </button>
-                  <button
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
                     onClick={() => {
                       setSelectedTheme('light')
                       setTheme('light')
                     }}
-                    className={`relative z-10 w-10 h-8 flex items-center justify-center rounded-full text-[13px] font-medium transition-colors duration-200 ${
+                    className={`relative z-10 w-10 h-8 rounded-full ${
                       (selectedTheme || theme) === 'light'
                         ? 'text-accent'
                         : 'text-muted-foreground hover:text-foreground'
@@ -431,13 +436,15 @@ export default function ProfilePage() {
                     title="Light"
                   >
                     <HugeiconsIcon icon={Sun03Icon} size={16} />
-                  </button>
-                  <button
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
                     onClick={() => {
                       setSelectedTheme('dark')
                       setTheme('dark')
                     }}
-                    className={`relative z-10 w-10 h-8 flex items-center justify-center rounded-full text-[13px] font-medium transition-colors duration-200 ${
+                    className={`relative z-10 w-10 h-8 rounded-full ${
                       (selectedTheme || theme) === 'dark'
                         ? 'text-accent'
                         : 'text-muted-foreground hover:text-foreground'
@@ -445,7 +452,7 @@ export default function ProfilePage() {
                     title="Dark"
                   >
                     <HugeiconsIcon icon={Moon02Icon} size={16} />
-                  </button>
+                  </Button>
                 </div>
               </div>
 
@@ -527,15 +534,16 @@ export default function ProfilePage() {
                             <p className="text-[13px] text-muted-foreground mb-1">
                               Guild Masters cannot leave
                             </p>
-                            <button
+                            <Button
+                              variant="link"
                               onClick={async () => {
                                 await switchGuild(membership.guild.id)
                                 router.push('/admin/guild-settings')
                               }}
-                              className="text-accent text-[13px] hover:underline"
+                              className="text-accent text-[13px] p-0 h-auto"
                             >
                               Go to Guild Settings
-                            </button>
+                            </Button>
                           </div>
                         ) : (
                           <Button

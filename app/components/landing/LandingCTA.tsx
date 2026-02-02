@@ -5,6 +5,7 @@ import { motion, useInView } from 'framer-motion'
 import { fadeInUp, staggerContainer } from '@/lib/animations'
 import { createClient } from '@/utils/supabase/client'
 import Image from 'next/image'
+import { Button } from '@/components/ui/button'
 
 interface LandingCTAProps {
   onLogin?: () => void
@@ -83,9 +84,11 @@ export default function LandingCTA({ onLogin }: LandingCTAProps) {
 
           {/* CTA Buttons */}
           <motion.div variants={fadeInUp} className="flex flex-col sm:flex-row gap-4 justify-center">
-            <button
+            <Button
+              variant="primary"
+              size="lg"
               onClick={handleDiscordLogin}
-              className="inline-flex items-center justify-center gap-3 px-8 py-4 bg-primary hover:bg-primary/90 text-primary-foreground font-poppins font-semibold text-base rounded-[52px] transition-all duration-200 active:scale-[0.98] shadow-lg hover:shadow-xl"
+              className="gap-3 font-poppins font-semibold shadow-lg hover:shadow-xl"
             >
               <Image
                 src="/discord-icon.svg"
@@ -95,18 +98,19 @@ export default function LandingCTA({ onLogin }: LandingCTAProps) {
                 className="w-6 h-6"
               />
               Continue with Discord
-            </button>
+            </Button>
           </motion.div>
 
           {/* Secondary link */}
           <motion.p variants={fadeInUp} className="mt-6 text-sm text-foreground-muted">
             Already have an account?{' '}
-            <button
+            <Button
+              variant="link"
               onClick={handleDiscordLogin}
-              className="text-foreground hover:text-accent underline underline-offset-2 transition-colors"
+              className="text-foreground hover:text-accent"
             >
               Log in
-            </button>
+            </Button>
           </motion.p>
 
           {/* Terms */}

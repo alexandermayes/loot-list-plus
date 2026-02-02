@@ -437,31 +437,27 @@ export default function MasterLootPage() {
           <div className="flex items-center gap-3 overflow-x-auto pb-1">
             <div className="flex gap-2">
               {/* All Tiers Button */}
-              <button
+              <Button
+                variant={activeTier === 'all' ? 'accent' : 'secondary'}
+                size="sm"
                 onClick={() => setActiveTier('all')}
-                className={`px-5 py-2.5 rounded-[40px] whitespace-nowrap text-[13px] font-medium transition-all border ${
-                  activeTier === 'all'
-                    ? 'bg-accent/20 border-accent/20 text-accent'
-                    : 'bg-background-elevated border-border text-foreground hover:bg-muted'
-                }`}
+                className="rounded-[40px] whitespace-nowrap"
               >
                 All
-              </button>
+              </Button>
               {raidTiers.map((tier) => (
-                <button
+                <Button
                   key={tier.id}
+                  variant={activeTier !== 'all' && activeTier?.id === tier.id ? 'accent' : 'secondary'}
+                  size="sm"
                   onClick={() => setActiveTier(tier)}
-                  className={`px-5 py-2.5 rounded-[40px] whitespace-nowrap text-[13px] font-medium transition-all border ${
-                    activeTier !== 'all' && activeTier?.id === tier.id
-                      ? 'bg-accent/20 border-accent/20 text-accent'
-                      : 'bg-background-elevated border-border text-foreground hover:bg-muted'
-                  }`}
+                  className="rounded-[40px] whitespace-nowrap"
                 >
                   <div className="flex items-center gap-2">
                     <span>{tier.name}</span>
                     {tier.is_active && <StarFilledIcon size={14} />}
                   </div>
-                </button>
+                </Button>
               ))}
             </div>
           </div>
@@ -481,17 +477,15 @@ export default function MasterLootPage() {
             <div className="flex items-center gap-3 w-full sm:w-auto">
               <div className="flex gap-2 overflow-x-auto pb-1 sm:pb-0 w-full sm:w-auto">
               {(['all', 'pending', 'approved', 'rejected'] as const).map((status) => (
-                <button
+                <Button
                   key={status}
+                  variant={filter === status ? 'accent' : 'secondary'}
+                  size="sm"
                   onClick={() => setFilter(status)}
-                  className={`px-5 py-2.5 rounded-[40px] text-[13px] font-medium transition-all whitespace-nowrap border ${
-                    filter === status
-                      ? 'bg-accent/20 border-accent/20 text-accent'
-                      : 'bg-background-elevated text-foreground hover:bg-muted border-border'
-                  }`}
+                  className="rounded-[40px] whitespace-nowrap"
                 >
                   {status.charAt(0).toUpperCase() + status.slice(1)}
-                </button>
+                </Button>
               ))}
               </div>
             </div>

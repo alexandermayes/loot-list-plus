@@ -381,7 +381,9 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
               return (
                 <div key={step} className={`flex items-center ${idx < 2 ? 'flex-1' : ''}`}>
                   {/* Step Pill */}
-                  <button
+                  <Button
+                    variant="ghost"
+                    size="sm"
                     onClick={() => {
                       if (step === 'discord') setCurrentStep('discord')
                       else if (step === 'details' && canProceedFromDiscord()) setCurrentStep('details')
@@ -408,7 +410,7 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
                       <HugeiconsIcon icon={Settings01Icon} size={16} />
                     )}
                     {step === 'discord' ? 'Connect Discord' : step === 'details' ? 'Add guild details' : 'Finalize settings'}
-                  </button>
+                  </Button>
 
                   {/* Connecting Line */}
                   {idx < 2 && (
@@ -467,14 +469,15 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
                     ) : discordGuilds.length > 0 ? (
                       <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 pr-2">
                         {discordGuilds.map((guild) => (
-                          <button
+                          <Button
                             key={guild.id}
+                            variant="ghost"
                             onClick={() => {
                               setSelectedDiscordServer(guild.id)
                               setShowManualEntry(false)
                               setManualServerId('')
                             }}
-                            className={`relative flex flex-col items-center gap-2 p-3 rounded-xl border transition text-center ${
+                            className={`relative flex flex-col items-center gap-2 p-3 rounded-xl border transition text-center h-auto ${
                               selectedDiscordServer === guild.id
                                 ? 'border-accent bg-accent/10'
                                 : 'border-border-strong bg-background-elevated hover:border-foreground-muted'
@@ -500,15 +503,16 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
                               <p className="text-foreground font-medium text-[12px] truncate">{guild.name}</p>
                               <p className="text-[10px] text-muted-foreground">{guild.owner ? 'Owner' : 'Admin'}</p>
                             </div>
-                          </button>
+                          </Button>
                         ))}
                         {/* Manual Entry Card */}
-                        <button
+                        <Button
+                          variant="ghost"
                           onClick={() => {
                             setShowManualEntry(true)
                             setSelectedDiscordServer('')
                           }}
-                          className={`relative flex flex-col items-center justify-center gap-2 p-3 rounded-xl border transition text-center ${
+                          className={`relative flex flex-col items-center justify-center gap-2 p-3 rounded-xl border transition text-center h-auto ${
                             showManualEntry
                               ? 'border-accent bg-accent/10'
                               : 'border-border-strong bg-background-elevated hover:border-foreground-muted'
@@ -528,14 +532,15 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
                             <p className="text-foreground font-medium text-[12px]">Enter ID</p>
                             <p className="text-[10px] text-muted-foreground">Manually</p>
                           </div>
-                        </button>
+                        </Button>
                       </div>
                     ) : (
                       <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                         {/* Manual Entry Card - shown when no guilds */}
-                        <button
+                        <Button
+                          variant="ghost"
                           onClick={() => setShowManualEntry(true)}
-                          className={`relative flex flex-col items-center justify-center gap-2 p-3 rounded-xl border transition text-center ${
+                          className={`relative flex flex-col items-center justify-center gap-2 p-3 rounded-xl border transition text-center h-auto ${
                             showManualEntry
                               ? 'border-accent bg-accent/10'
                               : 'border-border-strong bg-background-elevated hover:border-foreground-muted'
@@ -550,7 +555,7 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
                             <p className="text-foreground font-medium text-[12px]">Enter ID</p>
                             <p className="text-[10px] text-muted-foreground">Manually</p>
                           </div>
-                        </button>
+                        </Button>
                       </div>
                     )}
 
@@ -606,15 +611,16 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
                                 </div>
                               </div>
                               <div className="flex gap-2">
-                                <button
+                                <Button
+                                  variant="secondary"
                                   onClick={() => window.open('https://discord.com/oauth2/authorize?client_id=1458757176171560980', '_blank')}
-                                  className="flex-1 px-4 py-2 bg-discord hover:bg-discord/80 rounded-[52px] text-discord-foreground text-[13px] font-medium transition flex items-center justify-center gap-2"
+                                  className="flex-1 bg-discord hover:bg-discord/80 text-discord-foreground"
                                 >
                                   <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
                                     <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515a.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0a12.64 12.64 0 0 0-.617-1.25a.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057a19.9 19.9 0 0 0 5.993 3.03a.078.078 0 0 0 .084-.028a14.09 14.09 0 0 0 1.226-1.994a.076.076 0 0 0-.041-.106a13.107 13.107 0 0 1-1.872-.892a.077.077 0 0 1-.008-.128a10.2 10.2 0 0 0 .372-.292a.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127a12.299 12.299 0 0 1-1.873.892a.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028a19.839 19.839 0 0 0 6.002-3.03a.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419c0-1.333.956-2.419 2.157-2.419c1.21 0 2.176 1.096 2.157 2.42c0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419c0-1.333.955-2.419 2.157-2.419c1.21 0 2.176 1.096 2.157 2.42c0 1.333-.946 2.418-2.157 2.418z"/>
                                   </svg>
                                   Add Bot
-                                </button>
+                                </Button>
                                 <Button variant="secondary" size="sm" onClick={checkBotInstallation}>
                                   Recheck
                                 </Button>
@@ -665,10 +671,11 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
                     <div className="grid grid-cols-5 gap-2">
                       {EXPANSIONS.map((exp) => (
                         <div key={exp.id} className="relative group">
-                          <button
+                          <Button
+                            variant="ghost"
                             onClick={() => exp.available && setExpansion(exp.id)}
                             disabled={!exp.available}
-                            className={`flex flex-col items-center gap-1 w-full ${!exp.available ? 'cursor-not-allowed' : ''}`}
+                            className={`flex flex-col items-center gap-1 w-full h-auto p-0 ${!exp.available ? 'cursor-not-allowed' : ''}`}
                           >
                             <div className={`relative aspect-square w-full rounded-lg overflow-hidden border-2 transition ${
                               !exp.available
@@ -686,7 +693,7 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
                             }`}>
                               {exp.name}
                             </span>
-                          </button>
+                          </Button>
                           {/* Coming Soon Tooltip */}
                           {!exp.available && (
                             <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-muted border border-border-strong rounded-lg text-[10px] text-muted-foreground whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
@@ -725,9 +732,10 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
                   <div>
                     <Label className="mb-2">Faction</Label>
                     <div className="grid grid-cols-2 gap-2">
-                      <button
+                      <Button
+                        variant="ghost"
                         onClick={() => setFaction('Alliance')}
-                        className={`alliance-btn group relative px-3 py-2.5 rounded-lg border transition-all duration-300 flex items-center justify-center gap-2 overflow-hidden ${
+                        className={`alliance-btn group relative px-3 py-2.5 rounded-lg border transition-all duration-300 flex items-center justify-center gap-2 overflow-hidden h-auto ${
                           faction === 'Alliance'
                             ? 'border-blue-500 bg-blue-500/20'
                             : 'border-border-strong bg-background-elevated hover:bg-muted'
@@ -741,10 +749,11 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
                         <span className={`font-medium text-[13px] relative z-10 transition-colors duration-300 ${faction === 'Alliance' ? 'text-blue-400' : 'text-foreground group-hover:text-blue-400'}`}>
                           Alliance
                         </span>
-                      </button>
-                      <button
+                      </Button>
+                      <Button
+                        variant="ghost"
                         onClick={() => setFaction('Horde')}
-                        className={`horde-btn group relative px-3 py-2.5 rounded-lg border transition-all duration-300 flex items-center justify-center gap-2 overflow-hidden ${
+                        className={`horde-btn group relative px-3 py-2.5 rounded-lg border transition-all duration-300 flex items-center justify-center gap-2 overflow-hidden h-auto ${
                           faction === 'Horde'
                             ? 'border-red-500 bg-red-500/20'
                             : 'border-border-strong bg-background-elevated hover:bg-muted'
@@ -758,7 +767,7 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
                         <span className={`font-medium text-[13px] relative z-10 transition-colors duration-300 ${faction === 'Horde' ? 'text-red-400' : 'text-foreground group-hover:text-red-400'}`}>
                           Horde
                         </span>
-                      </button>
+                      </Button>
                     </div>
                     <style jsx>{`
                       .alliance-btn:hover {

@@ -1,6 +1,8 @@
 'use client'
 
 import { useState, useRef, useEffect, useMemo, useCallback, memo } from 'react'
+import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
 
 interface Option {
   id: string
@@ -170,9 +172,10 @@ const MultiSelectDropdown = memo(function MultiSelectDropdown({
 
   return (
     <div ref={dropdownRef} className="relative">
-      <button
+      <Button
         ref={buttonRef}
         type="button"
+        variant="outline"
         onClick={handleToggleDropdown}
         className="w-full px-4 py-2 h-11 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[13px] text-left focus:outline-none focus:border-accent flex items-center justify-between gap-2 transition-colors"
       >
@@ -185,7 +188,7 @@ const MultiSelectDropdown = memo(function MultiSelectDropdown({
         >
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
         </svg>
-      </button>
+      </Button>
 
       {isOpen && dropdownPosition && (
         <div
@@ -199,28 +202,30 @@ const MultiSelectDropdown = memo(function MultiSelectDropdown({
         >
           {/* Search Input */}
           <div className="p-2 border-b border-border sticky top-0 bg-background-elevated">
-            <input
+            <Input
               ref={searchInputRef}
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search specs..."
-              className="w-full px-3 py-2 bg-background-subtle border border-border rounded-md text-foreground text-[13px] focus:outline-none focus:border-accent"
+              variant="rounded"
+              size="sm"
             />
           </div>
 
           {/* Clear button */}
           {selectedIds.size > 0 && (
-            <button
+            <Button
               type="button"
+              variant="ghost"
               onClick={(e) => {
                 e.stopPropagation()
                 onClear()
               }}
-              className="w-full px-3 py-2 text-left hover:bg-muted text-muted-foreground text-[13px] border-b border-border"
+              className="w-full px-3 py-2 h-auto text-left justify-start rounded-none text-muted-foreground text-[13px] border-b border-border"
             >
               -- Clear All --
-            </button>
+            </Button>
           )}
 
           {/* Options */}

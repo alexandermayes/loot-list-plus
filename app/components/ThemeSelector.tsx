@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useTheme } from 'next-themes'
+import { Button } from '@/components/ui/button'
 
 // Inline SVG icons for reliable theming
 const MonitorIcon = ({ className }: { className?: string }) => (
@@ -71,13 +72,14 @@ export function ThemeSelector() {
 
   return (
     <div className="relative">
-      <button
+      <Button
+        variant="ghost"
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full px-3.5 py-2 flex items-center gap-3 rounded-[40px] hover:bg-muted transition font-poppins font-medium text-[13px] text-foreground"
+        className="w-full px-3.5 py-2 h-auto flex items-center gap-3 rounded-[40px] justify-start font-poppins font-medium text-[13px] text-foreground"
       >
         <CurrentIcon className="w-5 h-5" />
         <span className="whitespace-nowrap flex-1 text-left">{currentTheme.label}</span>
-      </button>
+      </Button>
 
       {/* Dropdown */}
       {isOpen && (
@@ -93,13 +95,14 @@ export function ThemeSelector() {
             {THEME_OPTIONS.map((option) => {
               const OptionIcon = option.Icon
               return (
-                <button
+                <Button
                   key={option.value}
+                  variant="ghost"
                   onClick={() => {
                     setTheme(option.value)
                     setIsOpen(false)
                   }}
-                  className="w-full flex items-center gap-3 px-3.5 py-2 hover:bg-muted transition text-left"
+                  className="w-full flex items-center gap-3 px-3.5 py-2 h-auto rounded-none justify-start"
                 >
                   <OptionIcon className="w-5 h-5" />
                   <span className="font-poppins font-medium text-[13px] text-foreground flex-1">
@@ -108,7 +111,7 @@ export function ThemeSelector() {
                   {theme === option.value && (
                     <CheckIcon className="w-5 h-5 shrink-0 text-accent" />
                   )}
-                </button>
+                </Button>
               )
             })}
           </div>

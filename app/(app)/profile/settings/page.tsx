@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { Input } from '@/components/ui/input'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { EyeIcon, ViewOffIcon, Notification01Icon, Shield01Icon, FloppyDiskIcon, CheckmarkCircle01Icon, RefreshIcon } from '@hugeicons/core-free-icons'
 import { useNotification } from '@/app/contexts/NotificationContext'
@@ -285,12 +286,12 @@ export default function SettingsPage() {
             <div>
               <Label>Preferred display name (optional)</Label>
               <p className="text-sm text-muted-foreground mb-2">Override your Discord name</p>
-              <input
+              <Input
                 type="text"
                 value={preferences?.preferred_display_name || ''}
                 onChange={(e) => updatePreference('preferred_display_name', e.target.value || null)}
-                className="w-full px-3 py-2 bg-input border border-border rounded-lg text-foreground"
                 placeholder="Leave blank to use Discord name"
+                variant="rounded"
               />
             </div>
 

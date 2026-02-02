@@ -11,6 +11,7 @@ import {
   ModalHeader,
   ModalBody,
 } from '@/components/ui/modal'
+import { Input } from '@/components/ui/input'
 
 export default function WelcomeScreen() {
   const [inviteCode, setInviteCode] = useState('')
@@ -275,12 +276,13 @@ export default function WelcomeScreen() {
                 </div>
                 <div className="flex flex-col gap-2.5 w-full mt-6">
                   <div className="flex gap-2.5 w-full">
-                    <input
+                    <Input
                       type="text"
                       value={inviteCode}
                       onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
                       placeholder="ABC123DEF456"
-                      className="flex-1 min-w-0 bg-background-elevated border border-border-strong rounded-[52px] px-5 py-3 font-poppins font-medium text-base text-foreground placeholder:text-foreground-muted focus:outline-none focus:border-border-strong"
+                      variant="pill"
+                      className="flex-1 min-w-0 font-poppins font-medium"
                       disabled={loading}
                     />
                     <Button
@@ -336,14 +338,15 @@ export default function WelcomeScreen() {
                 <p className="text-[12px] text-muted-foreground">Automatically join guilds from your Discord servers</p>
               </div>
             </div>
-            <button
+            <Button
+              variant="ghost"
+              size="icon"
               onClick={handleCloseModal}
-              className="text-muted-foreground hover:text-foreground transition"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
-            </button>
+            </Button>
           </div>
         </ModalHeader>
 

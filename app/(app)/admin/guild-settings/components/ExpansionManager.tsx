@@ -483,9 +483,10 @@ export default function ExpansionManager() {
                       style={{ borderColor: `${visuals.borderColor}40` }}
                     >
                       {/* Accordion Header - clickable summary */}
-                      <button
+                      <Button
+                        variant="ghost"
                         onClick={() => toggleExpanded(exp.expansion_id)}
-                        className="w-full flex items-center justify-between p-3 rounded-lg transition hover:bg-black/5"
+                        className="w-full flex items-center justify-between p-3 rounded-lg transition hover:bg-black/5 h-auto"
                       >
                         <div className="flex items-center gap-2">
                           <HugeiconsIcon
@@ -505,7 +506,7 @@ export default function ExpansionManager() {
                           size={16}
                           style={{ color: `${visuals.textColor}60` }}
                         />
-                      </button>
+                      </Button>
 
                       {/* Expanded Content */}
                       {isExpanded && schedule && (

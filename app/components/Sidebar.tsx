@@ -10,6 +10,7 @@ import { CharacterSelector } from './CharacterSelector'
 import { useSidebar } from '../contexts/SidebarContext'
 import { Modal, ModalHeader, ModalBody } from '@/components/ui/modal'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { Cancel01Icon, Settings01Icon } from '@hugeicons/core-free-icons'
@@ -358,18 +359,21 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange, 
       >
         {/* Close button for mobile overlay - matches hamburger button position */}
         {isMobileOverlay ? (
-          <button
+          <Button
+            variant="ghost"
+            size="icon"
             onClick={onNavigate}
-            className="w-10 h-10 flex items-center justify-center rounded-lg hover:bg-muted transition pointer-events-auto"
+            className="w-10 h-10 pointer-events-auto"
             aria-label="Close menu"
           >
             <HugeiconsIcon icon={Cancel01Icon} size={24} className="text-foreground" />
-          </button>
+          </Button>
         ) : (
           <div className="px-[12px] pointer-events-auto">
-            <button
+            <Button
+              variant="ghost"
               onClick={() => handleNavClick('overview')}
-              className="cursor-pointer hover:opacity-80 transition"
+              className="cursor-pointer hover:opacity-80 transition flex items-center gap-2 p-0 h-auto"
             >
               <Image
                 src="/logo.svg"
@@ -379,7 +383,10 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange, 
                 className="logo-adaptive h-4 w-auto"
                 priority
               />
-            </button>
+              <span className="text-[10px] font-semibold text-accent bg-accent/15 px-1.5 py-0.5 rounded-md uppercase tracking-wide">
+                Beta
+              </span>
+            </Button>
           </div>
         )}
       </div>
@@ -407,9 +414,10 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange, 
               </div>
             </div>
           ) : !activeGuild ? (
-            <button
+            <Button
+              variant="ghost"
               onClick={() => setShowCreateGuildModal(true)}
-              className="w-full border-accent border-[0.5px] rounded-[12px] px-[14px] py-2 flex items-center gap-3 hover:opacity-90 transition"
+              className="w-full border-accent border-[0.5px] rounded-[12px] px-[14px] py-2 h-auto flex items-center gap-3 hover:opacity-90 transition"
               style={{ background: 'linear-gradient(179.949deg, rgb(255, 128, 0) 0.15%, rgb(153, 77, 0) 113.91%)' }}
             >
               <Image
@@ -427,12 +435,13 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange, 
                   Start your own guild
                 </p>
               </div>
-            </button>
+            </Button>
           ) : (
             <div className="flex items-center gap-2">
-              <button
+              <Button
+                variant="ghost"
                 onClick={() => setGuildDropdownOpen(!guildDropdownOpen)}
-                className="flex-1 min-w-0 bg-background-elevated border border-border rounded-[12px] px-[14px] py-2 flex items-center gap-3 hover:bg-muted transition"
+                className="flex-1 min-w-0 bg-background-elevated border border-border rounded-[12px] px-[14px] py-2 h-auto flex items-center gap-3 hover:bg-muted transition"
               >
                 {activeGuild.icon_url ? (
                   <Image
@@ -460,15 +469,17 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange, 
                   height={20}
                   className={`icon-adaptive w-5 h-5 shrink-0 transition-transform ${guildDropdownOpen ? 'rotate-180' : ''}`}
                 />
-              </button>
+              </Button>
               {isOfficer && (
-                <button
+                <Button
+                  variant="ghost"
+                  size="icon"
                   onClick={() => handleNavClick('guild-settings')}
-                  className="shrink-0 w-11 flex items-center justify-center bg-background-elevated border border-border rounded-[12px] hover:bg-muted transition self-stretch"
+                  className="shrink-0 w-11 bg-background-elevated border border-border rounded-[12px] hover:bg-muted transition self-stretch"
                   title="Guild Settings"
                 >
                   <HugeiconsIcon icon={Settings01Icon} size={18} className="text-muted-foreground" />
-                </button>
+                </Button>
               )}
             </div>
           )}
@@ -487,9 +498,10 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange, 
                 const isGuildOfficer = g.member.role === 'Officer' || g.member.role === 'Guild Master'
                 return (
                   <div key={g.guild.id} className="flex items-center hover:bg-muted transition">
-                    <button
+                    <Button
+                      variant="ghost"
                       onClick={() => handleSwitchGuild(g.guild.id)}
-                      className="flex-1 min-w-0 px-[14px] py-2 flex items-center gap-3 text-left"
+                      className="flex-1 min-w-0 px-[14px] py-2 h-auto flex items-center gap-3 text-left rounded-none"
                     >
                       {g.guild.icon_url ? (
                         <Image
@@ -519,9 +531,11 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange, 
                           className="icon-adaptive w-4 h-4 shrink-0"
                         />
                       )}
-                    </button>
+                    </Button>
                     {isGuildOfficer && (
-                      <button
+                      <Button
+                        variant="ghost"
+                        size="icon"
                         onClick={(e) => {
                           e.stopPropagation()
                           // Switch to this guild first if not active, then navigate to settings
@@ -535,7 +549,7 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange, 
                         title="Guild Settings"
                       >
                         <HugeiconsIcon icon={Settings01Icon} size={16} className="text-muted-foreground hover:text-foreground" />
-                      </button>
+                      </Button>
                     )}
                   </div>
                 )
@@ -545,7 +559,8 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange, 
               <div className="h-px bg-border my-1" />
 
               {/* Join Guild Option */}
-              <button
+              <Button
+                variant="ghost"
                 onClick={() => {
                   setGuildDropdownOpen(false)
                   setShowJoinModal(true)
@@ -553,7 +568,7 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange, 
                   setInviteCode('')
                   setDiscordError('')
                 }}
-                className="w-full px-[14px] py-2 flex items-center gap-3 hover:bg-muted transition text-left"
+                className="w-full px-[14px] py-2 h-auto flex items-center gap-3 hover:bg-muted transition text-left justify-start rounded-none"
               >
                 <Image
                   src="/icons/user-multiple.svg"
@@ -565,15 +580,16 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange, 
                 <p className="font-poppins font-medium text-[13px] text-foreground">
                   Join a guild
                 </p>
-              </button>
+              </Button>
 
               {/* Create Guild Option */}
-              <button
+              <Button
+                variant="ghost"
                 onClick={() => {
                   setGuildDropdownOpen(false)
                   setShowCreateGuildModal(true)
                 }}
-                className="w-full px-[14px] py-2 flex items-center gap-3 hover:bg-muted transition text-left"
+                className="w-full px-[14px] py-2 h-auto flex items-center gap-3 hover:bg-muted transition text-left justify-start rounded-none"
               >
                 <Image
                   src="/icons/add-circle.svg"
@@ -585,7 +601,7 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange, 
                 <p className="font-poppins font-medium text-[13px] text-foreground">
                   Create a guild
                 </p>
-              </button>
+              </Button>
             </div>
           )}
           </div>
@@ -617,11 +633,12 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange, 
         {/* Navigation Items */}
         <div className="flex flex-col gap-[8px]">
           {navItems.map((item) => (
-            <button
+            <Button
               key={item.view}
+              variant="ghost"
               onClick={() => handleNavClick(item.view)}
               disabled={!activeGuild}
-              className={`w-full px-3.5 py-2.5 flex items-center gap-3 rounded-[40px] transition font-poppins font-medium text-[13px] border-[0.5px] ${
+              className={`w-full px-3.5 py-2.5 h-auto flex items-center gap-3 rounded-[40px] transition font-poppins font-medium text-[13px] border-[0.5px] justify-start ${
                 !activeGuild
                   ? 'opacity-20 cursor-not-allowed text-foreground border-transparent'
                   : isActive(item.view)
@@ -640,7 +657,7 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange, 
                 style={activeGuild && isActive(item.view) ? { filter: 'invert(55%) sepia(89%) saturate(2274%) hue-rotate(1deg) brightness(101%) contrast(105%)' } : undefined}
               />
               <span className="whitespace-nowrap">{item.name}</span>
-            </button>
+            </Button>
           ))}
         </div>
 
@@ -653,10 +670,11 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange, 
               </p>
             </div>
             {adminItems.map((item) => (
-              <button
+              <Button
                 key={item.view}
+                variant="ghost"
                 onClick={() => handleNavClick(item.view)}
-                className={`w-full px-3.5 py-[10px] flex items-center gap-3 rounded-[40px] transition font-poppins font-medium text-[13px] text-left border-[0.5px] ${
+                className={`w-full px-3.5 py-[10px] h-auto flex items-center gap-3 rounded-[40px] transition font-poppins font-medium text-[13px] text-left border-[0.5px] justify-start ${
                   isActive(item.view)
                     ? 'bg-accent/20 border-accent/20 text-accent'
                     : 'text-foreground hover:bg-muted border-transparent'
@@ -673,7 +691,7 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange, 
                   style={isActive(item.view) ? { filter: 'invert(55%) sepia(89%) saturate(2274%) hue-rotate(1deg) brightness(101%) contrast(105%)' } : undefined}
                 />
                 <span className="whitespace-nowrap overflow-hidden text-ellipsis">{item.name}</span>
-              </button>
+              </Button>
             ))}
           </div>
         )}
@@ -686,12 +704,13 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange, 
           className="absolute bottom-0 left-0 right-0 flex flex-col gap-0 z-10 bg-background-subtle border-t border-border p-[10px]"
           style={{ width: sidebarWidth }}
         >
-          <button
+          <Button
+            variant="ghost"
             onClick={() => {
               router.push('/help')
               onNavigate?.()
             }}
-            className={`w-full px-3.5 py-2 flex items-center gap-3 rounded-[40px] transition font-poppins font-medium text-[13px] border-[0.5px] ${
+            className={`w-full px-3.5 py-2 h-auto flex items-center gap-3 rounded-[40px] transition font-poppins font-medium text-[13px] border-[0.5px] justify-start ${
               pathname?.startsWith('/help')
                 ? 'bg-accent/20 border-accent/20 text-accent'
                 : 'text-foreground hover:bg-muted border-transparent'
@@ -706,7 +725,7 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange, 
               style={pathname?.startsWith('/help') ? { filter: 'invert(55%) sepia(89%) saturate(2274%) hue-rotate(1deg) brightness(101%) contrast(105%)' } : undefined}
             />
             <span className="whitespace-nowrap">Help</span>
-          </button>
+          </Button>
 
           <a
             href="https://discord.gg/WWaUQZMz9M"
@@ -735,12 +754,13 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange, 
               </div>
             </div>
           ) : (
-            <button
+            <Button
+              variant="ghost"
               onClick={() => {
                 router.push('/profile')
                 onNavigate?.()
               }}
-              className="w-full bg-background-elevated border border-muted rounded-xl px-3.5 py-2 flex items-center gap-3 hover:bg-muted transition mt-2"
+              className="w-full bg-background-elevated border border-muted rounded-xl px-3.5 py-2 h-auto flex items-center gap-3 hover:bg-muted transition mt-2"
             >
               {user?.user_metadata?.avatar_url ? (
                 <Image
@@ -774,7 +794,7 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange, 
                 height={20}
                 className="icon-adaptive w-5 h-5 shrink-0"
               />
-            </button>
+            </Button>
           )}
         </div>
       )}
@@ -821,17 +841,19 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange, 
                   <p className="text-[12px] text-muted-foreground">Choose how you'd like to join</p>
                 </div>
               </div>
-              <button
+              <Button
+                variant="ghost"
+                size="icon"
                 onClick={() => {
                   setShowJoinModal(false)
                   setModalView('main')
                 }}
-                className="text-muted-foreground hover:text-foreground transition"
+                className="text-muted-foreground hover:text-foreground"
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
-              </button>
+              </Button>
             </div>
           </ModalHeader>
 
@@ -882,12 +904,14 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange, 
                 </div>
                 <div className="flex flex-col gap-2.5 w-full mt-5">
                   <div className="flex gap-2.5 w-full">
-                    <input
+                    <Input
                       type="text"
                       value={inviteCode}
                       onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
                       placeholder="ABC123DEF456"
-                      className="flex-1 min-w-0 bg-background-subtle border border-border-strong rounded-[52px] px-5 py-3 font-poppins font-medium text-base text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:border-border-strong"
+                      variant="pill"
+                      size="lg"
+                      className="flex-1 min-w-0 bg-background-subtle font-poppins font-medium"
                       disabled={joining}
                     />
                     <Button
@@ -936,30 +960,34 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange, 
           >
             <div className="flex items-center justify-between w-full">
               <div className="flex items-center gap-3">
-                <button
+                <Button
+                  variant="ghost"
+                  size="icon"
                   onClick={() => setModalView('main')}
-                  className="text-muted-foreground hover:text-foreground transition"
+                  className="text-muted-foreground hover:text-foreground"
                 >
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                   </svg>
-                </button>
+                </Button>
                 <div>
                   <h3 className="text-[20px] font-bold text-foreground">Select guild</h3>
                   <p className="text-[12px] text-muted-foreground">Automatically join guilds from your Discord servers</p>
                 </div>
               </div>
-              <button
+              <Button
+                variant="ghost"
+                size="icon"
                 onClick={() => {
                   setShowJoinModal(false)
                   setModalView('main')
                 }}
-                className="text-muted-foreground hover:text-foreground transition"
+                className="text-muted-foreground hover:text-foreground"
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
-              </button>
+              </Button>
             </div>
           </ModalHeader>
 

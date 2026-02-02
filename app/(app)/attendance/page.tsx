@@ -8,6 +8,7 @@ import { useRouter } from 'next/navigation'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { Calendar01Icon, ArrowDown01Icon, ArrowUp01Icon } from '@hugeicons/core-free-icons'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
+import { Button } from '@/components/ui/button'
 import { AttendanceStatsSkeleton, TableSkeleton } from '@/components/ui/skeletons'
 import { Heading } from '@/components/ui/typography'
 import { calculateAttendanceScore, getRankModifier } from '@/utils/calculations'
@@ -557,24 +558,24 @@ export default function AttendancePage() {
           <h2 className="text-foreground font-semibold">Guild Attendance</h2>
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-[12px] text-foreground-muted">Sort:</span>
-            <button
+            <Button
+              variant={sortBy === 'score' ? 'accent' : 'ghost'}
+              size="sm"
               onClick={() => toggleSort('score')}
-              className={`px-3 py-1.5 rounded-lg text-[12px] font-medium transition flex items-center gap-1 ${
-                sortBy === 'score' ? 'bg-accent/20 text-accent' : 'bg-muted text-muted-foreground hover:text-foreground'
-              }`}
+              className="text-[12px]"
             >
               Credit
               {sortBy === 'score' && (sortDirection === 'desc' ? <HugeiconsIcon icon={ArrowDown01Icon} size={12} /> : <HugeiconsIcon icon={ArrowUp01Icon} size={12} />)}
-            </button>
-            <button
+            </Button>
+            <Button
+              variant={sortBy === 'name' ? 'accent' : 'ghost'}
+              size="sm"
               onClick={() => toggleSort('name')}
-              className={`px-3 py-1.5 rounded-lg text-[12px] font-medium transition flex items-center gap-1 ${
-                sortBy === 'name' ? 'bg-accent/20 text-accent' : 'bg-muted text-muted-foreground hover:text-foreground'
-              }`}
+              className="text-[12px]"
             >
               Name
               {sortBy === 'name' && (sortDirection === 'desc' ? <HugeiconsIcon icon={ArrowDown01Icon} size={12} /> : <HugeiconsIcon icon={ArrowUp01Icon} size={12} />)}
-            </button>
+            </Button>
           </div>
         </div>
 

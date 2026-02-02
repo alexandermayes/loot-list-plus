@@ -15,6 +15,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
+import { Input } from '@/components/ui/input'
 
 interface LootItem {
   id: string
@@ -287,13 +288,15 @@ export function PrioListItemModal({
                   <span className="flex-1 text-foreground font-medium text-[13px]">
                     {getRoleDisplayName(role as Role)}
                   </span>
-                  <input
+                  <Input
                     type="number"
                     value={points === 0 || points === null ? '' : points}
                     onChange={(e) => handleUpdateRolePriority(role, e.target.value === '' ? 0 : Number(e.target.value))}
                     placeholder="0"
                     step="any"
-                    className="w-20 px-3 py-1.5 bg-background-subtle border border-border-strong rounded-lg text-foreground text-[13px] text-center focus:outline-none focus:border-accent transition"
+                    variant="rounded"
+                    size="sm"
+                    className="w-20 text-center"
                   />
                   <span className="text-foreground-muted text-[12px]">pts</span>
                 </div>
@@ -336,13 +339,15 @@ export function PrioListItemModal({
                   <span className="flex-1 text-foreground font-medium text-[13px]">
                     {getSpecName(specId)}
                   </span>
-                  <input
+                  <Input
                     type="number"
                     value={points === 0 || points === null ? '' : points}
                     onChange={(e) => handleUpdateClassPriority(specId, e.target.value === '' ? 0 : Number(e.target.value))}
                     placeholder="0"
                     step="any"
-                    className="w-20 px-3 py-1.5 bg-background-subtle border border-border-strong rounded-lg text-foreground text-[13px] text-center focus:outline-none focus:border-accent transition"
+                    variant="rounded"
+                    size="sm"
+                    className="w-20 text-center"
                   />
                   <span className="text-foreground-muted text-[12px]">pts</span>
                 </div>
@@ -389,13 +394,15 @@ export function PrioListItemModal({
                         ({char?.class?.name || 'Unknown'})
                       </span>
                     </span>
-                    <input
+                    <Input
                       type="number"
                       value={points === 0 || points === null ? '' : points}
                       onChange={(e) => handleUpdateCharacterPriority(charId, e.target.value === '' ? 0 : Number(e.target.value))}
                       placeholder="0"
                       step="any"
-                      className="w-20 px-3 py-1.5 bg-background-subtle border border-border-strong rounded-lg text-foreground text-[13px] text-center focus:outline-none focus:border-accent transition"
+                      variant="rounded"
+                      size="sm"
+                      className="w-20 text-center"
                     />
                     <span className="text-foreground-muted text-[12px]">pts</span>
                   </div>

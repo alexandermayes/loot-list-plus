@@ -6,18 +6,19 @@ import { useRouter } from 'next/navigation'
 import { useGuildContext } from '@/app/contexts/GuildContext'
 import { useNotification } from '@/app/contexts/NotificationContext'
 import { HugeiconsIcon } from '@hugeicons/react'
-import { ArrowLeft01Icon, Tick01Icon } from '@hugeicons/core-free-icons'
+import { ArrowLeft01Icon } from '@hugeicons/core-free-icons'
 import { getExpansionVisuals } from '@/utils/expansionVisuals'
-import { getRaidIcon } from '@/utils/raidIcons'
+import { getRaidIcon, getRaidShorthand } from '@/utils/raidIcons'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Switch } from '@/components/ui/switch'
 
 interface RaidTier {
   id: string
   name: string
-  is_active: boolean
+  phase: number | null
   is_guild_active: boolean
   master_sheet_visible: boolean
-  submission_deadline: string | null
 }
 
 interface Expansion {
@@ -27,13 +28,182 @@ interface Expansion {
   is_current: boolean
 }
 
+interface CompactRaidToggleProps {
+  tier: RaidTier
+  updating: string | null
+  onToggleActive: (tierId: string, currentValue: boolean) => void
+  onToggleRankings: (tierId: string, currentValue: boolean) => void
+}
+
+function CompactRaidToggle({
+  tier,
+  updating,
+  onToggleActive,
+  onToggleRankings,
+}: CompactRaidToggleProps) {
+  const isUpdating = updating === tier.id
+
+  return (
+    <div
+      className={`flex items-center gap-3 p-2.5 rounded-lg transition ${
+        tier.is_guild_active
+          ? 'bg-background-subtle'
+          : 'bg-background-subtle/50 opacity-60'
+      }`}
+    >
+      {/* Icon + Name */}
+      <div className="flex items-center gap-2 min-w-0 flex-1">
+        <img
+          src={getRaidIcon(tier.name)}
+          alt={tier.name}
+          className="w-6 h-6 rounded border border-border/50 flex-shrink-0"
+        />
+        <span className="font-medium text-[13px] text-foreground truncate">
+          {getRaidShorthand(tier.name)}
+        </span>
+      </div>
+
+      {/* Toggles */}
+      <div className="flex items-center gap-3 flex-shrink-0">
+        <label className="flex items-center gap-1.5 cursor-pointer" title="Include in loot lists">
+          <span className="text-[11px] text-muted-foreground">Loot</span>
+          <Switch
+            checked={tier.is_guild_active}
+            onCheckedChange={() => onToggleActive(tier.id, tier.is_guild_active)}
+            disabled={isUpdating}
+            className="data-[state=checked]:bg-accent scale-90"
+          />
+        </label>
+
+        <label className="flex items-center gap-1.5 cursor-pointer" title="Show rankings to players">
+          <span className="text-[11px] text-muted-foreground">Ranks</span>
+          <Switch
+            checked={tier.master_sheet_visible && tier.is_guild_active}
+            onCheckedChange={() => onToggleRankings(tier.id, tier.master_sheet_visible)}
+            disabled={isUpdating || !tier.is_guild_active}
+            className="data-[state=checked]:bg-green-600 scale-90"
+          />
+        </label>
+      </div>
+    </div>
+  )
+}
+
+interface PhaseCardProps {
+  phase: number
+  tiers: RaidTier[]
+  deadline: string | null
+  deadlineInput: string
+  isCurrentPhase: boolean
+  isUnlocked: boolean
+  updating: string | null
+  onDeadlineInputChange: (value: string) => void
+  onUpdateDeadline: () => void
+  onToggleRaidActive: (tierId: string, currentValue: boolean) => void
+  onToggleRaidRankings: (tierId: string, currentValue: boolean) => void
+}
+
+function PhaseCard({
+  phase,
+  tiers,
+  deadline,
+  deadlineInput,
+  isCurrentPhase,
+  isUnlocked,
+  updating,
+  onDeadlineInputChange,
+  onUpdateDeadline,
+  onToggleRaidActive,
+  onToggleRaidRankings,
+}: PhaseCardProps) {
+  const isUpdatingDeadline = updating === `phase-${phase}`
+
+  return (
+    <div
+      className={`bg-background-elevated border rounded-xl overflow-hidden transition flex flex-col ${
+        isUnlocked ? 'border-border' : 'border-border/50 opacity-70'
+      }`}
+    >
+      {/* Header */}
+      <div className="flex items-center justify-between p-3 border-b border-border">
+        <h3 className="text-[15px] font-semibold text-foreground">
+          Phase {phase}
+        </h3>
+        {isCurrentPhase ? (
+          <span className="px-2 py-0.5 text-[10px] font-semibold rounded-full bg-accent/20 text-accent border border-accent/40">
+            CURRENT
+          </span>
+        ) : isUnlocked ? (
+          <span className="px-2 py-0.5 text-[10px] font-semibold rounded-full bg-green-500/20 text-green-400 border border-green-500/40">
+            UNLOCKED
+          </span>
+        ) : (
+          <span className="px-2 py-0.5 text-[10px] font-semibold rounded-full bg-muted text-muted-foreground border border-border">
+            LOCKED
+          </span>
+        )}
+      </div>
+
+      {/* Content - only show details for unlocked phases */}
+      {isUnlocked ? (
+        <div className="p-3 space-y-3 flex-1">
+          {/* Deadline */}
+          <div>
+            <label className="block text-[11px] font-medium text-muted-foreground mb-1.5">
+              Submission deadline
+            </label>
+            <div className="flex items-center gap-2">
+              <Input
+                type="datetime-local"
+                value={deadlineInput}
+                onChange={(e) => onDeadlineInputChange(e.target.value)}
+                variant="rounded"
+                size="sm"
+                className="flex-1 text-[12px]"
+              />
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={onUpdateDeadline}
+                disabled={isUpdatingDeadline}
+                loading={isUpdatingDeadline}
+              >
+                Save
+              </Button>
+            </div>
+          </div>
+
+          {/* Raids */}
+          <div className="space-y-1.5">
+            {tiers.map((tier) => (
+              <CompactRaidToggle
+                key={tier.id}
+                tier={tier}
+                updating={updating}
+                onToggleActive={onToggleRaidActive}
+                onToggleRankings={onToggleRaidRankings}
+              />
+            ))}
+          </div>
+        </div>
+      ) : (
+        <div className="p-3 text-muted-foreground text-[12px] flex-1">
+          Set current phase to {phase} or higher to configure.
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function ExpansionDetailPage({ params }: { params: Promise<{ expansionId: string }> }) {
   const { expansionId } = use(params)
   const [expansion, setExpansion] = useState<Expansion | null>(null)
   const [raidTiers, setRaidTiers] = useState<RaidTier[]>([])
   const [loading, setLoading] = useState(true)
   const [updating, setUpdating] = useState<string | null>(null)
-  const [deadlineInputs, setDeadlineInputs] = useState<Record<string, string>>({})
+  const [phaseDeadlines, setPhaseDeadlines] = useState<Record<number, string | null>>({})
+  const [phaseDeadlineInputs, setPhaseDeadlineInputs] = useState<Record<number, string>>({})
+  const [currentPhase, setCurrentPhase] = useState<number | null>(null)
 
   const supabase = createClient()
   const router = useRouter()
@@ -119,10 +289,10 @@ export default function ExpansionDetailPage({ params }: { params: Promise<{ expa
 
       setExpansion(exp)
 
-      // Load raid tiers for this expansion
+      // Load raid tiers for this expansion (only fields we need)
       const { data: tiersData, error: tiersError } = await supabase
         .from('raid_tiers')
-        .select('id, name, is_active, is_guild_active, master_sheet_visible, submission_deadline')
+        .select('id, name, phase, is_guild_active, master_sheet_visible')
         .eq('expansion_id', expansionId)
 
       if (tiersError) {
@@ -131,22 +301,41 @@ export default function ExpansionDetailPage({ params }: { params: Promise<{ expa
         // Sort by progression order
         const sortedTiers = (tiersData || []).map(tier => ({
           ...tier,
-          is_guild_active: tier.is_guild_active ?? true
+          is_guild_active: tier.is_guild_active ?? true,
+          master_sheet_visible: tier.master_sheet_visible ?? true
         })).sort((a, b) => {
           return getRaidTierOrder(a.name) - getRaidTierOrder(b.name)
         })
         setRaidTiers(sortedTiers)
+      }
 
-        // Initialize deadline inputs
-        const deadlines: Record<string, string> = {}
-        sortedTiers.forEach(tier => {
-          if (tier.submission_deadline) {
-            deadlines[tier.id] = new Date(tier.submission_deadline).toISOString().slice(0, 16)
-          } else {
-            deadlines[tier.id] = ''
-          }
-        })
-        setDeadlineInputs(deadlines)
+      // Load phase deadlines and current_phase from expansion
+      const { data: expansionData, error: expansionError } = await supabase
+        .from('expansions')
+        .select('phase_deadlines, current_phase')
+        .eq('id', expansionId)
+        .single()
+
+      if (!expansionError && expansionData) {
+        setCurrentPhase(expansionData.current_phase || 1)
+
+        if (expansionData.phase_deadlines) {
+          const deadlinesFromDb = expansionData.phase_deadlines as Record<string, string | null>
+          const phaseDeadlinesMap: Record<number, string | null> = {}
+          const phaseDlInputs: Record<number, string> = {}
+
+          Object.entries(deadlinesFromDb).forEach(([phase, deadline]) => {
+            const phaseNum = parseInt(phase)
+            phaseDeadlinesMap[phaseNum] = deadline
+            if (deadline) {
+              phaseDlInputs[phaseNum] = new Date(deadline).toISOString().slice(0, 16)
+            } else {
+              phaseDlInputs[phaseNum] = ''
+            }
+          })
+          setPhaseDeadlines(phaseDeadlinesMap)
+          setPhaseDeadlineInputs(phaseDlInputs)
+        }
       }
     } catch (error) {
       console.error('Error loading data:', error)
@@ -160,8 +349,6 @@ export default function ExpansionDetailPage({ params }: { params: Promise<{ expa
     setUpdating(tierId)
 
     try {
-      console.log('Toggling is_guild_active for tier:', tierId, 'from', currentValue, 'to', !currentValue)
-
       const { data, error } = await supabase
         .from('raid_tiers')
         .update({ is_guild_active: !currentValue })
@@ -169,22 +356,20 @@ export default function ExpansionDetailPage({ params }: { params: Promise<{ expa
         .select()
 
       if (error) {
-        // Check if it's a column not found error
         if (error.message?.includes('is_guild_active') || error.code === '42703') {
-          showNotification('error', 'Please run the database migration to enable this feature. See migrations/add_is_guild_active_to_raid_tiers.sql')
+          showNotification('error', 'Please run the database migration to enable this feature.')
         } else {
           throw error
         }
         return
       }
 
-      // Check if any rows were actually updated
       if (!data || data.length === 0) {
-        showNotification('error', 'Update failed - no rows affected. Check RLS policies.')
+        showNotification('error', 'Update failed. Check RLS policies.')
         return
       }
 
-      showNotification('success', !currentValue ? 'Raid activated for guild' : 'Raid deactivated for guild')
+      showNotification('success', !currentValue ? 'Raid added to loot lists' : 'Raid removed from loot lists')
       await loadData()
     } catch (error: any) {
       console.error('Toggle error:', error)
@@ -206,9 +391,8 @@ export default function ExpansionDetailPage({ params }: { params: Promise<{ expa
 
       if (error) throw error
 
-      // Check if any rows were actually updated
       if (!data || data.length === 0) {
-        showNotification('error', 'Update failed - no rows affected. Check RLS policies.')
+        showNotification('error', 'Update failed. Check RLS policies.')
         return
       }
 
@@ -222,43 +406,63 @@ export default function ExpansionDetailPage({ params }: { params: Promise<{ expa
     }
   }
 
-  const handleToggleCurrent = async (tierId: string, currentValue: boolean) => {
-    if (!activeGuild) return
-    setUpdating(tierId)
+  const handleUpdatePhaseDeadline = async (phase: number) => {
+    setUpdating(`phase-${phase}`)
 
     try {
-      // Toggle the is_active state for this tier
+      // Get current phase_deadlines from expansion
+      const { data: currentData } = await supabase
+        .from('expansions')
+        .select('phase_deadlines')
+        .eq('id', expansionId)
+        .single()
+
+      const currentDeadlines = (currentData?.phase_deadlines || {}) as Record<string, string | null>
+      const deadlineValue = phaseDeadlineInputs[phase] || null
+
+      // Update the specific phase deadline
+      const updatedDeadlines = {
+        ...currentDeadlines,
+        [phase.toString()]: deadlineValue
+      }
+
       const { error } = await supabase
-        .from('raid_tiers')
-        .update({ is_active: !currentValue })
-        .eq('id', tierId)
+        .from('expansions')
+        .update({ phase_deadlines: updatedDeadlines })
+        .eq('id', expansionId)
 
       if (error) throw error
 
-      showNotification('success', !currentValue ? 'Raid tier marked as current' : 'Raid tier unmarked as current')
+      showNotification('success', deadlineValue ? `Phase ${phase} deadline updated` : `Phase ${phase} deadline cleared`)
       await loadData()
     } catch (error: any) {
-      showNotification('error', error.message || 'Couldn\'t update raid tier. Try again.')
+      showNotification('error', error.message || 'Couldn\'t update phase deadline. Try again.')
     } finally {
       setUpdating(null)
     }
   }
 
-  const handleUpdateDeadline = async (tierId: string, deadline: string | null) => {
-    setUpdating(tierId)
+  const handleSetCurrentPhase = async (phase: number) => {
+    if (!activeGuild) return
+    setUpdating(`set-phase-${phase}`)
 
     try {
-      const { error } = await supabase
-        .from('raid_tiers')
-        .update({ submission_deadline: deadline || null })
-        .eq('id', tierId)
+      const response = await fetch(`/api/guilds/${activeGuild.id}/expansions/${expansionId}/phase`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phase })
+      })
 
-      if (error) throw error
+      const data = await response.json()
 
-      showNotification('success', deadline ? 'Submission deadline updated' : 'Submission deadline cleared')
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to set current phase')
+      }
+
+      showNotification('success', `Phase ${phase} is now current`)
       await loadData()
     } catch (error: any) {
-      showNotification('error', error.message || 'Couldn\'t update deadline. Try again.')
+      showNotification('error', error.message || 'Couldn\'t set current phase. Try again.')
     } finally {
       setUpdating(null)
     }
@@ -275,13 +479,14 @@ export default function ExpansionDetailPage({ params }: { params: Promise<{ expa
   if (!expansion) {
     return (
       <div className="p-8">
-        <button
+        <Button
+          variant="ghost"
           onClick={() => router.push('/admin/guild-settings')}
-          className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition mb-6"
+          className="mb-6"
         >
           <HugeiconsIcon icon={ArrowLeft01Icon} size={16} />
           Back
-        </button>
+        </Button>
         <p className="text-foreground-muted">Expansion not found</p>
       </div>
     )
@@ -289,7 +494,9 @@ export default function ExpansionDetailPage({ params }: { params: Promise<{ expa
 
   const visuals = getExpansionVisuals(expansion.expansion_name)
   const activeGuildRaids = raidTiers.filter(t => t.is_guild_active).length
-  const currentRaids = raidTiers.filter(t => t.is_guild_active && t.is_active).length
+
+  // Get unique phases
+  const uniquePhases = [...new Set(raidTiers.map(t => t.phase).filter((p): p is number => p !== null))].sort((a, b) => a - b)
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 space-y-6">
@@ -349,153 +556,86 @@ export default function ExpansionDetailPage({ params }: { params: Promise<{ expa
               )}
             </div>
             <p className="text-sm" style={{ color: `${visuals.textColor}80` }}>
-              {raidTiers.length} raid tiers • {activeGuildRaids} active for guild{currentRaids > 0 && ` • ${currentRaids} current`}
+              {raidTiers.length} raid tiers • {activeGuildRaids} active for guild
             </p>
           </div>
         </div>
       </div>
 
-      {/* Raid Tiers Section */}
-      <div>
-        <h2 className="text-[20px] font-semibold text-foreground mb-4">Raid Tiers</h2>
+      {/* Current Phase Selector */}
+      {uniquePhases.length > 0 && (
+        <div className="bg-background-elevated border border-border rounded-xl p-5">
+          <h2 className="text-[18px] font-semibold text-foreground mb-2">Current Phase</h2>
+          <p className="text-muted-foreground text-sm mb-4">
+            Select the phase your guild is progressing through. All phases up to this point will be visible for loot list submissions.
+          </p>
 
-        {raidTiers.length === 0 ? (
-          <div className="p-8 bg-background-elevated border border-border rounded-xl text-center">
-            <p className="text-foreground-muted">No raid tiers found for this expansion</p>
+          <div className="flex flex-wrap gap-2">
+            {uniquePhases.map((phase) => {
+              const tiersInPhase = raidTiers.filter(t => t.phase === phase)
+              const activeTiers = tiersInPhase.filter(t => t.is_guild_active)
+              const tierNames = activeTiers.map(t => getRaidShorthand(t.name)).join(', ')
+              const isCurrent = currentPhase === phase
+              const isUnlocked = currentPhase !== null && phase <= currentPhase
+              const isUpdating = updating === `set-phase-${phase}`
+
+              return (
+                <Button
+                  key={phase}
+                  variant={isCurrent ? 'primary' : isUnlocked ? 'secondary' : 'ghost'}
+                  size="sm"
+                  onClick={() => !isCurrent && handleSetCurrentPhase(phase)}
+                  disabled={isUpdating}
+                  loading={isUpdating}
+                  title={tierNames || 'No active raids'}
+                  className={isCurrent ? 'ring-2 ring-accent ring-offset-2 ring-offset-background' : ''}
+                >
+                  Phase {phase}
+                  {isCurrent && ' ✓'}
+                </Button>
+              )
+            })}
           </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {raidTiers.map((tier) => (
-              <div
-                key={tier.id}
-                className={`bg-background-elevated border rounded-xl p-5 transition ${
-                  tier.is_guild_active
-                    ? 'border-border'
-                    : 'border-border opacity-60'
-                }`}
-              >
-                {/* Header */}
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-2">
-                    <img
-                      src={getRaidIcon(tier.name)}
-                      alt={tier.name}
-                      className="w-8 h-8 rounded-lg border-2 border-border/50 shadow-md"
-                    />
-                    <h3 className="text-foreground font-semibold text-[16px]">{tier.name}</h3>
-                  </div>
-                </div>
+        </div>
+      )}
 
-                {/* Active for Guild Toggle */}
-                <div className="flex items-center justify-between p-3 bg-background-subtle rounded-lg mb-3">
-                  <div>
-                    <p className="text-foreground text-[13px] font-medium mb-0.5">Active for guild</p>
-                    <p className="text-muted-foreground text-[11px]">
-                      {tier.is_guild_active
-                        ? 'Appears in raid dropdowns'
-                        : 'Hidden from raid selectors'}
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => handleToggleGuildActive(tier.id, tier.is_guild_active)}
-                    disabled={updating === tier.id}
-                    className={`relative w-12 h-6 rounded-full transition ${
-                      tier.is_guild_active ? 'bg-accent' : 'bg-border-strong'
-                    } disabled:opacity-50`}
-                  >
-                    <div
-                      className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${
-                        tier.is_guild_active ? 'left-7' : 'left-1'
-                      }`}
-                    />
-                  </button>
-                </div>
+      {/* Phase Cards */}
+      {uniquePhases.length > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          {uniquePhases.map((phase) => {
+            const tiersInPhase = raidTiers.filter(t => t.phase === phase)
+            const isUnlocked = currentPhase !== null && phase <= currentPhase
+            const isCurrent = currentPhase === phase
 
-                {/* Only show other controls if guild active */}
-                {tier.is_guild_active && (
-                  <>
-                    {/* Current Raid Toggle */}
-                    <div className="flex items-center justify-between p-3 bg-background-subtle rounded-lg mb-3">
-                      <div>
-                        <p className="text-foreground text-[13px] font-medium mb-0.5">Current raid</p>
-                        <p className="text-muted-foreground text-[11px]">
-                          {tier.is_active
-                            ? 'Marked as a current progression raid'
-                            : 'Not marked as current'}
-                        </p>
-                      </div>
-                      <button
-                        onClick={() => handleToggleCurrent(tier.id, tier.is_active)}
-                        disabled={updating === tier.id}
-                        className={`relative w-12 h-6 rounded-full transition ${
-                          tier.is_active ? 'bg-green-600' : 'bg-border-strong'
-                        } disabled:opacity-50`}
-                      >
-                        <div
-                          className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${
-                            tier.is_active ? 'left-7' : 'left-1'
-                          }`}
-                        />
-                      </button>
-                    </div>
-                    {/* Master Sheet Visibility Toggle */}
-                    <div className="flex items-center justify-between p-3 bg-background-subtle rounded-lg mb-3">
-                      <div>
-                        <p className="text-foreground text-[13px] font-medium mb-0.5">Show rankings to players</p>
-                        <p className="text-muted-foreground text-[11px]">
-                          {tier.master_sheet_visible
-                            ? 'Players can see loot rankings'
-                            : 'Rankings hidden from players'}
-                        </p>
-                      </div>
-                      <button
-                        onClick={() => handleToggleMasterSheetVisibility(tier.id, tier.master_sheet_visible)}
-                        disabled={updating === tier.id}
-                        className={`px-3 py-1.5 rounded-[40px] text-[12px] font-medium transition ${
-                          tier.master_sheet_visible
-                            ? 'bg-green-950/50 text-green-200 border border-green-600/50'
-                            : 'bg-muted text-muted-foreground border border-border'
-                        } disabled:opacity-50`}
-                      >
-                        {tier.master_sheet_visible ? 'Visible' : 'Hidden'}
-                      </button>
-                    </div>
+            return (
+              <PhaseCard
+                key={phase}
+                phase={phase}
+                tiers={tiersInPhase}
+                deadline={phaseDeadlines[phase] || null}
+                deadlineInput={phaseDeadlineInputs[phase] || ''}
+                isCurrentPhase={isCurrent}
+                isUnlocked={isUnlocked}
+                updating={updating}
+                onDeadlineInputChange={(value) => setPhaseDeadlineInputs({
+                  ...phaseDeadlineInputs,
+                  [phase]: value
+                })}
+                onUpdateDeadline={() => handleUpdatePhaseDeadline(phase)}
+                onToggleRaidActive={handleToggleGuildActive}
+                onToggleRaidRankings={handleToggleMasterSheetVisibility}
+              />
+            )
+          })}
+        </div>
+      )}
 
-                    {/* Submission Deadline */}
-                    <div className="p-3 bg-background-subtle rounded-lg">
-                      <p className="text-foreground text-[13px] font-medium mb-2">Submission deadline</p>
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="datetime-local"
-                          value={deadlineInputs[tier.id] || ''}
-                          onChange={(e) => setDeadlineInputs({
-                            ...deadlineInputs,
-                            [tier.id]: e.target.value
-                          })}
-                          className="flex-1 px-3 py-2 bg-background-elevated border border-border rounded-lg text-foreground text-[12px] focus:outline-none focus:border-accent transition"
-                        />
-                        <Button
-                          variant="secondary"
-                          size="sm"
-                          onClick={() => handleUpdateDeadline(tier.id, deadlineInputs[tier.id] || null)}
-                          disabled={updating === tier.id}
-                        >
-                          {deadlineInputs[tier.id] ? 'Save' : 'Clear'}
-                        </Button>
-                      </div>
-                      {tier.submission_deadline && (
-                        <p className="text-muted-foreground text-[11px] mt-2">
-                          Current: {new Date(tier.submission_deadline).toLocaleString()}
-                        </p>
-                      )}
-                    </div>
-                  </>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+      {/* Empty state */}
+      {raidTiers.length === 0 && (
+        <div className="p-8 bg-background-elevated border border-border rounded-xl text-center">
+          <p className="text-foreground-muted">No raid tiers found for this expansion</p>
+        </div>
+      )}
     </div>
   )
 }

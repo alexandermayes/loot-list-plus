@@ -271,17 +271,15 @@ export default function MasterLootPage() {
           {/* Filters */}
           <div className="flex gap-2 overflow-x-auto pb-2">
             {(['all', 'pending', 'approved', 'rejected'] as const).map((status) => (
-              <button
+              <Button
                 key={status}
+                variant={filter === status ? 'accent' : 'secondary'}
+                size="sm"
                 onClick={() => setFilter(status)}
-                className={`px-5 py-2.5 rounded-full text-[13px] font-medium transition ${
-                  filter === status
-                    ? 'bg-accent text-foreground'
-                    : 'bg-muted text-muted-foreground hover:bg-muted border border-border'
-                }`}
+                className="rounded-full whitespace-nowrap"
               >
                 {status.charAt(0).toUpperCase() + status.slice(1)}
-              </button>
+              </Button>
             ))}
           </div>
 
@@ -321,12 +319,14 @@ export default function MasterLootPage() {
                       {submission.item_count} items • {submission.submitted_at ? new Date(submission.submitted_at).toLocaleDateString('en-US', { month: 'numeric', day: 'numeric', year: 'numeric' }) : 'N/A'}
                     </span>
                   </div>
-                  <button
+                  <Button
+                    variant="secondary"
+                    size="sm"
                     onClick={() => viewSubmissionDetails(submission.id)}
-                    className="w-full sm:w-auto px-4 sm:px-5 py-2 bg-muted hover:bg-muted border border-border rounded-lg text-foreground text-[13px] sm:text-[14px] font-medium transition"
+                    className="w-full sm:w-auto"
                   >
                     View Details
-                  </button>
+                  </Button>
                 </div>
               ))
             )}

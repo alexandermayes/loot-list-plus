@@ -11,6 +11,8 @@ import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
 import { DatePicker } from '@/components/ui/date-picker'
 import { Label } from '@/components/ui/label'
+import { Input } from '@/components/ui/input'
+import { Select } from '@/components/ui/select'
 import { FileSearchIcon } from '@hugeicons/core-free-icons'
 import { refreshWowheadTooltips } from '@/lib/wowhead'
 import type { LootHistoryEntry } from '@/app/api/loot-history/route'
@@ -206,47 +208,42 @@ export default function LootHistoryTab() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {/* Character Search */}
           <div>
-            <label className="block text-[13px] font-medium text-foreground mb-2">
-              Search Player
-            </label>
-            <input
-              type="text"
+            <Label className="mb-2">Search Player</Label>
+            <Input
+              variant="rounded"
+              size="sm"
               value={characterSearch}
               onChange={(e) => setCharacterSearch(e.target.value)}
               placeholder="Character name..."
-              className="w-full px-4 py-2.5 bg-background-elevated border border-border-strong rounded-xl text-foreground text-[13px] focus:outline-none focus:border-accent"
             />
           </div>
 
           {/* Item Search */}
           <div>
-            <label className="block text-[13px] font-medium text-foreground mb-2">
-              Search Item
-            </label>
-            <input
-              type="text"
+            <Label className="mb-2">Search Item</Label>
+            <Input
+              variant="rounded"
+              size="sm"
               value={itemSearch}
               onChange={(e) => setItemSearch(e.target.value)}
               placeholder="Item name..."
-              className="w-full px-4 py-2.5 bg-background-elevated border border-border-strong rounded-xl text-foreground text-[13px] focus:outline-none focus:border-accent"
             />
           </div>
 
           {/* Raid Tier Filter */}
           <div>
-            <label className="block text-[13px] font-medium text-foreground mb-2">
-              Raid
-            </label>
-            <select
+            <Label className="mb-2">Raid</Label>
+            <Select
+              variant="rounded"
+              size="sm"
               value={filterTier}
               onChange={(e) => setFilterTier(e.target.value)}
-              className="w-full px-4 py-2.5 bg-background-elevated border border-border-strong rounded-xl text-foreground text-[13px] focus:outline-none focus:border-accent cursor-pointer"
             >
               <option value="all">All Raids</option>
               {raidTiers.map(tier => (
                 <option key={tier.id} value={tier.id}>{tier.name}</option>
               ))}
-            </select>
+            </Select>
           </div>
 
           {/* Date Range */}

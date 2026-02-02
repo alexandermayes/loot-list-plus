@@ -148,13 +148,14 @@ export default function JoinGuildPage() {
     <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
       {/* Header */}
       <div className="absolute top-4 left-4">
-        <button
+        <Button
+          variant="ghost"
+          size="sm"
           onClick={() => router.push('/guild-select')}
-          className="text-muted-foreground hover:text-foreground transition flex items-center gap-2"
         >
           <HugeiconsIcon icon={ArrowLeft01Icon} size={16} />
           Back
-        </button>
+        </Button>
       </div>
 
       {/* Main Content */}

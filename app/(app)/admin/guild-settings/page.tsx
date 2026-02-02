@@ -24,6 +24,8 @@ import { Button } from '@/components/ui/button'
 import { Heading } from '@/components/ui/typography'
 import { useGuildMembers } from '@/app/hooks/use-api'
 import { Select } from '@/components/ui/select'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 
 export default function GuildSettingsPage() {
   const [loading, setLoading] = useState(true)
@@ -302,19 +304,21 @@ export default function GuildSettingsPage() {
             </div>
             <div className="p-6 space-y-4">
               <div className="space-y-2">
-                <label htmlFor="guildName" className="block text-[13px] font-medium text-foreground">Guild Name</label>
-                <input
+                <Label htmlFor="guildName">Guild Name</Label>
+                <Input
                   id="guildName"
                   value={guildName}
                   onChange={(e) => setGuildName(e.target.value)}
                   placeholder="Enter guild name"
                   disabled={!isGuildCreator || saving}
-                  className={`w-full px-5 py-3 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[13px] focus:outline-none focus:border-accent ${!isGuildCreator ? 'opacity-60 cursor-not-allowed' : ''}`}
+                  variant="rounded"
+                  size="sm"
+                  className={!isGuildCreator ? 'opacity-60 cursor-not-allowed' : ''}
                 />
               </div>
 
               <div className="space-y-2">
-                <label className="block text-[13px] font-medium text-foreground">Realm</label>
+                <Label>Realm</Label>
                 <RealmSelector
                   region={realmRegion}
                   realm={realm}
@@ -325,10 +329,11 @@ export default function GuildSettingsPage() {
               </div>
 
               <div className="space-y-2">
-                <label htmlFor="faction" className="block text-[13px] font-medium text-foreground">Faction</label>
+                <Label htmlFor="faction">Faction</Label>
                 <div className="grid grid-cols-2 gap-2">
-                  <button
+                  <Button
                     type="button"
+                    variant="secondary"
                     onClick={() => isGuildCreator && setFaction('Alliance')}
                     disabled={!isGuildCreator || saving}
                     className={`alliance-btn group relative px-3 py-2.5 rounded-lg border transition-all duration-300 flex items-center justify-center gap-2 overflow-hidden ${
@@ -345,9 +350,10 @@ export default function GuildSettingsPage() {
                     <span className={`font-medium text-[13px] relative z-10 transition-colors duration-300 ${faction === 'Alliance' ? 'text-blue-400' : isGuildCreator ? 'text-foreground group-hover:text-blue-400' : 'text-foreground'}`}>
                       Alliance
                     </span>
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     type="button"
+                    variant="secondary"
                     onClick={() => isGuildCreator && setFaction('Horde')}
                     disabled={!isGuildCreator || saving}
                     className={`horde-btn group relative px-3 py-2.5 rounded-lg border transition-all duration-300 flex items-center justify-center gap-2 overflow-hidden ${
@@ -364,7 +370,7 @@ export default function GuildSettingsPage() {
                     <span className={`font-medium text-[13px] relative z-10 transition-colors duration-300 ${faction === 'Horde' ? 'text-red-400' : isGuildCreator ? 'text-foreground group-hover:text-red-400' : 'text-foreground'}`}>
                       Horde
                     </span>
-                  </button>
+                  </Button>
                 </div>
                 {isGuildCreator && (
                   <style jsx>{`
@@ -503,7 +509,7 @@ export default function GuildSettingsPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="block text-[13px] font-medium text-foreground">Select new owner</label>
+                  <Label>Select new owner</Label>
                   {eligibleNewOwners.length > 0 ? (
                     <Select
                       value={selectedNewOwner}

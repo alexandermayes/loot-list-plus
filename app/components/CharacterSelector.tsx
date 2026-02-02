@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import dynamic from 'next/dynamic'
 import { Spinner } from '@/components/ui/loading-spinner'
+import { Button } from '@/components/ui/button'
 
 // Lazy load modal to reduce initial bundle size
 const CreateCharacterModal = dynamic(() => import('./CreateCharacterModal').then(mod => ({ default: mod.CreateCharacterModal })), {
@@ -153,16 +154,17 @@ export function CharacterSelector() {
   if (!activeCharacter) {
     return (
       <>
-        <button
+        <Button
+          variant="ghost"
           onClick={handleCreateCharacter}
-          className="w-full px-[14px] py-2 bg-primary/10 hover:bg-primary/20 border border-primary/30 rounded-[12px] text-foreground text-left transition flex items-center gap-3"
+          className="w-full px-[14px] py-2 bg-primary/10 hover:bg-primary/20 border border-primary/30 rounded-[12px] text-foreground text-left transition flex items-center gap-3 h-auto justify-start"
         >
           <RotatingClassIcon />
           <div className="flex-1 min-w-0">
             <p className="text-[13px] font-medium text-foreground">Character creation required</p>
             <p className="text-[10px] text-primary">Click here to create</p>
           </div>
-        </button>
+        </Button>
         <CreateCharacterModal
           isOpen={showCreateModal}
           onClose={() => setShowCreateModal(false)}
@@ -178,16 +180,17 @@ export function CharacterSelector() {
   if (needsSetup) {
     return (
       <>
-        <button
+        <Button
+          variant="ghost"
           onClick={() => setShowCreateModal(true)}
-          className="w-full px-[14px] py-2 bg-primary/10 hover:bg-primary/20 border border-primary/30 rounded-[12px] text-foreground text-left transition flex items-center gap-3"
+          className="w-full px-[14px] py-2 bg-primary/10 hover:bg-primary/20 border border-primary/30 rounded-[12px] text-foreground text-left transition flex items-center gap-3 h-auto justify-start"
         >
           <RotatingClassIcon />
           <div className="flex-1 min-w-0">
             <p className="text-[13px] font-medium text-foreground truncate">{activeCharacter.name}</p>
             <p className="text-[10px] text-primary">Click here to create</p>
           </div>
-        </button>
+        </Button>
         <CreateCharacterModal
           isOpen={showCreateModal}
           onClose={() => setShowCreateModal(false)}
@@ -199,9 +202,10 @@ export function CharacterSelector() {
 
   return (
     <div className="relative">
-      <button
+      <Button
+        variant="ghost"
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex items-center gap-3 px-[14px] py-2 rounded-[12px] bg-background-elevated border border-border hover:bg-muted transition"
+        className="w-full flex items-center gap-3 px-[14px] py-2 rounded-[12px] bg-background-elevated border border-border hover:bg-muted transition h-auto justify-start"
       >
         {/* Character Class Icon */}
         {activeCharacter.class?.name ? (
@@ -243,7 +247,7 @@ export function CharacterSelector() {
           height={20}
           className={`icon-adaptive w-5 h-5 shrink-0 transition-transform ${isOpen ? 'rotate-180' : ''}`}
         />
-      </button>
+      </Button>
 
       {/* Dropdown */}
       {isOpen && (
@@ -269,10 +273,11 @@ export function CharacterSelector() {
                   const isSelected = char.id === activeCharacter?.id
 
                   return (
-                    <button
+                    <Button
                       key={char.id}
+                      variant="ghost"
                       onClick={() => handleCharacterSelect(char.id)}
-                      className="w-full flex items-center gap-3 px-[14px] py-2 hover:bg-muted transition text-left"
+                      className="w-full flex items-center gap-3 px-[14px] py-2 hover:bg-muted transition text-left h-auto justify-start rounded-none"
                     >
                       {/* Character Class Icon */}
                       {char.class?.name ? (
@@ -314,7 +319,7 @@ export function CharacterSelector() {
                           className="icon-adaptive w-5 h-5 shrink-0"
                         />
                       )}
-                    </button>
+                    </Button>
                   )
                 })}
               </div>
@@ -374,10 +379,12 @@ export function CharacterSelector() {
                           </p>
                         </div>
 
-                        <button
+                        <Button
+                          variant="ghost"
+                          size="icon"
                           onClick={(e) => handleAddToGuild(char.id, e)}
                           disabled={isAdding}
-                          className="shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="shrink-0 h-8 w-8"
                         >
                           {isAdding ? (
                             <Spinner size="lg" className="text-muted-foreground" />
@@ -390,7 +397,7 @@ export function CharacterSelector() {
                               className="icon-adaptive w-5 h-5"
                             />
                           )}
-                        </button>
+                        </Button>
                       </div>
                     )
                   })}
@@ -402,9 +409,10 @@ export function CharacterSelector() {
 
             {/* Create Character & Manage */}
             <div>
-              <button
+              <Button
+                variant="ghost"
                 onClick={handleCreateCharacter}
-                className="w-full px-[14px] py-2 flex items-center gap-3 hover:bg-muted transition text-left"
+                className="w-full px-[14px] py-2 flex items-center gap-3 hover:bg-muted transition text-left h-auto justify-start rounded-none"
               >
                 <Image
                   src="/icons/user-add.svg"
@@ -416,10 +424,11 @@ export function CharacterSelector() {
                 <p className="font-poppins font-medium text-[13px] text-foreground">
                   Create character
                 </p>
-              </button>
-              <button
+              </Button>
+              <Button
+                variant="ghost"
                 onClick={handleManageCharacters}
-                className="w-full px-[14px] py-2 flex items-center gap-3 hover:bg-muted transition text-left"
+                className="w-full px-[14px] py-2 flex items-center gap-3 hover:bg-muted transition text-left h-auto justify-start rounded-none"
               >
                 <Image
                   src="/icons/user-settings.svg"
@@ -431,7 +440,7 @@ export function CharacterSelector() {
                 <p className="font-poppins font-medium text-[13px] text-foreground">
                   Manage characters
                 </p>
-              </button>
+              </Button>
             </div>
           </div>
         </>

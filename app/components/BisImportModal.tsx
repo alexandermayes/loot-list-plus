@@ -200,10 +200,11 @@ export function BisImportModal({
             {/* Gear Status / Import Section */}
             <div className="border border-border rounded-xl overflow-hidden">
               {/* Header - always visible */}
-              <button
+              <Button
                 type="button"
+                variant="ghost"
                 onClick={() => setShowGearSection(!showGearSection)}
-                className="w-full flex items-center justify-between p-4 bg-background-subtle hover:bg-muted transition-colors"
+                className="w-full flex items-center justify-between p-4 h-auto bg-background-subtle hover:bg-muted rounded-none"
               >
                 <div className="flex items-center gap-3">
                   <div className={`w-2 h-2 rounded-full ${hasGearImported ? 'bg-success' : 'bg-muted-foreground'}`} />
@@ -224,7 +225,7 @@ export function BisImportModal({
                   size={20}
                   className="text-muted-foreground"
                 />
-              </button>
+              </Button>
 
               {/* Expandable gear import section */}
               {showGearSection && (

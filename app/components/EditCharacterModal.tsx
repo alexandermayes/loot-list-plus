@@ -313,24 +313,26 @@ export function EditCharacterModal({ isOpen, onClose, character, onSuccess }: Ed
                   isMain ? 'left-1' : 'left-[calc(50%+2px)]'
                 }`}
               />
-              <button
+              <Button
                 type="button"
+                variant="ghost"
                 onClick={() => setIsMain(true)}
-                className={`relative z-10 flex-1 px-6 py-2 rounded-[44px] text-[13px] font-medium transition-colors duration-200 ${
+                className={`relative z-10 flex-1 px-6 py-2 h-auto rounded-[44px] text-[13px] font-medium transition-colors duration-200 ${
                   isMain ? 'text-foreground' : 'text-foreground-muted'
                 }`}
               >
                 Main
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
+                variant="ghost"
                 onClick={() => setIsMain(false)}
-                className={`relative z-10 flex-1 px-6 py-2 rounded-[44px] text-[13px] font-medium transition-colors duration-200 ${
+                className={`relative z-10 flex-1 px-6 py-2 h-auto rounded-[44px] text-[13px] font-medium transition-colors duration-200 ${
                   !isMain ? 'text-foreground' : 'text-foreground-muted'
                 }`}
               >
                 Alt
-              </button>
+              </Button>
             </div>
           </div>
 

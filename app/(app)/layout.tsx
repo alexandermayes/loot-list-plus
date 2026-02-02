@@ -10,6 +10,7 @@ import Link from 'next/link'
 import Sidebar from '@/app/components/Sidebar'
 import { MobileMenuButton } from '@/app/components/MobileMenuButton'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
+import { Button } from '@/components/ui/button'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { Bug01Icon } from '@hugeicons/core-free-icons'
 import { SidebarProvider, useSidebar } from '@/app/contexts/SidebarContext'
@@ -172,13 +173,15 @@ function AppLayoutContent({
       </main>
 
       {/* Floating Bug Report Button */}
-      <button
+      <Button
+        variant="secondary"
+        size="icon"
         onClick={() => setShowFeedbackModal(true)}
-        className="fixed bottom-6 right-6 w-14 h-14 bg-background-elevated hover:bg-muted border border-border-strong rounded-full shadow-lg flex items-center justify-center transition-all hover:scale-105 z-40"
+        className="fixed bottom-6 right-6 w-14 h-14 rounded-full shadow-lg hover:scale-105 z-40"
         title="Report a Bug"
       >
         <HugeiconsIcon icon={Bug01Icon} size={24} className="text-muted-foreground" />
-      </button>
+      </Button>
 
       {/* Feedback Modal */}
       <FeedbackModal

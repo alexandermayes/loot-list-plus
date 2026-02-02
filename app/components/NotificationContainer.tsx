@@ -4,6 +4,7 @@ import { useNotification, NotificationType } from '@/app/contexts/NotificationCo
 import { useEffect, useState } from 'react'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { CheckmarkCircle01Icon, Cancel01Icon, AlertCircleIcon, InformationCircleIcon } from '@hugeicons/core-free-icons'
+import { Button } from '@/components/ui/button'
 
 /**
  * Toast notification styles - matches inline alert styling
@@ -74,15 +75,17 @@ export default function NotificationContainer() {
             <div className="flex-1 text-sm font-medium">
               {notification.message}
             </div>
-            <button
+            <Button
+              variant="ghost"
+              size="icon"
               onClick={() => dismissNotification(notification.id)}
-              className="flex-shrink-0 hover:opacity-70 transition"
+              className="flex-shrink-0 w-6 h-6 min-h-0 hover:opacity-70"
               aria-label="Dismiss"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
-            </button>
+            </Button>
           </div>
         )
       })}

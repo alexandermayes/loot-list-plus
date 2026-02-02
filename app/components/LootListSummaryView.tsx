@@ -6,6 +6,8 @@ import { HugeiconsIcon } from '@hugeicons/react'
 import { ArrowDown01Icon, ArrowUp01Icon, UserMultipleIcon, CheckmarkCircle02Icon } from '@hugeicons/core-free-icons'
 import { EmptyState } from '@/components/ui/empty-state'
 import { ScrollIcon } from '@hugeicons/core-free-icons'
+import { Select } from '@/components/ui/select'
+import { Button } from '@/components/ui/button'
 
 interface LootListPlayer {
   character_id: string
@@ -108,16 +110,18 @@ export default function LootListSummaryView({
       <div className="flex flex-col sm:flex-row sm:items-center gap-3">
         <div className="flex items-center gap-3 flex-1">
           <span className="text-sm text-muted-foreground">Filter by boss:</span>
-          <select
+          <Select
             value={selectedBoss || ''}
             onChange={(e) => onBossFilter(e.target.value || null)}
-            className="bg-background-elevated border border-border rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-accent flex-1 sm:flex-initial"
+            variant="rounded"
+            size="sm"
+            className="flex-1 sm:flex-initial sm:w-auto"
           >
             <option value="">All bosses</option>
             {bosses.map(boss => (
               <option key={boss} value={boss}>{boss}</option>
             ))}
-          </select>
+          </Select>
         </div>
         <span className="text-sm text-muted-foreground sm:ml-auto">
           {sortedItems.length} item{sortedItems.length !== 1 ? 's' : ''}
@@ -195,22 +199,26 @@ export default function LootListSummaryView({
                         </div>
                       ))}
                     {hasMore && !isExpanded && (
-                      <button
+                      <Button
+                        variant="outline"
+                        size="sm"
                         onClick={() => toggleExpand(item.item_id)}
-                        className="flex items-center gap-1 px-2.5 py-1 bg-background-inset border border-border rounded-full text-[12px] text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                        className="flex items-center gap-1 px-2.5 py-1 h-auto bg-background-inset rounded-full text-[12px] text-muted-foreground hover:text-foreground"
                       >
                         +{item.players.length - 3} more
                         <HugeiconsIcon icon={ArrowDown01Icon} size={12} />
-                      </button>
+                      </Button>
                     )}
                     {isExpanded && hasMore && (
-                      <button
+                      <Button
+                        variant="outline"
+                        size="sm"
                         onClick={() => toggleExpand(item.item_id)}
-                        className="flex items-center gap-1 px-2.5 py-1 bg-background-inset border border-border rounded-full text-[12px] text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                        className="flex items-center gap-1 px-2.5 py-1 h-auto bg-background-inset rounded-full text-[12px] text-muted-foreground hover:text-foreground"
                       >
                         Show less
                         <HugeiconsIcon icon={ArrowUp01Icon} size={12} />
-                      </button>
+                      </Button>
                     )}
                   </div>
                 </div>

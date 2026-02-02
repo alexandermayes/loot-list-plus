@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button'
 import { Heading } from '@/components/ui/typography'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
+import { Select } from '@/components/ui/select'
 import RealmSelector from '@/app/components/RealmSelector'
 
 interface DiscordGuild {
@@ -380,13 +381,14 @@ export default function CreateGuildPage() {
     <div className="min-h-screen bg-background flex flex-col p-4">
       {/* Header */}
       <div className="mb-8">
-        <button
+        <Button
+          variant="ghost"
           onClick={() => router.push('/guild-select')}
-          className="text-muted-foreground hover:text-foreground transition flex items-center gap-2 mb-4"
+          className="text-muted-foreground hover:text-foreground flex items-center gap-2 mb-4"
         >
           <HugeiconsIcon icon={ArrowLeft01Icon} size={16} />
           Back
-        </button>
+        </Button>
       </div>
 
       {/* Main Content */}
@@ -507,7 +509,7 @@ export default function CreateGuildPage() {
                 : 'Enter your Discord Server ID manually'
               }
             </p>
-            <select
+            <Select
               id="discordServer"
               value={showManualEntry ? 'manual' : selectedDiscordServer}
               onChange={(e) => {
@@ -523,16 +525,15 @@ export default function CreateGuildPage() {
                 }
               }}
               disabled={creating}
-              className="w-full px-5 py-3 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[13px] focus:outline-none focus:border-accent cursor-pointer select-custom disabled:opacity-50"
             >
-              <option value="" className="bg-background-elevated text-foreground">Select a server...</option>
+              <option value="">Select a server...</option>
               {discordGuilds.length > 0 && discordGuilds.map((guild) => (
-                <option key={guild.id} value={guild.id} className="bg-background-elevated text-foreground">
+                <option key={guild.id} value={guild.id}>
                   {guild.name}
                 </option>
               ))}
-              <option value="manual" className="bg-background-elevated text-foreground">Manually enter Server ID</option>
-            </select>
+              <option value="manual">Manually enter Server ID</option>
+            </Select>
           </div>
 
           {/* Manual Discord Server ID Input (shown when manual option selected) */}
@@ -649,11 +650,12 @@ export default function CreateGuildPage() {
           <div className="space-y-2">
             <Label className="text-base">Expansion</Label>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
-              <button
+              <Button
                 type="button"
+                variant="ghost"
                 onClick={() => setExpansion('Classic')}
                 disabled={creating}
-                className={`relative aspect-video rounded-lg border-2 transition overflow-hidden ${
+                className={`relative aspect-video h-auto p-0 rounded-lg border-2 transition overflow-hidden ${
                   expansion === 'Classic'
                     ? 'border-primary ring-2 ring-primary/50'
                     : 'border-border hover:border-primary/50'
@@ -664,12 +666,13 @@ export default function CreateGuildPage() {
                   alt="Classic"
                   className="w-full h-full object-cover"
                 />
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
+                variant="ghost"
                 onClick={() => setExpansion('The Burning Crusade')}
                 disabled={creating}
-                className={`relative aspect-video rounded-lg border-2 transition overflow-hidden ${
+                className={`relative aspect-video h-auto p-0 rounded-lg border-2 transition overflow-hidden ${
                   expansion === 'The Burning Crusade'
                     ? 'border-primary ring-2 ring-primary/50'
                     : 'border-border hover:border-primary/50'
@@ -680,12 +683,13 @@ export default function CreateGuildPage() {
                   alt="The Burning Crusade"
                   className="w-full h-full object-cover"
                 />
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
+                variant="ghost"
                 onClick={() => setExpansion('Wrath of the Lich King')}
                 disabled={creating}
-                className={`relative aspect-video rounded-lg border-2 transition overflow-hidden ${
+                className={`relative aspect-video h-auto p-0 rounded-lg border-2 transition overflow-hidden ${
                   expansion === 'Wrath of the Lich King'
                     ? 'border-primary ring-2 ring-primary/50'
                     : 'border-border hover:border-primary/50'
@@ -696,12 +700,13 @@ export default function CreateGuildPage() {
                   alt="Wrath of the Lich King"
                   className="w-full h-full object-cover"
                 />
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
+                variant="ghost"
                 onClick={() => setExpansion('Cataclysm')}
                 disabled={creating}
-                className={`relative aspect-video rounded-lg border-2 transition overflow-hidden ${
+                className={`relative aspect-video h-auto p-0 rounded-lg border-2 transition overflow-hidden ${
                   expansion === 'Cataclysm'
                     ? 'border-primary ring-2 ring-primary/50'
                     : 'border-border hover:border-primary/50'
@@ -712,12 +717,13 @@ export default function CreateGuildPage() {
                   alt="Cataclysm"
                   className="w-full h-full object-cover"
                 />
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
+                variant="ghost"
                 onClick={() => setExpansion('Mists of Pandaria')}
                 disabled={creating}
-                className={`relative aspect-video rounded-lg border-2 transition overflow-hidden ${
+                className={`relative aspect-video h-auto p-0 rounded-lg border-2 transition overflow-hidden ${
                   expansion === 'Mists of Pandaria'
                     ? 'border-primary ring-2 ring-primary/50'
                     : 'border-border hover:border-primary/50'
@@ -728,7 +734,7 @@ export default function CreateGuildPage() {
                   alt="Mists of Pandaria"
                   className="w-full h-full object-cover"
                 />
-              </button>
+              </Button>
             </div>
             <p className="text-sm text-muted-foreground mt-2">
               Select your starting expansion. You can add additional expansions from the Admin panel after guild creation.
@@ -753,30 +759,32 @@ export default function CreateGuildPage() {
           <div className="space-y-2">
             <Label htmlFor="faction" className="text-base">Faction</Label>
             <div className="grid grid-cols-2 gap-4">
-              <button
+              <Button
                 type="button"
+                variant="ghost"
                 onClick={() => setFaction('Alliance')}
                 disabled={creating}
-                className={`p-4 rounded-lg border-2 transition ${
+                className={`p-4 h-auto rounded-lg border-2 transition ${
                   faction === 'Alliance'
                     ? 'border-blue-500 bg-blue-500/20 text-blue-200'
                     : 'border-border bg-card hover:border-blue-500/50'
                 }`}
               >
                 <p className="font-medium">Alliance</p>
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
+                variant="ghost"
                 onClick={() => setFaction('Horde')}
                 disabled={creating}
-                className={`p-4 rounded-lg border-2 transition ${
+                className={`p-4 h-auto rounded-lg border-2 transition ${
                   faction === 'Horde'
                     ? 'border-red-500 bg-red-500/20 text-red-200'
                     : 'border-border bg-card hover:border-red-500/50'
                 }`}
               >
                 <p className="font-medium">Horde</p>
-              </button>
+              </Button>
             </div>
           </div>
 

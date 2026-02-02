@@ -7,6 +7,9 @@ import type { User } from '@supabase/supabase-js'
 import { useGuildContext } from '@/app/contexts/GuildContext'
 import { useNotification } from '@/app/contexts/NotificationContext'
 import { Heading } from '@/components/ui/typography'
+import { Select } from '@/components/ui/select'
+import { Label } from '@/components/ui/label'
+import { Button } from '@/components/ui/button'
 
 export default function ImportPage() {
   const [loading, setLoading] = useState(false)
@@ -269,16 +272,17 @@ export default function ImportPage() {
 
           <div className="space-y-4">
             <div>
-              <label className="block text-[13px] font-medium text-foreground mb-2">Import Type</label>
-              <select
+              <Label className="mb-2">Import Type</Label>
+              <Select
+                variant="rounded"
+                size="sm"
                 value={importType}
                 onChange={(e) => setImportType(e.target.value as any)}
-                className="w-full px-5 py-3 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[13px] focus:outline-none focus:border-accent cursor-pointer select-custom"
               >
-                <option value="attendance" className="bg-background-elevated text-foreground">Attendance Records</option>
-                <option value="loot_items" className="bg-background-elevated text-foreground">Loot Items</option>
-                <option value="members" className="bg-background-elevated text-foreground">Guild Members (Not Available)</option>
-              </select>
+                <option value="attendance">Attendance Records</option>
+                <option value="loot_items">Loot Items</option>
+                <option value="members">Guild Members (Not Available)</option>
+              </Select>
             </div>
 
             <div>
@@ -315,13 +319,15 @@ Thunderfury,Prince,Weapon,19019`}
               )}
             </div>
 
-            <button
+            <Button
+              variant="primary"
               onClick={handleImport}
-              disabled={!file || loading}
-              className="w-full px-5 py-3 bg-primary hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed rounded-[40px] text-primary-foreground font-medium text-[16px] transition"
+              disabled={!file}
+              loading={loading}
+              className="w-full"
             >
-              {loading ? 'Importing...' : 'Import Data'}
-            </button>
+              Import Data
+            </Button>
           </div>
         </div>
       </div>

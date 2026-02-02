@@ -8,6 +8,10 @@ import { useGuildContext } from '@/app/contexts/GuildContext'
 import { ExpansionGuard } from '@/app/components/ExpansionGuard'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { Heading } from '@/components/ui/typography'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Select } from '@/components/ui/select'
+import { Label } from '@/components/ui/label'
 import { normalizeBossName } from '@/utils/bossOrder'
 import { refreshWowheadTooltips } from '@/lib/wowhead'
 
@@ -434,27 +438,28 @@ export default function AdminLootItems() {
         <div className="bg-background-elevated border border-border rounded-xl p-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-[13px] font-medium text-foreground mb-2">Search Items</label>
-              <input
-                type="text"
+              <Label className="mb-2">Search Items</Label>
+              <Input
+                variant="rounded"
+                size="sm"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="Search by name or boss..."
-                className="w-full px-5 py-3 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[13px] focus:outline-none focus:border-accent"
               />
             </div>
             <div>
-              <label className="block text-[13px] font-medium text-foreground mb-2">Filter by Raid</label>
-              <select
+              <Label className="mb-2">Filter by Raid</Label>
+              <Select
+                variant="rounded"
+                size="sm"
                 value={filterTier}
                 onChange={(e) => setFilterTier(e.target.value)}
-                className="w-full px-5 py-3 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[13px] focus:outline-none focus:border-accent cursor-pointer select-custom"
               >
-                <option value="all" className="bg-background-elevated text-foreground">All Raids</option>
+                <option value="all">All Raids</option>
                 {raidTiers.map(tier => (
-                  <option key={tier.id} value={tier.name} className="bg-background-elevated text-foreground">{tier.name}</option>
+                  <option key={tier.id} value={tier.name}>{tier.name}</option>
                 ))}
-              </select>
+              </Select>
             </div>
           </div>
         </div>
@@ -493,26 +498,30 @@ export default function AdminLootItems() {
                     <td className="px-4 py-3 text-muted-foreground">{item.item_slot}</td>
                     <td className="px-4 py-3 text-muted-foreground">{(item.raid_tier as any)?.name}</td>
                     <td className="px-4 py-3">
-                      <select
+                      <Select
+                        variant="rounded"
+                        size="sm"
                         value={item.classification}
                         onChange={(e) => updateClassification(item.id, e.target.value)}
-                        className="px-3 py-1.5 bg-background-elevated border border-border-strong rounded-md text-foreground text-[13px] focus:outline-none focus:border-accent cursor-pointer select-custom-sm"
+                        className="w-auto min-w-[110px]"
                       >
-                        <option value="Reserved" className="bg-background-elevated text-foreground">Reserved</option>
-                        <option value="Limited" className="bg-background-elevated text-foreground">Limited</option>
-                        <option value="Unlimited" className="bg-background-elevated text-foreground">Unlimited</option>
-                      </select>
+                        <option value="Reserved">Reserved</option>
+                        <option value="Limited">Limited</option>
+                        <option value="Unlimited">Unlimited</option>
+                      </Select>
                     </td>
                     <td className="px-4 py-3">
                       <div className="space-y-2">
-                        <select
+                        <Select
+                          variant="rounded"
+                          size="sm"
                           value=""
                           onChange={(e) => {
                             if (e.target.value) {
                               addSpec(item.id, e.target.value, 'primary')
                             }
                           }}
-                          className="w-full px-2.5 py-1 bg-background-elevated border border-border-strong rounded-md text-foreground text-[11px] focus:outline-none focus:border-accent cursor-pointer select-custom-xs"
+                          className="w-full text-[11px]"
                         >
                           <option value="">+ Add Primary Spec...</option>
                           {getClassSpecOptions().map(opt => {
@@ -523,7 +532,7 @@ export default function AdminLootItems() {
                               </option>
                             )
                           })}
-                        </select>
+                        </Select>
                         {itemSpecs[item.id]?.primary.size > 0 && (
                           <div className="flex flex-wrap gap-1">
                             {Array.from(itemSpecs[item.id].primary).map(specId => (
@@ -536,15 +545,17 @@ export default function AdminLootItems() {
                                   style={{ backgroundColor: getSpecColor(specId) }}
                                 />
                                 <span className="text-foreground">{getSpecName(specId)}</span>
-                                <button
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
                                   onClick={() => removeSpec(item.id, specId, 'primary')}
-                                  className="ml-0.5 hover:text-destructive"
+                                  className="ml-0.5 w-4 h-4 p-0 hover:text-destructive"
                                   title="Remove"
                                 >
                                   <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                                   </svg>
-                                </button>
+                                </Button>
                               </div>
                             ))}
                           </div>
@@ -553,14 +564,16 @@ export default function AdminLootItems() {
                     </td>
                     <td className="px-4 py-3">
                       <div className="space-y-2">
-                        <select
+                        <Select
+                          variant="rounded"
+                          size="sm"
                           value=""
                           onChange={(e) => {
                             if (e.target.value) {
                               addSpec(item.id, e.target.value, 'secondary')
                             }
                           }}
-                          className="w-full px-2.5 py-1 bg-background-elevated border border-border-strong rounded-md text-foreground text-[11px] focus:outline-none focus:border-accent cursor-pointer select-custom-xs"
+                          className="w-full text-[11px]"
                         >
                           <option value="">+ Add Secondary Spec...</option>
                           {getClassSpecOptions().map(opt => {
@@ -571,7 +584,7 @@ export default function AdminLootItems() {
                               </option>
                             )
                           })}
-                        </select>
+                        </Select>
                         {itemSpecs[item.id]?.secondary.size > 0 && (
                           <div className="flex flex-wrap gap-1">
                             {Array.from(itemSpecs[item.id].secondary).map(specId => (
@@ -584,15 +597,17 @@ export default function AdminLootItems() {
                                   style={{ backgroundColor: getSpecColor(specId) }}
                                 />
                                 <span className="text-foreground">{getSpecName(specId)}</span>
-                                <button
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
                                   onClick={() => removeSpec(item.id, specId, 'secondary')}
-                                  className="ml-0.5 hover:text-destructive"
+                                  className="ml-0.5 w-4 h-4 p-0 hover:text-destructive"
                                   title="Remove"
                                 >
                                   <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                                   </svg>
-                                </button>
+                                </Button>
                               </div>
                             ))}
                           </div>

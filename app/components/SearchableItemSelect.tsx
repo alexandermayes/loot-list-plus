@@ -8,6 +8,8 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
+import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
 import ItemLink from './ItemLink'
 import { getBossOrder, normalizeBossName } from '@/utils/bossOrder'
 import { refreshWowheadTooltips } from '@/lib/wowhead'
@@ -216,19 +218,21 @@ export default function SearchableItemSelect({
         <div className="flex items-center gap-1 flex-shrink-0">
           {/* Clear button (X) - only show when item is selected */}
           {selectedItem && (
-            <button
+            <Button
               type="button"
+              variant="ghost"
+              size="icon"
               onClick={(e) => {
                 e.stopPropagation()
                 handleClear()
               }}
-              className="p-1 hover:bg-muted rounded-full transition-colors"
+              className="w-6 h-6 min-h-0 rounded-full"
               aria-label="Clear selection"
             >
               <svg className="w-3.5 h-3.5 text-muted-foreground hover:text-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
-            </button>
+            </Button>
           )}
           <svg
             className="w-4 h-4 transition-transform"
@@ -256,13 +260,14 @@ export default function SearchableItemSelect({
         >
           {/* Search Input */}
           <div className="p-2 border-b border-border sticky top-0 bg-background-elevated">
-            <input
+            <Input
               ref={searchInputRef}
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search items..."
-              className="w-full px-3 py-2 bg-background-subtle border border-border rounded-md text-foreground text-[13px] focus:outline-none focus:border-accent"
+              variant="rounded"
+              size="sm"
             />
           </div>
 
@@ -286,8 +291,9 @@ export default function SearchableItemSelect({
                     const isDisabled = disabled.has(item.id) && currentValue !== item.id
                     const isOwned = ownedWowheadIds.has(item.wowhead_id)
                     return (
-                      <button
+                      <Button
                         key={item.id}
+                        variant="ghost"
                         onMouseDown={(e) => {
                           e.preventDefault()
                           e.stopPropagation()
@@ -296,7 +302,7 @@ export default function SearchableItemSelect({
                           }
                         }}
                         disabled={isDisabled}
-                        className={`w-full px-3 py-2 text-left hover:bg-muted flex items-center gap-2 min-w-0 ${
+                        className={`w-full px-3 py-2 h-auto text-left justify-start rounded-none flex items-center gap-2 min-w-0 ${
                           isDisabled ? 'opacity-50 cursor-not-allowed' : ''
                         } ${value === item.id ? 'bg-muted' : ''}`}
                       >
@@ -318,7 +324,7 @@ export default function SearchableItemSelect({
                             [{item.classification}]
                           </span>
                         )}
-                      </button>
+                      </Button>
                     )
                   })}
                 </div>

@@ -6,6 +6,7 @@ import { heroFadeIn, staggerContainer, scrollToSection } from '@/lib/animations'
 import { createClient } from '@/utils/supabase/client'
 import { ArrowDown01Icon } from '@hugeicons/core-free-icons'
 import { HugeiconsIcon } from '@hugeicons/react'
+import { Button } from '@/components/ui/button'
 
 export default function LandingHero() {
   const supabase = createClient()
@@ -76,18 +77,22 @@ export default function LandingHero() {
 
             {/* CTA Buttons */}
             <motion.div variants={heroFadeIn} className="flex flex-col sm:flex-row gap-4 justify-center">
-              <button
+              <Button
+                variant="primary"
+                size="lg"
                 onClick={handleDiscordLogin}
-                className="px-8 py-4 bg-primary hover:bg-primary/90 text-primary-foreground font-poppins font-semibold text-base rounded-[52px] transition-all duration-200 active:scale-[0.98] shadow-lg hover:shadow-xl"
+                className="font-poppins font-semibold shadow-lg hover:shadow-xl"
               >
                 Try for free
-              </button>
-              <button
+              </Button>
+              <Button
+                variant="secondary"
+                size="lg"
                 onClick={() => scrollToSection('features')}
-                className="px-8 py-4 bg-background-elevated/80 hover:bg-background-elevated text-foreground font-poppins font-medium text-base rounded-[52px] border border-border-strong transition-all duration-200 active:scale-[0.98] backdrop-blur-sm"
+                className="font-poppins font-medium bg-background-elevated/80 hover:bg-background-elevated backdrop-blur-sm"
               >
                 See Features
-              </button>
+              </Button>
             </motion.div>
 
             {/* Privacy note */}
@@ -105,15 +110,19 @@ export default function LandingHero() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 1.2, duration: 0.6 }}
       >
-        <motion.button
-          onClick={() => scrollToSection('features')}
-          className="flex flex-col items-center gap-2 text-foreground-muted hover:text-foreground transition-colors"
+        <motion.div
           animate={{ y: [0, 8, 0] }}
           transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
         >
-          <span className="text-xs font-medium uppercase tracking-wider">Scroll</span>
-          <HugeiconsIcon icon={ArrowDown01Icon} size={20} />
-        </motion.button>
+          <Button
+            variant="ghost"
+            onClick={() => scrollToSection('features')}
+            className="flex flex-col items-center gap-2 h-auto p-2 text-foreground-muted hover:text-foreground hover:bg-transparent"
+          >
+            <span className="text-xs font-medium uppercase tracking-wider">Scroll</span>
+            <HugeiconsIcon icon={ArrowDown01Icon} size={20} />
+          </Button>
+        </motion.div>
       </motion.div>
     </section>
   )
