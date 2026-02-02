@@ -9,6 +9,8 @@ import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { Text } from '@/components/ui/typography'
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
+import { DatePicker } from '@/components/ui/date-picker'
+import { Label } from '@/components/ui/label'
 import { FileSearchIcon } from '@hugeicons/core-free-icons'
 import { refreshWowheadTooltips } from '@/lib/wowhead'
 import type { LootHistoryEntry } from '@/app/api/loot-history/route'
@@ -250,25 +252,21 @@ export default function LootHistoryTab() {
           {/* Date Range */}
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className="block text-[13px] font-medium text-foreground mb-2">
-                From
-              </label>
-              <input
-                type="date"
+              <Label className="mb-2">From</Label>
+              <DatePicker
+                variant="rounded"
+                size="sm"
                 value={fromDate}
                 onChange={(e) => setFromDate(e.target.value)}
-                className="w-full px-3 py-2.5 bg-background-elevated border border-border-strong rounded-xl text-foreground text-[13px] focus:outline-none focus:border-accent"
               />
             </div>
             <div>
-              <label className="block text-[13px] font-medium text-foreground mb-2">
-                To
-              </label>
-              <input
-                type="date"
+              <Label className="mb-2">To</Label>
+              <DatePicker
+                variant="rounded"
+                size="sm"
                 value={toDate}
                 onChange={(e) => setToDate(e.target.value)}
-                className="w-full px-3 py-2.5 bg-background-elevated border border-border-strong rounded-xl text-foreground text-[13px] focus:outline-none focus:border-accent"
               />
             </div>
           </div>

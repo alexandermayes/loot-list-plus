@@ -16,6 +16,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { Heading, Text, LabelText } from "@/components/ui/typography";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { SegmentedControl } from "@/components/ui/segmented-control";
+import { DatePicker } from "@/components/ui/date-picker";
 import { useNotification } from "@/app/contexts/NotificationContext";
 import {
   Modal,
@@ -88,6 +89,7 @@ const navSections = [
       { id: "buttons", label: "Buttons" },
       { id: "form-inputs", label: "Form Inputs" },
       { id: "segmented-control", label: "Segmented Control" },
+      { id: "date-picker", label: "Date Picker" },
       { id: "cards", label: "Cards" },
       { id: "modals", label: "Modals" },
       { id: "badges", label: "Badges" },
@@ -870,6 +872,57 @@ export default function DesignSystemPage() {
                   </div>
                 </PreviewCard>
               </div>
+
+            </div>
+          </Section>
+
+          {/* Date Picker */}
+          <Section id="date-picker">
+            <SectionHeader
+              title="Date Picker"
+              description="Styled date input with calendar icon"
+            />
+
+            <div className="space-y-8">
+              {/* Variants */}
+              <div>
+                <SubsectionHeader title="Variants" />
+                <PreviewCard>
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Pill (Default)</Label>
+                      <DatePicker />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Rounded</Label>
+                      <DatePicker variant="rounded" />
+                    </div>
+                  </div>
+                </PreviewCard>
+              </div>
+
+              {/* Sizes */}
+              <div>
+                <SubsectionHeader title="Sizes" />
+                <PreviewCard>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                      <Label size="sm">Small</Label>
+                      <DatePicker size="sm" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Default</Label>
+                      <DatePicker />
+                    </div>
+                    <div className="space-y-2">
+                      <Label size="lg">Large</Label>
+                      <DatePicker size="lg" />
+                    </div>
+                  </div>
+                </PreviewCard>
+              </div>
+
+              <CodeBlock>{`import { DatePicker } from "@/components/ui/date-picker"`}</CodeBlock>
             </div>
           </Section>
 

@@ -5,9 +5,13 @@ import { useState, useEffect, useCallback } from 'react'
 import { useGuildContext } from '@/app/contexts/GuildContext'
 import { useNotification } from '@/app/contexts/NotificationContext'
 import { HugeiconsIcon } from '@hugeicons/react'
-import { Add01Icon, Calendar01Icon, ArrowRight01Icon, ArrowDown01Icon, ArrowUp01Icon, Settings01Icon } from '@hugeicons/core-free-icons'
+import { Add01Icon, ArrowRight01Icon, ArrowDown01Icon, ArrowUp01Icon, Settings01Icon, Globe02Icon, RepeatIcon, CalendarCheckIn01Icon } from '@hugeicons/core-free-icons'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
+import { Select } from '@/components/ui/select'
+import { Label } from '@/components/ui/label'
+import { SegmentedControl } from '@/components/ui/segmented-control'
+import { DatePicker } from '@/components/ui/date-picker'
 import { getExpansionVisuals } from '@/utils/expansionVisuals'
 
 interface GuildExpansion {
@@ -89,6 +93,8 @@ export default function ExpansionManager() {
   const [raidSchedules, setRaidSchedules] = useState<Record<string, RaidScheduleState>>({})
   const [originalSchedules, setOriginalSchedules] = useState<Record<string, RaidScheduleState>>({})
   const [timezones, setTimezones] = useState<Record<string, string>>({})
+  const [originalTimezones, setOriginalTimezones] = useState<Record<string, string>>({})
+  const [originalRaidStartDates, setOriginalRaidStartDates] = useState<Record<string, string>>({})
 
   const supabase = createClient()
   const { activeGuild, refreshExpansions } = useGuildContext()
@@ -133,9 +139,11 @@ export default function ExpansionManager() {
           tzs[exp.expansion_id] = exp.timezone || getBrowserTimezone()
         })
         setRaidStartDates(dates)
+        setOriginalRaidStartDates(JSON.parse(JSON.stringify(dates)))
         setRaidSchedules(schedules)
         setOriginalSchedules(JSON.parse(JSON.stringify(schedules)))
         setTimezones(tzs)
+        setOriginalTimezones(JSON.parse(JSON.stringify(tzs)))
       }
 
       // Load available expansions
@@ -223,39 +231,7 @@ export default function ExpansionManager() {
     }
   }
 
-  const handleUpdateRaidStartDate = async (expansionId: string) => {
-    if (!activeGuild || !raidStartDates[expansionId]) return
-
-    setUpdating(expansionId)
-
-    try {
-      const response = await fetch(`/api/guilds/${activeGuild.id}/expansions/${expansionId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ raidStartDate: raidStartDates[expansionId] })
-      })
-
-      const data = await response.json()
-
-      if (!response.ok) {
-        showNotification('error', data.error || 'Couldn\'t update raid start date. Try again.')
-        return
-      }
-
-      showNotification('success', 'Raid start date updated')
-      await loadData()
-      // Refresh GuildContext so other pages get the updated raid start date
-      await refreshExpansions()
-    } catch (error: unknown) {
-      console.error('Error updating raid start date:', error)
-      const message = error instanceof Error ? error.message : 'Couldn\'t update. Try again.'
-      showNotification('error', message)
-    } finally {
-      setUpdating(null)
-    }
-  }
-
-  const handleUpdateRaidSchedule = async (expansionId: string) => {
+  const handleSaveAllSettings = async (expansionId: string) => {
     if (!activeGuild) return
 
     const schedule = raidSchedules[expansionId]
@@ -268,6 +244,8 @@ export default function ExpansionManager() {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          raidStartDate: raidStartDates[expansionId] || null,
+          timezone: timezones[expansionId],
           raidDaysPerWeek: schedule.raidDaysPerWeek,
           firstRaidDay: schedule.raidDays[0],
           secondRaidDay: schedule.raidDays[1],
@@ -280,12 +258,20 @@ export default function ExpansionManager() {
       const data = await response.json()
 
       if (!response.ok) {
-        showNotification('error', data.error || 'Couldn\'t update raid schedule. Try again.')
+        showNotification('error', data.error || 'Couldn\'t save settings. Try again.')
         return
       }
 
-      showNotification('success', 'Raid schedule updated')
-      // Update original to match current
+      showNotification('success', 'Raid schedule saved')
+      // Update all originals to match current
+      setOriginalRaidStartDates(prev => ({
+        ...prev,
+        [expansionId]: raidStartDates[expansionId] || ''
+      }))
+      setOriginalTimezones(prev => ({
+        ...prev,
+        [expansionId]: timezones[expansionId]
+      }))
       setOriginalSchedules(prev => ({
         ...prev,
         [expansionId]: JSON.parse(JSON.stringify(schedule))
@@ -293,52 +279,30 @@ export default function ExpansionManager() {
       // Refresh GuildContext so other pages get the updated expansion data
       await refreshExpansions()
     } catch (error: unknown) {
-      console.error('Error updating raid schedule:', error)
-      const message = error instanceof Error ? error.message : 'Couldn\'t update. Try again.'
+      console.error('Error saving settings:', error)
+      const message = error instanceof Error ? error.message : 'Couldn\'t save. Try again.'
       showNotification('error', message)
     } finally {
       setUpdating(null)
     }
   }
 
-  const handleUpdateTimezone = async (expansionId: string, newTimezone: string) => {
-    if (!activeGuild) return
-
-    // Update local state immediately for responsiveness
+  const updateTimezone = (expansionId: string, newTimezone: string) => {
     setTimezones(prev => ({ ...prev, [expansionId]: newTimezone }))
-    setUpdating(expansionId)
-
-    try {
-      const response = await fetch(`/api/guilds/${activeGuild.id}/expansions/${expansionId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ timezone: newTimezone })
-      })
-
-      const data = await response.json()
-
-      if (!response.ok) {
-        showNotification('error', data.error || 'Couldn\'t update timezone. Try again.')
-        // Revert on error
-        await loadData()
-        return
-      }
-
-      showNotification('success', 'Timezone updated')
-      // Refresh GuildContext so other pages get the updated timezone
-      await refreshExpansions()
-    } catch (error: unknown) {
-      console.error('Error updating timezone:', error)
-      const message = error instanceof Error ? error.message : 'Couldn\'t update. Try again.'
-      showNotification('error', message)
-      // Revert on error
-      await loadData()
-    } finally {
-      setUpdating(null)
-    }
   }
 
-  const hasScheduleChanges = (expansionId: string): boolean => {
+  const hasAnyChanges = (expansionId: string): boolean => {
+    // Check raid start date
+    const currentDate = raidStartDates[expansionId] || ''
+    const originalDate = originalRaidStartDates[expansionId] || ''
+    if (currentDate !== originalDate) return true
+
+    // Check timezone
+    const currentTz = timezones[expansionId] || ''
+    const originalTz = originalTimezones[expansionId] || ''
+    if (currentTz !== originalTz) return true
+
+    // Check schedule
     const current = raidSchedules[expansionId]
     const original = originalSchedules[expansionId]
     if (!current || !original) return false
@@ -440,7 +404,6 @@ export default function ExpansionManager() {
               const visuals = getExpansionVisuals(exp.expansion_name)
               const isExpanded = expandedCards[exp.expansion_id] || false
               const schedule = raidSchedules[exp.expansion_id]
-              const hasChanges = hasScheduleChanges(exp.expansion_id)
 
               return (
                 <div
@@ -546,121 +509,106 @@ export default function ExpansionManager() {
 
                       {/* Expanded Content */}
                       {isExpanded && schedule && (
-                        <div className="mt-3 p-4 rounded-lg bg-background-elevated border border-border space-y-4">
-                          {/* Raid Start Date */}
-                          <div>
-                            <label className="block text-sm font-medium text-foreground mb-2">
-                              <HugeiconsIcon icon={Calendar01Icon} size={14} className="inline mr-2 text-muted-foreground" />
-                              Raid Start Date
-                            </label>
-                            <div className="flex items-center gap-3">
-                              <input
-                                type="date"
+                        <div className="mt-3 p-4 rounded-xl bg-background-elevated border border-border space-y-5">
+                          {/* Raid Start Date & Timezone - side by side */}
+                          <div className="grid grid-cols-2 gap-4">
+                            {/* Raid Start Date */}
+                            <div className="space-y-2">
+                              <Label>Raid Start Date</Label>
+                              <DatePicker
                                 value={raidStartDates[exp.expansion_id] || ''}
                                 onChange={(e) => setRaidStartDates({
                                   ...raidStartDates,
                                   [exp.expansion_id]: e.target.value
                                 })}
-                                className="flex-1 px-3 py-2 rounded-lg text-sm bg-background border border-border text-foreground focus:outline-none focus:ring-2 focus:ring-accent/50"
                               />
-                              <Button
-                                onClick={() => handleUpdateRaidStartDate(exp.expansion_id)}
-                                disabled={updating === exp.expansion_id || !raidStartDates[exp.expansion_id]}
-                                variant="secondary"
-                                size="sm"
-                              >
-                                Save
-                              </Button>
                             </div>
-                          </div>
 
-                          {/* Timezone */}
-                          <div>
-                            <label className="block text-sm font-medium text-foreground mb-2">
-                              Timezone
-                            </label>
-                            <select
-                              value={timezones[exp.expansion_id] || 'America/New_York'}
-                              onChange={(e) => handleUpdateTimezone(exp.expansion_id, e.target.value)}
-                              disabled={updating === exp.expansion_id}
-                              className="w-full px-3 py-2 rounded-lg text-sm bg-background border border-border text-foreground focus:outline-none focus:ring-2 focus:ring-accent/50"
-                            >
-                              {COMMON_TIMEZONES.map((tz) => (
-                                <option key={tz.value} value={tz.value}>
-                                  {tz.label}
-                                </option>
-                              ))}
-                              {/* Include current timezone if not in common list */}
-                              {timezones[exp.expansion_id] &&
-                               !COMMON_TIMEZONES.find(tz => tz.value === timezones[exp.expansion_id]) && (
-                                <option value={timezones[exp.expansion_id]}>
-                                  {timezones[exp.expansion_id]}
-                                </option>
-                              )}
-                            </select>
+                            {/* Timezone */}
+                            <div className="space-y-2">
+                              <Label className="flex items-center gap-2">
+                                <HugeiconsIcon icon={Globe02Icon} size={14} className="text-muted-foreground" />
+                                Timezone
+                              </Label>
+                              <Select
+                                value={timezones[exp.expansion_id] || 'America/New_York'}
+                                onChange={(e) => updateTimezone(exp.expansion_id, e.target.value)}
+                              >
+                                {COMMON_TIMEZONES.map((tz) => (
+                                  <option key={tz.value} value={tz.value}>
+                                    {tz.label}
+                                  </option>
+                                ))}
+                                {/* Include current timezone if not in common list */}
+                                {timezones[exp.expansion_id] &&
+                                 !COMMON_TIMEZONES.find(tz => tz.value === timezones[exp.expansion_id]) && (
+                                  <option value={timezones[exp.expansion_id]}>
+                                    {timezones[exp.expansion_id]}
+                                  </option>
+                                )}
+                              </Select>
+                            </div>
                           </div>
 
                           {/* Raid Days Per Week */}
-                          <div>
-                            <label className="block text-sm font-medium text-foreground mb-2">
+                          <div className="space-y-2">
+                            <Label className="flex items-center gap-2">
+                              <HugeiconsIcon icon={RepeatIcon} size={14} className="text-muted-foreground" />
                               Days Per Week
-                            </label>
-                            <div className="flex gap-2">
-                              {[1, 2, 3, 4, 5].map((num) => (
-                                <button
-                                  key={num}
-                                  onClick={() => updateRaidDaysPerWeek(exp.expansion_id, num)}
-                                  className={`w-10 h-10 rounded-lg text-sm font-medium transition ${
-                                    schedule.raidDaysPerWeek === num
-                                      ? 'bg-primary text-primary-foreground'
-                                      : 'bg-background border border-border text-foreground hover:border-border-strong'
-                                  }`}
-                                >
-                                  {num}
-                                </button>
-                              ))}
-                            </div>
+                            </Label>
+                            <SegmentedControl
+                              options={[
+                                { value: '1', label: '1' },
+                                { value: '2', label: '2' },
+                                { value: '3', label: '3' },
+                                { value: '4', label: '4' },
+                                { value: '5', label: '5' }
+                              ]}
+                              value={String(schedule.raidDaysPerWeek)}
+                              onChange={(val) => updateRaidDaysPerWeek(exp.expansion_id, parseInt(val))}
+                              size="sm"
+                            />
                           </div>
 
                           {/* Raid Day Selectors */}
-                          <div>
-                            <label className="block text-sm font-medium text-foreground mb-2">
+                          <div className="space-y-2">
+                            <Label className="flex items-center gap-2">
+                              <HugeiconsIcon icon={CalendarCheckIn01Icon} size={14} className="text-muted-foreground" />
                               Raid Days
-                            </label>
+                            </Label>
                             <div className="grid grid-cols-2 gap-3">
                               {Array.from({ length: schedule.raidDaysPerWeek }).map((_, idx) => (
-                                <div key={idx}>
-                                  <label className="block text-xs text-muted-foreground mb-1">
+                                <div key={idx} className="space-y-1">
+                                  <label className="block text-xs text-muted-foreground">
                                     {idx === 0 ? 'First' : idx === 1 ? 'Second' : idx === 2 ? 'Third' : idx === 3 ? 'Fourth' : 'Fifth'} Day
                                   </label>
-                                  <select
-                                    value={schedule.raidDays[idx] ?? ''}
+                                  <Select
+                                    value={String(schedule.raidDays[idx] ?? '')}
                                     onChange={(e) => updateRaidDay(exp.expansion_id, idx, parseInt(e.target.value))}
-                                    className="w-full px-3 py-2 rounded-lg text-sm bg-background border border-border text-foreground focus:outline-none focus:ring-2 focus:ring-accent/50"
                                   >
                                     {DAY_NAMES.map((day, dayIdx) => (
                                       <option key={dayIdx} value={dayIdx}>
                                         {day}
                                       </option>
                                     ))}
-                                  </select>
+                                  </Select>
                                 </div>
                               ))}
                             </div>
                           </div>
 
-                          {/* Save Schedule Button */}
+                          {/* Save Button */}
                           <div className="pt-2 border-t border-border">
                             <Button
-                              onClick={() => handleUpdateRaidSchedule(exp.expansion_id)}
-                              disabled={updating === exp.expansion_id || !hasChanges}
+                              onClick={() => handleSaveAllSettings(exp.expansion_id)}
+                              disabled={updating === exp.expansion_id || !hasAnyChanges(exp.expansion_id)}
                               variant="primary"
                               size="sm"
                               loading={updating === exp.expansion_id}
                             >
-                              Save Schedule
+                              Save
                             </Button>
-                            {hasChanges && (
+                            {hasAnyChanges(exp.expansion_id) && (
                               <span className="ml-3 text-xs text-muted-foreground">
                                 Unsaved changes
                               </span>
