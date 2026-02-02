@@ -438,7 +438,7 @@ export default function MasterLootPage() {
             <div className="flex gap-2">
               {/* All Tiers Button */}
               <Button
-                variant={activeTier === 'all' ? 'accent' : 'secondary'}
+                variant={activeTier === 'all' ? 'accent-subtle' : 'secondary'}
                 size="sm"
                 onClick={() => setActiveTier('all')}
                 className="rounded-[40px] whitespace-nowrap"
@@ -448,7 +448,7 @@ export default function MasterLootPage() {
               {raidTiers.map((tier) => (
                 <Button
                   key={tier.id}
-                  variant={activeTier !== 'all' && activeTier?.id === tier.id ? 'accent' : 'secondary'}
+                  variant={activeTier !== 'all' && activeTier?.id === tier.id ? 'accent-subtle' : 'secondary'}
                   size="sm"
                   onClick={() => setActiveTier(tier)}
                   className="rounded-[40px] whitespace-nowrap"
@@ -479,7 +479,7 @@ export default function MasterLootPage() {
               {(['all', 'pending', 'approved', 'rejected'] as const).map((status) => (
                 <Button
                   key={status}
-                  variant={filter === status ? 'accent' : 'secondary'}
+                  variant={filter === status ? 'accent-subtle' : 'secondary'}
                   size="sm"
                   onClick={() => setFilter(status)}
                   className="rounded-[40px] whitespace-nowrap"

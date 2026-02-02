@@ -700,6 +700,7 @@ export default function DesignSystemPage() {
                         <Button variant="outline">Outline</Button>
                         <Button variant="ghost">Ghost</Button>
                         <Button variant="accent">Accent</Button>
+                        <Button variant="accent-subtle">Accent Subtle</Button>
                         <Button variant="link">Link</Button>
                       </div>
                     </div>
@@ -930,30 +931,38 @@ export default function DesignSystemPage() {
           <Section id="segmented-control">
             <SectionHeader
               title="Segmented Control"
-              description="Toggle between options with primary button styling"
+              description="Toggle between options with accent or primary styling"
             />
 
             <div className="space-y-6">
               <div>
-                <SubsectionHeader title="Basic Usage" />
+                <SubsectionHeader title="Variants" description="Accent (default, on-brand) vs Primary (neutral)" />
                 <PreviewCard>
-                  <div className="flex flex-wrap gap-6 items-center">
-                    <SegmentedControl
-                      options={[
-                        { value: 'items', label: 'Items' },
-                        { value: 'priorities', label: 'Priorities' }
-                      ]}
-                      value="items"
-                      onChange={() => {}}
-                    />
-                    <SegmentedControl
-                      options={[
-                        { value: 'tracking', label: 'Tracking' },
-                        { value: 'history', label: 'Loot History' }
-                      ]}
-                      value="history"
-                      onChange={() => {}}
-                    />
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Text size="xs" color="muted">Accent (Default)</Text>
+                      <SegmentedControl
+                        options={[
+                          { value: 'items', label: 'Items' },
+                          { value: 'priorities', label: 'Priorities' }
+                        ]}
+                        value="items"
+                        onChange={() => {}}
+                        variant="accent"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Text size="xs" color="muted">Primary</Text>
+                      <SegmentedControl
+                        options={[
+                          { value: 'tracking', label: 'Tracking' },
+                          { value: 'history', label: 'Loot History' }
+                        ]}
+                        value="tracking"
+                        onChange={() => {}}
+                        variant="primary"
+                      />
+                    </div>
                   </div>
                 </PreviewCard>
               </div>
@@ -1005,6 +1014,14 @@ export default function DesignSystemPage() {
                   />
                 </PreviewCard>
               </div>
+
+              <CodeBlock>{`<SegmentedControl
+  options={[{ value: 'a', label: 'A' }, { value: 'b', label: 'B' }]}
+  value="a"
+  onChange={(v) => setValue(v)}
+  variant="accent" // or "primary"
+  size="default" // or "sm"
+/>`}</CodeBlock>
             </div>
           </Section>
 

@@ -559,7 +559,7 @@ export default function AttendancePage() {
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-[12px] text-foreground-muted">Sort:</span>
             <Button
-              variant={sortBy === 'score' ? 'accent' : 'ghost'}
+              variant={sortBy === 'score' ? 'accent-subtle' : 'ghost'}
               size="sm"
               onClick={() => toggleSort('score')}
               className="text-[12px]"
@@ -568,7 +568,7 @@ export default function AttendancePage() {
               {sortBy === 'score' && (sortDirection === 'desc' ? <HugeiconsIcon icon={ArrowDown01Icon} size={12} /> : <HugeiconsIcon icon={ArrowUp01Icon} size={12} />)}
             </Button>
             <Button
-              variant={sortBy === 'name' ? 'accent' : 'ghost'}
+              variant={sortBy === 'name' ? 'accent-subtle' : 'ghost'}
               size="sm"
               onClick={() => toggleSort('name')}
               className="text-[12px]"

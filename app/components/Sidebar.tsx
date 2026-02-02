@@ -641,7 +641,7 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange, 
                 !activeGuild
                   ? 'opacity-20 cursor-not-allowed text-foreground border-transparent'
                   : isActive(item.view)
-                  ? 'bg-accent/20 border-accent/20 text-accent'
+                  ? 'bg-accent/20 border-accent/20 text-accent hover:bg-accent/30'
                   : 'text-foreground hover:bg-muted border-transparent'
               }`}
             >
@@ -675,7 +675,7 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange, 
                 onClick={() => handleNavClick(item.view)}
                 className={`w-full px-3.5 py-[10px] h-auto flex items-center gap-3 rounded-[40px] transition font-poppins font-medium text-[13px] text-left border-[0.5px] justify-start ${
                   isActive(item.view)
-                    ? 'bg-accent/20 border-accent/20 text-accent'
+                    ? 'bg-accent/20 border-accent/20 text-accent hover:bg-accent/30'
                     : 'text-foreground hover:bg-muted border-transparent'
                 }`}
               >
@@ -711,7 +711,7 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange, 
             }}
             className={`w-full px-3.5 py-2 h-auto flex items-center gap-3 rounded-[40px] transition font-poppins font-medium text-[13px] border-[0.5px] justify-start ${
               pathname?.startsWith('/help')
-                ? 'bg-accent/20 border-accent/20 text-accent'
+                ? 'bg-accent/20 border-accent/20 text-accent hover:bg-accent/30'
                 : 'text-foreground hover:bg-muted border-transparent'
             }`}
           >

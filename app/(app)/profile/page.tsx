@@ -276,13 +276,9 @@ export default function ProfilePage() {
         {tabs.map((tab) => (
           <Button
             key={tab.id}
-            variant={activeTab === tab.id ? 'accent' : 'secondary'}
+            variant={activeTab === tab.id ? 'accent-subtle' : 'secondary'}
             onClick={() => setActiveTab(tab.id)}
-            className={`px-5 py-2.5 rounded-[40px] whitespace-nowrap text-[13px] font-medium ${
-              activeTab === tab.id
-                ? 'bg-accent/20 border-accent/20 text-accent'
-                : ''
-            }`}
+            className="px-5 py-2.5 rounded-[40px] whitespace-nowrap text-[13px] font-medium"
           >
             <HugeiconsIcon icon={tab.icon} size={16} />
             {tab.label}

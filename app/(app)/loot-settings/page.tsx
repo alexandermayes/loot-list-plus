@@ -1637,7 +1637,7 @@ export default function AdminLootItems() {
                       pageNumbers.push(
                         <Button
                           key={1}
-                          variant={currentPage === 1 ? 'accent' : 'outline'}
+                          variant={currentPage === 1 ? 'accent-subtle' : 'outline'}
                           size="sm"
                           onClick={() => setCurrentPage(1)}
                           className="min-w-[36px]"
@@ -1661,7 +1661,7 @@ export default function AdminLootItems() {
                         pageNumbers.push(
                           <Button
                             key={i}
-                            variant={currentPage === i ? 'accent' : 'outline'}
+                            variant={currentPage === i ? 'accent-subtle' : 'outline'}
                             size="sm"
                             onClick={() => setCurrentPage(i)}
                             className="min-w-[36px]"
@@ -1683,7 +1683,7 @@ export default function AdminLootItems() {
                         pageNumbers.push(
                           <Button
                             key={totalPages}
-                            variant={currentPage === totalPages ? 'accent' : 'outline'}
+                            variant={currentPage === totalPages ? 'accent-subtle' : 'outline'}
                             size="sm"
                             onClick={() => setCurrentPage(totalPages)}
                             className="min-w-[36px]"

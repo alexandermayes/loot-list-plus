@@ -273,7 +273,7 @@ export default function MasterLootPage() {
             {(['all', 'pending', 'approved', 'rejected'] as const).map((status) => (
               <Button
                 key={status}
-                variant={filter === status ? 'accent' : 'secondary'}
+                variant={filter === status ? 'accent-subtle' : 'secondary'}
                 size="sm"
                 onClick={() => setFilter(status)}
                 className="rounded-full whitespace-nowrap"

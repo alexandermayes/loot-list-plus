@@ -509,13 +509,9 @@ export default function LootList() {
                 return (
                   <Button
                     key={expansion.expansion_id}
-                    variant={isViewing || isCurrent ? 'accent' : 'secondary'}
+                    variant={isViewing || isCurrent ? 'accent-subtle' : 'secondary'}
                     onClick={() => setViewingExpansion(expansion.is_current ? null : expansion.expansion_id)}
-                    className={`px-5 py-2.5 rounded-[40px] whitespace-nowrap text-[13px] font-medium ${
-                      isViewing || isCurrent
-                        ? 'bg-accent/20 border-accent/20 text-accent'
-                        : ''
-                    }`}
+                    className="px-5 py-2.5 rounded-[40px] whitespace-nowrap text-[13px] font-medium"
                   >
                     <div className="flex items-center gap-2">
                       <span>{expansion.expansion_name}</span>
@@ -587,13 +583,9 @@ export default function LootList() {
                     return (
                       <Button
                         key={phase}
-                        variant={selectedPhase === phase ? 'accent' : 'secondary'}
+                        variant={selectedPhase === phase ? 'accent-subtle' : 'secondary'}
                         onClick={() => setSelectedPhase(phase)}
-                        className={`px-4 py-2.5 rounded-[40px] whitespace-nowrap text-[13px] font-medium ${
-                          selectedPhase === phase
-                            ? 'bg-accent/20 border-accent/20 text-accent'
-                            : ''
-                        }`}
+                        className="px-4 py-2.5 rounded-[40px] whitespace-nowrap text-[13px] font-medium"
                       >
                         <div className="flex items-center gap-2">
                           <span className={`px-1.5 py-0.5 rounded text-[11px] font-bold ${

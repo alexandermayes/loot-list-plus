@@ -13,6 +13,12 @@ interface SegmentedControlProps<T extends string> {
   onChange: (value: T) => void
   className?: string
   size?: 'sm' | 'default'
+  /**
+   * Visual variant for the active state
+   * - accent: Orange highlight (default, on-brand)
+   * - primary: White/light highlight (neutral)
+   */
+  variant?: 'accent' | 'primary'
 }
 
 export function SegmentedControl<T extends string>({
@@ -20,12 +26,13 @@ export function SegmentedControl<T extends string>({
   value,
   onChange,
   className,
-  size = 'default'
+  size = 'default',
+  variant = 'accent'
 }: SegmentedControlProps<T>) {
   return (
     <div
       className={cn(
-        'inline-flex rounded-xl bg-background-elevated border border-border p-1',
+        'inline-flex rounded-[40px] bg-background-elevated border border-border p-0.5',
         className
       )}
     >
@@ -35,9 +42,11 @@ export function SegmentedControl<T extends string>({
           onClick={() => onChange(option.value)}
           className={cn(
             'font-medium transition-all',
-            size === 'sm' ? 'px-3 py-1.5 text-[12px] rounded-lg' : 'px-4 py-2 text-[13px] rounded-lg',
+            size === 'sm' ? 'px-3 py-1.5 text-[12px] rounded-[40px]' : 'px-5 py-2 text-[13px] rounded-[40px]',
             value === option.value
-              ? 'bg-primary text-primary-foreground'
+              ? variant === 'accent'
+                ? 'bg-accent/20 text-accent hover:bg-accent/30'
+                : 'bg-primary text-primary-foreground hover:bg-primary/90'
               : 'text-muted-foreground hover:text-foreground'
           )}
         >

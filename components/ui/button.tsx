@@ -21,7 +21,8 @@ import { Spinner } from "@/components/ui/loading-spinner"
  * - outline: Bordered with transparent background
  * - ghost: No background, subtle hover state
  * - link: Text-only with underline on hover
- * - accent: Orange accent button for special actions
+ * - accent: Orange accent button for special actions (solid)
+ * - accent-subtle: Orange accent with subtle background (for selected/active states)
  *
  * Sizes:
  * - sm: Small (36px height, 40px radius)
@@ -82,9 +83,13 @@ const buttonVariants = cva(
         link:
           "text-accent underline-offset-4 hover:underline p-0 h-auto disabled:opacity-50",
 
-        // Accent: Orange accent button
+        // Accent: Orange accent button (solid)
         accent:
           "bg-accent text-accent-foreground hover:bg-accent/90 disabled:opacity-50",
+
+        // Accent Subtle: Orange accent with subtle background (for selected states)
+        "accent-subtle":
+          "bg-accent/20 text-accent border border-accent/20 hover:bg-accent/30 disabled:opacity-50",
 
         // Default (legacy support - maps to primary)
         default:

@@ -521,14 +521,10 @@ export default function PriorityListTab() {
                   return (
                     <Button
                       key={phase}
-                      variant={selectedPhase === phase ? 'accent' : 'secondary'}
+                      variant={selectedPhase === phase ? 'accent-subtle' : 'secondary'}
                       size="sm"
                       onClick={() => setSelectedPhase(phase)}
-                      className={`rounded-[40px] whitespace-nowrap ${
-                        selectedPhase === phase
-                          ? 'bg-accent/20 border-accent/20 text-accent'
-                          : ''
-                      }`}
+                      className="rounded-[40px] whitespace-nowrap"
                     >
                       <span className="flex items-center gap-2">
                         Phase {phase}

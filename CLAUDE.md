@@ -43,7 +43,7 @@ Font sizes: xs=10px, sm=12px, base=13px, md=14px, lg=16px, xl=18px, 2xl=20px, 3x
 ### Components (from `@/components/ui/`)
 
 **Always use these instead of raw HTML:**
-- `Button` - variants: primary, secondary, destructive, outline, ghost, accent, link
+- `Button` - variants: primary, secondary, destructive, outline, ghost, accent, accent-subtle (for selected states), link
 - `Input`, `Textarea`, `Select` - variants: pill (default), rounded
 - `Card`, `CardHeader`, `CardTitle`, `CardDescription`, `CardContent`, `CardFooter`
 - `Modal`, `ModalHeader`, `ModalTitle`, `ModalDescription`, `ModalBody`, `ModalFooter`

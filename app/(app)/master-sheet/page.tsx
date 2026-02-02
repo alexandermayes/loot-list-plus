@@ -19,6 +19,7 @@ import { TierTabsSkeleton, MasterSheetContentSkeleton } from '@/components/ui/sk
 import { EmptyState } from '@/components/ui/empty-state'
 import { Button } from '@/components/ui/button'
 import { Select } from '@/components/ui/select'
+import { SegmentedControl } from '@/components/ui/segmented-control'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { ScrollIcon, ArrowUpRight01Icon, InformationCircleIcon } from '@hugeicons/core-free-icons'
 import { HorizontalScroll } from '@/components/ui/horizontal-scroll'
@@ -1108,7 +1109,7 @@ export default function MasterSheet() {
                           isSelected
                             ? allDisabled
                               ? 'bg-muted/50 border-border text-muted-foreground'
-                              : 'bg-accent/20 border-accent/20 text-accent'
+                              : 'bg-accent/20 border-accent/20 text-accent hover:bg-accent/30'
                             : allDisabled
                               ? 'bg-background-elevated/50 border-border/50 text-muted-foreground hover:bg-muted/50 opacity-60'
                               : 'bg-background-elevated border-border text-foreground hover:bg-muted'
@@ -1150,30 +1151,15 @@ export default function MasterSheet() {
                     </Select>
                   </div>
                   {/* Desktop: Toggle buttons */}
-                  <div className="hidden sm:flex flex-shrink-0 bg-background-elevated border border-border rounded-[40px] p-0.5">
-                    <Button
-                      variant="ghost"
-                      onClick={() => setViewMode('rankings')}
-                      className={`px-5 py-2 rounded-[40px] text-[13px] font-medium transition-all ${
-                        viewMode === 'rankings'
-                          ? 'bg-accent/20 text-accent'
-                          : 'text-muted-foreground hover:text-foreground'
-                      }`}
-                    >
-                      Rankings
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      onClick={() => setViewMode('aggregate')}
-                      className={`px-5 py-2 rounded-[40px] text-[13px] font-medium transition-all ${
-                        viewMode === 'aggregate'
-                          ? 'bg-accent/20 text-accent'
-                          : 'text-muted-foreground hover:text-foreground'
-                      }`}
-                    >
-                      Summary
-                    </Button>
-                  </div>
+                  <SegmentedControl
+                    options={[
+                      { value: 'rankings', label: 'Rankings' },
+                      { value: 'aggregate', label: 'Summary' }
+                    ]}
+                    value={viewMode}
+                    onChange={setViewMode}
+                    className="hidden sm:inline-flex flex-shrink-0"
+                  />
                 </>
               )}
             </div>

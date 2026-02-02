@@ -250,7 +250,7 @@ export default function CreateCharacterPage() {
               <div className="flex gap-3">
                 <Button
                   type="button"
-                  variant={isMain ? 'accent' : 'secondary'}
+                  variant={isMain ? 'accent-subtle' : 'secondary'}
                   onClick={() => setIsMain(true)}
                   className="flex-1"
                 >
@@ -258,7 +258,7 @@ export default function CreateCharacterPage() {
                 </Button>
                 <Button
                   type="button"
-                  variant={!isMain ? 'accent' : 'secondary'}
+                  variant={!isMain ? 'accent-subtle' : 'secondary'}
                   onClick={() => setIsMain(false)}
                   className="flex-1"
                 >
