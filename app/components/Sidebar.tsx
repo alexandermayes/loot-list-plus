@@ -287,9 +287,9 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange, 
   ]
 
   const adminItems = isOfficer ? [
-    { name: 'Loot Submissions', view: 'loot-submissions', icon: '/icons/master-loot.svg' },
-    { name: 'Loot Management', view: 'loot-settings', icon: '/icons/loot-lists.svg' },
     { name: 'Raid Tracking', view: 'raid-tracking', icon: '/icons/raid-tracking.svg' },
+    { name: 'Loot Submissions', view: 'loot-submissions', icon: '/icons/master-loot.svg' },
+    { name: 'Loot Management', view: 'loot-settings', icon: '/icons/guild-settings.svg' },
   ] : []
 
   const isActive = (view: string) => {
