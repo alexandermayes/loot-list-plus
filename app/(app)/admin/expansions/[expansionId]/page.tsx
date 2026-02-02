@@ -276,11 +276,11 @@ export default function ExpansionDetailPage({ params }: { params: Promise<{ expa
     return (
       <div className="p-8">
         <button
-          onClick={() => router.push('/admin/expansions')}
+          onClick={() => router.push('/admin/guild-settings')}
           className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition mb-6"
         >
           <HugeiconsIcon icon={ArrowLeft01Icon} size={16} />
-          Back to Expansions
+          Back
         </button>
         <p className="text-foreground-muted">Expansion not found</p>
       </div>
@@ -296,10 +296,10 @@ export default function ExpansionDetailPage({ params }: { params: Promise<{ expa
       {/* Back Button */}
       <Button
         variant="secondary"
-        onClick={() => router.push('/admin/expansions')}
+        onClick={() => router.push('/admin/guild-settings')}
       >
         <HugeiconsIcon icon={ArrowLeft01Icon} size={16} />
-        Back to Expansions
+        Back
       </Button>
 
       {/* Expansion Header */}
