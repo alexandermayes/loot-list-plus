@@ -6,7 +6,7 @@ import { useGuildContext } from '@/app/contexts/GuildContext'
 import { useNotification } from '@/app/contexts/NotificationContext'
 import { useGuildMembers, invalidateGuildMembers } from '@/app/hooks/use-api'
 import { HugeiconsIcon } from '@hugeicons/react'
-import { UserBlock01Icon, Shield01Icon, UserIcon, CrownIcon, StarIcon } from '@hugeicons/core-free-icons'
+import { UserBlock01Icon, Shield01Icon, UserIcon, CrownIcon, StarIcon, Time01Icon, CheckmarkSquare01Icon } from '@hugeicons/core-free-icons'
 import { Select } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
 import { useConfirm } from '@/components/ui/confirm-modal'
@@ -38,6 +38,8 @@ interface Member {
   role: string
   joined_at: string
   joined_via: string
+  membership_status: 'trial' | 'full'
+  trial_started_at: string | null
   characters: Character[]
   mainCharacter: Character | null
   discordName: string
@@ -66,6 +68,8 @@ export default function MemberManager() {
       role: m.role,
       joined_at: m.joined_at,
       joined_via: m.joined_via,
+      membership_status: m.membership_status || 'full',
+      trial_started_at: m.trial_started_at || null,
       characters: m.characters,
       mainCharacter: m.mainCharacter,
       discordName: m.discordName
@@ -270,6 +274,59 @@ export default function MemberManager() {
     })
   }
 
+  const handleToggleTrialStatus = (userId: string, memberName: string, currentStatus: 'trial' | 'full') => {
+    const newStatus = currentStatus === 'trial' ? 'full' : 'trial'
+    const actionText = newStatus === 'trial' ? 'set as trial' : 'promote to full member'
+
+    confirm({
+      title: newStatus === 'trial' ? 'Set as Trial' : 'Promote Member',
+      description: `${newStatus === 'trial' ? 'Set' : 'Promote'} ${memberName} ${newStatus === 'trial' ? 'to trial status' : 'to full member'}? This affects their loot priority score.`,
+      confirmLabel: newStatus === 'trial' ? 'Set as Trial' : 'Promote',
+      variant: newStatus === 'trial' ? 'warning' : 'default',
+      onConfirm: async () => {
+        try {
+          const member = members.find(m => m.user_id === userId)
+          if (!member) throw new Error('Member not found')
+
+          const characterIds = member.characters.map(c => c.id)
+
+          const response = await fetch('/api/guild-members/trial-status', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              guild_id: activeGuild!.id,
+              target_user_id: userId,
+              character_ids: characterIds,
+              new_status: newStatus
+            })
+          })
+
+          if (!response.ok) {
+            const error = await response.json()
+            throw new Error(error.error || 'Failed to update trial status')
+          }
+
+          showNotification('success', `${memberName} ${actionText}`)
+          await refreshMembers()
+        } catch (error: any) {
+          showNotification('error', error.message || 'Couldn\'t update trial status. Try again.')
+        }
+      }
+    })
+  }
+
+  const getTrialDuration = (trialStartedAt: string | null) => {
+    if (!trialStartedAt) return null
+    const start = new Date(trialStartedAt)
+    const now = new Date()
+    const days = Math.floor((now.getTime() - start.getTime()) / (1000 * 60 * 60 * 24))
+    if (days === 0) return 'Today'
+    if (days === 1) return '1 day'
+    if (days < 7) return `${days} days`
+    const weeks = Math.floor(days / 7)
+    return weeks === 1 ? '1 week' : `${weeks} weeks`
+  }
+
   const getJoinedViaText = (joinedVia: string) => {
     switch (joinedVia) {
       case 'invite_code':
@@ -332,6 +389,15 @@ export default function MemberManager() {
                             Owner
                           </span>
                         )}
+                        {member.membership_status === 'trial' && (
+                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-yellow-500/20 text-yellow-400">
+                            <HugeiconsIcon icon={Time01Icon} size={10} />
+                            Trial
+                            {member.trial_started_at && (
+                              <span className="text-yellow-400/70">• {getTrialDuration(member.trial_started_at)}</span>
+                            )}
+                          </span>
+                        )}
                         {mainChar?.spec && mainChar?.class && (
                           <span className="text-muted-foreground text-[12px]">
                             {mainChar.spec.name} {mainChar.class.name}
@@ -377,6 +443,17 @@ export default function MemberManager() {
                         {member.role}
                       </span>
                     )}
+                    {canModify && (
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => handleToggleTrialStatus(member.user_id, displayName, member.membership_status)}
+                        className={`h-9 w-9 p-0 ${member.membership_status === 'trial' ? 'text-success hover:text-success' : 'text-yellow-400 hover:text-yellow-400'}`}
+                        title={member.membership_status === 'trial' ? 'Promote to full member' : 'Set as trial'}
+                      >
+                        <HugeiconsIcon icon={member.membership_status === 'trial' ? CheckmarkSquare01Icon : Time01Icon} size={16} />
+                      </Button>
+                    )}
                     {canModify ? (
                       <Button
                         variant="secondary"
@@ -387,7 +464,7 @@ export default function MemberManager() {
                         <HugeiconsIcon icon={UserBlock01Icon} size={16} />
                       </Button>
                     ) : (
-                      <div className="w-9" /> // Spacer to maintain alignment
+                      <div className="w-18" /> // Spacer to maintain alignment
                     )}
                   </div>
                 </div>
@@ -399,10 +476,10 @@ export default function MemberManager() {
 
       <div className="pt-3 border-t border-border">
         <p className="text-[12px] text-muted-foreground">
-          Total Members: {members.length} (Officers: {members.filter(m => {
+          Total Members: {members.length} • Officers: {members.filter(m => {
             const roleInfo = roles.find(r => r.name === m.role)
             return (roleInfo?.position || 0) >= 50
-          }).length})
+          }).length} • Trials: {members.filter(m => m.membership_status === 'trial').length}
         </p>
       </div>
 

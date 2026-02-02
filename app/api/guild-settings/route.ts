@@ -121,7 +121,14 @@ export async function GET(request: Request) {
             // Donation Settings
             donation_bonuses_enabled: false,
             donation_cap_enabled: false,
-            donation_bonus_type: 'rolling'
+            donation_bonus_type: 'rolling',
+
+            // Trial System
+            trial_penalty_enabled: false,
+            trial_penalty_value: -2.0,
+            trial_auto_promote_enabled: false,
+            trial_auto_promote_weeks: 4,
+            new_members_start_as_trial: false
           }
         },
         {

@@ -57,6 +57,8 @@ export async function GET(request: NextRequest) {
         role,
         joined_at,
         joined_via,
+        membership_status,
+        trial_started_at,
         character:characters (
           id,
           user_id,
@@ -102,6 +104,8 @@ export async function GET(request: NextRequest) {
       role: string
       joined_at: string
       joined_via: string
+      membership_status: string
+      trial_started_at: string | null
     }>()
 
     for (const membership of memberships || []) {
@@ -125,12 +129,19 @@ export async function GET(request: NextRequest) {
         if ((rolePositionMap.get(membership.role) || 0) > (rolePositionMap.get(existing.role) || 0)) {
           existing.role = membership.role
         }
+        // If any character is on trial, mark user as trial
+        if (membership.membership_status === 'trial') {
+          existing.membership_status = 'trial'
+          existing.trial_started_at = membership.trial_started_at
+        }
       } else {
         userCharacterMap.set(userId, {
           characters: [charData],
           role: membership.role,
           joined_at: membership.joined_at,
-          joined_via: membership.joined_via
+          joined_via: membership.joined_via,
+          membership_status: membership.membership_status || 'full',
+          trial_started_at: membership.trial_started_at || null
         })
       }
     }
@@ -177,6 +188,8 @@ export async function GET(request: NextRequest) {
         role: data.role,
         joined_at: data.joined_at,
         joined_via: data.joined_via,
+        membership_status: data.membership_status,
+        trial_started_at: data.trial_started_at,
         characters: data.characters,
         mainCharacter: mainChar,
         discordName: displayNameMap.get(userId) || 'Unknown User'

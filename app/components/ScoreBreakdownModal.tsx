@@ -14,7 +14,8 @@ import {
   UserIcon,
   SparklesIcon,
   Award01Icon,
-  ShuffleIcon
+  ShuffleIcon,
+  Time01Icon
 } from '@hugeicons/core-free-icons'
 
 interface GuildSettings {
@@ -29,6 +30,9 @@ interface GuildSettings {
   priority_bonus_role?: number
   priority_bonus_class_spec?: number
   priority_bonus_character?: number
+  // Trial system
+  trial_penalty_enabled?: boolean
+  trial_penalty_value?: number
 }
 
 interface ScoreBreakdownModalProps {
@@ -50,6 +54,8 @@ export default function ScoreBreakdownModal({ open, onClose, guildSettings }: Sc
   const priorityRole = guildSettings?.priority_bonus_role ?? 5
   const priorityClassSpec = guildSettings?.priority_bonus_class_spec ?? 3
   const priorityCharacter = guildSettings?.priority_bonus_character ?? 2
+  const trialPenaltyEnabled = guildSettings?.trial_penalty_enabled ?? false
+  const trialPenaltyValue = guildSettings?.trial_penalty_value ?? -2
 
   return (
     <Modal open={open} onClose={onClose} size="lg">
@@ -61,7 +67,7 @@ export default function ScoreBreakdownModal({ open, onClose, guildSettings }: Sc
         {/* Formula Overview */}
         <div className="bg-accent/10 border border-accent/30 rounded-lg p-4">
           <p className="text-foreground font-medium text-center text-[14px]">
-            Score = Item Rank + Attendance + Role Modifier + Bad Luck + Priority
+            Score = Item Rank + Attendance + Role Modifier + Bad Luck + Priority{trialPenaltyEnabled ? ' + Trial Penalty' : ''}
           </p>
         </div>
 
@@ -186,6 +192,25 @@ export default function ScoreBreakdownModal({ open, onClose, guildSettings }: Sc
               </p>
             </div>
           </div>
+
+          {/* Trial Penalty */}
+          {trialPenaltyEnabled && (
+            <div className="bg-background-subtle border border-border rounded-lg p-4">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-8 h-8 rounded-full bg-yellow-500/20 flex items-center justify-center">
+                  <HugeiconsIcon icon={Time01Icon} size={18} className="text-yellow-500" />
+                </div>
+                <div>
+                  <h3 className="text-foreground font-medium text-[14px]">Trial penalty</h3>
+                  <p className="text-muted-foreground text-[12px]">{trialPenaltyValue} points</p>
+                </div>
+              </div>
+              <p className="text-foreground-secondary text-[13px]">
+                New members on trial status receive a {trialPenaltyValue} point penalty until promoted to full member.
+                Trial members are shown with <span className="text-yellow-400">(T)</span> in rankings.
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Tiebreaker */}

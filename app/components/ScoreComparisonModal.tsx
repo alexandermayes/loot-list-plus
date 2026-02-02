@@ -17,6 +17,7 @@ import {
   SparklesIcon,
   Award01Icon,
   InformationCircleIcon,
+  Time01Icon,
 } from '@hugeicons/core-free-icons'
 
 interface PlayerRanking {
@@ -29,6 +30,8 @@ interface PlayerRanking {
   role_modifier: number
   priority_bonus: number
   bad_luck_bonus: number
+  trial_penalty: number
+  is_trial: boolean
   character_id: string
 }
 
@@ -81,6 +84,7 @@ function getTip(userRanking: PlayerRanking, winnerRanking: PlayerRanking): strin
     { name: 'attendance', diff: winnerRanking.attendance_score - userRanking.attendance_score },
     { name: 'role modifier', diff: winnerRanking.role_modifier - userRanking.role_modifier },
     { name: 'priority bonus', diff: winnerRanking.priority_bonus - userRanking.priority_bonus },
+    { name: 'trial penalty', diff: winnerRanking.trial_penalty - userRanking.trial_penalty },
   ]
 
   const biggestGap = gaps.reduce((max, gap) => gap.diff > max.diff ? gap : max, gaps[0])
@@ -108,6 +112,11 @@ function getTip(userRanking: PlayerRanking, winnerRanking: PlayerRanking): strin
   // Role modifier (guild rank)
   if (biggestGap.name === 'role modifier' && biggestGap.diff > 0) {
     return "Guild rank contributed to their score. This reflects their role and responsibilities in the guild."
+  }
+
+  // Trial penalty
+  if (biggestGap.name === 'trial penalty' && userRanking.is_trial) {
+    return "Your trial status applies a penalty to your score. Once promoted to full member, this penalty will be removed."
   }
 
   // Generic fallback
@@ -206,6 +215,15 @@ export default function ScoreComparisonModal({
               userValue={userRanking.priority_bonus}
               winnerValue={winnerRanking.priority_bonus}
             />
+            {(userRanking.trial_penalty !== 0 || winnerRanking.trial_penalty !== 0) && (
+              <ScoreRow
+                label="Trial Penalty"
+                icon={Time01Icon}
+                iconColor="bg-yellow-500/20 text-yellow-500"
+                userValue={userRanking.trial_penalty}
+                winnerValue={winnerRanking.trial_penalty}
+              />
+            )}
           </div>
         </div>
 

@@ -19,6 +19,12 @@ interface GuildSettings {
   see_item_bonus_value: number
   pass_item_bonus: boolean
   pass_item_bonus_value: number
+  // Trial system settings
+  trial_penalty_enabled: boolean
+  trial_penalty_value: number
+  trial_auto_promote_enabled: boolean
+  trial_auto_promote_weeks: number
+  new_members_start_as_trial: boolean
 }
 
 interface AttendanceRecord {
@@ -53,7 +59,13 @@ const DEFAULT_SETTINGS: Partial<GuildSettings> = {
   see_item_bonus: true,
   see_item_bonus_value: 1,
   pass_item_bonus: false,
-  pass_item_bonus_value: 0
+  pass_item_bonus_value: 0,
+  // Trial system defaults
+  trial_penalty_enabled: false,
+  trial_penalty_value: -2,
+  trial_auto_promote_enabled: false,
+  trial_auto_promote_weeks: 4,
+  new_members_start_as_trial: false
 }
 
 /**
@@ -130,9 +142,31 @@ export function calculateLootScore(
   attendanceScore: number,
   rankModifier: number,
   badLuckBonus: number = 0,
-  priorityBonus: number = 0
+  priorityBonus: number = 0,
+  trialPenalty: number = 0
 ): number {
-  return itemRank + attendanceScore + rankModifier + badLuckBonus + priorityBonus
+  return itemRank + attendanceScore + rankModifier + badLuckBonus + priorityBonus + trialPenalty
+}
+
+/**
+ * Get trial penalty based on membership status and guild settings
+ * @param membershipStatus - The character's membership status ('trial' or 'full')
+ * @param settings - Guild settings containing trial penalty configuration
+ * @returns The trial penalty (negative number) or 0 if not applicable
+ */
+export function getTrialPenalty(
+  membershipStatus: string,
+  settings: Partial<GuildSettings> = {}
+): number {
+  const config = { ...DEFAULT_SETTINGS, ...settings } as GuildSettings
+
+  // If trial penalty is disabled or member is not on trial, return 0
+  if (!config.trial_penalty_enabled || membershipStatus !== 'trial') {
+    return 0
+  }
+
+  // Return the penalty value (should be negative)
+  return config.trial_penalty_value
 }
 
 /**

@@ -5,7 +5,7 @@ import { createClient } from '@/utils/supabase/client'
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import ItemLink from '@/app/components/ItemLink'
-import { calculateAttendanceScore, getRankModifier, calculateLootScore, calculatePriorityBonus, type ItemPriority } from '@/utils/calculations'
+import { calculateAttendanceScore, getRankModifier, calculateLootScore, calculatePriorityBonus, getTrialPenalty, type ItemPriority } from '@/utils/calculations'
 import { getSpecRoles } from '@/utils/spec-role-mapping'
 import { getBossOrder, normalizeBossName } from '@/utils/bossOrder'
 import { getBossImage } from '@/utils/bossImages'
@@ -45,6 +45,8 @@ interface PlayerRanking {
   role_modifier: number
   priority_bonus: number
   bad_luck_bonus: number
+  trial_penalty: number
+  is_trial: boolean
   character_id: string
 }
 
@@ -383,7 +385,7 @@ export default function MasterSheet() {
             spec_id,
             class:wow_classes(name, color_hex),
             spec:class_specs(id, name),
-            character_guild_memberships!inner(role)
+            character_guild_memberships!inner(role, membership_status)
           `)
           .in('id', characterIds)
           .eq('character_guild_memberships.guild_id', activeGuild!.id)
@@ -478,7 +480,13 @@ export default function MasterSheet() {
             )
 
             const badLuckBonus = 0 // TODO: implement bad luck tracking
-            const lootScore = calculateLootScore(r.rank, attendance, roleModifier, badLuckBonus, priorityBonus)
+
+            // Get membership status and calculate trial penalty
+            const membershipStatus = (character as any).character_guild_memberships?.[0]?.membership_status || 'full'
+            const trialPenalty = getTrialPenalty(membershipStatus, guildSettings)
+            const isTrial = membershipStatus === 'trial'
+
+            const lootScore = calculateLootScore(r.rank, attendance, roleModifier, badLuckBonus, priorityBonus, trialPenalty)
 
             rankings.push({
               player_name: character.name || 'Unknown',
@@ -490,6 +498,8 @@ export default function MasterSheet() {
               role_modifier: roleModifier,
               priority_bonus: priorityBonus,
               bad_luck_bonus: badLuckBonus,
+              trial_penalty: trialPenalty,
+              is_trial: isTrial,
               character_id: character.id,
             })
           }
@@ -830,7 +840,7 @@ export default function MasterSheet() {
         spec_id,
         class:wow_classes(name, color_hex),
         spec:class_specs(id, name),
-        character_guild_memberships!inner(role)
+        character_guild_memberships!inner(role, membership_status)
       `)
       .in('id', characterIds)
       .eq('character_guild_memberships.guild_id', activeGuild.id)
@@ -919,7 +929,13 @@ export default function MasterSheet() {
         )
 
         const badLuckBonus = 0 // TODO: implement bad luck tracking
-        const lootScore = calculateLootScore(r.rank, attendance, roleModifier, badLuckBonus, priorityBonus)
+
+        // Calculate trial penalty
+        const membershipStatus = (character as any).character_guild_memberships?.[0]?.membership_status || 'full'
+        const trialPenalty = getTrialPenalty(membershipStatus, guildSettings)
+        const isTrial = membershipStatus === 'trial'
+
+        const lootScore = calculateLootScore(r.rank, attendance, roleModifier, badLuckBonus, priorityBonus, trialPenalty)
 
         rankings.push({
           player_name: character.name || 'Unknown',
@@ -931,6 +947,8 @@ export default function MasterSheet() {
           role_modifier: roleModifier,
           priority_bonus: priorityBonus,
           bad_luck_bonus: badLuckBonus,
+          trial_penalty: trialPenalty,
+          is_trial: isTrial,
           character_id: character.id,
         })
       }
@@ -1380,6 +1398,9 @@ export default function MasterSheet() {
                                           style={{ color: ranking.class_color }}
                                         >
                                           {ranking.player_name}
+                                          {ranking.is_trial && (
+                                            <span className="text-yellow-400 text-[10px] ml-0.5" title="Trial member">(T)</span>
+                                          )}
                                         </span>
                                         <span className="text-[11px] text-foreground-muted">
                                           {Math.round(ranking.loot_score)}
@@ -1417,7 +1438,7 @@ export default function MasterSheet() {
         <div className="bg-background-elevated border border-border rounded-xl p-4">
           <div className="flex items-center justify-between">
             <p className="text-foreground-muted text-[12px]">
-              Scores = item rank + attendance + role modifiers + priority bonuses. Ties go to roll.
+              Scores = item rank + attendance + role modifiers + priority bonuses + trial penalty. Ties go to roll. <span className="text-yellow-400">(T)</span> = Trial member.
             </p>
             {Object.keys(itemPriorities).length > 0 && (
               <p className="text-foreground-muted text-[12px]">

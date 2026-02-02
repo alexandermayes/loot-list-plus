@@ -180,7 +180,14 @@ export default function AdminLootItems() {
     // Donation Settings
     donation_bonuses_enabled: false,
     donation_cap_enabled: false,
-    donation_bonus_type: 'rolling' as 'permanent' | 'rolling' | 'hard-reset'
+    donation_bonus_type: 'rolling' as 'permanent' | 'rolling' | 'hard-reset',
+
+    // Trial System Settings
+    trial_penalty_enabled: false,
+    trial_penalty_value: -2.0,
+    trial_auto_promote_enabled: false,
+    trial_auto_promote_weeks: 4,
+    new_members_start_as_trial: false
   })
 
   const [guildRoles, setGuildRoles] = useState<{ name: string; position: number }[]>([
@@ -401,7 +408,14 @@ export default function AdminLootItems() {
         donation_bonuses_enabled: settings.donation_bonuses_enabled,
         donation_cap_enabled: settings.donation_cap_enabled,
         donation_bonus_type: settings.donation_bonus_type,
-        number_of_ranks: settings.number_of_ranks
+        number_of_ranks: settings.number_of_ranks,
+
+        // Trial System Settings
+        trial_penalty_enabled: settings.trial_penalty_enabled,
+        trial_penalty_value: settings.trial_penalty_value,
+        trial_auto_promote_enabled: settings.trial_auto_promote_enabled,
+        trial_auto_promote_weeks: settings.trial_auto_promote_weeks,
+        new_members_start_as_trial: settings.new_members_start_as_trial
       }
 
       console.log('Filtered settings to save:', safeSettings)
@@ -2189,6 +2203,81 @@ export default function AdminLootItems() {
                         </select>
                       </div>
                     </div>
+                    </div>
+
+                    {/* Trial System */}
+                    <div className="space-y-4">
+                      <div>
+                        <h4 className="text-[16px] font-semibold text-foreground pb-2">Trial System</h4>
+                        <p className="text-muted-foreground text-[13px] mt-1">Apply a score penalty to new members on trial status until they are promoted to full member.</p>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-[13px] font-medium text-foreground mb-2">Enable Trial Penalty</label>
+                          <select
+                            value={settings.trial_penalty_enabled ? 'yes' : 'no'}
+                            onChange={(e) => setSettings({ ...settings, trial_penalty_enabled: e.target.value === 'yes' })}
+                            className="w-full pl-4 pr-12 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[13px] focus:outline-none focus:border-accent transition-colors select-custom-sm"
+                          >
+                            <option value="no">No</option>
+                            <option value="yes">Yes</option>
+                          </select>
+                        </div>
+
+                        <div>
+                          <label className="block text-[13px] font-medium text-foreground mb-2">Trial Penalty Value</label>
+                          <input
+                            type="number"
+                            step="0.5"
+                            value={settings.trial_penalty_value}
+                            onChange={(e) => setSettings({ ...settings, trial_penalty_value: Number(e.target.value) })}
+                            disabled={!settings.trial_penalty_enabled}
+                            className="w-full px-4 py-2.5 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[13px] focus:outline-none focus:border-accent transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-background"
+                          />
+                          <p className="text-muted-foreground text-[11px] mt-1">Negative value reduces trial member scores</p>
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-[13px] font-medium text-foreground mb-2">New Members Start as Trial</label>
+                        <select
+                          value={settings.new_members_start_as_trial ? 'yes' : 'no'}
+                          onChange={(e) => setSettings({ ...settings, new_members_start_as_trial: e.target.value === 'yes' })}
+                          className="w-full pl-4 pr-12 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[13px] focus:outline-none focus:border-accent transition-colors select-custom-sm"
+                        >
+                          <option value="no">No</option>
+                          <option value="yes">Yes</option>
+                        </select>
+                        <p className="text-muted-foreground text-[11px] mt-1">When enabled, new members joining the guild will automatically be set to trial status</p>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-[13px] font-medium text-foreground mb-2">Auto-Promote Trials</label>
+                          <select
+                            value={settings.trial_auto_promote_enabled ? 'yes' : 'no'}
+                            onChange={(e) => setSettings({ ...settings, trial_auto_promote_enabled: e.target.value === 'yes' })}
+                            className="w-full pl-4 pr-12 py-2 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[13px] focus:outline-none focus:border-accent transition-colors select-custom-sm"
+                          >
+                            <option value="no">No</option>
+                            <option value="yes">Yes</option>
+                          </select>
+                        </div>
+
+                        <div>
+                          <label className="block text-[13px] font-medium text-foreground mb-2">Weeks Until Promotion</label>
+                          <input
+                            type="number"
+                            min="1"
+                            max="52"
+                            value={settings.trial_auto_promote_weeks}
+                            onChange={(e) => setSettings({ ...settings, trial_auto_promote_weeks: Number(e.target.value) })}
+                            disabled={!settings.trial_auto_promote_enabled}
+                            className="w-full px-4 py-2.5 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[13px] focus:outline-none focus:border-accent transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-background"
+                          />
+                        </div>
+                      </div>
                   </div>
                 </div>
               )}
