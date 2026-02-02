@@ -8,6 +8,7 @@ import { useNotification } from '@/app/contexts/NotificationContext'
 import InviteCodeManager from './components/InviteCodeManager'
 import MemberManager from './components/MemberManager'
 import RoleManager from './components/RoleManager'
+import ExpansionManager from './components/ExpansionManager'
 import RealmSelector from '@/app/components/RealmSelector'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { GuildSettingsContentSkeleton } from '@/components/ui/skeletons'
@@ -447,6 +448,9 @@ export default function GuildSettingsPage() {
             )}
           </div>
         </div>
+
+        {/* Expansions */}
+        <ExpansionManager />
 
         {/* Danger Zone - Only visible to guild creator */}
         {isGuildCreator && (

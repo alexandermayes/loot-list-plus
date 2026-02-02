@@ -12,7 +12,7 @@ import { Modal, ModalHeader, ModalBody } from '@/components/ui/modal'
 import { Button } from '@/components/ui/button'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { HugeiconsIcon } from '@hugeicons/react'
-import { Cancel01Icon } from '@hugeicons/core-free-icons'
+import { Cancel01Icon, Settings01Icon } from '@hugeicons/core-free-icons'
 
 // Lazy load modal to reduce initial bundle size
 const CreateGuildModal = dynamic(() => import('./CreateGuildModal').then(mod => ({ default: mod.CreateGuildModal })), {
@@ -268,12 +268,9 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange, 
         'loot-list': '/loot-list',
         'attendance': '/attendance',
         'guild-settings': '/admin/guild-settings',
-        'expansions': '/admin/expansions',
         'loot-submissions': '/loot-submissions',
         'loot-settings': '/loot-settings',
         'raid-tracking': '/admin/raid-tracking',
-        'prio-list': '/admin/prio-list',
-        'audit-log': '/admin/audit-log',
       }
       router.push(routeMap[view] || '/overview')
     }
@@ -290,13 +287,9 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange, 
   ]
 
   const adminItems = isOfficer ? [
-    { name: 'Guild Settings', view: 'guild-settings', icon: '/icons/guild-settings.svg' },
-    { name: 'Manage Expansions', view: 'expansions', icon: '/icons/raid-tracking.svg' },
     { name: 'Loot Submissions', view: 'loot-submissions', icon: '/icons/master-loot.svg' },
-    { name: 'Master Loot', view: 'loot-settings', icon: '/icons/loot-lists.svg' },
-    { name: 'Priority List', view: 'prio-list', icon: '/icons/master-sheet.svg' },
+    { name: 'Loot Management', view: 'loot-settings', icon: '/icons/loot-lists.svg' },
     { name: 'Raid Tracking', view: 'raid-tracking', icon: '/icons/raid-tracking.svg' },
-    { name: 'Audit Log', view: 'audit-log', icon: '/icons/master-sheet.svg' },
   ] : []
 
   const isActive = (view: string) => {
@@ -310,12 +303,9 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange, 
       'loot-list': '/loot-list',
       'attendance': '/attendance',
       'guild-settings': '/admin/guild-settings',
-      'expansions': '/admin/expansions',
       'loot-submissions': '/loot-submissions',
       'loot-settings': '/loot-settings',
       'raid-tracking': '/admin/raid-tracking',
-      'prio-list': '/admin/prio-list',
-      'audit-log': '/admin/audit-log',
     }
     return pathname === routeMap[view]
   }
@@ -439,37 +429,48 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange, 
               </div>
             </button>
           ) : (
-            <button
-              onClick={() => setGuildDropdownOpen(!guildDropdownOpen)}
-              className="w-full bg-background-elevated border border-border rounded-[12px] px-[14px] py-2 flex items-center gap-3 hover:bg-muted transition"
-            >
-              {activeGuild.icon_url ? (
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setGuildDropdownOpen(!guildDropdownOpen)}
+                className="flex-1 min-w-0 bg-background-elevated border border-border rounded-[12px] px-[14px] py-2 flex items-center gap-3 hover:bg-muted transition"
+              >
+                {activeGuild.icon_url ? (
+                  <Image
+                    src={activeGuild.icon_url}
+                    alt="Guild icon"
+                    width={20}
+                    height={20}
+                    className="w-5 h-5 rounded-[4px] shrink-0 border border-border"
+                  />
+                ) : (
+                  <div className="w-5 h-5 bg-muted-foreground rounded-[4px] shrink-0 border border-border" />
+                )}
+                <div className="flex-1 text-left leading-[normal] min-w-0">
+                  <p className="font-poppins font-medium text-[13px] text-foreground w-full truncate">
+                    {activeGuild.name}
+                  </p>
+                  <p className="font-poppins font-normal text-[10px] text-muted-foreground w-full truncate">
+                    {activeGuild.realm ? `${activeGuild.realm} • ${activeGuild.faction}` : ''}
+                  </p>
+                </div>
                 <Image
-                  src={activeGuild.icon_url}
-                  alt="Guild icon"
+                  src="/icons/arrow-down.svg"
+                  alt="Toggle"
                   width={20}
                   height={20}
-                  className="w-5 h-5 rounded-[4px] shrink-0 border border-border"
+                  className={`icon-adaptive w-5 h-5 shrink-0 transition-transform ${guildDropdownOpen ? 'rotate-180' : ''}`}
                 />
-              ) : (
-                <div className="w-5 h-5 bg-muted-foreground rounded-[4px] shrink-0 border border-border" />
+              </button>
+              {isOfficer && (
+                <button
+                  onClick={() => handleNavClick('guild-settings')}
+                  className="shrink-0 w-11 flex items-center justify-center bg-background-elevated border border-border rounded-[12px] hover:bg-muted transition self-stretch"
+                  title="Guild Settings"
+                >
+                  <HugeiconsIcon icon={Settings01Icon} size={18} className="text-muted-foreground" />
+                </button>
               )}
-              <div className="flex-1 text-left leading-[normal] min-w-0">
-                <p className="font-poppins font-medium text-[13px] text-foreground w-full truncate">
-                  {activeGuild.name}
-                </p>
-                <p className="font-poppins font-normal text-[10px] text-muted-foreground w-full truncate">
-                  {activeGuild.realm ? `${activeGuild.realm} • ${activeGuild.faction}` : ''}
-                </p>
-              </div>
-              <Image
-                src="/icons/arrow-down.svg"
-                alt="Toggle"
-                width={20}
-                height={20}
-                className={`icon-adaptive w-5 h-5 shrink-0 transition-transform ${guildDropdownOpen ? 'rotate-180' : ''}`}
-              />
-            </button>
+            </div>
           )}
 
           {/* Guild Dropdown */}
@@ -483,41 +484,60 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange, 
               </div>
               {userGuilds.map((g) => {
                 const isSelected = g.guild.id === activeGuild?.id
+                const isGuildOfficer = g.member.role === 'Officer' || g.member.role === 'Guild Master'
                 return (
-                  <button
-                    key={g.guild.id}
-                    onClick={() => handleSwitchGuild(g.guild.id)}
-                    className="w-full px-[14px] py-2 flex items-center gap-3 hover:bg-muted transition text-left"
-                  >
-                    {g.guild.icon_url ? (
-                      <Image
-                        src={g.guild.icon_url}
-                        alt="Guild icon"
-                        width={20}
-                        height={20}
-                        className="w-5 h-5 rounded-[4px] shrink-0 border border-border"
-                      />
-                    ) : (
-                      <div className="w-5 h-5 bg-muted-foreground rounded-[4px] shrink-0 border border-border" />
+                  <div key={g.guild.id} className="flex items-center hover:bg-muted transition">
+                    <button
+                      onClick={() => handleSwitchGuild(g.guild.id)}
+                      className="flex-1 min-w-0 px-[14px] py-2 flex items-center gap-3 text-left"
+                    >
+                      {g.guild.icon_url ? (
+                        <Image
+                          src={g.guild.icon_url}
+                          alt="Guild icon"
+                          width={20}
+                          height={20}
+                          className="w-5 h-5 rounded-[4px] shrink-0 border border-border"
+                        />
+                      ) : (
+                        <div className="w-5 h-5 bg-muted-foreground rounded-[4px] shrink-0 border border-border" />
+                      )}
+                      <div className="flex-1 leading-[normal] min-w-0">
+                        <p className="font-poppins font-medium text-[13px] text-foreground truncate">
+                          {g.guild.name}
+                        </p>
+                        <p className="font-poppins font-normal text-[10px] text-muted-foreground truncate">
+                          {g.guild.realm ? `${g.guild.realm} • ${g.guild.faction}` : ''}
+                        </p>
+                      </div>
+                      {isSelected && (
+                        <Image
+                          src="/icons/tick.svg"
+                          alt="Selected"
+                          width={16}
+                          height={16}
+                          className="icon-adaptive w-4 h-4 shrink-0"
+                        />
+                      )}
+                    </button>
+                    {isGuildOfficer && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          // Switch to this guild first if not active, then navigate to settings
+                          if (g.guild.id !== activeGuild?.id) {
+                            handleSwitchGuild(g.guild.id)
+                          }
+                          setGuildDropdownOpen(false)
+                          handleNavClick('guild-settings')
+                        }}
+                        className="p-2 mr-2 rounded-lg hover:bg-background-elevated transition"
+                        title="Guild Settings"
+                      >
+                        <HugeiconsIcon icon={Settings01Icon} size={16} className="text-muted-foreground hover:text-foreground" />
+                      </button>
                     )}
-                    <div className="flex-1 leading-[normal] min-w-0">
-                      <p className="font-poppins font-medium text-[13px] text-foreground w-full truncate">
-                        {g.guild.name}
-                      </p>
-                      <p className="font-poppins font-normal text-[10px] text-muted-foreground w-full truncate">
-                        {g.guild.realm ? `${g.guild.realm} • ${g.guild.faction}` : ''}
-                      </p>
-                    </div>
-                    {isSelected && (
-                      <Image
-                        src="/icons/tick.svg"
-                        alt="Selected"
-                        width={20}
-                        height={20}
-                        className="icon-adaptive w-5 h-5 shrink-0"
-                      />
-                    )}
-                  </button>
+                  </div>
                 )
               })}
 
