@@ -6,7 +6,8 @@ import { createClient } from '@/utils/supabase/client'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { HugeiconsIcon } from '@hugeicons/react'
-import { ArrowDown01Icon, ArrowUp01Icon, Upload01Icon, Cancel01Icon, NextIcon } from '@hugeicons/core-free-icons'
+import { ArrowDown01Icon, ArrowUp01Icon, Upload01Icon, Cancel01Icon } from '@hugeicons/core-free-icons'
+import LootHistoryTab from './components/LootHistoryTab'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { Heading } from '@/components/ui/typography'
 import { useGuildContext } from '@/app/contexts/GuildContext'
@@ -22,6 +23,7 @@ import {
 } from '@/components/ui/modal'
 import { Button } from '@/components/ui/button'
 import { useConfirm } from '@/components/ui/confirm-modal'
+import { SegmentedControl } from '@/components/ui/segmented-control'
 
 interface Member {
   character_id: string
@@ -88,6 +90,7 @@ export default function RaidTrackingPage() {
   const [showLootSelectionModal, setShowLootSelectionModal] = useState<{ index: number, itemId: number, characterName: string } | null>(null)
   const [lootSearchQuery, setLootSearchQuery] = useState('')
   const [importing, setImporting] = useState(false)
+  const [activeTab, setActiveTab] = useState<'tracking' | 'history'>('tracking')
 
   // For legacy compatibility
   const [importData, setImportData] = useState('')
@@ -100,8 +103,8 @@ export default function RaidTrackingPage() {
   const { confirm, ConfirmDialog } = useConfirm()
 
   useEffect(() => {
-    document.title = 'LootList+ • Raid Tracking'
-  }, [])
+    document.title = activeTab === 'tracking' ? 'LootList+ • Raid Tracking' : 'LootList+ • Loot History'
+  }, [activeTab])
 
   // Populate form when opening edit modal
   useEffect(() => {
@@ -1482,16 +1485,32 @@ export default function RaidTrackingPage() {
   return (
     <div className="p-4 sm:p-6 lg:p-8 space-y-6 font-poppins">
       {/* Header */}
-      <div>
-        <Heading level={1}>Raid Tracking</Heading>
-        <p className="text-muted-foreground mt-1 text-base">
-          Manage attendance and signups for each raid day
-          {currentExpansion && (
-            <span className="text-accent ml-2">• {currentExpansion.expansion_name}</span>
-          )}
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+        <div>
+          <Heading level={1}>Raid Tracking</Heading>
+          <p className="text-muted-foreground mt-1 text-base">
+            {activeTab === 'tracking' ? 'Manage attendance and signups for each raid day' : 'View loot distribution history'}
+            {currentExpansion && (
+              <span className="text-accent ml-2">• {currentExpansion.expansion_name}</span>
+            )}
+          </p>
+        </div>
+
+        {/* Tabs */}
+        <SegmentedControl
+          options={[
+            { value: 'tracking', label: 'Tracking' },
+            { value: 'history', label: 'Loot History' }
+          ]}
+          value={activeTab}
+          onChange={setActiveTab}
+          className="self-start"
+        />
       </div>
 
+      {/* Tracking Tab Content */}
+      {activeTab === 'tracking' && (
+        <>
       {/* Legend */}
       {!raidStartDateInFuture && (
         <div className="flex items-center gap-3 sm:gap-4 text-[12px] sm:text-[13px] flex-wrap">
@@ -1799,6 +1818,13 @@ export default function RaidTrackingPage() {
           )
         })}
         </div>
+      )}
+        </>
+      )}
+
+      {/* Loot History Tab Content */}
+      {activeTab === 'history' && (
+        <LootHistoryTab />
       )}
 
       {/* Skip Day Modal */}

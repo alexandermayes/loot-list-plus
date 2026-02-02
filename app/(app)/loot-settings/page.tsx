@@ -17,6 +17,8 @@ import { specMapping } from '@/utils/spec-role-mapping'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { ArrowDown01Icon, ArrowUp01Icon } from '@hugeicons/core-free-icons'
 import { refreshWowheadTooltips } from '@/lib/wowhead'
+import PriorityListTab from './components/PriorityListTab'
+import { SegmentedControl } from '@/components/ui/segmented-control'
 
 interface LootItem {
   id: string
@@ -117,6 +119,7 @@ export default function AdminLootItems() {
   const [advancedExpanded, setAdvancedExpanded] = useState(false)
   const [initialSettings, setInitialSettings] = useState<typeof settings | null>(null)
   const [initialGuildRoles, setInitialGuildRoles] = useState<typeof guildRoles | null>(null)
+  const [viewMode, setViewMode] = useState<'items' | 'priorities'>('items')
 
   // Guild Settings State
   const getDefaultResetDate = () => {
@@ -199,8 +202,8 @@ export default function AdminLootItems() {
 
   // Set page title
   useEffect(() => {
-    document.title = 'LootList+ • Master Loot'
-  }, [])
+    document.title = viewMode === 'items' ? 'LootList+ • Loot Management' : 'LootList+ • Priority List'
+  }, [viewMode])
 
   // Lock body scroll when settings modal is open and capture initial values
   useEffect(() => {
@@ -1281,26 +1284,45 @@ export default function AdminLootItems() {
   return (
     <ExpansionGuard>
       <div className="p-4 sm:p-6 lg:p-8 space-y-6 font-poppins">
-        {/* Header with Settings Button */}
-        <div className="flex items-center justify-between">
+        {/* Header with Tabs and Settings Button */}
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
           <div>
-            <Heading level={1}>Master Loot</Heading>
-            <p className="text-muted-foreground mt-1 text-base">Manage loot items and configure classifications</p>
+            <Heading level={1}>Loot Management</Heading>
+            <p className="text-muted-foreground mt-1 text-base">
+              {viewMode === 'items' ? 'Manage loot items and configure classifications' : 'Set role, class, and individual raider priorities'}
+            </p>
           </div>
-          <button
-            onClick={() => setShowSettingsModal(true)}
-            className="flex items-center gap-2 px-6 py-3 bg-background-elevated hover:bg-muted border border-border rounded-[52px] text-foreground text-base font-medium transition whitespace-nowrap"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-            </svg>
-            Loot System Settings
-          </button>
+
+          <div className="flex items-center gap-3">
+            {/* Tabs */}
+            <SegmentedControl
+              options={[
+                { value: 'items', label: 'Items' },
+                { value: 'priorities', label: 'Priorities' }
+              ]}
+              value={viewMode}
+              onChange={setViewMode}
+            />
+
+            {/* Settings Button */}
+            <button
+              onClick={() => setShowSettingsModal(true)}
+              className="flex items-center gap-2 px-6 py-3 bg-background-elevated hover:bg-muted border border-border rounded-[52px] text-foreground text-base font-medium transition whitespace-nowrap"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              Loot System Settings
+            </button>
+          </div>
         </div>
 
-        {/* Filters */}
-        <div className="bg-background-elevated border border-border rounded-xl p-4">
+        {/* Items Tab Content */}
+        {viewMode === 'items' && (
+          <>
+            {/* Filters */}
+            <div className="bg-background-elevated border border-border rounded-xl p-4">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
             <div>
               <label className="block text-[12px] font-medium text-foreground-muted mb-2">Search items</label>
@@ -1691,6 +1713,11 @@ export default function AdminLootItems() {
             No items found matching your filters
           </div>
         )}
+          </>
+        )}
+
+        {/* Priorities Tab Content */}
+        {viewMode === 'priorities' && <PriorityListTab />}
       </div>
 
       {/* Loot System Settings Modal */}

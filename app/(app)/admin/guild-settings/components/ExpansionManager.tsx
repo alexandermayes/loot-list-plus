@@ -1,15 +1,13 @@
 'use client'
 
 import { createClient } from '@/utils/supabase/client'
-import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect, useCallback } from 'react'
 import { useGuildContext } from '@/app/contexts/GuildContext'
 import { useNotification } from '@/app/contexts/NotificationContext'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { Add01Icon, Calendar01Icon, ArrowRight01Icon, ArrowDown01Icon, ArrowUp01Icon, Settings01Icon } from '@hugeicons/core-free-icons'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
-import { Heading } from '@/components/ui/typography'
 import { getExpansionVisuals } from '@/utils/expansionVisuals'
 
 interface GuildExpansion {
@@ -55,7 +53,7 @@ interface AvailableExpansion {
   hasData: boolean
 }
 
-export default function ExpansionsManagementPage() {
+export default function ExpansionManager() {
   const [guildExpansions, setGuildExpansions] = useState<GuildExpansion[]>([])
   const [availableExpansions, setAvailableExpansions] = useState<AvailableExpansion[]>([])
   const [loading, setLoading] = useState(true)
@@ -67,27 +65,10 @@ export default function ExpansionsManagementPage() {
   const [originalSchedules, setOriginalSchedules] = useState<Record<string, RaidScheduleState>>({})
 
   const supabase = createClient()
-  const router = useRouter()
-  const { activeGuild, loading: guildLoading, isOfficer } = useGuildContext()
+  const { activeGuild } = useGuildContext()
   const { showNotification } = useNotification()
 
-  useEffect(() => {
-    document.title = 'LootList+ • Manage Expansions'
-  }, [])
-
-  useEffect(() => {
-    if (!guildLoading) {
-      if (!isOfficer) {
-        router.push('/overview')
-        return
-      }
-      if (activeGuild) {
-        loadData()
-      }
-    }
-  }, [guildLoading, activeGuild, isOfficer])
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     if (!activeGuild) return
 
     setLoading(true)
@@ -139,7 +120,13 @@ export default function ExpansionsManagementPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [activeGuild, supabase, showNotification])
+
+  useEffect(() => {
+    if (activeGuild) {
+      loadData()
+    }
+  }, [activeGuild, loadData])
 
   const handleAddExpansion = async (expansionName: string) => {
     if (!activeGuild) return
@@ -165,9 +152,10 @@ export default function ExpansionsManagementPage() {
 
       showNotification('success', data.message || 'Expansion added')
       await loadData()
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error adding expansion:', error)
-      showNotification('error', error.message || 'Couldn\'t add expansion. Try again.')
+      const message = error instanceof Error ? error.message : 'Couldn\'t add expansion. Try again.'
+      showNotification('error', message)
     } finally {
       setAdding(false)
     }
@@ -194,9 +182,10 @@ export default function ExpansionsManagementPage() {
 
       showNotification('success', data.message || 'Expansion updated')
       await loadData()
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error setting current expansion:', error)
-      showNotification('error', error.message || 'Couldn\'t update expansion. Try again.')
+      const message = error instanceof Error ? error.message : 'Couldn\'t update expansion. Try again.'
+      showNotification('error', message)
     } finally {
       setUpdating(null)
     }
@@ -223,9 +212,10 @@ export default function ExpansionsManagementPage() {
 
       showNotification('success', 'Raid start date updated')
       await loadData()
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error updating raid start date:', error)
-      showNotification('error', error.message || 'Couldn\'t update. Try again.')
+      const message = error instanceof Error ? error.message : 'Couldn\'t update. Try again.'
+      showNotification('error', message)
     } finally {
       setUpdating(null)
     }
@@ -266,9 +256,10 @@ export default function ExpansionsManagementPage() {
         ...prev,
         [expansionId]: JSON.parse(JSON.stringify(schedule))
       }))
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error updating raid schedule:', error)
-      showNotification('error', error.message || 'Couldn\'t update. Try again.')
+      const message = error instanceof Error ? error.message : 'Couldn\'t update. Try again.'
+      showNotification('error', message)
     } finally {
       setUpdating(null)
     }
@@ -352,28 +343,20 @@ export default function ExpansionsManagementPage() {
     )
   )
 
-  if (loading || guildLoading) {
+  if (loading) {
     return (
       <div className="p-8 flex items-center justify-center">
-        <p className="text-foreground-muted">Loading...</p>
+        <p className="text-muted-foreground">Loading expansions...</p>
       </div>
     )
   }
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 space-y-6">
-      {/* Header */}
-      <div>
-        <Heading level={1}>Manage Expansions</Heading>
-        <p className="text-muted-foreground mt-1 text-base">
-          Add and manage expansions for your guild. Each expansion maintains its own loot lists and raid data.
-        </p>
-      </div>
-
+    <div className="space-y-6">
       {/* Guild Expansions */}
       {guildExpansions.length > 0 && (
         <div>
-          <h2 className="text-[20px] font-semibold text-foreground mb-4">Your Expansions</h2>
+          <h3 className="text-[16px] font-semibold text-foreground mb-4">Your Expansions</h3>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {/* Sort so current expansion is first */}
             {[...guildExpansions].sort((a, b) => {
@@ -617,7 +600,7 @@ export default function ExpansionsManagementPage() {
       {/* Add New Expansion */}
       {addableExpansions.length > 0 && (
         <div>
-          <h2 className="text-[20px] font-semibold text-foreground mb-4">Add Expansion</h2>
+          <h3 className="text-[16px] font-semibold text-foreground mb-4">Add Expansion</h3>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {addableExpansions.map((exp) => {
               const visuals = getExpansionVisuals(exp.name)
@@ -692,7 +675,7 @@ export default function ExpansionsManagementPage() {
           </div>
           {adding && (
             <div className="mt-4 p-4 bg-background-elevated border border-border rounded-xl text-center">
-              <p className="text-foreground-muted">Adding expansion... This may take a moment.</p>
+              <p className="text-muted-foreground">Adding expansion... This may take a moment.</p>
             </div>
           )}
         </div>
@@ -700,7 +683,7 @@ export default function ExpansionsManagementPage() {
 
       {guildExpansions.length === 0 && addableExpansions.length === 0 && (
         <div className="p-12 bg-background-elevated border border-border rounded-xl text-center">
-          <p className="text-foreground-muted text-[16px]">No expansions available to add</p>
+          <p className="text-muted-foreground text-[16px]">No expansions available to add</p>
         </div>
       )}
     </div>

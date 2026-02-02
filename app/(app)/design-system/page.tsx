@@ -15,6 +15,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Heading, Text, LabelText } from "@/components/ui/typography";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { SegmentedControl } from "@/components/ui/segmented-control";
 import { useNotification } from "@/app/contexts/NotificationContext";
 import {
   Modal,
@@ -86,6 +87,7 @@ const navSections = [
     items: [
       { id: "buttons", label: "Buttons" },
       { id: "form-inputs", label: "Form Inputs" },
+      { id: "segmented-control", label: "Segmented Control" },
       { id: "cards", label: "Cards" },
       { id: "modals", label: "Modals" },
       { id: "badges", label: "Badges" },
@@ -866,6 +868,88 @@ export default function DesignSystemPage() {
                       <Textarea variant="rounded" placeholder="Enter message..." />
                     </div>
                   </div>
+                </PreviewCard>
+              </div>
+            </div>
+          </Section>
+
+          {/* Segmented Control */}
+          <Section id="segmented-control">
+            <SectionHeader
+              title="Segmented Control"
+              description="Toggle between options with primary button styling"
+            />
+
+            <div className="space-y-6">
+              <div>
+                <SubsectionHeader title="Basic Usage" />
+                <PreviewCard>
+                  <div className="flex flex-wrap gap-6 items-center">
+                    <SegmentedControl
+                      options={[
+                        { value: 'items', label: 'Items' },
+                        { value: 'priorities', label: 'Priorities' }
+                      ]}
+                      value="items"
+                      onChange={() => {}}
+                    />
+                    <SegmentedControl
+                      options={[
+                        { value: 'tracking', label: 'Tracking' },
+                        { value: 'history', label: 'Loot History' }
+                      ]}
+                      value="history"
+                      onChange={() => {}}
+                    />
+                  </div>
+                </PreviewCard>
+              </div>
+
+              <div>
+                <SubsectionHeader title="Sizes" />
+                <PreviewCard>
+                  <div className="flex flex-wrap gap-6 items-center">
+                    <div className="space-y-2">
+                      <Text size="xs" color="muted">Default</Text>
+                      <SegmentedControl
+                        options={[
+                          { value: 'a', label: 'Option A' },
+                          { value: 'b', label: 'Option B' }
+                        ]}
+                        value="a"
+                        onChange={() => {}}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Text size="xs" color="muted">Small</Text>
+                      <SegmentedControl
+                        options={[
+                          { value: 'a', label: 'Option A' },
+                          { value: 'b', label: 'Option B' }
+                        ]}
+                        value="a"
+                        onChange={() => {}}
+                        size="sm"
+                      />
+                    </div>
+                  </div>
+                </PreviewCard>
+              </div>
+
+              <div>
+                <SubsectionHeader title="Multiple Options" />
+                <PreviewCard>
+                  <SegmentedControl
+                    options={[
+                      { value: '1', label: '1' },
+                      { value: '2', label: '2' },
+                      { value: '3', label: '3' },
+                      { value: '4', label: '4' }
+                    ]}
+                    value="2"
+                    onChange={() => {}}
+                    size="sm"
+                  />
                 </PreviewCard>
               </div>
             </div>
