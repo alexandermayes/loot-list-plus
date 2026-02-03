@@ -1367,7 +1367,7 @@ export default function AdminLootItems() {
                 onChange={(e) => setFilterTier(e.target.value)}
                 className="bg-background-elevated"
               >
-                <option value="all" className="bg-background-elevated text-foreground">All Raids</option>
+                <option value="all" className="bg-background-elevated text-foreground">All raids</option>
                 {raidTiers.map(tier => (
                   <option key={tier.id} value={tier.name} className="bg-background-elevated text-foreground">{tier.name}</option>
                 ))}
@@ -1382,7 +1382,7 @@ export default function AdminLootItems() {
                 onChange={(e) => setFilterSlot(e.target.value)}
                 className="bg-background-elevated"
               >
-                <option value="all" className="bg-background-elevated text-foreground">All Slots</option>
+                <option value="all" className="bg-background-elevated text-foreground">All slots</option>
                 {uniqueSlots.map(slot => (
                   <option key={slot} value={slot} className="bg-background-elevated text-foreground">{slot}</option>
                 ))}
@@ -1397,7 +1397,7 @@ export default function AdminLootItems() {
                 onChange={(e) => setFilterClassification(e.target.value)}
                 className="bg-background-elevated"
               >
-                <option value="all" className="bg-background-elevated text-foreground">All Classifications</option>
+                <option value="all" className="bg-background-elevated text-foreground">All classifications</option>
                 <option value="Reserved" className="bg-background-elevated" style={{ color: '#E57373' }}>Reserved</option>
                 <option value="Limited" className="bg-background-elevated" style={{ color: '#64B5F6' }}>Limited</option>
                 <option value="Unlimited" className="bg-background-elevated" style={{ color: '#B0B0B0' }}>Unlimited</option>
@@ -1413,7 +1413,7 @@ export default function AdminLootItems() {
                 className="bg-background-elevated"
               >
                 <option value="" className="bg-background-elevated text-foreground">Default</option>
-                <option value="name" className="bg-background-elevated text-foreground">Item Name</option>
+                <option value="name" className="bg-background-elevated text-foreground">Item name</option>
                 <option value="boss" className="bg-background-elevated text-foreground">Boss</option>
                 <option value="slot" className="bg-background-elevated text-foreground">Slot</option>
                 <option value="raid" className="bg-background-elevated text-foreground">Raid</option>
@@ -1760,13 +1760,13 @@ export default function AdminLootItems() {
                 <div>
                   <h4 className="text-[18px] font-semibold text-foreground flex items-center gap-2">
                     <HugeiconsIcon icon={Settings01Icon} size={20} className="text-muted-foreground" />
-                    General Settings
+                    General settings
                   </h4>
-                  <p className="text-muted-foreground text-[13px]">Configure how loot priority scores are displayed.</p>
+                  <p className="text-muted-foreground text-[13px]">Configure how Loot Scores are displayed.</p>
                 </div>
 
                 <div>
-                  <Label className="block mb-2">Score decimal places</Label>
+                  <Label className="block mb-2">Score precision</Label>
                   <Select
                     variant="pill"
                     value={settings.decimal_places}
@@ -1777,7 +1777,7 @@ export default function AdminLootItems() {
                     <option value="1">One decimal (e.g., 42.5)</option>
                     <option value="2">Two decimals (e.g., 42.50)</option>
                   </Select>
-                  <p className="text-muted-foreground text-[12px] mt-1">How precisely to display loot priority scores</p>
+                  <p className="text-muted-foreground text-[12px] mt-1">How many decimal places to show</p>
                 </div>
               </div>
 
@@ -1793,16 +1793,16 @@ export default function AdminLootItems() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label className="block mb-2">Type of Attendance Bonus</Label>
+                    <Label className="block mb-2">Type of attendance bonus</Label>
                     <Select
                       variant="pill"
                       value={settings.attendance_type}
                       onChange={(e) => setSettings({ ...settings, attendance_type: e.target.value as 'linear' | 'breakpoint' | 'points-per-raid' })}
                       className="bg-background-elevated"
                     >
-                      <option value="points-per-raid">Points Per Raid</option>
-                      <option value="linear">Linear (Percentage)</option>
-                      <option value="breakpoint">Break Point</option>
+                      <option value="points-per-raid">Points per raid</option>
+                      <option value="linear">Linear (percentage)</option>
+                      <option value="breakpoint">Breakpoint</option>
                     </Select>
                     <p className="text-muted-foreground text-[12px] mt-1">
                       {settings.attendance_type === 'points-per-raid'
@@ -1814,7 +1814,7 @@ export default function AdminLootItems() {
                   </div>
 
                   <div>
-                    <Label className="block mb-2">Rolling Attendance Period (Weeks)</Label>
+                    <Label className="block mb-2">Rolling attendance period (weeks)</Label>
                     <Input
                       variant="pill"
                       type="number"
@@ -1838,7 +1838,7 @@ export default function AdminLootItems() {
                 >
                   <div className="flex items-center gap-2">
                     <HugeiconsIcon icon={Settings02Icon} size={18} className="text-muted-foreground" />
-                    <span className="text-[16px] font-semibold text-foreground">Advanced Settings</span>
+                    <span className="text-[16px] font-semibold text-foreground">Advanced settings</span>
                     <span className="text-[12px] text-muted-foreground">(optional)</span>
                   </div>
                   <HugeiconsIcon
@@ -1855,14 +1855,14 @@ export default function AdminLootItems() {
                       <div>
                         <h4 className="text-[16px] font-semibold text-foreground flex items-center gap-2">
                           <HugeiconsIcon icon={PencilEdit01Icon} size={18} className="text-muted-foreground" />
-                          Raid Signups
+                          Raid signups
                         </h4>
                         <p className="text-muted-foreground text-[13px]">Track raid signups and give bonus attendance for early signups.</p>
                       </div>
 
                       <div className="grid grid-cols-2 gap-4">
                         <div>
-                          <Label className="block mb-2">Use Raid Signups for Attendance</Label>
+                          <Label className="block mb-2">Use raid signups for attendance</Label>
                           <Select
                             variant="pill"
                             value={settings.use_signups ? 'yes' : 'no'}
@@ -1877,8 +1877,8 @@ export default function AdminLootItems() {
                         <div>
                           <Label className="block mb-2">
                             {settings.attendance_type === 'points-per-raid'
-                              ? 'Signup Points (per raid)'
-                              : 'Signup % of Attendance (Decimal)'}
+                              ? 'Signup points (per raid)'
+                              : 'Signup % of attendance (decimal)'}
                           </Label>
                           <Input
                             variant="pill"
@@ -1906,10 +1906,10 @@ export default function AdminLootItems() {
                         <h4 className="text-[16px] font-semibold text-foreground flex items-center gap-2">
                           <HugeiconsIcon icon={Award01Icon} size={18} className="text-muted-foreground" />
                           {settings.attendance_type === 'points-per-raid'
-                            ? 'Attendance Points Cap'
+                            ? 'Attendance points cap'
                             : settings.attendance_type === 'linear'
-                            ? 'Maximum Attendance Bonus'
-                            : 'Attendance Bonus Tiers'}
+                            ? 'Maximum attendance bonus'
+                            : 'Attendance bonus tiers'}
                         </h4>
                         <p className="text-muted-foreground text-[13px]">
                           {settings.attendance_type === 'points-per-raid'
@@ -1924,7 +1924,7 @@ export default function AdminLootItems() {
                         {settings.attendance_type === 'points-per-raid' ? (
                           /* Points-per-raid: just show max cap */
                           <div className="w-1/3">
-                            <Label size="sm" className="block text-muted-foreground mb-1">Max Points Cap</Label>
+                            <Label size="sm" className="block text-muted-foreground mb-1">Max points cap</Label>
                             <Input
                               variant="pill"
                               size="sm"
@@ -1941,7 +1941,7 @@ export default function AdminLootItems() {
                         ) : settings.attendance_type === 'linear' ? (
                           /* Linear: show max bonus only */
                           <div className="w-1/3">
-                            <Label size="sm" className="block text-muted-foreground mb-1">Max Bonus</Label>
+                            <Label size="sm" className="block text-muted-foreground mb-1">Max bonus</Label>
                             <Input
                               variant="pill"
                               size="sm"
@@ -1956,7 +1956,7 @@ export default function AdminLootItems() {
                           /* Breakpoint: show all tiers */
                           <div className="grid grid-cols-3 gap-3">
                             <div>
-                              <Label size="sm" className="block text-muted-foreground mb-1">Max Attendance</Label>
+                              <Label size="sm" className="block text-muted-foreground mb-1">Max attendance</Label>
                               <div className="flex gap-2">
                                 <Input
                                   variant="pill"
@@ -1980,7 +1980,7 @@ export default function AdminLootItems() {
                               </div>
                             </div>
                             <div>
-                              <Label size="sm" className="block text-muted-foreground mb-1">Middle Attendance</Label>
+                              <Label size="sm" className="block text-muted-foreground mb-1">Middle attendance</Label>
                               <div className="flex gap-2">
                                 <Input
                                   variant="pill"
@@ -2004,7 +2004,7 @@ export default function AdminLootItems() {
                               </div>
                             </div>
                             <div>
-                              <Label size="sm" className="block text-muted-foreground mb-1">Bottom Attendance</Label>
+                              <Label size="sm" className="block text-muted-foreground mb-1">Bottom attendance</Label>
                               <div className="flex gap-2">
                                 <Input
                                   variant="pill"
@@ -2037,14 +2037,14 @@ export default function AdminLootItems() {
                       <div>
                         <h4 className="text-[16px] font-semibold text-foreground flex items-center gap-2">
                           <HugeiconsIcon icon={AlertCircleIcon} size={18} className="text-muted-foreground" />
-                          Attendance Penalties
+                          Attendance penalties
                         </h4>
                         <p className="text-muted-foreground text-[13px]">Set penalties for partial attendance.</p>
                       </div>
 
                       <div className="grid grid-cols-2 gap-4">
                         <div>
-                          <Label className="block mb-2">Late Show / Leave Early Penalty</Label>
+                          <Label className="block mb-2">Late show / leave early penalty</Label>
                           <Select
                             variant="pill"
                             value={settings.late_early_penalty_enabled ? 'yes' : 'no'}
@@ -2057,7 +2057,7 @@ export default function AdminLootItems() {
                         </div>
 
                         <div>
-                          <Label className="block mb-2">Penalty Value</Label>
+                          <Label className="block mb-2">Penalty value</Label>
                           <Input
                             variant="pill"
                             type="number"
@@ -2076,7 +2076,7 @@ export default function AdminLootItems() {
                       <div>
                         <h4 className="text-[16px] font-semibold text-foreground flex items-center gap-2">
                           <HugeiconsIcon icon={UserAdd01Icon} size={18} className="text-muted-foreground" />
-                          New Member Policy
+                          New member policy
                         </h4>
                         <p className="text-muted-foreground text-[13px]">Control how new members are treated for loot eligibility.</p>
                       </div>
@@ -2092,7 +2092,7 @@ export default function AdminLootItems() {
                             className="mt-1"
                           />
                           <div>
-                            <div className="font-medium text-foreground">Raw Attendance</div>
+                            <div className="font-medium text-foreground">Raw attendance</div>
                             <div className="text-muted-foreground text-[13px]">Score calculated against full rolling window. New members naturally have lower priority until they&apos;ve attended enough raids.</div>
                           </div>
                         </label>
@@ -2107,7 +2107,7 @@ export default function AdminLootItems() {
                             className="mt-1"
                           />
                           <div>
-                            <div className="font-medium text-foreground">Fair Attendance</div>
+                            <div className="font-medium text-foreground">Fair attendance</div>
                             <div className="text-muted-foreground text-[13px]">Score only counts raids since member joined guild. New members can compete equally if they&apos;re consistent.</div>
                           </div>
                         </label>
@@ -2122,14 +2122,14 @@ export default function AdminLootItems() {
                             className="mt-1"
                           />
                           <div>
-                            <div className="font-medium text-foreground">Minimum Raids Required</div>
+                            <div className="font-medium text-foreground">Minimum raids required</div>
                             <div className="text-muted-foreground text-[13px]">Members must attend a minimum number of raids before becoming eligible for loot. Uses fair attendance calculation once eligible.</div>
                           </div>
                         </label>
 
                         {settings.new_member_mode === 'minimum_gate' && (
                           <div className="ml-7 mt-2">
-                            <Label className="block mb-2">Minimum Raids Before Eligible</Label>
+                            <Label className="block mb-2">Minimum raids before eligible</Label>
                             <Input
                               variant="pill"
                               type="number"
@@ -2157,7 +2157,7 @@ export default function AdminLootItems() {
 
                       <div className="grid grid-cols-2 gap-4">
                         <div>
-                          <Label className="block mb-2">Bonus for Seeing Item but Not Receiving</Label>
+                          <Label className="block mb-2">Bonus for seeing item but not receiving</Label>
                           <Select
                             variant="pill"
                             value={settings.see_item_bonus ? 'yes' : 'no'}
@@ -2170,7 +2170,7 @@ export default function AdminLootItems() {
                         </div>
 
                         <div>
-                          <Label className="block mb-2">Bonus Value</Label>
+                          <Label className="block mb-2">Bonus value</Label>
                           <Input
                             variant="pill"
                             type="number"
@@ -2184,7 +2184,7 @@ export default function AdminLootItems() {
 
                       <div className="grid grid-cols-2 gap-4">
                         <div>
-                          <Label className="block mb-2">Bonus for Passing an Item</Label>
+                          <Label className="block mb-2">Bonus for passing an item</Label>
                           <Select
                             variant="pill"
                             value={settings.pass_item_bonus ? 'yes' : 'no'}
@@ -2197,7 +2197,7 @@ export default function AdminLootItems() {
                         </div>
 
                         <div>
-                          <Label className="block mb-2">Bonus Value</Label>
+                          <Label className="block mb-2">Bonus value</Label>
                           <Input
                             variant="pill"
                             type="number"
@@ -2215,13 +2215,13 @@ export default function AdminLootItems() {
                       <div>
                         <h4 className="text-[16px] font-semibold text-foreground flex items-center gap-2">
                           <HugeiconsIcon icon={Medal01Icon} size={18} className="text-muted-foreground" />
-                          Rank, Role, Class Bonuses
+                          Rank, role and class bonuses
                         </h4>
                         <p className="text-muted-foreground text-[13px]">Fine-tune priority systems to value guild rank, raid roles, class needs, or individual contributions.</p>
                       </div>
 
                       <div>
-                        <Label className="block mb-2">Guild Ranks Give Bonuses (Positive or Negative)</Label>
+                        <Label className="block mb-2">Guild ranks give bonuses (positive or negative)</Label>
                         <Select
                           variant="pill"
                           value={settings.guild_rank_bonuses_enabled ? 'yes' : 'no'}
@@ -2236,7 +2236,7 @@ export default function AdminLootItems() {
                       {settings.guild_rank_bonuses_enabled && (
                         <div className="bg-background-elevated border border-border-strong p-4 rounded-xl space-y-3">
                           <div className="flex items-center justify-between mb-2">
-                            <p className="text-[13px] font-medium text-foreground">Rank Bonuses</p>
+                            <p className="text-[13px] font-medium text-foreground">Rank bonuses</p>
                             <p className="text-[11px] text-muted-foreground">Can be positive or negative. For negative, use - before number (e.g., -1)</p>
                           </div>
                           <div className="grid grid-cols-3 gap-3">
@@ -2268,14 +2268,14 @@ export default function AdminLootItems() {
                             ))}
                           </div>
                           <p className="text-[11px] text-accent mt-2">
-                            Ensure you have assigned roles for each raider in the Master Loot sheet or calculations will not work.
+                            Ensure you have assigned roles for each raider in the Master Sheet or calculations will not work.
                           </p>
                         </div>
                       )}
 
                       <div className="grid grid-cols-2 gap-4">
                         <div>
-                          <Label className="block mb-2">Role Bonus Priority on Single Item</Label>
+                          <Label className="block mb-2">Role bonus priority on single item</Label>
                           <Select
                             variant="pill"
                             value={settings.role_bonus_priority_single_item ? 'yes' : 'no'}
@@ -2288,7 +2288,7 @@ export default function AdminLootItems() {
                         </div>
 
                         <div>
-                          <Label className="block mb-2">Class Bonus Priority on Single Item</Label>
+                          <Label className="block mb-2">Class bonus priority on single item</Label>
                           <Select
                             variant="pill"
                             value={settings.class_bonus_priority_single_item ? 'yes' : 'no'}
@@ -2303,7 +2303,7 @@ export default function AdminLootItems() {
 
                       <div className="grid grid-cols-2 gap-4">
                         <div>
-                          <Label className="block mb-2">Raid Roles Overall Bonus Priority</Label>
+                          <Label className="block mb-2">Raid roles overall bonus priority</Label>
                           <Select
                             variant="pill"
                             value={settings.raid_roles_overall_bonus_priority ? 'yes' : 'no'}
@@ -2316,7 +2316,7 @@ export default function AdminLootItems() {
                         </div>
 
                         <div>
-                          <Label className="block mb-2">Single Raider Overall Bonus</Label>
+                          <Label className="block mb-2">Single raider overall bonus</Label>
                           <Select
                             variant="pill"
                             value={settings.single_raider_overall_bonus ? 'yes' : 'no'}
@@ -2330,7 +2330,7 @@ export default function AdminLootItems() {
                       </div>
 
                       <div>
-                        <Label className="block mb-2">Single Raider Bonus on Single Item</Label>
+                        <Label className="block mb-2">Single raider bonus on single item</Label>
                         <Select
                           variant="pill"
                           value={settings.single_raider_bonus_single_item ? 'yes' : 'no'}
@@ -2344,7 +2344,7 @@ export default function AdminLootItems() {
 
                     <div className="grid grid-cols-3 gap-4">
                       <div>
-                        <Label className="block mb-2">Donation Bonuses</Label>
+                        <Label className="block mb-2">Donation bonuses</Label>
                         <Select
                           variant="pill"
                           value={settings.donation_bonuses_enabled ? 'yes' : 'no'}
@@ -2357,7 +2357,7 @@ export default function AdminLootItems() {
                       </div>
 
                       <div>
-                        <Label className="block mb-2">Cap on Donation Points</Label>
+                        <Label className="block mb-2">Cap on donation points</Label>
                         <Select
                           variant="pill"
                           value={settings.donation_cap_enabled ? 'yes' : 'no'}
@@ -2379,7 +2379,7 @@ export default function AdminLootItems() {
                         >
                           <option value="permanent">Permanent</option>
                           <option value="rolling">Rolling</option>
-                          <option value="hard-reset">Hard Reset</option>
+                          <option value="hard-reset">Hard reset</option>
                         </Select>
                       </div>
                     </div>
@@ -2390,14 +2390,14 @@ export default function AdminLootItems() {
                       <div>
                         <h4 className="text-[16px] font-semibold text-foreground flex items-center gap-2">
                           <HugeiconsIcon icon={Clock01Icon} size={18} className="text-muted-foreground" />
-                          Trial System
+                          Trial system
                         </h4>
                         <p className="text-muted-foreground text-[13px]">Apply a score penalty to new members on trial status until they are promoted to full member.</p>
                       </div>
 
                       <div className="grid grid-cols-2 gap-4">
                         <div>
-                          <Label className="block mb-2">Enable Trial Penalty</Label>
+                          <Label className="block mb-2">Enable trial penalty</Label>
                           <Select
                             variant="pill"
                             value={settings.trial_penalty_enabled ? 'yes' : 'no'}
@@ -2410,7 +2410,7 @@ export default function AdminLootItems() {
                         </div>
 
                         <div>
-                          <Label className="block mb-2">Trial Penalty Value</Label>
+                          <Label className="block mb-2">Trial penalty value</Label>
                           <Input
                             variant="pill"
                             type="number"
@@ -2425,7 +2425,7 @@ export default function AdminLootItems() {
                       </div>
 
                       <div>
-                        <Label className="block mb-2">New Members Start as Trial</Label>
+                        <Label className="block mb-2">New members start as trial</Label>
                         <Select
                           variant="pill"
                           value={settings.new_members_start_as_trial ? 'yes' : 'no'}
@@ -2440,7 +2440,7 @@ export default function AdminLootItems() {
 
                       <div className="grid grid-cols-2 gap-4">
                         <div>
-                          <Label className="block mb-2">Auto-Promote Trials</Label>
+                          <Label className="block mb-2">Auto-promote trials</Label>
                           <Select
                             variant="pill"
                             value={settings.trial_auto_promote_enabled ? 'yes' : 'no'}
@@ -2453,7 +2453,7 @@ export default function AdminLootItems() {
                         </div>
 
                         <div>
-                          <Label className="block mb-2">Weeks Until Promotion</Label>
+                          <Label className="block mb-2">Weeks until promotion</Label>
                           <Input
                             variant="pill"
                             type="number"
@@ -2476,7 +2476,7 @@ export default function AdminLootItems() {
             Cancel
           </Button>
           <Button onClick={saveSettings} loading={savingSettings} disabled={!hasSettingsChanges}>
-            Save Settings
+            Save settings
           </Button>
         </ModalFooter>
       </Modal>
