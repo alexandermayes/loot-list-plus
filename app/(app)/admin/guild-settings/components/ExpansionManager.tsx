@@ -5,7 +5,8 @@ import { useState, useEffect, useCallback } from 'react'
 import { useGuildContext } from '@/app/contexts/GuildContext'
 import { useNotification } from '@/app/contexts/NotificationContext'
 import { HugeiconsIcon } from '@hugeicons/react'
-import { Add01Icon, ArrowRight01Icon, ArrowDown01Icon, ArrowUp01Icon, Settings01Icon, Globe02Icon, RepeatIcon, CalendarCheckIn01Icon } from '@hugeicons/core-free-icons'
+import { Add01Icon, ArrowRight01Icon, ArrowDown01Icon, ArrowUp01Icon, Settings01Icon, Globe02Icon, RepeatIcon, CalendarCheckIn01Icon, Layers01Icon } from '@hugeicons/core-free-icons'
+import { getRaidIcon, getRaidShorthand } from '@/utils/raidIcons'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Select } from '@/components/ui/select'
@@ -82,6 +83,11 @@ interface AvailableExpansion {
   hasData: boolean
 }
 
+interface ExpansionTierInfo {
+  currentPhase: number | null
+  activeRaids: { name: string; phase: number | null }[]
+}
+
 export default function ExpansionManager() {
   const [guildExpansions, setGuildExpansions] = useState<GuildExpansion[]>([])
   const [availableExpansions, setAvailableExpansions] = useState<AvailableExpansion[]>([])
@@ -95,6 +101,7 @@ export default function ExpansionManager() {
   const [timezones, setTimezones] = useState<Record<string, string>>({})
   const [originalTimezones, setOriginalTimezones] = useState<Record<string, string>>({})
   const [originalRaidStartDates, setOriginalRaidStartDates] = useState<Record<string, string>>({})
+  const [expansionTierInfo, setExpansionTierInfo] = useState<Record<string, ExpansionTierInfo>>({})
 
   const supabase = createClient()
   const { activeGuild, refreshExpansions } = useGuildContext()
@@ -144,6 +151,32 @@ export default function ExpansionManager() {
         setOriginalSchedules(JSON.parse(JSON.stringify(schedules)))
         setTimezones(tzs)
         setOriginalTimezones(JSON.parse(JSON.stringify(tzs)))
+
+        // Load tier info for each expansion
+        const tierInfoMap: Record<string, ExpansionTierInfo> = {}
+        for (const exp of (expansions || [])) {
+          // Get current phase from expansion
+          const { data: expData } = await supabase
+            .from('expansions')
+            .select('current_phase')
+            .eq('id', exp.expansion_id)
+            .single()
+
+          // Get active raids for this expansion (only up to current phase)
+          const currentPhase = expData?.current_phase
+          const { data: tiersData } = await supabase
+            .from('raid_tiers')
+            .select('name, phase, is_guild_active')
+            .eq('expansion_id', exp.expansion_id)
+            .eq('is_guild_active', true)
+            .lte('phase', currentPhase ?? 99)
+
+          tierInfoMap[exp.expansion_id] = {
+            currentPhase: expData?.current_phase || null,
+            activeRaids: (tiersData || []).map(t => ({ name: t.name, phase: t.phase }))
+          }
+        }
+        setExpansionTierInfo(tierInfoMap)
       }
 
       // Load available expansions
@@ -395,12 +428,8 @@ export default function ExpansionManager() {
         <div>
           <h3 className="text-[16px] font-semibold text-foreground mb-4">Your Expansions</h3>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {/* Sort so current expansion is first */}
-            {[...guildExpansions].sort((a, b) => {
-              if (a.is_current && !b.is_current) return -1
-              if (!a.is_current && b.is_current) return 1
-              return 0
-            }).map((exp) => {
+            {/* Keep expansions in original order (by created_at) */}
+            {guildExpansions.map((exp) => {
               const visuals = getExpansionVisuals(exp.expansion_name)
               const isExpanded = expandedCards[exp.expansion_id] || false
               const schedule = raidSchedules[exp.expansion_id]
@@ -478,165 +507,283 @@ export default function ExpansionManager() {
                     </div>
 
                     {/* Raid Schedule Accordion */}
-                    <div
-                      className="pt-4 border-t"
-                      style={{ borderColor: `${visuals.borderColor}40` }}
-                    >
-                      {/* Accordion Header - clickable summary */}
-                      <Button
-                        variant="ghost"
-                        onClick={() => toggleExpanded(exp.expansion_id)}
-                        className="w-full flex items-center justify-between p-3 rounded-lg transition hover:bg-black/5 h-auto"
-                      >
-                        <div className="flex items-center gap-2">
-                          <HugeiconsIcon
-                            icon={Settings01Icon}
-                            size={16}
-                            style={{ color: `${visuals.textColor}80` }}
-                          />
-                          <span className="text-sm font-medium" style={{ color: visuals.textColor }}>
-                            Raid Schedule
-                          </span>
-                          <span className="text-sm" style={{ color: `${visuals.textColor}60` }}>
-                            — {getRaidScheduleSummary(exp)}
-                          </span>
-                        </div>
-                        <HugeiconsIcon
-                          icon={isExpanded ? ArrowUp01Icon : ArrowDown01Icon}
-                          size={16}
-                          style={{ color: `${visuals.textColor}60` }}
-                        />
-                      </Button>
+                    {(() => {
+                      const activeDays = schedule ? schedule.raidDays.slice(0, schedule.raidDaysPerWeek).filter(d => d !== null) : []
 
-                      {/* Expanded Content */}
-                      {isExpanded && schedule && (
-                        <div className="mt-3 p-4 rounded-xl bg-background-elevated border border-border space-y-5">
-                          {/* Raid Start Date & Timezone - side by side */}
-                          <div className="grid grid-cols-2 gap-4">
-                            {/* Raid Start Date */}
-                            <div className="space-y-2">
-                              <Label>Raid Start Date</Label>
-                              <DatePicker
-                                value={raidStartDates[exp.expansion_id] || ''}
-                                onChange={(e) => setRaidStartDates({
-                                  ...raidStartDates,
-                                  [exp.expansion_id]: e.target.value
-                                })}
-                              />
-                            </div>
-
-                            {/* Timezone */}
-                            <div className="space-y-2">
-                              <Label className="flex items-center gap-2">
-                                <HugeiconsIcon icon={Globe02Icon} size={14} className="text-muted-foreground" />
-                                Timezone
-                              </Label>
-                              <Select
-                                value={timezones[exp.expansion_id] || 'America/New_York'}
-                                onChange={(e) => updateTimezone(exp.expansion_id, e.target.value)}
-                              >
-                                {COMMON_TIMEZONES.map((tz) => (
-                                  <option key={tz.value} value={tz.value}>
-                                    {tz.label}
-                                  </option>
-                                ))}
-                                {/* Include current timezone if not in common list */}
-                                {timezones[exp.expansion_id] &&
-                                 !COMMON_TIMEZONES.find(tz => tz.value === timezones[exp.expansion_id]) && (
-                                  <option value={timezones[exp.expansion_id]}>
-                                    {timezones[exp.expansion_id]}
-                                  </option>
-                                )}
-                              </Select>
-                            </div>
-                          </div>
-
-                          {/* Raid Days Per Week */}
-                          <div className="space-y-2">
-                            <Label className="flex items-center gap-2">
-                              <HugeiconsIcon icon={RepeatIcon} size={14} className="text-muted-foreground" />
-                              Days Per Week
-                            </Label>
-                            <SegmentedControl
-                              options={[
-                                { value: '1', label: '1' },
-                                { value: '2', label: '2' },
-                                { value: '3', label: '3' },
-                                { value: '4', label: '4' },
-                                { value: '5', label: '5' }
-                              ]}
-                              value={String(schedule.raidDaysPerWeek)}
-                              onChange={(val) => updateRaidDaysPerWeek(exp.expansion_id, parseInt(val))}
-                              size="sm"
-                            />
-                          </div>
-
-                          {/* Raid Day Selectors */}
-                          <div className="space-y-2">
-                            <Label className="flex items-center gap-2">
-                              <HugeiconsIcon icon={CalendarCheckIn01Icon} size={14} className="text-muted-foreground" />
-                              Raid Days
-                            </Label>
-                            <div className="grid grid-cols-2 gap-3">
-                              {Array.from({ length: schedule.raidDaysPerWeek }).map((_, idx) => (
-                                <div key={idx} className="space-y-1">
-                                  <label className="block text-xs text-muted-foreground">
-                                    {idx === 0 ? 'First' : idx === 1 ? 'Second' : idx === 2 ? 'Third' : idx === 3 ? 'Fourth' : 'Fifth'} Day
-                                  </label>
-                                  <Select
-                                    value={String(schedule.raidDays[idx] ?? '')}
-                                    onChange={(e) => updateRaidDay(exp.expansion_id, idx, parseInt(e.target.value))}
+                      return (
+                        <div
+                          className="mt-4 rounded-xl transition-all"
+                          style={{
+                            backgroundColor: `${visuals.accentColor}10`,
+                            border: `1px solid ${visuals.accentColor}30`
+                          }}
+                        >
+                          {/* Accordion Header - clickable summary */}
+                          <button
+                            onClick={() => toggleExpanded(exp.expansion_id)}
+                            className="w-full text-left p-4 rounded-xl transition-colors hover:bg-white/5"
+                          >
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <HugeiconsIcon
+                                  icon={Settings01Icon}
+                                  size={16}
+                                  style={{ color: visuals.accentColor }}
+                                />
+                                <span
+                                  className="text-sm font-semibold"
+                                  style={{ color: visuals.textColor }}
+                                >
+                                  Raid Schedule
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                {activeDays.length > 0 ? (
+                                  activeDays.map((day, idx) => (
+                                    <span
+                                      key={idx}
+                                      className="px-2 py-0.5 text-[10px] font-bold rounded"
+                                      style={{
+                                        backgroundColor: `${visuals.accentColor}25`,
+                                        color: visuals.accentColor
+                                      }}
+                                    >
+                                      {getDayName(day)}
+                                    </span>
+                                  ))
+                                ) : (
+                                  <span
+                                    className="text-[11px]"
+                                    style={{ color: `${visuals.textColor}60` }}
                                   >
-                                    {DAY_NAMES.map((day, dayIdx) => (
-                                      <option key={dayIdx} value={dayIdx}>
-                                        {day}
+                                    Not configured
+                                  </span>
+                                )}
+                                <HugeiconsIcon
+                                  icon={isExpanded ? ArrowUp01Icon : ArrowDown01Icon}
+                                  size={16}
+                                  style={{ color: visuals.accentColor }}
+                                />
+                              </div>
+                            </div>
+                            {/* Schedule summary */}
+                            {exp.raid_start_date && (
+                              <p
+                                className="text-[11px] mt-1"
+                                style={{ color: `${visuals.textColor}60` }}
+                              >
+                                Started {new Date(exp.raid_start_date).toLocaleDateString()}
+                              </p>
+                            )}
+                          </button>
+
+                          {/* Expanded Content */}
+                          {isExpanded && schedule && (
+                            <div className="mx-3 mb-3 p-4 rounded-lg bg-background-elevated border border-border space-y-5">
+                              {/* Raid Start Date & Timezone - side by side */}
+                              <div className="grid grid-cols-2 gap-4">
+                                {/* Raid Start Date */}
+                                <div className="space-y-2">
+                                  <Label>Raid Start Date</Label>
+                                  <DatePicker
+                                    value={raidStartDates[exp.expansion_id] || ''}
+                                    onChange={(e) => setRaidStartDates({
+                                      ...raidStartDates,
+                                      [exp.expansion_id]: e.target.value
+                                    })}
+                                    variant="rounded"
+                                  />
+                                </div>
+
+                                {/* Timezone */}
+                                <div className="space-y-2">
+                                  <Label className="flex items-center gap-2">
+                                    <HugeiconsIcon icon={Globe02Icon} size={14} className="text-muted-foreground" />
+                                    Timezone
+                                  </Label>
+                                  <Select
+                                    value={timezones[exp.expansion_id] || 'America/New_York'}
+                                    onChange={(e) => updateTimezone(exp.expansion_id, e.target.value)}
+                                    variant="rounded"
+                                  >
+                                    {COMMON_TIMEZONES.map((tz) => (
+                                      <option key={tz.value} value={tz.value}>
+                                        {tz.label}
                                       </option>
                                     ))}
+                                    {/* Include current timezone if not in common list */}
+                                    {timezones[exp.expansion_id] &&
+                                     !COMMON_TIMEZONES.find(tz => tz.value === timezones[exp.expansion_id]) && (
+                                      <option value={timezones[exp.expansion_id]}>
+                                        {timezones[exp.expansion_id]}
+                                      </option>
+                                    )}
                                   </Select>
+                                </div>
+                              </div>
+
+                              {/* Raid Days Per Week */}
+                              <div className="space-y-2">
+                                <Label className="flex items-center gap-2">
+                                  <HugeiconsIcon icon={RepeatIcon} size={14} className="text-muted-foreground" />
+                                  Days Per Week
+                                </Label>
+                                <SegmentedControl
+                                  options={[
+                                    { value: '1', label: '1' },
+                                    { value: '2', label: '2' },
+                                    { value: '3', label: '3' },
+                                    { value: '4', label: '4' },
+                                    { value: '5', label: '5' }
+                                  ]}
+                                  value={String(schedule.raidDaysPerWeek)}
+                                  onChange={(val) => updateRaidDaysPerWeek(exp.expansion_id, parseInt(val))}
+                                  size="sm"
+                                />
+                              </div>
+
+                              {/* Raid Day Selectors */}
+                              <div className="space-y-2">
+                                <Label className="flex items-center gap-2">
+                                  <HugeiconsIcon icon={CalendarCheckIn01Icon} size={14} className="text-muted-foreground" />
+                                  Raid Days
+                                </Label>
+                                <div className="grid grid-cols-2 gap-3">
+                                  {Array.from({ length: schedule.raidDaysPerWeek }).map((_, idx) => (
+                                    <div key={idx} className="space-y-1">
+                                      <label className="block text-xs text-muted-foreground">
+                                        {idx === 0 ? 'First' : idx === 1 ? 'Second' : idx === 2 ? 'Third' : idx === 3 ? 'Fourth' : 'Fifth'} Day
+                                      </label>
+                                      <Select
+                                        value={String(schedule.raidDays[idx] ?? '')}
+                                        onChange={(e) => updateRaidDay(exp.expansion_id, idx, parseInt(e.target.value))}
+                                        variant="rounded"
+                                      >
+                                        {DAY_NAMES.map((day, dayIdx) => (
+                                          <option key={dayIdx} value={dayIdx}>
+                                            {day}
+                                          </option>
+                                        ))}
+                                      </Select>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+
+                              {/* Save Button */}
+                              <div className="pt-3 border-t border-border">
+                                <Button
+                                  onClick={() => handleSaveAllSettings(exp.expansion_id)}
+                                  disabled={updating === exp.expansion_id || !hasAnyChanges(exp.expansion_id)}
+                                  variant="secondary"
+                                  size="sm"
+                                  loading={updating === exp.expansion_id}
+                                >
+                                  Save
+                                </Button>
+                                {hasAnyChanges(exp.expansion_id) && (
+                                  <span className="ml-3 text-xs text-muted-foreground">
+                                    Unsaved changes
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )
+                    })()}
+
+                    {/* Manage Raid Tiers Link - with active raids info */}
+                    {(() => {
+                      const tierInfo = expansionTierInfo[exp.expansion_id]
+                      const activeRaids = tierInfo?.activeRaids || []
+                      // Group raids by phase for display
+                      const raidsByPhase = activeRaids.reduce((acc, raid) => {
+                        const phase = raid.phase || 0
+                        if (!acc[phase]) acc[phase] = []
+                        acc[phase].push(raid)
+                        return acc
+                      }, {} as Record<number, typeof activeRaids>)
+                      const sortedPhases = Object.keys(raidsByPhase).map(Number).sort((a, b) => a - b)
+
+                      return (
+                        <Link
+                          href={`/admin/expansions/${exp.expansion_id}`}
+                          className="block mt-4 p-4 rounded-xl transition-colors hover:bg-white/5"
+                          style={{
+                            backgroundColor: `${visuals.accentColor}10`,
+                            border: `1px solid ${visuals.accentColor}30`
+                          }}
+                        >
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-2">
+                              <HugeiconsIcon
+                                icon={Layers01Icon}
+                                size={16}
+                                style={{ color: visuals.accentColor }}
+                              />
+                              <span
+                                className="text-sm font-semibold"
+                                style={{ color: visuals.textColor }}
+                              >
+                                Raid Tiers
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              {sortedPhases.map((phase) => (
+                                <span
+                                  key={phase}
+                                  className="px-2 py-0.5 text-[10px] font-bold rounded"
+                                  style={{
+                                    backgroundColor: `${visuals.accentColor}25`,
+                                    color: visuals.accentColor
+                                  }}
+                                >
+                                  P{phase}
+                                </span>
+                              ))}
+                              <HugeiconsIcon
+                                icon={ArrowRight01Icon}
+                                size={16}
+                                style={{ color: visuals.accentColor }}
+                              />
+                            </div>
+                          </div>
+                          {/* All active raids */}
+                          {activeRaids.length > 0 && (
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              {activeRaids.map((raid) => (
+                                <div
+                                  key={raid.name}
+                                  className="flex items-center gap-1 px-2 py-1 rounded-md"
+                                  style={{ backgroundColor: `${visuals.borderColor}40` }}
+                                >
+                                  <img
+                                    src={getRaidIcon(raid.name)}
+                                    alt={raid.name}
+                                    className="w-4 h-4 rounded"
+                                  />
+                                  <span
+                                    className="text-[11px] font-medium"
+                                    style={{ color: `${visuals.textColor}90` }}
+                                  >
+                                    {getRaidShorthand(raid.name)}
+                                  </span>
                                 </div>
                               ))}
                             </div>
-                          </div>
-
-                          {/* Save Button */}
-                          <div className="pt-2 border-t border-border">
-                            <Button
-                              onClick={() => handleSaveAllSettings(exp.expansion_id)}
-                              disabled={updating === exp.expansion_id || !hasAnyChanges(exp.expansion_id)}
-                              variant="primary"
-                              size="sm"
-                              loading={updating === exp.expansion_id}
+                          )}
+                          {activeRaids.length === 0 && (
+                            <p
+                              className="text-[11px]"
+                              style={{ color: `${visuals.textColor}60` }}
                             >
-                              Save
-                            </Button>
-                            {hasAnyChanges(exp.expansion_id) && (
-                              <span className="ml-3 text-xs text-muted-foreground">
-                                Unsaved changes
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Manage Raid Tiers Link */}
-                    <Link
-                      href={`/admin/expansions/${exp.expansion_id}`}
-                      className="flex items-center justify-between mt-4 p-3 rounded-lg transition hover:bg-black/5"
-                      style={{
-                        border: `1px solid ${visuals.borderColor}40`
-                      }}
-                    >
-                      <span
-                        className="text-sm font-medium"
-                        style={{ color: visuals.textColor }}
-                      >
-                        Manage Raid Tiers
-                      </span>
-                      <HugeiconsIcon icon={ArrowRight01Icon} size={16}
-                        style={{ color: `${visuals.textColor}60` }}
-                      />
-                    </Link>
+                              Configure phases and active raids
+                            </p>
+                          )}
+                        </Link>
+                      )
+                    })()}
                   </div>
                 </div>
               )
@@ -655,7 +802,7 @@ export default function ExpansionManager() {
               return (
                 <div
                   key={exp.name}
-                  className="relative overflow-hidden rounded-xl border group cursor-pointer transition-all duration-200 hover:scale-[1.02]"
+                  className="relative overflow-hidden rounded-xl border group cursor-pointer transition-colors duration-200"
                   style={{
                     background: visuals.bgColor,
                     borderColor: visuals.borderColor
@@ -682,7 +829,7 @@ export default function ExpansionManager() {
                   <div className="relative p-5 flex items-center gap-4">
                     {/* Expansion Icon */}
                     <div
-                      className="w-14 h-14 rounded-lg overflow-hidden flex-shrink-0 border-2 transition-all group-hover:scale-110"
+                      className="w-14 h-14 rounded-lg overflow-hidden flex-shrink-0 border-2"
                       style={{ borderColor: visuals.accentColor }}
                     >
                       <img
@@ -708,7 +855,7 @@ export default function ExpansionManager() {
                     </div>
 
                     <div
-                      className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 transition-all group-hover:scale-110"
+                      className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
                       style={{
                         backgroundColor: `${visuals.accentColor}20`,
                         border: `1px solid ${visuals.accentColor}40`
