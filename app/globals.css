@@ -196,6 +196,11 @@
     background-size: 18px 18px;
     background-position: left center;
     background-repeat: no-repeat;
+    outline: none;
+  }
+
+  a[data-wowhead]:focus-visible {
+    outline: none;
   }
 
   a[data-wowhead] .iconsmall,
@@ -254,6 +259,18 @@
 .dark .icon-adaptive,
 .dark .logo-adaptive {
   filter: none !important;
+}
+
+/* Icon with accent color using CSS mask - use for active nav items */
+/* This uses the actual accent color instead of a filter approximation */
+.icon-accent {
+  background-color: hsl(var(--accent));
+  -webkit-mask-size: contain;
+  mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
 }
 
 /* ==========================================================================

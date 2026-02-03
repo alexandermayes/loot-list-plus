@@ -647,16 +647,21 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange, 
                   : 'text-foreground hover:bg-muted border-transparent'
               }`}
             >
-              <Image
-                src={item.icon}
-                alt={item.name}
-                width={20}
-                height={20}
-                className={`w-5 h-5 shrink-0 ${
-                  activeGuild && isActive(item.view) ? '' : 'icon-adaptive'
-                }`}
-                style={activeGuild && isActive(item.view) ? { filter: 'var(--accent-icon-filter)' } : undefined}
-              />
+              {activeGuild && isActive(item.view) ? (
+                <span
+                  className="w-5 h-5 shrink-0 icon-accent"
+                  style={{ WebkitMaskImage: `url(${item.icon})`, maskImage: `url(${item.icon})` }}
+                  aria-hidden="true"
+                />
+              ) : (
+                <Image
+                  src={item.icon}
+                  alt=""
+                  width={20}
+                  height={20}
+                  className="w-5 h-5 shrink-0 icon-adaptive"
+                />
+              )}
               <span className="whitespace-nowrap">{item.name}</span>
             </Button>
           ))}
@@ -681,16 +686,21 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange, 
                     : 'text-foreground hover:bg-muted border-transparent'
                 }`}
               >
-                <Image
-                  src={item.icon}
-                  alt={item.name}
-                  width={20}
-                  height={20}
-                  className={`w-5 h-5 shrink-0 ${
-                    isActive(item.view) ? '' : 'icon-adaptive'
-                  }`}
-                  style={isActive(item.view) ? { filter: 'var(--accent-icon-filter)' } : undefined}
-                />
+                {isActive(item.view) ? (
+                  <span
+                    className="w-5 h-5 shrink-0 icon-accent"
+                    style={{ WebkitMaskImage: `url(${item.icon})`, maskImage: `url(${item.icon})` }}
+                    aria-hidden="true"
+                  />
+                ) : (
+                  <Image
+                    src={item.icon}
+                    alt=""
+                    width={20}
+                    height={20}
+                    className="w-5 h-5 shrink-0 icon-adaptive"
+                  />
+                )}
                 <span className="whitespace-nowrap overflow-hidden text-ellipsis">{item.name}</span>
               </Button>
             ))}
@@ -717,14 +727,21 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange, 
                 : 'text-foreground hover:bg-muted border-transparent'
             }`}
           >
-            <Image
-              src="/icons/help.svg"
-              alt="Help"
-              width={20}
-              height={20}
-              className={`w-5 h-5 ${pathname?.startsWith('/help') ? '' : 'icon-adaptive'}`}
-              style={pathname?.startsWith('/help') ? { filter: 'var(--accent-icon-filter)' } : undefined}
-            />
+            {pathname?.startsWith('/help') ? (
+              <span
+                className="w-5 h-5 shrink-0 icon-accent"
+                style={{ WebkitMaskImage: 'url(/icons/help.svg)', maskImage: 'url(/icons/help.svg)' }}
+                aria-hidden="true"
+              />
+            ) : (
+              <Image
+                src="/icons/help.svg"
+                alt=""
+                width={20}
+                height={20}
+                className="w-5 h-5 icon-adaptive"
+              />
+            )}
             <span className="whitespace-nowrap">Help</span>
           </Button>
 

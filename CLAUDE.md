@@ -200,7 +200,14 @@ The app uses a dynamic accent color system via `AccentColorContext`. Users can c
 // Focus rings (automatic on Button, Input, etc.)
 <div className="focus-visible:ring-2 focus-visible:ring-ring">...</div>
 
-// Icon coloring (for white/light SVG icons)
+// Icon coloring with CSS mask (exact color match, preferred)
+<span
+  className="w-5 h-5 icon-accent"
+  style={{ WebkitMaskImage: 'url(/icon.svg)', maskImage: 'url(/icon.svg)' }}
+  aria-hidden="true"
+/>
+
+// Icon coloring with filter (approximate, use for non-critical icons)
 <img src="/icon.svg" style={{ filter: 'var(--accent-icon-filter)' }} />
 ```
 
