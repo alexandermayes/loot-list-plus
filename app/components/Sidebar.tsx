@@ -13,7 +13,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { HugeiconsIcon } from '@hugeicons/react'
-import { Cancel01Icon, Settings01Icon } from '@hugeicons/core-free-icons'
+import { Cancel01Icon, Settings01Icon, Notification03Icon } from '@hugeicons/core-free-icons'
 
 // Lazy load modal to reduce initial bundle size
 const CreateGuildModal = dynamic(() => import('./CreateGuildModal').then(mod => ({ default: mod.CreateGuildModal })), {
@@ -724,6 +724,26 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange, 
               style={pathname?.startsWith('/help') ? { filter: 'var(--accent-icon-filter)' } : undefined}
             />
             <span className="whitespace-nowrap">Help</span>
+          </Button>
+
+          <Button
+            variant="ghost"
+            onClick={() => {
+              router.push('/updates')
+              onNavigate?.()
+            }}
+            className={`w-full px-3.5 py-2 h-auto flex items-center gap-3 rounded-[40px] transition font-poppins font-medium text-[13px] border-[0.5px] justify-start ${
+              pathname?.startsWith('/updates')
+                ? 'bg-accent/20 border-accent/20 text-accent hover:bg-accent/30'
+                : 'text-foreground hover:bg-muted border-transparent'
+            }`}
+          >
+            <HugeiconsIcon
+              icon={Notification03Icon}
+              size={20}
+              className={`w-5 h-5 ${pathname?.startsWith('/updates') ? 'text-accent' : ''}`}
+            />
+            <span className="whitespace-nowrap">Updates</span>
           </Button>
 
           <a

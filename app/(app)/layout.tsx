@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/button'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { Bug01Icon } from '@hugeicons/core-free-icons'
 import { SidebarProvider, useSidebar } from '@/app/contexts/SidebarContext'
+import { AccentColorProvider } from '@/app/contexts/AccentColorContext'
 
 const FeedbackModal = dynamic(() => import('@/app/components/FeedbackModal').then(mod => ({ default: mod.FeedbackModal })), {
   loading: () => null
@@ -44,6 +45,7 @@ function AppLayoutContent({
     if (pathname === '/loot-settings') return 'loot-settings'
     if (pathname === '/admin/raid-tracking') return 'raid-tracking'
     if (pathname === '/admin/prio-list') return 'prio-list'
+    if (pathname === '/updates') return 'updates'
     // Return empty string for profile and other pages that shouldn't highlight nav items
     return ''
   }
@@ -177,7 +179,7 @@ function AppLayoutContent({
         variant="secondary"
         size="icon"
         onClick={() => setShowFeedbackModal(true)}
-        className="fixed bottom-6 right-6 w-14 h-14 rounded-full shadow-lg hover:scale-105 z-40"
+        className="fixed bottom-6 right-6 w-14 h-14 rounded-full shadow-lg z-40"
         title="Report a Bug"
       >
         <HugeiconsIcon icon={Bug01Icon} size={24} className="text-muted-foreground" />
@@ -198,8 +200,10 @@ export default function AppLayout({
   children: React.ReactNode
 }) {
   return (
-    <SidebarProvider>
-      <AppLayoutContent>{children}</AppLayoutContent>
-    </SidebarProvider>
+    <AccentColorProvider>
+      <SidebarProvider>
+        <AppLayoutContent>{children}</AppLayoutContent>
+      </SidebarProvider>
+    </AccentColorProvider>
   )
 }
