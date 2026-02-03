@@ -579,7 +579,7 @@ export default function ExpansionManager() {
 
                           {/* Expanded Content */}
                           {isExpanded && schedule && (
-                            <div className="mx-3 mb-3 p-4 rounded-lg bg-background-elevated border border-border space-y-5">
+                            <div className="mx-3 mt-3 mb-3 p-4 rounded-lg bg-background-elevated border border-border space-y-5">
                               {/* Raid Start Date & Timezone - side by side */}
                               <div className="grid grid-cols-2 gap-4">
                                 {/* Raid Start Date */}
@@ -675,7 +675,7 @@ export default function ExpansionManager() {
                                 <Button
                                   onClick={() => handleSaveAllSettings(exp.expansion_id)}
                                   disabled={updating === exp.expansion_id || !hasAnyChanges(exp.expansion_id)}
-                                  variant="secondary"
+                                  variant="primary"
                                   size="sm"
                                   loading={updating === exp.expansion_id}
                                 >
