@@ -47,7 +47,15 @@ export default function LandingFooter() {
 
           {/* Tagline */}
           <p className="text-xs text-foreground-muted text-center md:text-right">
-            Made with care for the WoW community
+            Made with &lt;3 by{' '}
+            <a
+              href="https://discord.gg/bigyikes"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-foreground-secondary hover:text-foreground transition-colors"
+            >
+              Big Yikes
+            </a>
           </p>
         </div>
       </div>
