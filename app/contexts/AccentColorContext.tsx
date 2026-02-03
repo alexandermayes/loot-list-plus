@@ -84,6 +84,7 @@ function applyAccentColor(hex: string) {
   // Set the accent color CSS variable (format: "h s% l%")
   root.style.setProperty('--accent', `${hsl.h} ${hsl.s}% ${hsl.l}%`)
   root.style.setProperty('--accent-subtle', `${hsl.h} ${hsl.s}% ${hsl.l}% / 0.2`)
+  root.style.setProperty('--ring', `${hsl.h} ${hsl.s}% ${hsl.l}%`)
 
   // Set foreground color based on lightness (dark text for light colors, white for dark)
   // Use 60% as threshold - colors like Artifact gold (#e6cc80, ~77% lightness) need dark text

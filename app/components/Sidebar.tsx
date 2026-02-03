@@ -437,10 +437,12 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange, 
               </div>
             </Button>
           ) : (
-            <Button
-              variant="ghost"
+            <div
+              role="button"
+              tabIndex={0}
               onClick={() => setGuildDropdownOpen(!guildDropdownOpen)}
-              className="w-full bg-background-elevated border border-muted rounded-xl px-3.5 py-2 h-auto flex items-center gap-3 hover:bg-muted transition"
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setGuildDropdownOpen(!guildDropdownOpen) }}
+              className="w-full bg-background-elevated border border-muted rounded-xl px-3.5 py-2 flex items-center gap-3 hover:bg-muted transition cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
             >
               {activeGuild.icon_url ? (
                 <Image
@@ -480,7 +482,7 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange, 
                 height={20}
                 className={`icon-adaptive w-5 h-5 shrink-0 transition-transform ${guildDropdownOpen ? 'rotate-180' : ''}`}
               />
-            </Button>
+            </div>
           )}
 
           {/* Guild Dropdown */}

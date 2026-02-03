@@ -125,6 +125,114 @@ warrior, paladin, hunter, rogue, priest, deathknight, shaman, mage, warlock, dru
 </span>
 ```
 
+## Interaction Patterns
+
+### No Scale/Bounce Effects
+Never use `hover:scale-*` or `active:scale-*` on interactive elements. Use color changes for hover states instead:
+- `hover:bg-muted` for subtle hover
+- `hover:bg-background-elevated` for ghost buttons
+- `transition-colors` instead of `transition-all` when only colors change
+
+### Buttons Inside Containers
+When using a `Button` component inside a rounded container (like a card or accordion), add `!rounded-none` to prevent oval/pill hover states:
+```tsx
+<div className="rounded-xl border overflow-hidden">
+  <Button variant="ghost" className="w-full !rounded-none">
+    Content
+  </Button>
+</div>
+```
+
+### Accordion/Collapsible Headers
+For collapsible sections, use consistent header styling:
+- **Layout:** `flex items-center justify-between` with content on left, controls on right
+- **Caret position:** Always on the right side, after item count
+- **Caret style:** Use inline SVG chevron that rotates 90° when expanded
+- **Padding:** `px-5 py-3` for standard headers
+- **Font:** `text-[15px] font-semibold` for header text
+- **Item count:** `text-[12px] text-muted-foreground` (plain text, not badge)
+
+```tsx
+<button className="w-full text-left px-5 py-3 rounded-xl bg-background-subtle border border-border hover:bg-muted">
+  <div className="flex items-center justify-between">
+    <div className="flex items-center gap-3">
+      <img src={icon} className="w-6 h-6 rounded border border-border/50" />
+      <span className="text-[15px] font-semibold text-foreground">{title}</span>
+    </div>
+    <div className="flex items-center gap-3">
+      <span className="text-[12px] text-muted-foreground">{count} items</span>
+      <svg
+        className={`w-4 h-4 text-muted-foreground transition-transform ${isCollapsed ? '' : 'rotate-90'}`}
+        fill="none" stroke="currentColor" viewBox="0 0 24 24"
+      >
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+      </svg>
+    </div>
+  </div>
+</button>
+```
+
+### Accent Color System
+
+The app uses a dynamic accent color system via `AccentColorContext`. Users can customize their accent color from WoW item quality colors.
+
+**Available accent colors:**
+- Legendary (#ff8000) - default orange
+- Epic (#a335ee) - purple
+- Rare (#0070dd) - blue
+- Uncommon (#1eff00) - green
+- Artifact (#e6cc80) - gold
+- Heirloom (#00ccff) - cyan
+
+**CSS variables (set dynamically):**
+- `--accent` - HSL format "h s% l%"
+- `--accent-subtle` - accent with 0.2 opacity
+- `--accent-foreground` - auto light/dark text based on lightness
+- `--accent-icon-filter` - CSS filter for icon coloring
+- `--ring` - focus ring color (synced with accent)
+
+**Usage:**
+```tsx
+// Text and backgrounds
+<span className="text-accent">Highlighted text</span>
+<div className="bg-accent text-accent-foreground">Accent button</div>
+
+// Focus rings (automatic on Button, Input, etc.)
+<div className="focus-visible:ring-2 focus-visible:ring-ring">...</div>
+
+// Icon coloring (for white/light SVG icons)
+<img src="/icon.svg" style={{ filter: 'var(--accent-icon-filter)' }} />
+```
+
+**When to use accent:**
+- Primary CTAs and important actions
+- Active/selected states (nav items, tabs)
+- Links and highlights
+
+**Don't use accent for:**
+- Section headers or containers (use `bg-background-subtle` instead)
+- Item counts or metadata (use `text-muted-foreground`)
+- Decorative elements
+
+### Nested Button Prevention
+
+HTML does not allow `<button>` inside `<button>`. When you need a clickable container with interactive children (like a dropdown trigger with a settings button inside), use a `<div>` with button semantics:
+
+```tsx
+<div
+  role="button"
+  tabIndex={0}
+  onClick={handleClick}
+  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleClick() }}
+  className="cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+>
+  <span>Content</span>
+  <button onClick={(e) => { e.stopPropagation(); handleOther() }}>
+    Nested action
+  </button>
+</div>
+```
+
 ## Code Patterns
 
 ### Loading States
