@@ -1756,9 +1756,9 @@ export default function AdminLootItems() {
         </ModalHeader>
         <ModalBody className="space-y-8">
               {/* General Settings */}
-              <div className="space-y-4 pb-6 border-b border-border-strong">
+              <div className="space-y-4">
                 <div>
-                  <h4 className="text-[18px] font-semibold text-foreground pb-2 flex items-center gap-2">
+                  <h4 className="text-[18px] font-semibold text-foreground pb-4 flex items-center gap-2">
                     <HugeiconsIcon icon={Settings01Icon} size={20} className="text-muted-foreground" />
                     General Settings
                   </h4>
@@ -1782,9 +1782,9 @@ export default function AdminLootItems() {
               </div>
 
               {/* Attendance Settings - Basic */}
-              <div className="space-y-4 pb-6 border-b border-border-strong">
+              <div className="space-y-4">
                 <div>
-                  <h4 className="text-[18px] font-semibold text-foreground pb-2 flex items-center gap-2">
+                  <h4 className="text-[18px] font-semibold text-foreground pb-4 flex items-center gap-2">
                     <HugeiconsIcon icon={Calendar03Icon} size={20} className="text-muted-foreground" />
                     Attendance
                   </h4>
@@ -1851,9 +1851,9 @@ export default function AdminLootItems() {
                 {advancedExpanded && (
                   <div className="space-y-8 pt-2">
                     {/* Signups */}
-                    <div className="space-y-4 pb-6 border-b border-border-strong">
+                    <div className="space-y-4">
                       <div>
-                        <h4 className="text-[16px] font-semibold text-foreground pb-2 flex items-center gap-2">
+                        <h4 className="text-[16px] font-semibold text-foreground pb-4 flex items-center gap-2">
                           <HugeiconsIcon icon={PencilEdit01Icon} size={18} className="text-muted-foreground" />
                           Raid Signups
                         </h4>
@@ -1901,9 +1901,9 @@ export default function AdminLootItems() {
                     </div>
 
                     {/* Attendance Bonus Configuration */}
-                    <div className="space-y-4 pb-6 border-b border-border-strong">
+                    <div className="space-y-4">
                       <div>
-                        <h4 className="text-[16px] font-semibold text-foreground pb-2 flex items-center gap-2">
+                        <h4 className="text-[16px] font-semibold text-foreground pb-4 flex items-center gap-2">
                           <HugeiconsIcon icon={Award01Icon} size={18} className="text-muted-foreground" />
                           {settings.attendance_type === 'points-per-raid'
                             ? 'Attendance Points Cap'
@@ -2033,9 +2033,9 @@ export default function AdminLootItems() {
                     </div>
 
                     {/* Attendance Penalties */}
-                    <div className="space-y-4 pb-6 border-b border-border-strong">
+                    <div className="space-y-4">
                       <div>
-                        <h4 className="text-[16px] font-semibold text-foreground pb-2 flex items-center gap-2">
+                        <h4 className="text-[16px] font-semibold text-foreground pb-4 flex items-center gap-2">
                           <HugeiconsIcon icon={AlertCircleIcon} size={18} className="text-muted-foreground" />
                           Attendance Penalties
                         </h4>
@@ -2072,9 +2072,9 @@ export default function AdminLootItems() {
                     </div>
 
                     {/* New Member Policy */}
-                    <div className="space-y-4 pb-6 border-b border-border-strong">
+                    <div className="space-y-4">
                       <div>
-                        <h4 className="text-[16px] font-semibold text-foreground pb-2 flex items-center gap-2">
+                        <h4 className="text-[16px] font-semibold text-foreground pb-4 flex items-center gap-2">
                           <HugeiconsIcon icon={UserAdd01Icon} size={18} className="text-muted-foreground" />
                           New Member Policy
                         </h4>
@@ -2146,9 +2146,9 @@ export default function AdminLootItems() {
                     </div>
 
                     {/* Bad Luck Prevention */}
-                    <div className="space-y-4 pb-6 border-b border-border-strong">
+                    <div className="space-y-4">
                       <div>
-                        <h4 className="text-[16px] font-semibold text-foreground pb-2 flex items-center gap-2">
+                        <h4 className="text-[16px] font-semibold text-foreground pb-4 flex items-center gap-2">
                           <HugeiconsIcon icon={DiceIcon} size={18} className="text-muted-foreground" />
                           Bad luck prevention
                         </h4>
@@ -2213,7 +2213,7 @@ export default function AdminLootItems() {
                     {/* Rank, Role, Class Bonuses */}
                     <div className="space-y-4">
                       <div>
-                        <h4 className="text-[16px] font-semibold text-foreground pb-2 flex items-center gap-2">
+                        <h4 className="text-[16px] font-semibold text-foreground pb-4 flex items-center gap-2">
                           <HugeiconsIcon icon={Medal01Icon} size={18} className="text-muted-foreground" />
                           Rank, Role, Class Bonuses
                         </h4>
@@ -2388,7 +2388,7 @@ export default function AdminLootItems() {
                     {/* Trial System */}
                     <div className="space-y-4">
                       <div>
-                        <h4 className="text-[16px] font-semibold text-foreground pb-2 flex items-center gap-2">
+                        <h4 className="text-[16px] font-semibold text-foreground pb-4 flex items-center gap-2">
                           <HugeiconsIcon icon={Clock01Icon} size={18} className="text-muted-foreground" />
                           Trial System
                         </h4>
