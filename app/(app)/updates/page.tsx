@@ -276,19 +276,19 @@ function UpdateEntryCard({ entry }: { entry: UpdateEntry }) {
 export default function UpdatesPage() {
   return (
     <div className="p-8">
-      {/* Header */}
-      <div className="flex items-center gap-3 mb-8">
-        <div className="w-10 h-10 bg-accent/10 rounded-lg flex items-center justify-center">
-          <HugeiconsIcon icon={Notification03Icon} size={20} className="text-accent" />
+      <div className="max-w-2xl mx-auto">
+        {/* Header */}
+        <div className="flex items-center gap-3 mb-8">
+          <div className="w-10 h-10 bg-accent/10 rounded-lg flex items-center justify-center">
+            <HugeiconsIcon icon={Notification03Icon} size={20} className="text-accent" />
+          </div>
+          <div>
+            <Heading level={1}>Updates</Heading>
+            <Text color="muted" size="sm">What's new in LootList+</Text>
+          </div>
         </div>
-        <div>
-          <Heading level={1}>Updates</Heading>
-          <Text color="muted" size="sm">What's new in LootList+</Text>
-        </div>
-      </div>
 
-      {/* Updates timeline */}
-      <div className="max-w-2xl">
+        {/* Updates timeline */}
         {updates.map((entry, index) => (
           <UpdateEntryCard key={index} entry={entry} />
         ))}
