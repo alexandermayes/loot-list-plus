@@ -205,7 +205,7 @@ export function CharacterSelector() {
       <Button
         variant="ghost"
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex items-center gap-3 px-[14px] py-2 rounded-[12px] bg-background-elevated border border-border hover:bg-muted transition h-auto justify-start"
+        className="w-full flex items-center gap-3 px-3.5 py-2 rounded-xl bg-background-elevated border border-muted hover:bg-muted transition h-auto justify-start"
       >
         {/* Character Class Icon */}
         {activeCharacter.class?.name ? (
@@ -277,7 +277,7 @@ export function CharacterSelector() {
                       key={char.id}
                       variant="ghost"
                       onClick={() => handleCharacterSelect(char.id)}
-                      className="w-full flex items-center gap-3 px-[14px] py-2 hover:bg-muted transition text-left h-auto justify-start rounded-none"
+                      className="w-full flex items-center gap-3 px-[14px] py-2 hover:!bg-muted transition text-left h-auto justify-start !rounded-none"
                     >
                       {/* Character Class Icon */}
                       {char.class?.name ? (
@@ -412,7 +412,7 @@ export function CharacterSelector() {
               <Button
                 variant="ghost"
                 onClick={handleCreateCharacter}
-                className="w-full px-[14px] py-2 flex items-center gap-3 hover:bg-muted transition text-left h-auto justify-start rounded-none"
+                className="w-full px-[14px] py-2 flex items-center gap-3 hover:!bg-muted transition text-left h-auto justify-start !rounded-none"
               >
                 <Image
                   src="/icons/user-add.svg"
@@ -428,7 +428,7 @@ export function CharacterSelector() {
               <Button
                 variant="ghost"
                 onClick={handleManageCharacters}
-                className="w-full px-[14px] py-2 flex items-center gap-3 hover:bg-muted transition text-left h-auto justify-start rounded-none"
+                className="w-full px-[14px] py-2 flex items-center gap-3 hover:!bg-muted transition text-left h-auto justify-start !rounded-none"
               >
                 <Image
                   src="/icons/user-settings.svg"

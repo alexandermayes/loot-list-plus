@@ -437,50 +437,50 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange, 
               </div>
             </Button>
           ) : (
-            <div className="flex items-stretch gap-2">
-              <Button
-                variant="ghost"
-                onClick={() => setGuildDropdownOpen(!guildDropdownOpen)}
-                className="flex-1 min-w-0 bg-background-elevated border border-border rounded-[12px] px-[14px] py-2 h-auto flex items-center gap-3 hover:bg-muted transition"
-              >
-                {activeGuild.icon_url ? (
-                  <Image
-                    src={activeGuild.icon_url}
-                    alt="Guild icon"
-                    width={20}
-                    height={20}
-                    className="w-5 h-5 rounded-[4px] shrink-0 border border-border"
-                  />
-                ) : (
-                  <div className="w-5 h-5 bg-muted-foreground rounded-[4px] shrink-0 border border-border" />
-                )}
-                <div className="flex-1 text-left leading-[normal] min-w-0">
-                  <p className="font-poppins font-medium text-[13px] text-foreground w-full truncate">
-                    {activeGuild.name}
-                  </p>
-                  <p className="font-poppins font-normal text-[10px] text-muted-foreground w-full truncate">
-                    {activeGuild.realm ? `${activeGuild.realm} • ${activeGuild.faction}` : ''}
-                  </p>
-                </div>
+            <Button
+              variant="ghost"
+              onClick={() => setGuildDropdownOpen(!guildDropdownOpen)}
+              className="w-full bg-background-elevated border border-muted rounded-xl px-3.5 py-2 h-auto flex items-center gap-3 hover:bg-muted transition"
+            >
+              {activeGuild.icon_url ? (
                 <Image
-                  src="/icons/arrow-down.svg"
-                  alt="Toggle"
+                  src={activeGuild.icon_url}
+                  alt="Guild icon"
                   width={20}
                   height={20}
-                  className={`icon-adaptive w-5 h-5 shrink-0 transition-transform ${guildDropdownOpen ? 'rotate-180' : ''}`}
+                  className="w-5 h-5 rounded-[4px] shrink-0 border border-border"
                 />
-              </Button>
+              ) : (
+                <div className="w-5 h-5 bg-muted-foreground rounded-[4px] shrink-0 border border-border" />
+              )}
+              <div className="flex-1 text-left leading-[normal] min-w-0">
+                <p className="font-poppins font-medium text-[13px] text-foreground w-full truncate">
+                  {activeGuild.name}
+                </p>
+                <p className="font-poppins font-normal text-[10px] text-muted-foreground w-full truncate">
+                  {activeGuild.realm ? `${activeGuild.realm} • ${activeGuild.faction}` : ''}
+                </p>
+              </div>
               {isOfficer && (
-                <Button
-                  variant="ghost"
-                  onClick={() => handleNavClick('guild-settings')}
-                  className="shrink-0 w-12 h-auto bg-background-elevated border border-border rounded-[12px] hover:bg-muted transition"
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    handleNavClick('guild-settings')
+                  }}
+                  className="p-1 rounded-md hover:bg-background-subtle transition shrink-0"
                   title="Guild Settings"
                 >
                   <HugeiconsIcon icon={Settings01Icon} size={18} className="text-muted-foreground" />
-                </Button>
+                </button>
               )}
-            </div>
+              <Image
+                src="/icons/arrow-down.svg"
+                alt="Toggle"
+                width={20}
+                height={20}
+                className={`icon-adaptive w-5 h-5 shrink-0 transition-transform ${guildDropdownOpen ? 'rotate-180' : ''}`}
+              />
+            </Button>
           )}
 
           {/* Guild Dropdown */}
@@ -500,7 +500,7 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange, 
                     <Button
                       variant="ghost"
                       onClick={() => handleSwitchGuild(g.guild.id)}
-                      className="flex-1 min-w-0 px-[14px] py-2 h-auto flex items-center gap-3 text-left rounded-none"
+                      className="flex-1 min-w-0 px-[14px] py-2 h-auto flex items-center gap-3 text-left !rounded-none hover:bg-transparent"
                     >
                       {g.guild.icon_url ? (
                         <Image
@@ -567,7 +567,7 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange, 
                   setInviteCode('')
                   setDiscordError('')
                 }}
-                className="w-full px-[14px] py-2 h-auto flex items-center gap-3 hover:bg-muted transition text-left justify-start rounded-none"
+                className="w-full px-[14px] py-2 h-auto flex items-center gap-3 hover:!bg-muted text-left justify-start !rounded-none"
               >
                 <Image
                   src="/icons/user-multiple.svg"
@@ -588,7 +588,7 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange, 
                   setGuildDropdownOpen(false)
                   setShowCreateGuildModal(true)
                 }}
-                className="w-full px-[14px] py-2 h-auto flex items-center gap-3 hover:bg-muted transition text-left justify-start rounded-none"
+                className="w-full px-[14px] py-2 h-auto flex items-center gap-3 hover:!bg-muted text-left justify-start !rounded-none"
               >
                 <Image
                   src="/icons/add-circle.svg"
