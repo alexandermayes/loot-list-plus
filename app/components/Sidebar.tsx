@@ -653,7 +653,7 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange, 
                 className={`w-5 h-5 shrink-0 ${
                   activeGuild && isActive(item.view) ? '' : 'icon-adaptive'
                 }`}
-                style={activeGuild && isActive(item.view) ? { filter: 'invert(55%) sepia(89%) saturate(2274%) hue-rotate(1deg) brightness(101%) contrast(105%)' } : undefined}
+                style={activeGuild && isActive(item.view) ? { filter: 'var(--accent-icon-filter)' } : undefined}
               />
               <span className="whitespace-nowrap">{item.name}</span>
             </Button>
@@ -687,7 +687,7 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange, 
                   className={`w-5 h-5 shrink-0 ${
                     isActive(item.view) ? '' : 'icon-adaptive'
                   }`}
-                  style={isActive(item.view) ? { filter: 'invert(55%) sepia(89%) saturate(2274%) hue-rotate(1deg) brightness(101%) contrast(105%)' } : undefined}
+                  style={isActive(item.view) ? { filter: 'var(--accent-icon-filter)' } : undefined}
                 />
                 <span className="whitespace-nowrap overflow-hidden text-ellipsis">{item.name}</span>
               </Button>
@@ -721,7 +721,7 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange, 
               width={20}
               height={20}
               className={`w-5 h-5 ${pathname?.startsWith('/help') ? '' : 'icon-adaptive'}`}
-              style={pathname?.startsWith('/help') ? { filter: 'invert(55%) sepia(89%) saturate(2274%) hue-rotate(1deg) brightness(101%) contrast(105%)' } : undefined}
+              style={pathname?.startsWith('/help') ? { filter: 'var(--accent-icon-filter)' } : undefined}
             />
             <span className="whitespace-nowrap">Help</span>
           </Button>

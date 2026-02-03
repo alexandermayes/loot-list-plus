@@ -33,6 +33,7 @@ import {
   CheckmarkCircle01Icon
 } from '@hugeicons/core-free-icons'
 import { useTheme } from 'next-themes'
+import { useAccentColor, ACCENT_COLORS, DEFAULT_ACCENT_COLOR } from '@/app/contexts/AccentColorContext'
 
 type TabId = 'account' | 'preferences' | 'guilds'
 
@@ -49,6 +50,7 @@ export default function ProfilePage() {
   const [selectedTheme, setSelectedTheme] = useState<string | null>(null)
 
   const { theme, setTheme } = useTheme()
+  const { accentColor, setAccentColor, saveAccentColor } = useAccentColor()
 
   // Only sync theme on initial mount, not on every theme change
   useEffect(() => {
@@ -452,8 +454,8 @@ export default function ProfilePage() {
                 </div>
               </div>
 
-              {/* Accent Color - Coming Soon */}
-              <div className="flex items-center justify-between opacity-60">
+              {/* Accent Color */}
+              <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-background-subtle border border-border rounded-lg flex items-center justify-center">
                     <HugeiconsIcon icon={PaintBoardIcon} size={20} />
@@ -463,15 +465,28 @@ export default function ProfilePage() {
                     <p className="text-[13px] text-muted-foreground">Choose your preferred accent color</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-3">
-                  <div className="flex items-center gap-1.5">
-                    <div className="w-6 h-6 rounded-full bg-[#ff8000] border-2 border-[#ff8000]/30" title="Legendary" />
-                    <div className="w-6 h-6 rounded-full bg-[#a335ee] border-2 border-[#a335ee]/30 opacity-50" title="Epic" />
-                    <div className="w-6 h-6 rounded-full bg-[#0070dd] border-2 border-[#0070dd]/30 opacity-50" title="Rare" />
-                  </div>
-                  <span className="px-3 py-1 bg-muted border border-border rounded-full text-muted-foreground text-[12px]">
-                    Coming Soon
-                  </span>
+                <div className="flex items-center gap-1.5">
+                  {ACCENT_COLORS.map((color) => {
+                    const isSelected = accentColor === color.value
+                    return (
+                      <button
+                        key={color.value}
+                        type="button"
+                        onClick={() => {
+                          setAccentColor(color.value)
+                          saveAccentColor(color.value)
+                        }}
+                        className={`w-6 h-6 rounded-full transition-all ${
+                          isSelected
+                            ? 'ring-2 ring-foreground ring-offset-2 ring-offset-background'
+                            : 'opacity-60 hover:opacity-100'
+                        }`}
+                        style={{ backgroundColor: color.value }}
+                        title={color.name}
+                        aria-label={`Set accent color to ${color.name}`}
+                      />
+                    )
+                  })}
                 </div>
               </div>
             </div>
