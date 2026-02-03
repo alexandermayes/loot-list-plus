@@ -1758,11 +1758,11 @@ export default function AdminLootItems() {
               {/* General Settings */}
               <div className="space-y-4">
                 <div>
-                  <h4 className="text-[18px] font-semibold text-foreground pb-4 flex items-center gap-2">
+                  <h4 className="text-[18px] font-semibold text-foreground flex items-center gap-2">
                     <HugeiconsIcon icon={Settings01Icon} size={20} className="text-muted-foreground" />
                     General Settings
                   </h4>
-                  <p className="text-muted-foreground text-[13px] mt-1">Configure how loot priority scores are displayed.</p>
+                  <p className="text-muted-foreground text-[13px]">Configure how loot priority scores are displayed.</p>
                 </div>
 
                 <div>
@@ -1784,11 +1784,11 @@ export default function AdminLootItems() {
               {/* Attendance Settings - Basic */}
               <div className="space-y-4">
                 <div>
-                  <h4 className="text-[18px] font-semibold text-foreground pb-4 flex items-center gap-2">
+                  <h4 className="text-[18px] font-semibold text-foreground flex items-center gap-2">
                     <HugeiconsIcon icon={Calendar03Icon} size={20} className="text-muted-foreground" />
                     Attendance
                   </h4>
-                  <p className="text-muted-foreground text-[13px] mt-1">Control how attendance bonuses are calculated. Consistent raiders get priority on loot.</p>
+                  <p className="text-muted-foreground text-[13px]">Control how attendance bonuses are calculated. Consistent raiders get priority on loot.</p>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
@@ -1853,11 +1853,11 @@ export default function AdminLootItems() {
                     {/* Signups */}
                     <div className="space-y-4">
                       <div>
-                        <h4 className="text-[16px] font-semibold text-foreground pb-4 flex items-center gap-2">
+                        <h4 className="text-[16px] font-semibold text-foreground flex items-center gap-2">
                           <HugeiconsIcon icon={PencilEdit01Icon} size={18} className="text-muted-foreground" />
                           Raid Signups
                         </h4>
-                        <p className="text-muted-foreground text-[13px] mt-1">Track raid signups and give bonus attendance for early signups.</p>
+                        <p className="text-muted-foreground text-[13px]">Track raid signups and give bonus attendance for early signups.</p>
                       </div>
 
                       <div className="grid grid-cols-2 gap-4">
@@ -1903,7 +1903,7 @@ export default function AdminLootItems() {
                     {/* Attendance Bonus Configuration */}
                     <div className="space-y-4">
                       <div>
-                        <h4 className="text-[16px] font-semibold text-foreground pb-4 flex items-center gap-2">
+                        <h4 className="text-[16px] font-semibold text-foreground flex items-center gap-2">
                           <HugeiconsIcon icon={Award01Icon} size={18} className="text-muted-foreground" />
                           {settings.attendance_type === 'points-per-raid'
                             ? 'Attendance Points Cap'
@@ -1911,7 +1911,7 @@ export default function AdminLootItems() {
                             ? 'Maximum Attendance Bonus'
                             : 'Attendance Bonus Tiers'}
                         </h4>
-                        <p className="text-muted-foreground text-[13px] mt-1">
+                        <p className="text-muted-foreground text-[13px]">
                           {settings.attendance_type === 'points-per-raid'
                             ? `Maximum total attendance points. With ${settings.rolling_attendance_weeks} weeks × 2 raids = ${settings.rolling_attendance_weeks * 2} max possible points.`
                             : settings.attendance_type === 'linear'
@@ -2035,11 +2035,11 @@ export default function AdminLootItems() {
                     {/* Attendance Penalties */}
                     <div className="space-y-4">
                       <div>
-                        <h4 className="text-[16px] font-semibold text-foreground pb-4 flex items-center gap-2">
+                        <h4 className="text-[16px] font-semibold text-foreground flex items-center gap-2">
                           <HugeiconsIcon icon={AlertCircleIcon} size={18} className="text-muted-foreground" />
                           Attendance Penalties
                         </h4>
-                        <p className="text-muted-foreground text-[13px] mt-1">Set penalties for partial attendance.</p>
+                        <p className="text-muted-foreground text-[13px]">Set penalties for partial attendance.</p>
                       </div>
 
                       <div className="grid grid-cols-2 gap-4">
@@ -2074,11 +2074,11 @@ export default function AdminLootItems() {
                     {/* New Member Policy */}
                     <div className="space-y-4">
                       <div>
-                        <h4 className="text-[16px] font-semibold text-foreground pb-4 flex items-center gap-2">
+                        <h4 className="text-[16px] font-semibold text-foreground flex items-center gap-2">
                           <HugeiconsIcon icon={UserAdd01Icon} size={18} className="text-muted-foreground" />
                           New Member Policy
                         </h4>
-                        <p className="text-muted-foreground text-[13px] mt-1">Control how new members are treated for loot eligibility.</p>
+                        <p className="text-muted-foreground text-[13px]">Control how new members are treated for loot eligibility.</p>
                       </div>
 
                       <div className="space-y-3">
@@ -2148,11 +2148,11 @@ export default function AdminLootItems() {
                     {/* Bad Luck Prevention */}
                     <div className="space-y-4">
                       <div>
-                        <h4 className="text-[16px] font-semibold text-foreground pb-4 flex items-center gap-2">
+                        <h4 className="text-[16px] font-semibold text-foreground flex items-center gap-2">
                           <HugeiconsIcon icon={DiceIcon} size={18} className="text-muted-foreground" />
                           Bad luck prevention
                         </h4>
-                        <p className="text-muted-foreground text-[13px] mt-1">Provide bonus points to raiders who experience bad RNG luck. Rewards players who see their desired items drop but lose the roll, or who generously pass on items to help others progress.</p>
+                        <p className="text-muted-foreground text-[13px]">Provide bonus points to raiders who experience bad RNG luck. Rewards players who see their desired items drop but lose the roll, or who generously pass on items to help others progress.</p>
                       </div>
 
                       <div className="grid grid-cols-2 gap-4">
@@ -2213,11 +2213,11 @@ export default function AdminLootItems() {
                     {/* Rank, Role, Class Bonuses */}
                     <div className="space-y-4">
                       <div>
-                        <h4 className="text-[16px] font-semibold text-foreground pb-4 flex items-center gap-2">
+                        <h4 className="text-[16px] font-semibold text-foreground flex items-center gap-2">
                           <HugeiconsIcon icon={Medal01Icon} size={18} className="text-muted-foreground" />
                           Rank, Role, Class Bonuses
                         </h4>
-                        <p className="text-muted-foreground text-[13px] mt-1">Fine-tune priority systems to value guild rank, raid roles, class needs, or individual contributions.</p>
+                        <p className="text-muted-foreground text-[13px]">Fine-tune priority systems to value guild rank, raid roles, class needs, or individual contributions.</p>
                       </div>
 
                       <div>
@@ -2388,11 +2388,11 @@ export default function AdminLootItems() {
                     {/* Trial System */}
                     <div className="space-y-4">
                       <div>
-                        <h4 className="text-[16px] font-semibold text-foreground pb-4 flex items-center gap-2">
+                        <h4 className="text-[16px] font-semibold text-foreground flex items-center gap-2">
                           <HugeiconsIcon icon={Clock01Icon} size={18} className="text-muted-foreground" />
                           Trial System
                         </h4>
-                        <p className="text-muted-foreground text-[13px] mt-1">Apply a score penalty to new members on trial status until they are promoted to full member.</p>
+                        <p className="text-muted-foreground text-[13px]">Apply a score penalty to new members on trial status until they are promoted to full member.</p>
                       </div>
 
                       <div className="grid grid-cols-2 gap-4">
