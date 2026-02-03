@@ -1754,7 +1754,7 @@ export default function AdminLootItems() {
         <ModalHeader onClose={() => setShowSettingsModal(false)}>
           <ModalTitle>Loot system settings</ModalTitle>
         </ModalHeader>
-        <ModalBody className="space-y-6">
+        <ModalBody className="space-y-8">
               {/* General Settings */}
               <div className="space-y-4 pb-6 border-b border-border-strong">
                 <div>
@@ -1849,7 +1849,7 @@ export default function AdminLootItems() {
                 </Button>
 
                 {advancedExpanded && (
-                  <div className="space-y-6 pt-2">
+                  <div className="space-y-8 pt-2">
                     {/* Signups */}
                     <div className="space-y-4 pb-6 border-b border-border-strong">
                       <div>
