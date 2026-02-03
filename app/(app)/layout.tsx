@@ -12,7 +12,7 @@ import { MobileMenuButton } from '@/app/components/MobileMenuButton'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { Button } from '@/components/ui/button'
 import { HugeiconsIcon } from '@hugeicons/react'
-import { Bug01Icon } from '@hugeicons/core-free-icons'
+import { Bug01Icon, Notification03Icon } from '@hugeicons/core-free-icons'
 import { SidebarProvider, useSidebar } from '@/app/contexts/SidebarContext'
 import { AccentColorProvider } from '@/app/contexts/AccentColorContext'
 
@@ -134,6 +134,13 @@ function AppLayoutContent({
                 className="w-5 h-5 icon-adaptive"
               />
             </a>
+            <Link
+              href="/updates"
+              className="p-2 rounded-full hover:bg-muted transition"
+              aria-label="Updates"
+            >
+              <HugeiconsIcon icon={Notification03Icon} size={20} />
+            </Link>
             <Link
               href="/profile"
               className="p-2 rounded-full hover:bg-muted transition"
