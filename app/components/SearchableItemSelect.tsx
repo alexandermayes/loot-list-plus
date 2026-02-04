@@ -86,6 +86,13 @@ export default function SearchableItemSelect({
 
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as Node
+
+      // Ignore events that don't have a valid target or target is not in the document
+      // This prevents closing when mouse leaves the window boundary
+      if (!target || !document.body.contains(target)) {
+        return
+      }
+
       // Check if click is outside both the button and dropdown
       if (
         dropdownRef.current &&

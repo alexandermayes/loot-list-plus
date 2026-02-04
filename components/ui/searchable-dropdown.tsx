@@ -132,10 +132,18 @@ export function SearchableDropdown({
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Node
+
+      // Ignore events that don't have a valid target or target is not in the document
+      // This prevents closing when mouse leaves the window boundary
+      if (!target || !document.body.contains(target)) {
+        return
+      }
+
       if (
         dropdownRef.current &&
-        !dropdownRef.current.contains(event.target as Node) &&
-        !buttonRef.current?.contains(event.target as Node)
+        !dropdownRef.current.contains(target) &&
+        !buttonRef.current?.contains(target)
       ) {
         setIsOpen(false)
         setSearch('')
@@ -411,17 +419,25 @@ export function ComboDropdown({
   // Close dropdowns when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Node
+
+      // Ignore events that don't have a valid target or target is not in the document
+      // This prevents closing when mouse leaves the window boundary
+      if (!target || !document.body.contains(target)) {
+        return
+      }
+
       if (
         prefixDropdownRef.current &&
-        !prefixDropdownRef.current.contains(event.target as Node) &&
-        !prefixButtonRef.current?.contains(event.target as Node)
+        !prefixDropdownRef.current.contains(target) &&
+        !prefixButtonRef.current?.contains(target)
       ) {
         setPrefixOpen(false)
       }
       if (
         mainDropdownRef.current &&
-        !mainDropdownRef.current.contains(event.target as Node) &&
-        !mainButtonRef.current?.contains(event.target as Node)
+        !mainDropdownRef.current.contains(target) &&
+        !mainButtonRef.current?.contains(target)
       ) {
         setMainOpen(false)
         setSearch('')

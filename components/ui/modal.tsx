@@ -32,7 +32,9 @@ const ModalBackdrop = React.forwardRef<
       className
     )}
     onClick={(e) => {
-      if (e.target === e.currentTarget && onClose) {
+      // Only close on direct clicks on the backdrop, not when mouse re-enters after leaving window
+      // Check that the click is a genuine user interaction within bounds
+      if (e.target === e.currentTarget && onClose && e.clientX > 0 && e.clientY > 0) {
         onClose()
       }
       onClick?.(e)
@@ -191,6 +193,10 @@ const Modal = ({
   maxHeight,
   zIndex = 50,
 }: ModalProps) => {
+  // Track if mousedown started on the backdrop (not inside the modal)
+  // This prevents closing when user drags selection from inside modal to outside
+  const mouseDownOnBackdrop = React.useRef(false)
+
   // Handle escape key
   React.useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
@@ -214,14 +220,47 @@ const Modal = ({
     }
   }, [open])
 
+  // Reset mousedown tracking when modal closes
+  React.useEffect(() => {
+    if (!open) {
+      mouseDownOnBackdrop.current = false
+    }
+  }, [open])
+
   if (!open) return null
 
+  const handleBackdropMouseDown = (e: React.MouseEvent) => {
+    // Only track mousedown if it's directly on the backdrop
+    mouseDownOnBackdrop.current = e.target === e.currentTarget
+  }
+
+  const handleBackdropClick = (e: React.MouseEvent) => {
+    // Only close if:
+    // 1. Click is directly on backdrop (not bubbled from children)
+    // 2. mousedown also started on the backdrop (prevents drag-selection closing)
+    // 3. Click is within valid bounds (not from mouse leaving/entering window)
+    if (
+      e.target === e.currentTarget &&
+      mouseDownOnBackdrop.current &&
+      e.clientX > 0 &&
+      e.clientY > 0
+    ) {
+      onClose()
+    }
+    mouseDownOnBackdrop.current = false
+  }
+
   return (
-    <ModalBackdrop onClose={onClose} style={{ zIndex }}>
+    <div
+      className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4"
+      style={{ zIndex }}
+      onMouseDown={handleBackdropMouseDown}
+      onClick={handleBackdropClick}
+    >
       <ModalContainer size={size} className={className} maxHeight={maxHeight}>
         {children}
       </ModalContainer>
-    </ModalBackdrop>
+    </div>
   )
 }
 

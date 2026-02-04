@@ -25,6 +25,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
+import { Checkbox } from '@/components/ui/checkbox'
 import { useConfirm } from '@/components/ui/confirm-modal'
 import { SegmentedControl } from '@/components/ui/segmented-control'
 
@@ -67,7 +68,7 @@ interface AttendanceStatus {
   was_benched: boolean
 }
 
-type CellState = 'empty' | 'attended' | 'late' | 'benched' | 'signed-up' | 'no-show'
+type CellState = 'attended' | 'late' | 'standby' | 'no-show' | 'empty'
 
 export default function RaidTrackingPage() {
   const [members, setMembers] = useState<Member[]>([])
@@ -109,46 +110,27 @@ export default function RaidTrackingPage() {
     document.title = activeTab === 'tracking' ? 'LootList+ • Raid Tracking' : 'LootList+ • Loot History'
   }, [activeTab])
 
-  // Populate form when opening edit modal
+  // Populate form when opening edit modal - only pre-fill loot (not attendance/signups)
+  // Attendance and signups are managed via the main UI, import is just for Gargul data
   useEffect(() => {
     if (showImportModal?.isEdit) {
       const raidId = showImportModal.raidId
       const raidDate = showImportModal.date
-      const raidAttendance = attendance[raidId] || {}
 
-      console.log('📝 Pre-filling edit modal for raid:', raidId)
-      console.log('📝 raidLoot state:', raidLoot)
-      console.log('📝 raidLoot[raidId]:', raidLoot[raidId])
+      // DON'T pre-fill attendance - import is for fresh Gargul data
+      setAttendanceData('')
+      // DON'T pre-fill signups - import is for fresh data
+      setSignupsData('')
 
-      // Pre-fill attendance
-      const attendedNames = members
-        .filter(m => raidAttendance[m.character_id]?.attended)
-        .map(m => m.character_name)
-      const unlinkedNames = (unlinkedAttendees[raidId] || [])
-        .filter(u => u.status.attended)
-        .map(u => u.character_name)
-      setAttendanceData([...attendedNames, ...unlinkedNames].join('\n'))
-
-      // Pre-fill signups
-      const signedUpNames = members
-        .filter(m => raidAttendance[m.character_id]?.signed_up)
-        .map(m => m.character_name)
-      const unlinkedSignups = (unlinkedAttendees[raidId] || [])
-        .filter(u => u.status.signed_up)
-        .map(u => u.character_name)
-      setSignupsData([...signedUpNames, ...unlinkedSignups].join('\n'))
-
-      // Pre-fill loot (convert back to Gargul format: DATE;[ITEM_ID];CHARACTER)
+      // DO pre-fill loot so users can see existing + add more
       const lootEntries = raidLoot[raidId] || []
-      console.log('📝 Loot entries to pre-fill:', lootEntries.length)
       const formattedDate = raidDate.replace(/-/g, '/').split('/').reverse().join('/')
       const lootLines = lootEntries.map(entry =>
         `${formattedDate};[${entry.item_wowhead_id}];${entry.character_name}`
       )
-      console.log('📝 Formatted loot lines:', lootLines)
       setLootData(lootLines.join('\n'))
     }
-  }, [showImportModal, attendance, unlinkedAttendees, members, raidLoot])
+  }, [showImportModal, raidLoot])
 
   useEffect(() => {
     if (guildLoading) return
@@ -356,17 +338,50 @@ export default function RaidTrackingPage() {
 
     console.log('✅ Filtered to', filteredEvents.length, 'events matching current schedule')
 
-    if (filteredEvents && filteredEvents.length > 0) {
-      setRaidDates(filteredEvents)
+    // Deduplicate by date - prefer events that already have attendance records
+    let deduplicatedEvents = filteredEvents
+    if (filteredEvents.length > 0) {
+      // Get all raid event IDs
+      const eventIds = filteredEvents.map(e => e.id)
+
+      // Check which have attendance records
+      const { data: attendanceCheck } = await supabase
+        .from('attendance_records')
+        .select('raid_event_id')
+        .in('raid_event_id', eventIds)
+
+      const eventsWithAttendance = new Set(attendanceCheck?.map(r => r.raid_event_id) || [])
+      console.log('🔍 Events with attendance records:', [...eventsWithAttendance])
+
+      // Deduplicate by date, preferring events with attendance
+      const dateMap = new Map<string, typeof filteredEvents[0]>()
+      filteredEvents.forEach(event => {
+        const existing = dateMap.get(event.raid_date)
+        if (!existing) {
+          dateMap.set(event.raid_date, event)
+        } else if (eventsWithAttendance.has(event.id) && !eventsWithAttendance.has(existing.id)) {
+          // Prefer the event that has attendance records
+          dateMap.set(event.raid_date, event)
+        }
+      })
+
+      deduplicatedEvents = Array.from(dateMap.values())
+        .sort((a, b) => b.raid_date.localeCompare(a.raid_date)) // Maintain DESC order
+
+      console.log('✅ Deduplicated to', deduplicatedEvents.length, 'events (removed', filteredEvents.length - deduplicatedEvents.length, 'duplicates)')
+    }
+
+    if (deduplicatedEvents && deduplicatedEvents.length > 0) {
+      setRaidDates(deduplicatedEvents)
 
       // Auto-expand the most recent week
-      const mostRecentRaid = filteredEvents[0]
+      const mostRecentRaid = deduplicatedEvents[0]
       const mostRecentWeekStart = getWeekStart(mostRecentRaid.raid_date, settings.first_raid_day ?? 0)
       console.log('📌 Auto-expanding week:', mostRecentWeekStart)
       setExpandedWeeks(new Set([mostRecentWeekStart]))
 
       // Auto-expand the first raid day in the most recent week (earliest date in that week)
-      const raidsInMostRecentWeek = filteredEvents.filter(r =>
+      const raidsInMostRecentWeek = deduplicatedEvents.filter(r =>
         getWeekStart(r.raid_date, settings.first_raid_day ?? 0) === mostRecentWeekStart
       )
       // Sort by date ascending to get the earliest raid in the week
@@ -403,6 +418,9 @@ export default function RaidTrackingPage() {
     const attendanceMap: Record<string, AttendanceStatus> = {}
     const unlinked: UnlinkedAttendee[] = []
 
+    // Build set of linked member names for duplicate detection
+    const linkedMemberNames = new Set(members.map(m => m.character_name.toLowerCase()))
+
     records?.forEach(r => {
       if (r.character_id) {
         // Linked attendee
@@ -414,17 +432,20 @@ export default function RaidTrackingPage() {
           was_benched: r.was_benched
         }
       } else if (r.character_name) {
-        // Unlinked attendee (no account yet)
-        unlinked.push({
-          character_name: r.character_name,
-          status: {
-            signed_up: r.signed_up,
-            attended: r.attended,
-            no_call_no_show: r.no_call_no_show,
-            was_late: r.was_late,
-            was_benched: r.was_benched
-          }
-        })
+        // Unlinked attendee - only add if name doesn't match a linked member
+        // (prevents duplicates from appearing when both linked and unlinked records exist)
+        if (!linkedMemberNames.has(r.character_name.toLowerCase())) {
+          unlinked.push({
+            character_name: r.character_name,
+            status: {
+              signed_up: r.signed_up,
+              attended: r.attended,
+              no_call_no_show: r.no_call_no_show,
+              was_late: r.was_late,
+              was_benched: r.was_benched
+            }
+          })
+        }
       }
     })
 
@@ -516,9 +537,8 @@ export default function RaidTrackingPage() {
     if (!status) return 'empty'
     if (status.no_call_no_show) return 'no-show'
     if (status.attended && status.was_late) return 'late'
-    if (status.was_benched) return 'benched'
+    if (status.was_benched) return 'standby'
     if (status.attended) return 'attended'
-    if (status.signed_up) return 'signed-up'
     return 'empty'
   }
 
@@ -526,8 +546,7 @@ export default function RaidTrackingPage() {
     switch (state) {
       case 'attended': return 'bg-success/30 border-success text-success'
       case 'late': return 'bg-yellow-500/30 border-yellow-500 text-yellow-400'
-      case 'benched': return 'bg-orange-500/30 border-orange-500 text-orange-400'
-      case 'signed-up': return 'bg-accent/30 border-accent text-accent'
+      case 'standby': return 'bg-orange-500/30 border-orange-500 text-orange-400'
       case 'no-show': return 'bg-destructive/30 border-destructive text-destructive'
       default: return 'bg-background-elevated border-border'
     }
@@ -537,39 +556,48 @@ export default function RaidTrackingPage() {
     switch (state) {
       case 'attended': return 'Attended'
       case 'late': return 'Late'
-      case 'benched': return 'Benched'
-      case 'signed-up': return 'Signed Up'
-      case 'no-show': return 'No-Show'
+      case 'standby': return 'Standby'
+      case 'no-show': return 'No Show'
       default: return 'Not Set'
+    }
+  }
+
+  const getShortLabel = (state: CellState) => {
+    switch (state) {
+      case 'attended': return 'A'
+      case 'late': return 'L'
+      case 'standby': return 'S'
+      case 'no-show': return 'N'
+      default: return '?'
     }
   }
 
   const cycleAttendanceState = async (raidId: string, characterId: string, userId: string) => {
     const current = attendance[raidId]?.[characterId]
     const currentState = getCellState(current)
+    const preserveSignedUp = current?.signed_up || false
 
+    // Cycle: Attended → Late → Standby → No Show → Attended (no empty state once set)
     let newStatus: AttendanceStatus
     switch (currentState) {
-      case 'empty':
-        newStatus = { signed_up: false, attended: true, no_call_no_show: false, was_late: false, was_benched: false }
-        break
       case 'attended':
-        newStatus = { signed_up: false, attended: true, no_call_no_show: false, was_late: true, was_benched: false }
+        newStatus = { signed_up: preserveSignedUp, attended: true, no_call_no_show: false, was_late: true, was_benched: false }
         break
       case 'late':
-        newStatus = { signed_up: false, attended: false, no_call_no_show: false, was_late: false, was_benched: true }
+        newStatus = { signed_up: preserveSignedUp, attended: false, no_call_no_show: false, was_late: false, was_benched: true }
         break
-      case 'benched':
-        newStatus = { signed_up: true, attended: false, no_call_no_show: false, was_late: false, was_benched: false }
-        break
-      case 'signed-up':
-        newStatus = { signed_up: false, attended: false, no_call_no_show: true, was_late: false, was_benched: false }
+      case 'standby':
+        newStatus = { signed_up: preserveSignedUp, attended: false, no_call_no_show: true, was_late: false, was_benched: false }
         break
       case 'no-show':
-        newStatus = { signed_up: false, attended: false, no_call_no_show: false, was_late: false, was_benched: false }
+      case 'empty':
+      default:
+        // First click or cycling from no-show starts at Attended
+        newStatus = { signed_up: preserveSignedUp, attended: true, no_call_no_show: false, was_late: false, was_benched: false }
         break
     }
 
+    // Optimistic update
     setAttendance(prev => ({
       ...prev,
       [raidId]: {
@@ -578,16 +606,78 @@ export default function RaidTrackingPage() {
       }
     }))
 
-    await supabase
+    // Save to database with error handling
+    const payload = {
+      raid_event_id: raidId,
+      character_id: characterId,
+      user_id: userId,
+      ...newStatus
+    }
+    console.log('[cycleAttendanceState] Upserting:', payload)
+
+    const { data, error, status, statusText } = await supabase
+      .from('attendance_records')
+      .upsert(payload, {
+        onConflict: 'raid_event_id,character_id'
+      })
+      .select()
+
+    console.log('[cycleAttendanceState] Response:', { data, error, status, statusText })
+
+    if (error) {
+      console.error('Failed to save attendance:', JSON.stringify(error, null, 2))
+      console.error('Error details:', error.message, error.code, error.details, error.hint)
+      showNotification('error', error.message || 'Failed to save attendance')
+      // Revert local state on error
+      await loadRaidAttendance(raidId)
+    } else if (!data || data.length === 0) {
+      console.error('No rows returned from upsert - possible RLS issue')
+      showNotification('error', 'Failed to save attendance - check permissions')
+      await loadRaidAttendance(raidId)
+    }
+  }
+
+  const toggleSignup = async (raidId: string, characterId: string, userId: string) => {
+    const current = attendance[raidId]?.[characterId]
+    const newSignedUp = !current?.signed_up
+
+    // Optimistic update
+    setAttendance(prev => ({
+      ...prev,
+      [raidId]: {
+        ...(prev[raidId] || {}),
+        [characterId]: {
+          signed_up: newSignedUp,
+          attended: current?.attended || false,
+          no_call_no_show: current?.no_call_no_show || false,
+          was_late: current?.was_late || false,
+          was_benched: current?.was_benched || false
+        }
+      }
+    }))
+
+    // Save to database
+    const { error } = await supabase
       .from('attendance_records')
       .upsert({
         raid_event_id: raidId,
         character_id: characterId,
         user_id: userId,
-        ...newStatus
+        signed_up: newSignedUp,
+        attended: current?.attended || false,
+        no_call_no_show: current?.no_call_no_show || false,
+        was_late: current?.was_late || false,
+        was_benched: current?.was_benched || false
       }, {
         onConflict: 'raid_event_id,character_id'
       })
+
+    if (error) {
+      console.error('Failed to toggle signup:', error)
+      showNotification('error', 'Failed to save signup status')
+      // Revert local state on error
+      await loadRaidAttendance(raidId)
+    }
   }
 
   const toggleSkipDay = async (raidId: string, currentSkipped: boolean) => {
@@ -737,11 +827,12 @@ export default function RaidTrackingPage() {
   }
 
   // Load all loot items for the current expansion
-  const loadLootItems = async () => {
+  // Returns the items array so callers can use it immediately (since setState is async)
+  const loadLootItems = async (): Promise<typeof lootItems> => {
     console.log('📦 loadLootItems called', { activeGuild: activeGuild?.id, currentExpansion: currentExpansion?.expansion_id })
     if (!activeGuild || !currentExpansion) {
       console.log('❌ Missing guild or expansion')
-      return
+      return []
     }
 
     // Get all raid tiers for this expansion
@@ -751,7 +842,7 @@ export default function RaidTrackingPage() {
       .eq('expansion_id', currentExpansion.expansion_id)
 
     console.log('📦 Found tiers:', tiers?.length || 0)
-    if (!tiers || tiers.length === 0) return
+    if (!tiers || tiers.length === 0) return []
 
     const tierIds = tiers.map(t => t.id)
 
@@ -765,7 +856,9 @@ export default function RaidTrackingPage() {
     console.log('📦 Loaded loot items:', items?.length || 0)
     if (items) {
       setLootItems(items)
+      return items
     }
+    return []
   }
 
   // Preview functions to show match counts
@@ -869,6 +962,98 @@ export default function RaidTrackingPage() {
     return parseAttendancePreview(data) // Same logic
   }
 
+  // Handle closing the import modal with confirmation if there's unsaved data
+  const handleCloseImportModal = () => {
+    const hasUnsavedData = attendanceData.trim() || lootData.trim() || signupsData.trim()
+
+    if (hasUnsavedData) {
+      confirm({
+        title: 'Discard changes?',
+        description: 'You have unsaved data in the form. Are you sure you want to close without importing?',
+        confirmLabel: 'Discard',
+        cancelLabel: 'Keep Editing',
+        variant: 'warning',
+        onConfirm: () => {
+          setShowImportModal(null)
+          setAttendanceData('')
+          setLootData('')
+          setSignupsData('')
+        }
+      })
+      return
+    }
+
+    setShowImportModal(null)
+    setAttendanceData('')
+    setLootData('')
+    setSignupsData('')
+  }
+
+  // Clear all saved attendance and loot data for a raid
+  const clearRaidData = async () => {
+    if (!showImportModal) return
+
+    const confirmed = window.confirm(
+      'Are you sure you want to clear ALL attendance and loot data for this raid? This cannot be undone.'
+    )
+    if (!confirmed) return
+
+    setImporting(true)
+
+    try {
+      // Delete all attendance records for this raid
+      const { error: attendanceError } = await supabase
+        .from('attendance_records')
+        .delete()
+        .eq('raid_event_id', showImportModal.raidId)
+
+      if (attendanceError) {
+        console.error('❌ Clear attendance error:', attendanceError)
+        showNotification('error', 'Failed to clear attendance data')
+      }
+
+      // Delete all loot history for this raid
+      const { error: lootError } = await supabase
+        .from('loot_history')
+        .delete()
+        .eq('raid_event_id', showImportModal.raidId)
+
+      if (lootError) {
+        console.error('❌ Clear loot error:', lootError)
+        showNotification('error', 'Failed to clear loot data')
+      }
+
+      // Clear local state
+      setAttendance(prev => {
+        const newState = { ...prev }
+        delete newState[showImportModal.raidId]
+        return newState
+      })
+      setUnlinkedAttendees(prev => {
+        const newState = { ...prev }
+        delete newState[showImportModal.raidId]
+        return newState
+      })
+      setRaidLoot(prev => {
+        const newState = { ...prev }
+        delete newState[showImportModal.raidId]
+        return newState
+      })
+
+      // Clear form fields
+      setAttendanceData('')
+      setLootData('')
+      setSignupsData('')
+
+      showNotification('success', 'Raid data cleared successfully')
+    } catch (e) {
+      console.error('❌ Clear raid data error:', e)
+      showNotification('error', 'Failed to clear raid data')
+    } finally {
+      setImporting(false)
+    }
+  }
+
   // Unified import function - imports all data at once
   const importAllRaidData = async () => {
     console.log('📥 importAllRaidData called', { showImportModal, activeGuild: activeGuild?.id })
@@ -914,7 +1099,7 @@ export default function RaidTrackingPage() {
             raid_event_id: showImportModal.raidId,
             character_id: member.character_id,
             user_id: member.user_id,
-            signed_up: false,
+            signed_up: guildSettings?.use_signups || false, // Auto-set signed_up if enabled
             attended: true,
             no_call_no_show: false,
             was_late: false,
@@ -925,7 +1110,7 @@ export default function RaidTrackingPage() {
           unlinkedUpdates.push({
             raid_event_id: showImportModal.raidId,
             character_name: name,
-            signed_up: false,
+            signed_up: guildSettings?.use_signups || false,
             attended: true,
             no_call_no_show: false,
             was_late: false,
@@ -934,6 +1119,30 @@ export default function RaidTrackingPage() {
           results.attendance.failed++
         }
       })
+
+      // Mark members with loot lists NOT in the import as No Show
+      const importedCharacterIds = new Set(linkedCharacterIds)
+      const noShowUpdates: any[] = []
+
+      members.forEach(member => {
+        if (!importedCharacterIds.has(member.character_id)) {
+          noShowUpdates.push({
+            raid_event_id: showImportModal.raidId,
+            character_id: member.character_id,
+            user_id: member.user_id,
+            signed_up: false,
+            attended: false,
+            no_call_no_show: true,
+            was_late: false,
+            was_benched: false
+          })
+        }
+      })
+
+      if (noShowUpdates.length > 0) {
+        console.log('📥 Marking', noShowUpdates.length, 'members as No Show (not in import)')
+        linkedUpdates.push(...noShowUpdates)
+      }
 
       // When editing, first remove attendance for members not in the new list
       if (showImportModal.isEdit) {
@@ -1011,58 +1220,76 @@ export default function RaidTrackingPage() {
     }
 
     // Import Signups (if enabled and data provided)
+    // Note: This runs AFTER attendance import, so all members already have records created
+    // We only need to update the signed_up field, preserving all other attendance statuses
     if (guildSettings?.use_signups && signupsData.trim()) {
       const names = parseMRTNames(signupsData)
+      const signupCharacterIds: string[] = []
 
-      const linkedUpdates: any[] = []
-      const unlinkedUpdates: any[] = []
-
-      names.forEach(name => {
+      for (const name of names) {
         const member = members.find(m =>
           m.character_name.toLowerCase() === name.toLowerCase()
         )
 
         if (member) {
-          linkedUpdates.push({
-            raid_event_id: showImportModal.raidId,
-            character_id: member.character_id,
-            user_id: member.user_id,
-            signed_up: true,
-            attended: false,
-            no_call_no_show: false,
-            was_late: false,
-            was_benched: false
-          })
+          signupCharacterIds.push(member.character_id)
           results.signups.success++
         } else {
-          unlinkedUpdates.push({
-            raid_event_id: showImportModal.raidId,
-            character_name: name,
-            signed_up: true,
-            attended: false,
-            no_call_no_show: false,
-            was_late: false,
-            was_benched: false
-          })
-          results.signups.failed++
+          // Unlinked signup (character not in guild) - upsert with signup flag
+          await supabase
+            .from('attendance_records')
+            .upsert({
+              raid_event_id: showImportModal.raidId,
+              character_name: name,
+              signed_up: true,
+              attended: false,
+              no_call_no_show: false,
+              was_late: false,
+              was_benched: false
+            })
+          results.signups.failed++ // Counts as "failed" match but successful import
         }
-      })
+      }
 
-      // For signups, we need to update existing records or insert new ones
-      for (const update of linkedUpdates) {
-        await supabase
+      // Batch update signed_up for all linked members in signup list
+      // This preserves their attendance status (attended, no_call_no_show, etc.)
+      if (signupCharacterIds.length > 0) {
+        const { error } = await supabase
           .from('attendance_records')
-          .upsert({
-            ...update,
-            // Preserve attended status if record exists
-          }, { onConflict: 'raid_event_id,character_id' })
+          .update({ signed_up: true })
+          .eq('raid_event_id', showImportModal.raidId)
+          .in('character_id', signupCharacterIds)
+
+        if (error) {
+          console.error('❌ Signup update error:', error)
+        } else {
+          console.log('✅ Updated signups for', signupCharacterIds.length, 'members')
+        }
       }
     }
 
     // Import Loot
     if (lootData.trim()) {
       console.log('📥 Starting loot import...')
-      console.log('📥 Available loot items:', lootItems.length)
+      console.log('📥 Available loot items in state:', lootItems.length)
+
+      // Get the items to use for matching - reload if state is empty
+      // We use the returned value because React state updates are async
+      let itemsToUse = lootItems
+      if (itemsToUse.length === 0) {
+        console.log('📥 Loot items state empty - loading items...')
+        itemsToUse = await loadLootItems()
+        console.log('📥 Loaded loot items:', itemsToUse.length)
+      }
+
+      if (itemsToUse.length === 0) {
+        results.loot.errors.push('Could not load loot items database. Please try again.')
+        showNotification('error', 'Loot import failed - items database not available')
+        // Don't continue with loot import
+        setImporting(false)
+        setShowImportModal(null)
+        return
+      }
 
       const { data: { user } } = await supabase.auth.getUser()
       const { data: eventData } = await supabase
@@ -1100,7 +1327,8 @@ export default function RaidTrackingPage() {
 
         const itemId = parseInt(itemIdMatch[1])
         console.log('📥 Looking for item with wowhead_id:', itemId)
-        const matchedItem = lootItems.find(item => item.wowhead_id === itemId)
+        // Use itemsToUse instead of lootItems state
+        const matchedItem = itemsToUse.find(item => item.wowhead_id === itemId)
         const matchedCharacter = members.find(m =>
           m.character_name.toLowerCase() === characterName.trim().toLowerCase()
         )
@@ -1520,7 +1748,7 @@ export default function RaidTrackingPage() {
       {/* Legend */}
       {!raidStartDateInFuture && (
         <div className="flex items-center gap-3 sm:gap-4 text-[12px] sm:text-[13px] flex-wrap">
-          <span className="text-muted-foreground">Status Options:</span>
+          <span className="text-muted-foreground">Status:</span>
           <div className="flex items-center gap-1">
             <div className="w-5 h-5 rounded border bg-success/30 border-success"></div>
             <span className="text-muted-foreground">Attended</span>
@@ -1531,16 +1759,21 @@ export default function RaidTrackingPage() {
           </div>
           <div className="flex items-center gap-1">
             <div className="w-5 h-5 rounded border bg-orange-500/30 border-orange-500"></div>
-            <span className="text-muted-foreground">Benched</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <div className="w-5 h-5 rounded border bg-accent/30 border-accent"></div>
-            <span className="text-muted-foreground">Signed Up</span>
+            <span className="text-muted-foreground">Standby</span>
           </div>
           <div className="flex items-center gap-1">
             <div className="w-5 h-5 rounded border bg-destructive/30 border-destructive"></div>
-            <span className="text-muted-foreground">No-Show</span>
+            <span className="text-muted-foreground">No Show</span>
           </div>
+          {guildSettings?.use_signups && (
+            <>
+              <span className="text-border">|</span>
+              <div className="flex items-center gap-1">
+                <Checkbox checked disabled className="h-4 w-4 opacity-60" />
+                <span className="text-muted-foreground">Signed Up</span>
+              </div>
+            </>
+          )}
         </div>
       )}
 
@@ -1717,63 +1950,81 @@ export default function RaidTrackingPage() {
                       </p>
                     </div>
                   ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                  <>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
                     {/* Linked Members */}
                     {members.map(member => {
                       const status = attendance[raid.id]?.[member.character_id]
                       const state = getCellState(status)
+                      const isSignedUp = status?.signed_up || false
+                      const memberLoot = raidLoot[raid.id]?.filter(l =>
+                        l.character_name.toLowerCase() === member.character_name.toLowerCase()
+                      ) || []
 
                       return (
-                        <Button
-                          key={member.character_id}
-                          variant="ghost"
-                          onClick={() => cycleAttendanceState(raid.id, member.character_id, member.user_id)}
-                          className={`px-4 py-3 h-auto rounded-lg border transition text-left justify-start ${getCellStyle(state)}`}
-                        >
-                          <div className="flex items-center justify-between w-full">
-                            <div>
-                              <p className="font-medium" style={{ color: member.class_color }}>
-                                {member.character_name}
-                              </p>
-                              <p className="text-[11px] text-foreground-muted mt-0.5">{member.class_name}</p>
-                            </div>
-                            <span className="text-[12px] font-medium">
-                              {getCellLabel(state)}
+                        <div key={member.character_id} className="flex items-center gap-1.5">
+                          {guildSettings?.use_signups && (
+                            <Checkbox
+                              checked={isSignedUp}
+                              onCheckedChange={() => toggleSignup(raid.id, member.character_id, member.user_id)}
+                              className="h-4 w-4 flex-shrink-0"
+                              title="Signed up for this raid"
+                            />
+                          )}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => cycleAttendanceState(raid.id, member.character_id, member.user_id)}
+                            className={`flex-1 px-2 py-1.5 h-auto text-[12px] rounded-md border transition justify-between ${getCellStyle(state)}`}
+                          >
+                            <span className="font-medium truncate" style={{ color: member.class_color }}>
+                              {member.character_name}
                             </span>
-                          </div>
-                        </Button>
+                            <span className="text-[10px] ml-1 flex-shrink-0 flex items-center gap-1">
+                              {memberLoot.length > 0 && (
+                                <span className="text-accent" title={`${memberLoot.length} item(s) received`}>
+                                  {memberLoot.length}
+                                </span>
+                              )}
+                              {getShortLabel(state)}
+                            </span>
+                          </Button>
+                        </div>
                       )
                     })}
 
-                    {/* Unlinked Attendees (No Account Yet) */}
-                    {unlinkedAttendees[raid.id]?.map((attendee, idx) => {
+                    {/* Unlinked Attendees (No Account Yet) - filter out any that match linked members */}
+                    {unlinkedAttendees[raid.id]
+                      ?.filter(attendee =>
+                        !members.some(m => m.character_name.toLowerCase() === attendee.character_name.toLowerCase())
+                      )
+                      .map((attendee, idx) => {
                       const state = getCellState(attendee.status)
 
                       return (
                         <div
                           key={`unlinked-${idx}`}
-                          className={`px-4 py-3 rounded-lg border opacity-60 text-left ${getCellStyle(state)}`}
+                          className={`flex items-center px-2 py-1.5 text-[12px] rounded-md border opacity-60 ${getCellStyle(state)}`}
                         >
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <div className="flex items-center gap-2">
-                                <p className="font-medium text-muted-foreground">
-                                  {attendee.character_name}
-                                </p>
-                                <span className="px-2 py-0.5 rounded-full text-[9px] font-medium bg-yellow-500/30 text-yellow-400 border border-yellow-500/50">
-                                  Pending
-                                </span>
-                              </div>
-                              <p className="text-[11px] text-foreground-muted mt-0.5">No account</p>
-                            </div>
-                            <span className="text-[12px] font-medium">
-                              {getCellLabel(state)}
-                            </span>
-                          </div>
+                          <span className="font-medium text-muted-foreground truncate flex-1" title={`${attendee.character_name} (No account)`}>
+                            {attendee.character_name}
+                          </span>
+                          <span className="text-[10px] ml-1 flex-shrink-0">{getShortLabel(state)}</span>
                         </div>
                       )
                     })}
                   </div>
+                  {/* Legend */}
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-3 text-[11px] text-muted-foreground">
+                    <span><strong className="text-success">A</strong> = Attended</span>
+                    <span><strong className="text-yellow-400">L</strong> = Late</span>
+                    <span><strong className="text-orange-400">S</strong> = Standby</span>
+                    <span><strong className="text-destructive">N</strong> = No Show</span>
+                    {raidLoot[raid.id]?.length > 0 && (
+                      <span><strong className="text-accent">#</strong> = Loot count</span>
+                    )}
+                  </div>
+                  </>
                   )}
 
                   {/* Loot Section */}
@@ -1868,15 +2119,10 @@ export default function RaidTrackingPage() {
       {/* Import Modal - Unified Form */}
       <Modal
         open={!!showImportModal}
-        onClose={() => {
-          setShowImportModal(null)
-          setAttendanceData('')
-          setLootData('')
-          setSignupsData('')
-        }}
+        onClose={handleCloseImportModal}
         size="xl"
       >
-        <ModalHeader onClose={() => setShowImportModal(null)}>
+        <ModalHeader onClose={handleCloseImportModal}>
           <ModalTitle>{showImportModal?.isEdit ? 'Edit Raid Data' : 'Import Raid Data'}</ModalTitle>
           {showImportModal && (
             <ModalDescription>
@@ -1981,26 +2227,43 @@ export default function RaidTrackingPage() {
             </div>
           )}
         </ModalBody>
-        <ModalFooter>
-          <Button
-            variant="secondary"
-            onClick={() => {
-              setShowImportModal(null)
-              setAttendanceData('')
-              setLootData('')
-              setSignupsData('')
-            }}
-          >
-            Cancel
-          </Button>
-          <Button
-            variant="primary"
-            onClick={importAllRaidData}
-            disabled={importing || (!attendanceData.trim() && !lootData.trim())}
-            loading={importing}
-          >
-            {showImportModal?.isEdit ? 'Save Changes' : 'Import All'}
-          </Button>
+        <ModalFooter className="flex justify-between">
+          <div className="flex gap-2">
+            <Button
+              variant="ghost"
+              onClick={() => {
+                setAttendanceData('')
+                setLootData('')
+                setSignupsData('')
+              }}
+              disabled={importing || (!attendanceData.trim() && !lootData.trim() && !signupsData.trim())}
+            >
+              Clear Fields
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={clearRaidData}
+              disabled={importing}
+            >
+              Clear Saved Data
+            </Button>
+          </div>
+          <div className="flex gap-2">
+            <Button
+              variant="secondary"
+              onClick={handleCloseImportModal}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              onClick={importAllRaidData}
+              disabled={importing || (!attendanceData.trim() && !lootData.trim())}
+              loading={importing}
+            >
+              {showImportModal?.isEdit ? 'Save Changes' : 'Import All'}
+            </Button>
+          </div>
         </ModalFooter>
       </Modal>
 

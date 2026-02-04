@@ -51,7 +51,15 @@ export default function Navigation({
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      const target = event.target as Node
+
+      // Ignore events that don't have a valid target or target is not in the document
+      // This prevents closing when mouse leaves the window boundary
+      if (!target || !document.body.contains(target)) {
+        return
+      }
+
+      if (dropdownRef.current && !dropdownRef.current.contains(target)) {
         setDropdownOpen(false)
       }
     }
