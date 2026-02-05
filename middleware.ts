@@ -137,12 +137,39 @@ const rateLimitConfig = {
   api: { limit: 60, windowMs: 60000 },
 }
 
+// LOW-02: Request body size limits by route type
+// Feedback allows 5MB for screenshots, others get 1MB default
+const bodySizeLimits: Record<string, number> = {
+  feedback: 5 * 1024 * 1024,  // 5MB for feedback (screenshots)
+  default: 1024 * 1024,        // 1MB for all other routes
+}
+
 export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname
 
   // Only rate limit API routes
   if (!pathname.startsWith('/api') && !pathname.startsWith('/auth')) {
     return NextResponse.next()
+  }
+
+  // LOW-02: Check request body size for POST/PUT/PATCH requests
+  const method = request.method.toUpperCase()
+  if (['POST', 'PUT', 'PATCH'].includes(method)) {
+    const contentLength = request.headers.get('content-length')
+    if (contentLength) {
+      const size = parseInt(contentLength, 10)
+      const limit = pathname.startsWith('/api/feedback')
+        ? bodySizeLimits.feedback
+        : bodySizeLimits.default
+
+      if (!isNaN(size) && size > limit) {
+        const limitMB = (limit / (1024 * 1024)).toFixed(0)
+        return NextResponse.json(
+          { error: `Request body too large. Maximum size is ${limitMB}MB.` },
+          { status: 413 }
+        )
+      }
+    }
   }
 
   const ip = getClientIp(request)

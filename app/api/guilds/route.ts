@@ -115,7 +115,8 @@ export async function POST(request: NextRequest) {
     // Auto-fetch Discord icon if server ID is provided
     if (discord_server_id) {
       try {
-        const iconResponse = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/api/discord/guild-icon?serverId=${discord_server_id}`)
+        // LOW-04: URL encode the server ID to prevent injection
+        const iconResponse = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/api/discord/guild-icon?serverId=${encodeURIComponent(discord_server_id)}`)
 
         if (iconResponse.ok) {
           const iconData = await iconResponse.json()

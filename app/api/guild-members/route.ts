@@ -301,10 +301,16 @@ export async function DELETE(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const guildId = searchParams.get('guild_id')
     const targetUserId = searchParams.get('target_user_id')
-    const characterIds = searchParams.get('character_ids')?.split(',')
+    const characterIdsParam = searchParams.get('character_ids')
 
-    if (!guildId || !targetUserId || !characterIds) {
+    if (!guildId || !targetUserId || !characterIdsParam) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
+    }
+
+    // LOW-03: Validate array length to prevent DoS via excessive character_ids
+    const characterIds = characterIdsParam.split(',')
+    if (characterIds.length > 100) {
+      return NextResponse.json({ error: 'Too many character_ids (max 100)' }, { status: 400 })
     }
 
     // Verify user has officer permissions (position >= 50)
