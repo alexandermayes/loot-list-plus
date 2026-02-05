@@ -315,25 +315,25 @@ export default function AttendancePage() {
       ].filter(day => day !== null && day !== undefined)
         .slice(0, raidDaysSource?.raid_days_per_week || 2)
 
-      const filteredRaidEvents = (raidEventsData || []).filter(event => {
+      const filteredRaidEvents = (raidEventsData || []).filter((event: RaidEvent) => {
         const eventDate = new Date(event.raid_date + 'T00:00:00')
         return raidDays.includes(eventDate.getDay())
       })
 
       // IMPORTANT: Deduplicate by raid_date to handle duplicate entries in database
       // First, find which raid IDs have attendance records, so we prefer those
-      const filteredRaidIds = filteredRaidEvents.map(e => e.id)
+      const filteredRaidIds = filteredRaidEvents.map((e: RaidEvent) => e.id)
       const { data: existingAttendance } = await supabase
         .from('attendance_records')
         .select('raid_event_id')
         .in('raid_event_id', filteredRaidIds)
 
-      const raidIdsWithAttendance = new Set(existingAttendance?.map(r => r.raid_event_id) || [])
+      const raidIdsWithAttendance = new Set(existingAttendance?.map((r: { raid_event_id: string }) => r.raid_event_id) || [])
       console.log('📊 [Attendance] Raid IDs with existing attendance:', [...raidIdsWithAttendance])
 
       // Deduplicate: prefer events that have attendance records
-      const deduplicatedRaidEvents = Array.from(
-        filteredRaidEvents.reduce((map, event) => {
+      const deduplicatedRaidEvents: RaidEvent[] = Array.from(
+        filteredRaidEvents.reduce((map: Map<string, RaidEvent>, event: RaidEvent) => {
           const existing = map.get(event.raid_date)
           if (!existing) {
             // First event for this date - keep it
@@ -343,11 +343,11 @@ export default function AttendancePage() {
             map.set(event.raid_date, event)
           }
           return map
-        }, new Map<string, typeof filteredRaidEvents[0]>()).values()
+        }, new Map<string, RaidEvent>()).values()
       )
 
       console.log('📊 [Attendance] Query returned', raidEventsData?.length || 0, 'events, filtered to', filteredRaidEvents.length, 'matching raid days, deduplicated to', deduplicatedRaidEvents.length)
-      console.log('📊 [Attendance] Deduplicated raid events:', deduplicatedRaidEvents.map(e => ({ id: e.id, date: e.raid_date, hasAttendance: raidIdsWithAttendance.has(e.id) })))
+      console.log('📊 [Attendance] Deduplicated raid events:', deduplicatedRaidEvents.map((e: RaidEvent) => ({ id: e.id, date: e.raid_date, hasAttendance: raidIdsWithAttendance.has(e.id) })))
 
       setGuildRaidEvents(deduplicatedRaidEvents)
 
@@ -377,7 +377,7 @@ export default function AttendancePage() {
 
       // Calculate personal attendance score using deduplicated events
       if (deduplicatedRaidEvents.length > 0) {
-        const raidIds = deduplicatedRaidEvents.map(r => r.id)
+        const raidIds = deduplicatedRaidEvents.map((r: RaidEvent) => r.id)
 
         const { data: recentRecords } = await supabase
           .from('attendance_records')
@@ -429,7 +429,7 @@ export default function AttendancePage() {
       .eq('status', 'approved')
       .in('character_id', characterIds)
 
-    const approvedCharacterIds = new Set(approvedSubmissions?.map(s => s.character_id) || [])
+    const approvedCharacterIds = new Set(approvedSubmissions?.map((s: { character_id: string }) => s.character_id) || [])
 
     // Filter to only active raiders
     const activeRaiders = membershipsData.filter((m: any) => approvedCharacterIds.has(m.character_id))
@@ -449,7 +449,7 @@ export default function AttendancePage() {
 
     // Build attendance map: characterId -> raidEventId -> status
     const attendanceByCharacter: Record<string, Map<string, AttendanceStatus>> = {}
-    allAttendance?.forEach(record => {
+    allAttendance?.forEach((record: { raid_event_id: string; character_id: string | null; signed_up: boolean; attended: boolean; no_call_no_show: boolean; was_late?: boolean; was_benched?: boolean }) => {
       if (!record.character_id) return
       if (!attendanceByCharacter[record.character_id]) {
         attendanceByCharacter[record.character_id] = new Map()

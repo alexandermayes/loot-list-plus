@@ -436,7 +436,8 @@ export default function RaidTrackingPage() {
     // Build set of linked member names for duplicate detection
     const linkedMemberNames = new Set(members.map(m => m.character_name.toLowerCase()))
 
-    records?.forEach(r => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    records?.forEach((r: any) => {
       if (r.character_id) {
         // Linked attendee
         attendanceMap[r.character_id] = {
@@ -492,8 +493,8 @@ export default function RaidTrackingPage() {
       if (!lootError && lootRecords) {
         // Get character IDs that are not null
         const characterIds = lootRecords
-          .map(r => r.character_id)
-          .filter((id): id is string => id !== null)
+          .map((r: { character_id: string | null }) => r.character_id)
+          .filter((id: string | null): id is string => id !== null)
 
         // Fetch character info separately if there are linked characters
         let characterMap: Record<string, { name: string, color_hex: string }> = {}
@@ -924,7 +925,7 @@ export default function RaidTrackingPage() {
     console.log('📦 Found tiers:', tiers?.length || 0)
     if (!tiers || tiers.length === 0) return []
 
-    const tierIds = tiers.map(t => t.id)
+    const tierIds = tiers.map((t: { id: string }) => t.id)
 
     // Get all loot items for these tiers
     const { data: items } = await supabase
@@ -1233,15 +1234,16 @@ export default function RaidTrackingPage() {
           .eq('raid_event_id', showImportModal.raidId)
 
         if (currentRecords) {
+          type AttendanceRecord = { id: string; character_id: string | null; character_name: string | null }
           // Find linked records to remove (character_id not in new list)
           const linkedToRemove = currentRecords
-            .filter(r => r.character_id && !linkedCharacterIds.includes(r.character_id))
-            .map(r => r.id)
+            .filter((r: AttendanceRecord) => r.character_id && !linkedCharacterIds.includes(r.character_id))
+            .map((r: AttendanceRecord) => r.id)
 
           // Find unlinked records to remove (character_name not in new list)
           const unlinkedToRemove = currentRecords
-            .filter(r => !r.character_id && r.character_name && !namesLower.includes(r.character_name.toLowerCase()))
-            .map(r => r.id)
+            .filter((r: AttendanceRecord) => !r.character_id && r.character_name && !namesLower.includes(r.character_name.toLowerCase()))
+            .map((r: AttendanceRecord) => r.id)
 
           const idsToRemove = [...linkedToRemove, ...unlinkedToRemove]
 
@@ -1351,7 +1353,7 @@ export default function RaidTrackingPage() {
     // Import Loot
     if (lootData.trim()) {
       console.log('📥 Starting loot import...')
-      console.log('📥 Current expansion:', currentExpansion?.name, '(id:', currentExpansion?.expansion_id, ')')
+      console.log('📥 Current expansion:', currentExpansion?.expansion_name, '(id:', currentExpansion?.expansion_id, ')')
       console.log('📥 Available loot items in state:', lootItems.length)
 
       // Get the items to use for matching - reload if state is empty

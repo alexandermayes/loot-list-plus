@@ -344,9 +344,10 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
       let transformedMemberships: any[] = []
 
       if (characters && characters.length > 0) {
-        const characterIds = characters.map(c => c.id)
+        type CharacterData = { id: string; spec_id: string | null; name: string; [key: string]: unknown }
+        const characterIds = characters.map((c: CharacterData) => c.id)
         const specIds = characters
-          .map(c => c.spec_id)
+          .map((c: CharacterData) => c.spec_id)
           .filter(Boolean) as string[]
 
         console.log('[GUILD CONTEXT] Fetching memberships for character IDs:', characterIds)
@@ -411,10 +412,11 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
         const { data: memberships, error: membershipsError } = membershipsResult
 
         // Attach specs to characters
+        type SpecData = { id: string; name: string }
         if (specs && specs.length > 0) {
-          enrichedCharacters = characters.map(char => ({
+          enrichedCharacters = characters.map((char: { id: string; spec_id: string | null; [key: string]: unknown }) => ({
             ...char,
-            spec: specs.find(s => s.id === char.spec_id) || null
+            spec: specs.find((s: SpecData) => s.id === char.spec_id) || null
           }))
         } else {
           enrichedCharacters = characters
@@ -433,7 +435,7 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
           setCharacterMemberships([])
         } else {
           // Transform the data to handle arrays from Supabase joins
-          transformedMemberships = (memberships || []).map(m => {
+          transformedMemberships = (memberships || []).map((m: { character: unknown; [key: string]: unknown }) => {
             const char = Array.isArray(m.character) ? m.character[0] : m.character
             return {
               ...m,
@@ -530,7 +532,7 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
 
       if (activeCharData?.active_character_id) {
         // Find the character from our enriched characters (which have specs attached)
-        const activeChar = enrichedCharacters.find(c => c.id === activeCharData.active_character_id)
+        const activeChar = enrichedCharacters.find((c: { id: string }) => c.id === activeCharData.active_character_id)
         if (activeChar) {
           setActiveCharacter(activeChar)
         }
@@ -837,7 +839,7 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
 
   // Listen for auth changes
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event: string, session: unknown) => {
       if (event === 'SIGNED_IN') {
         // Only reload guilds on fresh sign-in, not on token refresh/session restore
         // This prevents UI flashing when users tab away and return

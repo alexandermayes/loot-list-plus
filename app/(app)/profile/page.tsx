@@ -177,7 +177,7 @@ export default function ProfilePage() {
       let derivedMemberships: any[] = []
 
       if (userCharacters && userCharacters.length > 0) {
-        const characterIds = userCharacters.map(c => c.id)
+        const characterIds = userCharacters.map((c: { id: string }) => c.id)
         const { data: charMemberships } = await supabase
           .from('character_guild_memberships')
           .select(`

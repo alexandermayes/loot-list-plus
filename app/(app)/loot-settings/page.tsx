@@ -289,7 +289,7 @@ export default function AdminLootItems() {
           }
 
           const rolesFromGuildRoles = guildRolesData
-            ? guildRolesData.map(r => ({ name: r.name, position: r.position }))
+            ? guildRolesData.map((r: { name: string; position: number }) => ({ name: r.name, position: r.position }))
             : []
 
           console.log('Roles from guild_roles table:', rolesFromGuildRoles)
@@ -315,12 +315,12 @@ export default function AdminLootItems() {
               .eq('guild_id', guildId)
 
             const rolesFromDB = membershipData
-              ? [...new Set(membershipData.map(d => d.role))].filter(Boolean)
+              ? [...new Set(membershipData.map((d: { role: string }) => d.role))].filter(Boolean) as string[]
               : []
 
             const uniqueRoleNames = [...new Set([...rolesFromSettings, ...rolesFromDB])]
             // Assign default positions for fallback roles
-            allRoles = uniqueRoleNames.map(name => {
+            allRoles = uniqueRoleNames.map((name: string) => {
               if (name === 'Guild Master') return { name, position: 100 }
               if (name === 'Officer') return { name, position: 50 }
               if (name === 'Member') return { name, position: 0 }
@@ -537,7 +537,7 @@ export default function AdminLootItems() {
 
       if (tiersData) {
         // Sort by progression order
-        const sortedTiers = tiersData.sort((a, b) =>
+        const sortedTiers = tiersData.sort((a: { name: string }, b: { name: string }) =>
           getRaidTierOrder(a.name) - getRaidTierOrder(b.name)
         )
         setRaidTiers(sortedTiers)

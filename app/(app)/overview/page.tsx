@@ -317,7 +317,7 @@ export default function Dashboard() {
       }
 
       // Get raid tier data separately to avoid join issues
-      const submissionRaidTierIds = submissions?.map(s => s.raid_tier_id) || []
+      const submissionRaidTierIds = submissions?.map((s: { raid_tier_id: string }) => s.raid_tier_id) || []
       let raidTierMap: Record<string, RaidTier> = {}
 
       if (submissionRaidTierIds.length > 0) {
@@ -327,12 +327,12 @@ export default function Dashboard() {
           .in('id', submissionRaidTierIds)
 
         if (tiers) {
-          raidTierMap = Object.fromEntries(tiers.map(t => [t.id, t]))
+          raidTierMap = Object.fromEntries(tiers.map((t: { id: string; name: string; is_active: boolean | null }) => [t.id, t]))
         }
       }
 
       // Transform submissions for current character
-      const transformedSubmissions: LootSubmission[] = (submissions || []).map(sub => ({
+      const transformedSubmissions: LootSubmission[] = (submissions || []).map((sub: { id: string; character_id: string; raid_tier_id: string; status: string; updated_at: string }) => ({
         id: sub.id,
         character_id: sub.character_id,
         raid_tier_id: sub.raid_tier_id,
@@ -477,7 +477,7 @@ export default function Dashboard() {
 
           // Filter to only raids on configured raid days
           const filteredRaidEvents = raidDays.length > 0 && raidEventsData
-            ? raidEventsData.filter(event => {
+            ? raidEventsData.filter((event: { id: string; raid_date: string }) => {
                 const eventDate = new Date(event.raid_date + 'T00:00:00')
                 return raidDays.includes(eventDate.getDay())
               })
@@ -487,7 +487,7 @@ export default function Dashboard() {
 
           if (filteredRaidEvents && filteredRaidEvents.length > 0) {
             // Handle duplicate raid events - prefer IDs with attendance records
-            const raidEventIds = filteredRaidEvents.map(r => r.id)
+            const raidEventIds = filteredRaidEvents.map((r: { id: string }) => r.id)
 
             // Check which raid IDs have attendance for this character
             const { data: existingAttendance } = await supabase
@@ -496,12 +496,13 @@ export default function Dashboard() {
               .eq('character_id', characterId)
               .in('raid_event_id', raidEventIds)
 
-            const raidIdsWithAttendance = new Set(existingAttendance?.map(r => r.raid_event_id) || [])
+            const raidIdsWithAttendance = new Set(existingAttendance?.map((r: { raid_event_id: string }) => r.raid_event_id) || [])
             console.log('📊 [Overview] Raid IDs with attendance:', [...raidIdsWithAttendance])
 
             // Deduplicate by date, preferring IDs that have attendance records
-            const deduplicatedRaidEvents = Array.from(
-              filteredRaidEvents.reduce((map, event) => {
+            type RaidEvent = { id: string; raid_date: string }
+            const deduplicatedRaidEvents: RaidEvent[] = Array.from(
+              filteredRaidEvents.reduce((map: Map<string, RaidEvent>, event: RaidEvent) => {
                 const existing = map.get(event.raid_date)
                 if (!existing) {
                   map.set(event.raid_date, event)
@@ -509,11 +510,11 @@ export default function Dashboard() {
                   map.set(event.raid_date, event)
                 }
                 return map
-              }, new Map<string, typeof filteredRaidEvents[0]>()).values()
+              }, new Map<string, RaidEvent>()).values()
             )
 
             const totalRaids = deduplicatedRaidEvents.length
-            const deduplicatedRaidIds = deduplicatedRaidEvents.map(r => r.id)
+            const deduplicatedRaidIds = deduplicatedRaidEvents.map((r: RaidEvent) => r.id)
 
             // Now fetch attendance records using the deduplicated raid IDs
             const { data: attendanceRecords, error: attError } = await supabase
@@ -568,7 +569,8 @@ export default function Dashboard() {
       }
 
       // Get unique loot item IDs
-      const itemIds = [...new Set(submissionItems.map(si => si.loot_item_id))]
+      type SubmissionItemData = { loot_item_id: string; rank: number; slot: number; submission: unknown }
+      const itemIds = [...new Set(submissionItems.map((si: SubmissionItemData) => si.loot_item_id))]
 
       // Fetch item details
       const { data: items } = await supabase
@@ -585,12 +587,13 @@ export default function Dashboard() {
       const priorityItems: LootPriorityItem[] = []
 
       // Collect all item/rank pairs we need to check for ties (BATCHED - avoids N+1)
+      type LootItemData = { id: string; name: string; wowhead_id: number; boss_name: string; classification: string | null; raid_tier_id: string }
       const itemRankPairs = items
-        .map(item => {
-          const charRanking = submissionItems.find(si => si.loot_item_id === item.id)
+        .map((item: LootItemData) => {
+          const charRanking = submissionItems.find((si: SubmissionItemData) => si.loot_item_id === item.id)
           return charRanking ? { itemId: item.id, rank: charRanking.rank } : null
         })
-        .filter((pair): pair is { itemId: string; rank: number } => pair !== null)
+        .filter((pair: { itemId: string; rank: number } | null): pair is { itemId: string; rank: number } => pair !== null)
 
       // Batch fetch all same-rank submissions for all items in ONE query
       // Note: Supabase returns joined relations as arrays
@@ -631,7 +634,7 @@ export default function Dashboard() {
       if (itemRankPairs.length > 0) {
         // Build OR conditions for each item/rank pair
         const orConditions = itemRankPairs
-          .map(pair => `and(loot_item_id.eq.${pair.itemId},rank.eq.${pair.rank})`)
+          .map((pair: { itemId: string; rank: number }) => `and(loot_item_id.eq.${pair.itemId},rank.eq.${pair.rank})`)
           .join(',')
 
         const { data: batchedSubmissions } = await supabase
@@ -670,7 +673,7 @@ export default function Dashboard() {
 
       for (const item of items) {
         // Find this character's ranking for this item
-        const charRanking = submissionItems.find(si => si.loot_item_id === item.id)
+        const charRanking = submissionItems.find((si: SubmissionItemData) => si.loot_item_id === item.id)
 
         if (charRanking) {
           // Get same-rank submissions from our batched results

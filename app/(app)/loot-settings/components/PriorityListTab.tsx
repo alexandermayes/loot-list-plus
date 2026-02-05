@@ -166,12 +166,12 @@ export default function PriorityListTab() {
 
           if (tiersData && tiersData.length > 0) {
             // Sort by progression order
-            const sortedTiers = tiersData.sort((a, b) =>
+            const sortedTiers = tiersData.sort((a: RaidTier, b: RaidTier) =>
               getRaidTierOrder(a.name) - getRaidTierOrder(b.name)
             )
             setRaidTiers(sortedTiers)
             // Set initial phase to current (active tier's phase) or first available
-            const activeTier = sortedTiers.find(t => t.is_active) || sortedTiers[0]
+            const activeTier = sortedTiers.find((t: RaidTier) => t.is_active) || sortedTiers[0]
             const initialPhase = activeTier?.phase ?? sortedTiers[0]?.phase ?? 1
             setSelectedPhase(initialPhase)
           }
@@ -194,7 +194,7 @@ export default function PriorityListTab() {
           .order('name')
 
         if (specsData) {
-          setClassSpecs(specsData.map(spec => ({
+          setClassSpecs(specsData.map((spec: { id: string; class_id: string; name: string; wow_classes?: { name: string } | null }) => ({
             ...spec,
             combined_name: spec.wow_classes?.name === spec.name
               ? spec.name
@@ -217,7 +217,8 @@ export default function PriorityListTab() {
 
         if (memberships) {
           const chars = memberships
-            .map(m => {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            .map((m: any) => {
               const char = m.character as any
               if (!char) return null
               // Handle both array and single object returns from Supabase
@@ -229,8 +230,8 @@ export default function PriorityListTab() {
                 class: Array.isArray(charData.class) ? charData.class[0] : charData.class
               } as Character
             })
-            .filter((c): c is Character => c !== null)
-          setCharacters(chars.sort((a, b) => a.name.localeCompare(b.name)))
+            .filter((c: Character | null): c is Character => c !== null)
+          setCharacters(chars.sort((a: Character, b: Character) => a.name.localeCompare(b.name)))
         }
 
       } catch (error) {
@@ -265,9 +266,9 @@ export default function PriorityListTab() {
 
         if (itemsData) {
           // Add raid tier name to each item for grouping
-          const itemsWithTierName = itemsData.map(item => ({
+          const itemsWithTierName = itemsData.map((item: LootItem) => ({
             ...item,
-            raid_tier_name: phaseTiers.find(t => t.id === item.raid_tier_id)?.name
+            raid_tier_name: phaseTiers.find((t: RaidTier) => t.id === item.raid_tier_id)?.name
           }))
           setLootItems(itemsWithTierName)
         }

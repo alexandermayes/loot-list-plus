@@ -225,8 +225,9 @@ export default function MasterSheet() {
     if (!recentRaids || recentRaids.length === 0) return { score: 0, raidsAttended: 0 }
 
     // Filter to only raids on configured raid days
+    type RaidEventRecord = { id: string; raid_date: string }
     const filteredRaids = raidDays.length > 0
-      ? recentRaids.filter(event => {
+      ? recentRaids.filter((event: RaidEventRecord) => {
           const eventDate = new Date(event.raid_date + 'T00:00:00')
           return raidDays.includes(eventDate.getDay())
         })
@@ -236,7 +237,7 @@ export default function MasterSheet() {
 
     if (filteredRaids.length === 0) return { score: 0, raidsAttended: 0 }
 
-    const raidIds = filteredRaids.map(r => r.id)
+    const raidIds = filteredRaids.map((r: RaidEventRecord) => r.id)
 
     // Check which raid IDs have attendance for this character
     let raidIdsWithAttendance = new Set<string>()
@@ -246,13 +247,13 @@ export default function MasterSheet() {
         .select('raid_event_id')
         .eq('character_id', characterId)
         .in('raid_event_id', raidIds)
-      raidIdsWithAttendance = new Set(existingAttendance?.map(r => r.raid_event_id) || [])
+      raidIdsWithAttendance = new Set(existingAttendance?.map((r: { raid_event_id: string }) => r.raid_event_id) || [])
     }
 
     // Deduplicate by date, preferring IDs that have attendance records
     // This handles the case where there are duplicate raid events for the same date
-    const deduplicatedRaidEvents = Array.from(
-      filteredRaids.reduce((map, event) => {
+    const deduplicatedRaidEvents: RaidEventRecord[] = Array.from(
+      filteredRaids.reduce((map: Map<string, RaidEventRecord>, event: RaidEventRecord) => {
         const existing = map.get(event.raid_date)
         if (!existing) {
           map.set(event.raid_date, event)
@@ -260,11 +261,11 @@ export default function MasterSheet() {
           map.set(event.raid_date, event)
         }
         return map
-      }, new Map<string, typeof filteredRaids[0]>()).values()
+      }, new Map<string, RaidEventRecord>()).values()
     )
 
     const totalRaids = deduplicatedRaidEvents.length
-    const deduplicatedRaidIds = deduplicatedRaidEvents.map(r => r.id)
+    const deduplicatedRaidIds = deduplicatedRaidEvents.map((r: RaidEventRecord) => r.id)
 
     console.log('📊 [MasterSheet] Deduplicated to', totalRaids, 'raids')
 
@@ -296,7 +297,7 @@ export default function MasterSheet() {
 
     const score = calculateAttendanceScore(records, totalRaids, guildSettings)
     // Count how many raids this character actually attended
-    const raidsAttended = records.filter(r => r.attended).length
+    const raidsAttended = records.filter((r: { attended: boolean }) => r.attended).length
     console.log('📊 [MasterSheet] Attendance score for', characterId, ':', score, '(records:', records.length, 'totalRaids:', totalRaids, 'raidsAttended:', raidsAttended, ')')
     return { score, raidsAttended }
   }
@@ -468,7 +469,7 @@ export default function MasterSheet() {
         }
 
         // Get all ranking submissions for all items at once
-        const itemIds = itemsData.map(i => i.id)
+        const itemIds = itemsData.map((i: { id: string }) => i.id)
         const { data: allRankingsData, error: rankingsError } = await supabase
           .from('loot_submission_items')
           .select('rank, slot, submission_id, loot_item_id')
@@ -476,19 +477,19 @@ export default function MasterSheet() {
 
         if (rankingsError) {
           console.error('Error loading rankings:', rankingsError)
-          setAllItemRankings(itemsData.map(item => ({ item, rankings: [] })))
+          setAllItemRankings(itemsData.map((item: LootItem) => ({ item, rankings: [] })))
           setContentLoading(false)
           return
         }
 
         if (!allRankingsData || allRankingsData.length === 0) {
-          setAllItemRankings(itemsData.map(item => ({ item, rankings: [] })))
+          setAllItemRankings(itemsData.map((item: LootItem) => ({ item, rankings: [] })))
           setContentLoading(false)
           return
         }
 
         // Get all submissions (only approved lists show on master sheet)
-        const submissionIds = [...new Set(allRankingsData.map(r => r.submission_id))]
+        const submissionIds = [...new Set(allRankingsData.map((r: { submission_id: string }) => r.submission_id))]
         const { data: subsData, error: subsError } = await supabase
           .from('loot_submissions')
           .select('id, status, character_id')
@@ -500,16 +501,16 @@ export default function MasterSheet() {
         }
 
         if (!subsData || subsData.length === 0) {
-          setAllItemRankings(itemsData.map(item => ({ item, rankings: [] })))
+          setAllItemRankings(itemsData.map((item: LootItem) => ({ item, rankings: [] })))
           setContentLoading(false)
           return
         }
 
         // Get all character info (filter out nulls)
-        const characterIds = [...new Set(subsData.map(s => s.character_id).filter(id => id !== null))]
+        const characterIds = [...new Set(subsData.map((s: { character_id: string | null }) => s.character_id).filter((id: string | null) => id !== null))]
 
         if (characterIds.length === 0) {
-          setAllItemRankings(itemsData.map(item => ({ item, rankings: [] })))
+          setAllItemRankings(itemsData.map((item: LootItem) => ({ item, rankings: [] })))
           setContentLoading(false)
           return
         }
@@ -530,7 +531,7 @@ export default function MasterSheet() {
 
         if (charError) {
           console.error('Error loading characters:', charError)
-          setAllItemRankings(itemsData.map(item => ({ item, rankings: [] })))
+          setAllItemRankings(itemsData.map((item: LootItem) => ({ item, rankings: [] })))
           setContentLoading(false)
           return
         }
@@ -563,12 +564,13 @@ export default function MasterSheet() {
 
         // Create a Set of "characterId-itemId" pairs for fast lookup
         const receivedItemsSet = new Set<string>(
-          (lootHistoryData || []).map(h => `${h.character_id}-${h.loot_item_id}`)
+          (lootHistoryData || []).map((h: { character_id: string; loot_item_id: string }) => `${h.character_id}-${h.loot_item_id}`)
         )
 
         // Pre-calculate attendance for all characters in parallel
+        type CharacterData = { id: string; user_id: string; name: string | null; spec_id: string | null }
         const attendanceCache: Record<string, { score: number; raidsAttended: number }> = {}
-        const attendancePromises = (charactersData || []).map(async (character) => {
+        const attendancePromises = (charactersData || []).map(async (character: CharacterData) => {
           const attendance = await calculateAttendance(character.user_id, character.id)
           return { id: character.id, attendance }
         })
@@ -582,17 +584,19 @@ export default function MasterSheet() {
         const isMinimumGateMode = guildSettings.new_member_mode === 'minimum_gate'
 
         // Build rankings for each item
+        type SubmissionData = { id: string; status: string; character_id: string | null }
+        type RankingData = { rank: number; slot: number; submission_id: string; loot_item_id: string }
         const itemRankingsMap: Record<string, ItemRankings> = {}
 
         for (const item of itemsData) {
-          const itemRankingsData = allRankingsData.filter(r => r.loot_item_id === item.id)
+          const itemRankingsData = allRankingsData.filter((r: RankingData) => r.loot_item_id === item.id)
           const rankings: PlayerRanking[] = []
 
           for (const r of itemRankingsData) {
-            const sub = subsData.find(s => s.id === r.submission_id)
+            const sub = subsData.find((s: SubmissionData) => s.id === r.submission_id)
             if (!sub) continue
 
-            const character = charactersData?.find(c => c.id === sub.character_id)
+            const character = charactersData?.find((c: CharacterData) => c.id === sub.character_id)
             if (!character) continue
 
             // Skip if character has already received this item
@@ -661,7 +665,7 @@ export default function MasterSheet() {
         }
 
         // Convert to array and sort by boss name
-        const sortedItemRankings = itemsData.map(item => itemRankingsMap[item.id])
+        const sortedItemRankings = itemsData.map((item: LootItem) => itemRankingsMap[item.id])
         setAllItemRankings(sortedItemRankings)
 
       } catch (err) {
@@ -713,7 +717,7 @@ export default function MasterSheet() {
           return
         }
 
-        const itemIds = itemsData.map(i => i.id)
+        const itemIds = itemsData.map((i: { id: string }) => i.id)
 
         // Get all submission items for these items
         const { data: submissionItemsData } = await supabase
@@ -728,7 +732,8 @@ export default function MasterSheet() {
         }
 
         // Get approved submissions only
-        const submissionIds = [...new Set(submissionItemsData.map(si => si.submission_id))]
+        type SubmissionItemData = { loot_item_id: string; rank: number; slot: number; submission_id: string }
+        const submissionIds = [...new Set(submissionItemsData.map((si: SubmissionItemData) => si.submission_id))]
         const { data: submissionsData } = await supabase
           .from('loot_submissions')
           .select('id, character_id, status')
@@ -741,10 +746,11 @@ export default function MasterSheet() {
           return
         }
 
-        const approvedSubmissionIds = new Set(submissionsData.map(s => s.id))
+        type AggregateSubmission = { id: string; character_id: string | null; status: string }
+        const approvedSubmissionIds = new Set(submissionsData.map((s: AggregateSubmission) => s.id))
 
         // Get character info
-        const characterIds = [...new Set(submissionsData.map(s => s.character_id).filter(id => id !== null))]
+        const characterIds = [...new Set(submissionsData.map((s: AggregateSubmission) => s.character_id).filter((id: string | null) => id !== null))]
         const { data: charactersData } = await supabase
           .from('characters')
           .select('id, name, class:wow_classes(name, color_hex)')
@@ -782,13 +788,14 @@ export default function MasterSheet() {
         }
 
         // Populate players for each item
+        type AggregateCharacter = { id: string; name: string | null }
         for (const si of submissionItemsData) {
           if (!approvedSubmissionIds.has(si.submission_id)) continue
 
-          const submission = submissionsData.find(s => s.id === si.submission_id)
+          const submission = submissionsData.find((s: AggregateSubmission) => s.id === si.submission_id)
           if (!submission) continue
 
-          const character = charactersData?.find(c => c.id === submission.character_id)
+          const character = charactersData?.find((c: AggregateCharacter) => c.id === submission.character_id)
           if (!character) continue
 
           const aggregate = aggregateMap[si.loot_item_id]
@@ -1001,18 +1008,20 @@ export default function MasterSheet() {
     if (!itemsData || itemsData.length === 0) return []
 
     // Get all ranking submissions for all items at once
-    const itemIds = itemsData.map(i => i.id)
+    type TierLootItem = { id: string; name: string; boss_name: string; item_slot: string; wowhead_id: number }
+    const itemIds = itemsData.map((i: TierLootItem) => i.id)
     const { data: allRankingsData } = await supabase
       .from('loot_submission_items')
       .select('rank, slot, submission_id, loot_item_id')
       .in('loot_item_id', itemIds)
 
     if (!allRankingsData || allRankingsData.length === 0) {
-      return itemsData.map(item => ({ item, rankings: [] }))
+      return itemsData.map((item: TierLootItem) => ({ item, rankings: [] }))
     }
 
     // Get all submissions (only approved lists)
-    const submissionIds = [...new Set(allRankingsData.map(r => r.submission_id))]
+    type TierRankingData = { rank: number; slot: number; submission_id: string; loot_item_id: string }
+    const submissionIds = [...new Set(allRankingsData.map((r: TierRankingData) => r.submission_id))]
     const { data: subsData } = await supabase
       .from('loot_submissions')
       .select('id, status, character_id')
@@ -1020,13 +1029,14 @@ export default function MasterSheet() {
       .eq('status', 'approved')
 
     if (!subsData || subsData.length === 0) {
-      return itemsData.map(item => ({ item, rankings: [] }))
+      return itemsData.map((item: TierLootItem) => ({ item, rankings: [] }))
     }
 
     // Get all character info
-    const characterIds = [...new Set(subsData.map(s => s.character_id).filter(id => id !== null))]
+    type TierSubmissionData = { id: string; status: string; character_id: string | null }
+    const characterIds = [...new Set(subsData.map((s: TierSubmissionData) => s.character_id).filter((id: string | null) => id !== null))]
     if (characterIds.length === 0) {
-      return itemsData.map(item => ({ item, rankings: [] }))
+      return itemsData.map((item: TierLootItem) => ({ item, rankings: [] }))
     }
 
     const { data: charactersData } = await supabase
@@ -1044,7 +1054,7 @@ export default function MasterSheet() {
       .eq('character_guild_memberships.guild_id', activeGuild.id)
 
     if (!charactersData) {
-      return itemsData.map(item => ({ item, rankings: [] }))
+      return itemsData.map((item: TierLootItem) => ({ item, rankings: [] }))
     }
 
     // Load item priorities for this tier
@@ -1071,12 +1081,13 @@ export default function MasterSheet() {
       .in('loot_item_id', itemIds)
 
     const receivedItemsSet = new Set<string>(
-      (lootHistoryData || []).map(h => `${h.character_id}-${h.loot_item_id}`)
+      (lootHistoryData || []).map((h: { character_id: string; loot_item_id: string }) => `${h.character_id}-${h.loot_item_id}`)
     )
 
     // Pre-calculate attendance for all characters
+    type TierCharacterData = { id: string; user_id: string; name: string | null; spec_id: string | null }
     const attendanceCache: Record<string, { score: number; raidsAttended: number }> = {}
-    const attendancePromises = charactersData.map(async (character) => {
+    const attendancePromises = charactersData.map(async (character: TierCharacterData) => {
       const attendance = await calculateAttendance(character.user_id, character.id)
       return { id: character.id, attendance }
     })
@@ -1093,14 +1104,14 @@ export default function MasterSheet() {
     const results: ItemRankings[] = []
 
     for (const item of itemsData) {
-      const itemRankingsData = allRankingsData.filter(r => r.loot_item_id === item.id)
+      const itemRankingsData = allRankingsData.filter((r: TierRankingData) => r.loot_item_id === item.id)
       const rankings: PlayerRanking[] = []
 
       for (const r of itemRankingsData) {
-        const sub = subsData.find(s => s.id === r.submission_id)
+        const sub = subsData.find((s: TierSubmissionData) => s.id === r.submission_id)
         if (!sub) continue
 
-        const character = charactersData.find(c => c.id === sub.character_id)
+        const character = charactersData.find((c: TierCharacterData) => c.id === sub.character_id)
         if (!character) continue
 
         // Skip if character has already received this item

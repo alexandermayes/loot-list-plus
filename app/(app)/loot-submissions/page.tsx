@@ -217,14 +217,14 @@ export default function MasterLootPage() {
     }
 
     // Get item counts for each submission
-    const submissionIds = submissionsData.map(s => s.id)
+    const submissionIds = submissionsData.map((s: { id: string }) => s.id)
     const { data: itemCounts } = await supabase
       .from('loot_submission_items')
       .select('submission_id')
       .in('submission_id', submissionIds)
 
     const countMap: Record<string, number> = {}
-    itemCounts?.forEach(item => {
+    itemCounts?.forEach((item: { submission_id: string }) => {
       countMap[item.submission_id] = (countMap[item.submission_id] || 0) + 1
     })
 
