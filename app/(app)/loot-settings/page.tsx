@@ -19,7 +19,8 @@ import StyledSelect from '@/app/components/StyledSelect'
 import MultiSelectDropdown from '@/app/components/MultiSelectDropdown'
 import { specMapping } from '@/utils/spec-role-mapping'
 import { HugeiconsIcon } from '@hugeicons/react'
-import { ArrowDown01Icon, ArrowUp01Icon, Settings01Icon, Calendar03Icon, Settings02Icon, UserAdd01Icon, DiceIcon, Medal01Icon, Clock01Icon, GiftIcon } from '@hugeicons/core-free-icons'
+import { ArrowDown01Icon, ArrowUp01Icon, Settings01Icon, Calendar03Icon, Settings02Icon, UserAdd01Icon, DiceIcon, Medal01Icon, Clock01Icon, GiftIcon, StickyNote01Icon } from '@hugeicons/core-free-icons'
+import { Textarea } from '@/components/ui/textarea'
 import { refreshWowheadTooltips } from '@/lib/wowhead'
 import PriorityListTab from './components/PriorityListTab'
 import { SegmentedControl } from '@/components/ui/segmented-control'
@@ -121,6 +122,10 @@ export default function AdminLootItems() {
   const [itemRoles, setItemRoles] = useState<Record<string, Set<string>>>({})
   // Track notes for each item: { itemId: note }
   const [itemNotes, setItemNotes] = useState<Record<string, string>>({})
+  // Notes modal state
+  const [notesModalItem, setNotesModalItem] = useState<LootItem | null>(null)
+  const [notesModalValue, setNotesModalValue] = useState('')
+  const [savingNotes, setSavingNotes] = useState(false)
   const [showSettingsModal, setShowSettingsModal] = useState(false)
   const [savingSettings, setSavingSettings] = useState(false)
   const [advancedExpanded, setAdvancedExpanded] = useState(false)
@@ -713,22 +718,37 @@ export default function AdminLootItems() {
   }
 
   // Update officer notes for an item
-  const updateNotes = async (itemId: string, notes: string) => {
-    const { error } = await supabase
+  const updateNotes = async (itemId: string, notes: string): Promise<boolean> => {
+    console.log('📝 Updating notes for item:', itemId, 'notes:', notes)
+
+    const { data, error } = await supabase
       .from('loot_items')
       .update({ officer_notes: notes || null })
       .eq('id', itemId)
+      .select('id, officer_notes')
+
+    console.log('📝 Update response:', { data, error })
 
     if (error) {
       console.error('Error updating notes:', error)
       showNotification('error', 'Couldn\'t save notes. Try again.')
-      return
+      return false
     }
 
+    // Check if the update actually worked (RLS might silently block it)
+    if (!data || data.length === 0) {
+      console.error('Notes update failed - no rows updated (RLS may have blocked it)')
+      showNotification('error', 'You don\'t have permission to edit notes.')
+      return false
+    }
+
+    console.log('📝 Notes saved successfully:', data[0])
     setItemNotes(prev => ({ ...prev, [itemId]: notes }))
     setLootItems(items => items.map(item =>
       item.id === itemId ? { ...item, officer_notes: notes || undefined } : item
     ))
+    showNotification('success', 'Note saved')
+    return true
   }
 
   // Add a spec to an item (immediately saves to database)
@@ -1351,128 +1371,128 @@ export default function AdminLootItems() {
         {/* Items Tab Content */}
         {viewMode === 'items' && (
           <>
+            {/* Stats */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="bg-background-elevated border border-border rounded-xl p-4">
+                <p className="text-foreground-muted text-sm">Total Items</p>
+                <p className="text-2xl font-bold text-foreground">{filteredItems.length}</p>
+              </div>
+              <div className="bg-background-elevated border border-border rounded-xl p-4">
+                <p className="text-foreground-muted text-sm">Available</p>
+                <p className="text-2xl font-bold text-success">
+                  {filteredItems.filter(i => i.is_available).length}
+                </p>
+              </div>
+              <div className="bg-background-elevated border border-border rounded-xl p-4">
+                <p className="text-foreground-muted text-sm">Reserved</p>
+                <p className="text-2xl font-bold text-destructive">
+                  {filteredItems.filter(i => i.classification === 'Reserved').length}
+                </p>
+              </div>
+              <div className="bg-background-elevated border border-border rounded-xl p-4">
+                <p className="text-foreground-muted text-sm">Limited</p>
+                <p className="text-2xl font-bold text-warning">
+                  {filteredItems.filter(i => i.classification === 'Limited').length}
+                </p>
+              </div>
+            </div>
+
             {/* Filters */}
             <div className="bg-background-elevated border border-border rounded-xl p-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
-            <div>
-              <Label size="sm" className="block text-foreground-muted mb-2">Search items</Label>
-              <Input
-                variant="pill"
-                size="sm"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Search by name or boss..."
-                className="bg-background-elevated"
-              />
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+                <div>
+                  <Label size="sm" className="block text-foreground-muted mb-2">Search items</Label>
+                  <Input
+                    variant="pill"
+                    size="sm"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    placeholder="Search by name or boss..."
+                    className="bg-background-elevated"
+                  />
+                </div>
+                <div>
+                  <Label size="sm" className="block text-foreground-muted mb-2">Raid</Label>
+                  <Select
+                    variant="pill"
+                    size="sm"
+                    value={filterTier}
+                    onChange={(e) => setFilterTier(e.target.value)}
+                    className="bg-background-elevated"
+                  >
+                    <option value="all" className="bg-background-elevated text-foreground">All raids</option>
+                    {raidTiers.map(tier => (
+                      <option key={tier.id} value={tier.name} className="bg-background-elevated text-foreground">{tier.name}</option>
+                    ))}
+                  </Select>
+                </div>
+                <div>
+                  <Label size="sm" className="block text-foreground-muted mb-2">Slot</Label>
+                  <Select
+                    variant="pill"
+                    size="sm"
+                    value={filterSlot}
+                    onChange={(e) => setFilterSlot(e.target.value)}
+                    className="bg-background-elevated"
+                  >
+                    <option value="all" className="bg-background-elevated text-foreground">All slots</option>
+                    {uniqueSlots.map(slot => (
+                      <option key={slot} value={slot} className="bg-background-elevated text-foreground">{slot}</option>
+                    ))}
+                  </Select>
+                </div>
+                <div>
+                  <Label size="sm" className="block text-foreground-muted mb-2">Classification</Label>
+                  <Select
+                    variant="pill"
+                    size="sm"
+                    value={filterClassification}
+                    onChange={(e) => setFilterClassification(e.target.value)}
+                    className="bg-background-elevated"
+                  >
+                    <option value="all" className="bg-background-elevated text-foreground">All classifications</option>
+                    <option value="Reserved" className="bg-background-elevated" style={{ color: '#E57373' }}>Reserved</option>
+                    <option value="Limited" className="bg-background-elevated" style={{ color: '#64B5F6' }}>Limited</option>
+                    <option value="Unlimited" className="bg-background-elevated" style={{ color: '#B0B0B0' }}>Unlimited</option>
+                  </Select>
+                </div>
+                <div>
+                  <Label size="sm" className="block text-foreground-muted mb-2">Sort By</Label>
+                  <Select
+                    variant="pill"
+                    size="sm"
+                    value={sortField || ''}
+                    onChange={(e) => setSortField(e.target.value as any || null)}
+                    className="bg-background-elevated"
+                  >
+                    <option value="" className="bg-background-elevated text-foreground">Default</option>
+                    <option value="name" className="bg-background-elevated text-foreground">Item name</option>
+                    <option value="boss" className="bg-background-elevated text-foreground">Boss</option>
+                    <option value="slot" className="bg-background-elevated text-foreground">Slot</option>
+                    <option value="raid" className="bg-background-elevated text-foreground">Raid</option>
+                    <option value="classification" className="bg-background-elevated text-foreground">Classification</option>
+                  </Select>
+                </div>
+                <div>
+                  <Label size="sm" className="block text-foreground-muted mb-2">Order</Label>
+                  <Select
+                    variant="pill"
+                    size="sm"
+                    value={sortDirection}
+                    onChange={(e) => setSortDirection(e.target.value as 'asc' | 'desc')}
+                    disabled={!sortField}
+                    className="bg-background-elevated"
+                  >
+                    <option value="asc" className="bg-background-elevated text-foreground">A → Z</option>
+                    <option value="desc" className="bg-background-elevated text-foreground">Z → A</option>
+                  </Select>
+                </div>
+              </div>
             </div>
-            <div>
-              <Label size="sm" className="block text-foreground-muted mb-2">Raid</Label>
-              <Select
-                variant="pill"
-                size="sm"
-                value={filterTier}
-                onChange={(e) => setFilterTier(e.target.value)}
-                className="bg-background-elevated"
-              >
-                <option value="all" className="bg-background-elevated text-foreground">All raids</option>
-                {raidTiers.map(tier => (
-                  <option key={tier.id} value={tier.name} className="bg-background-elevated text-foreground">{tier.name}</option>
-                ))}
-              </Select>
-            </div>
-            <div>
-              <Label size="sm" className="block text-foreground-muted mb-2">Slot</Label>
-              <Select
-                variant="pill"
-                size="sm"
-                value={filterSlot}
-                onChange={(e) => setFilterSlot(e.target.value)}
-                className="bg-background-elevated"
-              >
-                <option value="all" className="bg-background-elevated text-foreground">All slots</option>
-                {uniqueSlots.map(slot => (
-                  <option key={slot} value={slot} className="bg-background-elevated text-foreground">{slot}</option>
-                ))}
-              </Select>
-            </div>
-            <div>
-              <Label size="sm" className="block text-foreground-muted mb-2">Classification</Label>
-              <Select
-                variant="pill"
-                size="sm"
-                value={filterClassification}
-                onChange={(e) => setFilterClassification(e.target.value)}
-                className="bg-background-elevated"
-              >
-                <option value="all" className="bg-background-elevated text-foreground">All classifications</option>
-                <option value="Reserved" className="bg-background-elevated" style={{ color: '#E57373' }}>Reserved</option>
-                <option value="Limited" className="bg-background-elevated" style={{ color: '#64B5F6' }}>Limited</option>
-                <option value="Unlimited" className="bg-background-elevated" style={{ color: '#B0B0B0' }}>Unlimited</option>
-              </Select>
-            </div>
-            <div>
-              <Label size="sm" className="block text-foreground-muted mb-2">Sort By</Label>
-              <Select
-                variant="pill"
-                size="sm"
-                value={sortField || ''}
-                onChange={(e) => setSortField(e.target.value as any || null)}
-                className="bg-background-elevated"
-              >
-                <option value="" className="bg-background-elevated text-foreground">Default</option>
-                <option value="name" className="bg-background-elevated text-foreground">Item name</option>
-                <option value="boss" className="bg-background-elevated text-foreground">Boss</option>
-                <option value="slot" className="bg-background-elevated text-foreground">Slot</option>
-                <option value="raid" className="bg-background-elevated text-foreground">Raid</option>
-                <option value="classification" className="bg-background-elevated text-foreground">Classification</option>
-              </Select>
-            </div>
-            <div>
-              <Label size="sm" className="block text-foreground-muted mb-2">Order</Label>
-              <Select
-                variant="pill"
-                size="sm"
-                value={sortDirection}
-                onChange={(e) => setSortDirection(e.target.value as 'asc' | 'desc')}
-                disabled={!sortField}
-                className="bg-background-elevated"
-              >
-                <option value="asc" className="bg-background-elevated text-foreground">A → Z</option>
-                <option value="desc" className="bg-background-elevated text-foreground">Z → A</option>
-              </Select>
-            </div>
-          </div>
-        </div>
-
-        {/* Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="bg-background-elevated border border-border rounded-xl p-4">
-            <p className="text-foreground-muted text-sm">Total Items</p>
-            <p className="text-2xl font-bold text-foreground">{filteredItems.length}</p>
-          </div>
-          <div className="bg-background-elevated border border-border rounded-xl p-4">
-            <p className="text-foreground-muted text-sm">Available</p>
-            <p className="text-2xl font-bold text-success">
-              {filteredItems.filter(i => i.is_available).length}
-            </p>
-          </div>
-          <div className="bg-background-elevated border border-border rounded-xl p-4">
-            <p className="text-foreground-muted text-sm">Reserved</p>
-            <p className="text-2xl font-bold text-destructive">
-              {filteredItems.filter(i => i.classification === 'Reserved').length}
-            </p>
-          </div>
-          <div className="bg-background-elevated border border-border rounded-xl p-4">
-            <p className="text-foreground-muted text-sm">Limited</p>
-            <p className="text-2xl font-bold text-warning">
-              {filteredItems.filter(i => i.classification === 'Limited').length}
-            </p>
-          </div>
-        </div>
 
         {/* Items Table */}
         <div className="bg-background-elevated border border-border rounded-xl overflow-hidden">
-          <div>
+          <div className="overflow-x-auto">
             <table className="w-full table-fixed">
               <colgroup>
                 <col style={{ width: '50px' }} />
@@ -1483,7 +1503,7 @@ export default function AdminLootItems() {
                 <col style={{ width: '150px' }} />
                 <col style={{ width: '220px' }} />
                 <col style={{ width: '220px' }} />
-                <col style={{ width: '180px' }} />
+                <col style={{ width: '48px' }} />
               </colgroup>
               <thead>
                 <tr className="bg-background-subtle border-b border-border">
@@ -1495,7 +1515,7 @@ export default function AdminLootItems() {
                   <th className="px-4 py-2.5 text-left text-[12px] font-medium text-foreground-muted">Classification</th>
                   <th className="px-4 py-2.5 text-left text-[12px] font-medium text-foreground-muted">Primary</th>
                   <th className="px-4 py-2.5 text-left text-[12px] font-medium text-foreground-muted">Secondary</th>
-                  <th className="px-4 py-2.5 text-left text-[12px] font-medium text-foreground-muted">Notes</th>
+                  <th className="px-2 py-2.5 text-center text-[12px] font-medium text-foreground-muted w-12 sticky right-0 bg-background-subtle/80">Notes</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
@@ -1612,23 +1632,21 @@ export default function AdminLootItems() {
                         variant="secondary"
                       />
                     </td>
-                    <td className="px-2 py-2.5">
-                      <Input
-                        type="text"
-                        variant="pill"
-                        size="sm"
-                        placeholder="Add note..."
-                        value={itemNotes[item.id] || ''}
-                        onChange={(e) => setItemNotes(prev => ({ ...prev, [item.id]: e.target.value }))}
-                        onBlur={(e) => {
-                          const newValue = e.target.value
-                          const originalValue = lootItems.find(i => i.id === item.id)?.officer_notes || ''
-                          if (newValue !== originalValue) {
-                            updateNotes(item.id, newValue)
-                          }
+                    <td className="px-2 py-2.5 text-center sticky right-0 bg-background-elevated/80">
+                      <button
+                        onClick={() => {
+                          setNotesModalItem(item)
+                          setNotesModalValue(itemNotes[item.id] || '')
                         }}
-                        className="text-[12px]"
-                      />
+                        title={itemNotes[item.id] || 'Add note'}
+                        className={`p-1.5 rounded-md transition-colors ${
+                          itemNotes[item.id]
+                            ? 'text-accent hover:bg-accent/10'
+                            : 'text-foreground-muted hover:text-foreground hover:bg-background-elevated'
+                        }`}
+                      >
+                        <HugeiconsIcon icon={StickyNote01Icon} size={16} />
+                      </button>
                     </td>
                   </tr>
                 ))}
@@ -2505,6 +2523,53 @@ export default function AdminLootItems() {
           </Button>
           <Button onClick={saveSettings} loading={savingSettings} disabled={!hasSettingsChanges}>
             Save settings
+          </Button>
+        </ModalFooter>
+      </Modal>
+
+      {/* Notes Modal */}
+      <Modal
+        open={!!notesModalItem}
+        onClose={() => setNotesModalItem(null)}
+        size="sm"
+      >
+        <ModalHeader onClose={() => setNotesModalItem(null)}>
+          <ModalTitle>Officer Notes</ModalTitle>
+          {notesModalItem && (
+            <ModalDescription>
+              <ItemLink wowheadId={notesModalItem.wowhead_id} name={notesModalItem.name} />
+            </ModalDescription>
+          )}
+        </ModalHeader>
+        <ModalBody>
+          <Textarea
+            value={notesModalValue}
+            onChange={(e) => setNotesModalValue(e.target.value)}
+            placeholder="Add notes for officers..."
+            rows={4}
+            variant="rounded"
+            autoFocus
+          />
+        </ModalBody>
+        <ModalFooter>
+          <Button variant="secondary" onClick={() => setNotesModalItem(null)} disabled={savingNotes}>
+            Cancel
+          </Button>
+          <Button
+            variant="primary"
+            loading={savingNotes}
+            onClick={async () => {
+              if (notesModalItem) {
+                setSavingNotes(true)
+                const success = await updateNotes(notesModalItem.id, notesModalValue)
+                setSavingNotes(false)
+                if (success) {
+                  setNotesModalItem(null)
+                }
+              }
+            }}
+          >
+            Save note
           </Button>
         </ModalFooter>
       </Modal>

@@ -161,7 +161,7 @@ export function CharacterSelector() {
         >
           <RotatingClassIcon />
           <div className="flex-1 min-w-0">
-            <p className="text-[13px] font-medium text-foreground">Character creation required</p>
+            <p className="text-[13px] font-medium text-foreground truncate">Character creation required</p>
             <p className="text-[10px] text-primary">Click here to create</p>
           </div>
         </Button>

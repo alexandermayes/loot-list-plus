@@ -401,7 +401,7 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange, 
 
       {/* Main Navigation - Scrollable (extends to bottom) */}
       <div className={`flex-1 flex flex-col gap-6 min-h-0 overflow-y-auto sidebar-scrollable px-2.5 ${
-        isMobileOverlay ? 'pt-[60px] pb-6' : 'pt-[88px] pb-[170px]'
+        isMobileOverlay ? 'pt-[60px] pb-6' : 'pt-[88px] pb-[220px]'
       }`}>
         {/* Guild Selector */}
         <div className="flex flex-col gap-[4px]">
