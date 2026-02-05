@@ -9,7 +9,7 @@ import { calculateAttendanceScore, getRankModifier, calculateLootScore, calculat
 import { getSpecRoles } from '@/utils/spec-role-mapping'
 import { getBossOrder, normalizeBossName } from '@/utils/bossOrder'
 import { getBossImage } from '@/utils/bossImages'
-import { getRaidShorthand } from '@/utils/raidIcons'
+import { getRaidIcon, getRaidShorthand } from '@/utils/raidIcons'
 import { StarFilledIcon } from '@/components/ui/icons'
 import { useGuildContext } from '@/app/contexts/GuildContext'
 import { useNotification } from '@/app/contexts/NotificationContext'
@@ -21,7 +21,7 @@ import { Button } from '@/components/ui/button'
 import { Select } from '@/components/ui/select'
 import { SegmentedControl } from '@/components/ui/segmented-control'
 import { HugeiconsIcon } from '@hugeicons/react'
-import { ScrollIcon, ArrowUpRight01Icon, InformationCircleIcon } from '@hugeicons/core-free-icons'
+import { ScrollIcon, ArrowUpRight01Icon, InformationCircleIcon, ArrowUp01Icon, ArrowDown01Icon } from '@hugeicons/core-free-icons'
 import { HorizontalScroll } from '@/components/ui/horizontal-scroll'
 import { Heading } from '@/components/ui/typography'
 import ScoreBreakdownModal from '@/app/components/ScoreBreakdownModal'
@@ -52,6 +52,9 @@ interface PlayerRanking {
   trial_penalty: number
   is_trial: boolean
   character_id: string
+  // Minimum gate eligibility (only relevant when new_member_mode === 'minimum_gate')
+  raids_attended: number
+  is_eligible: boolean
 }
 
 interface ItemRankings {
@@ -75,6 +78,7 @@ export default function MasterSheet() {
   const [masterSheetVisible, setMasterSheetVisible] = useState<boolean>(false)
   const [itemPriorities, setItemPriorities] = useState<Record<string, ItemPriority>>({})
   const [collapsedBosses, setCollapsedBosses] = useState<Set<string>>(new Set())
+  const [collapsedRaidTiers, setCollapsedRaidTiers] = useState<Set<string>>(new Set())
   const [isExporting, setIsExporting] = useState(false)
   const [showScoreBreakdown, setShowScoreBreakdown] = useState(false)
   const [showScoreComparison, setShowScoreComparison] = useState(false)
@@ -136,23 +140,133 @@ export default function MasterSheet() {
   }
 
   // Calculate attendance score for a character (or user for backward compatibility)
-  const calculateAttendance = async (userId: string, characterId?: string): Promise<number> => {
-    if (!guildId || !guildSettings) return 0
+  // Returns both the score and the number of raids attended (for minimum_gate eligibility)
+  const calculateAttendance = async (userId: string, characterId?: string): Promise<{ score: number; raidsAttended: number }> => {
+    if (!guildId || !guildSettings) return { score: 0, raidsAttended: 0 }
 
     const weeks = guildSettings.rolling_attendance_weeks || 4
     const daysAgo = weeks * 7
     const periodStart = new Date()
     periodStart.setDate(periodStart.getDate() - daysAgo)
 
-    const { data: recentRaids } = await supabase
+    console.log('📊 [MasterSheet] calculateAttendance for character:', characterId, 'user:', userId)
+    console.log('📊 [MasterSheet] Rolling weeks:', weeks, 'Period start:', periodStart.toISOString().split('T')[0])
+
+    // New member policy: check how to handle new members
+    const newMemberMode = guildSettings.new_member_mode || 'raw'
+    let effectiveStartDate = periodStart
+    let memberJoinDate: Date | null = null
+
+    // For 'fair' and 'minimum_gate' modes, use join date filtering
+    if ((newMemberMode === 'fair' || newMemberMode === 'minimum_gate') && characterId) {
+      const { data: membership } = await supabase
+        .from('character_guild_memberships')
+        .select('joined_at')
+        .eq('character_id', characterId)
+        .eq('guild_id', guildId)
+        .single()
+
+      if (membership?.joined_at) {
+        memberJoinDate = new Date(membership.joined_at)
+        // Use the later of periodStart or joinedAt
+        if (memberJoinDate > periodStart) {
+          effectiveStartDate = memberJoinDate
+          console.log('📊 [MasterSheet] New member (' + newMemberMode + ' mode) - using join date:', membership.joined_at)
+        }
+      }
+    }
+
+    const periodStartStr = effectiveStartDate.toISOString().split('T')[0]
+    console.log('📊 [MasterSheet] New member mode:', newMemberMode, 'Effective period start:', periodStartStr)
+
+    // Get expansion's raid day configuration
+    let raidDays: number[] = []
+    if (activeGuild?.active_expansion_id) {
+      const { data: expansionData } = await supabase
+        .from('expansions')
+        .select('raid_days_per_week, first_raid_day, second_raid_day, third_raid_day, fourth_raid_day, fifth_raid_day')
+        .eq('id', activeGuild.active_expansion_id)
+        .single()
+
+      if (expansionData) {
+        raidDays = [
+          expansionData.first_raid_day,
+          expansionData.second_raid_day,
+          expansionData.third_raid_day,
+          expansionData.fourth_raid_day,
+          expansionData.fifth_raid_day
+        ].filter((day): day is number => day !== null && day !== undefined)
+          .slice(0, expansionData.raid_days_per_week || 2)
+      }
+    }
+
+    // Fall back to guild settings if no expansion raid days
+    if (raidDays.length === 0) {
+      raidDays = [
+        guildSettings.first_raid_day,
+        guildSettings.second_raid_day,
+        guildSettings.third_raid_day,
+        guildSettings.fourth_raid_day,
+        guildSettings.fifth_raid_day
+      ].filter((day): day is number => day !== null && day !== undefined)
+        .slice(0, guildSettings.raid_days_per_week || 2)
+    }
+
+    console.log('📊 [MasterSheet] Configured raid days:', raidDays)
+
+    const { data: recentRaids, error: raidError } = await supabase
       .from('raid_events')
-      .select('id')
+      .select('id, raid_date')
       .eq('guild_id', guildId)
-      .gte('raid_date', periodStart.toISOString().split('T')[0])
+      .gte('raid_date', periodStartStr)
 
-    if (!recentRaids || recentRaids.length === 0) return 0
+    console.log('📊 [MasterSheet] Recent raids found:', recentRaids?.length, 'Error:', raidError)
 
-    const raidIds = recentRaids.map(r => r.id)
+    if (!recentRaids || recentRaids.length === 0) return { score: 0, raidsAttended: 0 }
+
+    // Filter to only raids on configured raid days
+    const filteredRaids = raidDays.length > 0
+      ? recentRaids.filter(event => {
+          const eventDate = new Date(event.raid_date + 'T00:00:00')
+          return raidDays.includes(eventDate.getDay())
+        })
+      : recentRaids
+
+    console.log('📊 [MasterSheet] Filtered to', filteredRaids.length, 'raids on configured days')
+
+    if (filteredRaids.length === 0) return { score: 0, raidsAttended: 0 }
+
+    const raidIds = filteredRaids.map(r => r.id)
+
+    // Check which raid IDs have attendance for this character
+    let raidIdsWithAttendance = new Set<string>()
+    if (characterId) {
+      const { data: existingAttendance } = await supabase
+        .from('attendance_records')
+        .select('raid_event_id')
+        .eq('character_id', characterId)
+        .in('raid_event_id', raidIds)
+      raidIdsWithAttendance = new Set(existingAttendance?.map(r => r.raid_event_id) || [])
+    }
+
+    // Deduplicate by date, preferring IDs that have attendance records
+    // This handles the case where there are duplicate raid events for the same date
+    const deduplicatedRaidEvents = Array.from(
+      filteredRaids.reduce((map, event) => {
+        const existing = map.get(event.raid_date)
+        if (!existing) {
+          map.set(event.raid_date, event)
+        } else if (raidIdsWithAttendance.has(event.id) && !raidIdsWithAttendance.has(existing.id)) {
+          map.set(event.raid_date, event)
+        }
+        return map
+      }, new Map<string, typeof filteredRaids[0]>()).values()
+    )
+
+    const totalRaids = deduplicatedRaidEvents.length
+    const deduplicatedRaidIds = deduplicatedRaidEvents.map(r => r.id)
+
+    console.log('📊 [MasterSheet] Deduplicated to', totalRaids, 'raids')
 
     // Try character-based attendance first, fall back to user-based
     let records
@@ -161,7 +275,7 @@ export default function MasterSheet() {
         .from('attendance_records')
         .select('signed_up, attended, no_call_no_show')
         .eq('character_id', characterId)
-        .in('raid_event_id', raidIds)
+        .in('raid_event_id', deduplicatedRaidIds)
       records = data
     }
 
@@ -171,13 +285,20 @@ export default function MasterSheet() {
         .from('attendance_records')
         .select('signed_up, attended, no_call_no_show')
         .eq('user_id', userId)
-        .in('raid_event_id', raidIds)
+        .in('raid_event_id', deduplicatedRaidIds)
       records = data
     }
 
-    if (!records || records.length === 0) return 0
+    if (!records || records.length === 0) {
+      console.log('📊 [MasterSheet] No attendance records found for character:', characterId)
+      return { score: 0, raidsAttended: 0 }
+    }
 
-    return calculateAttendanceScore(records, recentRaids.length, guildSettings)
+    const score = calculateAttendanceScore(records, totalRaids, guildSettings)
+    // Count how many raids this character actually attended
+    const raidsAttended = records.filter(r => r.attended).length
+    console.log('📊 [MasterSheet] Attendance score for', characterId, ':', score, '(records:', records.length, 'totalRaids:', totalRaids, 'raidsAttended:', raidsAttended, ')')
+    return { score, raidsAttended }
   }
 
   // Load initial data
@@ -446,7 +567,7 @@ export default function MasterSheet() {
         )
 
         // Pre-calculate attendance for all characters in parallel
-        const attendanceCache: Record<string, number> = {}
+        const attendanceCache: Record<string, { score: number; raidsAttended: number }> = {}
         const attendancePromises = (charactersData || []).map(async (character) => {
           const attendance = await calculateAttendance(character.user_id, character.id)
           return { id: character.id, attendance }
@@ -455,6 +576,10 @@ export default function MasterSheet() {
         attendanceResults.forEach(({ id, attendance }) => {
           attendanceCache[id] = attendance
         })
+
+        // Determine minimum raids required for eligibility
+        const minimumRaidDays = guildSettings.minimum_raid_days || 2
+        const isMinimumGateMode = guildSettings.new_member_mode === 'minimum_gate'
 
         // Build rankings for each item
         const itemRankingsMap: Record<string, ItemRankings> = {}
@@ -473,7 +598,9 @@ export default function MasterSheet() {
             // Skip if character has already received this item
             if (receivedItemsSet.has(`${character.id}-${item.id}`)) continue
 
-            const attendance = attendanceCache[character.id] || 0
+            const attendanceData = attendanceCache[character.id] || { score: 0, raidsAttended: 0 }
+            const attendance = attendanceData.score
+            const raidsAttended = attendanceData.raidsAttended
             const characterRole = (character as any).character_guild_memberships?.[0]?.role || 'Member'
             const roleModifier = getRankModifier(characterRole, guildSettings)
 
@@ -507,6 +634,9 @@ export default function MasterSheet() {
 
             const lootScore = calculateLootScore(r.rank, attendance, roleModifier, badLuckBonus, priorityBonus, trialPenalty)
 
+            // Determine eligibility based on minimum_gate mode
+            const isEligible = !isMinimumGateMode || raidsAttended >= minimumRaidDays
+
             rankings.push({
               player_name: character.name || 'Unknown',
               class_name: (character.class as any)?.name || 'Unknown',
@@ -520,6 +650,8 @@ export default function MasterSheet() {
               trial_penalty: trialPenalty,
               is_trial: isTrial,
               character_id: character.id,
+              raids_attended: raidsAttended,
+              is_eligible: isEligible,
             })
           }
 
@@ -751,31 +883,56 @@ export default function MasterSheet() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [allItemRankings.length])
 
-  // Group items by boss (normalize boss names to merge multi-boss encounters like Opera Event)
-  const groupedByBoss: Record<string, ItemRankings[]> = {}
-  allItemRankings.forEach(ir => {
-    const boss = normalizeBossName(ir.item.boss_name)
-    if (!groupedByBoss[boss]) {
-      groupedByBoss[boss] = []
-    }
-    groupedByBoss[boss].push(ir)
-  })
+  // Group items by raid tier first, then by boss within each tier (memoized for performance)
+  const groupedByRaidTier = useMemo(() => {
+    const grouped: Record<string, { tier: typeof phaseTiers[0], items: ItemRankings[] }> = {}
+    allItemRankings.forEach(ir => {
+      const tierId = ir.item.raid_tier_id || 'unknown'
+      if (!grouped[tierId]) {
+        const tier = phaseTiers.find(t => t.id === tierId)
+        grouped[tierId] = { tier: tier || { id: tierId, name: 'Unknown', phase: 0 }, items: [] }
+      }
+      grouped[tierId].items.push(ir)
+    })
+    return grouped
+  }, [allItemRankings, phaseTiers])
+
+  // Group items by boss within each tier (memoized for performance)
+  const groupedByBoss = useMemo(() => {
+    const grouped: Record<string, ItemRankings[]> = {}
+    allItemRankings.forEach(ir => {
+      const boss = normalizeBossName(ir.item.boss_name)
+      if (!grouped[boss]) {
+        grouped[boss] = []
+      }
+      grouped[boss].push(ir)
+    })
+    return grouped
+  }, [allItemRankings])
+
+  // Sort raid tiers by progression order (memoized)
+  const sortedRaidTiers = useMemo(() =>
+    Object.values(groupedByRaidTier).sort((a, b) =>
+      getRaidTierOrder(a.tier.name) - getRaidTierOrder(b.tier.name)
+    ),
+    [groupedByRaidTier]
+  )
 
   // Check if any tier in the selected phase is disabled (for officer warning)
-  const hasDisabledTiers = phaseTiers.some(t => t.is_guild_active === false)
+  const hasDisabledTiers = useMemo(() => phaseTiers.some(t => t.is_guild_active === false), [phaseTiers])
   // Get active tiers for display in header
-  const activePhaseTiers = phaseTiers.filter(t => t.is_guild_active !== false)
+  const activePhaseTiers = useMemo(() => phaseTiers.filter(t => t.is_guild_active !== false), [phaseTiers])
 
-  const bossNames = Object.keys(groupedByBoss).sort((a, b) => getBossOrder(a) - getBossOrder(b))
+  const bossNames = useMemo(() => Object.keys(groupedByBoss).sort((a, b) => getBossOrder(a) - getBossOrder(b)), [groupedByBoss])
 
-  const scrollToBoss = (bossName: string) => {
+  const scrollToBoss = useCallback((bossName: string) => {
     const element = document.getElementById(`boss-${bossName.replace(/\s+/g, '-')}`)
     if (element) {
       element.scrollIntoView({ behavior: 'smooth', block: 'start' })
     }
-  }
+  }, [])
 
-  const toggleBossCollapse = (bossName: string) => {
+  const toggleBossCollapse = useCallback((bossName: string) => {
     setCollapsedBosses(prev => {
       const newSet = new Set(prev)
       if (newSet.has(bossName)) {
@@ -785,18 +942,32 @@ export default function MasterSheet() {
       }
       return newSet
     })
-  }
+  }, [])
 
-  const collapseAll = () => {
+  const toggleRaidTierCollapse = useCallback((tierId: string) => {
+    setCollapsedRaidTiers(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(tierId)) {
+        newSet.delete(tierId)
+      } else {
+        newSet.add(tierId)
+      }
+      return newSet
+    })
+  }, [])
+
+  const collapseAll = useCallback(() => {
     setCollapsedBosses(new Set(bossNames))
-  }
+    setCollapsedRaidTiers(new Set(sortedRaidTiers.map(rt => rt.tier.id)))
+  }, [bossNames, sortedRaidTiers])
 
-  const expandAll = () => {
+  const expandAll = useCallback(() => {
     setCollapsedBosses(new Set())
-  }
+    setCollapsedRaidTiers(new Set())
+  }, [])
 
-  // Generate Gargul DFT export format from rankings data
-  const formatRankingsForGargul = (rankings: ItemRankings[]): string => {
+  // Generate Gargul DFT export format from rankings data (memoized callback)
+  const formatRankingsForGargul = useCallback((rankings: ItemRankings[]): string => {
     return rankings.map(ir => {
       const itemId = ir.item.wowhead_id
 
@@ -807,12 +978,12 @@ export default function MasterSheet() {
       const playerLines = ir.rankings.map(r => {
         // Convert #RRGGBB to RRGGBB (strip #)
         const colorHex = r.class_color.replace('#', '')
-        return `|cff${colorHex}${r.player_name}|r: ${Math.round(r.loot_score)}`
+        return `|cff${colorHex}${r.player_name}|r: ${r.loot_score.toFixed(guildSettings?.decimal_places ?? 2)}`
       }).join('\n')
 
       return `"${itemId}^DFTFC Priority:\n${playerLines};"`
     }).join('\n')
-  }
+  }, [guildSettings?.decimal_places])
 
   // Fetch rankings for a single tier
   const fetchTierRankings = async (tierId: string): Promise<ItemRankings[]> => {
@@ -904,7 +1075,7 @@ export default function MasterSheet() {
     )
 
     // Pre-calculate attendance for all characters
-    const attendanceCache: Record<string, number> = {}
+    const attendanceCache: Record<string, { score: number; raidsAttended: number }> = {}
     const attendancePromises = charactersData.map(async (character) => {
       const attendance = await calculateAttendance(character.user_id, character.id)
       return { id: character.id, attendance }
@@ -913,6 +1084,10 @@ export default function MasterSheet() {
     attendanceResults.forEach(({ id, attendance }) => {
       attendanceCache[id] = attendance
     })
+
+    // Determine minimum raids required for eligibility
+    const minimumRaidDays = guildSettings.minimum_raid_days || 2
+    const isMinimumGateMode = guildSettings.new_member_mode === 'minimum_gate'
 
     // Build rankings for each item
     const results: ItemRankings[] = []
@@ -931,7 +1106,9 @@ export default function MasterSheet() {
         // Skip if character has already received this item
         if (receivedItemsSet.has(`${character.id}-${item.id}`)) continue
 
-        const attendance = attendanceCache[character.id] || 0
+        const attendanceData = attendanceCache[character.id] || { score: 0, raidsAttended: 0 }
+        const attendance = attendanceData.score
+        const raidsAttended = attendanceData.raidsAttended
         const characterRole = (character as any).character_guild_memberships?.[0]?.role || 'Member'
         const roleModifier = getRankModifier(characterRole, guildSettings)
 
@@ -964,6 +1141,9 @@ export default function MasterSheet() {
 
         const lootScore = calculateLootScore(r.rank, attendance, roleModifier, badLuckBonus, priorityBonus, trialPenalty)
 
+        // Determine eligibility based on minimum_gate mode
+        const isEligible = !isMinimumGateMode || raidsAttended >= minimumRaidDays
+
         rankings.push({
           player_name: character.name || 'Unknown',
           class_name: (character.class as any)?.name || 'Unknown',
@@ -977,6 +1157,8 @@ export default function MasterSheet() {
           trial_penalty: trialPenalty,
           is_trial: isTrial,
           character_id: character.id,
+          raids_attended: raidsAttended,
+          is_eligible: isEligible,
         })
       }
 
@@ -1047,7 +1229,7 @@ export default function MasterSheet() {
                   disabled={contentLoading || raidTiers.length === 0 || isExporting}
                   loading={isExporting}
                   loadingText="Exporting..."
-                  className="bg-violet-600 hover:bg-violet-500 text-white border-0 shadow-lg shadow-violet-900/30"
+                  className="bg-violet-600 hover:bg-violet-500 text-white border-0 shadow-lg"
                 >
                   <Image src="/icons/gargul.png" alt="Gargul" width={20} height={20} priority />
                   <span className="hidden sm:inline">Export to Gargul</span>
@@ -1061,11 +1243,11 @@ export default function MasterSheet() {
 
         {/* Phase Tabs - Sticky */}
         {initialLoading ? (
-          <div className="sticky top-0 z-20 px-4 sm:px-6 lg:px-8 py-1.5 bg-background">
+          <div className="sticky top-0 z-20 px-4 sm:px-6 lg:px-8 py-2.5 bg-background">
             <TierTabsSkeleton />
           </div>
         ) : phases.length > 0 && (
-          <div className="sticky top-14 sm:top-0 z-20 px-4 sm:px-6 lg:px-8 py-1.5 bg-background">
+          <div className="sticky top-14 sm:top-0 z-20 px-4 sm:px-6 lg:px-8 py-2.5 bg-background">
             <div className="flex items-center gap-3">
               {/* Mobile: Dropdown selector */}
               <div className="sm:hidden flex-1">
@@ -1100,6 +1282,8 @@ export default function MasterSheet() {
                     const allDisabled = tiersInPhase.every(t => t.is_guild_active === false)
                     const isSelected = selectedPhase === phase
                     const raidNames = activeTiersInPhase.map(t => getRaidShorthand(t.name)).join(', ')
+                    // Get the first active tier for the icon, or first tier if none active
+                    const iconTier = activeTiersInPhase[0] || tiersInPhase[0]
                     return (
                       <Button
                         key={phase}
@@ -1125,6 +1309,13 @@ export default function MasterSheet() {
                                 ? 'bg-foreground/5 text-muted-foreground'
                                 : 'bg-foreground/10 text-foreground-secondary'
                           }`}>P{phase}</span>
+                          {iconTier && (
+                            <img
+                              src={getRaidIcon(iconTier.name)}
+                              alt=""
+                              className="w-5 h-5 rounded border border-border/50"
+                            />
+                          )}
                           <span>{raidNames}</span>
                           {hasActiveTier && <StarFilledIcon size={14} />}
                           {allDisabled && <span className="text-[10px] uppercase tracking-wide">Off</span>}
@@ -1168,7 +1359,7 @@ export default function MasterSheet() {
 
         {/* Boss Quick Navigation - Sticky below tier tabs (rankings view only) */}
         {!initialLoading && !contentLoading && bossNames.length > 0 && viewMode === 'rankings' && (
-          <div className="sticky top-[108px] sm:top-[50px] z-10 px-4 sm:px-6 lg:px-8 py-1.5 bg-background">
+          <div className="sticky top-[116px] sm:top-[60px] z-10 px-4 sm:px-6 lg:px-8 py-2.5 bg-background">
             {/* Mobile: Dropdown + Expand/Collapse */}
             <div className="sm:hidden flex gap-2">
               <Select
@@ -1202,50 +1393,45 @@ export default function MasterSheet() {
               </Button>
             </div>
             {/* Desktop: Horizontal chips + Expand/Collapse */}
-            <div className="hidden sm:flex gap-3">
-              {/* Boss chips container with horizontal scroll fade */}
-              <div className="flex-1 min-w-0 bg-background-elevated border border-border rounded-xl p-3 overflow-hidden">
-                <div
-                  className="overflow-x-auto scrollbar-hide"
-                  style={{
-                    maskImage: 'linear-gradient(to right, transparent, black 24px, black calc(100% - 24px), transparent)',
-                    WebkitMaskImage: 'linear-gradient(to right, transparent, black 24px, black calc(100% - 24px), transparent)'
-                  }}
+            <div className="hidden sm:flex gap-3 items-center">
+              {/* Boss chips container with horizontal scroll */}
+              <HorizontalScroll containerClassName="flex-1 min-w-0">
+                <div className="flex gap-2">
+                  {bossNames.map((boss) => (
+                    <Button
+                      key={boss}
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => scrollToBoss(boss)}
+                    >
+                      {getBossImage(boss) && (
+                        <img
+                          src={getBossImage(boss)!}
+                          alt=""
+                          className="w-4 h-4 rounded border border-border/50"
+                        />
+                      )}
+                      {boss}
+                    </Button>
+                  ))}
+                </div>
+              </HorizontalScroll>
+              {/* Expand/Collapse buttons */}
+              <div className="flex-shrink-0 flex gap-2">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={expandAll}
                 >
-                  <div className="flex gap-2 px-3">
-                    {bossNames.map((boss) => (
-                      <Button
-                        key={boss}
-                        variant="ghost"
-                        onClick={() => scrollToBoss(boss)}
-                        className="px-4 py-2 bg-background-inset hover:bg-muted border border-border rounded-[40px] text-sm font-medium text-foreground whitespace-nowrap transition"
-                      >
-                        {boss}
-                      </Button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-              {/* Expand/Collapse container */}
-              <div className="flex-shrink-0 bg-background-elevated border border-border rounded-xl p-3">
-                <div className="flex gap-2 h-full items-center justify-start">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={expandAll}
-                    className="rounded-[40px]"
-                  >
-                    Expand All
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={collapseAll}
-                    className="rounded-[40px]"
-                  >
-                    Collapse All
-                  </Button>
-                </div>
+                  Expand All
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={collapseAll}
+                >
+                  Collapse All
+                </Button>
               </div>
             </div>
           </div>
@@ -1316,7 +1502,7 @@ export default function MasterSheet() {
             ) : (
             <>
             {/* Loot Table */}
-            {Object.keys(groupedByBoss).length === 0 ? (
+            {sortedRaidTiers.length === 0 ? (
               <EmptyState
                 icon={ScrollIcon}
                 title="No loot items found"
@@ -1324,126 +1510,187 @@ export default function MasterSheet() {
                 variant="card"
               />
             ) : (
-          <div className="space-y-3">
-            {Object.entries(groupedByBoss).sort(([bossA], [bossB]) => getBossOrder(bossA) - getBossOrder(bossB)).map(([boss, items]) => {
-              const isCollapsed = collapsedBosses.has(boss)
-              return (
-                <div
-                  key={boss}
-                  id={`boss-${boss.replace(/\s+/g, '-')}`}
-                  className="bg-background-elevated border border-border rounded-xl overflow-hidden scroll-mt-[140px]"
-                >
-                  {/* Boss Header - Clickable */}
-                  <Button
-                    variant="ghost"
-                    onClick={() => toggleBossCollapse(boss)}
-                    className="w-full px-5 py-3 flex items-center justify-between hover:bg-muted transition-colors rounded-none"
-                  >
-                    <div className="flex items-center gap-3">
-                      {getBossImage(boss) && (
-                        <img
-                          src={getBossImage(boss)!}
-                          alt={boss}
-                          className="w-6 h-6 rounded border border-border/50 shadow-sm"
-                        />
-                      )}
-                      <h2 className="text-[15px] font-semibold text-foreground">{boss}</h2>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <span className="text-[12px] text-foreground-muted font-medium">
-                        {items.length} item{items.length !== 1 ? 's' : ''}
-                      </span>
-                      <svg
-                        className={`w-4 h-4 text-muted-foreground transition-transform ${isCollapsed ? '' : 'rotate-90'}`}
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                      </svg>
-                    </div>
-                  </Button>
+          <div className="space-y-4">
+            {sortedRaidTiers.map(({ tier, items: tierItems }) => {
+              const isRaidTierCollapsed = collapsedRaidTiers.has(tier.id)
 
-                  {/* Items Table - Collapsible */}
-                  {!isCollapsed && (
-                    <div className="border-t border-border overflow-x-auto">
-                      <table className="w-full min-w-[800px]">
-                        <thead>
-                          <tr className="bg-background-subtle">
-                            <th className="px-5 py-2.5 text-left text-[12px] font-medium text-foreground-muted w-[280px]">Item</th>
-                            <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted w-[100px]">Slot</th>
-                            <th className="px-3 py-2.5 text-center text-[12px] font-medium text-foreground-muted w-[120px]">#1</th>
-                            <th className="px-3 py-2.5 text-center text-[12px] font-medium text-foreground-muted w-[120px]">#2</th>
-                            <th className="px-3 py-2.5 text-center text-[12px] font-medium text-foreground-muted w-[120px]">#3</th>
-                            <th className="px-3 py-2.5 text-center text-[12px] font-medium text-foreground-muted w-[120px]">#4</th>
-                            <th className="px-3 py-2.5 text-center text-[12px] font-medium text-foreground-muted w-[120px]">#5</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-border">
-                          {items.map((ir) => (
-                            <tr
-                              key={ir.item.id}
-                              id={`item-${ir.item.id}`}
-                              className={`transition-all hover:bg-muted ${ir.rankings.length === 0 ? 'bg-destructive/10' : ''}`}
+              // Group items by boss within this tier
+              const tierGroupedByBoss: Record<string, ItemRankings[]> = {}
+              tierItems.forEach(ir => {
+                const boss = normalizeBossName(ir.item.boss_name)
+                if (!tierGroupedByBoss[boss]) {
+                  tierGroupedByBoss[boss] = []
+                }
+                tierGroupedByBoss[boss].push(ir)
+              })
+
+              const tierBossNames = Object.keys(tierGroupedByBoss).sort((a, b) => getBossOrder(a) - getBossOrder(b))
+
+              return (
+                <div key={tier.id} className="space-y-3">
+                  {/* Raid Tier Header Bar */}
+                  <button
+                    onClick={() => toggleRaidTierCollapse(tier.id)}
+                    className="w-full text-left px-5 py-3 rounded-xl transition-colors bg-background-subtle border border-border hover:bg-muted"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <img
+                          src={getRaidIcon(tier.name)}
+                          alt=""
+                          className="w-6 h-6 rounded border border-border/50"
+                        />
+                        <span className="text-[15px] font-semibold text-foreground">{tier.name}</span>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className="text-[12px] text-muted-foreground">
+                          {tierItems.length} item{tierItems.length !== 1 ? 's' : ''}
+                        </span>
+                        <svg
+                          className={`w-4 h-4 text-muted-foreground transition-transform ${isRaidTierCollapsed ? '' : 'rotate-90'}`}
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
+                      </div>
+                    </div>
+                  </button>
+
+                  {/* Bosses within this raid tier */}
+                  {!isRaidTierCollapsed && (
+                    <div className="space-y-3">
+                      {tierBossNames.map((boss) => {
+                        const items = tierGroupedByBoss[boss]
+                        const isCollapsed = collapsedBosses.has(boss)
+                        return (
+                          <div
+                            key={boss}
+                            id={`boss-${boss.replace(/\s+/g, '-')}`}
+                            className="bg-background-elevated border border-border rounded-xl overflow-hidden scroll-mt-[140px]"
+                          >
+                            {/* Boss Header - Clickable */}
+                            <Button
+                              variant="ghost"
+                              onClick={() => toggleBossCollapse(boss)}
+                              className="w-full px-5 py-3 flex items-center justify-between hover:bg-muted transition-colors !rounded-none"
                             >
-                              <td className="px-5 py-2.5">
-                                <ItemLink
-                                  name={ir.item.name}
-                                  wowheadId={ir.item.wowhead_id}
-                                  className="font-medium text-[13px]"
-                                />
-                              </td>
-                              <td className="px-3 py-2.5 text-[12px] text-foreground-muted">
-                                {ir.item.item_slot}
-                              </td>
-                              {[0, 1, 2, 3, 4].map((index) => {
-                                const ranking = ir.rankings[index]
-                                const isCurrentUser = ranking && activeCharacter?.id === ranking.character_id
-                                const canCompare = isCurrentUser && index > 0 && ir.rankings[0]
-                                return (
-                                  <td key={index} className="px-3 py-2.5 text-center">
-                                    {ranking ? (
-                                      <div
-                                        className={`flex flex-col items-center ${
-                                          isCurrentUser ? 'relative' : ''
-                                        } ${
-                                          canCompare ? 'cursor-pointer hover:bg-accent/10 rounded-lg p-1 -m-1 transition-colors' : ''
-                                        }`}
-                                        onClick={canCompare ? () => {
-                                          setComparisonData({
-                                            itemName: ir.item.name,
-                                            userRanking: ranking,
-                                            winnerRanking: ir.rankings[0],
-                                          })
-                                          setShowScoreComparison(true)
-                                        } : undefined}
+                              <div className="flex items-center gap-3">
+                                {getBossImage(boss) && (
+                                  <img
+                                    src={getBossImage(boss)!}
+                                    alt={boss}
+                                    className="w-6 h-6 rounded border border-border/50 shadow-sm"
+                                  />
+                                )}
+                                <h2 className="text-[15px] font-semibold text-foreground">{boss}</h2>
+                              </div>
+                              <div className="flex items-center gap-3">
+                                <span className="text-[12px] text-foreground-muted font-medium">
+                                  {items.length} item{items.length !== 1 ? 's' : ''}
+                                </span>
+                                <svg
+                                  className={`w-4 h-4 text-muted-foreground transition-transform ${isCollapsed ? '' : 'rotate-90'}`}
+                                  fill="none"
+                                  stroke="currentColor"
+                                  viewBox="0 0 24 24"
+                                >
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                </svg>
+                              </div>
+                            </Button>
+
+                            {/* Items Table - Collapsible */}
+                            {!isCollapsed && (
+                              <div className="border-t border-border overflow-x-auto">
+                                <table className="w-full min-w-[800px]">
+                                  <thead>
+                                    <tr className="bg-background-subtle">
+                                      <th className="px-5 py-2.5 text-left text-[12px] font-medium text-foreground-muted w-[280px]">Item</th>
+                                      <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted w-[100px]">Slot</th>
+                                      <th className="px-3 py-2.5 text-center text-[12px] font-medium text-foreground-muted w-[120px]">#1</th>
+                                      <th className="px-3 py-2.5 text-center text-[12px] font-medium text-foreground-muted w-[120px]">#2</th>
+                                      <th className="px-3 py-2.5 text-center text-[12px] font-medium text-foreground-muted w-[120px]">#3</th>
+                                      <th className="px-3 py-2.5 text-center text-[12px] font-medium text-foreground-muted w-[120px]">#4</th>
+                                      <th className="px-3 py-2.5 text-center text-[12px] font-medium text-foreground-muted w-[120px]">#5</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody className="divide-y divide-border">
+                                    {items.map((ir) => (
+                                      <tr
+                                        key={ir.item.id}
+                                        id={`item-${ir.item.id}`}
+                                        className={`transition-all hover:bg-muted ${ir.rankings.length === 0 ? 'bg-destructive/10' : ''}`}
                                       >
-                                        <span
-                                          className={`text-[13px] font-medium ${isCurrentUser ? 'underline decoration-dotted underline-offset-2' : ''}`}
-                                          style={{ color: ranking.class_color }}
-                                        >
-                                          {ranking.player_name}
-                                          {ranking.is_trial && (
-                                            <span className="text-yellow-400 text-[10px] ml-0.5" title="Trial member">(T)</span>
-                                          )}
-                                        </span>
-                                        <span className="text-[11px] text-foreground-muted">
-                                          {Math.round(ranking.loot_score)}
-                                        </span>
-                                        {canCompare && (
-                                          <span className="text-[10px] text-accent mt-0.5">Why?</span>
-                                        )}
-                                      </div>
-                                    ) : (
-                                      <span className="text-muted-foreground">—</span>
-                                    )}
-                                  </td>
-                                )
-                              })}
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
+                                        <td className="px-5 py-2.5">
+                                          <ItemLink
+                                            name={ir.item.name}
+                                            wowheadId={ir.item.wowhead_id}
+                                            className="font-medium text-[13px]"
+                                          />
+                                        </td>
+                                        <td className="px-3 py-2.5 text-[12px] text-foreground-muted">
+                                          {ir.item.item_slot}
+                                        </td>
+                                        {[0, 1, 2, 3, 4].map((index) => {
+                                          const ranking = ir.rankings[index]
+                                          const isCurrentUser = ranking && activeCharacter?.id === ranking.character_id
+                                          const canCompare = isCurrentUser && index > 0 && ir.rankings[0]
+                                          return (
+                                            <td key={index} className="px-3 py-2.5 text-center">
+                                              {ranking ? (
+                                                <div
+                                                  className={`flex flex-col items-center ${
+                                                    isCurrentUser ? 'relative' : ''
+                                                  } ${
+                                                    canCompare ? 'cursor-pointer hover:bg-accent/10 rounded-lg p-1 -m-1 transition-colors' : ''
+                                                  } ${
+                                                    !ranking.is_eligible ? 'opacity-50' : ''
+                                                  }`}
+                                                  onClick={canCompare ? () => {
+                                                    setComparisonData({
+                                                      itemName: ir.item.name,
+                                                      userRanking: ranking,
+                                                      winnerRanking: ir.rankings[0],
+                                                    })
+                                                    setShowScoreComparison(true)
+                                                  } : undefined}
+                                                >
+                                                  <span
+                                                    className={`text-[13px] font-medium ${isCurrentUser ? 'underline decoration-dotted underline-offset-2' : ''}`}
+                                                    style={{ color: ranking.class_color }}
+                                                  >
+                                                    {ranking.player_name}
+                                                    {ranking.is_trial && (
+                                                      <span className="text-warning text-[10px] ml-0.5" title="Trial member">(T)</span>
+                                                    )}
+                                                    {!ranking.is_eligible && (
+                                                      <span className="text-destructive text-[10px] ml-0.5" title={`Ineligible: ${ranking.raids_attended}/${guildSettings?.minimum_raid_days || 2} raids attended`}>⊘</span>
+                                                    )}
+                                                  </span>
+                                                  <span className="text-[11px] text-foreground-muted">
+                                                    {ranking.loot_score.toFixed(guildSettings?.decimal_places ?? 2)}
+                                                  </span>
+                                                  {canCompare && (
+                                                    <span className="text-[10px] text-accent mt-0.5">Why?</span>
+                                                  )}
+                                                </div>
+                                              ) : (
+                                                <span className="text-muted-foreground">—</span>
+                                              )}
+                                            </td>
+                                          )
+                                        })}
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+                            )}
+                          </div>
+                        )
+                      })}
                     </div>
                   )}
                 </div>
@@ -1463,7 +1710,7 @@ export default function MasterSheet() {
         <div className="bg-background-elevated border border-border rounded-xl p-4">
           <div className="flex items-center justify-between">
             <p className="text-foreground-muted text-[12px]">
-              Scores = item rank + attendance + role modifiers + priority bonuses + trial penalty. Ties go to roll. <span className="text-yellow-400">(T)</span> = Trial member.
+              Scores = item rank + attendance + role modifiers + priority bonuses + trial penalty. Ties go to roll. <span className="text-yellow-400">(T)</span> = Trial member.{guildSettings?.new_member_mode === 'minimum_gate' && <> <span className="text-red-400">⊘</span> = Ineligible (needs {guildSettings?.minimum_raid_days || 2}+ raids).</>}
             </p>
             {Object.keys(itemPriorities).length > 0 && (
               <p className="text-foreground-muted text-[12px]">

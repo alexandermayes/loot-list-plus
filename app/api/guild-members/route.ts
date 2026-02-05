@@ -210,7 +210,15 @@ export async function GET(request: NextRequest) {
       return aName.localeCompare(bName)
     })
 
-    return NextResponse.json({ members })
+    return NextResponse.json(
+      { members },
+      {
+        headers: {
+          // Cache for 30 seconds, allow stale responses while revalidating
+          'Cache-Control': 'private, max-age=30, stale-while-revalidate=60'
+        }
+      }
+    )
   } catch (error) {
     console.error('Error in GET /api/guild-members:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

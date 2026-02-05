@@ -3,6 +3,20 @@ import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { TBC_BIS, type BisTierData, type BisItem } from '@/data/bis/tbc-bis'
 
+/**
+ * Normalize raid tier names to match BIS data keys.
+ * Database may have variations like "Tempest Keep: The Eye" but BIS data uses "Tempest Keep".
+ */
+const RAID_NAME_ALIASES: Record<string, string> = {
+  'Tempest Keep: The Eye': 'Tempest Keep',
+  'The Eye': 'Tempest Keep',
+  'Mount Hyjal': 'Hyjal Summit',
+}
+
+function normalizeTierName(tierName: string): string {
+  return RAID_NAME_ALIASES[tierName] || tierName
+}
+
 interface LootItem {
   id: string
   name: string
@@ -29,12 +43,14 @@ function getBisSpecKey(specName: string, className: string): string {
 /**
  * GET /api/bis-items
  *
- * Fetches BIS items for a character's spec matched against available loot items for a tier.
+ * Fetches BIS items for a character's spec matched against available loot items.
  * Returns items sorted by priority (BIS first, then alt) with slot information for auto-ranking.
  *
  * Query params:
- * - tier_id: The raid tier ID
+ * - expansion_id: The expansion ID
+ * - phase: The phase number
  * - character_id: The character ID (used to determine spec)
+ * - guild_id: The guild ID (used to filter active tiers)
  */
 export async function GET(request: NextRequest) {
   try {
@@ -44,19 +60,34 @@ export async function GET(request: NextRequest) {
     }
 
     const searchParams = request.nextUrl.searchParams
-    const tierId = searchParams.get('tier_id')
+    const expansionId = searchParams.get('expansion_id')
+    const phase = searchParams.get('phase')
     const characterId = searchParams.get('character_id')
+    const guildId = searchParams.get('guild_id')
 
-    if (!tierId || !characterId) {
-      return NextResponse.json({ error: 'tier_id and character_id are required' }, { status: 400 })
+    if (!expansionId || !phase || !characterId || !guildId) {
+      return NextResponse.json({ error: 'expansion_id, phase, character_id, and guild_id are required' }, { status: 400 })
     }
 
     const supabase = createServiceRoleClient()
 
-    // Get character info
+    // Get character info with spec and class in a single query (avoiding N+1)
     const { data: character, error: charError } = await supabase
       .from('characters')
-      .select('id, user_id, class_id, spec_id')
+      .select(`
+        id,
+        user_id,
+        class_id,
+        spec_id,
+        spec:class_specs (
+          id,
+          name
+        ),
+        class:wow_classes (
+          id,
+          name
+        )
+      `)
       .eq('id', characterId)
       .single()
 
@@ -71,71 +102,117 @@ export async function GET(request: NextRequest) {
     }
 
     // Get spec name if character has a spec set
-    if (!character.spec_id) {
+    if (!character.spec_id || !character.spec) {
       return NextResponse.json({
         error: 'Character has no spec set. Please set your specialization first.',
         code: 'NO_SPEC'
       }, { status: 400 })
     }
 
-    // Get spec name and class name
-    const { data: specData, error: specError } = await supabase
-      .from('class_specs')
-      .select('id, name, class_id')
-      .eq('id', character.spec_id)
-      .single()
-
-    if (specError || !specData) {
-      return NextResponse.json({
-        error: 'Could not find spec information',
-        code: 'SPEC_ERROR'
-      }, { status: 500 })
-    }
-
-    // Get class name
-    const { data: classData, error: classError } = await supabase
-      .from('wow_classes')
-      .select('id, name')
-      .eq('id', specData.class_id)
-      .single()
-
-    if (classError || !classData) {
+    if (!character.class) {
       return NextResponse.json({
         error: 'Could not find class information',
         code: 'CLASS_ERROR'
       }, { status: 500 })
     }
 
+    // Handle Supabase returning arrays for single joins
+    const specData = Array.isArray(character.spec) ? character.spec[0] : character.spec
+    const classData = Array.isArray(character.class) ? character.class[0] : character.class
+
     const specName = specData.name
     const className = classData.name
     const bisSpecKey = getBisSpecKey(specName, className)
 
-    // Get raid tier name
-    const { data: tier, error: tierError } = await supabase
+    // Get all tiers for this expansion (needed for error messaging about disabled tiers)
+    const { data: allTiers } = await supabase
+      .from('raid_tiers')
+      .select('id, name, phase, is_guild_active')
+      .eq('expansion_id', expansionId)
+
+    // Get all raid tiers for this expansion and phase that are active for the guild
+    // Note: is_guild_active can be null (treated as true/enabled by default) or explicitly true/false
+    const { data: tiers, error: tierError } = await supabase
       .from('raid_tiers')
       .select('id, name')
-      .eq('id', tierId)
-      .single()
+      .eq('expansion_id', expansionId)
+      .eq('phase', parseInt(phase, 10))
+      .or('is_guild_active.eq.true,is_guild_active.is.null')
 
-    if (tierError || !tier) {
-      return NextResponse.json({ error: 'Raid tier not found' }, { status: 404 })
+    if (tierError) {
+      console.error('Error fetching tiers:', tierError)
+      return NextResponse.json({ error: 'Failed to fetch raid tiers' }, { status: 500 })
     }
 
-    // Get BIS data for this spec and tier
-    const bisData = TBC_BIS[bisSpecKey]?.[tier.name] as BisTierData | undefined
+    if (!tiers || tiers.length === 0) {
+      return NextResponse.json({ error: 'No active raid tiers found for this phase' }, { status: 404 })
+    }
 
-    if (!bisData) {
+    // Collect BIS data from all tiers
+    const combinedBisData: BisTierData = {}
+    const tierNames: string[] = []
+
+    for (const tier of tiers) {
+      const normalizedName = normalizeTierName(tier.name)
+      const tierBisData = TBC_BIS[bisSpecKey]?.[normalizedName] as BisTierData | undefined
+      if (tierBisData) {
+        tierNames.push(normalizedName)
+        // Merge BIS data from this tier
+        for (const [slot, items] of Object.entries(tierBisData)) {
+          const slotKey = slot as keyof BisTierData
+          if (!combinedBisData[slotKey]) {
+            combinedBisData[slotKey] = []
+          }
+          combinedBisData[slotKey]!.push(...(items as BisItem[]))
+        }
+      }
+    }
+
+    if (Object.keys(combinedBisData).length === 0) {
+      // Debug info for troubleshooting
+      const activeTierNames = tiers.map(t => t.name)
+      const availableBisTiers = Object.keys(TBC_BIS[bisSpecKey] || {})
+
+      // Check if there are BIS tiers for this phase that are disabled
+      const allTiersForPhase = allTiers?.filter(t => t.phase === parseInt(phase, 10)) || []
+      const disabledTiers = allTiersForPhase.filter(t => t.is_guild_active === false)
+      const disabledTiersWithBisData = disabledTiers.filter(t =>
+        availableBisTiers.includes(normalizeTierName(t.name))
+      )
+
+      console.error('[BIS API] BIS lookup failed:', {
+        bisSpecKey,
+        phase,
+        activeTierNames,
+        availableBisTiers,
+        disabledTiersWithBisData: disabledTiersWithBisData.map(t => t.name),
+        hasBisSpec: !!TBC_BIS[bisSpecKey]
+      })
+
+      // Provide a more helpful error message
+      let errorMessage = `No BIS data available for ${bisSpecKey} in phase ${phase}`
+      if (disabledTiersWithBisData.length > 0) {
+        const disabledNames = disabledTiersWithBisData.map(t => t.name).join(', ')
+        errorMessage = `${bisSpecKey} BIS items come from ${disabledNames}, which ${disabledTiersWithBisData.length === 1 ? 'is' : 'are'} disabled for this guild`
+      }
+
       return NextResponse.json({
-        error: `No BIS data available for ${bisSpecKey} in ${tier.name}`,
-        code: 'NO_BIS_DATA'
+        error: errorMessage,
+        code: 'NO_BIS_DATA',
+        details: {
+          active_raids: activeTierNames,
+          bis_data_available_for: availableBisTiers,
+          disabled_raids_with_bis: disabledTiersWithBisData.map(t => t.name)
+        }
       }, { status: 404 })
     }
 
-    // Fetch all loot items for this tier
+    // Fetch all loot items for these tiers
+    const tierIds = tiers.map(t => t.id)
     const { data: lootItems, error: itemsError } = await supabase
       .from('loot_items')
       .select('id, name, item_slot, wowhead_id')
-      .eq('raid_tier_id', tierId)
+      .in('raid_tier_id', tierIds)
       .eq('is_available', true)
 
     if (itemsError) {
@@ -160,12 +237,17 @@ export async function GET(request: NextRequest) {
 
     const matchedItems: MatchedBisItem[] = []
     const unmatchedBisItems: { wowhead_id: number; slot: string; priority: string }[] = []
+    const seenWowheadIds = new Set<number>() // Prevent duplicates across tiers
 
-    // Process each slot in BIS data
-    Object.entries(bisData).forEach(([slot, items]) => {
+    // Process each slot in combined BIS data
+    Object.entries(combinedBisData).forEach(([slot, items]) => {
       (items as BisItem[]).forEach(bisItem => {
+        // Skip if we've already added this item
+        if (seenWowheadIds.has(bisItem.wowhead_id)) return
+
         const lootItem = itemsByWowheadId[bisItem.wowhead_id]
         if (lootItem) {
+          seenWowheadIds.add(bisItem.wowhead_id)
           matchedItems.push({
             loot_item_id: lootItem.id,
             wowhead_id: bisItem.wowhead_id,
@@ -194,9 +276,10 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(
       {
         spec_name: bisSpecKey,
-        tier_name: tier.name,
+        tier_names: tierNames,
+        phase: parseInt(phase, 10),
         items: matchedItems,
-        total_bis_items: Object.values(bisData).flat().length,
+        total_bis_items: Object.values(combinedBisData).flat().length,
         matched_count: matchedItems.length,
         unmatched_count: unmatchedBisItems.length
       },

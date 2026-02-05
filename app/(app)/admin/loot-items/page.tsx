@@ -1,7 +1,7 @@
 'use client'
 
 import { createClient } from '@/utils/supabase/client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import ItemLink from '@/app/components/ItemLink'
 import { useGuildContext } from '@/app/contexts/GuildContext'
@@ -14,6 +14,8 @@ import { Select } from '@/components/ui/select'
 import { Label } from '@/components/ui/label'
 import { normalizeBossName } from '@/utils/bossOrder'
 import { refreshWowheadTooltips } from '@/lib/wowhead'
+import { getRaidIcon } from '@/utils/raidIcons'
+import { getBossImage } from '@/utils/bossImages'
 
 interface LootItem {
   id: string
@@ -213,7 +215,7 @@ export default function AdminLootItems() {
 
       if (tiersData) {
         // Sort by progression order
-        const sortedTiers = tiersData.sort((a, b) =>
+        const sortedTiers = tiersData.sort((a: { id: string; name: string }, b: { id: string; name: string }) =>
           getRaidTierOrder(a.name) - getRaidTierOrder(b.name)
         )
         setRaidTiers(sortedTiers)
@@ -364,8 +366,8 @@ export default function AdminLootItems() {
     return wowClass?.color_hex || '#888888'
   }
 
-  // Get all available specs as "Class Spec" options for dropdown
-  const getClassSpecOptions = () => {
+  // Get all available specs as "Class Spec" options for dropdown (memoized)
+  const classSpecOptions = useMemo(() => {
     return classSpecs
       .map(spec => {
         const wowClass = classes.find(c => c.id === spec.class_id)
@@ -382,14 +384,23 @@ export default function AdminLootItems() {
         }
       })
       .sort((a, b) => a.label.localeCompare(b.label))
-  }
+  }, [classSpecs, classes])
 
-  const filteredItems = lootItems.filter(item => {
+  // Memoized filtered items to prevent recalculation on every render
+  const filteredItems = useMemo(() => lootItems.filter(item => {
     const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          item.boss_name.toLowerCase().includes(searchTerm.toLowerCase())
     const matchesTier = filterTier === 'all' || (item.raid_tier as any)?.name === filterTier
     return matchesSearch && matchesTier
-  })
+  }), [lootItems, searchTerm, filterTier])
+
+  // Memoized stats to prevent multiple filter iterations
+  const itemStats = useMemo(() => ({
+    total: filteredItems.length,
+    available: filteredItems.filter(i => i.is_available).length,
+    reserved: filteredItems.filter(i => i.classification === 'Reserved').length,
+    limited: filteredItems.filter(i => i.classification === 'Limited').length,
+  }), [filteredItems])
 
   if (loading) {
     return (
@@ -412,25 +423,19 @@ export default function AdminLootItems() {
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
           <div className="bg-background-elevated border border-border rounded-xl p-4">
             <p className="text-muted-foreground text-sm">Total Items</p>
-            <p className="text-2xl font-bold text-foreground">{filteredItems.length}</p>
+            <p className="text-2xl font-bold text-foreground">{itemStats.total}</p>
           </div>
           <div className="bg-background-elevated border border-border rounded-xl p-4">
             <p className="text-muted-foreground text-sm">Available</p>
-            <p className="text-2xl font-bold text-green-400">
-              {filteredItems.filter(i => i.is_available).length}
-            </p>
+            <p className="text-2xl font-bold text-success">{itemStats.available}</p>
           </div>
           <div className="bg-background-elevated border border-border rounded-xl p-4">
             <p className="text-muted-foreground text-sm">Reserved</p>
-            <p className="text-2xl font-bold text-red-400">
-              {filteredItems.filter(i => i.classification === 'Reserved').length}
-            </p>
+            <p className="text-2xl font-bold text-destructive">{itemStats.reserved}</p>
           </div>
           <div className="bg-background-elevated border border-border rounded-xl p-4">
             <p className="text-muted-foreground text-sm">Limited</p>
-            <p className="text-2xl font-bold text-yellow-400">
-              {filteredItems.filter(i => i.classification === 'Limited').length}
-            </p>
+            <p className="text-2xl font-bold text-warning">{itemStats.limited}</p>
           </div>
         </div>
 
@@ -494,9 +499,29 @@ export default function AdminLootItems() {
                     <td className="px-4 py-3 text-foreground">
                       <ItemLink name={item.name} wowheadId={item.wowhead_id} />
                     </td>
-                    <td className="px-4 py-3 text-muted-foreground">{normalizeBossName(item.boss_name)}</td>
+                    <td className="px-4 py-3 text-muted-foreground">
+                      <span className="flex items-center gap-2">
+                        {getBossImage(item.boss_name) && (
+                          <img
+                            src={getBossImage(item.boss_name)!}
+                            alt=""
+                            className="w-5 h-5 rounded border border-border/50"
+                          />
+                        )}
+                        {normalizeBossName(item.boss_name)}
+                      </span>
+                    </td>
                     <td className="px-4 py-3 text-muted-foreground">{item.item_slot}</td>
-                    <td className="px-4 py-3 text-muted-foreground">{(item.raid_tier as any)?.name}</td>
+                    <td className="px-4 py-3 text-muted-foreground">
+                      <span className="flex items-center gap-2">
+                        <img
+                          src={getRaidIcon((item.raid_tier as any)?.name || '')}
+                          alt=""
+                          className="w-5 h-5 rounded border border-border/50"
+                        />
+                        {(item.raid_tier as any)?.name}
+                      </span>
+                    </td>
                     <td className="px-4 py-3">
                       <Select
                         variant="rounded"
@@ -524,10 +549,10 @@ export default function AdminLootItems() {
                           className="w-full text-[11px]"
                         >
                           <option value="">+ Add Primary Spec...</option>
-                          {getClassSpecOptions().map(opt => {
+                          {classSpecOptions.map(opt => {
                             const isAssigned = itemSpecs[item.id]?.primary.has(opt.id) || itemSpecs[item.id]?.secondary.has(opt.id)
                             return (
-                              <option key={opt.id} value={opt.id} disabled={isAssigned} className={isAssigned ? 'text-gray-500' : ''}>
+                              <option key={opt.id} value={opt.id} disabled={isAssigned} className={isAssigned ? 'text-muted-foreground' : ''}>
                                 {opt.label}
                               </option>
                             )
@@ -538,7 +563,7 @@ export default function AdminLootItems() {
                             {Array.from(itemSpecs[item.id].primary).map(specId => (
                               <div
                                 key={specId}
-                                className="flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium border border-green-600 bg-green-900/30"
+                                className="flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium border border-success bg-success/20"
                               >
                                 <div
                                   className="w-1.5 h-1.5 rounded-full"
@@ -576,10 +601,10 @@ export default function AdminLootItems() {
                           className="w-full text-[11px]"
                         >
                           <option value="">+ Add Secondary Spec...</option>
-                          {getClassSpecOptions().map(opt => {
+                          {classSpecOptions.map(opt => {
                             const isAssigned = itemSpecs[item.id]?.primary.has(opt.id) || itemSpecs[item.id]?.secondary.has(opt.id)
                             return (
-                              <option key={opt.id} value={opt.id} disabled={isAssigned} className={isAssigned ? 'text-gray-500' : ''}>
+                              <option key={opt.id} value={opt.id} disabled={isAssigned} className={isAssigned ? 'text-muted-foreground' : ''}>
                                 {opt.label}
                               </option>
                             )
@@ -590,7 +615,7 @@ export default function AdminLootItems() {
                             {Array.from(itemSpecs[item.id].secondary).map(specId => (
                               <div
                                 key={specId}
-                                className="flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium border border-yellow-600 bg-yellow-900/30"
+                                className="flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium border border-warning bg-warning/20"
                               >
                                 <div
                                   className="w-1.5 h-1.5 rounded-full"

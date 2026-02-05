@@ -3,10 +3,10 @@
 export const dynamic = 'force-dynamic'
 
 import { createClient } from '@/utils/supabase/client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { HugeiconsIcon } from '@hugeicons/react'
-import { ArrowDown01Icon, ArrowUp01Icon, Upload01Icon, Cancel01Icon } from '@hugeicons/core-free-icons'
+import { ArrowDown01Icon, ArrowUp01Icon, Upload01Icon, Cancel01Icon, MoreVerticalIcon } from '@hugeicons/core-free-icons'
 import LootHistoryTab from './components/LootHistoryTab'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { Heading } from '@/components/ui/typography'
@@ -28,6 +28,14 @@ import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
 import { useConfirm } from '@/components/ui/confirm-modal'
 import { SegmentedControl } from '@/components/ui/segmented-control'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { Select } from '@/components/ui/select'
 
 interface Member {
   character_id: string
@@ -76,7 +84,7 @@ export default function RaidTrackingPage() {
   const [attendance, setAttendance] = useState<Record<string, Record<string, AttendanceStatus>>>({})
   const [unlinkedAttendees, setUnlinkedAttendees] = useState<Record<string, UnlinkedAttendee[]>>({})
   const [raidLoot, setRaidLoot] = useState<Record<string, RaidLootEntry[]>>({})
-  const [expandedRaid, setExpandedRaid] = useState<string | null>(null)
+  const [expandedRaids, setExpandedRaids] = useState<Set<string>>(new Set())
   const [expandedWeeks, setExpandedWeeks] = useState<Set<string>>(new Set())
   const [loading, setLoading] = useState(true)
   const [guildSettings, setGuildSettings] = useState<any>(null)
@@ -95,6 +103,13 @@ export default function RaidTrackingPage() {
   const [lootSearchQuery, setLootSearchQuery] = useState('')
   const [importing, setImporting] = useState(false)
   const [activeTab, setActiveTab] = useState<'tracking' | 'history'>('tracking')
+
+  // Reassign loot modal state
+  const [reassignModal, setReassignModal] = useState<{
+    raidId: string
+    lootEntries: RaidLootEntry[]
+    currentMember: Member
+  } | null>(null)
 
   // For legacy compatibility
   const [importData, setImportData] = useState('')
@@ -389,7 +404,7 @@ export default function RaidTrackingPage() {
       const firstRaidInWeek = raidsInMostRecentWeek[0]
 
       console.log('📍 Auto-expanding first raid in week:', firstRaidInWeek.raid_date)
-      setExpandedRaid(firstRaidInWeek.id)
+      setExpandedRaids(new Set([firstRaidInWeek.id]))
       await loadRaidAttendance(firstRaidInWeek.id)
     } else {
       console.log('⚠️ No raid events found')
@@ -522,16 +537,22 @@ export default function RaidTrackingPage() {
     }
   }
 
-  const toggleRaidExpanded = async (raidId: string) => {
-    if (expandedRaid === raidId) {
-      setExpandedRaid(null)
-    } else {
-      setExpandedRaid(raidId)
-      if (!attendance[raidId]) {
-        await loadRaidAttendance(raidId)
+  const toggleRaidExpanded = useCallback(async (raidId: string) => {
+    setExpandedRaids(prev => {
+      const next = new Set(prev)
+      if (next.has(raidId)) {
+        next.delete(raidId)
+      } else {
+        next.add(raidId)
       }
+      return next
+    })
+
+    // Load attendance if not already loaded
+    if (!attendance[raidId]) {
+      await loadRaidAttendance(raidId)
     }
-  }
+  }, [attendance, loadRaidAttendance])
 
   const getCellState = (status: AttendanceStatus | undefined): CellState => {
     if (!status) return 'empty'
@@ -545,8 +566,8 @@ export default function RaidTrackingPage() {
   const getCellStyle = (state: CellState) => {
     switch (state) {
       case 'attended': return 'bg-success/30 border-success text-success'
-      case 'late': return 'bg-yellow-500/30 border-yellow-500 text-yellow-400'
-      case 'standby': return 'bg-orange-500/30 border-orange-500 text-orange-400'
+      case 'late': return 'bg-warning/30 border-warning text-warning'
+      case 'standby': return 'bg-warning/30 border-warning text-warning'
       case 'no-show': return 'bg-destructive/30 border-destructive text-destructive'
       default: return 'bg-background-elevated border-border'
     }
@@ -678,6 +699,65 @@ export default function RaidTrackingPage() {
       // Revert local state on error
       await loadRaidAttendance(raidId)
     }
+  }
+
+  const removeFromAttendance = (raidId: string, characterId: string) => {
+    confirm({
+      title: 'Remove from raid',
+      description: 'Remove this character from attendance tracking for this raid?',
+      confirmLabel: 'Remove',
+      variant: 'danger',
+      onConfirm: async () => {
+        const { error } = await supabase
+          .from('attendance_records')
+          .delete()
+          .eq('raid_event_id', raidId)
+          .eq('character_id', characterId)
+
+        if (error) {
+          console.error('Failed to remove from raid:', error)
+          showNotification('error', 'Failed to remove from raid')
+          return
+        }
+
+        // Update local state
+        setAttendance(prev => {
+          const newState = { ...prev }
+          if (newState[raidId]) {
+            const raidAttendance = { ...newState[raidId] }
+            delete raidAttendance[characterId]
+            newState[raidId] = raidAttendance
+          }
+          return newState
+        })
+
+        showNotification('success', 'Removed from raid')
+      }
+    })
+  }
+
+  const reassignLoot = async (lootId: string, newCharacterId: string, newCharacterName: string) => {
+    if (!reassignModal) return
+
+    const { error } = await supabase
+      .from('loot_history')
+      .update({
+        character_id: newCharacterId,
+        character_name: null, // Clear unlinked name if switching to linked
+        notes: `Reassigned from ${reassignModal.currentMember.character_name}`
+      })
+      .eq('id', lootId)
+
+    if (error) {
+      console.error('Failed to reassign loot:', error)
+      showNotification('error', 'Failed to reassign loot')
+      return
+    }
+
+    // Reload loot for this raid
+    await loadRaidAttendance(reassignModal.raidId)
+    setReassignModal(null)
+    showNotification('success', `Loot reassigned to ${newCharacterName}`)
   }
 
   const toggleSkipDay = async (raidId: string, currentSkipped: boolean) => {
@@ -1271,6 +1351,7 @@ export default function RaidTrackingPage() {
     // Import Loot
     if (lootData.trim()) {
       console.log('📥 Starting loot import...')
+      console.log('📥 Current expansion:', currentExpansion?.name, '(id:', currentExpansion?.expansion_id, ')')
       console.log('📥 Available loot items in state:', lootItems.length)
 
       // Get the items to use for matching - reload if state is empty
@@ -1326,7 +1407,7 @@ export default function RaidTrackingPage() {
         }
 
         const itemId = parseInt(itemIdMatch[1])
-        console.log('📥 Looking for item with wowhead_id:', itemId)
+        console.log('📥 Looking for item with wowhead_id:', itemId, 'in', itemsToUse.length, 'items')
         // Use itemsToUse instead of lootItems state
         const matchedItem = itemsToUse.find(item => item.wowhead_id === itemId)
         const matchedCharacter = members.find(m =>
@@ -1335,8 +1416,20 @@ export default function RaidTrackingPage() {
 
         if (!matchedItem) {
           results.loot.failed++
-          results.loot.errors.push(`Item #${itemId} not found for ${characterName.trim()}`)
-          console.log('❌ Item not found in lootItems')
+          // Check if item exists by fetching from DB directly
+          const { data: directLookup } = await supabase
+            .from('loot_items')
+            .select('id, name, raid_tier_id')
+            .eq('wowhead_id', itemId)
+            .limit(1)
+
+          if (directLookup && directLookup.length > 0) {
+            results.loot.errors.push(`Item #${itemId} (${directLookup[0].name}) exists but not in current expansion`)
+            console.log('❌ Item exists but wrong expansion:', directLookup[0].name, 'tier:', directLookup[0].raid_tier_id)
+          } else {
+            results.loot.errors.push(`Item #${itemId} not in database - may need to add to loot tables`)
+            console.log('❌ Item not found in database at all')
+          }
           continue
         }
 
@@ -1634,23 +1727,23 @@ export default function RaidTrackingPage() {
     }
   }
 
-  const getAttendanceCount = (raidId: string) => {
+  const getAttendanceCount = useCallback((raidId: string) => {
     const raidAttendance = attendance[raidId] || {}
     const linkedCount = Object.values(raidAttendance).filter(a => a.attended).length
     const unlinkedCount = (unlinkedAttendees[raidId] || []).filter(u => u.status.attended).length
     return linkedCount + unlinkedCount
-  }
+  }, [attendance, unlinkedAttendees])
 
-  const getSignupCount = (raidId: string) => {
+  const getSignupCount = useCallback((raidId: string) => {
     const raidAttendance = attendance[raidId] || {}
     const linkedCount = Object.values(raidAttendance).filter(a => a.signed_up).length
     const unlinkedCount = (unlinkedAttendees[raidId] || []).filter(u => u.status.signed_up).length
     return linkedCount + unlinkedCount
-  }
+  }, [attendance, unlinkedAttendees])
 
-  const getLootCount = (raidId: string) => {
+  const getLootCount = useCallback((raidId: string) => {
     return raidLoot[raidId]?.length || 0
-  }
+  }, [raidLoot])
 
   if (loading) {
     return (
@@ -1668,7 +1761,7 @@ export default function RaidTrackingPage() {
   // Group raids by week (starting on the first raid day from settings)
   const firstRaidDay = guildSettings?.first_raid_day ?? 0 // Default to Sunday if not set
 
-  const toggleWeekExpanded = (weekStart: string) => {
+  const toggleWeekExpanded = useCallback((weekStart: string) => {
     setExpandedWeeks(prev => {
       const newSet = new Set(prev)
       if (newSet.has(weekStart)) {
@@ -1678,9 +1771,9 @@ export default function RaidTrackingPage() {
       }
       return newSet
     })
-  }
+  }, [])
 
-  const getWeekLabel = (weekStartDate: string) => {
+  const getWeekLabel = useCallback((weekStartDate: string) => {
     const date = new Date(weekStartDate + 'T00:00:00')
     return `Week of ${date.toLocaleDateString('en-US', {
       weekday: 'long',
@@ -1688,29 +1781,31 @@ export default function RaidTrackingPage() {
       day: 'numeric',
       year: 'numeric'
     })}`
-  }
+  }, [])
 
-  const raidsByWeek = raidDates.reduce((acc, raid) => {
-    const weekStart = getWeekStart(raid.raid_date, firstRaidDay)
-    if (!acc[weekStart]) {
-      acc[weekStart] = []
-    }
-    // Deduplicate: only add if this raid_date doesn't already exist in this week
-    const alreadyExists = acc[weekStart].some(r => r.raid_date === raid.raid_date)
-    if (!alreadyExists) {
-      acc[weekStart].push(raid)
-    } else {
-      console.log('⚠️ Skipping duplicate raid event:', raid.raid_date)
-    }
-    return acc
-  }, {} as Record<string, RaidEvent[]>)
+  // Memoize expensive raid grouping computation
+  const { raidsByWeek, weekKeys } = useMemo(() => {
+    const grouped = raidDates.reduce((acc, raid) => {
+      const weekStart = getWeekStart(raid.raid_date, firstRaidDay)
+      if (!acc[weekStart]) {
+        acc[weekStart] = []
+      }
+      // Deduplicate: only add if this raid_date doesn't already exist in this week
+      const alreadyExists = acc[weekStart].some(r => r.raid_date === raid.raid_date)
+      if (!alreadyExists) {
+        acc[weekStart].push(raid)
+      }
+      return acc
+    }, {} as Record<string, RaidEvent[]>)
 
-  // Sort raids within each week by date ascending (earliest first)
-  Object.keys(raidsByWeek).forEach(weekStart => {
-    raidsByWeek[weekStart].sort((a, b) => a.raid_date.localeCompare(b.raid_date))
-  })
+    // Sort raids within each week by date ascending (earliest first)
+    Object.keys(grouped).forEach(weekStart => {
+      grouped[weekStart].sort((a, b) => a.raid_date.localeCompare(b.raid_date))
+    })
 
-  const weekKeys = Object.keys(raidsByWeek).sort((a, b) => b.localeCompare(a)) // Most recent first
+    const keys = Object.keys(grouped).sort((a, b) => b.localeCompare(a)) // Most recent first
+    return { raidsByWeek: grouped, weekKeys: keys }
+  }, [raidDates, firstRaidDay])
 
   console.log('📊 Raids by week:', Object.entries(raidsByWeek).map(([week, raids]) =>
     `${week}: ${raids.map(r => r.raid_date).join(', ')}`
@@ -1831,7 +1926,7 @@ export default function RaidTrackingPage() {
 
               {/* Raid Days for this week */}
               {isWeekExpanded && raids.map((raid) => {
-          const isExpanded = expandedRaid === raid.id
+          const isExpanded = expandedRaids.has(raid.id)
           const isPast = raid.raid_date < today
           const attendedCount = getAttendanceCount(raid.id)
           const signupCount = getSignupCount(raid.id)
@@ -1951,7 +2046,16 @@ export default function RaidTrackingPage() {
                     </div>
                   ) : (
                   <>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
+                  {/* Row-based raider list */}
+                  <div className="space-y-1">
+                    {/* Column Headers - hidden on mobile */}
+                    <div className="hidden sm:grid grid-cols-[auto_1fr_auto_auto] gap-3 px-3 py-2 text-[11px] text-muted-foreground font-medium border-b border-border">
+                      <div className="w-4">{/* Signup checkbox column */}</div>
+                      <div>Raider</div>
+                      <div className="text-center w-20">Status</div>
+                      <div className="w-8">{/* Actions column */}</div>
+                    </div>
+
                     {/* Linked Members */}
                     {members.map(member => {
                       const status = attendance[raid.id]?.[member.character_id]
@@ -1962,33 +2066,121 @@ export default function RaidTrackingPage() {
                       ) || []
 
                       return (
-                        <div key={member.character_id} className="flex items-center gap-1.5">
-                          {guildSettings?.use_signups && (
-                            <Checkbox
-                              checked={isSignedUp}
-                              onCheckedChange={() => toggleSignup(raid.id, member.character_id, member.user_id)}
-                              className="h-4 w-4 flex-shrink-0"
-                              title="Signed up for this raid"
-                            />
-                          )}
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => cycleAttendanceState(raid.id, member.character_id, member.user_id)}
-                            className={`flex-1 px-2 py-1.5 h-auto text-[12px] rounded-md border transition justify-between ${getCellStyle(state)}`}
-                          >
-                            <span className="font-medium truncate" style={{ color: member.class_color }}>
-                              {member.character_name}
-                            </span>
-                            <span className="text-[10px] ml-1 flex-shrink-0 flex items-center gap-1">
-                              {memberLoot.length > 0 && (
-                                <span className="text-accent" title={`${memberLoot.length} item(s) received`}>
-                                  {memberLoot.length}
-                                </span>
+                        <div
+                          key={member.character_id}
+                          className={`
+                            sm:grid sm:grid-cols-[auto_1fr_auto_auto] sm:gap-3 sm:items-center
+                            flex flex-col gap-2
+                            px-3 py-2 rounded-lg border transition ${getCellStyle(state)}
+                          `}
+                        >
+                          {/* Mobile: Top row with checkbox, name, status, and actions */}
+                          <div className="flex items-center justify-between sm:contents">
+                            <div className="flex items-center gap-2 min-w-0 flex-1">
+                              {/* Signup Checkbox */}
+                              {guildSettings?.use_signups && (
+                                <Checkbox
+                                  checked={isSignedUp}
+                                  onCheckedChange={() => toggleSignup(raid.id, member.character_id, member.user_id)}
+                                  className="h-4 w-4 flex-shrink-0"
+                                  title="Signed up for this raid"
+                                />
                               )}
-                              {getShortLabel(state)}
-                            </span>
-                          </Button>
+                              {!guildSettings?.use_signups && <div className="w-4 hidden sm:block" />}
+
+                              {/* Raider Name */}
+                              <Button
+                                variant="ghost"
+                                onClick={() => cycleAttendanceState(raid.id, member.character_id, member.user_id)}
+                                className="font-medium text-[13px] hover:underline truncate p-0 h-auto"
+                                style={{ color: member.class_color }}
+                              >
+                                {member.character_name}
+                              </Button>
+
+                              {/* Status - inline on mobile */}
+                              <span className="sm:hidden text-[11px] font-medium text-muted-foreground flex-shrink-0">
+                                ({getCellLabel(state)})
+                              </span>
+
+                              {/* Desktop: Inline Loot Items */}
+                              {memberLoot.length > 0 && (
+                                <div className="hidden sm:flex items-center gap-2 text-[12px] min-w-0">
+                                  <span className="text-muted-foreground">→</span>
+                                  {memberLoot.map(loot => (
+                                    <div key={loot.id} className="flex items-center gap-1 group min-w-0">
+                                      <ItemLink name={loot.item_name} wowheadId={loot.item_wowhead_id} className="text-[12px] truncate" />
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={(e) => { e.stopPropagation(); deleteLootEntry(loot.id, raid.id) }}
+                                        className="opacity-0 group-hover:opacity-100 text-destructive hover:text-destructive/80 flex-shrink-0 h-5 w-5 p-0"
+                                        title="Remove loot"
+                                      >
+                                        <HugeiconsIcon icon={Cancel01Icon} size={14} />
+                                      </Button>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Desktop: Status Badge */}
+                            <div className="hidden sm:block w-20 text-center">
+                              <span className="text-[12px] font-medium">
+                                {getCellLabel(state)}
+                              </span>
+                            </div>
+
+                            {/* Actions Dropdown */}
+                            <div className="w-8 flex-shrink-0">
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="icon" className="h-7 w-7">
+                                    <HugeiconsIcon icon={MoreVerticalIcon} size={16} />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem onClick={() => cycleAttendanceState(raid.id, member.character_id, member.user_id)}>
+                                    Change Status
+                                  </DropdownMenuItem>
+                                  {memberLoot.length > 0 && (
+                                    <DropdownMenuItem onClick={() => setReassignModal({ raidId: raid.id, lootEntries: memberLoot, currentMember: member })}>
+                                      Reassign Loot
+                                    </DropdownMenuItem>
+                                  )}
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem
+                                    onClick={() => removeFromAttendance(raid.id, member.character_id)}
+                                    className="text-destructive"
+                                  >
+                                    Remove from Raid
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </div>
+                          </div>
+
+                          {/* Mobile: Loot items on separate line */}
+                          {memberLoot.length > 0 && (
+                            <div className="flex items-center gap-2 text-[12px] sm:hidden pl-6 flex-wrap">
+                              <span className="text-muted-foreground">→</span>
+                              {memberLoot.map(loot => (
+                                <div key={loot.id} className="flex items-center gap-1">
+                                  <ItemLink name={loot.item_name} wowheadId={loot.item_wowhead_id} className="text-[12px]" />
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={(e) => { e.stopPropagation(); deleteLootEntry(loot.id, raid.id) }}
+                                    className="text-destructive hover:text-destructive/80 h-5 w-5 p-0"
+                                    title="Remove loot"
+                                  >
+                                    <HugeiconsIcon icon={Cancel01Icon} size={14} />
+                                  </Button>
+                                </div>
+                              ))}
+                            </div>
+                          )}
                         </div>
                       )
                     })}
@@ -2004,70 +2196,36 @@ export default function RaidTrackingPage() {
                       return (
                         <div
                           key={`unlinked-${idx}`}
-                          className={`flex items-center px-2 py-1.5 text-[12px] rounded-md border opacity-60 ${getCellStyle(state)}`}
+                          className={`
+                            sm:grid sm:grid-cols-[auto_1fr_auto_auto] sm:gap-3 sm:items-center
+                            flex flex-col gap-2
+                            px-3 py-2 rounded-lg border transition opacity-60 ${getCellStyle(state)}
+                          `}
                         >
-                          <span className="font-medium text-muted-foreground truncate flex-1" title={`${attendee.character_name} (No account)`}>
-                            {attendee.character_name}
-                          </span>
-                          <span className="text-[10px] ml-1 flex-shrink-0">{getShortLabel(state)}</span>
+                          <div className="flex items-center justify-between sm:contents">
+                            <div className="flex items-center gap-2 min-w-0 flex-1">
+                              <div className="w-4 hidden sm:block" />
+                              <span className="font-medium text-muted-foreground text-[13px] truncate" title={`${attendee.character_name} (No account)`}>
+                                {attendee.character_name}
+                              </span>
+                              <span className="sm:hidden text-[11px] font-medium text-muted-foreground flex-shrink-0">
+                                ({getCellLabel(state)})
+                              </span>
+                            </div>
+                            <div className="hidden sm:block w-20 text-center">
+                              <span className="text-[12px] font-medium">
+                                {getCellLabel(state)}
+                              </span>
+                            </div>
+                            <div className="w-8" />
+                          </div>
                         </div>
                       )
                     })}
                   </div>
-                  {/* Legend */}
-                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-3 text-[11px] text-muted-foreground">
-                    <span><strong className="text-success">A</strong> = Attended</span>
-                    <span><strong className="text-yellow-400">L</strong> = Late</span>
-                    <span><strong className="text-orange-400">S</strong> = Standby</span>
-                    <span><strong className="text-destructive">N</strong> = No Show</span>
-                    {raidLoot[raid.id]?.length > 0 && (
-                      <span><strong className="text-accent">#</strong> = Loot count</span>
-                    )}
-                  </div>
                   </>
                   )}
 
-                  {/* Loot Section */}
-                  {raidLoot[raid.id] && raidLoot[raid.id].length > 0 && (
-                    <div className="mt-6 pt-6 border-t border-border">
-                      <h4 className="text-[14px] font-semibold text-foreground mb-3 flex items-center gap-2">
-                        <svg className="w-4 h-4 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        Loot Awarded ({raidLoot[raid.id].length} items)
-                      </h4>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                        {raidLoot[raid.id].map(loot => (
-                          <div
-                            key={loot.id}
-                            className="flex items-center justify-between px-4 py-2.5 bg-muted border border-border-strong rounded-lg group"
-                          >
-                            <div className="flex items-center gap-3 min-w-0">
-                              <span
-                                className="font-medium text-[13px] truncate"
-                                style={{ color: loot.character_class_color }}
-                              >
-                                {loot.character_name}
-                              </span>
-                              <span className="text-foreground-muted text-[12px]">→</span>
-                              <span className="text-[13px] truncate">
-                                <ItemLink name={loot.item_name} wowheadId={loot.item_wowhead_id} />
-                              </span>
-                            </div>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => deleteLootEntry(loot.id, raid.id)}
-                              className="p-1.5 h-auto w-auto text-foreground-muted hover:text-destructive hover:bg-destructive/10 rounded-md transition opacity-0 group-hover:opacity-100"
-                              title="Remove loot entry"
-                            >
-                              <HugeiconsIcon icon={Cancel01Icon} size={16} />
-                            </Button>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
                 </div>
               )}
             </div>
@@ -2320,6 +2478,59 @@ export default function RaidTrackingPage() {
         <ModalFooter>
           <Button variant="secondary" onClick={skipLootItemSelection}>
             Skip This Item
+          </Button>
+        </ModalFooter>
+      </Modal>
+
+      {/* Reassign Loot Modal */}
+      <Modal open={!!reassignModal} onClose={() => setReassignModal(null)} size="sm">
+        <ModalHeader onClose={() => setReassignModal(null)}>
+          <ModalTitle>Reassign Loot</ModalTitle>
+          <ModalDescription>
+            {reassignModal?.lootEntries.length === 1 ? (
+              <ItemLink
+                name={reassignModal.lootEntries[0].item_name}
+                wowheadId={reassignModal.lootEntries[0].item_wowhead_id}
+              />
+            ) : (
+              <span>{reassignModal?.lootEntries.length} items from {reassignModal?.currentMember.character_name}</span>
+            )}
+          </ModalDescription>
+        </ModalHeader>
+        <ModalBody>
+          <div className="space-y-4">
+            {reassignModal?.lootEntries.map(loot => (
+              <div key={loot.id} className="space-y-2">
+                <div className="flex items-center gap-2 text-sm">
+                  <ItemLink name={loot.item_name} wowheadId={loot.item_wowhead_id} />
+                </div>
+                <Select
+                  variant="rounded"
+                  value=""
+                  onChange={(e) => {
+                    const member = members.find(m => m.character_id === e.target.value)
+                    if (member && reassignModal) {
+                      reassignLoot(loot.id, member.character_id, member.character_name)
+                    }
+                  }}
+                >
+                  <option value="" disabled>Select new owner...</option>
+                  {members
+                    .filter(m => m.character_id !== reassignModal?.currentMember.character_id)
+                    .map(m => (
+                      <option key={m.character_id} value={m.character_id}>
+                        {m.character_name} ({m.class_name})
+                      </option>
+                    ))
+                  }
+                </Select>
+              </div>
+            ))}
+          </div>
+        </ModalBody>
+        <ModalFooter>
+          <Button variant="secondary" onClick={() => setReassignModal(null)}>
+            Cancel
           </Button>
         </ModalFooter>
       </Modal>
