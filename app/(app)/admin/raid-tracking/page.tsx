@@ -370,7 +370,7 @@ export default function RaidTrackingPage() {
 
       // Deduplicate by date, preferring events with attendance
       const dateMap = new Map<string, typeof filteredEvents[0]>()
-      filteredEvents.forEach(event => {
+      filteredEvents.forEach((event: RaidEvent) => {
         const existing = dateMap.get(event.raid_date)
         if (!existing) {
           dateMap.set(event.raid_date, event)
@@ -396,11 +396,11 @@ export default function RaidTrackingPage() {
       setExpandedWeeks(new Set([mostRecentWeekStart]))
 
       // Auto-expand the first raid day in the most recent week (earliest date in that week)
-      const raidsInMostRecentWeek = deduplicatedEvents.filter(r =>
+      const raidsInMostRecentWeek = deduplicatedEvents.filter((r: RaidEvent) =>
         getWeekStart(r.raid_date, settings.first_raid_day ?? 0) === mostRecentWeekStart
       )
       // Sort by date ascending to get the earliest raid in the week
-      raidsInMostRecentWeek.sort((a, b) => a.raid_date.localeCompare(b.raid_date))
+      raidsInMostRecentWeek.sort((a: RaidEvent, b: RaidEvent) => a.raid_date.localeCompare(b.raid_date))
       const firstRaidInWeek = raidsInMostRecentWeek[0]
 
       console.log('📍 Auto-expanding first raid in week:', firstRaidInWeek.raid_date)
