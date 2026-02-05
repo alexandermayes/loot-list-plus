@@ -162,6 +162,7 @@ export interface LootItem {
     spec_type: string | null
   }[]
   consensus_count?: number  // Number of OTHER guildmates who ranked this item
+  character_spec_type?: 'primary' | 'secondary' | null  // The spec_type for the current character (for bracket filtering)
 }
 
 export interface LootSubmission {

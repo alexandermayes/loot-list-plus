@@ -113,7 +113,21 @@ export async function GET(request: NextRequest) {
     const className = (Array.isArray(wowClass) ? wowClass[0]?.name : wowClass?.name) as WowClassName | undefined
 
     // Filter items based on character's class/spec AND class proficiencies
-    const filteredItems = (items || []).filter(item => {
+    // Also track each item's spec_type for the character (for bracket filtering)
+    const filteredItemsWithSpecType = (items || []).map(item => {
+      const classes = item.loot_item_classes as LootItemClassRestriction[]
+
+      // Determine character_spec_type for this item
+      let characterSpecType: 'primary' | 'secondary' | null = null
+      if (character.spec_id && classes.length > 0) {
+        const matchingEntry = classes.find(c => c.spec_id === character.spec_id)
+        if (matchingEntry?.spec_type) {
+          characterSpecType = matchingEntry.spec_type as 'primary' | 'secondary'
+        }
+      }
+
+      return { ...item, character_spec_type: characterSpecType }
+    }).filter(item => {
       const classes = item.loot_item_classes as LootItemClassRestriction[]
 
       // First, check guild prio restrictions
@@ -187,8 +201,8 @@ export async function GET(request: NextRequest) {
     // If guildId provided, fetch consensus counts (how many OTHER guildmates ranked each item)
     let consensusCounts: Record<string, number> = {}
 
-    if (guildId && filteredItems.length > 0) {
-      const itemIds = filteredItems.map(item => item.id)
+    if (guildId && filteredItemsWithSpecType.length > 0) {
+      const itemIds = filteredItemsWithSpecType.map(item => item.id)
 
       // Query approved submissions from other characters in the guild
       // For phase-based queries, use expansion_id + phase; for tier queries use raid_tier_id
@@ -235,7 +249,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Merge consensus counts and raid tier name into response
-    const itemsWithConsensus = filteredItems.map(item => {
+    const itemsWithConsensus = filteredItemsWithSpecType.map(item => {
       const raidTier = item.raid_tiers as { name: string } | { name: string }[] | null
       const raidTierName = Array.isArray(raidTier) ? raidTier[0]?.name : raidTier?.name
       return {

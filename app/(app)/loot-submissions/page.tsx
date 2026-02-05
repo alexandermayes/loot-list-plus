@@ -498,15 +498,42 @@ export default function MasterLootPage() {
                     </span>
                   </div>
                   <div className="flex gap-2 flex-shrink-0">
+                    {submission.status === 'pending' && (
+                      <>
+                        <Button
+                          variant="success"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleReview(submission.id, 'approved')
+                          }}
+                          disabled={reviewing === submission.id}
+                          loading={reviewing === submission.id}
+                        >
+                          Approve
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleReview(submission.id, 'rejected')
+                          }}
+                          disabled={reviewing === submission.id}
+                        >
+                          Reject
+                        </Button>
+                      </>
+                    )}
                     <Button
-                      variant="primary-outline"
+                      variant="secondary"
                       size="sm"
                       onClick={(e) => {
                         e.stopPropagation()
                         viewSubmissionDetails(submission.id)
                       }}
                     >
-                      View Details
+                      View
                     </Button>
                     <Button
                       variant="destructive-outline"

@@ -265,6 +265,20 @@ export default function LootList() {
     [rankings]
   )
 
+  // Filter items by spec type for different sections
+  // Primary items: Brackets 1-4 (ranks 39-50)
+  // Secondary items: No Bracket / Main-spec (ranks 25-38)
+  // All items: Off-spec (ranks 1-24)
+  const { primaryItems, secondaryItems, allItems } = useMemo(() => {
+    const primary = lootItems.filter(item => item.character_spec_type === 'primary')
+    const secondary = lootItems.filter(item => item.character_spec_type === 'secondary')
+    return {
+      primaryItems: primary,
+      secondaryItems: secondary,
+      allItems: lootItems // All equippable items for off-spec
+    }
+  }, [lootItems])
+
   // Bracket validation
   type BracketValidation = {
     bracketName: string
@@ -772,7 +786,7 @@ export default function LootList() {
                   <RankRow
                     key={rank}
                     rank={rank}
-                    lootItems={lootItems}
+                    lootItems={primaryItems}
                     selectedItemId1={rankings[`${rank}-1`]}
                     selectedItemId2={rankings[`${rank}-2`]}
                     selectedItems={selectedItems}
@@ -862,7 +876,7 @@ export default function LootList() {
                   <RankRow
                     key={rank}
                     rank={rank}
-                    lootItems={lootItems}
+                    lootItems={primaryItems}
                     selectedItemId1={rankings[`${rank}-1`]}
                     selectedItemId2={rankings[`${rank}-2`]}
                     selectedItems={selectedItems}
@@ -952,7 +966,7 @@ export default function LootList() {
                   <RankRow
                     key={rank}
                     rank={rank}
-                    lootItems={lootItems}
+                    lootItems={primaryItems}
                     selectedItemId1={rankings[`${rank}-1`]}
                     selectedItemId2={rankings[`${rank}-2`]}
                     selectedItems={selectedItems}
@@ -1042,7 +1056,7 @@ export default function LootList() {
                   <RankRow
                     key={rank}
                     rank={rank}
-                    lootItems={lootItems}
+                    lootItems={primaryItems}
                     selectedItemId1={rankings[`${rank}-1`]}
                     selectedItemId2={rankings[`${rank}-2`]}
                     selectedItems={selectedItems}
@@ -1087,7 +1101,7 @@ export default function LootList() {
                   <RankRow
                     key={rank}
                     rank={rank}
-                    lootItems={lootItems}
+                    lootItems={secondaryItems}
                     selectedItemId1={rankings[`${rank}-1`]}
                     selectedItemId2={rankings[`${rank}-2`]}
                     selectedItems={selectedItems}
@@ -1130,7 +1144,7 @@ export default function LootList() {
                   <RankRow
                     key={rank}
                     rank={rank}
-                    lootItems={lootItems}
+                    lootItems={allItems}
                     selectedItemId1={rankings[`${rank}-1`]}
                     selectedItemId2={rankings[`${rank}-2`]}
                     selectedItems={selectedItems}

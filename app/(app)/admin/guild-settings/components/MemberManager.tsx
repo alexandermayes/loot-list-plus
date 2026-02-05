@@ -460,11 +460,20 @@ export default function MemberManager() {
                         size="sm"
                         onClick={() => handleRemoveMember(member.user_id, displayName)}
                         className="text-destructive hover:text-destructive h-9 w-9 p-0"
+                        title="Remove from guild"
                       >
                         <HugeiconsIcon icon={UserBlock01Icon} size={16} />
                       </Button>
                     ) : (
-                      <div className="w-18" /> // Spacer to maintain alignment
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        disabled
+                        className="h-9 w-9 p-0 opacity-30 cursor-not-allowed"
+                        title={isGuildOwner ? "Can't remove guild owner" : "Can't remove members at or above your role"}
+                      >
+                        <HugeiconsIcon icon={UserBlock01Icon} size={16} />
+                      </Button>
                     )}
                   </div>
                 </div>
