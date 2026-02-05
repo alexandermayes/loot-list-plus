@@ -7,7 +7,7 @@
 
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useMemo, useCallback } from 'react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import ItemLink from './ItemLink'
@@ -56,29 +56,36 @@ export default function SearchableItemSelect({
   const searchInputRef = useRef<HTMLInputElement>(null)
   const dropdownContentRef = useRef<HTMLDivElement>(null)
 
-  const selectedItem = items.find(i => i.id === value)
+  const selectedItem = useMemo(() => items.find(i => i.id === value), [items, value])
 
-  // Filter items by search
-  const filteredItems = items.filter(item =>
-    item.name.toLowerCase().includes(search.toLowerCase())
+  // Filter items by search (memoized to prevent re-filtering on every render)
+  const filteredItems = useMemo(() =>
+    items.filter(item =>
+      item.name.toLowerCase().includes(search.toLowerCase())
+    ),
+    [items, search]
   )
 
-  // Group items by boss and sort by Classic WoW encounter order
+  // Group items by boss and sort by Classic WoW encounter order (memoized)
   // Normalize boss names to merge multi-boss encounters (e.g., Opera Event)
-  const itemsByBoss: Record<string, Item[]> = {}
-  const bossOrder: string[] = []
+  const { itemsByBoss, bossNames } = useMemo(() => {
+    const byBoss: Record<string, Item[]> = {}
+    const order: string[] = []
 
-  filteredItems.forEach(item => {
-    const boss = normalizeBossName(item.boss_name || 'Unknown')
-    if (!itemsByBoss[boss]) {
-      itemsByBoss[boss] = []
-      bossOrder.push(boss) // Track order as we encounter each boss
-    }
-    itemsByBoss[boss].push(item)
-  })
+    filteredItems.forEach(item => {
+      const boss = normalizeBossName(item.boss_name || 'Unknown')
+      if (!byBoss[boss]) {
+        byBoss[boss] = []
+        order.push(boss) // Track order as we encounter each boss
+      }
+      byBoss[boss].push(item)
+    })
 
-  // Sort bosses by Classic WoW progression order
-  const bossNames = bossOrder.sort((a, b) => getBossOrder(a) - getBossOrder(b))
+    // Sort bosses by Classic WoW progression order
+    const sortedBossNames = order.sort((a, b) => getBossOrder(a) - getBossOrder(b))
+
+    return { itemsByBoss: byBoss, bossNames: sortedBossNames }
+  }, [filteredItems])
 
   // Close dropdown when clicking outside and update position on scroll
   useEffect(() => {
@@ -167,17 +174,17 @@ export default function SearchableItemSelect({
     refreshWowheadTooltips()
   }, [value, isOpen])
 
-  const handleSelect = (itemId: string) => {
+  const handleSelect = useCallback((itemId: string) => {
     onChange(itemId)
     setIsOpen(false)
     setSearch('')
-  }
+  }, [onChange])
 
-  const handleClear = () => {
+  const handleClear = useCallback(() => {
     onChange('')
     setIsOpen(false)
     setSearch('')
-  }
+  }, [onChange])
 
   return (
     <div className="relative" ref={dropdownRef}>

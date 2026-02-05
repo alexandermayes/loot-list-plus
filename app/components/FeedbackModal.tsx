@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { Bug01Icon, Camera01Icon, SentIcon } from '@hugeicons/core-free-icons'
 import { Spinner } from '@/components/ui/loading-spinner'
-import html2canvas from 'html2canvas'
+// html2canvas is dynamically imported in captureScreenshot() to reduce initial bundle size (~140KB)
 import {
   Modal,
   ModalHeader,
@@ -51,6 +51,9 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
   const captureScreenshot = async () => {
     setCapturing(true)
     try {
+      // Dynamically import html2canvas to reduce initial bundle size
+      const { default: html2canvas } = await import('html2canvas')
+
       // Hide the modal temporarily for screenshot
       if (modalRef.current) {
         modalRef.current.style.display = 'none'

@@ -25,14 +25,21 @@ export default function LandingHero() {
     <section id="hero" className="relative min-h-screen w-full overflow-hidden">
       {/* Background Image */}
       <div className="absolute inset-0 bg-background-elevated">
-        <Image
-          src="/landing-background.png"
-          alt="Epic loot background"
-          fill
-          className="object-cover object-center"
-          priority
-          quality={100}
-        />
+        <picture>
+          <source
+            type="image/webp"
+            srcSet="/images/landing/landing-background-640w.webp 640w, /images/landing/landing-background-1024w.webp 1024w, /images/landing/landing-background-1920w.webp 1920w, /images/landing/landing-background-2560w.webp 2560w"
+            sizes="100vw"
+          />
+          <Image
+            src="/images/landing/landing-background-2560w.webp"
+            alt="Epic loot background"
+            fill
+            className="object-cover object-center"
+            priority
+            quality={82}
+          />
+        </picture>
         {/* Gradient overlay for better text readability */}
         <div className="absolute inset-0 bg-background/60" />
         <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-background/50" />

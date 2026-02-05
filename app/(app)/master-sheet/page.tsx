@@ -588,15 +588,19 @@ export default function MasterSheet() {
         type RankingData = { rank: number; slot: number; submission_id: string; loot_item_id: string }
         const itemRankingsMap: Record<string, ItemRankings> = {}
 
+        // Create lookup maps for O(1) access (performance optimization - replaces O(n²) nested .find() calls)
+        const subsById = new Map<string, SubmissionData>(subsData.map((s: SubmissionData) => [s.id, s]))
+        const characterById = new Map<string, CharacterData>(charactersData?.map((c: CharacterData) => [c.id, c]) || [])
+
         for (const item of itemsData) {
           const itemRankingsData = allRankingsData.filter((r: RankingData) => r.loot_item_id === item.id)
           const rankings: PlayerRanking[] = []
 
           for (const r of itemRankingsData) {
-            const sub = subsData.find((s: SubmissionData) => s.id === r.submission_id)
+            const sub = subsById.get(r.submission_id)
             if (!sub) continue
 
-            const character = charactersData?.find((c: CharacterData) => c.id === sub.character_id)
+            const character = sub.character_id ? characterById.get(sub.character_id) as any : undefined
             if (!character) continue
 
             // Skip if character has already received this item
@@ -789,13 +793,18 @@ export default function MasterSheet() {
 
         // Populate players for each item
         type AggregateCharacter = { id: string; name: string | null }
+
+        // Create lookup maps for O(1) access (performance optimization)
+        const submissionsById = new Map<string, AggregateSubmission>(submissionsData.map((s: AggregateSubmission) => [s.id, s]))
+        const aggregateCharacterById = new Map<string, AggregateCharacter>(charactersData?.map((c: AggregateCharacter) => [c.id, c]) || [])
+
         for (const si of submissionItemsData) {
           if (!approvedSubmissionIds.has(si.submission_id)) continue
 
-          const submission = submissionsData.find((s: AggregateSubmission) => s.id === si.submission_id)
+          const submission = submissionsById.get(si.submission_id)
           if (!submission) continue
 
-          const character = charactersData?.find((c: AggregateCharacter) => c.id === submission.character_id)
+          const character = submission.character_id ? aggregateCharacterById.get(submission.character_id) as any : undefined
           if (!character) continue
 
           const aggregate = aggregateMap[si.loot_item_id]
@@ -1103,15 +1112,19 @@ export default function MasterSheet() {
     // Build rankings for each item
     const results: ItemRankings[] = []
 
+    // Create lookup maps for O(1) access (performance optimization)
+    const tierSubsById = new Map<string, TierSubmissionData>(subsData.map((s: TierSubmissionData) => [s.id, s]))
+    const tierCharacterById = new Map<string, TierCharacterData>(charactersData.map((c: TierCharacterData) => [c.id, c]))
+
     for (const item of itemsData) {
       const itemRankingsData = allRankingsData.filter((r: TierRankingData) => r.loot_item_id === item.id)
       const rankings: PlayerRanking[] = []
 
       for (const r of itemRankingsData) {
-        const sub = subsData.find((s: TierSubmissionData) => s.id === r.submission_id)
+        const sub = tierSubsById.get(r.submission_id)
         if (!sub) continue
 
-        const character = charactersData.find((c: TierCharacterData) => c.id === sub.character_id)
+        const character = sub.character_id ? tierCharacterById.get(sub.character_id) as any : undefined
         if (!character) continue
 
         // Skip if character has already received this item
