@@ -3,7 +3,7 @@
 import { createContext, useContext, useState, useEffect, useRef, ReactNode } from 'react'
 import { createClient } from '@/utils/supabase/client'
 import { useRouter } from 'next/navigation'
-import type { User } from '@supabase/supabase-js'
+import type { User, AuthChangeEvent, Session } from '@supabase/supabase-js'
 
 // Types
 export interface Guild {
@@ -839,7 +839,8 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
 
   // Listen for auth changes
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event: string, session: unknown) => {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event: AuthChangeEvent, _session: Session | null) => {
       if (event === 'SIGNED_IN') {
         // Only reload guilds on fresh sign-in, not on token refresh/session restore
         // This prevents UI flashing when users tab away and return
