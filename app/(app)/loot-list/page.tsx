@@ -21,6 +21,7 @@ import { StarFilledIcon, CheckFilledIcon, ClockFilledIcon, AlertFilledIcon, Canc
 import { HugeiconsIcon } from '@hugeicons/react'
 import { InformationCircleIcon } from '@hugeicons/core-free-icons'
 import { useLootList, type LootItem } from '@/app/contexts/LootListContext'
+import { isTokenSlot } from '@/data/token-class-mapping'
 import { useNotification } from '@/app/contexts/NotificationContext'
 import { ClassificationBadge } from '@/components/ui/classification-badge'
 import { BisImportModal } from '@/app/components/BisImportModal'
@@ -259,6 +260,51 @@ export default function LootList() {
   }
 
   const rankedCount = Object.keys(rankings).length
+
+  // Create bracket-specific disabled sets for tokens
+  // Tokens can be selected once per bracket section (Brackets 1-4, No Bracket, Off-spec)
+  // Non-tokens are disabled everywhere once selected
+  const { bracket14DisabledItems, noBracketDisabledItems, offSpecDisabledItems } = useMemo(() => {
+    // Create a map of itemId -> item_slot for checking if an item is a token
+    const itemSlotMap = new Map(lootItems.map(item => [item.id, item.item_slot]))
+
+    // Separate items by bracket section based on rank
+    // Rankings key format: "{rank}-{slot}" e.g., "50-1", "38-2"
+    const bracket14Tokens = new Set<string>()   // Tokens selected in ranks 39-50
+    const noBracketTokens = new Set<string>()   // Tokens selected in ranks 25-38
+    const offSpecTokens = new Set<string>()     // Tokens selected in ranks 1-24
+    const nonTokenItems = new Set<string>()     // All non-token items
+
+    Object.entries(rankings).forEach(([key, itemId]) => {
+      const rank = parseInt(key.split('-')[0])
+      const slot = itemSlotMap.get(itemId)
+      const isToken = slot ? isTokenSlot(slot) : false
+
+      if (isToken) {
+        // Tokens go into their bracket-specific set
+        if (rank >= 39) {
+          bracket14Tokens.add(itemId)
+        } else if (rank >= 25) {
+          noBracketTokens.add(itemId)
+        } else {
+          offSpecTokens.add(itemId)
+        }
+      } else {
+        // Non-tokens are disabled everywhere
+        nonTokenItems.add(itemId)
+      }
+    })
+
+    // Build disabled sets for each section
+    // Non-tokens are always disabled, tokens only disabled within their section
+    return {
+      bracket14DisabledItems: new Set([...nonTokenItems, ...bracket14Tokens]),
+      noBracketDisabledItems: new Set([...nonTokenItems, ...noBracketTokens]),
+      offSpecDisabledItems: new Set([...nonTokenItems, ...offSpecTokens]),
+    }
+  }, [rankings, lootItems])
+
+  // Legacy: Keep selectedItems for duplicate detection (checks ALL selected items)
   const selectedItems = useMemo(() => new Set(Object.values(rankings)), [rankings])
   const duplicateItems = useMemo(() =>
     Object.values(rankings).filter((itemId, index, arr) => arr.indexOf(itemId) !== index),
@@ -850,7 +896,7 @@ export default function LootList() {
                     lootItems={bracket14Items}
                     selectedItemId1={rankings[`${rank}-1`]}
                     selectedItemId2={rankings[`${rank}-2`]}
-                    selectedItems={selectedItems}
+                    selectedItems={bracket14DisabledItems}
                     duplicateItems={duplicateItems}
                     onItemSelect={handleItemSelect}
                     slot1Errors={getSlotErrors(rank, 1)}
@@ -940,7 +986,7 @@ export default function LootList() {
                     lootItems={bracket14Items}
                     selectedItemId1={rankings[`${rank}-1`]}
                     selectedItemId2={rankings[`${rank}-2`]}
-                    selectedItems={selectedItems}
+                    selectedItems={bracket14DisabledItems}
                     duplicateItems={duplicateItems}
                     onItemSelect={handleItemSelect}
                     slot1Errors={getSlotErrors(rank, 1)}
@@ -1030,7 +1076,7 @@ export default function LootList() {
                     lootItems={bracket14Items}
                     selectedItemId1={rankings[`${rank}-1`]}
                     selectedItemId2={rankings[`${rank}-2`]}
-                    selectedItems={selectedItems}
+                    selectedItems={bracket14DisabledItems}
                     duplicateItems={duplicateItems}
                     onItemSelect={handleItemSelect}
                     slot1Errors={getSlotErrors(rank, 1)}
@@ -1120,7 +1166,7 @@ export default function LootList() {
                     lootItems={bracket14Items}
                     selectedItemId1={rankings[`${rank}-1`]}
                     selectedItemId2={rankings[`${rank}-2`]}
-                    selectedItems={selectedItems}
+                    selectedItems={bracket14DisabledItems}
                     duplicateItems={duplicateItems}
                     onItemSelect={handleItemSelect}
                     slot1Errors={getSlotErrors(rank, 1)}
@@ -1165,7 +1211,7 @@ export default function LootList() {
                     lootItems={noBracketItems}
                     selectedItemId1={rankings[`${rank}-1`]}
                     selectedItemId2={rankings[`${rank}-2`]}
-                    selectedItems={selectedItems}
+                    selectedItems={noBracketDisabledItems}
                     duplicateItems={duplicateItems}
                     onItemSelect={handleItemSelect}
                     ownedWowheadIds={equippedWowheadIds}
@@ -1208,7 +1254,7 @@ export default function LootList() {
                     lootItems={offSpecItems}
                     selectedItemId1={rankings[`${rank}-1`]}
                     selectedItemId2={rankings[`${rank}-2`]}
-                    selectedItems={selectedItems}
+                    selectedItems={offSpecDisabledItems}
                     duplicateItems={duplicateItems}
                     onItemSelect={handleItemSelect}
                     ownedWowheadIds={equippedWowheadIds}
