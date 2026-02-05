@@ -297,7 +297,7 @@ export default function RaidTrackingPage() {
       .eq('guild_id', guildId)
       .in('raid_date', dates)
 
-    const existingDates = new Set(existingEvents?.map(e => e.raid_date) || [])
+    const existingDates = new Set(existingEvents?.map((e: { raid_date: string }) => e.raid_date) || [])
     const newDates = dates.filter(d => !existingDates.has(d))
 
     // Get active expansion tier
@@ -343,7 +343,7 @@ export default function RaidTrackingPage() {
 
     // Filter events to only show ones that match the current raid schedule
     console.log('🔍 Filtering events. Current raid days:', raidDays)
-    const filteredEvents = allEvents?.filter(event => {
+    const filteredEvents = allEvents?.filter((event: RaidEvent) => {
       const eventDate = new Date(event.raid_date + 'T00:00:00')
       const eventDayOfWeek = eventDate.getDay()
       const matchesSchedule = raidDays.includes(eventDayOfWeek)
@@ -357,7 +357,7 @@ export default function RaidTrackingPage() {
     let deduplicatedEvents = filteredEvents
     if (filteredEvents.length > 0) {
       // Get all raid event IDs
-      const eventIds = filteredEvents.map(e => e.id)
+      const eventIds = filteredEvents.map((e: RaidEvent) => e.id)
 
       // Check which have attendance records
       const { data: attendanceCheck } = await supabase
