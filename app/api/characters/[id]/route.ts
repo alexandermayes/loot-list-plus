@@ -2,6 +2,34 @@ import { NextResponse } from 'next/server'
 import { createClient, getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 
+// WoW character name validation and formatting
+// Rules: 2-12 characters, letters only (accents allowed), first letter capitalized
+function validateCharacterName(name: string): { valid: boolean; error?: string; formatted?: string } {
+  if (!name) {
+    return { valid: false, error: 'Character name is required' }
+  }
+
+  const trimmed = name.trim()
+
+  if (trimmed.length < 2) {
+    return { valid: false, error: 'Character name must be at least 2 characters' }
+  }
+
+  if (trimmed.length > 12) {
+    return { valid: false, error: 'Character name must be 12 characters or less' }
+  }
+
+  // Only letters (including accented characters like é, ñ, etc.)
+  if (!/^[\p{L}]+$/u.test(trimmed)) {
+    return { valid: false, error: 'Character name can only contain letters' }
+  }
+
+  // Format: first letter uppercase, rest lowercase (like WoW)
+  const formatted = trimmed.charAt(0).toUpperCase() + trimmed.slice(1).toLowerCase()
+
+  return { valid: true, formatted }
+}
+
 /**
  * GET /api/characters/[id]
  * Get a specific character by ID
@@ -127,7 +155,17 @@ export async function PUT(
       updated_at: new Date().toISOString(),
     }
 
-    if (name !== undefined) updateData.name = name
+    // Validate and format name if provided
+    if (name !== undefined) {
+      const nameValidation = validateCharacterName(name)
+      if (!nameValidation.valid) {
+        return NextResponse.json(
+          { error: nameValidation.error },
+          { status: 400 }
+        )
+      }
+      updateData.name = nameValidation.formatted
+    }
     if (realm !== undefined) updateData.realm = realm || null
     if (class_id !== undefined) updateData.class_id = class_id
     if (spec_id !== undefined) updateData.spec_id = spec_id || null

@@ -2,6 +2,35 @@ import { NextResponse } from 'next/server'
 import { createClient, getAuthenticatedUser } from '@/utils/supabase/server'
 import { getCached, invalidateCache, cacheKeys } from '@/utils/cache'
 
+// WoW character name validation and formatting
+// Rules: 2-12 characters, letters only (accents allowed), first letter capitalized
+function validateCharacterName(name: string): { valid: boolean; error?: string; formatted?: string } {
+  if (!name) {
+    return { valid: false, error: 'Character name is required' }
+  }
+
+  const trimmed = name.trim()
+
+  if (trimmed.length < 2) {
+    return { valid: false, error: 'Character name must be at least 2 characters' }
+  }
+
+  if (trimmed.length > 12) {
+    return { valid: false, error: 'Character name must be 12 characters or less' }
+  }
+
+  // Only letters (including accented characters like é, ñ, etc.)
+  // This regex matches Unicode letters
+  if (!/^[\p{L}]+$/u.test(trimmed)) {
+    return { valid: false, error: 'Character name can only contain letters' }
+  }
+
+  // Format: first letter uppercase, rest lowercase (like WoW)
+  const formatted = trimmed.charAt(0).toUpperCase() + trimmed.slice(1).toLowerCase()
+
+  return { valid: true, formatted }
+}
+
 /**
  * GET /api/characters
  * List all characters for the authenticated user
@@ -76,13 +105,15 @@ export async function POST(request: Request) {
     const body = await request.json()
     const { name, realm, class_id, spec_id, level, is_main, region } = body
 
-    // Validate required fields
-    if (!name) {
+    // Validate and format character name (WoW rules)
+    const nameValidation = validateCharacterName(name)
+    if (!nameValidation.valid) {
       return NextResponse.json(
-        { error: 'Character name is required' },
+        { error: nameValidation.error },
         { status: 400 }
       )
     }
+    const formattedName = nameValidation.formatted!
 
     if (!class_id) {
       return NextResponse.json(
@@ -96,7 +127,7 @@ export async function POST(request: Request) {
       .from('characters')
       .select('id')
       .eq('user_id', user.id)
-      .eq('name', name)
+      .eq('name', formattedName)
       .eq('realm', realm || '')
       .maybeSingle()
 
@@ -120,7 +151,7 @@ export async function POST(request: Request) {
       .from('characters')
       .insert({
         user_id: user.id,
-        name,
+        name: formattedName,
         realm: realm || null,
         class_id,
         spec_id: spec_id || null,
