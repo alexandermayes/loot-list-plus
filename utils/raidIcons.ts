@@ -66,3 +66,45 @@ export function getRaidIconLarge(raidName: string): string {
   const iconName = raidIconMap[raidName] || 'inv_misc_questionmark'
   return `https://wow.zamimg.com/images/wow/icons/large/${iconName}.jpg`
 }
+
+// Mapping of full raid names to shorthand abbreviations
+const raidShorthandMap: Record<string, string> = {
+  // Classic
+  'Molten Core': 'MC',
+  'Onyxia\'s Lair': 'Onyxia',
+  'Blackwing Lair': 'BWL',
+  'Zul\'Gurub': 'ZG',
+  'Ruins of Ahn\'Qiraj': 'AQ20',
+  'Temple of Ahn\'Qiraj': 'AQ40',
+  'Naxxramas': 'Naxx',
+  // TBC
+  'Karazhan': 'Kara',
+  'Gruul\'s Lair': 'Gruul',
+  'Magtheridon\'s Lair': 'Mag',
+  'Serpentshrine Cavern': 'SSC',
+  'Tempest Keep: The Eye': 'TK',
+  'Tempest Keep': 'TK',
+  'The Eye': 'TK',
+  'Hyjal Summit': 'Hyjal',
+  'Mount Hyjal': 'Hyjal',
+  'Black Temple': 'BT',
+  'Zul\'Aman': 'ZA',
+  'Sunwell Plateau': 'SWP',
+  // WotLK
+  'Vault of Archavon': 'VoA',
+  'Obsidian Sanctum': 'OS',
+  'Eye of Eternity': 'EoE',
+  'Ulduar': 'Ulduar',
+  'Trial of the Crusader': 'ToC',
+  'Trial of the Grand Crusader': 'ToGC',
+  'Icecrown Citadel': 'ICC',
+  'Ruby Sanctum': 'RS',
+}
+
+/**
+ * Get the shorthand abbreviation for a raid name
+ * e.g., "Serpentshrine Cavern" → "SSC"
+ */
+export function getRaidShorthand(raidName: string): string {
+  return raidShorthandMap[raidName] || raidName
+}

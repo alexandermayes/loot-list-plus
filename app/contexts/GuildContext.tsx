@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
+import { createContext, useContext, useState, useEffect, useRef, ReactNode } from 'react'
 import { createClient } from '@/utils/supabase/client'
 import { useRouter } from 'next/navigation'
 import type { User } from '@supabase/supabase-js'
@@ -155,6 +155,10 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
   const supabase = createClient()
   const router = useRouter()
 
+  // Track if initial data load has completed to distinguish fresh login from token refresh
+  // This prevents UI flashing when users tab away and return (Supabase fires SIGNED_IN on visibility change)
+  const hasInitiallyLoaded = useRef(false)
+
   // Load user's guilds and active guild
   const loadGuilds = async () => {
     try {
@@ -293,6 +297,7 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
       console.error('Error in loadGuilds:', error)
     } finally {
       setGuildsLoading(false)
+      hasInitiallyLoaded.current = true
     }
   }
 
@@ -834,8 +839,14 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_IN') {
-        loadGuilds()
+        // Only reload guilds on fresh sign-in, not on token refresh/session restore
+        // This prevents UI flashing when users tab away and return
+        // (Supabase fires SIGNED_IN on visibility change when restoring session)
+        if (!hasInitiallyLoaded.current) {
+          loadGuilds()
+        }
       } else if (event === 'SIGNED_OUT') {
+        hasInitiallyLoaded.current = false
         setActiveGuild(null)
         setActiveMember(null)
         setUserGuilds([])

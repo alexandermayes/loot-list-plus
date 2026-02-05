@@ -16,7 +16,8 @@ import { PendingSubmissionsListSkeleton } from '@/components/ui/skeletons'
 interface PendingSubmission {
   id: string
   character_id: string
-  raid_tier_id: string
+  expansion_id: string
+  phase: number
   status: string
   created_at: string
   updated_at: string
@@ -27,7 +28,7 @@ interface PendingSubmission {
       color_hex: string
     } | null
   }
-  raid_tier: {
+  expansion: {
     name: string
   }
   // Count of items in this submission
@@ -72,7 +73,8 @@ export default function PendingSubmissionsPage() {
         .select(`
           id,
           character_id,
-          raid_tier_id,
+          expansion_id,
+          phase,
           status,
           created_at,
           updated_at,
@@ -83,15 +85,13 @@ export default function PendingSubmissionsPage() {
               color_hex
             )
           ),
-          raid_tier:raid_tiers!inner (
+          expansion:expansions!inner (
             name,
-            expansion:expansions!inner (
-              guild_id
-            )
+            guild_id
           )
         `)
         .eq('status', 'pending')
-        .eq('raid_tier.expansion.guild_id', activeGuild.id)
+        .eq('expansion.guild_id', activeGuild.id)
         .order('created_at', { ascending: false })
 
       if (error) {
@@ -101,10 +101,11 @@ export default function PendingSubmissionsPage() {
       }
 
       // Transform the data to handle nested arrays from Supabase
-      const transformedData = (data || []).map(sub => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const transformedData = (data || []).map((sub: any) => {
         const character = Array.isArray(sub.character) ? sub.character[0] : sub.character
         const charClass = Array.isArray(character?.class) ? character.class[0] : character?.class
-        const raidTier = Array.isArray(sub.raid_tier) ? sub.raid_tier[0] : sub.raid_tier
+        const expansion = Array.isArray(sub.expansion) ? sub.expansion[0] : sub.expansion
 
         return {
           ...sub,
@@ -112,15 +113,16 @@ export default function PendingSubmissionsPage() {
             name: character?.name || 'Unknown',
             class: charClass || null
           },
-          raid_tier: {
-            name: raidTier?.name || 'Unknown'
+          expansion: {
+            name: expansion?.name || 'Unknown'
           }
         }
       })
 
       // Get item counts for each submission
       const submissionsWithCounts = await Promise.all(
-        transformedData.map(async (sub) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        transformedData.map(async (sub: any) => {
           const { count } = await supabase
             .from('loot_submission_items')
             .select('*', { count: 'exact', head: true })
@@ -146,12 +148,67 @@ export default function PendingSubmissionsPage() {
     setProcessing(submissionId)
 
     try {
-      const { error } = await supabase
+      console.log('[handleApprove] Approving submission:', submissionId)
+      console.log('[handleApprove] isOfficer from context:', isOfficer)
+      console.log('[handleApprove] activeGuild:', activeGuild?.id)
+
+      // First, verify we can see the submission (SELECT policy check)
+      const { data: existingData, error: selectError } = await supabase
+        .from('loot_submissions')
+        .select('id, status, guild_id, character_id')
+        .eq('id', submissionId)
+        .single()
+
+      console.log('[handleApprove] SELECT check:', { existingData, selectError })
+
+      // Get current user ID
+      const { data: { user } } = await supabase.auth.getUser()
+      console.log('[handleApprove] Current user:', user?.id)
+
+      // Check current user's membership/role in the submission's guild
+      const { data: membershipData, error: membershipError } = await supabase
+        .from('character_guild_memberships')
+        .select(`
+          id,
+          role,
+          is_active,
+          guild_id,
+          character:characters!inner(id, user_id, name)
+        `)
+        .eq('guild_id', existingData?.guild_id)
+        .eq('is_active', true)
+
+      // Filter to just current user's memberships
+      const userMemberships = membershipData?.filter((m: any) => m.character?.user_id === user?.id)
+      console.log('[handleApprove] User memberships in submission guild:', {
+        allMemberships: membershipData?.length,
+        userMemberships,
+        membershipError,
+        submissionGuildId: existingData?.guild_id
+      })
+
+      if (selectError || !existingData) {
+        console.error('[handleApprove] Cannot find submission - SELECT policy may be blocking')
+        throw new Error('Cannot find submission - check your permissions')
+      }
+
+      const { data, error, count } = await supabase
         .from('loot_submissions')
         .update({ status: 'approved', updated_at: new Date().toISOString() })
         .eq('id', submissionId)
+        .select()
 
-      if (error) throw error
+      console.log('[handleApprove] UPDATE result:', { data, error, count })
+
+      if (error) {
+        console.error('[handleApprove] Supabase error:', error)
+        throw error
+      }
+
+      if (!data || data.length === 0) {
+        console.error('[handleApprove] No rows updated - possible RLS policy issue')
+        throw new Error('Update failed - check officer permissions')
+      }
 
       showNotification('success', 'Submission approved')
       await loadPendingSubmissions()
@@ -173,12 +230,25 @@ export default function PendingSubmissionsPage() {
         setProcessing(submissionId)
 
         try {
-          const { error } = await supabase
+          console.log('[handleReject] Rejecting submission:', submissionId)
+
+          const { data, error, count } = await supabase
             .from('loot_submissions')
             .update({ status: 'rejected', updated_at: new Date().toISOString() })
             .eq('id', submissionId)
+            .select()
 
-          if (error) throw error
+          console.log('[handleReject] Result:', { data, error, count })
+
+          if (error) {
+            console.error('[handleReject] Supabase error:', error)
+            throw error
+          }
+
+          if (!data || data.length === 0) {
+            console.error('[handleReject] No rows updated - possible RLS policy issue')
+            throw new Error('Update failed - check officer permissions')
+          }
 
           showNotification('success', 'Submission rejected')
           await loadPendingSubmissions()
@@ -246,9 +316,9 @@ export default function PendingSubmissionsPage() {
 
                     <div className="space-y-2">
                       <div className="flex items-center gap-2">
-                        <span className="text-[13px] text-muted-foreground">Raid Tier:</span>
+                        <span className="text-[13px] text-muted-foreground">Expansion:</span>
                         <span className="text-[13px] text-foreground font-medium">
-                          {submission.raid_tier.name}
+                          {submission.expansion.name} - Phase {submission.phase}
                         </span>
                       </div>
                       <div className="flex items-center gap-2">

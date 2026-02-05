@@ -17,7 +17,7 @@ CREATE TABLE IF NOT EXISTS guild_settings (
   decimal_places INTEGER DEFAULT 2, -- 0=Ones, 1=Tenths, 2=Hundredths
 
   -- Attendance Settings
-  attendance_type TEXT DEFAULT 'linear' CHECK (attendance_type IN ('linear', 'breakpoint')),
+  attendance_type TEXT DEFAULT 'linear' CHECK (attendance_type IN ('linear', 'breakpoint', 'points-per-raid')),
   rolling_attendance_weeks INTEGER DEFAULT 4,
   use_signups BOOLEAN DEFAULT true,
   signup_weight DECIMAL DEFAULT 0.25,
@@ -33,6 +33,9 @@ CREATE TABLE IF NOT EXISTS guild_settings (
   -- Minimum Raids
   minimum_raid_days_enabled BOOLEAN DEFAULT true,
   minimum_raid_days INTEGER DEFAULT 2,
+
+  -- New Member Policy
+  new_member_mode TEXT DEFAULT 'raw' CHECK (new_member_mode IN ('raw', 'fair', 'minimum_gate')),
 
   -- Late/Early Penalty
   late_early_penalty_enabled BOOLEAN DEFAULT true,
@@ -133,6 +136,11 @@ BEGIN
   END IF;
   IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='guild_settings' AND column_name='minimum_raid_days') THEN
     ALTER TABLE guild_settings ADD COLUMN minimum_raid_days INTEGER DEFAULT 2;
+  END IF;
+
+  -- New Member Policy
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='guild_settings' AND column_name='new_member_mode') THEN
+    ALTER TABLE guild_settings ADD COLUMN new_member_mode TEXT DEFAULT 'raw';
   END IF;
 
   -- Late/Early Penalty

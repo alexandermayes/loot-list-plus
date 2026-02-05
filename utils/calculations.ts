@@ -1,5 +1,5 @@
 interface GuildSettings {
-  attendance_type: 'linear' | 'breakpoint'
+  attendance_type: 'linear' | 'breakpoint' | 'points-per-raid'
   rolling_attendance_weeks: number
   use_signups: boolean
   signup_weight: number
@@ -95,7 +95,30 @@ export function calculateAttendanceScore(
 
   const attendancePercentage = attendedCount / totalRaids
 
-  if (config.attendance_type === 'linear') {
+  if (config.attendance_type === 'points-per-raid') {
+    // Points-per-raid model: flat points per attended/signed-up raid
+    // Default: 0.75 pts per attended raid, 0.25 pts per signup
+    // Each raid can contribute up to 1.0 points total
+    const attendancePointsPerRaid = 1 - config.signup_weight  // 0.75 by default
+    const signupPointsPerRaid = config.signup_weight  // 0.25 by default
+
+    let totalScore = 0
+
+    // Calculate points for each raid based on signup + attendance
+    records.forEach(r => {
+      let raidPoints = 0
+      if (r.signed_up) {
+        raidPoints += signupPointsPerRaid
+      }
+      if (r.attended) {
+        raidPoints += attendancePointsPerRaid
+      }
+      // Cap each raid's contribution at 1.0 points
+      totalScore += Math.min(raidPoints, 1.0)
+    })
+
+    return Math.min(totalScore, config.max_attendance_bonus)
+  } else if (config.attendance_type === 'linear') {
     // Linear scaling: 0% attendance = 0 bonus, 100% attendance = max bonus
     const baseScore = attendancePercentage * config.max_attendance_bonus
 

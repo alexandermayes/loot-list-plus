@@ -137,6 +137,9 @@ export default function Dashboard() {
     actionsNeeded: 0
   })
 
+  // Guild settings for display formatting
+  const [decimalPlaces, setDecimalPlaces] = useState<number>(2)
+
   const supabase = createClient()
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -386,45 +389,152 @@ export default function Dashboard() {
       try {
         const { data: guildSettings, error: settingsError } = await supabase
           .from('guild_settings')
-          .select('attendance_type, rolling_attendance_weeks, use_signups, signup_weight, max_attendance_bonus, max_attendance_threshold, middle_attendance_bonus, middle_attendance_threshold, bottom_attendance_bonus, bottom_attendance_threshold, rank_modifiers')
+          .select('attendance_type, rolling_attendance_weeks, use_signups, signup_weight, max_attendance_bonus, max_attendance_threshold, middle_attendance_bonus, middle_attendance_threshold, bottom_attendance_bonus, bottom_attendance_threshold, rank_modifiers, decimal_places, new_member_mode')
           .eq('guild_id', activeGuild.id)
           .single()
 
         if (guildSettings && !settingsError) {
+          // Set decimal places for display formatting
+          setDecimalPlaces(guildSettings.decimal_places ?? 2)
+
           // Try to get attendance records
           const rollingWeeks = guildSettings.rolling_attendance_weeks || 4
           const startDate = new Date()
           startDate.setDate(startDate.getDate() - (rollingWeeks * 7))
-          const startDateISO = startDate.toISOString()
 
-          // Fetch attendance records and raid events in parallel (both need same startDate)
-          const [attendanceResult, raidEventsResult] = await Promise.all([
-            supabase
+          console.log('📊 [Overview] Loading attendance for character:', characterId)
+          console.log('📊 [Overview] Rolling weeks:', rollingWeeks, 'Start date:', startDate.toISOString().split('T')[0])
+
+          // New member policy: check how to handle new members
+          const newMemberMode = guildSettings.new_member_mode || 'raw'
+          let effectiveStartDate = startDate
+
+          // For 'fair' and 'minimum_gate' modes, use join date filtering
+          if ((newMemberMode === 'fair' || newMemberMode === 'minimum_gate') && characterId) {
+            const { data: membership } = await supabase
+              .from('character_guild_memberships')
+              .select('joined_at')
+              .eq('character_id', characterId)
+              .eq('guild_id', activeGuild.id)
+              .single()
+
+            if (membership?.joined_at) {
+              const joinedAt = new Date(membership.joined_at)
+              // Use the later of startDate or joinedAt
+              if (joinedAt > startDate) {
+                effectiveStartDate = joinedAt
+                console.log('📊 [Overview] New member (' + newMemberMode + ' mode) - using join date:', membership.joined_at)
+              }
+            }
+          }
+
+          const startDateStr = effectiveStartDate.toISOString().split('T')[0]
+          console.log('📊 [Overview] New member mode:', newMemberMode, 'Effective period start:', startDateStr)
+
+          // Get expansion's raid day configuration
+          let raidDays: number[] = []
+          if (activeGuild?.active_expansion_id) {
+            const { data: expansionData } = await supabase
+              .from('expansions')
+              .select('raid_days_per_week, first_raid_day, second_raid_day, third_raid_day, fourth_raid_day, fifth_raid_day')
+              .eq('id', activeGuild.active_expansion_id)
+              .single()
+
+            if (expansionData) {
+              raidDays = [
+                expansionData.first_raid_day,
+                expansionData.second_raid_day,
+                expansionData.third_raid_day,
+                expansionData.fourth_raid_day,
+                expansionData.fifth_raid_day
+              ].filter((day): day is number => day !== null && day !== undefined)
+                .slice(0, expansionData.raid_days_per_week || 2)
+            }
+          }
+
+          // Fall back to guild settings if no expansion raid days
+          if (raidDays.length === 0) {
+            raidDays = [
+              (guildSettings as any).first_raid_day,
+              (guildSettings as any).second_raid_day,
+              (guildSettings as any).third_raid_day,
+              (guildSettings as any).fourth_raid_day,
+              (guildSettings as any).fifth_raid_day
+            ].filter((day): day is number => day !== null && day !== undefined)
+              .slice(0, (guildSettings as any).raid_days_per_week || 2)
+          }
+
+          console.log('📊 [Overview] Configured raid days:', raidDays)
+
+          // First get raid events for the period
+          const { data: raidEventsData, error: raidError } = await supabase
+            .from('raid_events')
+            .select('id, raid_date')
+            .eq('guild_id', activeGuild.id)
+            .gte('raid_date', startDateStr)
+
+          console.log('📊 [Overview] Raid events found:', raidEventsData?.length, 'Error:', raidError)
+
+          // Filter to only raids on configured raid days
+          const filteredRaidEvents = raidDays.length > 0 && raidEventsData
+            ? raidEventsData.filter(event => {
+                const eventDate = new Date(event.raid_date + 'T00:00:00')
+                return raidDays.includes(eventDate.getDay())
+              })
+            : raidEventsData
+
+          console.log('📊 [Overview] Filtered to raid days:', filteredRaidEvents?.length)
+
+          if (filteredRaidEvents && filteredRaidEvents.length > 0) {
+            // Handle duplicate raid events - prefer IDs with attendance records
+            const raidEventIds = filteredRaidEvents.map(r => r.id)
+
+            // Check which raid IDs have attendance for this character
+            const { data: existingAttendance } = await supabase
+              .from('attendance_records')
+              .select('raid_event_id')
+              .eq('character_id', characterId)
+              .in('raid_event_id', raidEventIds)
+
+            const raidIdsWithAttendance = new Set(existingAttendance?.map(r => r.raid_event_id) || [])
+            console.log('📊 [Overview] Raid IDs with attendance:', [...raidIdsWithAttendance])
+
+            // Deduplicate by date, preferring IDs that have attendance records
+            const deduplicatedRaidEvents = Array.from(
+              filteredRaidEvents.reduce((map, event) => {
+                const existing = map.get(event.raid_date)
+                if (!existing) {
+                  map.set(event.raid_date, event)
+                } else if (raidIdsWithAttendance.has(event.id) && !raidIdsWithAttendance.has(existing.id)) {
+                  map.set(event.raid_date, event)
+                }
+                return map
+              }, new Map<string, typeof filteredRaidEvents[0]>()).values()
+            )
+
+            const totalRaids = deduplicatedRaidEvents.length
+            const deduplicatedRaidIds = deduplicatedRaidEvents.map(r => r.id)
+
+            // Now fetch attendance records using the deduplicated raid IDs
+            const { data: attendanceRecords, error: attError } = await supabase
               .from('attendance_records')
               .select('signed_up, attended, no_call_no_show')
               .eq('character_id', characterId)
-              .gte('created_at', startDateISO),
-            supabase
-              .from('raid_events')
-              .select('raid_date')
-              .eq('guild_id', activeGuild.id)
-              .gte('raid_date', startDateISO)
-          ])
+              .in('raid_event_id', deduplicatedRaidIds)
 
-          const { data: attendanceRecords, error: attError } = attendanceResult
-          const { data: totalRaidsData } = raidEventsResult
+            console.log('📊 [Overview] Total raids (deduplicated):', totalRaids)
+            console.log('📊 [Overview] Attendance records found:', attendanceRecords?.length, 'Error:', attError)
+            console.log('📊 [Overview] Attendance records:', attendanceRecords)
 
-          // Only proceed if no error (empty data is fine, errors are not)
-          if (!attError) {
-            const uniqueRaids = new Set(totalRaidsData?.map(r => r.raid_date) || [])
-            const totalRaids = uniqueRaids.size
-
-            if (attendanceRecords && attendanceRecords.length > 0 && totalRaids > 0) {
+            if (!attError && attendanceRecords && attendanceRecords.length > 0 && totalRaids > 0) {
               attendanceScore = calculateAttendanceScore(
                 attendanceRecords,
                 totalRaids,
                 guildSettings
               )
+              console.log('📊 [Overview] Calculated attendance score:', attendanceScore)
+            } else {
+              console.log('📊 [Overview] No attendance score calculated - missing data')
             }
           }
 
@@ -758,7 +868,7 @@ export default function Dashboard() {
                       className="w-16 h-16 rounded-full border-2 border-border/50 shadow-md"
                     />
                   ) : (
-                    <div className="w-16 h-16 bg-gradient-to-br from-[#ff8000] to-[#ff6000] rounded-full flex items-center justify-center border-2 border-border/50 shadow-md">
+                    <div className="w-16 h-16 bg-accent rounded-full flex items-center justify-center border-2 border-border/50 shadow-md">
                       <HugeiconsIcon icon={UserIcon} size={32} className="text-foreground" />
                     </div>
                   )}
@@ -826,8 +936,8 @@ export default function Dashboard() {
                       <p className="text-sm text-muted-foreground">Actions needed</p>
                       <p className="text-[42px] font-bold text-foreground mt-2 leading-none">{visibleActionsCount}</p>
                     </div>
-                    <div className="w-12 h-12 bg-orange-500/20 rounded-full flex items-center justify-center">
-                      <HugeiconsIcon icon={AlertCircleIcon} size={24} className="text-orange-500" />
+                    <div className="w-12 h-12 bg-warning/20 rounded-full flex items-center justify-center">
+                      <HugeiconsIcon icon={AlertCircleIcon} size={24} className="text-warning" />
                     </div>
                   </div>
                 </div>
@@ -877,11 +987,11 @@ export default function Dashboard() {
                           <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
                             <span>{item.boss_name}</span>
                             <span>•</span>
-                            <span className="font-semibold text-foreground">{item.loot_score.toFixed(1)}</span>
+                            <span className="font-semibold text-foreground">{item.loot_score.toFixed(decimalPlaces)}</span>
                             {item.tied_characters.length > 0 && (
                               <>
                                 <span>•</span>
-                                <span className="text-yellow-400">Tied with:</span>
+                                <span className="text-warning">Tied with:</span>
                                 {item.tied_characters.map((char, idx) => (
                                   <span key={idx} className="flex items-center gap-1">
                                     <span style={{ color: char.class_color }} className="font-semibold">
@@ -991,7 +1101,7 @@ export default function Dashboard() {
                           size="sm"
                           onClick={(e) => handleDismissAction(e, submission.id)}
                           title="Dismiss"
-                          className="hover:bg-destructive/10 hover:text-destructive"
+                          className="hover:!bg-destructive/10 hover:text-destructive"
                         >
                           <HugeiconsIcon icon={Cancel01Icon} size={16} />
                         </Button>

@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS guild_settings (
   guild_id UUID NOT NULL REFERENCES guilds(id) ON DELETE CASCADE,
   
   -- Attendance Settings
-  attendance_type TEXT NOT NULL DEFAULT 'linear' CHECK (attendance_type IN ('linear', 'breakpoint')),
+  attendance_type TEXT NOT NULL DEFAULT 'linear' CHECK (attendance_type IN ('linear', 'breakpoint', 'points-per-raid')),
   rolling_attendance_weeks INTEGER NOT NULL DEFAULT 4,
   use_signups BOOLEAN NOT NULL DEFAULT true,
   signup_weight DECIMAL(3,2) NOT NULL DEFAULT 0.25,
@@ -18,7 +18,11 @@ CREATE TABLE IF NOT EXISTS guild_settings (
   middle_attendance_threshold DECIMAL(3,2) NOT NULL DEFAULT 0.5,
   bottom_attendance_bonus DECIMAL(5,2) NOT NULL DEFAULT 1,
   bottom_attendance_threshold DECIMAL(3,2) NOT NULL DEFAULT 0.25,
-  
+
+  -- New Member Policy
+  new_member_mode TEXT NOT NULL DEFAULT 'raw' CHECK (new_member_mode IN ('raw', 'fair', 'minimum_gate')),
+  minimum_raid_days INTEGER NOT NULL DEFAULT 2,
+
   -- Bad Luck Prevention
   see_item_bonus BOOLEAN NOT NULL DEFAULT true,
   see_item_bonus_value DECIMAL(5,2) NOT NULL DEFAULT 1,

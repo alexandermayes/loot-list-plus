@@ -14,14 +14,18 @@ export async function GET(request: NextRequest) {
     const characterId = searchParams.get('character_id')
     const guildId = searchParams.get('guild_id')
     const tierIdsParam = searchParams.get('tier_ids')
+    const expansionId = searchParams.get('expansion_id')
 
-    if (!characterId || !guildId || !tierIdsParam) {
-      return NextResponse.json({ error: 'character_id, guild_id, and tier_ids are required' }, { status: 400 })
+    if (!characterId || !guildId) {
+      return NextResponse.json({ error: 'character_id and guild_id are required' }, { status: 400 })
     }
 
-    const tierIds = tierIdsParam.split(',').filter(Boolean)
-    if (tierIds.length === 0) {
-      return NextResponse.json({ statuses: {} })
+    // Support both tier_ids (legacy) and expansion_id (phase-based) queries
+    const usePhaseBased = !!expansionId
+    const tierIds = tierIdsParam?.split(',').filter(Boolean) || []
+
+    if (!usePhaseBased && tierIds.length === 0) {
+      return NextResponse.json({ statuses: {}, phaseStatuses: {} })
     }
 
     const supabase = createServiceRoleClient()
@@ -37,29 +41,48 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Not authorized for this character' }, { status: 403 })
     }
 
-    // Get submissions for all tiers
-    const { data: submissions, error: subError } = await supabase
+    // Get submissions - either by tier IDs or by expansion (for phase-based)
+    let query = supabase
       .from('loot_submissions')
-      .select('raid_tier_id, status, submitted_at')
+      .select('raid_tier_id, phase, status, submitted_at')
       .eq('character_id', characterId)
       .eq('guild_id', guildId)
-      .in('raid_tier_id', tierIds)
+
+    if (usePhaseBased) {
+      query = query.eq('expansion_id', expansionId).not('phase', 'is', null)
+    } else {
+      query = query.in('raid_tier_id', tierIds)
+    }
+
+    const { data: submissions, error: subError } = await query
 
     if (subError) {
       console.error('Error fetching submission statuses:', subError)
       return NextResponse.json({ error: 'Failed to fetch statuses' }, { status: 500 })
     }
 
-    // Build status map
+    // Build status maps - both tier-based and phase-based
     const statuses: Record<string, { status: string; submitted_at: string | null }> = {}
+    const phaseStatuses: Record<number, { status: string; submitted_at: string | null }> = {}
+
     submissions?.forEach(sub => {
-      statuses[sub.raid_tier_id] = {
-        status: sub.status,
-        submitted_at: sub.submitted_at
+      // Tier-based status (legacy)
+      if (sub.raid_tier_id) {
+        statuses[sub.raid_tier_id] = {
+          status: sub.status,
+          submitted_at: sub.submitted_at
+        }
+      }
+      // Phase-based status
+      if (sub.phase !== null && sub.phase !== undefined) {
+        phaseStatuses[sub.phase] = {
+          status: sub.status,
+          submitted_at: sub.submitted_at
+        }
       }
     })
 
-    return NextResponse.json({ statuses })
+    return NextResponse.json({ statuses, phaseStatuses })
   } catch (error) {
     console.error('Error in GET /api/loot-submissions/statuses:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

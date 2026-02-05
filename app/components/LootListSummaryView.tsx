@@ -163,9 +163,9 @@ export default function LootListSummaryView({
                       <span className="text-[13px] font-medium text-accent">{item.total_lists}</span>
                     </div>
                     {item.already_awarded > 0 && (
-                      <div className="flex items-center gap-1.5 px-3 py-1.5 bg-green-500/10 border border-green-500/20 rounded-full">
-                        <HugeiconsIcon icon={CheckmarkCircle02Icon} size={14} className="text-green-500" />
-                        <span className="text-[13px] font-medium text-green-500">{item.already_awarded}</span>
+                      <div className="flex items-center gap-1.5 px-3 py-1.5 bg-success/10 border border-success/20 rounded-full">
+                        <HugeiconsIcon icon={CheckmarkCircle02Icon} size={14} className="text-success" />
+                        <span className="text-[13px] font-medium text-success">{item.already_awarded}</span>
                       </div>
                     )}
                   </div>

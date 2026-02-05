@@ -63,34 +63,19 @@ export function HorizontalScroll({
 
   const showArrows = scrollState.canScrollLeft || scrollState.canScrollRight
 
-  const arrowButtonClass = (enabled: boolean) => cn(
+  const arrowButtonClass = cn(
     'flex-shrink-0 w-7 h-7 flex items-center justify-center rounded-full transition-all duration-200',
-    enabled
-      ? 'bg-background-elevated border border-border hover:bg-background-inset hover:border-border-strong text-foreground cursor-pointer'
-      : 'text-foreground-muted cursor-default opacity-30'
+    'bg-background-elevated border border-border hover:bg-background-inset hover:border-border-strong text-foreground cursor-pointer shadow-sm'
   )
 
   return (
-    <div className={cn('relative flex items-center', containerClassName)}>
-      {/* Left Arrow - Desktop only (on left side) */}
-      {showArrows && (
-        <button
-          onClick={scrollLeft}
-          disabled={!scrollState.canScrollLeft}
-          className={cn(arrowButtonClass(scrollState.canScrollLeft), 'hidden sm:flex')}
-          aria-label="Scroll left"
-        >
-          <HugeiconsIcon icon={ArrowLeft01Icon} size={16} />
-        </button>
-      )}
-
+    <div className={cn('relative overflow-visible', containerClassName)}>
       {/* Scroll Container */}
       <div
         ref={scrollRef}
         onScroll={handleScroll}
         className={cn(
-          'flex-1 min-w-0 overflow-x-auto scrollbar-hide',
-          showArrows && 'sm:mx-2',
+          'overflow-x-auto scrollbar-hide -my-1 py-1',
           className
         )}
         style={showFade ? {
@@ -101,28 +86,49 @@ export function HorizontalScroll({
         {children}
       </div>
 
-      {/* Arrow buttons - Mobile: both together on right, Desktop: only right arrow */}
-      {showArrows && (
-        <div className="flex items-center gap-1 ml-2 sm:ml-0">
-          {/* Left Arrow - Mobile only (grouped with right) */}
-          <button
-            onClick={scrollLeft}
-            disabled={!scrollState.canScrollLeft}
-            className={cn(arrowButtonClass(scrollState.canScrollLeft), 'sm:hidden')}
-            aria-label="Scroll left"
-          >
-            <HugeiconsIcon icon={ArrowLeft01Icon} size={16} />
-          </button>
+      {/* Left Arrow - Floating overlay, hidden when at start */}
+      {showArrows && scrollState.canScrollLeft && (
+        <button
+          onClick={scrollLeft}
+          className={cn(arrowButtonClass, 'absolute left-0 top-1/2 -translate-y-1/2 z-10 hidden sm:flex')}
+          aria-label="Scroll left"
+        >
+          <HugeiconsIcon icon={ArrowLeft01Icon} size={16} />
+        </button>
+      )}
 
-          {/* Right Arrow - Always visible */}
-          <button
-            onClick={scrollRight}
-            disabled={!scrollState.canScrollRight}
-            className={arrowButtonClass(scrollState.canScrollRight)}
-            aria-label="Scroll right"
-          >
-            <HugeiconsIcon icon={ArrowRight01Icon} size={16} />
-          </button>
+      {/* Right Arrow - Floating overlay, hidden when at end */}
+      {showArrows && scrollState.canScrollRight && (
+        <button
+          onClick={scrollRight}
+          className={cn(arrowButtonClass, 'absolute right-0 top-1/2 -translate-y-1/2 z-10 hidden sm:flex')}
+          aria-label="Scroll right"
+        >
+          <HugeiconsIcon icon={ArrowRight01Icon} size={16} />
+        </button>
+      )}
+
+      {/* Mobile arrows - grouped on right side */}
+      {showArrows && (
+        <div className="flex items-center gap-1 absolute right-0 top-1/2 -translate-y-1/2 z-10 sm:hidden">
+          {scrollState.canScrollLeft && (
+            <button
+              onClick={scrollLeft}
+              className={arrowButtonClass}
+              aria-label="Scroll left"
+            >
+              <HugeiconsIcon icon={ArrowLeft01Icon} size={16} />
+            </button>
+          )}
+          {scrollState.canScrollRight && (
+            <button
+              onClick={scrollRight}
+              className={arrowButtonClass}
+              aria-label="Scroll right"
+            >
+              <HugeiconsIcon icon={ArrowRight01Icon} size={16} />
+            </button>
+          )}
         </div>
       )}
     </div>

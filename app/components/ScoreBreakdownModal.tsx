@@ -76,8 +76,8 @@ export default function ScoreBreakdownModal({ open, onClose, guildSettings }: Sc
           {/* Item Rank */}
           <div className="bg-background-subtle border border-border rounded-lg p-4">
             <div className="flex items-center gap-3 mb-2">
-              <div className="w-8 h-8 rounded-full bg-yellow-500/20 flex items-center justify-center">
-                <HugeiconsIcon icon={Target01Icon} size={18} className="text-yellow-500" />
+              <div className="w-8 h-8 rounded-full bg-warning/20 flex items-center justify-center">
+                <HugeiconsIcon icon={Target01Icon} size={18} className="text-warning" />
               </div>
               <div>
                 <h3 className="text-foreground font-medium text-[14px]">Item rank</h3>
@@ -92,8 +92,8 @@ export default function ScoreBreakdownModal({ open, onClose, guildSettings }: Sc
           {/* Attendance */}
           <div className="bg-background-subtle border border-border rounded-lg p-4">
             <div className="flex items-center gap-3 mb-2">
-              <div className="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center">
-                <HugeiconsIcon icon={Calendar03Icon} size={18} className="text-blue-500" />
+              <div className="w-8 h-8 rounded-full bg-accent/20 flex items-center justify-center">
+                <HugeiconsIcon icon={Calendar03Icon} size={18} className="text-accent" />
               </div>
               <div>
                 <h3 className="text-foreground font-medium text-[14px]">Attendance score</h3>
@@ -129,8 +129,8 @@ export default function ScoreBreakdownModal({ open, onClose, guildSettings }: Sc
           {/* Role Modifier */}
           <div className="bg-background-subtle border border-border rounded-lg p-4">
             <div className="flex items-center gap-3 mb-2">
-              <div className="w-8 h-8 rounded-full bg-purple-500/20 flex items-center justify-center">
-                <HugeiconsIcon icon={UserIcon} size={18} className="text-purple-500" />
+              <div className="w-8 h-8 rounded-full bg-accent/20 flex items-center justify-center">
+                <HugeiconsIcon icon={UserIcon} size={18} className="text-accent" />
               </div>
               <div>
                 <h3 className="text-foreground font-medium text-[14px]">Role modifier</h3>
@@ -153,8 +153,8 @@ export default function ScoreBreakdownModal({ open, onClose, guildSettings }: Sc
           {/* Bad Luck Bonus */}
           <div className="bg-background-subtle border border-border rounded-lg p-4">
             <div className="flex items-center gap-3 mb-2">
-              <div className="w-8 h-8 rounded-full bg-red-500/20 flex items-center justify-center">
-                <HugeiconsIcon icon={SparklesIcon} size={18} className="text-red-500" />
+              <div className="w-8 h-8 rounded-full bg-destructive/20 flex items-center justify-center">
+                <HugeiconsIcon icon={SparklesIcon} size={18} className="text-destructive" />
               </div>
               <div>
                 <h3 className="text-foreground font-medium text-[14px]">Bad luck bonus</h3>
@@ -169,8 +169,8 @@ export default function ScoreBreakdownModal({ open, onClose, guildSettings }: Sc
           {/* Priority Bonus */}
           <div className="bg-background-subtle border border-border rounded-lg p-4">
             <div className="flex items-center gap-3 mb-2">
-              <div className="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center">
-                <HugeiconsIcon icon={Award01Icon} size={18} className="text-green-500" />
+              <div className="w-8 h-8 rounded-full bg-success/20 flex items-center justify-center">
+                <HugeiconsIcon icon={Award01Icon} size={18} className="text-success" />
               </div>
               <div>
                 <h3 className="text-foreground font-medium text-[14px]">Priority bonus</h3>
@@ -197,8 +197,8 @@ export default function ScoreBreakdownModal({ open, onClose, guildSettings }: Sc
           {trialPenaltyEnabled && (
             <div className="bg-background-subtle border border-border rounded-lg p-4">
               <div className="flex items-center gap-3 mb-2">
-                <div className="w-8 h-8 rounded-full bg-yellow-500/20 flex items-center justify-center">
-                  <HugeiconsIcon icon={Time01Icon} size={18} className="text-yellow-500" />
+                <div className="w-8 h-8 rounded-full bg-warning/20 flex items-center justify-center">
+                  <HugeiconsIcon icon={Time01Icon} size={18} className="text-warning" />
                 </div>
                 <div>
                   <h3 className="text-foreground font-medium text-[14px]">Trial penalty</h3>
@@ -215,8 +215,8 @@ export default function ScoreBreakdownModal({ open, onClose, guildSettings }: Sc
 
         {/* Tiebreaker */}
         <div className="flex items-center gap-3 p-4 bg-background-subtle border border-border rounded-lg">
-          <div className="w-8 h-8 rounded-full bg-orange-500/20 flex items-center justify-center">
-            <HugeiconsIcon icon={ShuffleIcon} size={18} className="text-orange-500" />
+          <div className="w-8 h-8 rounded-full bg-warning/20 flex items-center justify-center">
+            <HugeiconsIcon icon={ShuffleIcon} size={18} className="text-warning" />
           </div>
           <p className="text-foreground-secondary text-[13px]">
             <span className="text-foreground font-medium">Tiebreaker:</span> When scores are equal, winners are determined by random roll.

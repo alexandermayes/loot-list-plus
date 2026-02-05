@@ -9,6 +9,7 @@ import { useNotification } from '@/app/contexts/NotificationContext'
 import { ExpansionGuard } from '@/app/components/ExpansionGuard'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { Modal, ModalHeader, ModalTitle, ModalDescription, ModalBody, ModalFooter } from '@/components/ui/modal'
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Heading } from '@/components/ui/typography'
 import { Select } from '@/components/ui/select'
@@ -18,7 +19,7 @@ import StyledSelect from '@/app/components/StyledSelect'
 import MultiSelectDropdown from '@/app/components/MultiSelectDropdown'
 import { specMapping } from '@/utils/spec-role-mapping'
 import { HugeiconsIcon } from '@hugeicons/react'
-import { ArrowDown01Icon, ArrowUp01Icon, Settings01Icon, Calendar03Icon, Settings02Icon, PencilEdit01Icon, Award01Icon, AlertCircleIcon, UserAdd01Icon, DiceIcon, Medal01Icon, Clock01Icon } from '@hugeicons/core-free-icons'
+import { ArrowDown01Icon, ArrowUp01Icon, Settings01Icon, Calendar03Icon, Settings02Icon, UserAdd01Icon, DiceIcon, Medal01Icon, Clock01Icon, GiftIcon } from '@hugeicons/core-free-icons'
 import { refreshWowheadTooltips } from '@/lib/wowhead'
 import PriorityListTab from './components/PriorityListTab'
 import { SegmentedControl } from '@/components/ui/segmented-control'
@@ -1445,19 +1446,19 @@ export default function AdminLootItems() {
           </div>
           <div className="bg-background-elevated border border-border rounded-xl p-4">
             <p className="text-foreground-muted text-sm">Available</p>
-            <p className="text-2xl font-bold text-green-400">
+            <p className="text-2xl font-bold text-success">
               {filteredItems.filter(i => i.is_available).length}
             </p>
           </div>
           <div className="bg-background-elevated border border-border rounded-xl p-4">
             <p className="text-foreground-muted text-sm">Reserved</p>
-            <p className="text-2xl font-bold text-red-400">
+            <p className="text-2xl font-bold text-destructive">
               {filteredItems.filter(i => i.classification === 'Reserved').length}
             </p>
           </div>
           <div className="bg-background-elevated border border-border rounded-xl p-4">
             <p className="text-foreground-muted text-sm">Limited</p>
-            <p className="text-2xl font-bold text-yellow-400">
+            <p className="text-2xl font-bold text-warning">
               {filteredItems.filter(i => i.classification === 'Limited').length}
             </p>
           </div>
@@ -1754,79 +1755,278 @@ export default function AdminLootItems() {
         <ModalHeader onClose={() => setShowSettingsModal(false)}>
           <ModalTitle>Loot system settings</ModalTitle>
         </ModalHeader>
-        <ModalBody className="space-y-10">
+        <ModalBody className="space-y-6">
               {/* General Settings */}
-              <div className="space-y-4">
-                <div>
-                  <h4 className="text-[18px] font-semibold text-foreground flex items-center gap-2">
-                    <HugeiconsIcon icon={Settings01Icon} size={20} className="text-muted-foreground" />
+              <Card variant="unified">
+                <CardHeader>
+                  <CardTitle className="text-[15px] font-semibold flex items-center gap-2">
+                    <HugeiconsIcon icon={Settings01Icon} size={18} className="text-muted-foreground" />
                     General settings
-                  </h4>
-                  <p className="text-muted-foreground text-[13px]">Configure how Loot Scores are displayed.</p>
-                </div>
-
-                <div>
-                  <Label className="block mb-2">Score precision</Label>
-                  <Select
-                    variant="pill"
-                    value={settings.decimal_places}
-                    onChange={(e) => setSettings({ ...settings, decimal_places: Number(e.target.value) })}
-                    className="bg-background-elevated"
-                  >
-                    <option value="0">Whole numbers (e.g., 42)</option>
-                    <option value="1">One decimal (e.g., 42.5)</option>
-                    <option value="2">Two decimals (e.g., 42.50)</option>
-                  </Select>
-                  <p className="text-muted-foreground text-[12px] mt-1">How many decimal places to show</p>
-                </div>
-              </div>
-
-              {/* Attendance Settings - Basic */}
-              <div className="space-y-4">
-                <div>
-                  <h4 className="text-[18px] font-semibold text-foreground flex items-center gap-2">
-                    <HugeiconsIcon icon={Calendar03Icon} size={20} className="text-muted-foreground" />
-                    Attendance
-                  </h4>
-                  <p className="text-muted-foreground text-[13px]">Control how attendance bonuses are calculated. Consistent raiders get priority on loot.</p>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
+                  </CardTitle>
+                  <CardDescription>Configure how Loot Scores are displayed.</CardDescription>
+                </CardHeader>
+                <CardContent>
                   <div>
-                    <Label className="block mb-2">Type of attendance bonus</Label>
+                    <Label className="block mb-2">Score precision</Label>
                     <Select
                       variant="pill"
-                      value={settings.attendance_type}
-                      onChange={(e) => setSettings({ ...settings, attendance_type: e.target.value as 'linear' | 'breakpoint' | 'points-per-raid' })}
+                      value={settings.decimal_places}
+                      onChange={(e) => setSettings({ ...settings, decimal_places: Number(e.target.value) })}
                       className="bg-background-elevated"
                     >
-                      <option value="points-per-raid">Points per raid</option>
-                      <option value="linear">Linear (percentage)</option>
-                      <option value="breakpoint">Breakpoint</option>
+                      <option value="0">Whole numbers (e.g., 42)</option>
+                      <option value="1">One decimal (e.g., 42.5)</option>
+                      <option value="2">Two decimals (e.g., 42.50)</option>
                     </Select>
-                    <p className="text-muted-foreground text-[12px] mt-1">
-                      {settings.attendance_type === 'points-per-raid'
-                        ? 'Flat points per raid: signup + attendance = 1 point/raid'
-                        : settings.attendance_type === 'linear'
-                        ? 'Scales with % of raids attended'
-                        : 'Fixed bonus at attendance thresholds'}
-                    </p>
+                    <p className="text-muted-foreground text-[12px] mt-1">How many decimal places to show</p>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Attendance Settings - Basic */}
+              <Card variant="unified">
+                <CardHeader>
+                  <CardTitle className="text-[15px] font-semibold flex items-center gap-2">
+                    <HugeiconsIcon icon={Calendar03Icon} size={18} className="text-muted-foreground" />
+                    Attendance
+                  </CardTitle>
+                  <CardDescription>Control how attendance bonuses are calculated. Consistent raiders get priority on loot.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label className="block mb-2">Type of attendance bonus</Label>
+                      <Select
+                        variant="pill"
+                        value={settings.attendance_type}
+                        onChange={(e) => setSettings({ ...settings, attendance_type: e.target.value as 'linear' | 'breakpoint' | 'points-per-raid' })}
+                        className="bg-background-elevated"
+                      >
+                        <option value="points-per-raid">Points per raid</option>
+                        <option value="linear">Linear (percentage)</option>
+                        <option value="breakpoint">Breakpoint</option>
+                      </Select>
+                      <p className="text-muted-foreground text-[12px] mt-1">
+                        {settings.attendance_type === 'points-per-raid'
+                          ? 'Flat points per raid: signup + attendance = 1 point/raid'
+                          : settings.attendance_type === 'linear'
+                          ? 'Scales with % of raids attended'
+                          : 'Fixed bonus at attendance thresholds'}
+                      </p>
+                    </div>
+
+                    <div>
+                      <Label className="block mb-2">Rolling attendance period (weeks)</Label>
+                      <Input
+                        variant="pill"
+                        type="number"
+                        min="1"
+                        value={settings.rolling_attendance_weeks}
+                        onChange={(e) => setSettings({ ...settings, rolling_attendance_weeks: Number(e.target.value) })}
+                        className="bg-background-elevated"
+                      />
+                      <p className="text-muted-foreground text-[12px] mt-1">How many weeks to track attendance</p>
+                    </div>
                   </div>
 
-                  <div>
-                    <Label className="block mb-2">Rolling attendance period (weeks)</Label>
-                    <Input
-                      variant="pill"
-                      type="number"
-                      min="1"
-                      value={settings.rolling_attendance_weeks}
-                      onChange={(e) => setSettings({ ...settings, rolling_attendance_weeks: Number(e.target.value) })}
-                      className="bg-background-elevated"
-                    />
-                    <p className="text-muted-foreground text-[12px] mt-1">How many weeks to track attendance</p>
+                  {/* Linear: show max bonus */}
+                  {settings.attendance_type === 'linear' && (
+                    <div className="bg-background-elevated border border-border-strong p-4 rounded-xl">
+                      <div className="w-1/3">
+                        <Label className="block mb-2">Maximum attendance bonus</Label>
+                        <Input
+                          variant="pill"
+                          type="number"
+                          value={settings.max_attendance_bonus}
+                          onChange={(e) => setSettings({ ...settings, max_attendance_bonus: Number(e.target.value) })}
+                          placeholder="Points"
+                          className="bg-background-elevated"
+                        />
+                        <p className="text-muted-foreground text-[12px] mt-1">Bonus at 100% attendance</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Breakpoint: show all tiers */}
+                  {settings.attendance_type === 'breakpoint' && (
+                    <div className="bg-background-elevated border border-border-strong p-4 rounded-xl">
+                      <p className="text-muted-foreground text-[12px] mb-3">Configure bonus points for different attendance thresholds (points | threshold %)</p>
+                      <div className="grid grid-cols-3 gap-3">
+                        <div>
+                          <Label size="sm" className="block text-muted-foreground mb-1">Max attendance</Label>
+                          <div className="flex gap-2">
+                            <Input
+                              variant="pill"
+                              size="sm"
+                              type="number"
+                              value={settings.max_attendance_bonus}
+                              onChange={(e) => setSettings({ ...settings, max_attendance_bonus: Number(e.target.value) })}
+                              placeholder="Points"
+                              className="bg-background-elevated"
+                            />
+                            <Input
+                              variant="pill"
+                              size="sm"
+                              type="number"
+                              step="0.1"
+                              value={settings.max_attendance_threshold}
+                              onChange={(e) => setSettings({ ...settings, max_attendance_threshold: Number(e.target.value) })}
+                              placeholder="Threshold"
+                              className="bg-background-elevated"
+                            />
+                          </div>
+                        </div>
+                        <div>
+                          <Label size="sm" className="block text-muted-foreground mb-1">Middle attendance</Label>
+                          <div className="flex gap-2">
+                            <Input
+                              variant="pill"
+                              size="sm"
+                              type="number"
+                              value={settings.middle_attendance_bonus}
+                              onChange={(e) => setSettings({ ...settings, middle_attendance_bonus: Number(e.target.value) })}
+                              placeholder="Points"
+                              className="bg-background-elevated"
+                            />
+                            <Input
+                              variant="pill"
+                              size="sm"
+                              type="number"
+                              step="0.1"
+                              value={settings.middle_attendance_threshold}
+                              onChange={(e) => setSettings({ ...settings, middle_attendance_threshold: Number(e.target.value) })}
+                              placeholder="Threshold"
+                              className="bg-background-elevated"
+                            />
+                          </div>
+                        </div>
+                        <div>
+                          <Label size="sm" className="block text-muted-foreground mb-1">Bottom attendance</Label>
+                          <div className="flex gap-2">
+                            <Input
+                              variant="pill"
+                              size="sm"
+                              type="number"
+                              value={settings.bottom_attendance_bonus}
+                              onChange={(e) => setSettings({ ...settings, bottom_attendance_bonus: Number(e.target.value) })}
+                              placeholder="Points"
+                              className="bg-background-elevated"
+                            />
+                            <Input
+                              variant="pill"
+                              size="sm"
+                              type="number"
+                              step="0.1"
+                              value={settings.bottom_attendance_threshold}
+                              onChange={(e) => setSettings({ ...settings, bottom_attendance_threshold: Number(e.target.value) })}
+                              placeholder="Threshold"
+                              className="bg-background-elevated"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Points-per-raid: show max cap */}
+                  {settings.attendance_type === 'points-per-raid' && (
+                    <div className="bg-background-elevated border border-border-strong p-4 rounded-xl">
+                      <div className="w-1/3">
+                        <Label className="block mb-2">Max points cap</Label>
+                        <Input
+                          variant="pill"
+                          type="number"
+                          value={settings.max_attendance_bonus}
+                          onChange={(e) => setSettings({ ...settings, max_attendance_bonus: Number(e.target.value) })}
+                          placeholder="Points"
+                          className="bg-background-elevated"
+                        />
+                        <p className="text-muted-foreground text-[12px] mt-1">
+                          Max possible: {settings.rolling_attendance_weeks * 2} pts ({settings.rolling_attendance_weeks} weeks × 2 raids)
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Raid Signups */}
+                  <div className="border-t border-border pt-4">
+                    <p className="text-[13px] font-medium text-foreground mb-3">Raid signups</p>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label className="block mb-2">Use raid signups for attendance</Label>
+                        <Select
+                          variant="pill"
+                          value={settings.use_signups ? 'yes' : 'no'}
+                          onChange={(e) => setSettings({ ...settings, use_signups: e.target.value === 'yes' })}
+                          className="bg-background-elevated"
+                        >
+                          <option value="no">No</option>
+                          <option value="yes">Yes</option>
+                        </Select>
+                        <p className="text-muted-foreground text-[12px] mt-1">Give bonus for signing up to raids</p>
+                      </div>
+
+                      <div>
+                        <Label className="block mb-2">
+                          {settings.attendance_type === 'points-per-raid'
+                            ? 'Signup points (per raid)'
+                            : 'Signup % of attendance (decimal)'}
+                        </Label>
+                        <Input
+                          variant="pill"
+                          type="number"
+                          min="0"
+                          max="1"
+                          step="0.05"
+                          value={settings.signup_weight}
+                          onChange={(e) => setSettings({ ...settings, signup_weight: Number(e.target.value) })}
+                          disabled={settings.attendance_type !== 'points-per-raid' && !settings.use_signups}
+                          className="bg-background-elevated"
+                        />
+                        <p className="text-muted-foreground text-[12px] mt-1">
+                          {settings.attendance_type === 'points-per-raid'
+                            ? `Signup: ${settings.signup_weight} pts, Attend: ${(1 - settings.signup_weight).toFixed(2)} pts per raid`
+                            : 'Portion of attendance bonus from signups'}
+                        </p>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
+
+                  {/* Attendance Penalties */}
+                  <div className="border-t border-border pt-4">
+                    <p className="text-[13px] font-medium text-foreground mb-3">Penalties</p>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label className="block mb-2">Late show / leave early penalty</Label>
+                        <Select
+                          variant="pill"
+                          value={settings.late_early_penalty_enabled ? 'yes' : 'no'}
+                          onChange={(e) => setSettings({ ...settings, late_early_penalty_enabled: e.target.value === 'yes' })}
+                          className="bg-background-elevated"
+                        >
+                          <option value="no">No</option>
+                          <option value="yes">Yes</option>
+                        </Select>
+                        <p className="text-muted-foreground text-[12px] mt-1">Penalize partial attendance</p>
+                      </div>
+
+                      <div>
+                        <Label className="block mb-2">Penalty value</Label>
+                        <Input
+                          variant="pill"
+                          type="number"
+                          step="0.05"
+                          value={settings.late_early_penalty_value}
+                          onChange={(e) => setSettings({ ...settings, late_early_penalty_value: Number(e.target.value) })}
+                          disabled={!settings.late_early_penalty_enabled}
+                          className="bg-background-elevated"
+                        />
+                        <p className="text-muted-foreground text-[12px] mt-1">Attendance deduction for late/early</p>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
 
               {/* Advanced Settings - Collapsible */}
               <div className="space-y-4">
@@ -1849,313 +2049,173 @@ export default function AdminLootItems() {
                 </Button>
 
                 {advancedExpanded && (
-                  <div className="space-y-10 pt-2">
-                    {/* Signups */}
-                    <div className="space-y-4">
-                      <div>
-                        <h4 className="text-[16px] font-semibold text-foreground flex items-center gap-2">
-                          <HugeiconsIcon icon={PencilEdit01Icon} size={18} className="text-muted-foreground" />
-                          Raid signups
-                        </h4>
-                        <p className="text-muted-foreground text-[13px]">Track raid signups and give bonus attendance for early signups.</p>
-                      </div>
+                  <div className="space-y-4 pt-2">
+                    {/* New Members - Combined Policy and Trial System */}
+                    <Card variant="unified">
+                      <CardHeader>
+                        <CardTitle className="text-[15px] font-semibold flex items-center gap-2">
+                          <HugeiconsIcon icon={UserAdd01Icon} size={18} className="text-muted-foreground" />
+                          New members
+                        </CardTitle>
+                        <CardDescription>Control how new members are treated for loot eligibility and trial periods.</CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-6">
+                        {/* Attendance Calculation Mode */}
+                        <div className="space-y-3">
+                          <p className="text-[13px] font-medium text-foreground">Attendance calculation</p>
+                          <label className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${settings.new_member_mode === 'raw' ? 'border-accent bg-accent/5' : 'border-border hover:border-border-strong'}`}>
+                            <input
+                              type="radio"
+                              name="new_member_mode"
+                              value="raw"
+                              checked={settings.new_member_mode === 'raw'}
+                              onChange={() => setSettings({ ...settings, new_member_mode: 'raw' })}
+                              className="mt-1"
+                            />
+                            <div>
+                              <div className="font-medium text-foreground">Raw attendance</div>
+                              <div className="text-muted-foreground text-[13px]">Score calculated against full rolling window. New members naturally have lower priority until they&apos;ve attended enough raids.</div>
+                            </div>
+                          </label>
 
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <Label className="block mb-2">Use raid signups for attendance</Label>
-                          <Select
-                            variant="pill"
-                            value={settings.use_signups ? 'yes' : 'no'}
-                            onChange={(e) => setSettings({ ...settings, use_signups: e.target.value === 'yes' })}
-                            className="bg-background-elevated"
-                          >
-                            <option value="no">No</option>
-                            <option value="yes">Yes</option>
-                          </Select>
+                          <label className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${settings.new_member_mode === 'fair' ? 'border-accent bg-accent/5' : 'border-border hover:border-border-strong'}`}>
+                            <input
+                              type="radio"
+                              name="new_member_mode"
+                              value="fair"
+                              checked={settings.new_member_mode === 'fair'}
+                              onChange={() => setSettings({ ...settings, new_member_mode: 'fair' })}
+                              className="mt-1"
+                            />
+                            <div>
+                              <div className="font-medium text-foreground">Fair attendance</div>
+                              <div className="text-muted-foreground text-[13px]">Score only counts raids since member joined guild. New members can compete equally if they&apos;re consistent.</div>
+                            </div>
+                          </label>
+
+                          <label className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${settings.new_member_mode === 'minimum_gate' ? 'border-accent bg-accent/5' : 'border-border hover:border-border-strong'}`}>
+                            <input
+                              type="radio"
+                              name="new_member_mode"
+                              value="minimum_gate"
+                              checked={settings.new_member_mode === 'minimum_gate'}
+                              onChange={() => setSettings({ ...settings, new_member_mode: 'minimum_gate' })}
+                              className="mt-1"
+                            />
+                            <div>
+                              <div className="font-medium text-foreground">Minimum raids required</div>
+                              <div className="text-muted-foreground text-[13px]">Members must attend a minimum number of raids before becoming eligible for loot. Uses fair attendance calculation once eligible.</div>
+                            </div>
+                          </label>
+
+                          {settings.new_member_mode === 'minimum_gate' && (
+                            <div className="ml-7 mt-2">
+                              <Label className="block mb-2">Minimum raids before eligible</Label>
+                              <Input
+                                variant="pill"
+                                type="number"
+                                min="1"
+                                max="20"
+                                value={settings.minimum_raid_days}
+                                onChange={(e) => setSettings({ ...settings, minimum_raid_days: Number(e.target.value) })}
+                                className="bg-background-elevated w-24"
+                              />
+                              <p className="text-muted-foreground text-[12px] mt-1">Members must attend this many raids before they can receive loot.</p>
+                            </div>
+                          )}
                         </div>
 
-                        <div>
-                          <Label className="block mb-2">
-                            {settings.attendance_type === 'points-per-raid'
-                              ? 'Signup points (per raid)'
-                              : 'Signup % of attendance (decimal)'}
-                          </Label>
-                          <Input
-                            variant="pill"
-                            type="number"
-                            min="0"
-                            max="1"
-                            step="0.05"
-                            value={settings.signup_weight}
-                            onChange={(e) => setSettings({ ...settings, signup_weight: Number(e.target.value) })}
-                            disabled={settings.attendance_type !== 'points-per-raid' && !settings.use_signups}
-                            className="bg-background-elevated"
-                          />
-                          <p className="text-muted-foreground text-[11px] mt-1">
-                            {settings.attendance_type === 'points-per-raid'
-                              ? `Signup: ${settings.signup_weight} pts, Attend: ${(1 - settings.signup_weight).toFixed(2)} pts per raid`
-                              : 'Portion of attendance bonus from signups'}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
+                        {/* Trial System */}
+                        <div className="space-y-4 pt-2 border-t border-border">
+                          <p className="text-[13px] font-medium text-foreground pt-2">Trial system</p>
+                          <p className="text-muted-foreground text-[12px] -mt-2">Apply a score penalty to members on trial status until promoted to full member.</p>
 
-                    {/* Attendance Bonus Configuration */}
-                    <div className="space-y-4">
-                      <div>
-                        <h4 className="text-[16px] font-semibold text-foreground flex items-center gap-2">
-                          <HugeiconsIcon icon={Award01Icon} size={18} className="text-muted-foreground" />
-                          {settings.attendance_type === 'points-per-raid'
-                            ? 'Attendance points cap'
-                            : settings.attendance_type === 'linear'
-                            ? 'Maximum attendance bonus'
-                            : 'Attendance bonus tiers'}
-                        </h4>
-                        <p className="text-muted-foreground text-[13px]">
-                          {settings.attendance_type === 'points-per-raid'
-                            ? `Maximum total attendance points. With ${settings.rolling_attendance_weeks} weeks × 2 raids = ${settings.rolling_attendance_weeks * 2} max possible points.`
-                            : settings.attendance_type === 'linear'
-                            ? 'Maximum bonus at 100% attendance.'
-                            : 'Configure bonus points for different attendance thresholds.'}
-                        </p>
-                      </div>
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <Label className="block mb-2">Enable trial penalty</Label>
+                              <Select
+                                variant="pill"
+                                value={settings.trial_penalty_enabled ? 'yes' : 'no'}
+                                onChange={(e) => setSettings({ ...settings, trial_penalty_enabled: e.target.value === 'yes' })}
+                                className="bg-background-elevated"
+                              >
+                                <option value="no">No</option>
+                                <option value="yes">Yes</option>
+                              </Select>
+                            </div>
 
-                      <div className="bg-background-elevated border border-border-strong p-4 rounded-xl space-y-3">
-                        {settings.attendance_type === 'points-per-raid' ? (
-                          /* Points-per-raid: just show max cap */
-                          <div className="w-1/3">
-                            <Label size="sm" className="block text-muted-foreground mb-1">Max points cap</Label>
-                            <Input
-                              variant="pill"
-                              size="sm"
-                              type="number"
-                              value={settings.max_attendance_bonus}
-                              onChange={(e) => setSettings({ ...settings, max_attendance_bonus: Number(e.target.value) })}
-                              placeholder="Points"
-                              className="bg-background-elevated"
-                            />
-                            <p className="text-muted-foreground text-[11px] mt-1">
-                              Set to {settings.rolling_attendance_weeks * 2} for no cap
-                            </p>
-                          </div>
-                        ) : settings.attendance_type === 'linear' ? (
-                          /* Linear: show max bonus only */
-                          <div className="w-1/3">
-                            <Label size="sm" className="block text-muted-foreground mb-1">Max bonus</Label>
-                            <Input
-                              variant="pill"
-                              size="sm"
-                              type="number"
-                              value={settings.max_attendance_bonus}
-                              onChange={(e) => setSettings({ ...settings, max_attendance_bonus: Number(e.target.value) })}
-                              placeholder="Points"
-                              className="bg-background-elevated"
-                            />
-                          </div>
-                        ) : (
-                          /* Breakpoint: show all tiers */
-                          <div className="grid grid-cols-3 gap-3">
                             <div>
-                              <Label size="sm" className="block text-muted-foreground mb-1">Max attendance</Label>
-                              <div className="flex gap-2">
-                                <Input
-                                  variant="pill"
-                                  size="sm"
-                                  type="number"
-                                  value={settings.max_attendance_bonus}
-                                  onChange={(e) => setSettings({ ...settings, max_attendance_bonus: Number(e.target.value) })}
-                                  placeholder="Points"
-                                  className="bg-background-elevated"
-                                />
-                                <Input
-                                  variant="pill"
-                                  size="sm"
-                                  type="number"
-                                  step="0.1"
-                                  value={settings.max_attendance_threshold}
-                                  onChange={(e) => setSettings({ ...settings, max_attendance_threshold: Number(e.target.value) })}
-                                  placeholder="Threshold"
-                                  className="bg-background-elevated"
-                                />
-                              </div>
+                              <Label className="block mb-2">Trial penalty value</Label>
+                              <Input
+                                variant="pill"
+                                type="number"
+                                step="0.5"
+                                value={settings.trial_penalty_value}
+                                onChange={(e) => setSettings({ ...settings, trial_penalty_value: Number(e.target.value) })}
+                                disabled={!settings.trial_penalty_enabled}
+                                className="bg-background-elevated"
+                              />
+                              <p className="text-muted-foreground text-[11px] mt-1">Negative value reduces trial member scores</p>
                             </div>
+                          </div>
+
+                          <div>
+                            <Label className="block mb-2">New members start as trial</Label>
+                            <Select
+                              variant="pill"
+                              value={settings.new_members_start_as_trial ? 'yes' : 'no'}
+                              onChange={(e) => setSettings({ ...settings, new_members_start_as_trial: e.target.value === 'yes' })}
+                              className="bg-background-elevated"
+                            >
+                              <option value="no">No</option>
+                              <option value="yes">Yes</option>
+                            </Select>
+                            <p className="text-muted-foreground text-[11px] mt-1">When enabled, new members joining the guild will automatically be set to trial status</p>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-4">
                             <div>
-                              <Label size="sm" className="block text-muted-foreground mb-1">Middle attendance</Label>
-                              <div className="flex gap-2">
-                                <Input
-                                  variant="pill"
-                                  size="sm"
-                                  type="number"
-                                  value={settings.middle_attendance_bonus}
-                                  onChange={(e) => setSettings({ ...settings, middle_attendance_bonus: Number(e.target.value) })}
-                                  placeholder="Points"
-                                  className="bg-background-elevated"
-                                />
-                                <Input
-                                  variant="pill"
-                                  size="sm"
-                                  type="number"
-                                  step="0.1"
-                                  value={settings.middle_attendance_threshold}
-                                  onChange={(e) => setSettings({ ...settings, middle_attendance_threshold: Number(e.target.value) })}
-                                  placeholder="Threshold"
-                                  className="bg-background-elevated"
-                                />
-                              </div>
+                              <Label className="block mb-2">Auto-promote trials</Label>
+                              <Select
+                                variant="pill"
+                                value={settings.trial_auto_promote_enabled ? 'yes' : 'no'}
+                                onChange={(e) => setSettings({ ...settings, trial_auto_promote_enabled: e.target.value === 'yes' })}
+                                className="bg-background-elevated"
+                              >
+                                <option value="no">No</option>
+                                <option value="yes">Yes</option>
+                              </Select>
                             </div>
+
                             <div>
-                              <Label size="sm" className="block text-muted-foreground mb-1">Bottom attendance</Label>
-                              <div className="flex gap-2">
-                                <Input
-                                  variant="pill"
-                                  size="sm"
-                                  type="number"
-                                  value={settings.bottom_attendance_bonus}
-                                  onChange={(e) => setSettings({ ...settings, bottom_attendance_bonus: Number(e.target.value) })}
-                                  placeholder="Points"
-                                  className="bg-background-elevated"
-                                />
-                                <Input
-                                  variant="pill"
-                                  size="sm"
-                                  type="number"
-                                  step="0.1"
-                                  value={settings.bottom_attendance_threshold}
-                                  onChange={(e) => setSettings({ ...settings, bottom_attendance_threshold: Number(e.target.value) })}
-                                  placeholder="Threshold"
-                                  className="bg-background-elevated"
+                              <Label className="block mb-2">Weeks until promotion</Label>
+                              <Input
+                                variant="pill"
+                                type="number"
+                                min="1"
+                                max="52"
+                                value={settings.trial_auto_promote_weeks}
+                                onChange={(e) => setSettings({ ...settings, trial_auto_promote_weeks: Number(e.target.value) })}
+                                disabled={!settings.trial_auto_promote_enabled}
+                                className="bg-background-elevated"
                               />
                             </div>
                           </div>
                         </div>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Attendance Penalties */}
-                    <div className="space-y-4">
-                      <div>
-                        <h4 className="text-[16px] font-semibold text-foreground flex items-center gap-2">
-                          <HugeiconsIcon icon={AlertCircleIcon} size={18} className="text-muted-foreground" />
-                          Attendance penalties
-                        </h4>
-                        <p className="text-muted-foreground text-[13px]">Set penalties for partial attendance.</p>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <Label className="block mb-2">Late show / leave early penalty</Label>
-                          <Select
-                            variant="pill"
-                            value={settings.late_early_penalty_enabled ? 'yes' : 'no'}
-                            onChange={(e) => setSettings({ ...settings, late_early_penalty_enabled: e.target.value === 'yes' })}
-                            className="bg-background-elevated"
-                          >
-                            <option value="yes">Yes</option>
-                            <option value="no">No</option>
-                          </Select>
-                        </div>
-
-                        <div>
-                          <Label className="block mb-2">Penalty value</Label>
-                          <Input
-                            variant="pill"
-                            type="number"
-                            step="0.05"
-                            value={settings.late_early_penalty_value}
-                            onChange={(e) => setSettings({ ...settings, late_early_penalty_value: Number(e.target.value) })}
-                            disabled={!settings.late_early_penalty_enabled}
-                            className="bg-background-elevated"
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* New Member Policy */}
-                    <div className="space-y-4">
-                      <div>
-                        <h4 className="text-[16px] font-semibold text-foreground flex items-center gap-2">
-                          <HugeiconsIcon icon={UserAdd01Icon} size={18} className="text-muted-foreground" />
-                          New member policy
-                        </h4>
-                        <p className="text-muted-foreground text-[13px]">Control how new members are treated for loot eligibility.</p>
-                      </div>
-
-                      <div className="space-y-3">
-                        <label className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${settings.new_member_mode === 'raw' ? 'border-accent bg-accent/5' : 'border-border hover:border-border-strong'}`}>
-                          <input
-                            type="radio"
-                            name="new_member_mode"
-                            value="raw"
-                            checked={settings.new_member_mode === 'raw'}
-                            onChange={() => setSettings({ ...settings, new_member_mode: 'raw' })}
-                            className="mt-1"
-                          />
-                          <div>
-                            <div className="font-medium text-foreground">Raw attendance</div>
-                            <div className="text-muted-foreground text-[13px]">Score calculated against full rolling window. New members naturally have lower priority until they&apos;ve attended enough raids.</div>
-                          </div>
-                        </label>
-
-                        <label className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${settings.new_member_mode === 'fair' ? 'border-accent bg-accent/5' : 'border-border hover:border-border-strong'}`}>
-                          <input
-                            type="radio"
-                            name="new_member_mode"
-                            value="fair"
-                            checked={settings.new_member_mode === 'fair'}
-                            onChange={() => setSettings({ ...settings, new_member_mode: 'fair' })}
-                            className="mt-1"
-                          />
-                          <div>
-                            <div className="font-medium text-foreground">Fair attendance</div>
-                            <div className="text-muted-foreground text-[13px]">Score only counts raids since member joined guild. New members can compete equally if they&apos;re consistent.</div>
-                          </div>
-                        </label>
-
-                        <label className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${settings.new_member_mode === 'minimum_gate' ? 'border-accent bg-accent/5' : 'border-border hover:border-border-strong'}`}>
-                          <input
-                            type="radio"
-                            name="new_member_mode"
-                            value="minimum_gate"
-                            checked={settings.new_member_mode === 'minimum_gate'}
-                            onChange={() => setSettings({ ...settings, new_member_mode: 'minimum_gate' })}
-                            className="mt-1"
-                          />
-                          <div>
-                            <div className="font-medium text-foreground">Minimum raids required</div>
-                            <div className="text-muted-foreground text-[13px]">Members must attend a minimum number of raids before becoming eligible for loot. Uses fair attendance calculation once eligible.</div>
-                          </div>
-                        </label>
-
-                        {settings.new_member_mode === 'minimum_gate' && (
-                          <div className="ml-7 mt-2">
-                            <Label className="block mb-2">Minimum raids before eligible</Label>
-                            <Input
-                              variant="pill"
-                              type="number"
-                              min="1"
-                              max="20"
-                              value={settings.minimum_raid_days}
-                              onChange={(e) => setSettings({ ...settings, minimum_raid_days: Number(e.target.value) })}
-                              className="bg-background-elevated w-24"
-                            />
-                            <p className="text-muted-foreground text-[12px] mt-1">Members must attend this many raids before they can receive loot.</p>
-                          </div>
-                        )}
-                      </div>
-                    </div>
+                      </CardContent>
+                    </Card>
 
                     {/* Bad Luck Prevention */}
-                    <div className="space-y-4">
-                      <div>
-                        <h4 className="text-[16px] font-semibold text-foreground flex items-center gap-2">
+                    <Card variant="unified">
+                      <CardHeader>
+                        <CardTitle className="text-[15px] font-semibold flex items-center gap-2">
                           <HugeiconsIcon icon={DiceIcon} size={18} className="text-muted-foreground" />
                           Bad luck prevention
-                        </h4>
-                        <p className="text-muted-foreground text-[13px]">Provide bonus points to raiders who experience bad RNG luck. Rewards players who see their desired items drop but lose the roll, or who generously pass on items to help others progress.</p>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-4">
+                        </CardTitle>
+                        <CardDescription>Provide bonus points to raiders who experience bad RNG luck. Rewards players who see their desired items drop but lose the roll, or who generously pass on items to help others progress.</CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div className="grid grid-cols-2 gap-4">
                         <div>
                           <Label className="block mb-2">Bonus for seeing item but not receiving</Label>
                           <Select
@@ -2207,18 +2267,20 @@ export default function AdminLootItems() {
                             className="bg-background-elevated"
                           />
                         </div>
-                      </div>
-                    </div>
+                        </div>
+                      </CardContent>
+                    </Card>
 
                     {/* Rank, Role, Class Bonuses */}
-                    <div className="space-y-4">
-                      <div>
-                        <h4 className="text-[16px] font-semibold text-foreground flex items-center gap-2">
+                    <Card variant="unified">
+                      <CardHeader>
+                        <CardTitle className="text-[15px] font-semibold flex items-center gap-2">
                           <HugeiconsIcon icon={Medal01Icon} size={18} className="text-muted-foreground" />
                           Rank, role and class bonuses
-                        </h4>
-                        <p className="text-muted-foreground text-[13px]">Fine-tune priority systems to value guild rank, raid roles, class needs, or individual contributions.</p>
-                      </div>
+                        </CardTitle>
+                        <CardDescription>Fine-tune priority systems to value guild rank, raid roles, class needs, or individual contributions.</CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
 
                       <div>
                         <Label className="block mb-2">Guild ranks give bonuses (positive or negative)</Label>
@@ -2285,6 +2347,7 @@ export default function AdminLootItems() {
                             <option value="no">No</option>
                             <option value="yes">Yes</option>
                           </Select>
+                          <p className="text-muted-foreground text-[11px] mt-1">Boost priority for the intended role when an item has a role tag (e.g., Tank gear)</p>
                         </div>
 
                         <div>
@@ -2298,6 +2361,7 @@ export default function AdminLootItems() {
                             <option value="no">No</option>
                             <option value="yes">Yes</option>
                           </Select>
+                          <p className="text-muted-foreground text-[11px] mt-1">Boost priority for specific classes when an item has a class tag</p>
                         </div>
                       </div>
 
@@ -2313,6 +2377,7 @@ export default function AdminLootItems() {
                             <option value="no">No</option>
                             <option value="yes">Yes</option>
                           </Select>
+                          <p className="text-muted-foreground text-[11px] mt-1">Give certain raid roles (Tank, Healer, DPS) a global score bonus</p>
                         </div>
 
                         <div>
@@ -2326,6 +2391,7 @@ export default function AdminLootItems() {
                             <option value="no">No</option>
                             <option value="yes">Yes</option>
                           </Select>
+                          <p className="text-muted-foreground text-[11px] mt-1">Allow individual raiders to have custom score modifiers</p>
                         </div>
                       </div>
 
@@ -2340,136 +2406,72 @@ export default function AdminLootItems() {
                           <option value="no">No</option>
                           <option value="yes">Yes</option>
                         </Select>
+                        <p className="text-muted-foreground text-[11px] mt-1">Allow boosting a specific raider&apos;s priority on a specific item</p>
                       </div>
+                      </CardContent>
+                    </Card>
 
-                    <div className="grid grid-cols-3 gap-4">
-                      <div>
-                        <Label className="block mb-2">Donation bonuses</Label>
-                        <Select
-                          variant="pill"
-                          value={settings.donation_bonuses_enabled ? 'yes' : 'no'}
-                          onChange={(e) => setSettings({ ...settings, donation_bonuses_enabled: e.target.value === 'yes' })}
-                          className="bg-background-elevated"
-                        >
-                          <option value="no">No</option>
-                          <option value="yes">Yes</option>
-                        </Select>
-                      </div>
+                    {/* Donations */}
+                    <Card variant="unified">
+                      <CardHeader>
+                        <CardTitle className="text-[15px] font-semibold flex items-center gap-2">
+                          <HugeiconsIcon icon={GiftIcon} size={18} className="text-muted-foreground" />
+                          Donations
+                        </CardTitle>
+                        <CardDescription>Reward members who donate gold, materials, or consumables to the guild bank.</CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="grid grid-cols-3 gap-4">
+                          <div>
+                            <Label className="block mb-2">Enable donation bonuses</Label>
+                            <Select
+                              variant="pill"
+                              value={settings.donation_bonuses_enabled ? 'yes' : 'no'}
+                              onChange={(e) => setSettings({ ...settings, donation_bonuses_enabled: e.target.value === 'yes' })}
+                              className="bg-background-elevated"
+                            >
+                              <option value="no">No</option>
+                              <option value="yes">Yes</option>
+                            </Select>
+                          </div>
 
-                      <div>
-                        <Label className="block mb-2">Cap on donation points</Label>
-                        <Select
-                          variant="pill"
-                          value={settings.donation_cap_enabled ? 'yes' : 'no'}
-                          onChange={(e) => setSettings({ ...settings, donation_cap_enabled: e.target.value === 'yes' })}
-                          className="bg-background-elevated"
-                        >
-                          <option value="no">No</option>
-                          <option value="yes">Yes</option>
-                        </Select>
-                      </div>
+                          <div>
+                            <Label className="block mb-2">Cap on donation points</Label>
+                            <Select
+                              variant="pill"
+                              value={settings.donation_cap_enabled ? 'yes' : 'no'}
+                              onChange={(e) => setSettings({ ...settings, donation_cap_enabled: e.target.value === 'yes' })}
+                              className="bg-background-elevated"
+                              disabled={!settings.donation_bonuses_enabled}
+                            >
+                              <option value="no">No</option>
+                              <option value="yes">Yes</option>
+                            </Select>
+                            <p className="text-muted-foreground text-[11px] mt-1">Limit max donation bonus to prevent pay-to-win</p>
+                          </div>
 
-                      <div>
-                        <Label className="block mb-2">Donation bonus type</Label>
-                        <Select
-                          variant="pill"
-                          value={settings.donation_bonus_type}
-                          onChange={(e) => setSettings({ ...settings, donation_bonus_type: e.target.value as 'permanent' | 'rolling' | 'hard-reset' })}
-                          className="bg-background-elevated"
-                        >
-                          <option value="permanent">Permanent</option>
-                          <option value="rolling">Rolling</option>
-                          <option value="hard-reset">Hard reset</option>
-                        </Select>
-                      </div>
-                    </div>
-                    </div>
-
-                    {/* Trial System */}
-                    <div className="space-y-4">
-                      <div>
-                        <h4 className="text-[16px] font-semibold text-foreground flex items-center gap-2">
-                          <HugeiconsIcon icon={Clock01Icon} size={18} className="text-muted-foreground" />
-                          Trial system
-                        </h4>
-                        <p className="text-muted-foreground text-[13px]">Apply a score penalty to new members on trial status until they are promoted to full member.</p>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <Label className="block mb-2">Enable trial penalty</Label>
-                          <Select
-                            variant="pill"
-                            value={settings.trial_penalty_enabled ? 'yes' : 'no'}
-                            onChange={(e) => setSettings({ ...settings, trial_penalty_enabled: e.target.value === 'yes' })}
-                            className="bg-background-elevated"
-                          >
-                            <option value="no">No</option>
-                            <option value="yes">Yes</option>
-                          </Select>
+                          <div>
+                            <Label className="block mb-2">Donation bonus type</Label>
+                            <Select
+                              variant="pill"
+                              value={settings.donation_bonus_type}
+                              onChange={(e) => setSettings({ ...settings, donation_bonus_type: e.target.value as 'permanent' | 'rolling' | 'hard-reset' })}
+                              className="bg-background-elevated"
+                              disabled={!settings.donation_bonuses_enabled}
+                            >
+                              <option value="permanent">Permanent</option>
+                              <option value="rolling">Rolling</option>
+                              <option value="hard-reset">Hard reset</option>
+                            </Select>
+                            <p className="text-muted-foreground text-[11px] mt-1">How donation points persist over time</p>
+                          </div>
                         </div>
+                      </CardContent>
+                    </Card>
 
-                        <div>
-                          <Label className="block mb-2">Trial penalty value</Label>
-                          <Input
-                            variant="pill"
-                            type="number"
-                            step="0.5"
-                            value={settings.trial_penalty_value}
-                            onChange={(e) => setSettings({ ...settings, trial_penalty_value: Number(e.target.value) })}
-                            disabled={!settings.trial_penalty_enabled}
-                            className="bg-background-elevated"
-                          />
-                          <p className="text-muted-foreground text-[11px] mt-1">Negative value reduces trial member scores</p>
-                        </div>
-                      </div>
-
-                      <div>
-                        <Label className="block mb-2">New members start as trial</Label>
-                        <Select
-                          variant="pill"
-                          value={settings.new_members_start_as_trial ? 'yes' : 'no'}
-                          onChange={(e) => setSettings({ ...settings, new_members_start_as_trial: e.target.value === 'yes' })}
-                          className="bg-background-elevated"
-                        >
-                          <option value="no">No</option>
-                          <option value="yes">Yes</option>
-                        </Select>
-                        <p className="text-muted-foreground text-[11px] mt-1">When enabled, new members joining the guild will automatically be set to trial status</p>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <Label className="block mb-2">Auto-promote trials</Label>
-                          <Select
-                            variant="pill"
-                            value={settings.trial_auto_promote_enabled ? 'yes' : 'no'}
-                            onChange={(e) => setSettings({ ...settings, trial_auto_promote_enabled: e.target.value === 'yes' })}
-                            className="bg-background-elevated"
-                          >
-                            <option value="no">No</option>
-                            <option value="yes">Yes</option>
-                          </Select>
-                        </div>
-
-                        <div>
-                          <Label className="block mb-2">Weeks until promotion</Label>
-                          <Input
-                            variant="pill"
-                            type="number"
-                            min="1"
-                            max="52"
-                            value={settings.trial_auto_promote_weeks}
-                            onChange={(e) => setSettings({ ...settings, trial_auto_promote_weeks: Number(e.target.value) })}
-                            disabled={!settings.trial_auto_promote_enabled}
-                            className="bg-background-elevated"
-                          />
-                        </div>
-                      </div>
                   </div>
-                </div>
-              )}
-            </div>
+                )}
+              </div>
         </ModalBody>
         <ModalFooter>
           <Button variant="secondary" onClick={() => setShowSettingsModal(false)} disabled={savingSettings}>

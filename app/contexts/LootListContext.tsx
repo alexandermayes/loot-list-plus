@@ -6,14 +6,15 @@ import { createClient } from '@/utils/supabase/client'
 import { useGuildContext } from './GuildContext'
 import { useNotification } from './NotificationContext'
 import {
-  useLootItems,
   useRaidTiers,
-  useLootSubmission,
-  useTierSubmissionStatuses,
+  usePhaseLootItems,
+  usePhaseSubmission,
+  usePhaseSubmissionStatuses,
   useCharacterGear,
-  invalidateTierSubmissionStatuses,
+  invalidatePhaseSubmissionStatuses,
   invalidateCharacterGear,
   type LootItem,
+  type PhaseLootItem,
   type LootSubmission,
   type RaidTier,
   type EquippedItem
@@ -67,13 +68,15 @@ interface BisImportResult {
 
 interface LootListContextType {
   // Data
-  lootItems: LootItem[]
+  lootItems: PhaseLootItem[]
   submission: LootSubmission | null
   rankings: Record<string, string>
   raidTiers: RaidTier[]
-  tierSubmissionStatuses: Record<string, { status: string; submitted_at: string | null }>
-  selectedTierId: string | null
-  selectedTierDeadline: string | null
+  phaseTiers: RaidTier[] // Tiers within the current phase (for grouping items by raid)
+  phases: number[] // Available phases for the expansion
+  phaseSubmissionStatuses: Record<number, { status: string; submitted_at: string | null }>
+  selectedPhase: number | null
+  phaseDeadline: string | null
   enforceSlotRestrictions: boolean
   equippedItems: EquippedItem[]
   equippedWowheadIds: Set<number>
@@ -91,7 +94,7 @@ interface LootListContextType {
   originalStatus: string | null
 
   // Actions
-  setSelectedTierId: (tierId: string) => void
+  setSelectedPhase: (phase: number) => void
   handleItemSelect: (rank: number, slot: number, itemId: string) => void
   clearAllRankings: () => void
   saveSubmission: (submit: boolean) => Promise<void>
@@ -116,10 +119,11 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
   } = useGuildContext()
 
   // Local state
-  const [selectedTierId, setSelectedTierIdState] = useState<string | null>(() => {
+  const [selectedPhase, setSelectedPhaseState] = useState<number | null>(() => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search)
-      return params.get('tier')
+      const phaseParam = params.get('phase')
+      return phaseParam ? parseInt(phaseParam) : null
     }
     return null
   })
@@ -130,6 +134,7 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
   const [isSaving, setIsSaving] = useState(false)
   const [isImportingBis, setIsImportingBis] = useState(false)
   const [initialLoadComplete, setInitialLoadComplete] = useState(false)
+  const [expansionPhaseDeadlines, setExpansionPhaseDeadlines] = useState<Record<string, string | null>>({})
 
   // Refs for stable callbacks and preventing save loops
   // Using refs instead of state for autosave tracking to prevent re-renders that close dropdowns
@@ -173,24 +178,43 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
     return [...tiersData.tiers].sort((a, b) => getRaidTierOrder(a.name) - getRaidTierOrder(b.name))
   }, [tiersData?.tiers])
 
-  // Get tier IDs for status fetching
-  const tierIds = useMemo(() => sortedTiers.map(t => t.id), [sortedTiers])
+  // Get unique phases from tiers (sorted)
+  const phases = useMemo(() => {
+    const phaseSet = new Set<number>()
+    sortedTiers.forEach(t => {
+      if (t.phase !== undefined && t.phase !== null) {
+        phaseSet.add(t.phase)
+      }
+    })
+    return Array.from(phaseSet).sort((a, b) => a - b)
+  }, [sortedTiers])
 
-  const { data: statusesData } = useTierSubmissionStatuses(
+  // Get tiers within the selected phase (for grouping items by raid)
+  const phaseTiers = useMemo(() => {
+    if (selectedPhase === null) return []
+    return sortedTiers.filter(t => t.phase === selectedPhase)
+  }, [sortedTiers, selectedPhase])
+
+  // Fetch phase submission statuses
+  const { data: statusesData } = usePhaseSubmissionStatuses(
     activeCharacter?.id || null,
     activeGuild?.id || null,
-    tierIds
+    targetExpansionId || null
   )
 
-  const { data: itemsData, isLoading: itemsLoading } = useLootItems(
-    selectedTierId,
+  // Fetch loot items for the selected phase
+  const { data: itemsData, isLoading: itemsLoading } = usePhaseLootItems(
+    targetExpansionId || null,
+    selectedPhase,
     activeCharacter?.id || null,
     activeGuild?.id || null
   )
 
-  const { data: submissionData, isLoading: submissionLoading, mutate: mutateSubmission } = useLootSubmission(
+  // Fetch submission for the selected phase
+  const { data: submissionData, isLoading: submissionLoading, mutate: mutateSubmission } = usePhaseSubmission(
     activeCharacter?.id || null,
-    selectedTierId,
+    targetExpansionId || null,
+    selectedPhase,
     activeGuild?.id || null
   )
 
@@ -222,24 +246,26 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
     submissionDataRef.current = submissionData || null
   }, [submissionData])
 
-  // Set initial tier from URL or first available
+  // Set initial phase from URL or first available
   useEffect(() => {
-    if (guildLoading || sortedTiers.length === 0) return
+    if (guildLoading || phases.length === 0) return
 
-    const tierIdFromUrl = searchParams.get('tier')
+    const phaseFromUrl = searchParams.get('phase')
+    const parsedPhase = phaseFromUrl ? parseInt(phaseFromUrl) : null
 
-    if (tierIdFromUrl && sortedTiers.some(t => t.id === tierIdFromUrl)) {
-      if (selectedTierId !== tierIdFromUrl) {
-        setSelectedTierIdState(tierIdFromUrl)
+    if (parsedPhase !== null && phases.includes(parsedPhase)) {
+      if (selectedPhase !== parsedPhase) {
+        setSelectedPhaseState(parsedPhase)
       }
-    } else if (!selectedTierId || !sortedTiers.some(t => t.id === selectedTierId)) {
-      const defaultTier = sortedTiers.find(t => t.is_active) || sortedTiers[0]
-      setSelectedTierIdState(defaultTier.id)
+    } else if (selectedPhase === null || !phases.includes(selectedPhase)) {
+      // Default to first available phase
+      const defaultPhase = phases[0]
+      setSelectedPhaseState(defaultPhase)
       const params = new URLSearchParams(searchParams.toString())
-      params.set('tier', defaultTier.id)
+      params.set('phase', defaultPhase.toString())
       router.replace(`?${params.toString()}`, { scroll: false })
     }
-  }, [guildLoading, sortedTiers, searchParams, selectedTierId, router])
+  }, [guildLoading, phases, searchParams, selectedPhase, router])
 
   // Load guild settings for slot restrictions
   useEffect(() => {
@@ -255,6 +281,29 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
     }
     loadSettings()
   }, [activeGuild?.id, supabase])
+
+  // Load phase deadlines from expansion
+  useEffect(() => {
+    if (!targetExpansionId) {
+      setExpansionPhaseDeadlines({})
+      return
+    }
+
+    const loadPhaseDeadlines = async () => {
+      const { data } = await supabase
+        .from('expansions')
+        .select('phase_deadlines')
+        .eq('id', targetExpansionId)
+        .single()
+
+      if (data?.phase_deadlines) {
+        setExpansionPhaseDeadlines(data.phase_deadlines as Record<string, string | null>)
+      } else {
+        setExpansionPhaseDeadlines({})
+      }
+    }
+    loadPhaseDeadlines()
+  }, [targetExpansionId, supabase])
 
   // Sync rankings from submission data
   // Only overwrite local rankings on initial load or tier switch, not after our own saves
@@ -311,15 +360,15 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
     }
   }, [itemsLoading, itemsData?.items])
 
-  // Helper to change tier and update URL
-  const setSelectedTierId = useCallback((tierId: string) => {
-    setSelectedTierIdState(tierId)
+  // Helper to change phase and update URL
+  const setSelectedPhase = useCallback((phase: number) => {
+    setSelectedPhaseState(phase)
     setInitialLoadComplete(false)
-    // Reset local changes flag so fresh data loads for new tier
+    // Reset local changes flag so fresh data loads for new phase
     localChangesRef.current = false
     lastSavedRankingsRef.current = null
     const params = new URLSearchParams(searchParams.toString())
-    params.set('tier', tierId)
+    params.set('phase', phase.toString())
     window.history.replaceState(null, '', `?${params.toString()}`)
   }, [searchParams])
 
@@ -348,15 +397,16 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
 
   // Import BIS items into rankings
   const importBisItems = useCallback(async (): Promise<BisImportResult> => {
-    if (!activeCharacter || !selectedTierId) {
-      return { success: false, importedCount: 0, error: 'No character or tier selected' }
+    if (!activeCharacter || selectedPhase === null || !targetExpansionId || !activeGuild?.id) {
+      return { success: false, importedCount: 0, error: 'No character or phase selected' }
     }
 
     setIsImportingBis(true)
 
     try {
+      // Fetch BIS items for all tiers in the phase
       const response = await fetch(
-        `/api/bis-items?tier_id=${selectedTierId}&character_id=${activeCharacter.id}`
+        `/api/bis-items?expansion_id=${targetExpansionId}&phase=${selectedPhase}&character_id=${activeCharacter.id}&guild_id=${activeGuild.id}`
       )
       const data = await response.json()
 
@@ -469,7 +519,7 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setIsImportingBis(false)
     }
-  }, [activeCharacter, selectedTierId, itemsData?.items, equippedWowheadIds])
+  }, [activeCharacter, selectedPhase, targetExpansionId, activeGuild?.id, itemsData?.items, equippedWowheadIds])
 
   // Check for changes
   const hasChanges = useMemo(() => {
@@ -481,7 +531,7 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
 
   // Auto-save function - uses refs to avoid dependency cycles
   const doAutoSave = useCallback(async () => {
-    if (!activeCharacter || !selectedTierId || !activeGuild?.id) return
+    if (!activeCharacter || selectedPhase === null || !targetExpansionId || !activeGuild?.id) return
     if (savingInProgressRef.current) return
 
     // Enforce minimum 2 second interval between saves
@@ -530,39 +580,51 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
 
       let submissionId = currentSubmissionData?.submission?.id
 
-      if (!submissionId) {
-        // Create new submission
-        const { data: newSub, error: subError } = await supabase
-          .from('loot_submissions')
-          .insert({
-            character_id: activeCharacter.id,
-            guild_id: activeGuild.id,
-            raid_tier_id: selectedTierId,
-            status: targetStatus,
-            submitted_at: null
-          })
-          .select()
-          .single()
+      // Use upsert to handle race conditions and unique constraint
+      console.log('[doAutoSave] Upserting submission:', {
+        character_id: activeCharacter.id,
+        guild_id: activeGuild.id,
+        expansion_id: targetExpansionId,
+        phase: selectedPhase,
+        status: targetStatus,
+        existingId: submissionId
+      })
 
-        if (subError) throw new Error(subError.message)
-        submissionId = newSub.id
-      } else {
-        // Update existing
-        const { error: updateError } = await supabase
-          .from('loot_submissions')
-          .update({ status: targetStatus, updated_at: new Date().toISOString() })
-          .eq('id', submissionId)
+      const { data: upsertedSub, error: subError } = await supabase
+        .from('loot_submissions')
+        .upsert({
+          ...(submissionId ? { id: submissionId } : {}),
+          character_id: activeCharacter.id,
+          guild_id: activeGuild.id,
+          expansion_id: targetExpansionId,
+          phase: selectedPhase,
+          status: targetStatus,
+          updated_at: new Date().toISOString()
+        }, {
+          onConflict: 'character_id,guild_id,expansion_id,phase'
+        })
+        .select()
+        .single()
 
-        if (updateError) throw new Error(updateError.message)
+      if (subError) {
+        console.error('[doAutoSave] Failed to upsert submission:', subError)
+        throw new Error(subError.message)
       }
+      console.log('[doAutoSave] Upserted submission:', upsertedSub.id)
+      submissionId = upsertedSub.id
 
       // Delete existing rankings
-      const { error: deleteError } = await supabase
+      console.log('[doAutoSave] Deleting existing items for submission:', submissionId)
+      const { error: deleteError, count: deleteCount } = await supabase
         .from('loot_submission_items')
         .delete()
         .eq('submission_id', submissionId)
 
-      if (deleteError) throw new Error(`Failed to delete items: ${deleteError.message}`)
+      if (deleteError) {
+        console.error('[doAutoSave] Failed to delete items:', deleteError)
+        throw new Error(`Failed to delete items: ${deleteError.message}`)
+      }
+      console.log('[doAutoSave] Deleted items, rows affected:', deleteCount)
 
       // Insert new rankings
       const rankingsToInsert = Object.entries(currentRankings).map(([key, loot_item_id]) => {
@@ -576,11 +638,30 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
       })
 
       if (rankingsToInsert.length > 0) {
-        const { error: itemsError } = await supabase
+        console.log('[doAutoSave] Upserting items:', rankingsToInsert.length, 'for submission:', submissionId)
+        const { data: upsertedItems, error: itemsError } = await supabase
           .from('loot_submission_items')
           .upsert(rankingsToInsert, { onConflict: 'submission_id,rank,slot', ignoreDuplicates: false })
+          .select()
 
-        if (itemsError) throw new Error(itemsError.message)
+        if (itemsError) {
+          console.error('[doAutoSave] Failed to upsert items:', itemsError)
+          throw new Error(itemsError.message)
+        }
+        console.log('[doAutoSave] Items upserted:', upsertedItems?.length)
+
+        // Verify items were actually saved
+        const { data: verifyItems, error: verifyError } = await supabase
+          .from('loot_submission_items')
+          .select('id, submission_id, rank, slot')
+          .eq('submission_id', submissionId)
+
+        console.log('[doAutoSave] Verification:', {
+          requestedCount: rankingsToInsert.length,
+          upsertedCount: upsertedItems?.length,
+          verifiedCount: verifyItems?.length,
+          verifyError
+        })
       }
 
       // Mark this state as saved (store object copy for value comparison)
@@ -599,7 +680,7 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
     } finally {
       savingInProgressRef.current = false
     }
-  }, [activeCharacter, selectedTierId, activeGuild?.id, supabase, showNotification])
+  }, [activeCharacter, selectedPhase, targetExpansionId, activeGuild?.id, supabase, showNotification])
 
   // Keep autoSave ref up to date
   const autoSaveRef = useRef(doAutoSave)
@@ -610,7 +691,14 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
   // Auto-save when rankings change (debounced)
   // Uses ref to avoid re-triggering when callback is recreated
   useEffect(() => {
-    if (!activeCharacter || !selectedTierId || !activeGuild?.id || !initialLoadComplete) {
+    if (!activeCharacter || selectedPhase === null || !targetExpansionId || !activeGuild?.id || !initialLoadComplete) {
+      console.log('[autoSave effect] Skipping - missing required data:', {
+        hasCharacter: !!activeCharacter,
+        selectedPhase,
+        targetExpansionId,
+        hasGuild: !!activeGuild?.id,
+        initialLoadComplete
+      })
       return
     }
 
@@ -622,6 +710,7 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
       const matchesLastSaved = currentKeys.length === savedKeys.length &&
           currentKeys.every(key => rankings[key] === lastSaved[key])
       if (matchesLastSaved) {
+        console.log('[autoSave effect] Skipping - matches last saved')
         return
       }
     }
@@ -633,10 +722,13 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
     const matchesInitial = currentKeys.length === initialKeys.length &&
         currentKeys.every(key => rankings[key] === initial[key])
     if (matchesInitial) {
+      console.log('[autoSave effect] Skipping - matches initial state')
       return
     }
 
+    console.log('[autoSave effect] Changes detected, starting 1s debounce timer')
     const timer = setTimeout(() => {
+      console.log('[autoSave effect] Timer fired, calling doAutoSave')
       autoSaveRef.current()
     }, 1000) // 1 second debounce
 
@@ -644,52 +736,63 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
       clearTimeout(timer)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rankings, activeCharacter?.id, selectedTierId, activeGuild?.id, initialLoadComplete])
+  }, [rankings, activeCharacter?.id, selectedPhase, targetExpansionId, activeGuild?.id, initialLoadComplete])
 
   // Save submission (manual save/submit)
   const saveSubmission = useCallback(async (submit: boolean) => {
-    if (!activeCharacter || !selectedTierId || !activeGuild?.id) return
+    if (!activeCharacter || selectedPhase === null || !targetExpansionId || !activeGuild?.id) return
 
     setIsSaving(true)
 
     try {
       let submissionId = submissionData?.submission?.id
 
-      if (!submissionId) {
-        const { data: newSub, error: subError } = await supabase
-          .from('loot_submissions')
-          .insert({
-            character_id: activeCharacter.id,
-            guild_id: activeGuild.id,
-            raid_tier_id: selectedTierId,
-            status: submit ? 'pending' : 'draft',
-            submitted_at: submit ? new Date().toISOString() : null
-          })
-          .select()
-          .single()
+      // Use upsert to handle race conditions and unique constraint
+      const newStatus = submit ? 'pending' : 'draft'
+      console.log('[saveSubmission] Upserting submission:', {
+        character_id: activeCharacter.id,
+        guild_id: activeGuild.id,
+        expansion_id: targetExpansionId,
+        phase: selectedPhase,
+        status: newStatus,
+        existingId: submissionId
+      })
 
-        if (subError) throw subError
-        submissionId = newSub.id
-      } else {
-        const { error: updateError } = await supabase
-          .from('loot_submissions')
-          .update({
-            status: submit ? 'pending' : 'draft',
-            submitted_at: submit ? new Date().toISOString() : submissionData?.submission?.submitted_at,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', submissionId)
+      const { data: upsertedSub, error: subError } = await supabase
+        .from('loot_submissions')
+        .upsert({
+          ...(submissionId ? { id: submissionId } : {}),
+          character_id: activeCharacter.id,
+          guild_id: activeGuild.id,
+          expansion_id: targetExpansionId,
+          phase: selectedPhase,
+          status: newStatus,
+          submitted_at: submit ? new Date().toISOString() : (submissionData?.submission?.submitted_at || null),
+          updated_at: new Date().toISOString()
+        }, {
+          onConflict: 'character_id,guild_id,expansion_id,phase'
+        })
+        .select()
+        .single()
 
-        if (updateError) throw updateError
+      if (subError) {
+        console.error('[saveSubmission] Failed to upsert submission:', subError)
+        throw subError
       }
+      console.log('[saveSubmission] Upserted submission:', upsertedSub.id)
+      submissionId = upsertedSub.id
 
       // Delete and re-insert rankings
+      console.log('[saveSubmission] Deleting existing items for submission:', submissionId)
       const { error: deleteError } = await supabase
         .from('loot_submission_items')
         .delete()
         .eq('submission_id', submissionId)
 
-      if (deleteError) throw new Error(`Failed to delete items: ${deleteError.message}`)
+      if (deleteError) {
+        console.error('[saveSubmission] Failed to delete items:', deleteError)
+        throw new Error(`Failed to delete items: ${deleteError.message}`)
+      }
 
       const rankingsToInsert = Object.entries(rankings).map(([key, loot_item_id]) => {
         const [rankStr, slotStr] = key.split('-')
@@ -702,11 +805,34 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
       })
 
       if (rankingsToInsert.length > 0) {
-        const { error: itemsError } = await supabase
+        console.log('[saveSubmission] Inserting items:', rankingsToInsert.length, 'for submission:', submissionId)
+        const { data: insertedItems, error: itemsError } = await supabase
           .from('loot_submission_items')
           .insert(rankingsToInsert)
+          .select()
 
-        if (itemsError) throw itemsError
+        if (itemsError) {
+          console.error('[saveSubmission] Failed to insert items:', itemsError)
+          throw itemsError
+        }
+        console.log('[saveSubmission] Items inserted successfully:', insertedItems?.length)
+
+        // Verify items were actually saved by querying them back
+        const { data: verifyItems, error: verifyError } = await supabase
+          .from('loot_submission_items')
+          .select('id, submission_id, rank, slot, loot_item_id')
+          .eq('submission_id', submissionId)
+
+        console.log('[saveSubmission] Verification query:', {
+          requestedCount: rankingsToInsert.length,
+          insertedCount: insertedItems?.length,
+          verifiedCount: verifyItems?.length,
+          verifyError
+        })
+
+        if (verifyItems && verifyItems.length !== rankingsToInsert.length) {
+          console.warn('[saveSubmission] Item count mismatch! Some items may not have been saved.')
+        }
       }
 
       showNotification('success', submit ? 'Loot list submitted for review' : 'Draft saved')
@@ -720,16 +846,16 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
       lastSavedRef.current = new Date()
       localChangesRef.current = false
 
-      // Only invalidate tier statuses (for the tab badges) - this is lightweight
-      if (activeCharacter && activeGuild && tierIds.length > 0) {
-        invalidateTierSubmissionStatuses(activeCharacter.id, activeGuild.id, tierIds)
+      // Invalidate phase statuses (for the tab badges)
+      if (activeCharacter && activeGuild && targetExpansionId) {
+        invalidatePhaseSubmissionStatuses(activeCharacter.id, activeGuild.id, targetExpansionId)
       }
     } catch (error) {
       showNotification('error', error instanceof Error ? error.message : 'Couldn\'t save. Try again.')
     }
 
     setIsSaving(false)
-  }, [activeCharacter, selectedTierId, activeGuild, rankings, submissionData, supabase, showNotification, tierIds])
+  }, [activeCharacter, selectedPhase, targetExpansionId, activeGuild, rankings, submissionData, supabase, showNotification])
 
   // Refresh data - clears local changes to allow fresh data to load
   const refreshData = useCallback(() => {
@@ -746,25 +872,56 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
     }
   }, [activeCharacter?.id, mutateGear])
 
-  // Get selected tier deadline
-  const selectedTierDeadline = useMemo(() => {
-    const tier = sortedTiers.find(t => t.id === selectedTierId)
+  // Get phase deadline - prefer expansion's phase_deadlines, fall back to tier deadline
+  const phaseDeadline = useMemo(() => {
+    if (selectedPhase === null) return null
+    // First check expansion's phase_deadlines
+    const phaseKey = selectedPhase.toString()
+    if (expansionPhaseDeadlines[phaseKey]) {
+      return expansionPhaseDeadlines[phaseKey]
+    }
+    // Fall back to deadline from the first tier in the phase
+    const tier = phaseTiers[0]
     return tier?.submission_deadline || null
-  }, [sortedTiers, selectedTierId])
+  }, [selectedPhase, expansionPhaseDeadlines, phaseTiers])
 
   // Loading states
   const isLoading = guildLoading || tiersLoading
   const isContentLoading = itemsLoading || submissionLoading
 
+  // Filter loot items to only include those from active tiers
+  // This is a client-side safety filter in case the API cache is stale
+  const filteredLootItems = useMemo(() => {
+    const items = itemsData?.items || []
+    if (items.length === 0) return items
+
+    // Get IDs of active tiers in the current phase
+    const activeTierIds = new Set(
+      phaseTiers
+        .filter(t => t.is_guild_active !== false)
+        .map(t => t.id)
+    )
+
+    // If no active tiers info, return all items (fallback)
+    if (activeTierIds.size === 0 && phaseTiers.length > 0) {
+      return items
+    }
+
+    // Filter items to only those from active tiers
+    return items.filter(item => activeTierIds.has(item.raid_tier_id))
+  }, [itemsData?.items, phaseTiers])
+
   const value: LootListContextType = {
     // Data
-    lootItems: itemsData?.items || [],
+    lootItems: filteredLootItems,
     submission: submissionData?.submission || null,
     rankings,
     raidTiers: sortedTiers,
-    tierSubmissionStatuses: statusesData?.statuses || {},
-    selectedTierId,
-    selectedTierDeadline,
+    phaseTiers,
+    phases,
+    phaseSubmissionStatuses: statusesData?.phaseStatuses || {},
+    selectedPhase,
+    phaseDeadline,
     enforceSlotRestrictions,
     equippedItems: gearData?.items || [],
     equippedWowheadIds,
@@ -782,7 +939,7 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
     originalStatus,
 
     // Actions
-    setSelectedTierId,
+    setSelectedPhase,
     handleItemSelect,
     clearAllRankings,
     saveSubmission,
@@ -807,4 +964,4 @@ export function useLootList() {
 }
 
 // Re-export types for external use
-export type { LootItem }
+export type { LootItem, PhaseLootItem }

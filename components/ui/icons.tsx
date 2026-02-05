@@ -2,7 +2,7 @@
 
 import { HugeiconsIcon } from '@hugeicons/react'
 import type { IconSvgElement } from '@hugeicons/react'
-import { StarIcon, CheckmarkCircle02Icon, Clock01Icon, AlertCircleIcon, CancelCircleIcon } from '@hugeicons-pro/core-solid-rounded'
+import { StarIcon, CheckmarkCircle01Icon, Clock01Icon, AlertCircleIcon, Cancel01Icon } from '@hugeicons/core-free-icons'
 
 // Re-export HugeiconsIcon for convenience
 export { HugeiconsIcon }
@@ -28,7 +28,7 @@ export function Icon({ icon, size = 20, className, color = 'currentColor', strok
   )
 }
 
-// Filled/Solid indicator icons using HugeIcons Pro
+// Status indicator icons using HugeIcons
 interface FilledIconProps {
   className?: string
   size?: number
@@ -48,7 +48,7 @@ export function StarFilledIcon({ className = '', size = 14 }: FilledIconProps) {
 export function CheckFilledIcon({ className = '', size = 14 }: FilledIconProps) {
   return (
     <HugeiconsIcon
-      icon={CheckmarkCircle02Icon}
+      icon={CheckmarkCircle01Icon}
       size={size}
       color="currentColor"
       className={className}
@@ -81,7 +81,7 @@ export function AlertFilledIcon({ className = '', size = 14 }: FilledIconProps) 
 export function CancelFilledIcon({ className = '', size = 14 }: FilledIconProps) {
   return (
     <HugeiconsIcon
-      icon={CancelCircleIcon}
+      icon={Cancel01Icon}
       size={size}
       color="currentColor"
       className={className}

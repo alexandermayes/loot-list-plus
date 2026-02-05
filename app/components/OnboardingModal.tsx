@@ -185,9 +185,9 @@ export default function OnboardingModal({ open, onClose }: OnboardingModalProps)
                         initial="initial"
                         animate="animate"
                         transition={{ delay: 0.1 }}
-                        className="w-12 h-12 rounded-full bg-blue-500/20 flex items-center justify-center flex-shrink-0"
+                        className="w-12 h-12 rounded-full bg-accent/20 flex items-center justify-center flex-shrink-0"
                       >
-                        <HugeiconsIcon icon={CheckListIcon} size={24} className="text-blue-500" />
+                        <HugeiconsIcon icon={CheckListIcon} size={24} className="text-accent" />
                       </motion.div>
                       <div>
                         <h3 className="text-foreground font-semibold text-[16px] mb-2">Getting started</h3>
@@ -209,9 +209,9 @@ export default function OnboardingModal({ open, onClose }: OnboardingModalProps)
                         variants={iconVariants}
                         initial="initial"
                         animate="animate"
-                        className="w-12 h-12 rounded-full bg-purple-500/20 flex items-center justify-center flex-shrink-0"
+                        className="w-12 h-12 rounded-full bg-accent/20 flex items-center justify-center flex-shrink-0"
                       >
-                        <HugeiconsIcon icon={Shield01Icon} size={24} className="text-purple-500" />
+                        <HugeiconsIcon icon={Shield01Icon} size={24} className="text-accent" />
                       </motion.div>
                       <div>
                         <h3 className="text-foreground font-semibold text-[16px] mb-2">How ranking works</h3>
@@ -250,9 +250,9 @@ export default function OnboardingModal({ open, onClose }: OnboardingModalProps)
                         variants={iconVariants}
                         initial="initial"
                         animate="animate"
-                        className="w-12 h-12 rounded-full bg-green-500/20 flex items-center justify-center flex-shrink-0"
+                        className="w-12 h-12 rounded-full bg-success/20 flex items-center justify-center flex-shrink-0"
                       >
-                        <HugeiconsIcon icon={SparklesIcon} size={24} className="text-green-500" />
+                        <HugeiconsIcon icon={SparklesIcon} size={24} className="text-success" />
                       </motion.div>
                       <div>
                         <h3 className="text-foreground font-semibold text-[16px] mb-2">Why use it?</h3>

@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
 
-const MIN_WIDTH = 150
+const MIN_WIDTH = 200
 const MAX_WIDTH = 260
 const DEFAULT_WIDTH = 220
 const STORAGE_KEY = 'sidebar-width'

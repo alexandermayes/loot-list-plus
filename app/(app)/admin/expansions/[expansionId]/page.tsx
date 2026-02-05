@@ -134,7 +134,7 @@ function PhaseCard({
             CURRENT
           </span>
         ) : isUnlocked ? (
-          <span className="px-2 py-0.5 text-[10px] font-semibold rounded-full bg-green-500/20 text-green-400 border border-green-500/40">
+          <span className="px-2 py-0.5 text-[10px] font-semibold rounded-full bg-success/20 text-success border border-success/40">
             UNLOCKED
           </span>
         ) : (
@@ -299,11 +299,11 @@ export default function ExpansionDetailPage({ params }: { params: Promise<{ expa
         console.error('Error loading raid tiers:', tiersError)
       } else {
         // Sort by progression order
-        const sortedTiers = (tiersData || []).map(tier => ({
+        const sortedTiers = (tiersData || []).map((tier: { id: string; name: string; phase: number | null; is_guild_active: boolean | null; master_sheet_visible: boolean | null }) => ({
           ...tier,
           is_guild_active: tier.is_guild_active ?? true,
           master_sheet_visible: tier.master_sheet_visible ?? true
-        })).sort((a, b) => {
+})).sort((a: RaidTier, b: RaidTier) => {
           return getRaidTierOrder(a.name) - getRaidTierOrder(b.name)
         })
         setRaidTiers(sortedTiers)

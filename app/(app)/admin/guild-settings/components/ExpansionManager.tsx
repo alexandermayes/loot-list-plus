@@ -173,7 +173,7 @@ export default function ExpansionManager() {
 
           tierInfoMap[exp.expansion_id] = {
             currentPhase: expData?.current_phase || null,
-            activeRaids: (tiersData || []).map(t => ({ name: t.name, phase: t.phase }))
+            activeRaids: (tiersData || []).map((t: { name: string; phase: number | null }) => ({ name: t.name, phase: t.phase }))
           }
         }
         setExpansionTierInfo(tierInfoMap)
@@ -519,9 +519,10 @@ export default function ExpansionManager() {
                           }}
                         >
                           {/* Accordion Header - clickable summary */}
-                          <button
+                          <Button
+                            variant="ghost"
                             onClick={() => toggleExpanded(exp.expansion_id)}
-                            className="w-full text-left p-4 rounded-xl transition-colors hover:bg-white/5"
+                            className="w-full text-left p-4 rounded-xl transition-colors hover:bg-white/5 h-auto"
                           >
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-2">
@@ -575,7 +576,7 @@ export default function ExpansionManager() {
                                 Started {new Date(exp.raid_start_date).toLocaleDateString()}
                               </p>
                             )}
-                          </button>
+                          </Button>
 
                           {/* Expanded Content */}
                           {isExpanded && schedule && (

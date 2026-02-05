@@ -547,13 +547,13 @@ export default function PriorityListTab() {
         </div>
         <div className="bg-background-elevated border border-border rounded-xl p-4">
           <p className="text-muted-foreground text-sm">With Priorities</p>
-          <p className="text-2xl font-bold text-green-400">
+          <p className="text-2xl font-bold text-success">
             {Object.keys(priorities).length}
           </p>
         </div>
         <div className="bg-background-elevated border border-border rounded-xl p-4">
           <p className="text-muted-foreground text-sm">No Priorities</p>
-          <p className="text-2xl font-bold text-yellow-400">
+          <p className="text-2xl font-bold text-warning">
             {filteredItems.length - Object.keys(priorities).filter(id =>
               filteredItems.some(item => item.id === id)
             ).length}
@@ -561,7 +561,7 @@ export default function PriorityListTab() {
         </div>
         <div className="bg-background-elevated border border-border rounded-xl p-4">
           <p className="text-muted-foreground text-sm">Guild Raiders</p>
-          <p className="text-2xl font-bold text-blue-400">{characters.length}</p>
+          <p className="text-2xl font-bold text-accent">{characters.length}</p>
         </div>
       </div>
 

@@ -5,6 +5,7 @@ import { ITEM_CLASSIFICATIONS } from '@/data/classic-wow-item-classifications'
 import { TBC_ITEM_CLASSIFICATIONS } from '@/data/tbc-item-classifications'
 import { CLASSIC_ITEM_ROLES } from '@/data/classic-item-roles'
 import { TBC_ITEM_ROLES } from '@/data/tbc-item-roles'
+import { EXPANSION_PHASES, getExpansionSlug } from '@/data/expansion-phases'
 
 /**
  * Expansion Seeding Service
@@ -23,6 +24,7 @@ export interface ExpansionDefinition {
 export interface RaidDefinition {
   name: string
   isActive: boolean
+  phase: number | null
   bosses: BossDefinition[]
 }
 
@@ -38,6 +40,21 @@ export interface LootItemDefinition {
 }
 
 /**
+ * Get the phase number for a raid based on expansion phases mapping
+ */
+function getRaidPhase(expansionSlug: string, raidName: string): number | null {
+  const phases = EXPANSION_PHASES[expansionSlug]
+  if (!phases) return null
+
+  for (const phase of phases) {
+    if (phase.raids.includes(raidName)) {
+      return phase.phase
+    }
+  }
+  return null
+}
+
+/**
  * Transform Classic WoW raid data into the format expected by the seeder
  */
 function transformClassicRaids(): RaidDefinition[] {
@@ -45,6 +62,7 @@ function transformClassicRaids(): RaidDefinition[] {
     name: raid.name,
     // Mark the first raid (Molten Core) as active by default
     isActive: index === 0,
+    phase: getRaidPhase('classic', raid.name),
     bosses: raid.bosses.map(boss => ({
       name: boss.name,
       lootItems: boss.items.map(item => ({
@@ -64,6 +82,7 @@ function transformTBCRaids(): RaidDefinition[] {
     name: raid.name,
     // Mark the first raid (Karazhan) as active by default
     isActive: index === 0,
+    phase: getRaidPhase('tbc', raid.name),
     bosses: raid.bosses.map(boss => ({
       name: boss.name,
       lootItems: boss.items.map(item => ({
@@ -253,7 +272,8 @@ export async function seedExpansionForGuild(
           expansion_id: expansion.id,
           name: raid.name,
           is_active: raid.isActive, // Keep for backward compatibility
-          master_sheet_visible: true // All tiers visible by default
+          master_sheet_visible: true, // All tiers visible by default
+          phase: raid.phase // Phase number for grouping raids by content phase
         })
         .select()
         .single()

@@ -241,8 +241,8 @@ export default function LootList() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'approved': return 'bg-success/10 border-success text-foreground'
-      case 'pending': return 'bg-yellow-500/10 border-yellow-500 text-foreground'
-      case 'needs_revision': return 'bg-orange-500/10 border-orange-500 text-foreground'
+      case 'pending': return 'bg-warning/10 border-warning text-foreground'
+      case 'needs_revision': return 'bg-destructive/10 border-destructive text-foreground'
       case 'rejected': return 'bg-destructive/10 border-destructive text-foreground'
       default: return 'bg-background-elevated border-border text-muted-foreground'
     }
@@ -470,6 +470,23 @@ export default function LootList() {
               </p>
             </div>
             <div className="flex items-center gap-3">
+              {/* Expansion Selector - Dropdown */}
+              {guildExpansions.length > 1 && (
+                <Select
+                  variant="rounded"
+                  value={viewingExpansionId || guildExpansions.find(e => e.is_current)?.expansion_id || ''}
+                  onChange={(e) => {
+                    const expansion = guildExpansions.find(exp => exp.expansion_id === e.target.value)
+                    setViewingExpansion(expansion?.is_current ? null : e.target.value)
+                  }}
+                >
+                  {guildExpansions.map((expansion) => (
+                    <option key={expansion.expansion_id} value={expansion.expansion_id}>
+                      {expansion.expansion_name}{expansion.is_current ? ' ★' : ''}
+                    </option>
+                  ))}
+                </Select>
+              )}
               {/* How to Rank Button */}
               <Button variant="secondary" onClick={() => setShowInstructionsModal(true)}>
                 <HugeiconsIcon icon={InformationCircleIcon} size={18} />
@@ -478,51 +495,6 @@ export default function LootList() {
             </div>
           </div>
         </div>
-
-        {/* Expansion Selector */}
-        {guildExpansions.length > 1 && (
-          <div className="px-4 sm:px-6 lg:px-8 py-1.5 bg-background">
-            {/* Mobile: Dropdown selector */}
-            <div className="sm:hidden">
-              <Select
-                variant="rounded"
-                size="sm"
-                value={viewingExpansionId || guildExpansions.find(e => e.is_current)?.expansion_id || ''}
-                onChange={(e) => {
-                  const expansion = guildExpansions.find(exp => exp.expansion_id === e.target.value)
-                  setViewingExpansion(expansion?.is_current ? null : e.target.value)
-                }}
-              >
-                {guildExpansions.map((expansion) => (
-                  <option key={expansion.expansion_id} value={expansion.expansion_id}>
-                    {expansion.expansion_name}{expansion.is_current ? ' ★' : ''}
-                  </option>
-                ))}
-              </Select>
-            </div>
-            {/* Desktop: Horizontal scroll tabs */}
-            <div className="hidden sm:flex gap-2 overflow-x-auto">
-              {guildExpansions.map((expansion) => {
-                const isViewing = viewingExpansionId === expansion.expansion_id
-                const isCurrent = expansion.is_current && !viewingExpansionId
-
-                return (
-                  <Button
-                    key={expansion.expansion_id}
-                    variant={isViewing || isCurrent ? 'accent-subtle' : 'secondary'}
-                    onClick={() => setViewingExpansion(expansion.is_current ? null : expansion.expansion_id)}
-                    className="px-5 py-2.5 rounded-[40px] whitespace-nowrap text-[13px] font-medium"
-                  >
-                    <div className="flex items-center gap-2">
-                      <span>{expansion.expansion_name}</span>
-                      {expansion.is_current && <StarFilledIcon size={14} />}
-                    </div>
-                  </Button>
-                )
-              })}
-            </div>
-          </div>
-        )}
 
         {/* Phase Tabs - Sticky */}
         {isLoading ? (
@@ -566,19 +538,22 @@ export default function LootList() {
                     const hasSubmission = !!status
                     const statusColor = hasSubmission
                       ? status.status === 'approved'
-                        ? 'text-green-400'
+                        ? 'text-success'
                         : status.status === 'pending'
-                        ? 'text-yellow-400'
+                        ? 'text-warning'
                         : status.status === 'needs_revision'
-                        ? 'text-orange-400'
+                        ? 'text-warning'
                         : status.status === 'rejected'
-                        ? 'text-red-400'
-                        : 'text-gray-400'
+                        ? 'text-destructive'
+                        : 'text-muted-foreground'
                       : ''
                     const tiersInPhase = raidTiers.filter(t => t.phase === phase)
                     const activeTiersInPhase = tiersInPhase.filter(t => t.is_guild_active !== false)
                     const hasActiveTier = tiersInPhase.some(t => t.is_guild_active)
                     const raidNames = activeTiersInPhase.map(t => getRaidShorthand(t.name)).join(', ')
+
+                    // Get the first active tier for the icon, or first tier if none active
+                    const iconTier = activeTiersInPhase[0] || tiersInPhase[0]
 
                     return (
                       <Button
@@ -593,6 +568,13 @@ export default function LootList() {
                               ? 'bg-accent/30 text-accent'
                               : 'bg-foreground/10 text-foreground-secondary'
                           }`}>P{phase}</span>
+                          {iconTier && (
+                            <img
+                              src={getRaidIcon(iconTier.name)}
+                              alt=""
+                              className="w-5 h-5 rounded border border-border/50"
+                            />
+                          )}
                           <span>{raidNames}</span>
                           {hasActiveTier && <StarFilledIcon size={14} />}
                           {hasSubmission && (
@@ -741,20 +723,21 @@ export default function LootList() {
                   <div className="flex flex-col items-end gap-2">
                     <Button
                       variant="destructive"
+                      size="sm"
                       onClick={() => toggleErrorExpanded(bracketName)}
-                      className="flex items-center gap-2 bg-red-500 hover:bg-red-600 border-2 border-red-300 px-3 py-1.5 rounded-lg font-bold text-foreground shadow-lg animate-pulse"
+                      className="flex items-center gap-2"
                     >
-                      <span className="text-sm whitespace-nowrap">
+                      <span className="whitespace-nowrap">
                         {validation.violations.length} {validation.violations.length === 1 ? 'Error' : 'Errors'}
                       </span>
                       <span className="text-xs">{isExpanded ? '▼' : '▶'}</span>
                     </Button>
                     {isExpanded && (
-                      <div className="bg-red-600 border-2 border-red-400 rounded-lg px-3 py-2 shadow-lg max-w-md">
-                        <ul className="space-y-1 text-sm font-semibold text-foreground">
+                      <div className="bg-destructive/10 border border-destructive/30 rounded-lg px-3 py-2 max-w-md">
+                        <ul className="space-y-1 text-sm text-foreground">
                           {validation.violations.map((violation, idx) => (
                             <li key={idx} className="flex items-center gap-2">
-                              <span className="text-base">⚠️</span>
+                              <span className="text-destructive">•</span>
                               <span>{violation}</span>
                             </li>
                           ))}
@@ -830,20 +813,21 @@ export default function LootList() {
                   <div className="flex flex-col items-end gap-2">
                     <Button
                       variant="destructive"
+                      size="sm"
                       onClick={() => toggleErrorExpanded(bracketName)}
-                      className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 border-2 border-orange-300 px-3 py-1.5 rounded-lg font-bold text-foreground shadow-lg animate-pulse"
+                      className="flex items-center gap-2"
                     >
-                      <span className="text-sm whitespace-nowrap">
+                      <span className="whitespace-nowrap">
                         {validation.violations.length} {validation.violations.length === 1 ? 'Error' : 'Errors'}
                       </span>
                       <span className="text-xs">{isExpanded ? '▼' : '▶'}</span>
                     </Button>
                     {isExpanded && (
-                      <div className="bg-orange-600 border-2 border-orange-400 rounded-lg px-3 py-2 shadow-lg max-w-md">
-                        <ul className="space-y-1 text-sm font-semibold text-foreground">
+                      <div className="bg-destructive/10 border border-destructive/30 rounded-lg px-3 py-2 max-w-md">
+                        <ul className="space-y-1 text-sm text-foreground">
                           {validation.violations.map((violation, idx) => (
                             <li key={idx} className="flex items-center gap-2">
-                              <span className="text-base">⚠️</span>
+                              <span className="text-destructive">•</span>
                               <span>{violation}</span>
                             </li>
                           ))}
@@ -919,20 +903,21 @@ export default function LootList() {
                   <div className="flex flex-col items-end gap-2">
                     <Button
                       variant="destructive"
+                      size="sm"
                       onClick={() => toggleErrorExpanded(bracketName)}
-                      className="flex items-center gap-2 bg-yellow-500 hover:bg-yellow-600 border-2 border-yellow-300 px-3 py-1.5 rounded-lg font-bold text-foreground shadow-lg animate-pulse"
+                      className="flex items-center gap-2"
                     >
-                      <span className="text-sm whitespace-nowrap">
+                      <span className="whitespace-nowrap">
                         {validation.violations.length} {validation.violations.length === 1 ? 'Error' : 'Errors'}
                       </span>
                       <span className="text-xs">{isExpanded ? '▼' : '▶'}</span>
                     </Button>
                     {isExpanded && (
-                      <div className="bg-yellow-600 border-2 border-yellow-400 rounded-lg px-3 py-2 shadow-lg max-w-md">
-                        <ul className="space-y-1 text-sm font-semibold text-foreground">
+                      <div className="bg-destructive/10 border border-destructive/30 rounded-lg px-3 py-2 max-w-md">
+                        <ul className="space-y-1 text-sm text-foreground">
                           {validation.violations.map((violation, idx) => (
                             <li key={idx} className="flex items-center gap-2">
-                              <span className="text-base">⚠️</span>
+                              <span className="text-destructive">•</span>
                               <span>{violation}</span>
                             </li>
                           ))}
@@ -1008,20 +993,21 @@ export default function LootList() {
                   <div className="flex flex-col items-end gap-2">
                     <Button
                       variant="destructive"
+                      size="sm"
                       onClick={() => toggleErrorExpanded(bracketName)}
-                      className="flex items-center gap-2 bg-amber-500 hover:bg-amber-600 border-2 border-amber-300 px-3 py-1.5 rounded-lg font-bold text-foreground shadow-lg animate-pulse"
+                      className="flex items-center gap-2"
                     >
-                      <span className="text-sm whitespace-nowrap">
+                      <span className="whitespace-nowrap">
                         {validation.violations.length} {validation.violations.length === 1 ? 'Error' : 'Errors'}
                       </span>
                       <span className="text-xs">{isExpanded ? '▼' : '▶'}</span>
                     </Button>
                     {isExpanded && (
-                      <div className="bg-amber-600 border-2 border-amber-400 rounded-lg px-3 py-2 shadow-lg max-w-md">
-                        <ul className="space-y-1 text-sm font-semibold text-foreground">
+                      <div className="bg-destructive/10 border border-destructive/30 rounded-lg px-3 py-2 max-w-md">
+                        <ul className="space-y-1 text-sm text-foreground">
                           {validation.violations.map((violation, idx) => (
                             <li key={idx} className="flex items-center gap-2">
-                              <span className="text-base">⚠️</span>
+                              <span className="text-destructive">•</span>
                               <span>{violation}</span>
                             </li>
                           ))}

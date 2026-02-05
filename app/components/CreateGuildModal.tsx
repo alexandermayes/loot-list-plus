@@ -432,7 +432,7 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
             </div>
           ) : !discordVerified ? (
             <div className="text-center py-8">
-              <div className="w-16 h-16 bg-yellow-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+              <div className="w-16 h-16 bg-warning/20 rounded-full flex items-center justify-center mx-auto mb-4">
                 <span className="text-3xl">⚠️</span>
               </div>
               <h4 className="text-[18px] font-bold text-foreground mb-2">Discord verification required</h4>
@@ -744,7 +744,7 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
                         <img
                           src="https://wow.zamimg.com/images/wow/icons/large/inv_bannerpvp_02.jpg"
                           alt="Alliance"
-                          className={`w-6 h-6 rounded border border-border/50 shadow-sm relative z-10 transition-transform duration-300 ${faction === 'Alliance' ? 'scale-110' : 'group-hover:scale-110'}`}
+                          className="w-6 h-6 rounded border border-border/50 shadow-sm relative z-10"
                         />
                         <span className={`font-medium text-[13px] relative z-10 transition-colors duration-300 ${faction === 'Alliance' ? 'text-blue-400' : 'text-foreground group-hover:text-blue-400'}`}>
                           Alliance
@@ -762,7 +762,7 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
                         <img
                           src="https://wow.zamimg.com/images/wow/icons/large/inv_bannerpvp_01.jpg"
                           alt="Horde"
-                          className={`w-6 h-6 rounded border border-border/50 shadow-sm relative z-10 transition-transform duration-300 ${faction === 'Horde' ? 'scale-110' : 'group-hover:scale-110'}`}
+                          className="w-6 h-6 rounded border border-border/50 shadow-sm relative z-10"
                         />
                         <span className={`font-medium text-[13px] relative z-10 transition-colors duration-300 ${faction === 'Horde' ? 'text-red-400' : 'text-foreground group-hover:text-red-400'}`}>
                           Horde

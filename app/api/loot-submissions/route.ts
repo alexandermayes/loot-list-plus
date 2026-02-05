@@ -13,10 +13,15 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams
     const characterId = searchParams.get('character_id')
     const tierId = searchParams.get('tier_id')
+    const phase = searchParams.get('phase')
+    const expansionId = searchParams.get('expansion_id')
     const guildId = searchParams.get('guild_id')
 
-    if (!characterId || !tierId || !guildId) {
-      return NextResponse.json({ error: 'character_id, tier_id, and guild_id are required' }, { status: 400 })
+    if (!characterId || !guildId) {
+      return NextResponse.json({ error: 'character_id and guild_id are required' }, { status: 400 })
+    }
+    if (!tierId && (!phase || !expansionId)) {
+      return NextResponse.json({ error: 'tier_id or (phase and expansion_id) are required' }, { status: 400 })
     }
 
     const supabase = createServiceRoleClient()
@@ -32,14 +37,22 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Not authorized for this character' }, { status: 403 })
     }
 
-    // Get submission
-    const { data: submission, error: subError } = await supabase
+    // Get submission - either by tier_id (legacy) or by phase+expansion_id (new)
+    let submissionQuery = supabase
       .from('loot_submissions')
-      .select('id, status, submitted_at, review_notes')
+      .select('id, status, submitted_at, review_notes, expansion_id, phase')
       .eq('character_id', characterId)
-      .eq('raid_tier_id', tierId)
       .eq('guild_id', guildId)
-      .maybeSingle()
+
+    if (phase && expansionId) {
+      submissionQuery = submissionQuery
+        .eq('expansion_id', expansionId)
+        .eq('phase', parseInt(phase))
+    } else if (tierId) {
+      submissionQuery = submissionQuery.eq('raid_tier_id', tierId)
+    }
+
+    const { data: submission, error: subError } = await submissionQuery.maybeSingle()
 
     if (subError) {
       console.error('Error fetching submission:', subError)

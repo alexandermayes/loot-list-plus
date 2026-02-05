@@ -29,11 +29,17 @@ export async function GET(request: NextRequest) {
 
     const searchParams = request.nextUrl.searchParams
     const tierId = searchParams.get('tier_id')
+    const phase = searchParams.get('phase')
+    const expansionId = searchParams.get('expansion_id')
     const characterId = searchParams.get('character_id')
     const guildId = searchParams.get('guild_id')
 
-    if (!tierId || !characterId) {
-      return NextResponse.json({ error: 'tier_id and character_id are required' }, { status: 400 })
+    // Support both tier_id (legacy) and phase+expansion_id (new)
+    if (!characterId) {
+      return NextResponse.json({ error: 'character_id is required' }, { status: 400 })
+    }
+    if (!tierId && (!phase || !expansionId)) {
+      return NextResponse.json({ error: 'tier_id or (phase and expansion_id) are required' }, { status: 400 })
     }
 
     const supabase = createServiceRoleClient()
@@ -54,16 +60,45 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Not authorized for this character' }, { status: 403 })
     }
 
+    // Get tier IDs to query - either single tier or all active tiers in phase
+    let tierIds: string[] = []
+
+    if (tierId) {
+      // Legacy single-tier query
+      tierIds = [tierId]
+    } else if (phase && expansionId && guildId) {
+      // Phase-based query - get all active tiers in this phase
+      // Note: is_guild_active can be null (treated as true/enabled by default) or explicitly true/false
+      const { data: phaseTiers, error: phaseTiersError } = await supabase
+        .from('raid_tiers')
+        .select('id')
+        .eq('expansion_id', expansionId)
+        .eq('phase', parseInt(phase))
+        .or('is_guild_active.eq.true,is_guild_active.is.null')
+
+      if (phaseTiersError) {
+        console.error('Error fetching phase tiers:', phaseTiersError)
+        return NextResponse.json({ error: 'Failed to fetch phase tiers' }, { status: 500 })
+      }
+
+      tierIds = phaseTiers?.map(t => t.id) || []
+
+      if (tierIds.length === 0) {
+        return NextResponse.json({ items: [] })
+      }
+    }
+
     // Fetch loot items with class/spec restrictions
     const { data: items, error: itemsError } = await supabase
       .from('loot_items')
       .select(`
         id, name, boss_name, item_slot, wowhead_id,
         classification, item_type, allocation_cost, is_available, roles,
-        armor_type, weapon_type,
-        loot_item_classes(class_id, spec_id, spec_type)
+        armor_type, weapon_type, raid_tier_id,
+        loot_item_classes(class_id, spec_id, spec_type),
+        raid_tiers(name)
       `)
-      .eq('raid_tier_id', tierId)
+      .in('raid_tier_id', tierIds)
       .eq('is_available', true)
       .order('id')
 
@@ -95,13 +130,13 @@ export async function GET(request: NextRequest) {
 
       if (!passesClassRestriction) return false
 
-      // Second, check token class restrictions (tokens are class-specific)
-      // This is a fallback safety check - loot_item_classes should already restrict tokens
-      if (className && isTokenSlot(item.item_slot)) {
-        if (!canClassUseToken(item.name, className)) {
+      // Check if this is a token - apply token class restrictions
+      if (isTokenSlot(item.item_slot)) {
+        // Tokens are rankable, but only by classes that can use them
+        if (className && !canClassUseToken(item.name, className)) {
           return false
         }
-        // Tokens don't need armor/weapon proficiency checks
+        // Skip armor/weapon proficiency checks for tokens
         return true
       }
 
@@ -155,18 +190,29 @@ export async function GET(request: NextRequest) {
     if (guildId && filteredItems.length > 0) {
       const itemIds = filteredItems.map(item => item.id)
 
-      // Query approved submissions from other characters in the guild for this tier
-      const { data: submissionItems } = await supabase
+      // Query approved submissions from other characters in the guild
+      // For phase-based queries, use expansion_id + phase; for tier queries use raid_tier_id
+      let query = supabase
         .from('loot_submission_items')
         .select(`
           loot_item_id,
-          loot_submissions!inner(character_id, status, guild_id, raid_tier_id)
+          loot_submissions!inner(character_id, status, guild_id, expansion_id, phase, raid_tier_id)
         `)
         .in('loot_item_id', itemIds)
-        .eq('loot_submissions.raid_tier_id', tierId)
         .eq('loot_submissions.guild_id', guildId)
         .eq('loot_submissions.status', 'approved')
         .neq('loot_submissions.character_id', characterId)
+
+      // Filter by phase or tier depending on query type
+      if (phase && expansionId) {
+        query = query
+          .eq('loot_submissions.expansion_id', expansionId)
+          .eq('loot_submissions.phase', parseInt(phase))
+      } else if (tierId) {
+        query = query.eq('loot_submissions.raid_tier_id', tierId)
+      }
+
+      const { data: submissionItems } = await query
 
       // Count unique characters per item
       if (submissionItems) {
@@ -188,11 +234,16 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Merge consensus counts into response
-    const itemsWithConsensus = filteredItems.map(item => ({
-      ...item,
-      consensus_count: consensusCounts[item.id] || 0
-    }))
+    // Merge consensus counts and raid tier name into response
+    const itemsWithConsensus = filteredItems.map(item => {
+      const raidTier = item.raid_tiers as { name: string } | { name: string }[] | null
+      const raidTierName = Array.isArray(raidTier) ? raidTier[0]?.name : raidTier?.name
+      return {
+        ...item,
+        raid_tier_name: raidTierName || null,
+        consensus_count: consensusCounts[item.id] || 0
+      }
+    })
 
     return NextResponse.json(
       { items: itemsWithConsensus },

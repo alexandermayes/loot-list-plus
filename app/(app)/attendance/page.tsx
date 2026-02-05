@@ -104,7 +104,7 @@ export default function AttendancePage() {
     return weekStart.toISOString().split('T')[0]
   }
 
-  // Calculate the most recent tracked week (the week just before current week)
+  // Calculate the most recent tracked week (the current week)
   const mostRecentTrackedWeek = useMemo(() => {
     // Use expansion's first raid day, fallback to guild settings
     const firstRaidDay = expansionRaidSchedule?.first_raid_day ?? guildSettings?.first_raid_day ?? 0
@@ -113,8 +113,6 @@ export default function AttendancePage() {
     const daysToSubtract = (currentDay - firstRaidDay + 7) % 7
     const currentWeekStartDate = new Date(today)
     currentWeekStartDate.setDate(currentWeekStartDate.getDate() - daysToSubtract)
-    // Go back one week to get the most recent completed/tracked week
-    currentWeekStartDate.setDate(currentWeekStartDate.getDate() - 7)
     return currentWeekStartDate.toISOString().split('T')[0]
   }, [expansionRaidSchedule, guildSettings])
 
@@ -131,7 +129,11 @@ export default function AttendancePage() {
       if (!grouped[weekStart]) {
         grouped[weekStart] = []
       }
-      grouped[weekStart].push(raid)
+      // Deduplicate: only add if this raid_date doesn't already exist in this week
+      const alreadyExists = grouped[weekStart].some(r => r.raid_date === raid.raid_date)
+      if (!alreadyExists) {
+        grouped[weekStart].push(raid)
+      }
     })
 
     // Sort weeks descending (most recent first) and raids within each week ascending
@@ -255,7 +257,7 @@ export default function AttendancePage() {
       setRoleModifier(modifier)
 
       // Calculate rolling attendance window
-      // The window is the X PREVIOUS completed weeks, NOT including the current week
+      // Include current week + X previous weeks
       const weeks = settingsData?.rolling_attendance_weeks || 4
       // Use expansion's first raid day, fallback to guild settings, then default to 0
       const firstRaidDay = expansionRaidDays?.first_raid_day ?? settingsData?.first_raid_day ?? 0
@@ -268,9 +270,8 @@ export default function AttendancePage() {
       currentWeekStartDate.setDate(currentWeekStartDate.getDate() - daysToSubtract)
       currentWeekStartDate.setHours(0, 0, 0, 0)
 
-      // Period ends at the start of current week (exclusive - last day of previous week)
-      const periodEnd = new Date(currentWeekStartDate)
-      periodEnd.setDate(periodEnd.getDate() - 1) // Last day of previous week
+      // Period ends at today (include current week)
+      const periodEnd = new Date(today)
 
       // Period starts X weeks before the current week
       const periodStart = new Date(currentWeekStartDate)
@@ -281,7 +282,18 @@ export default function AttendancePage() {
         ? new Date(Math.max(new Date(raidStartDate).getTime(), periodStart.getTime()))
         : periodStart
 
-      // Get raid events in the rolling window (previous X completed weeks only)
+      console.log('📊 [Attendance] Date range calculation:', {
+        today: today.toISOString().split('T')[0],
+        firstRaidDay,
+        currentWeekStart: currentWeekStartDate.toISOString().split('T')[0],
+        periodStart: periodStart.toISOString().split('T')[0],
+        periodEnd: periodEnd.toISOString().split('T')[0],
+        lowerBound: lowerBound.toISOString().split('T')[0],
+        weeks,
+        note: 'Current week INCLUDED through today'
+      })
+
+      // Get raid events in the rolling window (current week + previous X weeks)
       const { data: raidEventsData } = await supabase
         .from('raid_events')
         .select('id, raid_date, is_skipped, notes')
@@ -308,7 +320,36 @@ export default function AttendancePage() {
         return raidDays.includes(eventDate.getDay())
       })
 
-      setGuildRaidEvents(filteredRaidEvents)
+      // IMPORTANT: Deduplicate by raid_date to handle duplicate entries in database
+      // First, find which raid IDs have attendance records, so we prefer those
+      const filteredRaidIds = filteredRaidEvents.map(e => e.id)
+      const { data: existingAttendance } = await supabase
+        .from('attendance_records')
+        .select('raid_event_id')
+        .in('raid_event_id', filteredRaidIds)
+
+      const raidIdsWithAttendance = new Set(existingAttendance?.map(r => r.raid_event_id) || [])
+      console.log('📊 [Attendance] Raid IDs with existing attendance:', [...raidIdsWithAttendance])
+
+      // Deduplicate: prefer events that have attendance records
+      const deduplicatedRaidEvents = Array.from(
+        filteredRaidEvents.reduce((map, event) => {
+          const existing = map.get(event.raid_date)
+          if (!existing) {
+            // First event for this date - keep it
+            map.set(event.raid_date, event)
+          } else if (raidIdsWithAttendance.has(event.id) && !raidIdsWithAttendance.has(existing.id)) {
+            // This event has attendance but the existing one doesn't - prefer this one
+            map.set(event.raid_date, event)
+          }
+          return map
+        }, new Map<string, typeof filteredRaidEvents[0]>()).values()
+      )
+
+      console.log('📊 [Attendance] Query returned', raidEventsData?.length || 0, 'events, filtered to', filteredRaidEvents.length, 'matching raid days, deduplicated to', deduplicatedRaidEvents.length)
+      console.log('📊 [Attendance] Deduplicated raid events:', deduplicatedRaidEvents.map(e => ({ id: e.id, date: e.raid_date, hasAttendance: raidIdsWithAttendance.has(e.id) })))
+
+      setGuildRaidEvents(deduplicatedRaidEvents)
 
       // Get attendance records for personal view (use same tracked window)
       const { data: recordsData } = await supabase
@@ -334,9 +375,9 @@ export default function AttendancePage() {
         setAttendanceRecords(recordsData as any)
       }
 
-      // Calculate personal attendance score using filtered events
-      if (filteredRaidEvents.length > 0) {
-        const raidIds = filteredRaidEvents.map(r => r.id)
+      // Calculate personal attendance score using deduplicated events
+      if (deduplicatedRaidEvents.length > 0) {
+        const raidIds = deduplicatedRaidEvents.map(r => r.id)
 
         const { data: recentRecords } = await supabase
           .from('attendance_records')
@@ -345,13 +386,13 @@ export default function AttendancePage() {
           .in('raid_event_id', raidIds)
 
         if (recentRecords && recentRecords.length > 0) {
-          const score = calculateAttendanceScore(recentRecords, filteredRaidEvents.length, settingsData || {})
+          const score = calculateAttendanceScore(recentRecords, deduplicatedRaidEvents.length, settingsData || {})
           setAttendanceScore(score)
         }
       }
 
       // Load guild-wide attendance data
-      await loadGuildAttendance(activeCharData.active_guild_id, filteredRaidEvents, settingsData)
+      await loadGuildAttendance(activeCharData.active_guild_id, deduplicatedRaidEvents, settingsData)
 
       setLoading(false)
     }
@@ -361,11 +402,13 @@ export default function AttendancePage() {
 
   const loadGuildAttendance = async (guildId: string, raidEvents: RaidEvent[], settings: any) => {
     // Get all active guild members with approved loot submissions
+    // Include joined_at for new member fairness calculation
     const { data: membershipsData } = await supabase
       .from('character_guild_memberships')
       .select(`
         character_id,
         role,
+        joined_at,
         character:characters!inner (
           id,
           name,
@@ -398,6 +441,7 @@ export default function AttendancePage() {
 
     // Get all attendance records for these raid events
     const raidEventIds = raidEvents.map(r => r.id)
+
     const { data: allAttendance } = await supabase
       .from('attendance_records')
       .select('raid_event_id, character_id, signed_up, attended, no_call_no_show, was_late, was_benched')
@@ -424,14 +468,27 @@ export default function AttendancePage() {
       const char = m.character as any
       const charAttendance = attendanceByCharacter[m.character_id] || new Map()
 
-      // Get records for score calculation
-      const records = Array.from(charAttendance.values()).map(status => ({
-        signed_up: status.signed_up,
-        attended: status.attended,
-        no_call_no_show: status.no_call_no_show
-      }))
+      // New member policy: check how to handle new members
+      const newMemberMode = settings?.new_member_mode || 'raw'
+      const memberJoinDate = m.joined_at ? new Date(m.joined_at) : null
 
-      const score = calculateAttendanceScore(records, raidEvents.length, settings || {})
+      // For 'fair' and 'minimum_gate' modes, filter raids to only those after member's join date
+      const eligibleRaidEvents = (newMemberMode === 'fair' || newMemberMode === 'minimum_gate') && memberJoinDate
+        ? raidEvents.filter(r => new Date(r.raid_date + 'T00:00:00') >= memberJoinDate)
+        : raidEvents
+
+      const eligibleRaidIds = new Set(eligibleRaidEvents.map(r => r.id))
+
+      // Get records for score calculation (only for eligible raids)
+      const records = Array.from(charAttendance.entries())
+        .filter(([raidId]) => eligibleRaidIds.has(raidId))
+        .map(([, status]) => ({
+          signed_up: status.signed_up,
+          attended: status.attended,
+          no_call_no_show: status.no_call_no_show
+        }))
+
+      const score = calculateAttendanceScore(records, eligibleRaidEvents.length, settings || {})
 
       return {
         id: m.character_id,
@@ -460,8 +517,8 @@ export default function AttendancePage() {
   const getCellStyle = (state: string): string => {
     switch (state) {
       case 'attended': return 'bg-success/30 text-success'
-      case 'late': return 'bg-yellow-500/30 text-yellow-400'
-      case 'benched': return 'bg-orange-500/30 text-orange-400'
+      case 'late': return 'bg-warning/30 text-warning'
+      case 'benched': return 'bg-accent/30 text-accent'
       case 'signed-up': return 'bg-accent/30 text-accent'
       case 'no-show': return 'bg-destructive/30 text-destructive'
       default: return 'bg-muted text-foreground-muted'
@@ -525,9 +582,9 @@ export default function AttendancePage() {
                 Attendance Credit (Previous {guildSettings?.rolling_attendance_weeks || 4} Weeks)
               </p>
               <p className={`text-[42px] font-bold leading-none ${
-                attendanceScore >= (guildSettings?.max_attendance_bonus || 8) * 0.75 ? 'text-green-400' :
-                attendanceScore >= (guildSettings?.max_attendance_bonus || 8) * 0.5 ? 'text-yellow-400' :
-                'text-red-400'
+                attendanceScore >= (guildSettings?.max_attendance_bonus || 8) * 0.75 ? 'text-success' :
+                attendanceScore >= (guildSettings?.max_attendance_bonus || 8) * 0.5 ? 'text-warning' :
+                'text-destructive'
               }`}>
                 {attendanceScore.toFixed(guildSettings?.decimal_places || 2)} <span className="text-[18px] text-muted-foreground">/ {(guildSettings?.max_attendance_bonus || 8).toFixed(guildSettings?.decimal_places || 2)}</span>
               </p>
@@ -535,7 +592,7 @@ export default function AttendancePage() {
 
             <div className="bg-background-elevated border border-border rounded-xl p-6">
               <p className="text-muted-foreground text-sm mb-1">Role Modifier</p>
-              <p className={`text-[42px] font-bold leading-none ${roleModifier < 0 ? 'text-red-400' : roleModifier > 0 ? 'text-green-400' : 'text-foreground'}`}>
+              <p className={`text-[42px] font-bold leading-none ${roleModifier < 0 ? 'text-destructive' : roleModifier > 0 ? 'text-success' : 'text-foreground'}`}>
                 {roleModifier >= 0 ? '+' : ''}{roleModifier}
               </p>
               <p className="text-muted-foreground text-sm mt-2">{memberRole}</p>
@@ -546,7 +603,7 @@ export default function AttendancePage() {
               <p className="text-[42px] font-bold text-foreground leading-none">
                 {guildRaidEvents.length}
               </p>
-              <p className="text-muted-foreground text-sm mt-2">Previous {guildSettings?.rolling_attendance_weeks || 4} completed weeks</p>
+              <p className="text-muted-foreground text-sm mt-2">Current + previous {guildSettings?.rolling_attendance_weeks || 4} weeks</p>
             </div>
           </div>
         </>
@@ -555,7 +612,12 @@ export default function AttendancePage() {
       {/* Guild Attendance Table */}
       <div className="bg-background-elevated border border-border rounded-xl overflow-hidden">
         <div className="p-4 border-b border-border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-          <h2 className="text-foreground font-semibold">Guild Attendance</h2>
+          <div>
+            <h2 className="text-foreground font-semibold">Guild Attendance</h2>
+            <p className="text-foreground-muted text-[12px] mt-0.5">
+              Current week + previous {guildSettings?.rolling_attendance_weeks || 4} weeks
+            </p>
+          </div>
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-[12px] text-foreground-muted">Sort:</span>
             <Button
@@ -611,7 +673,7 @@ export default function AttendancePage() {
                       key={week.weekStart}
                       colSpan={week.raids.length}
                       className={`px-2 py-2 text-center text-[11px] font-medium border-l border-border ${
-                        week.isMostRecent ? 'bg-green-900/20 text-green-400' : 'bg-blue-900/10 text-blue-300'
+                        week.isMostRecent ? 'bg-success/10 text-success' : 'bg-accent/10 text-accent'
                       }`}
                     >
                       Week of {week.label}
@@ -628,7 +690,7 @@ export default function AttendancePage() {
                       <th
                         key={raid.id}
                         className={`px-2 py-1.5 text-center text-[10px] font-normal min-w-[50px] border-l border-border ${
-                          week.isMostRecent ? 'bg-green-900/10 text-green-300/70' : 'bg-blue-900/5 text-blue-200/50'
+                          week.isMostRecent ? 'bg-success/5 text-success/70' : 'bg-accent/5 text-accent/50'
                         }`}
                       >
                         {formatShortDate(raid.raid_date)}
@@ -650,9 +712,9 @@ export default function AttendancePage() {
                     </td>
                     <td className="sticky left-[260px] z-10 bg-background-elevated group-hover:bg-muted px-3 py-2.5 text-center">
                       <span className={`font-semibold text-[13px] ${
-                        raider.attendanceScore >= (guildSettings?.max_attendance_bonus || 8) * 0.75 ? 'text-green-400' :
-                        raider.attendanceScore >= (guildSettings?.max_attendance_bonus || 8) * 0.5 ? 'text-yellow-400' :
-                        'text-red-400'
+                        raider.attendanceScore >= (guildSettings?.max_attendance_bonus || 8) * 0.75 ? 'text-success' :
+                        raider.attendanceScore >= (guildSettings?.max_attendance_bonus || 8) * 0.5 ? 'text-warning' :
+                        'text-destructive'
                       }`}>
                         {raider.attendanceScore.toFixed(guildSettings?.decimal_places || 2)}
                       </span>
@@ -665,7 +727,7 @@ export default function AttendancePage() {
                           <td
                             key={raid.id}
                             className={`px-2 py-2.5 text-center border-l border-border ${
-                              week.isMostRecent ? 'bg-green-900/5' : 'bg-blue-900/5'
+                              week.isMostRecent ? 'bg-success/5' : 'bg-accent/5'
                             }`}
                           >
                             <span
@@ -690,23 +752,23 @@ export default function AttendancePage() {
           <div className="flex flex-wrap items-center gap-4 text-[12px]">
             <span className="text-foreground-muted">Legend:</span>
             <div className="flex items-center gap-1.5">
-              <span className="inline-flex items-center justify-center w-5 h-5 rounded bg-green-600/30 text-green-300 text-[10px] font-medium">A</span>
+              <span className="inline-flex items-center justify-center w-5 h-5 rounded bg-success/20 text-success text-[10px] font-medium">A</span>
               <span className="text-muted-foreground">Attended</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <span className="inline-flex items-center justify-center w-5 h-5 rounded bg-yellow-600/30 text-yellow-300 text-[10px] font-medium">L</span>
+              <span className="inline-flex items-center justify-center w-5 h-5 rounded bg-warning/20 text-warning text-[10px] font-medium">L</span>
               <span className="text-muted-foreground">Late</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <span className="inline-flex items-center justify-center w-5 h-5 rounded bg-orange-600/30 text-orange-300 text-[10px] font-medium">B</span>
+              <span className="inline-flex items-center justify-center w-5 h-5 rounded bg-accent/20 text-accent text-[10px] font-medium">B</span>
               <span className="text-muted-foreground">Benched</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <span className="inline-flex items-center justify-center w-5 h-5 rounded bg-blue-600/30 text-blue-300 text-[10px] font-medium">S</span>
+              <span className="inline-flex items-center justify-center w-5 h-5 rounded bg-accent/20 text-accent text-[10px] font-medium">S</span>
               <span className="text-muted-foreground">Signed up only</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <span className="inline-flex items-center justify-center w-5 h-5 rounded bg-red-600/30 text-red-300 text-[10px] font-medium">X</span>
+              <span className="inline-flex items-center justify-center w-5 h-5 rounded bg-destructive/20 text-destructive text-[10px] font-medium">X</span>
               <span className="text-muted-foreground">No-show</span>
             </div>
             <div className="flex items-center gap-1.5">
@@ -718,11 +780,11 @@ export default function AttendancePage() {
           {/* Color coding explanation */}
           <div className="flex items-center gap-4 text-[12px] text-foreground-muted">
             <div className="flex items-center gap-2">
-              <div className="w-4 h-4 rounded bg-green-900/20 border border-green-600/30" />
+              <div className="w-4 h-4 rounded bg-success/10 border border-success/30" />
               <span>Most recent tracked week</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-4 h-4 rounded bg-blue-900/10 border border-blue-600/20" />
+              <div className="w-4 h-4 rounded bg-accent/10 border border-accent/20" />
               <span>Previous tracked weeks</span>
             </div>
           </div>

@@ -345,7 +345,7 @@ export default function GuildSettingsPage() {
                     <img
                       src="https://wow.zamimg.com/images/wow/icons/large/inv_bannerpvp_02.jpg"
                       alt="Alliance"
-                      className={`w-6 h-6 rounded border border-border/50 shadow-sm relative z-10 transition-transform duration-300 ${faction === 'Alliance' ? 'scale-110' : isGuildCreator ? 'group-hover:scale-110' : ''}`}
+                      className="w-6 h-6 rounded border border-border/50 shadow-sm relative z-10"
                     />
                     <span className={`font-medium text-[13px] relative z-10 transition-colors duration-300 ${faction === 'Alliance' ? 'text-blue-400' : isGuildCreator ? 'text-foreground group-hover:text-blue-400' : 'text-foreground'}`}>
                       Alliance
@@ -365,7 +365,7 @@ export default function GuildSettingsPage() {
                     <img
                       src="https://wow.zamimg.com/images/wow/icons/large/inv_bannerpvp_01.jpg"
                       alt="Horde"
-                      className={`w-6 h-6 rounded border border-border/50 shadow-sm relative z-10 transition-transform duration-300 ${faction === 'Horde' ? 'scale-110' : isGuildCreator ? 'group-hover:scale-110' : ''}`}
+                      className="w-6 h-6 rounded border border-border/50 shadow-sm relative z-10"
                     />
                     <span className={`font-medium text-[13px] relative z-10 transition-colors duration-300 ${faction === 'Horde' ? 'text-red-400' : isGuildCreator ? 'text-foreground group-hover:text-red-400' : 'text-foreground'}`}>
                       Horde
@@ -437,10 +437,10 @@ export default function GuildSettingsPage() {
             </div>
             <div className="p-6 space-y-4">
               {/* Transfer Ownership */}
-              <div className="rounded-lg border border-yellow-500/30 bg-yellow-500/10 p-4">
+              <div className="rounded-lg border border-warning/30 bg-warning/10 p-4">
                 <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
                   <div className="flex-1">
-                    <h3 className="text-[16px] font-semibold text-yellow-500 mb-1">Transfer Ownership</h3>
+                    <h3 className="text-[16px] font-semibold text-warning mb-1">Transfer Ownership</h3>
                     <p className="text-[13px] text-muted-foreground">
                       Transfer guild ownership to another member. You will be demoted to Officer and lose owner privileges.
                     </p>
@@ -448,7 +448,7 @@ export default function GuildSettingsPage() {
                   <Button
                     variant="secondary"
                     onClick={() => setShowTransferModal(true)}
-                    className="shrink-0 border-yellow-500/50 text-yellow-500 hover:bg-yellow-500/10 w-full sm:w-auto"
+                    className="shrink-0 border-warning/50 text-warning hover:bg-warning/10 w-full sm:w-auto"
                   >
                     Transfer
                   </Button>
@@ -498,8 +498,8 @@ export default function GuildSettingsPage() {
                 </ModalDescription>
               </ModalHeader>
               <ModalBody className="space-y-4">
-                <div className="rounded-lg border border-yellow-500/30 bg-yellow-500/10 p-4">
-                  <p className="text-[13px] text-yellow-500 font-medium mb-2">Warning:</p>
+                <div className="rounded-lg border border-warning/30 bg-warning/10 p-4">
+                  <p className="text-[13px] text-warning font-medium mb-2">Warning:</p>
                   <ul className="text-[13px] text-muted-foreground space-y-1 list-disc list-inside">
                     <li>The new owner will have full control over the guild</li>
                     <li>You will be demoted to Officer</li>
@@ -540,7 +540,7 @@ export default function GuildSettingsPage() {
                   onClick={handleTransferOwnership}
                   disabled={!selectedNewOwner}
                   loading={transferring}
-                  className="bg-yellow-500 hover:bg-yellow-600 text-black"
+                  className="bg-warning hover:bg-warning/90 text-black"
                 >
                   Transfer Ownership
                 </Button>

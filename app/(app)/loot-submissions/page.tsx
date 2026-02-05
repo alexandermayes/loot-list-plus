@@ -21,10 +21,7 @@ import {
 } from '@/components/ui/modal'
 import { Button } from '@/components/ui/button'
 import { Heading } from '@/components/ui/typography'
-import { StarFilledIcon } from '@/components/ui/icons'
-import Link from 'next/link'
 import ItemLink from '@/app/components/ItemLink'
-import { normalizeBossName } from '@/utils/bossOrder'
 import { refreshWowheadTooltips } from '@/lib/wowhead'
 
 interface Submission {
@@ -53,55 +50,16 @@ interface Submission {
   item_count: number
 }
 
-interface RaidTier {
-  id: string
-  name: string
-  is_active: boolean
-  expansion: {
-    name: string
-  }
-}
-
-// Define raid tier progression order (Classic + TBC + WotLK)
-const getRaidTierOrder = (tierName: string): number => {
-  const order: Record<string, number> = {
-    // Classic
-    'Molten Core': 1, 'MC': 1,
-    'Onyxia\'s Lair': 2, 'Onyxia': 2,
-    'Blackwing Lair': 3, 'BWL': 3,
-    'Zul\'Gurub': 4, 'ZG': 4,
-    'Ruins of Ahn\'Qiraj': 5, 'AQ20': 5,
-    'Temple of Ahn\'Qiraj': 6, 'AQ40': 6,
-    'Naxxramas': 7, 'Naxx': 7,
-    // TBC
-    'Karazhan': 10, 'Kara': 10,
-    'Gruul\'s Lair': 11, 'Gruul': 11,
-    'Magtheridon\'s Lair': 12, 'Magtheridon': 12, 'Mag': 12,
-    'Serpentshrine Cavern': 20, 'SSC': 20,
-    'Tempest Keep: The Eye': 21, 'Tempest Keep': 21, 'The Eye': 21, 'TK': 21,
-    'Hyjal Summit': 30, 'Mount Hyjal': 30, 'Hyjal': 30,
-    'Black Temple': 31, 'BT': 31,
-    'Zul\'Aman': 32, 'ZA': 32,
-    'Sunwell Plateau': 33, 'Sunwell': 33, 'SWP': 33,
-    // WotLK
-    'Vault of Archavon': 40, 'VoA': 40,
-    'Obsidian Sanctum': 41, 'OS': 41,
-    'Eye of Eternity': 42, 'EoE': 42,
-    'Naxxramas (10)': 43, 'Naxxramas (25)': 44,
-    'Ulduar': 50,
-    'Trial of the Crusader': 60, 'ToC': 60,
-    'Trial of the Grand Crusader': 61, 'ToGC': 61,
-    'Onyxia\'s Lair (10)': 62, 'Onyxia\'s Lair (25)': 63,
-    'Icecrown Citadel': 70, 'ICC': 70,
-    'Ruby Sanctum': 80, 'RS': 80
-  }
-  return order[tierName] || 999 // Unknown tiers go to the end
+interface Phase {
+  phase: number
+  expansion_id: string
+  expansion_name: string
 }
 
 export default function MasterLootPage() {
   const [submissions, setSubmissions] = useState<Submission[]>([])
-  const [raidTiers, setRaidTiers] = useState<RaidTier[]>([])
-  const [activeTier, setActiveTier] = useState<RaidTier | 'all' | null>(null)
+  const [phases, setPhases] = useState<Phase[]>([])
+  const [activePhase, setActivePhase] = useState<Phase | 'all' | null>(null)
   const [initialLoading, setInitialLoading] = useState(true)
   const [contentLoading, setContentLoading] = useState(false)
   const [reviewing, setReviewing] = useState<string | null>(null)
@@ -159,40 +117,34 @@ export default function MasterLootPage() {
 
       setGuildId(activeGuild.id)
 
-      let tiersData: any[] = []
+      // Get expansion info and create phase options
+      console.log('[Loot Submissions] Guild active_expansion_id:', activeGuild.active_expansion_id)
+
       if (activeGuild.active_expansion_id) {
-        const { data: tiersResult } = await supabase
-          .from('raid_tiers')
-          .select(`
-            id,
-            name,
-            is_active,
-            expansion:expansions!inner (
-              id,
-              name
-            )
-          `)
-          .eq('expansion.id', activeGuild.active_expansion_id)
-          .eq('is_guild_active', true)
-          .order('name', { ascending: true })
+        const { data: expansion, error: expansionError } = await supabase
+          .from('expansions')
+          .select('id, name')
+          .eq('id', activeGuild.active_expansion_id)
+          .single()
 
-        if (tiersResult) {
-          tiersData = tiersResult
+        console.log('[Loot Submissions] Expansion query result:', expansion, 'Error:', expansionError)
+
+        if (expansion) {
+          // Create phase options (1-5 is typical for WoW expansions)
+          const phaseOptions: Phase[] = []
+          for (let i = 1; i <= 5; i++) {
+            phaseOptions.push({
+              phase: i,
+              expansion_id: expansion.id,
+              expansion_name: expansion.name
+            })
+          }
+          console.log('[Loot Submissions] Setting phases:', phaseOptions)
+          setPhases(phaseOptions)
+          setActivePhase('all')
         }
-      }
-
-      if (tiersData && tiersData.length > 0) {
-        const transformedData = tiersData.map((tier: any) => ({
-          ...tier,
-          expansion: Array.isArray(tier.expansion) ? tier.expansion[0] : tier.expansion
-        }))
-        // Sort tiers by raid progression order
-        const sortedTiers = transformedData.sort((a: any, b: any) =>
-          getRaidTierOrder(a.name) - getRaidTierOrder(b.name)
-        )
-        setRaidTiers(sortedTiers as any)
-        // Default to "All" view
-        setActiveTier('all')
+      } else {
+        console.log('[Loot Submissions] No active_expansion_id set on guild')
       }
       setInitialLoading(false)
     }
@@ -202,69 +154,55 @@ export default function MasterLootPage() {
     }
   }, [guildLoading, activeGuild])
 
-  const loadSubmissions = useCallback(async (guildId: string, tierId: string | 'all', allTiers?: RaidTier[], singleTier?: RaidTier) => {
+  const loadSubmissions = useCallback(async (guildId: string, phase: Phase | 'all', expansionId?: string) => {
     setContentLoading(true)
-    if (tierId === 'all' && allTiers && allTiers.length > 0) {
-      // Load submissions for all tiers in parallel
-      const results = await Promise.all(
-        allTiers.map(tier =>
-          supabase
-            .rpc('get_guild_submissions', {
-              p_guild_id: guildId,
-              p_raid_tier_id: tier.id
-            })
-            .then(({ data, error }) => ({ data, error, tier }))
+    console.log('[Loot Submissions] loadSubmissions called with:', { guildId, phase, expansionId })
+
+    // First, check if there are ANY submissions for this guild (debug query)
+    const { data: allGuildSubs, error: debugErr } = await supabase
+      .from('loot_submissions')
+      .select('id, status, expansion_id, phase, character_id')
+      .eq('guild_id', guildId)
+      .limit(10)
+
+    console.log('[Loot Submissions] DEBUG - All guild submissions:', { count: allGuildSubs?.length, data: allGuildSubs, error: debugErr })
+
+    // Build query for submissions with character info
+    let query = supabase
+      .from('loot_submissions')
+      .select(`
+        id,
+        status,
+        submitted_at,
+        review_notes,
+        character_id,
+        expansion_id,
+        phase,
+        character:characters (
+          name,
+          class:wow_classes (
+            name,
+            color_hex
+          )
         )
-      )
+      `)
+      .eq('guild_id', guildId)
 
-      const allSubmissions: any[] = []
-      results.forEach(({ data: submissionsData, error, tier }) => {
-        if (!error && submissionsData) {
-          // Add tier info to each submission
-          const withTierInfo = submissionsData.map((sub: any) => ({
-            ...sub,
-            tier_name: tier.name,
-            tier_id: tier.id
-          }))
-          allSubmissions.push(...withTierInfo)
-        }
-      })
-
-      // Transform and set submissions
-      const formattedSubmissions = allSubmissions.map((sub: any) => ({
-        id: sub.id,
-        status: sub.status,
-        submitted_at: sub.submitted_at,
-        review_notes: sub.review_notes,
-        character_id: sub.character_id,
-        tier_name: sub.tier_name,
-        tier_id: sub.tier_id,
-        member: sub.character_name ? {
-          character_name: sub.character_name,
-          role: 'Member',
-          class: {
-            name: sub.character_class_name,
-            color_hex: sub.character_class_color
-          }
-        } : null,
-        item_count: sub.item_count || 0,
-        user: {
-          id: sub.user_id || '',
-          user_metadata: {}
-        }
-      }))
-
-      setSubmissions(formattedSubmissions as any)
-      setContentLoading(false)
-      return
+    // Filter by expansion
+    if (expansionId) {
+      query = query.eq('expansion_id', expansionId)
     }
 
-    // Load submissions for a single tier
-    const { data: submissionsData, error } = await supabase
-      .rpc('get_guild_submissions', {
-        p_guild_id: guildId,
-        p_raid_tier_id: tierId
-      })
+    // Filter by phase if not 'all'
+    if (phase !== 'all') {
+      query = query.eq('phase', phase.phase)
+    }
+
+    query = query.order('submitted_at', { ascending: false })
+
+    const { data: submissionsData, error } = await query
+
+    console.log('[Loot Submissions] Query result:', { count: submissionsData?.length, error, data: submissionsData })
 
     if (error) {
       console.error('Error loading submissions:', error)
@@ -273,47 +211,61 @@ export default function MasterLootPage() {
     }
 
     if (!submissionsData) {
+      setSubmissions([])
       setContentLoading(false)
       return
     }
 
+    // Get item counts for each submission
+    const submissionIds = submissionsData.map(s => s.id)
+    const { data: itemCounts } = await supabase
+      .from('loot_submission_items')
+      .select('submission_id')
+      .in('submission_id', submissionIds)
+
+    const countMap: Record<string, number> = {}
+    itemCounts?.forEach(item => {
+      countMap[item.submission_id] = (countMap[item.submission_id] || 0) + 1
+    })
+
     // Transform data to match expected format
-    const formattedSubmissions = submissionsData.map((sub: any) => ({
-      id: sub.id,
-      status: sub.status,
-      submitted_at: sub.submitted_at,
-      review_notes: sub.review_notes,
-      character_id: sub.character_id,
-      tier_name: singleTier?.name,
-      tier_id: singleTier?.id,
-      member: sub.character_name ? {
-        character_name: sub.character_name,
-        role: 'Member',
-        class: {
-          name: sub.character_class_name,
-          color_hex: sub.character_class_color
+    const formattedSubmissions = submissionsData.map((sub: any) => {
+      const character = Array.isArray(sub.character) ? sub.character[0] : sub.character
+      const charClass = Array.isArray(character?.class) ? character.class[0] : character?.class
+
+      return {
+        id: sub.id,
+        status: sub.status,
+        submitted_at: sub.submitted_at,
+        review_notes: sub.review_notes,
+        character_id: sub.character_id,
+        tier_name: `Phase ${sub.phase}`,
+        tier_id: sub.expansion_id,
+        member: {
+          character_name: character?.name || 'Unknown Character',
+          role: 'Member',
+          class: {
+            name: charClass?.name || 'Unknown',
+            color_hex: charClass?.color_hex || '#ffffff'
+          }
+        },
+        item_count: countMap[sub.id] || 0,
+        user: {
+          id: '',
+          user_metadata: {}
         }
-      } : null,
-      item_count: sub.item_count || 0,
-      user: {
-        id: sub.user_id || '',
-        user_metadata: {}
       }
-    }))
+    })
 
     setSubmissions(formattedSubmissions as any)
     setContentLoading(false)
   }, [supabase])
 
   useEffect(() => {
-    if (guildId && activeTier) {
-      if (activeTier === 'all') {
-        loadSubmissions(guildId, 'all', raidTiers, undefined)
-      } else {
-        loadSubmissions(guildId, activeTier.id, undefined, activeTier)
-      }
+    if (guildId && activePhase !== null && activeGuild?.active_expansion_id) {
+      loadSubmissions(guildId, activePhase, activeGuild.active_expansion_id)
     }
-  }, [activeTier, guildId, raidTiers, loadSubmissions])
+  }, [activePhase, guildId, activeGuild?.active_expansion_id, loadSubmissions])
 
   const handleReview = async (submissionId: string, status: 'approved' | 'rejected') => {
     setReviewing(submissionId)
@@ -335,9 +287,8 @@ export default function MasterLootPage() {
       setReviewNotes('')
       setReviewing(null)
 
-      if (guildId && activeTier) {
-        const tierId = activeTier === 'all' ? 'all' : activeTier.id
-        await loadSubmissions(guildId, tierId, activeTier === 'all' ? raidTiers : undefined, activeTier === 'all' ? undefined : activeTier)
+      if (guildId && activePhase !== null && activeGuild?.active_expansion_id) {
+        await loadSubmissions(guildId, activePhase, activeGuild.active_expansion_id)
       }
     } catch (error: any) {
       showNotification('error', error.message || 'Couldn\'t update submission. Try again.')
@@ -366,7 +317,7 @@ export default function MasterLootPage() {
   }
 
   const handleDeleteSubmissions = async () => {
-    if (!guildId || !deleteTarget || !activeTier) return
+    if (!guildId || !deleteTarget || activePhase === null) return
 
     setDeleting(true)
     try {
@@ -401,8 +352,9 @@ export default function MasterLootPage() {
         showNotification('success', `Deleted ${result.count} submission${result.count !== 1 ? 's' : ''}`)
       }
 
-      const tierId = activeTier === 'all' ? 'all' : activeTier.id
-      await loadSubmissions(guildId, tierId, activeTier === 'all' ? raidTiers : undefined, activeTier === 'all' ? undefined : activeTier)
+      if (activeGuild?.active_expansion_id) {
+        await loadSubmissions(guildId, activePhase, activeGuild.active_expansion_id)
+      }
 
       setShowDeleteConfirm(false)
       setDeleteTarget(null)
@@ -427,36 +379,33 @@ export default function MasterLootPage() {
         <p className="text-muted-foreground mt-1 text-base">Review and manage character loot submissions</p>
       </div>
 
-      {/* Raid Tier Selector - Sticky */}
+      {/* Phase Selector - Sticky */}
       {initialLoading ? (
         <div className="px-4 sm:px-6 lg:px-8 py-1.5 bg-background">
           <TierTabsSkeleton />
         </div>
-      ) : raidTiers.length > 0 && (
+      ) : phases.length > 0 && (
         <div className="sticky top-0 z-20 px-4 sm:px-6 lg:px-8 py-1.5 bg-background">
           <div className="flex items-center gap-3 overflow-x-auto pb-1">
             <div className="flex gap-2">
-              {/* All Tiers Button */}
+              {/* All Phases Button */}
               <Button
-                variant={activeTier === 'all' ? 'accent-subtle' : 'secondary'}
+                variant={activePhase === 'all' ? 'accent-subtle' : 'secondary'}
                 size="sm"
-                onClick={() => setActiveTier('all')}
+                onClick={() => setActivePhase('all')}
                 className="rounded-[40px] whitespace-nowrap"
               >
-                All
+                All Phases
               </Button>
-              {raidTiers.map((tier) => (
+              {phases.map((phase) => (
                 <Button
-                  key={tier.id}
-                  variant={activeTier !== 'all' && activeTier?.id === tier.id ? 'accent-subtle' : 'secondary'}
+                  key={phase.phase}
+                  variant={activePhase !== 'all' && activePhase?.phase === phase.phase ? 'accent-subtle' : 'secondary'}
                   size="sm"
-                  onClick={() => setActiveTier(tier)}
+                  onClick={() => setActivePhase(phase)}
                   className="rounded-[40px] whitespace-nowrap"
                 >
-                  <div className="flex items-center gap-2">
-                    <span>{tier.name}</span>
-                    {tier.is_active && <StarFilledIcon size={14} />}
-                  </div>
+                  Phase {phase.phase}
                 </Button>
               ))}
             </div>

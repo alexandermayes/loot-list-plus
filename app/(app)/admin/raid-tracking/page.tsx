@@ -212,7 +212,7 @@ export default function RaidTrackingPage() {
           .in('character_id', characterIds)
 
         // Create a Set of character IDs with approved submissions for fast lookup
-        const approvedCharacterIds = new Set(approvedSubmissions?.map(s => s.character_id) || [])
+        const approvedCharacterIds = new Set(approvedSubmissions?.map((s: { character_id: string }) => s.character_id) || [])
 
         // Filter to only include members with approved loot lists
         const formattedMembers: Member[] = membershipsData
@@ -225,7 +225,7 @@ export default function RaidTrackingPage() {
             class_color: m.character?.class?.color_hex || '#888888',
             role: m.role
           }))
-          .sort((a, b) => a.character_name.localeCompare(b.character_name))
+          .sort((a: Member, b: Member) => a.character_name.localeCompare(b.character_name))
 
         console.log(`👥 Loaded ${formattedMembers.length} raiders with approved loot lists (out of ${membershipsData.length} total members)`)
         setMembers(formattedMembers)

@@ -13,11 +13,13 @@ const fetcher = async (url: string) => {
 }
 
 // Default SWR config with sensible caching defaults
+// Disabled focus/reconnect revalidation to prevent data loss when users tab away
+// (e.g., when switching to game to export data and back to paste it)
 export const swrConfig: SWRConfiguration = {
   fetcher,
-  revalidateOnFocus: false, // Don't refetch on window focus (reduces API calls)
+  revalidateOnFocus: false, // Don't refetch on window focus
   revalidateIfStale: true,
-  revalidateOnReconnect: true,
+  revalidateOnReconnect: false, // Don't refetch when browser reconnects (prevents refresh on tab switch)
   dedupingInterval: 5000, // Dedupe requests within 5 seconds
   errorRetryCount: 3,
 }
@@ -152,6 +154,8 @@ export interface LootItem {
   weapon_type?: string // Dagger, One-Handed Sword, Staff, etc.
   allocation_cost?: number
   roles?: string[]
+  raid_tier_id?: string
+  raid_tier_name?: string | null  // Populated by phase-based queries
   loot_item_classes?: {
     class_id: string
     spec_id: string | null
@@ -165,13 +169,17 @@ export interface LootSubmission {
   status: string
   submitted_at: string | null
   review_notes: string | null
+  expansion_id?: string
+  phase?: number
 }
 
 export interface RaidTier {
   id: string
   name: string
   is_active: boolean
+  is_guild_active?: boolean
   submission_deadline: string | null
+  phase?: number
 }
 
 /**
@@ -206,14 +214,20 @@ export function useLootItems(
  * Fetch raid tiers for an expansion
  * @param expansionId - The expansion ID
  * @param guildId - The guild ID
+ * @param includeAllPhases - If true, returns all phases (for admin views). If false/undefined, filters to unlocked phases only.
  */
 export function useRaidTiers(
   expansionId: string | null,
   guildId: string | null,
+  includeAllPhases?: boolean,
   options?: SWRConfiguration
 ) {
-  return useSWR<{ tiers: RaidTier[] }>(
-    expansionId && guildId ? `/api/raid-tiers?expansion_id=${expansionId}&guild_id=${guildId}` : null,
+  const url = expansionId && guildId
+    ? `/api/raid-tiers?expansion_id=${expansionId}&guild_id=${guildId}${includeAllPhases ? '&includeAllPhases=true' : ''}`
+    : null
+
+  return useSWR<{ tiers: RaidTier[]; current_phase?: number }>(
+    url,
     fetcher,
     {
       ...swrConfig,
@@ -273,8 +287,101 @@ export function useTierSubmissionStatuses(
     fetcher,
     {
       ...swrConfig,
-      revalidateOnFocus: true, // Refresh when user returns to tab to show status changes
-      refreshInterval: 30000, // Also refresh every 30 seconds to catch officer updates
+      refreshInterval: 30000, // Refresh every 30 seconds to catch officer updates
+      ...options,
+    }
+  )
+}
+
+// === Phase-Based Loot List Hooks ===
+
+export interface PhaseLootItem extends LootItem {
+  raid_tier_id: string
+  raid_tier_name?: string | null
+}
+
+/**
+ * Fetch loot items for all active tiers in a phase
+ * @param expansionId - The expansion ID
+ * @param phase - The phase number
+ * @param characterId - The character ID (for spec filtering)
+ * @param guildId - The guild ID (for consensus counts + active tier filtering)
+ */
+export function usePhaseLootItems(
+  expansionId: string | null,
+  phase: number | null,
+  characterId: string | null,
+  guildId: string | null,
+  options?: SWRConfiguration
+) {
+  const url = expansionId && phase !== null && characterId && guildId
+    ? `/api/loot-items?expansion_id=${expansionId}&phase=${phase}&character_id=${characterId}&guild_id=${guildId}`
+    : null
+
+  return useSWR<{ items: PhaseLootItem[] }>(
+    url,
+    fetcher,
+    {
+      ...swrConfig,
+      revalidateOnFocus: false,
+      dedupingInterval: 10000,
+      ...options,
+    }
+  )
+}
+
+/**
+ * Fetch loot submission for a character/phase
+ * @param characterId - The character ID
+ * @param expansionId - The expansion ID
+ * @param phase - The phase number
+ * @param guildId - The guild ID
+ */
+export function usePhaseSubmission(
+  characterId: string | null,
+  expansionId: string | null,
+  phase: number | null,
+  guildId: string | null,
+  options?: SWRConfiguration
+) {
+  return useSWR<{ submission: LootSubmission | null; rankings: Record<string, string> }>(
+    characterId && expansionId && phase !== null && guildId
+      ? `/api/loot-submissions?character_id=${characterId}&expansion_id=${expansionId}&phase=${phase}&guild_id=${guildId}`
+      : null,
+    fetcher,
+    {
+      ...swrConfig,
+      revalidateOnFocus: false,
+      revalidateIfStale: false,
+      revalidateOnReconnect: false,
+      dedupingInterval: 30000,
+      ...options,
+    }
+  )
+}
+
+/**
+ * Fetch submission statuses for all phases in an expansion
+ * @param characterId - The character ID
+ * @param guildId - The guild ID
+ * @param expansionId - The expansion ID
+ */
+export function usePhaseSubmissionStatuses(
+  characterId: string | null,
+  guildId: string | null,
+  expansionId: string | null,
+  options?: SWRConfiguration
+) {
+  const key = characterId && guildId && expansionId
+    ? `/api/loot-submissions/statuses?character_id=${characterId}&guild_id=${guildId}&expansion_id=${expansionId}`
+    : null
+
+  return useSWR<{ statuses: Record<string, { status: string; submitted_at: string | null }>; phaseStatuses: Record<number, { status: string; submitted_at: string | null }> }>(
+    key,
+    fetcher,
+    {
+      ...swrConfig,
+      refreshInterval: 30000, // Refresh every 30 seconds to catch officer updates
       ...options,
     }
   )
@@ -285,6 +392,13 @@ export function useTierSubmissionStatuses(
  */
 export function invalidateLootItems(tierId: string, characterId: string) {
   return mutate(`/api/loot-items?tier_id=${tierId}&character_id=${characterId}`)
+}
+
+/**
+ * Invalidate loot items cache for a phase
+ */
+export function invalidatePhaseLootItems(expansionId: string, phase: number, characterId: string, guildId: string) {
+  return mutate(`/api/loot-items?expansion_id=${expansionId}&phase=${phase}&character_id=${characterId}&guild_id=${guildId}`)
 }
 
 /**
@@ -299,6 +413,20 @@ export function invalidateLootSubmission(characterId: string, tierId: string, gu
  */
 export function invalidateTierSubmissionStatuses(characterId: string, guildId: string, tierIds: string[]) {
   return mutate(`/api/loot-submissions/statuses?character_id=${characterId}&guild_id=${guildId}&tier_ids=${tierIds.join(',')}`)
+}
+
+/**
+ * Invalidate phase submission cache
+ */
+export function invalidatePhaseSubmission(characterId: string, expansionId: string, phase: number, guildId: string) {
+  return mutate(`/api/loot-submissions?character_id=${characterId}&expansion_id=${expansionId}&phase=${phase}&guild_id=${guildId}`)
+}
+
+/**
+ * Invalidate phase submission statuses cache
+ */
+export function invalidatePhaseSubmissionStatuses(characterId: string, guildId: string, expansionId: string) {
+  return mutate(`/api/loot-submissions/statuses?character_id=${characterId}&guild_id=${guildId}&expansion_id=${expansionId}`)
 }
 
 // === Character Gear Hooks ===
