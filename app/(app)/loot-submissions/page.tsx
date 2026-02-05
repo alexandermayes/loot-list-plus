@@ -168,6 +168,7 @@ export default function MasterLootPage() {
     console.log('[Loot Submissions] DEBUG - All guild submissions:', { count: allGuildSubs?.length, data: allGuildSubs, error: debugErr })
 
     // Build query for submissions with character info
+    // Exclude drafts - they haven't been submitted for review yet
     let query = supabase
       .from('loot_submissions')
       .select(`
@@ -187,6 +188,7 @@ export default function MasterLootPage() {
         )
       `)
       .eq('guild_id', guildId)
+      .neq('status', 'draft')
 
     // Filter by expansion
     if (expansionId) {
