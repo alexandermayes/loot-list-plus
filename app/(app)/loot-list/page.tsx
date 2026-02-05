@@ -265,18 +265,79 @@ export default function LootList() {
     [rankings]
   )
 
-  // Filter items by spec type for different sections
-  // Primary items: Brackets 1-4 (ranks 39-50)
-  // Secondary items: No Bracket / Main-spec (ranks 25-38)
-  // All items: Off-spec (ranks 1-24)
-  const { primaryItems, secondaryItems, allItems } = useMemo(() => {
-    const primary = lootItems.filter(item => item.character_spec_type === 'primary')
-    const secondary = lootItems.filter(item => item.character_spec_type === 'secondary')
-    return {
-      primaryItems: primary,
-      secondaryItems: secondary,
-      allItems: lootItems // All equippable items for off-spec
-    }
+  // Filter items by spec type for different bracket sections
+  // Items CASCADE down: Brackets 1-4 ⊆ No Bracket ⊆ Off-spec
+  //
+  // Bracket filtering rules:
+  // - Brackets 1-4: PRIMARY + SECONDARY + UNALLOCATED
+  // - No Bracket: Brackets 1-4 items + notPriod-primaryOnly
+  // - Off-spec: ALL equippable items
+  const { bracket14Items, noBracketItems, offSpecItems } = useMemo(() => {
+    // Helper to check if character is not prio'd on an item
+    // (spec_type is null/undefined AND item is allocated)
+    const isNotPriod = (item: LootItem) =>
+      !item.character_spec_type && item.is_allocated === true
+
+    // Brackets 1-4: PRIMARY + SECONDARY + UNALLOCATED
+    // UNALLOCATED = item has no loot_item_classes entries (is_allocated is false/undefined)
+    const bracket14Items = lootItems.filter(item =>
+      item.character_spec_type === 'primary' ||
+      item.character_spec_type === 'secondary' ||
+      !item.is_allocated  // false or undefined = unallocated
+    )
+
+    // No Bracket: Everything from Brackets 1-4 + notPriod with primary-only
+    // CASCADE: includes all bracket14Items plus additional items
+    const noBracketItems = lootItems.filter(item =>
+      // Include everything from Brackets 1-4
+      item.character_spec_type === 'primary' ||
+      item.character_spec_type === 'secondary' ||
+      !item.is_allocated ||  // false or undefined = unallocated
+      // Plus notPriod items where item has primary-only (no secondary assignments)
+      (isNotPriod(item) && item.has_primary_only === true)
+    )
+
+    // Off-spec: ALL equippable items (superset of everything)
+    const offSpecItems = lootItems
+
+    // Debug: log item counts with detailed field inspection
+    const sampleItem = lootItems[0]
+    const notPriodItems = lootItems.filter(i => isNotPriod(i))
+    const sampleNotPriod = notPriodItems[0]
+
+    console.log('[loot-list page] Sample item fields:', sampleItem ? {
+      name: sampleItem.name,
+      character_spec_type: sampleItem.character_spec_type,
+      character_spec_type_type: typeof sampleItem.character_spec_type,
+      is_allocated: sampleItem.is_allocated,
+      is_allocated_type: typeof sampleItem.is_allocated,
+      has_primary_only: sampleItem.has_primary_only,
+      has_primary_only_type: typeof sampleItem.has_primary_only,
+    } : 'no items')
+
+    // Log a sample notPriod item to see if has_primary_only is set
+    console.log('[loot-list page] Sample notPriod item:', sampleNotPriod ? {
+      name: sampleNotPriod.name,
+      character_spec_type: sampleNotPriod.character_spec_type,
+      is_allocated: sampleNotPriod.is_allocated,
+      has_primary_only: sampleNotPriod.has_primary_only,
+      has_primary_only_type: typeof sampleNotPriod.has_primary_only,
+    } : 'no notPriod items')
+
+    console.log('[loot-list page] Item counts:', {
+      total: lootItems.length,
+      primaryOnly: lootItems.filter(i => i.character_spec_type === 'primary').length,
+      secondaryOnly: lootItems.filter(i => i.character_spec_type === 'secondary').length,
+      notPriod: notPriodItems.length,
+      unallocated: lootItems.filter(i => !i.is_allocated).length,
+      hasPrimaryOnly: lootItems.filter(i => i.has_primary_only === true).length,
+      notPriodWithPrimaryOnly: lootItems.filter(i => isNotPriod(i) && i.has_primary_only === true).length,
+      bracket14Items: bracket14Items.length,
+      noBracketItems: noBracketItems.length,
+      offSpecItems: offSpecItems.length
+    })
+
+    return { bracket14Items, noBracketItems, offSpecItems }
   }, [lootItems])
 
   // Bracket validation
@@ -786,7 +847,7 @@ export default function LootList() {
                   <RankRow
                     key={rank}
                     rank={rank}
-                    lootItems={primaryItems}
+                    lootItems={bracket14Items}
                     selectedItemId1={rankings[`${rank}-1`]}
                     selectedItemId2={rankings[`${rank}-2`]}
                     selectedItems={selectedItems}
@@ -876,7 +937,7 @@ export default function LootList() {
                   <RankRow
                     key={rank}
                     rank={rank}
-                    lootItems={primaryItems}
+                    lootItems={bracket14Items}
                     selectedItemId1={rankings[`${rank}-1`]}
                     selectedItemId2={rankings[`${rank}-2`]}
                     selectedItems={selectedItems}
@@ -966,7 +1027,7 @@ export default function LootList() {
                   <RankRow
                     key={rank}
                     rank={rank}
-                    lootItems={primaryItems}
+                    lootItems={bracket14Items}
                     selectedItemId1={rankings[`${rank}-1`]}
                     selectedItemId2={rankings[`${rank}-2`]}
                     selectedItems={selectedItems}
@@ -1056,7 +1117,7 @@ export default function LootList() {
                   <RankRow
                     key={rank}
                     rank={rank}
-                    lootItems={primaryItems}
+                    lootItems={bracket14Items}
                     selectedItemId1={rankings[`${rank}-1`]}
                     selectedItemId2={rankings[`${rank}-2`]}
                     selectedItems={selectedItems}
@@ -1101,7 +1162,7 @@ export default function LootList() {
                   <RankRow
                     key={rank}
                     rank={rank}
-                    lootItems={secondaryItems}
+                    lootItems={noBracketItems}
                     selectedItemId1={rankings[`${rank}-1`]}
                     selectedItemId2={rankings[`${rank}-2`]}
                     selectedItems={selectedItems}
@@ -1144,7 +1205,7 @@ export default function LootList() {
                   <RankRow
                     key={rank}
                     rank={rank}
-                    lootItems={allItems}
+                    lootItems={offSpecItems}
                     selectedItemId1={rankings[`${rank}-1`]}
                     selectedItemId2={rankings[`${rank}-2`]}
                     selectedItems={selectedItems}

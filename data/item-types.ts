@@ -192,6 +192,12 @@ export const ITEM_TYPES: Record<number, ItemTypeInfo> = {
   28782: { weapon_type: 'Staff' },            // Crystalheart Pulse-Staff
   28778: { armor_type: 'Plate' },             // Terror Pit Girdle
   28783: { weapon_type: 'Wand' },             // Eredar Wand of Obliteration
+  29458: { weapon_type: 'Shield' },           // Aegis of the Vindicator
+
+  // TBC Shields (Karazhan)
+  28754: { weapon_type: 'Shield' },           // Triptych Shield of the Ancients (Nightbane)
+  28606: { weapon_type: 'Shield' },           // Shield of Impenetrable Darkness (Nightbane)
+  28825: { weapon_type: 'Shield' },           // Aldori Legacy Defender (The Curator)
 
   // ============================================================================
   // SERPENTSHRINE CAVERN
@@ -888,6 +894,21 @@ export function inferWeaponType(slot: string, name: string): WeaponType | undefi
   if (slot === 'Wand') return 'Wand'
   if (slot === 'Shield') return 'Shield'
   if (slot === 'Legendary') return 'One-Handed Sword'  // Warglaives
+
+  // Detect shields from name patterns (even in Off Hand slots)
+  // Shields can be in 'Off Hand' slot in TBC data
+  if (slot === 'Off Hand' || slot === 'Off-Hand' || slot === 'Held In Off-hand') {
+    if (nameLower.includes('shield') ||
+        nameLower.includes('aegis') ||
+        nameLower.includes('defender') ||
+        nameLower.includes('buckler') ||
+        nameLower.includes('bulwark') ||
+        nameLower.includes('protector') ||
+        nameLower.includes('barricade') ||
+        nameLower.includes('barrier')) {
+      return 'Shield'
+    }
+  }
 
   // Check if it's a weapon slot
   const weaponSlots = ['One-Hand', 'Two-Hand', 'Main Hand', 'Ranged', 'Weapon']

@@ -112,37 +112,12 @@ export async function GET(request: NextRequest) {
     const wowClass = character.wow_classes as { name: string } | { name: string }[] | null
     const className = (Array.isArray(wowClass) ? wowClass[0]?.name : wowClass?.name) as WowClassName | undefined
 
-    // Filter items based on character's class/spec AND class proficiencies
-    // Also track each item's spec_type for the character (for bracket filtering)
-    const filteredItemsWithSpecType = (items || []).map(item => {
+    // Filter items based on class proficiencies (armor/weapon types)
+    // NOTE: We do NOT filter based on loot_item_classes entries - those determine
+    // bracket placement (primary/secondary/off-spec), not item visibility.
+    // A character should see ALL equippable items, even if not prio'd on them.
+    const filteredItems = (items || []).filter(item => {
       const classes = item.loot_item_classes as LootItemClassRestriction[]
-
-      // Determine character_spec_type for this item
-      let characterSpecType: 'primary' | 'secondary' | null = null
-      if (character.spec_id && classes.length > 0) {
-        const matchingEntry = classes.find(c => c.spec_id === character.spec_id)
-        if (matchingEntry?.spec_type) {
-          characterSpecType = matchingEntry.spec_type as 'primary' | 'secondary'
-        }
-      }
-
-      return { ...item, character_spec_type: characterSpecType }
-    }).filter(item => {
-      const classes = item.loot_item_classes as LootItemClassRestriction[]
-
-      // First, check guild prio restrictions
-      let passesClassRestriction = true
-      if (classes.length > 0) {
-        // If character has no spec set, show all items for their class
-        if (!character.spec_id) {
-          passesClassRestriction = classes.some(c => c.class_id === character.class_id)
-        } else {
-          // Check if character's specific spec is in primary or secondary list
-          passesClassRestriction = classes.some(c => c.spec_id === character.spec_id)
-        }
-      }
-
-      if (!passesClassRestriction) return false
 
       // Check if this is a token - apply token class restrictions
       if (isTokenSlot(item.item_slot)) {
@@ -156,11 +131,6 @@ export async function GET(request: NextRequest) {
 
       // Third, check class proficiencies (armor/weapon types the class can equip)
       if (className && CLASS_PROFICIENCIES[className]) {
-        // Skip proficiency checks for class-agnostic slots (Neck, Back, Trinket, etc.)
-        if (isClassAgnosticSlot(item.item_slot)) {
-          return true
-        }
-
         // Get item's armor/weapon type from DB or lookup table or inference
         let armorType = item.armor_type as ArmorType | null
         let weaponType = item.weapon_type as WeaponType | null
@@ -180,22 +150,81 @@ export async function GET(request: NextRequest) {
           weaponType = inferWeaponType(item.item_slot, item.name) || null
         }
 
+        // Check weapon proficiency FIRST (before class-agnostic bypass)
+        // This ensures shields in Off Hand slots are still filtered by class
+        if (weaponType) {
+          if (!canUseWeaponType(className, weaponType)) {
+            return false
+          }
+        }
+
+        // Skip armor proficiency checks for class-agnostic slots (Neck, Back, Trinket, etc.)
+        // Note: weapon_type check above already handles shields in Off Hand slots
+        if (isClassAgnosticSlot(item.item_slot)) {
+          return true
+        }
+
         // Check armor proficiency
         if (armorType) {
           if (!canWearArmorType(className, armorType)) {
             return false
           }
         }
-
-        // Check weapon proficiency
-        if (weaponType) {
-          if (!canUseWeaponType(className, weaponType)) {
-            return false
-          }
-        }
       }
 
       return true
+    })
+
+    // Add bracket filtering fields to each filtered item
+    // Fields computed:
+    // - character_spec_type: 'primary' | 'secondary' | null - character's relationship to item
+    // - is_allocated: boolean - does item have ANY prio assignments?
+    // - has_primary_only: boolean - has primary but no secondary assignments?
+    //
+    // Bracket rules (from user requirements):
+    // - Brackets 1-4: character is PRIMARY, OR item is UNALLOCATED
+    // - No Bracket: character is PRIMARY/SECONDARY, OR item is UNALLOCATED, OR item has primary-only
+    // - Off-spec: ALL equippable items
+    const filteredItemsWithSpecType = filteredItems.map(item => {
+      const classes = item.loot_item_classes as LootItemClassRestriction[]
+
+      // Determine if item has ANY allocations
+      const isAllocated = classes && classes.length > 0
+
+      // Determine if item has primary-only (no secondary) assignments
+      // This matters for non-prio'd characters: they can use No Bracket if no secondary exists
+      let hasPrimaryOnly = false
+      if (isAllocated) {
+        const hasPrimary = classes.some(c => c.spec_type === 'primary')
+        const hasSecondary = classes.some(c => c.spec_type === 'secondary')
+        hasPrimaryOnly = hasPrimary && !hasSecondary
+      }
+
+      // Determine character's spec_type for this item
+      let characterSpecType: 'primary' | 'secondary' | null = null
+
+      if (character.spec_id && isAllocated) {
+        // Check if character's spec is specifically assigned
+        const specSpecificEntry = classes.find(c => c.spec_id === character.spec_id)
+        if (specSpecificEntry?.spec_type) {
+          characterSpecType = specSpecificEntry.spec_type as 'primary' | 'secondary'
+        } else {
+          // No spec-specific entry - check for class-level entry (spec_id null)
+          const classLevelEntry = classes.find(c => c.class_id === character.class_id && c.spec_id === null)
+          if (classLevelEntry?.spec_type) {
+            characterSpecType = classLevelEntry.spec_type as 'primary' | 'secondary'
+          }
+          // If no matching entry, characterSpecType stays null (not prio'd)
+        }
+      }
+      // If !isAllocated (classes.length === 0), characterSpecType stays null (unallocated)
+
+      return {
+        ...item,
+        character_spec_type: characterSpecType,
+        is_allocated: isAllocated,
+        has_primary_only: hasPrimaryOnly
+      }
     })
 
     // If guildId provided, fetch consensus counts (how many OTHER guildmates ranked each item)
@@ -247,6 +276,38 @@ export async function GET(request: NextRequest) {
         })
       }
     }
+
+    // Debug: Log character info
+    console.log('[loot-items] Character:', {
+      class_id: character.class_id,
+      spec_id: character.spec_id,
+      className
+    })
+
+    // Debug: Log bracket filtering stats
+    const bracketStats = {
+      primary: filteredItemsWithSpecType.filter(i => i.character_spec_type === 'primary').length,
+      secondary: filteredItemsWithSpecType.filter(i => i.character_spec_type === 'secondary').length,
+      notPriod: filteredItemsWithSpecType.filter(i => i.character_spec_type === null && i.is_allocated).length,
+      unallocated: filteredItemsWithSpecType.filter(i => !i.is_allocated).length,
+      hasPrimaryOnly: filteredItemsWithSpecType.filter(i => i.has_primary_only).length,
+      total: filteredItemsWithSpecType.length
+    }
+    console.log('[loot-items] Bracket filtering stats:', bracketStats)
+
+    // Debug: Log a few example items with their bracket fields
+    const itemsWithClasses = filteredItemsWithSpecType.filter(i => i.is_allocated)
+    console.log('[loot-items] Allocated items:', itemsWithClasses.length)
+    itemsWithClasses.slice(0, 5).forEach(i => {
+      const classes = i.loot_item_classes as LootItemClassRestriction[]
+      console.log(`[loot-items] Item "${i.name}": spec_type=${i.character_spec_type}, allocated=${i.is_allocated}, primaryOnly=${i.has_primary_only}`,
+        ', entries=', classes.map(c => ({ spec_id: c.spec_id?.slice(0, 8), spec_type: c.spec_type })))
+    })
+
+    // Debug: Log class-agnostic items
+    const classAgnosticItems = filteredItemsWithSpecType.filter(i => isClassAgnosticSlot(i.item_slot))
+    console.log('[loot-items] Class-agnostic items:', classAgnosticItems.length,
+      classAgnosticItems.slice(0, 3).map(i => ({ name: i.name, slot: i.item_slot, spec_type: i.character_spec_type })))
 
     // Merge consensus counts and raid tier name into response
     const itemsWithConsensus = filteredItemsWithSpecType.map(item => {

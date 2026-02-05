@@ -163,6 +163,8 @@ export interface LootItem {
   }[]
   consensus_count?: number  // Number of OTHER guildmates who ranked this item
   character_spec_type?: 'primary' | 'secondary' | null  // The spec_type for the current character (for bracket filtering)
+  is_allocated?: boolean  // Does item have ANY prio assignments? (false = can go anywhere)
+  has_primary_only?: boolean  // Has primary but no secondary assignments? (non-prio'd can use No Bracket)
 }
 
 export interface LootSubmission {
