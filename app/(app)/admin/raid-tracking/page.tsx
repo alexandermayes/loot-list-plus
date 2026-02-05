@@ -1747,19 +1747,6 @@ export default function RaidTrackingPage() {
     return raidLoot[raidId]?.length || 0
   }, [raidLoot])
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <LoadingSpinner />
-      </div>
-    )
-  }
-
-  const today = new Date().toISOString().split('T')[0]
-
-  // Check if raid start date is in the future
-  const raidStartDateInFuture = currentExpansion?.raid_start_date && currentExpansion.raid_start_date > today
-
   // Group raids by week (starting on the first raid day from settings)
   const firstRaidDay = guildSettings?.first_raid_day ?? 0 // Default to Sunday if not set
 
@@ -1808,6 +1795,19 @@ export default function RaidTrackingPage() {
     const keys = Object.keys(grouped).sort((a, b) => b.localeCompare(a)) // Most recent first
     return { raidsByWeek: grouped, weekKeys: keys }
   }, [raidDates, firstRaidDay])
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <LoadingSpinner />
+      </div>
+    )
+  }
+
+  const today = new Date().toISOString().split('T')[0]
+
+  // Check if raid start date is in the future
+  const raidStartDateInFuture = currentExpansion?.raid_start_date && currentExpansion.raid_start_date > today
 
   console.log('📊 Raids by week:', Object.entries(raidsByWeek).map(([week, raids]) =>
     `${week}: ${raids.map(r => r.raid_date).join(', ')}`
