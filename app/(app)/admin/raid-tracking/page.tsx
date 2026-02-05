@@ -365,7 +365,7 @@ export default function RaidTrackingPage() {
         .select('raid_event_id')
         .in('raid_event_id', eventIds)
 
-      const eventsWithAttendance = new Set(attendanceCheck?.map(r => r.raid_event_id) || [])
+      const eventsWithAttendance = new Set(attendanceCheck?.map((r: { raid_event_id: string }) => r.raid_event_id) || [])
       console.log('🔍 Events with attendance records:', [...eventsWithAttendance])
 
       // Deduplicate by date, preferring events with attendance
