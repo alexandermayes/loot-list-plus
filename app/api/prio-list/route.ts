@@ -68,7 +68,7 @@ export async function GET(request: Request) {
 
     if (itemId) {
       const parsedItemId = parseInt(itemId, 10)
-      if (isNaN(parsedItemId)) {
+      if (isNaN(parsedItemId) || parsedItemId < 1 || parsedItemId > 1000000) {
         return NextResponse.json({ error: 'Invalid item_id format' }, { status: 400 })
       }
       query = query.eq('item_id', parsedItemId)

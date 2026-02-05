@@ -67,13 +67,19 @@ export async function GET(request: NextRequest) {
       // Legacy single-tier query
       tierIds = [tierId]
     } else if (phase && expansionId && guildId) {
+      // Validate phase parameter (MED-02: Input validation bounds)
+      const parsedPhase = parseInt(phase, 10)
+      if (isNaN(parsedPhase) || parsedPhase < 1 || parsedPhase > 10) {
+        return NextResponse.json({ error: 'Invalid phase value (must be 1-10)' }, { status: 400 })
+      }
+
       // Phase-based query - get all active tiers in this phase
       // Note: is_guild_active can be null (treated as true/enabled by default) or explicitly true/false
       const { data: phaseTiers, error: phaseTiersError } = await supabase
         .from('raid_tiers')
         .select('id')
         .eq('expansion_id', expansionId)
-        .eq('phase', parseInt(phase))
+        .eq('phase', parsedPhase)
         .or('is_guild_active.eq.true,is_guild_active.is.null')
 
       if (phaseTiersError) {
