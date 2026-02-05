@@ -46,6 +46,7 @@ export default function ProfilePage() {
   const [leaving, setLeaving] = useState(false)
   const [disconnecting, setDisconnecting] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const [loggingOut, setLoggingOut] = useState(false)
   const [mounted, setMounted] = useState(false)
   const [selectedTheme, setSelectedTheme] = useState<string | null>(null)
 
@@ -69,9 +70,12 @@ export default function ProfilePage() {
     document.title = 'LootList+ • Profile'
   }, [])
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut()
-    router.push('/')
+  const handleLogout = () => {
+    setLoggingOut(true)
+    // Don't await - redirect immediately to prevent React re-renders
+    // from auth state change hiding the overlay before navigation completes
+    supabase.auth.signOut()
+    window.location.href = '/'
   }
 
   const handleLeaveGuild = async (guildId: string) => {
@@ -114,7 +118,7 @@ export default function ProfilePage() {
         setDisconnecting(true)
         try {
           await supabase.auth.signOut()
-          router.push('/')
+          window.location.href = '/'
         } catch (err) {
           console.error('Error disconnecting:', err)
           setDisconnecting(false)
@@ -244,7 +248,15 @@ export default function ProfilePage() {
   ]
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 space-y-6 font-poppins">
+    <>
+      {/* Full-screen overlay during logout to prevent flash */}
+      {loggingOut && (
+        <div className="fixed inset-0 bg-background z-[9999] flex items-center justify-center">
+          <LoadingSpinner text="Logging out..." />
+        </div>
+      )}
+
+      <div className="p-4 sm:p-6 lg:p-8 space-y-6 font-poppins">
       {/* Header */}
       <div className="bg-background-elevated border border-border rounded-xl p-4 sm:p-6">
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6">
@@ -266,7 +278,7 @@ export default function ProfilePage() {
               </div>
             </div>
           </div>
-          <Button variant="secondary" onClick={handleLogout} className="w-full sm:w-auto">
+          <Button variant="secondary" onClick={handleLogout} loading={loggingOut} className="w-full sm:w-auto">
             <HugeiconsIcon icon={Logout01Icon} size={16} />
             Log Out
           </Button>
@@ -630,5 +642,6 @@ export default function ProfilePage() {
 
       {ConfirmDialog}
     </div>
+    </>
   )
 }

@@ -124,7 +124,7 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange, 
 
   const handleLogout = async () => {
     await supabase.auth.signOut()
-    router.push('/')
+    window.location.href = '/'
   }
 
   const handleSwitchGuild = async (guildId: string) => {
