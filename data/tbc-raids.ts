@@ -341,8 +341,10 @@ export const magtheridonslair: Raid = {
         { name: 'Chestguard of the Fallen Hero', slot: 'Token', wowhead_id: 29753 },
         { name: 'Chestguard of the Fallen Champion', slot: 'Token', wowhead_id: 29754 },
         { name: 'Chestguard of the Fallen Defender', slot: 'Token', wowhead_id: 29755 },
+        // Quest Item
+        { name: 'Magtheridon\'s Head', slot: 'Quest', wowhead_id: 32385 },
         // 20-Slot Bag
-        { name: 'Pit Lord\'s Satchel', slot: 'Bag', wowhead_id: 28803 },
+        { name: 'Pit Lord\'s Satchel', slot: 'Bag', wowhead_id: 34845 },
       ],
     }
   ],

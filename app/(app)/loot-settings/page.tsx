@@ -35,6 +35,7 @@ interface LootItem {
   allocation_cost: number
   is_available: boolean
   roles: string[]
+  officer_notes?: string
   raid_tier: {
     name: string
   }
@@ -118,6 +119,8 @@ export default function AdminLootItems() {
   const [itemSpecs, setItemSpecs] = useState<Record<string, { primary: Set<string>, secondary: Set<string> }>>({})
   // Track roles for each item: { itemId: Set<role> }
   const [itemRoles, setItemRoles] = useState<Record<string, Set<string>>>({})
+  // Track notes for each item: { itemId: note }
+  const [itemNotes, setItemNotes] = useState<Record<string, string>>({})
   const [showSettingsModal, setShowSettingsModal] = useState(false)
   const [savingSettings, setSavingSettings] = useState(false)
   const [advancedExpanded, setAdvancedExpanded] = useState(false)
@@ -550,11 +553,12 @@ export default function AdminLootItems() {
   }
 
   const loadLootItems = async (expansionId: string) => {
-    // Get raid tiers for active expansion
+    // Get raid tiers for active expansion (only guild-active tiers)
     const { data: tiersData } = await supabase
       .from('raid_tiers')
       .select('id')
       .eq('expansion_id', expansionId)
+      .eq('is_guild_active', true)
 
     if (!tiersData || tiersData.length === 0) return
 
@@ -574,6 +578,7 @@ export default function AdminLootItems() {
         allocation_cost,
         is_available,
         roles,
+        officer_notes,
         raid_tier:raid_tiers(name)
       `)
       .in('raid_tier_id', tierIds)
@@ -588,6 +593,13 @@ export default function AdminLootItems() {
         rolesState[item.id] = new Set(item.roles || [])
       })
       setItemRoles(rolesState)
+
+      // Initialize item notes state
+      const notesState: Record<string, string> = {}
+      itemsData.forEach((item: any) => {
+        notesState[item.id] = item.officer_notes || ''
+      })
+      setItemNotes(notesState)
 
       // Load all spec relations for all items (batch to avoid URL length issues)
       const itemIds = itemsData.map((item: any) => item.id)
@@ -700,6 +712,25 @@ export default function AdminLootItems() {
     ))
   }
 
+  // Update officer notes for an item
+  const updateNotes = async (itemId: string, notes: string) => {
+    const { error } = await supabase
+      .from('loot_items')
+      .update({ officer_notes: notes || null })
+      .eq('id', itemId)
+
+    if (error) {
+      console.error('Error updating notes:', error)
+      showNotification('error', 'Couldn\'t save notes. Try again.')
+      return
+    }
+
+    setItemNotes(prev => ({ ...prev, [itemId]: notes }))
+    setLootItems(items => items.map(item =>
+      item.id === itemId ? { ...item, officer_notes: notes || undefined } : item
+    ))
+  }
+
   // Add a spec to an item (immediately saves to database)
   const addSpec = async (itemId: string, specIdOrRole: string, specType: 'primary' | 'secondary') => {
     // Check if this is "all" selection
@@ -751,10 +782,11 @@ export default function AdminLootItems() {
       return
     }
 
-    // Remove from opposite type if it exists there
+    // Check if spec is in opposite type - if so, skip (preserve existing selection)
     const oppositeType = specType === 'primary' ? 'secondary' : 'primary'
     if (currentSpecs[oppositeType].has(specIdOrRole)) {
-      await removeSpec(itemId, specIdOrRole, oppositeType)
+      // Spec already exists in opposite type, don't add it here
+      return
     }
 
     // Insert into database
@@ -809,30 +841,15 @@ export default function AdminLootItems() {
     // Get current specs to avoid duplicates
     const currentSpecs = itemSpecs[itemId]?.[specType] || new Set()
 
-    // Check opposite type for conflicts
+    // Check opposite type - skip specs that are already in opposite type
     const oppositeType = specType === 'primary' ? 'secondary' : 'primary'
     const oppositeSpecs = itemSpecs[itemId]?.[oppositeType] || new Set()
 
-    // Remove specs from opposite type if they exist there
-    const specsInOpposite = specsToAdd.filter(spec => oppositeSpecs.has(spec.id))
-    if (specsInOpposite.length > 0) {
-      const { error: deleteError } = await supabase
-        .from('loot_item_classes')
-        .delete()
-        .eq('loot_item_id', itemId)
-        .eq('spec_type', oppositeType)
-        .in('spec_id', specsInOpposite.map(s => s.id))
+    // Filter out specs that are in the opposite type (preserve existing selections)
+    const specsNotInOpposite = specsToAdd.filter(spec => !oppositeSpecs.has(spec.id))
 
-      if (deleteError) {
-        console.error('Error removing conflicting specs:', {
-          message: deleteError.message,
-          details: deleteError.details
-        })
-      }
-    }
-
-    // Only insert specs that aren't already in this type
-    const specsToInsert = specsToAdd
+    // Only insert specs that aren't already in this type or opposite type
+    const specsToInsert = specsNotInOpposite
       .filter(spec => !currentSpecs.has(spec.id))
       .map(spec => ({
         loot_item_id: itemId,
@@ -860,23 +877,19 @@ export default function AdminLootItems() {
       }
     }
 
-    // Update local state - add all role specs (not just newly inserted ones)
-    const allRoleSpecIds = new Set(specsToAdd.map(s => s.id))
+    // Update local state - add role specs that aren't in opposite type
+    const roleSpecIdsToAdd = new Set(specsNotInOpposite.map(s => s.id))
 
     setItemSpecs(prev => {
       const prevItemSpecs = prev[itemId] || { primary: new Set(), secondary: new Set() }
       const updatedSpecs = new Set(prevItemSpecs[specType])
-      allRoleSpecIds.forEach(id => updatedSpecs.add(id))
-
-      // Remove specs from opposite type
-      const updatedOppositeSpecs = new Set(prevItemSpecs[oppositeType])
-      specsInOpposite.forEach(spec => updatedOppositeSpecs.delete(spec.id))
+      roleSpecIdsToAdd.forEach(id => updatedSpecs.add(id))
 
       return {
         ...prev,
         [itemId]: {
-          primary: specType === 'primary' ? updatedSpecs : updatedOppositeSpecs,
-          secondary: specType === 'secondary' ? updatedSpecs : updatedOppositeSpecs
+          ...prevItemSpecs,
+          [specType]: updatedSpecs
         }
       }
     })
@@ -884,29 +897,24 @@ export default function AdminLootItems() {
 
   // Add all specs to an item
   const addAllSpecs = async (itemId: string, specType: 'primary' | 'secondary') => {
-    // Get current specs to avoid duplicates
+    // Get current specs
     const currentSpecs = itemSpecs[itemId]?.[specType] || new Set()
-
-    // Check opposite type - need to clear all from opposite
     const oppositeType = specType === 'primary' ? 'secondary' : 'primary'
+    const oppositeSpecs = itemSpecs[itemId]?.[oppositeType] || new Set()
 
-    // Delete all specs from opposite type
-    const { error: deleteError } = await supabase
-      .from('loot_item_classes')
-      .delete()
-      .eq('loot_item_id', itemId)
-      .eq('spec_type', oppositeType)
-
-    if (deleteError) {
-      console.error('Error removing conflicting specs:', {
-        message: deleteError.message,
-        details: deleteError.details
-      })
-    }
+    // When adding "all" to a type, we add all specs EXCEPT those in the opposite type
+    // This preserves the user's opposite type selections
+    const allSpecIds = new Set(classSpecs.map(s => s.id))
+    const specsToAddIds = new Set<string>()
+    allSpecIds.forEach(id => {
+      if (!oppositeSpecs.has(id)) {
+        specsToAddIds.add(id)
+      }
+    })
 
     // Only insert specs that aren't already in this type
     const specsToInsert = classSpecs
-      .filter(spec => !currentSpecs.has(spec.id))
+      .filter(spec => specsToAddIds.has(spec.id) && !currentSpecs.has(spec.id))
       .map(spec => ({
         loot_item_id: itemId,
         class_id: spec.class_id,
@@ -932,16 +940,14 @@ export default function AdminLootItems() {
       }
     }
 
-    // Update local state with ALL specs for this type
-    const allSpecIds = new Set(classSpecs.map(s => s.id))
-
+    // Update local state - add all specs to this type except those in opposite type
     setItemSpecs(prev => {
       const prevItemSpecs = prev[itemId] || { primary: new Set(), secondary: new Set() }
       return {
         ...prev,
         [itemId]: {
-          primary: specType === 'primary' ? allSpecIds : new Set(),
-          secondary: specType === 'secondary' ? allSpecIds : new Set()
+          ...prevItemSpecs,
+          [specType]: specsToAddIds
         }
       }
     })
@@ -1477,6 +1483,7 @@ export default function AdminLootItems() {
                 <col style={{ width: '150px' }} />
                 <col style={{ width: '220px' }} />
                 <col style={{ width: '220px' }} />
+                <col style={{ width: '180px' }} />
               </colgroup>
               <thead>
                 <tr className="bg-background-subtle border-b border-border">
@@ -1488,6 +1495,7 @@ export default function AdminLootItems() {
                   <th className="px-4 py-2.5 text-left text-[12px] font-medium text-foreground-muted">Classification</th>
                   <th className="px-4 py-2.5 text-left text-[12px] font-medium text-foreground-muted">Primary</th>
                   <th className="px-4 py-2.5 text-left text-[12px] font-medium text-foreground-muted">Secondary</th>
+                  <th className="px-4 py-2.5 text-left text-[12px] font-medium text-foreground-muted">Notes</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
@@ -1602,6 +1610,24 @@ export default function AdminLootItems() {
                         getConsolidatedDisplay={(ids) => getConsolidatedSpecNames(ids)}
                         isOptionSelected={(optionId, selectedIds) => isRoleGroupSelected(optionId, selectedIds)}
                         variant="secondary"
+                      />
+                    </td>
+                    <td className="px-2 py-2.5">
+                      <Input
+                        type="text"
+                        variant="pill"
+                        size="sm"
+                        placeholder="Add note..."
+                        value={itemNotes[item.id] || ''}
+                        onChange={(e) => setItemNotes(prev => ({ ...prev, [item.id]: e.target.value }))}
+                        onBlur={(e) => {
+                          const newValue = e.target.value
+                          const originalValue = lootItems.find(i => i.id === item.id)?.officer_notes || ''
+                          if (newValue !== originalValue) {
+                            updateNotes(item.id, newValue)
+                          }
+                        }}
+                        className="text-[12px]"
                       />
                     </td>
                   </tr>
