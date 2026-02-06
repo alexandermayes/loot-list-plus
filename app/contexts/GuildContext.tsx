@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useContext, useState, useEffect, useRef, ReactNode } from 'react'
+import { createContext, useContext, useState, useEffect, useRef, useCallback, useMemo, ReactNode } from 'react'
 import { createClient } from '@/utils/supabase/client'
 import { useRouter } from 'next/navigation'
 import type { User, AuthChangeEvent, Session } from '@supabase/supabase-js'
@@ -94,7 +94,8 @@ export interface GuildExpansion {
   timezone: string
 }
 
-export interface GuildContextType {
+// Separate interface for data (changes frequently, triggers re-renders)
+export interface GuildDataContextType {
   // Existing State
   activeGuild: Guild | null
   activeMember: GuildMember | null
@@ -111,22 +112,29 @@ export interface GuildContextType {
   guildExpansions: GuildExpansion[]
   viewingExpansionId: string | null // For when users view past expansions
 
-  // Methods
-  switchGuild: (guildId: string, characterId?: string) => Promise<void>
-  refreshGuilds: () => Promise<void>
-  switchCharacter: (characterId: string) => Promise<void>
-  refreshCharacters: () => Promise<void>
-  setViewingExpansion: (expansionId: string | null) => void
-  refreshExpansions: () => Promise<void>
-
   // Derived state
   isOfficer: boolean
   hasMultipleGuilds: boolean
   hasMultipleCharacters: boolean
 }
 
-// Create context
-const GuildContext = createContext<GuildContextType | undefined>(undefined)
+// Separate interface for actions (stable functions, rarely trigger re-renders)
+export interface GuildActionsContextType {
+  switchGuild: (guildId: string, characterId?: string) => Promise<void>
+  refreshGuilds: () => Promise<void>
+  switchCharacter: (characterId: string) => Promise<void>
+  refreshCharacters: () => Promise<void>
+  setViewingExpansion: (expansionId: string | null) => void
+  refreshExpansions: () => Promise<void>
+}
+
+// Combined type for backward compatibility
+export interface GuildContextType extends GuildDataContextType, GuildActionsContextType {}
+
+// Create separate contexts for data and actions
+// This prevents components that only use actions from re-rendering when data changes
+const GuildDataContext = createContext<GuildDataContextType | undefined>(undefined)
+const GuildActionsContext = createContext<GuildActionsContextType | undefined>(undefined)
 
 // Provider component
 export function GuildContextProvider({ children }: { children: ReactNode }) {
@@ -667,18 +675,18 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  const refreshExpansions = async () => {
+  const refreshExpansions = useCallback(async () => {
     if (activeGuild) {
       await loadExpansions(activeGuild.id)
     }
-  }
+  }, [activeGuild])
 
-  const setViewingExpansion = (expansionId: string | null) => {
+  const setViewingExpansion = useCallback((expansionId: string | null) => {
     setViewingExpansionId(expansionId)
-  }
+  }, [])
 
   // Switch to a different guild (with optional character)
-  const switchGuild = async (guildId: string, characterId?: string) => {
+  const switchGuild = useCallback(async (guildId: string, characterId?: string) => {
     if (!user) return
 
     try {
@@ -754,10 +762,10 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       console.error('Error in switchGuild:', error)
     }
-  }
+  }, [user, userGuilds, userCharacters, characterMemberships, supabase, router])
 
   // Switch to a different character
-  const switchCharacter = async (characterId: string) => {
+  const switchCharacter = useCallback(async (characterId: string) => {
     if (!user) return
 
     try {
@@ -802,17 +810,17 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       console.error('Error in switchCharacter:', error)
     }
-  }
+  }, [user, userCharacters, activeGuild, characterMemberships, router])
 
   // Refresh guilds (useful after joining a new guild)
-  const refreshGuilds = async () => {
+  const refreshGuilds = useCallback(async () => {
     await loadGuilds()
-  }
+  }, [])
 
   // Refresh characters (useful after creating a new character)
-  const refreshCharacters = async () => {
+  const refreshCharacters = useCallback(async () => {
     await loadCharacters()
-  }
+  }, [])
 
   // Load guilds and characters on mount
   useEffect(() => {
@@ -959,49 +967,87 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
   const hasMultipleGuilds = userGuilds.length > 1
   const hasMultipleCharacters = userCharacters.length > 1
 
-  const value: GuildContextType = {
-    // Existing
+  // Memoize data value to prevent unnecessary re-renders
+  // This object changes when data state changes
+  const dataValue = useMemo<GuildDataContextType>(() => ({
     activeGuild,
     activeMember,
     userGuilds,
     loading,
-
-    // New Character System
     activeCharacter,
     userCharacters,
     characterMemberships,
-
-    // Expansion State
     currentExpansion,
     guildExpansions,
     viewingExpansionId,
+    isOfficer,
+    hasMultipleGuilds,
+    hasMultipleCharacters
+  }), [
+    activeGuild,
+    activeMember,
+    userGuilds,
+    loading,
+    activeCharacter,
+    userCharacters,
+    characterMemberships,
+    currentExpansion,
+    guildExpansions,
+    viewingExpansionId,
+    isOfficer,
+    hasMultipleGuilds,
+    hasMultipleCharacters
+  ])
 
-    // Methods
+  // Memoize actions value - these are stable functions that rarely change
+  // Components using only actions won't re-render when data changes
+  const actionsValue = useMemo<GuildActionsContextType>(() => ({
     switchGuild,
     refreshGuilds,
     switchCharacter,
     refreshCharacters,
     setViewingExpansion,
-    refreshExpansions,
-
-    // Derived state
-    isOfficer,
-    hasMultipleGuilds,
-    hasMultipleCharacters
-  }
+    refreshExpansions
+  }), [
+    switchGuild,
+    refreshGuilds,
+    switchCharacter,
+    refreshCharacters,
+    setViewingExpansion,
+    refreshExpansions
+  ])
 
   return (
-    <GuildContext.Provider value={value}>
-      {children}
-    </GuildContext.Provider>
+    <GuildDataContext.Provider value={dataValue}>
+      <GuildActionsContext.Provider value={actionsValue}>
+        {children}
+      </GuildActionsContext.Provider>
+    </GuildDataContext.Provider>
   )
 }
 
-// Custom hook to use guild context
-export function useGuildContext() {
-  const context = useContext(GuildContext)
+// Hook for components that only need data (most common use case)
+export function useGuildData() {
+  const context = useContext(GuildDataContext)
   if (context === undefined) {
-    throw new Error('useGuildContext must be used within a GuildContextProvider')
+    throw new Error('useGuildData must be used within a GuildContextProvider')
   }
   return context
+}
+
+// Hook for components that only need actions (prevents re-renders from data changes)
+export function useGuildActions() {
+  const context = useContext(GuildActionsContext)
+  if (context === undefined) {
+    throw new Error('useGuildActions must be used within a GuildContextProvider')
+  }
+  return context
+}
+
+// Combined hook for backward compatibility
+// Components using this will re-render on any context change
+export function useGuildContext(): GuildContextType {
+  const data = useGuildData()
+  const actions = useGuildActions()
+  return { ...data, ...actions }
 }

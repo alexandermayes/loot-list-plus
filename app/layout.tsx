@@ -8,8 +8,6 @@ import { SWRProvider } from "./components/SWRProvider";
 import NotificationContainer from "./components/NotificationContainer";
 import "./globals.css";
 
-export const dynamic = 'force-dynamic'
-
 const poppins = Poppins({
   variable: "--font-poppins",
   subsets: ["latin"],

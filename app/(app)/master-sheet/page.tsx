@@ -2,7 +2,7 @@
 
 import Image from 'next/image'
 import { createClient } from '@/utils/supabase/client'
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import ItemLink from '@/app/components/ItemLink'
 import { calculateAttendanceScore, getRankModifier, calculateLootScore, calculatePriorityBonus, getTrialPenalty, type ItemPriority } from '@/utils/calculations'
@@ -63,6 +63,14 @@ interface ItemRankings {
 }
 
 export default function MasterSheet() {
+  return (
+    <Suspense fallback={<MasterSheetContentSkeleton />}>
+      <MasterSheetContent />
+    </Suspense>
+  )
+}
+
+function MasterSheetContent() {
   const { activeGuild, activeCharacter, loading: guildLoading, isOfficer } = useGuildContext()
   const { showNotification } = useNotification()
   const [allItemRankings, setAllItemRankings] = useState<ItemRankings[]>([])
@@ -139,47 +147,41 @@ export default function MasterSheet() {
     return order[tierName] || 999 // Unknown tiers go to the end
   }
 
-  // Calculate attendance score for a character (or user for backward compatibility)
-  // Returns both the score and the number of raids attended (for minimum_gate eligibility)
-  const calculateAttendance = async (userId: string, characterId?: string): Promise<{ score: number; raidsAttended: number }> => {
-    if (!guildId || !guildSettings) return { score: 0, raidsAttended: 0 }
+  // Batched attendance calculation for multiple characters
+  // Instead of N queries per character, this fetches all data in bulk (5 queries total)
+  const calculateAttendanceBatch = async (
+    characters: Array<{ id: string; user_id: string }>
+  ): Promise<Record<string, { score: number; raidsAttended: number }>> => {
+    if (!guildId || !guildSettings || characters.length === 0) {
+      return {}
+    }
 
+    const characterIds = characters.map(c => c.id)
     const weeks = guildSettings.rolling_attendance_weeks || 4
     const daysAgo = weeks * 7
     const periodStart = new Date()
     periodStart.setDate(periodStart.getDate() - daysAgo)
+    const periodStartStr = periodStart.toISOString().split('T')[0]
 
-    console.log('📊 [MasterSheet] calculateAttendance for character:', characterId, 'user:', userId)
-    console.log('📊 [MasterSheet] Rolling weeks:', weeks, 'Period start:', periodStart.toISOString().split('T')[0])
-
-    // New member policy: check how to handle new members
     const newMemberMode = guildSettings.new_member_mode || 'raw'
-    let effectiveStartDate = periodStart
-    let memberJoinDate: Date | null = null
 
-    // For 'fair' and 'minimum_gate' modes, use join date filtering
-    if ((newMemberMode === 'fair' || newMemberMode === 'minimum_gate') && characterId) {
-      const { data: membership } = await supabase
+    // Query 1: Fetch ALL memberships in one query (for join dates in fair/minimum_gate modes)
+    let membershipsByCharacter = new Map<string, { joined_at: string | null }>()
+    if (newMemberMode === 'fair' || newMemberMode === 'minimum_gate') {
+      const { data: memberships } = await supabase
         .from('character_guild_memberships')
-        .select('joined_at')
-        .eq('character_id', characterId)
+        .select('character_id, joined_at')
+        .in('character_id', characterIds)
         .eq('guild_id', guildId)
-        .single()
 
-      if (membership?.joined_at) {
-        memberJoinDate = new Date(membership.joined_at)
-        // Use the later of periodStart or joinedAt
-        if (memberJoinDate > periodStart) {
-          effectiveStartDate = memberJoinDate
-          console.log('📊 [MasterSheet] New member (' + newMemberMode + ' mode) - using join date:', membership.joined_at)
+      if (memberships) {
+        for (const m of memberships) {
+          membershipsByCharacter.set(m.character_id, { joined_at: m.joined_at })
         }
       }
     }
 
-    const periodStartStr = effectiveStartDate.toISOString().split('T')[0]
-    console.log('📊 [MasterSheet] New member mode:', newMemberMode, 'Effective period start:', periodStartStr)
-
-    // Get expansion's raid day configuration
+    // Query 2: Fetch expansion raid day config ONCE
     let raidDays: number[] = []
     if (activeGuild?.active_expansion_id) {
       const { data: expansionData } = await supabase
@@ -212,17 +214,16 @@ export default function MasterSheet() {
         .slice(0, guildSettings.raid_days_per_week || 2)
     }
 
-    console.log('📊 [MasterSheet] Configured raid days:', raidDays)
-
-    const { data: recentRaids, error: raidError } = await supabase
+    // Query 3: Fetch ALL raid events ONCE
+    const { data: recentRaids } = await supabase
       .from('raid_events')
       .select('id, raid_date')
       .eq('guild_id', guildId)
       .gte('raid_date', periodStartStr)
 
-    console.log('📊 [MasterSheet] Recent raids found:', recentRaids?.length, 'Error:', raidError)
-
-    if (!recentRaids || recentRaids.length === 0) return { score: 0, raidsAttended: 0 }
+    if (!recentRaids || recentRaids.length === 0) {
+      return Object.fromEntries(characterIds.map(id => [id, { score: 0, raidsAttended: 0 }]))
+    }
 
     // Filter to only raids on configured raid days
     type RaidEventRecord = { id: string; raid_date: string }
@@ -233,73 +234,96 @@ export default function MasterSheet() {
         })
       : recentRaids
 
-    console.log('📊 [MasterSheet] Filtered to', filteredRaids.length, 'raids on configured days')
-
-    if (filteredRaids.length === 0) return { score: 0, raidsAttended: 0 }
+    if (filteredRaids.length === 0) {
+      return Object.fromEntries(characterIds.map(id => [id, { score: 0, raidsAttended: 0 }]))
+    }
 
     const raidIds = filteredRaids.map((r: RaidEventRecord) => r.id)
 
-    // Check which raid IDs have attendance for this character
-    let raidIdsWithAttendance = new Set<string>()
-    if (characterId) {
-      const { data: existingAttendance } = await supabase
-        .from('attendance_records')
-        .select('raid_event_id')
-        .eq('character_id', characterId)
-        .in('raid_event_id', raidIds)
-      raidIdsWithAttendance = new Set(existingAttendance?.map((r: { raid_event_id: string }) => r.raid_event_id) || [])
+    // Query 4: Fetch ALL attendance records for ALL characters in ONE query
+    const { data: allAttendanceRecords } = await supabase
+      .from('attendance_records')
+      .select('character_id, user_id, raid_event_id, signed_up, attended, no_call_no_show')
+      .in('character_id', characterIds)
+      .in('raid_event_id', raidIds)
+
+    // Build lookup: character_id -> Set of raid_event_ids with attendance
+    const attendanceByCharacter = new Map<string, Array<{
+      raid_event_id: string
+      signed_up: boolean
+      attended: boolean
+      no_call_no_show: boolean
+    }>>()
+
+    for (const record of allAttendanceRecords || []) {
+      if (!record.character_id) continue
+      if (!attendanceByCharacter.has(record.character_id)) {
+        attendanceByCharacter.set(record.character_id, [])
+      }
+      attendanceByCharacter.get(record.character_id)!.push(record)
     }
 
-    // Deduplicate by date, preferring IDs that have attendance records
-    // This handles the case where there are duplicate raid events for the same date
-    const deduplicatedRaidEvents: RaidEventRecord[] = Array.from(
-      filteredRaids.reduce((map: Map<string, RaidEventRecord>, event: RaidEventRecord) => {
-        const existing = map.get(event.raid_date)
-        if (!existing) {
-          map.set(event.raid_date, event)
-        } else if (raidIdsWithAttendance.has(event.id) && !raidIdsWithAttendance.has(existing.id)) {
-          map.set(event.raid_date, event)
+    // Process each character in memory (no more queries)
+    const results: Record<string, { score: number; raidsAttended: number }> = {}
+
+    for (const character of characters) {
+      // Determine effective start date for this character
+      let effectiveStartDate = periodStart
+      if (newMemberMode === 'fair' || newMemberMode === 'minimum_gate') {
+        const membership = membershipsByCharacter.get(character.id)
+        if (membership?.joined_at) {
+          const memberJoinDate = new Date(membership.joined_at)
+          if (memberJoinDate > periodStart) {
+            effectiveStartDate = memberJoinDate
+          }
         }
-        return map
-      }, new Map<string, RaidEventRecord>()).values()
-    )
+      }
 
-    const totalRaids = deduplicatedRaidEvents.length
-    const deduplicatedRaidIds = deduplicatedRaidEvents.map((r: RaidEventRecord) => r.id)
+      // Filter raids to those after effective start date
+      const effectiveRaids = filteredRaids.filter((r: RaidEventRecord) => {
+        const raidDate = new Date(r.raid_date + 'T00:00:00')
+        return raidDate >= effectiveStartDate
+      })
 
-    console.log('📊 [MasterSheet] Deduplicated to', totalRaids, 'raids')
+      if (effectiveRaids.length === 0) {
+        results[character.id] = { score: 0, raidsAttended: 0 }
+        continue
+      }
 
-    // Try character-based attendance first, fall back to user-based
-    let records
-    if (characterId) {
-      const { data } = await supabase
-        .from('attendance_records')
-        .select('signed_up, attended, no_call_no_show')
-        .eq('character_id', characterId)
-        .in('raid_event_id', deduplicatedRaidIds)
-      records = data
+      // Get attendance records for this character
+      const characterAttendance = attendanceByCharacter.get(character.id) || []
+      const raidIdsWithAttendance = new Set(characterAttendance.map(a => a.raid_event_id))
+
+      // Deduplicate by date, preferring IDs that have attendance records
+      const deduplicatedRaidEvents: RaidEventRecord[] = Array.from(
+        effectiveRaids.reduce((map: Map<string, RaidEventRecord>, event: RaidEventRecord) => {
+          const existing = map.get(event.raid_date)
+          if (!existing) {
+            map.set(event.raid_date, event)
+          } else if (raidIdsWithAttendance.has(event.id) && !raidIdsWithAttendance.has(existing.id)) {
+            map.set(event.raid_date, event)
+          }
+          return map
+        }, new Map<string, RaidEventRecord>()).values()
+      )
+
+      const totalRaids = deduplicatedRaidEvents.length
+      const deduplicatedRaidIds = new Set(deduplicatedRaidEvents.map((r: RaidEventRecord) => r.id))
+
+      // Filter attendance to only deduplicated raids
+      const relevantRecords = characterAttendance.filter(a => deduplicatedRaidIds.has(a.raid_event_id))
+
+      if (relevantRecords.length === 0) {
+        results[character.id] = { score: 0, raidsAttended: 0 }
+        continue
+      }
+
+      const score = calculateAttendanceScore(relevantRecords, totalRaids, guildSettings)
+      const raidsAttended = relevantRecords.filter(r => r.attended).length
+      results[character.id] = { score, raidsAttended }
     }
 
-    // Fall back to user-based if no character records found
-    if (!records || records.length === 0) {
-      const { data } = await supabase
-        .from('attendance_records')
-        .select('signed_up, attended, no_call_no_show')
-        .eq('user_id', userId)
-        .in('raid_event_id', deduplicatedRaidIds)
-      records = data
-    }
-
-    if (!records || records.length === 0) {
-      console.log('📊 [MasterSheet] No attendance records found for character:', characterId)
-      return { score: 0, raidsAttended: 0 }
-    }
-
-    const score = calculateAttendanceScore(records, totalRaids, guildSettings)
-    // Count how many raids this character actually attended
-    const raidsAttended = records.filter((r: { attended: boolean }) => r.attended).length
-    console.log('📊 [MasterSheet] Attendance score for', characterId, ':', score, '(records:', records.length, 'totalRaids:', totalRaids, 'raidsAttended:', raidsAttended, ')')
-    return { score, raidsAttended }
+    return results
   }
 
   // Load initial data
@@ -567,17 +591,12 @@ export default function MasterSheet() {
           (lootHistoryData || []).map((h: { character_id: string; loot_item_id: string }) => `${h.character_id}-${h.loot_item_id}`)
         )
 
-        // Pre-calculate attendance for all characters in parallel
+        // Pre-calculate attendance for all characters in a single batched query
+        // This replaces N individual queries with just 4 bulk queries total
         type CharacterData = { id: string; user_id: string; name: string | null; spec_id: string | null }
-        const attendanceCache: Record<string, { score: number; raidsAttended: number }> = {}
-        const attendancePromises = (charactersData || []).map(async (character: CharacterData) => {
-          const attendance = await calculateAttendance(character.user_id, character.id)
-          return { id: character.id, attendance }
-        })
-        const attendanceResults = await Promise.all(attendancePromises)
-        attendanceResults.forEach(({ id, attendance }) => {
-          attendanceCache[id] = attendance
-        })
+        const attendanceCache = await calculateAttendanceBatch(
+          (charactersData || []).map((c: CharacterData) => ({ id: c.id, user_id: c.user_id }))
+        )
 
         // Determine minimum raids required for eligibility
         const minimumRaidDays = guildSettings.minimum_raid_days || 2
@@ -1093,17 +1112,11 @@ export default function MasterSheet() {
       (lootHistoryData || []).map((h: { character_id: string; loot_item_id: string }) => `${h.character_id}-${h.loot_item_id}`)
     )
 
-    // Pre-calculate attendance for all characters
+    // Pre-calculate attendance for all characters in a single batched query
     type TierCharacterData = { id: string; user_id: string; name: string | null; spec_id: string | null }
-    const attendanceCache: Record<string, { score: number; raidsAttended: number }> = {}
-    const attendancePromises = charactersData.map(async (character: TierCharacterData) => {
-      const attendance = await calculateAttendance(character.user_id, character.id)
-      return { id: character.id, attendance }
-    })
-    const attendanceResults = await Promise.all(attendancePromises)
-    attendanceResults.forEach(({ id, attendance }) => {
-      attendanceCache[id] = attendance
-    })
+    const attendanceCache = await calculateAttendanceBatch(
+      charactersData.map((c: TierCharacterData) => ({ id: c.id, user_id: c.user_id }))
+    )
 
     // Determine minimum raids required for eligibility
     const minimumRaidDays = guildSettings.minimum_raid_days || 2

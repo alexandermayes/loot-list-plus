@@ -1,9 +1,7 @@
 'use client'
 
-export const dynamic = 'force-dynamic'
-
 import { createClient } from '@/utils/supabase/client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { ArrowLeft01Icon, Key01Icon, Tick01Icon } from '@hugeicons/core-free-icons'
@@ -15,6 +13,14 @@ import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 
 export default function JoinGuildPage() {
+  return (
+    <Suspense fallback={<LoadingSpinner fullScreen />}>
+      <JoinGuildContent />
+    </Suspense>
+  )
+}
+
+function JoinGuildContent() {
   const [loading, setLoading] = useState(true)
   const [validating, setValidating] = useState(false)
   const [joining, setJoining] = useState(false)
