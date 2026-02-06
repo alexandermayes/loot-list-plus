@@ -16,15 +16,15 @@ export default function PrivacyPolicyPage() {
           Privacy Policy
         </Heading>
         <Text color="secondary" className="mb-8">
-          Last updated: January 30, 2025
+          Last updated: February 6, 2026
         </Text>
 
         <div className="space-y-8 text-foreground">
           <section className="space-y-4">
             <Heading level={2}>1. Introduction</Heading>
             <Text>
-              LootList+ (&quot;we,&quot; &quot;us,&quot; or &quot;our&quot;), operated by Alexander
-              &quot;Zev&quot; Mayes, is committed to protecting your privacy. This Privacy Policy
+              LootList+ (&quot;we,&quot; &quot;us,&quot; or &quot;our&quot;), operated by the
+              LootList+ Team, is committed to protecting your privacy. This Privacy Policy
               explains how we collect, use, disclose, and safeguard your information when you use
               our loot management service for World of Warcraft Classic.
             </Text>
@@ -77,7 +77,10 @@ export default function PrivacyPolicyPage() {
                 <Text>Guild membership information</Text>
               </li>
               <li>
-                <Text>Loot priority lists and item preferences</Text>
+                <Text>Loot priority lists and item preferences (up to 50 ranked items)</Text>
+              </li>
+              <li>
+                <Text>Equipped gear data imported from external tools like WowSims</Text>
               </li>
               <li>
                 <Text>Profile information (display name, bio)</Text>
@@ -354,8 +357,8 @@ export default function PrivacyPolicyPage() {
             </ul>
             <Text>
               To exercise any of these rights, please contact us at{' '}
-              <a href="mailto:zev@lootlistplus.com" className="text-accent hover:underline">
-                zev@lootlistplus.com
+              <a href="mailto:info@lootlistplus.com" className="text-accent hover:underline">
+                info@lootlistplus.com
               </a>
               .
             </Text>
@@ -391,8 +394,8 @@ export default function PrivacyPolicyPage() {
               LootList+ is not directed at children under 13 years of age. We do not knowingly
               collect personal information from children under 13. If you believe we have collected
               information from a child under 13, please contact us immediately at{' '}
-              <a href="mailto:zev@lootlistplus.com" className="text-accent hover:underline">
-                zev@lootlistplus.com
+              <a href="mailto:info@lootlistplus.com" className="text-accent hover:underline">
+                info@lootlistplus.com
               </a>{' '}
               and we will take steps to delete that information.
             </Text>
@@ -442,13 +445,11 @@ export default function PrivacyPolicyPage() {
               contact us at:
             </Text>
             <Text>
-              <strong>LootList+</strong>
-              <br />
-              Alexander &quot;Zev&quot; Mayes
+              <strong>LootList+ Team</strong>
               <br />
               Email:{' '}
-              <a href="mailto:zev@lootlistplus.com" className="text-accent hover:underline">
-                zev@lootlistplus.com
+              <a href="mailto:info@lootlistplus.com" className="text-accent hover:underline">
+                info@lootlistplus.com
               </a>
             </Text>
           </section>

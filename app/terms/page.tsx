@@ -16,16 +16,16 @@ export default function TermsOfServicePage() {
           Terms of Service
         </Heading>
         <Text color="secondary" className="mb-8">
-          Last updated: January 30, 2025
+          Last updated: February 6, 2026
         </Text>
 
         <div className="space-y-8 text-foreground">
           <section className="space-y-4">
             <Heading level={2}>1. Acceptance of Terms</Heading>
             <Text>
-              By accessing or using LootList+ (&quot;the Service&quot;), operated by Alexander
-              &quot;Zev&quot; Mayes (&quot;we,&quot; &quot;us,&quot; or &quot;our&quot;), you agree
-              to be bound by these Terms of Service. If you do not agree to these terms, please do
+              By accessing or using LootList+ (&quot;the Service&quot;), operated by the LootList+
+              Team (&quot;we,&quot; &quot;us,&quot; or &quot;our&quot;), you agree to be bound by
+              these Terms of Service. If you do not agree to these terms, please do
               not use the Service.
             </Text>
           </section>
@@ -41,10 +41,13 @@ export default function TermsOfServicePage() {
                 <Text>Create and manage World of Warcraft character profiles</Text>
               </li>
               <li>
-                <Text>Submit and track loot priority lists</Text>
+                <Text>Submit ranked loot priority lists (up to 50 items across multiple brackets)</Text>
               </li>
               <li>
-                <Text>Track raid attendance</Text>
+                <Text>Import gear and best-in-slot lists from external tools like WowSims</Text>
+              </li>
+              <li>
+                <Text>Track raid attendance across content phases</Text>
               </li>
               <li>
                 <Text>Manage guild memberships and settings</Text>
@@ -128,9 +131,9 @@ export default function TermsOfServicePage() {
           <section className="space-y-4">
             <Heading level={2}>5. Intellectual Property</Heading>
             <Text>
-              LootList+ and its original content, features, and functionality are owned by Alexander
-              &quot;Zev&quot; Mayes and are protected by copyright, trademark, and other
-              intellectual property laws.
+              LootList+ and its original content, features, and functionality are owned by the
+              LootList+ Team and are protected by copyright, trademark, and other intellectual
+              property laws.
             </Text>
             <Text>
               World of Warcraft, Blizzard Entertainment, and all related names, logos, and images
@@ -242,8 +245,8 @@ export default function TermsOfServicePage() {
             <Text>
               You may stop using the Service at any time. To delete your account and associated
               data, please contact us at{' '}
-              <a href="mailto:zev@lootlistplus.com" className="text-accent hover:underline">
-                zev@lootlistplus.com
+              <a href="mailto:info@lootlistplus.com" className="text-accent hover:underline">
+                info@lootlistplus.com
               </a>
               .
             </Text>
@@ -273,13 +276,11 @@ export default function TermsOfServicePage() {
               If you have any questions about these Terms, please contact us at:
             </Text>
             <Text>
-              <strong>LootList+</strong>
-              <br />
-              Alexander &quot;Zev&quot; Mayes
+              <strong>LootList+ Team</strong>
               <br />
               Email:{' '}
-              <a href="mailto:zev@lootlistplus.com" className="text-accent hover:underline">
-                zev@lootlistplus.com
+              <a href="mailto:info@lootlistplus.com" className="text-accent hover:underline">
+                info@lootlistplus.com
               </a>
             </Text>
           </section>
