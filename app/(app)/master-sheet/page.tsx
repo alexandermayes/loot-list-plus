@@ -4,7 +4,6 @@ import Image from 'next/image'
 import { createClient } from '@/utils/supabase/client'
 import { useState, useEffect, useRef, useCallback, useMemo, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import ItemLink from '@/app/components/ItemLink'
 import { calculateAttendanceScore, getRankModifier, calculateLootScore, calculatePriorityBonus, getTrialPenalty, calculateBadLuckBonus, type ItemPriority } from '@/utils/calculations'
 import { getSpecRoles } from '@/utils/spec-role-mapping'
 import { getBossOrder, normalizeBossName } from '@/utils/bossOrder'
@@ -28,6 +27,8 @@ import ScoreBreakdownModal from '@/app/components/ScoreBreakdownModal'
 import ScoreComparisonModal from '@/app/components/ScoreComparisonModal'
 import LootListSummaryView, { LootListAggregateItem } from '@/app/components/LootListSummaryView'
 import { refreshWowheadTooltips } from '@/lib/wowhead'
+import { VirtualizedMasterSheet } from './components/VirtualizedMasterSheet'
+import type { PlayerRanking } from './components/BossSection'
 
 interface LootItem {
   id: string
@@ -38,24 +39,7 @@ interface LootItem {
   raid_tier_id?: string
 }
 
-interface PlayerRanking {
-  player_name: string
-  class_name: string
-  class_color: string
-  loot_score: number
-  rank: number
-  // Breakdown components for score comparison
-  attendance_score: number
-  role_modifier: number
-  priority_bonus: number
-  bad_luck_bonus: number
-  trial_penalty: number
-  is_trial: boolean
-  character_id: string
-  // Minimum gate eligibility (only relevant when new_member_mode === 'minimum_gate')
-  raids_attended: number
-  is_eligible: boolean
-}
+// PlayerRanking type imported from ./components/BossSection
 
 interface ItemRankings {
   item: LootItem
@@ -1020,6 +1004,16 @@ function MasterSheetContent() {
     setCollapsedRaidTiers(new Set())
   }, [])
 
+  // Handle comparison modal (for virtualized list)
+  const handleCompare = useCallback((itemName: string, userRanking: PlayerRanking, winnerRanking: PlayerRanking) => {
+    setComparisonData({
+      itemName,
+      userRanking,
+      winnerRanking,
+    })
+    setShowScoreComparison(true)
+  }, [])
+
   // Generate Gargul DFT export format from rankings data (memoized callback)
   const formatRankingsForGargul = useCallback((rankings: ItemRankings[]): string => {
     return rankings.map(ir => {
@@ -1585,193 +1579,16 @@ function MasterSheetContent() {
                 variant="card"
               />
             ) : (
-          <div className="space-y-4">
-            {sortedRaidTiers.map(({ tier, items: tierItems }) => {
-              const isRaidTierCollapsed = collapsedRaidTiers.has(tier.id)
-
-              // Group items by boss within this tier
-              const tierGroupedByBoss: Record<string, ItemRankings[]> = {}
-              tierItems.forEach(ir => {
-                const boss = normalizeBossName(ir.item.boss_name)
-                if (!tierGroupedByBoss[boss]) {
-                  tierGroupedByBoss[boss] = []
-                }
-                tierGroupedByBoss[boss].push(ir)
-              })
-
-              const tierBossNames = Object.keys(tierGroupedByBoss).sort((a, b) => getBossOrder(a) - getBossOrder(b))
-
-              return (
-                <div key={tier.id} className="space-y-3">
-                  {/* Raid Tier Header Bar */}
-                  <button
-                    onClick={() => toggleRaidTierCollapse(tier.id)}
-                    className="w-full text-left px-5 py-3 rounded-xl transition-colors bg-background-subtle border border-border hover:bg-muted"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <img
-                          src={getRaidIcon(tier.name)}
-                          alt=""
-                          className="w-6 h-6 rounded border border-border/50"
-                        />
-                        <span className="text-[15px] font-semibold text-foreground">{tier.name}</span>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <span className="text-[12px] text-muted-foreground">
-                          {tierItems.length} item{tierItems.length !== 1 ? 's' : ''}
-                        </span>
-                        <svg
-                          className={`w-4 h-4 text-muted-foreground transition-transform ${isRaidTierCollapsed ? '' : 'rotate-90'}`}
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                        </svg>
-                      </div>
-                    </div>
-                  </button>
-
-                  {/* Bosses within this raid tier */}
-                  {!isRaidTierCollapsed && (
-                    <div className="space-y-3">
-                      {tierBossNames.map((boss) => {
-                        const items = tierGroupedByBoss[boss]
-                        const isCollapsed = collapsedBosses.has(boss)
-                        return (
-                          <div
-                            key={boss}
-                            id={`boss-${boss.replace(/\s+/g, '-')}`}
-                            className="bg-background-elevated border border-border rounded-xl overflow-hidden scroll-mt-[140px]"
-                          >
-                            {/* Boss Header - Clickable */}
-                            <Button
-                              variant="ghost"
-                              onClick={() => toggleBossCollapse(boss)}
-                              className="w-full px-5 py-3 flex items-center justify-between hover:bg-muted transition-colors !rounded-none"
-                            >
-                              <div className="flex items-center gap-3">
-                                {getBossImage(boss) && (
-                                  <img
-                                    src={getBossImage(boss)!}
-                                    alt={boss}
-                                    className="w-6 h-6 rounded border border-border/50 shadow-sm"
-                                  />
-                                )}
-                                <h2 className="text-[15px] font-semibold text-foreground">{boss}</h2>
-                              </div>
-                              <div className="flex items-center gap-3">
-                                <span className="text-[12px] text-foreground-muted font-medium">
-                                  {items.length} item{items.length !== 1 ? 's' : ''}
-                                </span>
-                                <svg
-                                  className={`w-4 h-4 text-muted-foreground transition-transform ${isCollapsed ? '' : 'rotate-90'}`}
-                                  fill="none"
-                                  stroke="currentColor"
-                                  viewBox="0 0 24 24"
-                                >
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                                </svg>
-                              </div>
-                            </Button>
-
-                            {/* Items Table - Collapsible */}
-                            {!isCollapsed && (
-                              <div className="border-t border-border overflow-x-auto">
-                                <table className="w-full min-w-[800px]">
-                                  <thead>
-                                    <tr className="bg-background-subtle">
-                                      <th className="px-5 py-2.5 text-left text-[12px] font-medium text-foreground-muted w-[280px]">Item</th>
-                                      <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted w-[100px]">Slot</th>
-                                      <th className="px-3 py-2.5 text-center text-[12px] font-medium text-foreground-muted w-[120px]">#1</th>
-                                      <th className="px-3 py-2.5 text-center text-[12px] font-medium text-foreground-muted w-[120px]">#2</th>
-                                      <th className="px-3 py-2.5 text-center text-[12px] font-medium text-foreground-muted w-[120px]">#3</th>
-                                      <th className="px-3 py-2.5 text-center text-[12px] font-medium text-foreground-muted w-[120px]">#4</th>
-                                      <th className="px-3 py-2.5 text-center text-[12px] font-medium text-foreground-muted w-[120px]">#5</th>
-                                    </tr>
-                                  </thead>
-                                  <tbody className="divide-y divide-border">
-                                    {items.map((ir) => (
-                                      <tr
-                                        key={ir.item.id}
-                                        id={`item-${ir.item.id}`}
-                                        className={`transition-all hover:bg-muted ${ir.rankings.length === 0 ? 'bg-destructive/10' : ''}`}
-                                      >
-                                        <td className="px-5 py-2.5">
-                                          <ItemLink
-                                            name={ir.item.name}
-                                            wowheadId={ir.item.wowhead_id}
-                                            className="font-medium text-[13px]"
-                                          />
-                                        </td>
-                                        <td className="px-3 py-2.5 text-[12px] text-foreground-muted">
-                                          {ir.item.item_slot}
-                                        </td>
-                                        {[0, 1, 2, 3, 4].map((index) => {
-                                          const ranking = ir.rankings[index]
-                                          const isCurrentUser = ranking && activeCharacter?.id === ranking.character_id
-                                          const canCompare = isCurrentUser && index > 0 && ir.rankings[0]
-                                          return (
-                                            <td key={index} className="px-3 py-2.5 text-center">
-                                              {ranking ? (
-                                                <div
-                                                  className={`flex flex-col items-center ${
-                                                    isCurrentUser ? 'relative' : ''
-                                                  } ${
-                                                    canCompare ? 'cursor-pointer hover:bg-accent/10 rounded-lg p-1 -m-1 transition-colors' : ''
-                                                  } ${
-                                                    !ranking.is_eligible ? 'opacity-50' : ''
-                                                  }`}
-                                                  onClick={canCompare ? () => {
-                                                    setComparisonData({
-                                                      itemName: ir.item.name,
-                                                      userRanking: ranking,
-                                                      winnerRanking: ir.rankings[0],
-                                                    })
-                                                    setShowScoreComparison(true)
-                                                  } : undefined}
-                                                >
-                                                  <span
-                                                    className={`text-[13px] font-medium ${isCurrentUser ? 'underline decoration-dotted underline-offset-2' : ''}`}
-                                                    style={{ color: ranking.class_color }}
-                                                  >
-                                                    {ranking.player_name}
-                                                    {ranking.is_trial && (
-                                                      <span className="text-warning text-[10px] ml-0.5" title="Trial member">(T)</span>
-                                                    )}
-                                                    {!ranking.is_eligible && (
-                                                      <span className="text-destructive text-[10px] ml-0.5" title={`Ineligible: ${ranking.raids_attended}/${guildSettings?.minimum_raid_days || 2} raids attended`}>⊘</span>
-                                                    )}
-                                                  </span>
-                                                  <span className="text-[11px] text-foreground-muted">
-                                                    {ranking.loot_score.toFixed(guildSettings?.decimal_places ?? 2)}
-                                                  </span>
-                                                  {canCompare && (
-                                                    <span className="text-[10px] text-accent mt-0.5">Why?</span>
-                                                  )}
-                                                </div>
-                                              ) : (
-                                                <span className="text-muted-foreground">—</span>
-                                              )}
-                                            </td>
-                                          )
-                                        })}
-                                      </tr>
-                                    ))}
-                                  </tbody>
-                                </table>
-                              </div>
-                            )}
-                          </div>
-                        )
-                      })}
-                    </div>
-                  )}
-                </div>
-              )
-            })}
-          </div>
+              <VirtualizedMasterSheet
+                sortedRaidTiers={sortedRaidTiers}
+                collapsedRaidTiers={collapsedRaidTiers}
+                collapsedBosses={collapsedBosses}
+                onToggleRaidTierCollapse={toggleRaidTierCollapse}
+                onToggleBossCollapse={toggleBossCollapse}
+                activeCharacterId={activeCharacter?.id}
+                guildSettings={guildSettings}
+                onCompare={handleCompare}
+              />
             )}
             </>
             )}

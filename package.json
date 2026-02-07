@@ -38,6 +38,7 @@
     "@radix-ui/react-switch": "^1.2.6",
     "@supabase/ssr": "^0.8.0",
     "@supabase/supabase-js": "^2.90.0",
+    "@tanstack/react-virtual": "^3.13.18",
     "@upstash/ratelimit": "^2.0.8",
     "@upstash/redis": "^1.36.1",
     "dotenv": "^17.2.3",
