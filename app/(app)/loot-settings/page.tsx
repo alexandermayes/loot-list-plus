@@ -2326,7 +2326,7 @@ export default function AdminLootItems() {
                         {/* BLP (Bad Luck Protection) - Automatic tracking */}
                         <div className="border-t border-border pt-4 mt-2">
                           <p className="text-[13px] font-medium text-foreground mb-1">Automatic bad luck tracking (BLP)</p>
-                          <p className="text-[12px] text-muted-foreground mb-4">Automatically track when raiders are "in running" for an item (have it ranked and attended the raid) but don't receive it. BLP bonus accumulates each time they're passed over and resets when they receive the item.</p>
+                          <p className="text-[12px] text-muted-foreground mb-4">Compensate raiders who lose rolls or get passed over for items they want. When a raider is "in running" (has the item ranked and attended the raid) but doesn't receive it, their BLP bonus increases. Resets to 0 when they finally win the item.</p>
 
                           <div className="grid grid-cols-3 gap-4">
                             <div>
@@ -2343,7 +2343,7 @@ export default function AdminLootItems() {
                             </div>
 
                             <div>
-                              <Label className="block mb-2">Bonus per pass</Label>
+                              <Label className="block mb-2">Bonus per loss</Label>
                               <Input
                                 variant="pill"
                                 type="number"
