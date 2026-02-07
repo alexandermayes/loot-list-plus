@@ -202,7 +202,12 @@ export default function AdminLootItems() {
     trial_penalty_value: -2.0,
     trial_auto_promote_enabled: false,
     trial_auto_promote_weeks: 4,
-    new_members_start_as_trial: false
+    new_members_start_as_trial: false,
+
+    // BLP (Bad Luck Protection) Settings
+    blp_enabled: false,
+    blp_increment: 1.0,
+    blp_maximum: 5.0
   })
 
   const [guildRoles, setGuildRoles] = useState<{ name: string; position: number }[]>([
@@ -433,7 +438,12 @@ export default function AdminLootItems() {
         trial_penalty_value: settings.trial_penalty_value,
         trial_auto_promote_enabled: settings.trial_auto_promote_enabled,
         trial_auto_promote_weeks: settings.trial_auto_promote_weeks,
-        new_members_start_as_trial: settings.new_members_start_as_trial
+        new_members_start_as_trial: settings.new_members_start_as_trial,
+
+        // BLP (Bad Luck Protection) Settings
+        blp_enabled: settings.blp_enabled,
+        blp_increment: settings.blp_increment,
+        blp_maximum: settings.blp_maximum
       }
 
       console.log('Filtered settings to save:', safeSettings)
@@ -2311,6 +2321,57 @@ export default function AdminLootItems() {
                             className="bg-background-elevated"
                           />
                         </div>
+                        </div>
+
+                        {/* BLP (Bad Luck Protection) - Automatic tracking */}
+                        <div className="border-t border-border pt-4 mt-2">
+                          <p className="text-[13px] font-medium text-foreground mb-1">Automatic bad luck tracking (BLP)</p>
+                          <p className="text-[12px] text-muted-foreground mb-4">Automatically track when raiders are "in running" for an item (have it ranked and attended the raid) but don't receive it. BLP bonus accumulates each time they're passed over and resets when they receive the item.</p>
+
+                          <div className="grid grid-cols-3 gap-4">
+                            <div>
+                              <Label className="block mb-2">Enable BLP tracking</Label>
+                              <Select
+                                variant="pill"
+                                value={settings.blp_enabled ? 'yes' : 'no'}
+                                onChange={(e) => setSettings({ ...settings, blp_enabled: e.target.value === 'yes' })}
+                                className="bg-background-elevated"
+                              >
+                                <option value="no">No</option>
+                                <option value="yes">Yes</option>
+                              </Select>
+                            </div>
+
+                            <div>
+                              <Label className="block mb-2">Bonus per pass</Label>
+                              <Input
+                                variant="pill"
+                                type="number"
+                                step="0.5"
+                                min="0.5"
+                                max="10"
+                                value={settings.blp_increment}
+                                onChange={(e) => setSettings({ ...settings, blp_increment: Number(e.target.value) })}
+                                disabled={!settings.blp_enabled}
+                                className="bg-background-elevated"
+                              />
+                            </div>
+
+                            <div>
+                              <Label className="block mb-2">Maximum bonus</Label>
+                              <Input
+                                variant="pill"
+                                type="number"
+                                step="0.5"
+                                min="1"
+                                max="50"
+                                value={settings.blp_maximum}
+                                onChange={(e) => setSettings({ ...settings, blp_maximum: Number(e.target.value) })}
+                                disabled={!settings.blp_enabled}
+                                className="bg-background-elevated"
+                              />
+                            </div>
+                          </div>
                         </div>
                       </CardContent>
                     </Card>

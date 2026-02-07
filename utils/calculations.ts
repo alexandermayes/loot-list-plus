@@ -25,6 +25,10 @@ interface GuildSettings {
   trial_auto_promote_enabled: boolean
   trial_auto_promote_weeks: number
   new_members_start_as_trial: boolean
+  // BLP (Bad Luck Protection) settings
+  blp_enabled: boolean
+  blp_increment: number
+  blp_maximum: number
 }
 
 interface AttendanceRecord {
@@ -65,7 +69,11 @@ const DEFAULT_SETTINGS: Partial<GuildSettings> = {
   trial_penalty_value: -2,
   trial_auto_promote_enabled: false,
   trial_auto_promote_weeks: 4,
-  new_members_start_as_trial: false
+  new_members_start_as_trial: false,
+  // BLP defaults
+  blp_enabled: false,
+  blp_increment: 1,
+  blp_maximum: 5
 }
 
 /**
@@ -190,6 +198,28 @@ export function getTrialPenalty(
 
   // Return the penalty value (should be negative)
   return config.trial_penalty_value
+}
+
+/**
+ * Calculate Bad Luck Protection bonus based on times passed and guild settings
+ * @param timesPassed - Number of times the character was in running but didn't win
+ * @param settings - Guild settings containing BLP configuration
+ * @returns The BLP bonus value (0 if disabled or no passes)
+ */
+export function calculateBadLuckBonus(
+  timesPassed: number,
+  settings: Partial<GuildSettings> = {}
+): number {
+  const config = { ...DEFAULT_SETTINGS, ...settings } as GuildSettings
+
+  // If BLP is disabled or no passes, return 0
+  if (!config.blp_enabled || timesPassed <= 0) {
+    return 0
+  }
+
+  // Calculate bonus: times_passed × increment, capped at maximum
+  const bonus = timesPassed * config.blp_increment
+  return Math.min(bonus, config.blp_maximum)
 }
 
 /**

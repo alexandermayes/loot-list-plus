@@ -1661,6 +1661,18 @@ export default function RaidTrackingPage() {
         errorCount++
       } else {
         successCount++
+
+        // Update BLP (Bad Luck Protection) - fire and forget
+        fetch('/api/blp/update', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            guild_id: activeGuild.id,
+            loot_item_id: entry.matchedItem.id,
+            winner_character_id: characterId,
+            raid_event_id: showImportModal.raidId
+          })
+        }).catch(err => console.error('BLP update failed:', err))
       }
     }
 

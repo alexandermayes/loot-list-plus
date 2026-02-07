@@ -5,7 +5,7 @@ import { createClient } from '@/utils/supabase/client'
 import { useState, useEffect, useRef, useCallback, useMemo, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import ItemLink from '@/app/components/ItemLink'
-import { calculateAttendanceScore, getRankModifier, calculateLootScore, calculatePriorityBonus, getTrialPenalty, type ItemPriority } from '@/utils/calculations'
+import { calculateAttendanceScore, getRankModifier, calculateLootScore, calculatePriorityBonus, getTrialPenalty, calculateBadLuckBonus, type ItemPriority } from '@/utils/calculations'
 import { getSpecRoles } from '@/utils/spec-role-mapping'
 import { getBossOrder, normalizeBossName } from '@/utils/bossOrder'
 import { getBossImage } from '@/utils/bossImages'
@@ -591,6 +591,22 @@ function MasterSheetContent() {
           (lootHistoryData || []).map((h: { character_id: string; loot_item_id: string }) => `${h.character_id}-${h.loot_item_id}`)
         )
 
+        // Fetch BLP data for all items in this phase
+        let blpDataMap: Record<string, number> = {}
+        if (guildSettings.blp_enabled) {
+          try {
+            const blpResponse = await fetch(
+              `/api/blp?guild_id=${guildId}&item_ids=${itemIds.join(',')}`
+            )
+            if (blpResponse.ok) {
+              const blpResult = await blpResponse.json()
+              blpDataMap = blpResult.data || {}
+            }
+          } catch (err) {
+            console.error('Error loading BLP data:', err)
+          }
+        }
+
         // Pre-calculate attendance for all characters in a single batched query
         // This replaces N individual queries with just 4 bulk queries total
         type CharacterData = { id: string; user_id: string; name: string | null; spec_id: string | null }
@@ -652,7 +668,10 @@ function MasterSheetContent() {
               specRole
             )
 
-            const badLuckBonus = 0 // TODO: implement bad luck tracking
+            // Calculate BLP bonus from tracked passes
+            const blpKey = `${character.id}-${item.id}`
+            const timesPassed = blpDataMap[blpKey] || 0
+            const badLuckBonus = calculateBadLuckBonus(timesPassed, guildSettings)
 
             // Get membership status and calculate trial penalty
             const membershipStatus = (character as any).character_guild_memberships?.[0]?.membership_status || 'full'
@@ -1112,6 +1131,22 @@ function MasterSheetContent() {
       (lootHistoryData || []).map((h: { character_id: string; loot_item_id: string }) => `${h.character_id}-${h.loot_item_id}`)
     )
 
+    // Fetch BLP data for all items in this tier
+    let tierBlpDataMap: Record<string, number> = {}
+    if (guildSettings.blp_enabled) {
+      try {
+        const blpResponse = await fetch(
+          `/api/blp?guild_id=${guildId}&item_ids=${itemIds.join(',')}`
+        )
+        if (blpResponse.ok) {
+          const blpResult = await blpResponse.json()
+          tierBlpDataMap = blpResult.data || {}
+        }
+      } catch (err) {
+        console.error('Error loading BLP data:', err)
+      }
+    }
+
     // Pre-calculate attendance for all characters in a single batched query
     type TierCharacterData = { id: string; user_id: string; name: string | null; spec_id: string | null }
     const attendanceCache = await calculateAttendanceBatch(
@@ -1169,7 +1204,10 @@ function MasterSheetContent() {
           specRole
         )
 
-        const badLuckBonus = 0 // TODO: implement bad luck tracking
+        // Calculate BLP bonus from tracked passes
+        const tierBlpKey = `${character.id}-${item.id}`
+        const tierTimesPassed = tierBlpDataMap[tierBlpKey] || 0
+        const badLuckBonus = calculateBadLuckBonus(tierTimesPassed, guildSettings)
 
         // Calculate trial penalty
         const membershipStatus = (character as any).character_guild_memberships?.[0]?.membership_status || 'full'
