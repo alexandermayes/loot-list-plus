@@ -166,7 +166,7 @@ async function getEligibleCharacters(
     }
   }
   const charactersWithItem = new Set<string>()
-  for (const item of submissionItems as SubmissionItemWithJoin[]) {
+  for (const item of submissionItems as unknown as SubmissionItemWithJoin[]) {
     if (item.loot_submissions?.character_id) {
       charactersWithItem.add(item.loot_submissions.character_id)
     }

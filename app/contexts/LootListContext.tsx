@@ -66,7 +66,8 @@ interface BisImportResult {
   code?: string
 }
 
-interface LootListContextType {
+// Separate interface for data (changes frequently, triggers re-renders)
+interface LootListDataContextType {
   // Data
   lootItems: PhaseLootItem[]
   submission: LootSubmission | null
@@ -92,8 +93,10 @@ interface LootListContextType {
   hasChanges: boolean
   initialRankings: Record<string, string>
   originalStatus: string | null
+}
 
-  // Actions
+// Separate interface for actions (stable functions, rarely trigger re-renders)
+interface LootListActionsContextType {
   setSelectedPhase: (phase: number) => void
   handleItemSelect: (rank: number, slot: number, itemId: string) => void
   clearAllRankings: () => void
@@ -103,7 +106,13 @@ interface LootListContextType {
   refreshGear: () => void
 }
 
-const LootListContext = createContext<LootListContextType | null>(null)
+// Combined type for backward compatibility
+interface LootListContextType extends LootListDataContextType, LootListActionsContextType {}
+
+// Create separate contexts for data and actions
+// This prevents components that only use actions from re-rendering when data changes
+const LootListDataContext = createContext<LootListDataContextType | null>(null)
+const LootListActionsContext = createContext<LootListActionsContextType | null>(null)
 
 export function LootListProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter()
@@ -911,8 +920,9 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
     return items.filter(item => activeTierIds.has(item.raid_tier_id))
   }, [itemsData?.items, phaseTiers])
 
-  const value: LootListContextType = {
-    // Data
+  // Memoize data value to prevent unnecessary re-renders
+  // This object changes when data state changes
+  const dataValue = useMemo<LootListDataContextType>(() => ({
     lootItems: filteredLootItems,
     submission: submissionData?.submission || null,
     rankings,
@@ -925,20 +935,40 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
     enforceSlotRestrictions,
     equippedItems: gearData?.items || [],
     equippedWowheadIds,
-
-    // Loading states
     isLoading,
     isContentLoading,
     isSaving,
     isImportingBis,
     isGearLoading: gearLoading,
-
-    // Computed
     hasChanges,
     initialRankings,
-    originalStatus,
+    originalStatus
+  }), [
+    filteredLootItems,
+    submissionData?.submission,
+    rankings,
+    sortedTiers,
+    phaseTiers,
+    phases,
+    statusesData?.phaseStatuses,
+    selectedPhase,
+    phaseDeadline,
+    enforceSlotRestrictions,
+    gearData?.items,
+    equippedWowheadIds,
+    isLoading,
+    isContentLoading,
+    isSaving,
+    isImportingBis,
+    gearLoading,
+    hasChanges,
+    initialRankings,
+    originalStatus
+  ])
 
-    // Actions
+  // Memoize actions value - these are stable functions that rarely change
+  // Components using only actions won't re-render when data changes
+  const actionsValue = useMemo<LootListActionsContextType>(() => ({
     setSelectedPhase,
     handleItemSelect,
     clearAllRankings,
@@ -946,21 +976,49 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
     refreshData,
     importBisItems,
     refreshGear
-  }
+  }), [
+    setSelectedPhase,
+    handleItemSelect,
+    clearAllRankings,
+    saveSubmission,
+    refreshData,
+    importBisItems,
+    refreshGear
+  ])
 
   return (
-    <LootListContext.Provider value={value}>
-      {children}
-    </LootListContext.Provider>
+    <LootListDataContext.Provider value={dataValue}>
+      <LootListActionsContext.Provider value={actionsValue}>
+        {children}
+      </LootListActionsContext.Provider>
+    </LootListDataContext.Provider>
   )
 }
 
-export function useLootList() {
-  const context = useContext(LootListContext)
+// Hook for components that only need data (most common use case)
+export function useLootListData() {
+  const context = useContext(LootListDataContext)
   if (!context) {
-    throw new Error('useLootList must be used within a LootListProvider')
+    throw new Error('useLootListData must be used within a LootListProvider')
   }
   return context
+}
+
+// Hook for components that only need actions (prevents re-renders from data changes)
+export function useLootListActions() {
+  const context = useContext(LootListActionsContext)
+  if (!context) {
+    throw new Error('useLootListActions must be used within a LootListProvider')
+  }
+  return context
+}
+
+// Combined hook for backward compatibility
+// Components using this will re-render on any context change
+export function useLootList(): LootListContextType {
+  const data = useLootListData()
+  const actions = useLootListActions()
+  return { ...data, ...actions }
 }
 
 // Re-export types for external use
