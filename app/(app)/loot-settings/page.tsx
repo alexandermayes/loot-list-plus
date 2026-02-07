@@ -2347,8 +2347,8 @@ export default function AdminLootItems() {
                               <Input
                                 variant="pill"
                                 type="number"
-                                step="0.5"
-                                min="0.5"
+                                step="0.01"
+                                min="0.01"
                                 max="10"
                                 value={settings.blp_increment}
                                 onChange={(e) => setSettings({ ...settings, blp_increment: Number(e.target.value) })}
@@ -2362,8 +2362,8 @@ export default function AdminLootItems() {
                               <Input
                                 variant="pill"
                                 type="number"
-                                step="0.5"
-                                min="1"
+                                step="0.1"
+                                min="0.1"
                                 max="50"
                                 value={settings.blp_maximum}
                                 onChange={(e) => setSettings({ ...settings, blp_maximum: Number(e.target.value) })}
