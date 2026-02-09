@@ -26,6 +26,7 @@ import { useNotification } from '@/app/contexts/NotificationContext'
 import { ClassificationBadge } from '@/components/ui/classification-badge'
 import { BisImportModal } from '@/app/components/BisImportModal'
 import { HorizontalScroll } from '@/components/ui/horizontal-scroll'
+import ItemLink from '@/app/components/ItemLink'
 
 // Helper function for rank colors - defined outside component for stability
 const getRankColor = (rank: number) => {
@@ -202,6 +203,9 @@ export default function LootList() {
   const [showInstructionsModal, setShowInstructionsModal] = useState(false)
   const [showBisImportModal, setShowBisImportModal] = useState(false)
   const [expandedErrors, setExpandedErrors] = useState<Set<string>>(new Set())
+  const [showUnrankedPanel, setShowUnrankedPanel] = useState(false)
+  const [showMoreMenu, setShowMoreMenu] = useState(false)
+  const moreMenuRef = React.useRef<HTMLDivElement>(null)
 
   const { confirm, ConfirmDialog } = useConfirm()
   const { showNotification } = useNotification()
@@ -210,6 +214,18 @@ export default function LootList() {
   useEffect(() => {
     document.title = 'LootList+ • Loot List'
   }, [])
+
+  // Close More menu when clicking outside
+  useEffect(() => {
+    if (!showMoreMenu) return
+    const handleClickOutside = (event: MouseEvent) => {
+      if (moreMenuRef.current && !moreMenuRef.current.contains(event.target as Node)) {
+        setShowMoreMenu(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [showMoreMenu])
 
   // Helper to check if we're past the submission deadline
   const isPastDeadline = (): boolean => {
@@ -346,45 +362,27 @@ export default function LootList() {
     // Off-spec: ALL equippable items (superset of everything)
     const offSpecItems = lootItems
 
-    // Debug: log item counts with detailed field inspection
-    const sampleItem = lootItems[0]
-    const notPriodItems = lootItems.filter(i => isNotPriod(i))
-    const sampleNotPriod = notPriodItems[0]
-
-    console.log('[loot-list page] Sample item fields:', sampleItem ? {
-      name: sampleItem.name,
-      character_spec_type: sampleItem.character_spec_type,
-      character_spec_type_type: typeof sampleItem.character_spec_type,
-      is_allocated: sampleItem.is_allocated,
-      is_allocated_type: typeof sampleItem.is_allocated,
-      has_primary_only: sampleItem.has_primary_only,
-      has_primary_only_type: typeof sampleItem.has_primary_only,
-    } : 'no items')
-
-    // Log a sample notPriod item to see if has_primary_only is set
-    console.log('[loot-list page] Sample notPriod item:', sampleNotPriod ? {
-      name: sampleNotPriod.name,
-      character_spec_type: sampleNotPriod.character_spec_type,
-      is_allocated: sampleNotPriod.is_allocated,
-      has_primary_only: sampleNotPriod.has_primary_only,
-      has_primary_only_type: typeof sampleNotPriod.has_primary_only,
-    } : 'no notPriod items')
-
-    console.log('[loot-list page] Item counts:', {
-      total: lootItems.length,
-      primaryOnly: lootItems.filter(i => i.character_spec_type === 'primary').length,
-      secondaryOnly: lootItems.filter(i => i.character_spec_type === 'secondary').length,
-      notPriod: notPriodItems.length,
-      unallocated: lootItems.filter(i => !i.is_allocated).length,
-      hasPrimaryOnly: lootItems.filter(i => i.has_primary_only === true).length,
-      notPriodWithPrimaryOnly: lootItems.filter(i => isNotPriod(i) && i.has_primary_only === true).length,
-      bracket14Items: bracket14Items.length,
-      noBracketItems: noBracketItems.length,
-      offSpecItems: offSpecItems.length
-    })
-
     return { bracket14Items, noBracketItems, offSpecItems }
   }, [lootItems])
+
+  // Compute unranked items (all spec items not yet on the list)
+  const unrankedItems = useMemo(() => {
+    const rankedItemIds = new Set(Object.values(rankings))
+    return lootItems.filter(item => !rankedItemIds.has(item.id))
+  }, [lootItems, rankings])
+
+  // Group unranked items by boss for display
+  const unrankedByBoss = useMemo(() => {
+    const byBoss: Record<string, LootItem[]> = {}
+    unrankedItems.forEach(item => {
+      const boss = normalizeBossName(item.boss_name || 'Unknown')
+      if (!byBoss[boss]) {
+        byBoss[boss] = []
+      }
+      byBoss[boss].push(item)
+    })
+    return byBoss
+  }, [unrankedItems])
 
   // Bracket validation
   type BracketValidation = {
@@ -717,8 +715,10 @@ export default function LootList() {
           </div>
         )}
 
-        {/* Main Content */}
-        <div className="px-4 sm:px-6 lg:px-8 pt-1.5 pb-6 space-y-6">
+        {/* Main Content - Flex container for loot list and sidebar */}
+        <div className="flex gap-6 px-4 sm:px-6 lg:px-8 pt-1.5 pb-6">
+        {/* Loot List Content */}
+        <div className={`flex-1 min-w-0 space-y-6 transition-all duration-300 ${showUnrankedPanel ? 'pr-0' : ''}`}>
         {/* Content Loading State */}
         {(isLoading || isContentLoading) ? (
           <LootListContentSkeleton />
@@ -726,75 +726,116 @@ export default function LootList() {
         <>
         {/* Status Banner */}
         {selectedPhase !== null && (
-          <div className={`rounded-xl p-4 sm:p-6 border ${submission ? getStatusColor(submission.status) : getStatusColor('draft')}`}>
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div className="flex items-center gap-3">
-                {/* Show first active tier's raid icon, or first tier if none active */}
-                {phaseTiers.length > 0 && (
-                  <img
-                    src={getRaidIcon(phaseTiers.find(t => t.is_guild_active)?.name || phaseTiers[0]?.name || '')}
-                    alt=""
-                    className="w-10 h-10 rounded-lg border-2 border-border/50 shadow-md"
-                  />
-                )}
-                <div>
-                  <h2 className="font-semibold text-lg text-foreground">
-                    Phase {selectedPhase}
-                    {phaseTiers.length > 0 && (
-                      <span className="font-normal text-muted-foreground text-sm ml-2">
-                        ({phaseTiers.filter(t => t.is_guild_active).map(t => t.name).join(', ') || 'No active raids'})
-                      </span>
+          <div className="sticky top-14 z-10 -mb-2 pb-2 bg-background/95 backdrop-blur-md">
+            <div className={`rounded-xl p-4 sm:p-6 border ${submission ? getStatusColor(submission.status) : getStatusColor('draft')}`}>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  {/* Show first active tier's raid icon, or first tier if none active */}
+                  {phaseTiers.length > 0 && (
+                    <img
+                      src={getRaidIcon(phaseTiers.find(t => t.is_guild_active)?.name || phaseTiers[0]?.name || '')}
+                      alt=""
+                      className="w-10 h-10 rounded-lg border-2 border-border/50 shadow-md"
+                    />
+                  )}
+                  <div>
+                    <h2 className="font-semibold text-lg text-foreground">
+                      Phase {selectedPhase}
+                      {phaseTiers.length > 0 && (
+                        <span className="font-normal text-muted-foreground text-sm ml-2">
+                          ({phaseTiers.filter(t => t.is_guild_active).map(t => t.name).join(', ') || 'No active raids'})
+                        </span>
+                      )}
+                    </h2>
+                    <p className="text-sm text-muted-foreground mt-0.5">
+                      {submission ? getStatusLabel(submission.status) : 'Draft'}
+                      {submission?.submitted_at && (
+                        <span> · Submitted {new Date(submission.submitted_at).toLocaleDateString()}</span>
+                      )}
+                      {phaseDeadline && !isPastDeadline() && (
+                        <span> · Due {new Date(phaseDeadline).toLocaleString()}</span>
+                      )}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex flex-wrap items-center gap-3">
+                  <span className="text-sm opacity-75">{rankedCount} items ranked</span>
+                  {/* More Menu Dropdown */}
+                  <div className="relative" ref={moreMenuRef}>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => setShowMoreMenu(!showMoreMenu)}
+                      className="w-10 h-10"
+                    >
+                      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                        <circle cx="5" cy="12" r="2" />
+                        <circle cx="12" cy="12" r="2" />
+                        <circle cx="19" cy="12" r="2" />
+                      </svg>
+                    </Button>
+                    {showMoreMenu && (
+                      <div className="absolute right-0 top-full mt-2 w-48 bg-background-elevated border border-border rounded-lg shadow-lg z-50 overflow-hidden">
+                        <button
+                          className="w-full px-4 py-2.5 text-left text-sm hover:bg-muted transition-colors flex items-center gap-2"
+                          onClick={() => {
+                            setShowUnrankedPanel(!showUnrankedPanel)
+                            setShowMoreMenu(false)
+                          }}
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                          </svg>
+                          Show {unrankedItems.length} Unranked
+                        </button>
+                        {rankedCount > 0 && (
+                          <button
+                            className="w-full px-4 py-2.5 text-left text-sm text-destructive hover:bg-destructive/10 transition-colors flex items-center gap-2"
+                            onClick={() => {
+                              handleClearList()
+                              setShowMoreMenu(false)
+                            }}
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                            Clear List
+                          </button>
+                        )}
+                      </div>
                     )}
-                  </h2>
-                  <p className="text-sm text-muted-foreground mt-0.5">
-                    {submission ? getStatusLabel(submission.status) : 'Draft'}
-                    {submission?.submitted_at && (
-                      <span> · Submitted {new Date(submission.submitted_at).toLocaleDateString()}</span>
-                    )}
-                    {phaseDeadline && !isPastDeadline() && (
-                      <span> · Due {new Date(phaseDeadline).toLocaleString()}</span>
-                    )}
-                  </p>
+                  </div>
+                  {/* Import BIS Button */}
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowBisImportModal(true)}
+                  >
+                    Import BIS
+                  </Button>
+                  {/* Submit for Review Button */}
+                  <Button
+                    onClick={() => saveSubmission(true)}
+                    disabled={
+                      rankedCount === 0 ||
+                      duplicateItems.length > 0 ||
+                      hasValidationErrors ||
+                      (!hasChanges && (submission?.status === 'approved' || submission?.status === 'pending'))
+                    }
+                    loading={isSaving}
+                  >
+                    Submit for Review
+                  </Button>
                 </div>
               </div>
-              <div className="flex flex-wrap items-center gap-3">
-                <span className="text-sm opacity-75">{rankedCount} items ranked</span>
-                {/* Import BIS Button */}
-                <Button
-                  variant="secondary"
-                  onClick={() => setShowBisImportModal(true)}
-                >
-                  Import BIS
-                </Button>
-                {/* Clear List Button */}
-                {rankedCount > 0 && (
-                  <Button variant="destructive" onClick={handleClearList}>
-                    Clear List
-                  </Button>
-                )}
-                {/* Submit for Review Button */}
-                <Button
-                  onClick={() => saveSubmission(true)}
-                  disabled={
-                    rankedCount === 0 ||
-                    duplicateItems.length > 0 ||
-                    hasValidationErrors ||
-                    (!hasChanges && (submission?.status === 'approved' || submission?.status === 'pending'))
-                  }
-                  loading={isSaving}
-                >
-                  Submit for Review
-                </Button>
-              </div>
+              {submission?.review_notes && (
+                <div className="mt-3 p-4 bg-black/20 rounded-xl">
+                  <p className="text-sm"><strong>Officer Notes:</strong> {submission.review_notes}</p>
+                </div>
+              )}
             </div>
-            {submission?.review_notes && (
-              <div className="mt-3 p-4 bg-black/20 rounded-xl">
-                <p className="text-sm"><strong>Officer Notes:</strong> {submission.review_notes}</p>
-              </div>
-            )}
           </div>
         )}
-
 
         {/* Deadline Warning */}
         {phaseDeadline && isPastDeadline() && (
@@ -1359,6 +1400,71 @@ export default function LootList() {
         )}
         </>
         )}
+        </div>
+
+        {/* Unranked Items Sidebar */}
+        <div
+          className={`shrink-0 transition-all duration-300 ease-out ${
+            showUnrankedPanel ? 'w-80 opacity-100' : 'w-0 opacity-0 overflow-hidden'
+          }`}
+        >
+          <div className="w-80 bg-background-elevated border border-border rounded-xl flex flex-col sticky top-14 max-h-[calc(100vh-4.5rem)]">
+            {/* Panel Header */}
+            <div className="p-4 border-b border-border flex items-center justify-between shrink-0">
+              <div>
+                <h3 className="font-semibold text-foreground">Unranked Items</h3>
+                <p className="text-xs text-muted-foreground">{unrankedItems.length} items not on your list</p>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setShowUnrankedPanel(false)}
+                className="w-8 h-8"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </Button>
+            </div>
+
+            {/* Panel Content - Scrollable */}
+            <div className="flex-1 overflow-y-auto">
+              {unrankedItems.length === 0 ? (
+                <div className="p-6 text-center">
+                  <p className="text-muted-foreground text-sm">All items are ranked!</p>
+                </div>
+              ) : (
+                Object.keys(unrankedByBoss).sort().map(boss => (
+                  <div key={boss}>
+                    {/* Boss Header */}
+                    <div className="px-4 py-2 bg-muted border-b border-border sticky top-0 z-10">
+                      <p className="text-xs font-semibold text-foreground uppercase tracking-wide">{boss}</p>
+                    </div>
+                    {/* Boss Items */}
+                    <div>
+                      {unrankedByBoss[boss].map(item => (
+                        <div key={item.id} className="px-4 py-3 hover:bg-muted/50 transition-colors border-b border-border/30">
+                          <div className="flex items-center gap-2">
+                            <span className="flex-1 min-w-0">
+                              <ItemLink name={item.name} wowheadId={item.wowhead_id} clickable={true} />
+                            </span>
+                            {item.classification && item.classification !== 'Unlimited' && (
+                              <ClassificationBadge
+                                classification={item.classification as 'Reserved' | 'Limited' | 'Unlimited'}
+                                compact
+                              />
+                            )}
+                          </div>
+                          <p className="text-[11px] text-muted-foreground mt-1">{item.item_slot}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
         </div>
       </div>
     </ExpansionGuard>

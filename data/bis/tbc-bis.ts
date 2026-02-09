@@ -19,6 +19,8 @@ export type EquipmentSlot =
 export interface BisItem {
   wowhead_id: number
   priority: 'bis' | 'alt'  // BIS = best, Alt = alternative/soft BIS
+  dps_gain?: number  // Expected DPS/HPS gain from this item (from WoWSims data)
+  stat_weight?: number  // Weighted stat value for ranking
 }
 
 export type BisSlotItems = BisItem[]

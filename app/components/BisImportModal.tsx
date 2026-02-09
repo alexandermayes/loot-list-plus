@@ -245,14 +245,31 @@ export function BisImportModal({
 
                   {!gearSuccess && (
                     <>
-                      <div className="space-y-2 text-foreground-secondary text-[13px]">
-                        <div className="flex gap-2">
-                          <span className="text-accent font-medium">1.</span>
-                          <span>Install the <a href="https://www.curseforge.com/wow/addons/wowsimsexporter" target="_blank" rel="noopener noreferrer" className="text-accent hover:underline inline-flex items-center gap-1">WowSims Exporter addon <HugeiconsIcon icon={LinkSquare01Icon} size={14} /></a></span>
+                      <div className="space-y-3 text-foreground-secondary text-[13px]">
+                        {/* Option A: Website Export */}
+                        <div className="space-y-2">
+                          <Text size="xs" className="font-semibold text-foreground uppercase tracking-wide">Option A: WoWSims Website</Text>
+                          <div className="flex gap-2">
+                            <span className="text-accent font-medium">1.</span>
+                            <span>Go to <a href="https://wowsims.github.io/cata/" target="_blank" rel="noopener noreferrer" className="text-accent hover:underline inline-flex items-center gap-1">wowsims.github.io <HugeiconsIcon icon={LinkSquare01Icon} size={14} /></a> and load your character</span>
+                          </div>
+                          <div className="flex gap-2">
+                            <span className="text-accent font-medium">2.</span>
+                            <span>Click <strong>Export</strong> in the top menu and copy the JSON</span>
+                          </div>
                         </div>
-                        <div className="flex gap-2">
-                          <span className="text-accent font-medium">2.</span>
-                          <span>Type <code className="px-1.5 py-0.5 bg-background rounded text-[12px]">/wowsims</code> in-game and copy the export</span>
+
+                        <div className="border-t border-border pt-3">
+                          {/* Option B: In-Game Addon */}
+                          <Text size="xs" className="font-semibold text-foreground uppercase tracking-wide mb-2">Option B: In-Game Addon</Text>
+                          <div className="flex gap-2">
+                            <span className="text-accent font-medium">1.</span>
+                            <span>Install the <a href="https://www.curseforge.com/wow/addons/wowsimsexporter" target="_blank" rel="noopener noreferrer" className="text-accent hover:underline inline-flex items-center gap-1">WowSims Exporter addon <HugeiconsIcon icon={LinkSquare01Icon} size={14} /></a></span>
+                          </div>
+                          <div className="flex gap-2">
+                            <span className="text-accent font-medium">2.</span>
+                            <span>Type <code className="px-1.5 py-0.5 bg-background rounded text-[12px]">/wowsims</code> in-game and copy the export</span>
+                          </div>
                         </div>
                       </div>
 

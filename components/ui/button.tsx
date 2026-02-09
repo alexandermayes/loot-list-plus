@@ -61,7 +61,7 @@ const buttonVariants = cva(
 
         // Success: Green for approve/confirm actions
         success:
-          "bg-success text-success-foreground hover:bg-success/90 disabled:opacity-50",
+          "bg-success text-white hover:bg-success/90 disabled:opacity-50",
 
         // Success Outline: Subtle green border for secondary confirm actions
         "success-outline":
@@ -85,7 +85,7 @@ const buttonVariants = cva(
 
         // Accent: Orange accent button (solid)
         accent:
-          "bg-accent text-accent-foreground hover:bg-accent/90 disabled:opacity-50",
+          "bg-accent text-white hover:bg-accent/90 disabled:opacity-50",
 
         // Accent Subtle: Orange accent with subtle background (for selected states)
         "accent-subtle":

@@ -153,6 +153,7 @@ export interface LootItem {
   armor_type?: string  // Cloth, Leather, Mail, Plate
   weapon_type?: string // Dagger, One-Handed Sword, Staff, etc.
   allocation_cost?: number
+  dps_gain?: number    // Expected DPS/HPS gain from this item (from WoWSims simulations)
   roles?: string[]
   raid_tier_id?: string
   raid_tier_name?: string | null  // Populated by phase-based queries

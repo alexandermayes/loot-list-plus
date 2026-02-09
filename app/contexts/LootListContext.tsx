@@ -21,6 +21,13 @@ import {
 } from '@/app/hooks/use-api'
 import { refreshWowheadTooltips } from '@/lib/wowhead'
 import { preloadItemIcons } from '@/data/item-icons'
+import {
+  createBracketStates,
+  findNextValidSlot,
+  findNextNoBracketSlot,
+  placeInBracket,
+  type BracketItem
+} from '@/lib/bracket-validation'
 
 // Define raid tier progression order (Classic + TBC + WotLK)
 const RAID_TIER_ORDER: Record<string, number> = {
@@ -404,7 +411,7 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
     setRankings({})
   }, [])
 
-  // Import BIS items into rankings
+  // Import BIS items into rankings using smart bracket-aware placement
   const importBisItems = useCallback(async (): Promise<BisImportResult> => {
     if (!activeCharacter || selectedPhase === null || !targetExpansionId || !activeGuild?.id) {
       return { success: false, importedCount: 0, error: 'No character or phase selected' }
@@ -437,12 +444,18 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
         }
       }
 
-      // Build maps of valid item IDs for this tier
-      const validItems = new Map<string, number>() // id -> wowhead_id
-      const itemClassifications = new Map<string, string | undefined>() // id -> classification
+      // Build item lookup map with all fields needed for bracket validation
+      const itemsById = new Map<string, BracketItem>()
+      const validWowheadIds = new Map<string, number>() // id -> wowhead_id
       for (const item of (itemsData?.items || [])) {
-        validItems.set(item.id, item.wowhead_id)
-        itemClassifications.set(item.id, item.classification)
+        itemsById.set(item.id, {
+          id: item.id,
+          classification: item.classification,
+          item_type: item.item_type,
+          item_slot: item.item_slot,
+          allocation_cost: item.allocation_cost,
+        })
+        validWowheadIds.set(item.id, item.wowhead_id)
       }
 
       // Sort BIS items by priority (BIS first, then alt)
@@ -453,61 +466,45 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
         return 0
       })
 
-      // Fill both columns starting from rank 50 (top/highest priority)
-      // Pattern: rank 50 slot 1, rank 50 slot 2, rank 49 slot 1, rank 49 slot 2, etc.
-      // Skip items that the user already owns (based on equipped gear from WowSims import)
-      // Reserved items must be alone at their rank (no companion item)
+      // Initialize bracket states for smart placement
+      const bracketStates = createBracketStates()
+      const noBracketPlacements = new Map<string, string>() // "rank-slot" -> itemId
       const newRankings: Record<string, string> = {}
-      let rank = 50
-      let slot = 1
       let importedCount = 0
-      let skippedOwned = 0
 
       for (const bisItem of sortedBisItems) {
-        // Skip if item not available in this tier
-        const wowheadId = validItems.get(bisItem.loot_item_id)
+        // Skip if item not available in this tier's loot table
+        const wowheadId = validWowheadIds.get(bisItem.loot_item_id)
         if (wowheadId === undefined) continue
 
         // Skip items the user already owns (imported from WowSims)
         if (equippedWowheadIds.has(wowheadId)) {
-          skippedOwned++
           continue
         }
 
-        // Stop if we've filled all ranks down to 1
-        if (rank < 1) break
+        const item = itemsById.get(bisItem.loot_item_id)
+        if (!item) continue
 
-        const classification = itemClassifications.get(bisItem.loot_item_id)
-        const isReserved = classification === 'Reserved'
+        // Try to find a valid slot in brackets first
+        const bracketSlot = findNextValidSlot(item, bracketStates, enforceSlotRestrictions, itemsById)
 
-        // Reserved items must be alone at their rank
-        if (isReserved) {
-          // If we're at slot 2, move to slot 1 of next rank
-          if (slot === 2) {
-            slot = 1
-            rank--
-          }
-          if (rank < 1) break
-
-          // Place Reserved item in slot 1
-          newRankings[`${rank}-1`] = bisItem.loot_item_id
+        if (bracketSlot) {
+          // Place in bracket
+          const { bracketIndex, rank, slot } = bracketSlot
+          placeInBracket(item, bracketStates[bracketIndex], rank, slot)
+          newRankings[`${rank}-${slot}`] = item.id
           importedCount++
-
-          // Move to next rank (Reserved items get their own rank)
-          rank--
-          slot = 1
         } else {
-          // Normal item placement
-          newRankings[`${rank}-${slot}`] = bisItem.loot_item_id
-          importedCount++
+          // Brackets are full or can't fit this item - try No Bracket zone
+          const noBracketSlot = findNextNoBracketSlot(item, noBracketPlacements, itemsById)
 
-          // Move to next slot: 1 -> 2, then 2 -> 1 (next rank down)
-          if (slot === 1) {
-            slot = 2
-          } else {
-            slot = 1
-            rank--
+          if (noBracketSlot) {
+            const { rank, slot } = noBracketSlot
+            noBracketPlacements.set(`${rank}-${slot}`, item.id)
+            newRankings[`${rank}-${slot}`] = item.id
+            importedCount++
           }
+          // If no slot found anywhere, skip this item
         }
       }
 
@@ -528,7 +525,7 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setIsImportingBis(false)
     }
-  }, [activeCharacter, selectedPhase, targetExpansionId, activeGuild?.id, itemsData?.items, equippedWowheadIds])
+  }, [activeCharacter, selectedPhase, targetExpansionId, activeGuild?.id, itemsData?.items, equippedWowheadIds, enforceSlotRestrictions])
 
   // Check for changes
   const hasChanges = useMemo(() => {
