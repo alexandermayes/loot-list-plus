@@ -20,6 +20,8 @@ import {
   ModalFooter,
 } from '@/components/ui/modal'
 import { Button } from '@/components/ui/button'
+import { Textarea } from '@/components/ui/textarea'
+import { Label } from '@/components/ui/label'
 import { Heading } from '@/components/ui/typography'
 import ItemLink from '@/app/components/ItemLink'
 import { refreshWowheadTooltips } from '@/lib/wowhead'
@@ -300,6 +302,7 @@ export default function MasterLootPage() {
 
   const viewSubmissionDetails = async (submissionId: string) => {
     setViewingSubmission(submissionId)
+    setReviewNotes('') // Clear previous review notes
     setSubmissionDetails([]) // Clear previous data immediately
     setLoadingDetails(true)
 
@@ -559,8 +562,8 @@ export default function MasterLootPage() {
         </div>
 
       {/* Submission Details Modal */}
-      <Modal open={!!viewingSubmission} onClose={() => setViewingSubmission(null)} size="lg">
-        <ModalHeader onClose={() => setViewingSubmission(null)}>
+      <Modal open={!!viewingSubmission} onClose={() => { setViewingSubmission(null); setReviewNotes('') }} size="lg">
+        <ModalHeader onClose={() => { setViewingSubmission(null); setReviewNotes('') }}>
           {(() => {
             const submission = viewingSubmission ? submissions.find(s => s.id === viewingSubmission) : null
             return (
@@ -672,28 +675,44 @@ export default function MasterLootPage() {
           )}
         </ModalBody>
         {viewingSubmission && submissions.find(s => s.id === viewingSubmission)?.status === 'pending' && (
-          <ModalFooter>
-            <Button
-              variant="destructive"
-              onClick={async () => {
-                await handleReview(viewingSubmission, 'rejected')
-                setViewingSubmission(null)
-              }}
-              disabled={reviewing === viewingSubmission}
-            >
-              Reject
-            </Button>
-            <Button
-              variant="success"
-              onClick={async () => {
-                await handleReview(viewingSubmission, 'approved')
-                setViewingSubmission(null)
-              }}
-              disabled={reviewing === viewingSubmission}
-              loading={reviewing === viewingSubmission}
-            >
-              Approve
-            </Button>
+          <ModalFooter className="flex-col items-stretch gap-4">
+            <div className="w-full">
+              <Label htmlFor="review-notes" className="text-sm font-medium mb-2 block">
+                Review Notes (optional)
+              </Label>
+              <Textarea
+                id="review-notes"
+                value={reviewNotes}
+                onChange={(e) => setReviewNotes(e.target.value)}
+                placeholder="Add notes for the raider about this submission..."
+                className="w-full min-h-[80px]"
+              />
+            </div>
+            <div className="flex justify-end gap-3">
+              <Button
+                variant="destructive"
+                onClick={async () => {
+                  await handleReview(viewingSubmission, 'rejected')
+                  setViewingSubmission(null)
+                  setReviewNotes('')
+                }}
+                disabled={reviewing === viewingSubmission}
+              >
+                Reject
+              </Button>
+              <Button
+                variant="success"
+                onClick={async () => {
+                  await handleReview(viewingSubmission, 'approved')
+                  setViewingSubmission(null)
+                  setReviewNotes('')
+                }}
+                disabled={reviewing === viewingSubmission}
+                loading={reviewing === viewingSubmission}
+              >
+                Approve
+              </Button>
+            </div>
           </ModalFooter>
         )}
       </Modal>
