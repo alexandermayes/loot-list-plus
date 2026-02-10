@@ -5,6 +5,7 @@ import { GuildContextProvider } from "./contexts/GuildContext";
 import { NotificationProvider } from "./contexts/NotificationContext";
 import { ThemeProvider } from "./components/ThemeProvider";
 import { SWRProvider } from "./components/SWRProvider";
+import { PostHogProvider } from "./components/PostHogProvider";
 import NotificationContainer from "./components/NotificationContainer";
 import "./globals.css";
 
@@ -172,8 +173,10 @@ export default function RootLayout({
           <SWRProvider>
             <NotificationProvider>
               <GuildContextProvider>
-                <NotificationContainer />
-                {children}
+                <PostHogProvider>
+                  <NotificationContainer />
+                  {children}
+                </PostHogProvider>
               </GuildContextProvider>
             </NotificationProvider>
           </SWRProvider>

@@ -2,6 +2,8 @@ import { createClient, getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { NextResponse } from 'next/server'
 import { verifyOfficerPermissions } from '@/utils/server-roles'
+import { logAudit } from '@/utils/audit/log'
+import { trackEvent } from '@/utils/analytics/server'
 
 export async function DELETE(request: Request) {
   try {
@@ -29,6 +31,14 @@ export async function DELETE(request: Request) {
         return NextResponse.json({ error: 'Only officers can delete loot lists' }, { status: 403 })
       }
 
+      // Get submission data before deletion for audit logging
+      const { data: oldSubmission } = await serviceSupabase
+        .from('loot_submissions')
+        .select('*')
+        .eq('id', submission_id)
+        .eq('guild_id', guild_id)
+        .single()
+
       // Delete single submission
       const { data, error } = await serviceSupabase
         .from('loot_submissions')
@@ -45,6 +55,32 @@ export async function DELETE(request: Request) {
       if (!data || data.length === 0) {
         return NextResponse.json({ error: 'Submission not found or already deleted' }, { status: 404 })
       }
+
+      // Audit logging
+      if (oldSubmission) {
+        await logAudit({
+          supabase: serviceSupabase,
+          guildId: guild_id,
+          tableName: 'loot_submissions',
+          recordId: submission_id,
+          action: 'DELETE',
+          userId: user.id,
+          oldData: oldSubmission,
+          newData: null,
+        })
+      }
+
+      // Analytics tracking
+      await trackEvent({
+        event: 'loot_submission_deleted',
+        userId: user.id,
+        properties: {
+          guild_id,
+          submission_id,
+          character_id: oldSubmission?.character_id,
+          was_bulk: false,
+        },
+      })
 
       return NextResponse.json({
         success: true,
@@ -68,17 +104,18 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ error: 'Only officers can delete loot lists' }, { status: 403 })
     }
 
-    // First, count how many submissions we're about to delete
-    let countQuery = supabase
+    // Get submissions to be deleted for audit logging
+    let fetchQuery = supabase
       .from('loot_submissions')
-      .select('id', { count: 'exact', head: true })
+      .select('id, character_id, status')
       .eq('guild_id', guild_id)
 
     if (target === 'pending') {
-      countQuery = countQuery.eq('status', 'pending')
+      fetchQuery = fetchQuery.eq('status', 'pending')
     }
 
-    const { count: submissionCount } = await countQuery
+    const { data: submissionsToDelete } = await fetchQuery
+    const submissionCount = submissionsToDelete?.length || 0
 
     // Build the delete query based on target
     let deleteQuery = supabase
@@ -95,6 +132,37 @@ export async function DELETE(request: Request) {
     if (error) {
       console.error('Error deleting loot submissions:', error)
       return NextResponse.json({ error: 'Failed to delete loot submissions' }, { status: 500 })
+    }
+
+    // Audit logging for bulk deletion (log one summary entry)
+    if (submissionCount > 0) {
+      await logAudit({
+        supabase,
+        guildId: guild_id,
+        tableName: 'loot_submissions',
+        recordId: guild_id, // Use guild_id as reference for bulk operation
+        action: 'DELETE',
+        userId: user.id,
+        oldData: {
+          bulk_delete: true,
+          target,
+          count: submissionCount,
+          submission_ids: submissionsToDelete?.map(s => s.id) || [],
+        },
+        newData: null,
+      })
+
+      // Analytics tracking
+      await trackEvent({
+        event: 'loot_submission_deleted',
+        userId: user.id,
+        properties: {
+          guild_id,
+          target,
+          count: submissionCount,
+          was_bulk: true,
+        },
+      })
     }
 
     return NextResponse.json({

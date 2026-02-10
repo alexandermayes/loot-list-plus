@@ -1,5 +1,7 @@
 import { createClient, getAuthenticatedUser } from '@/utils/supabase/server'
 import { NextResponse } from 'next/server'
+import { logAudit } from '@/utils/audit/log'
+import { trackEvent } from '@/utils/analytics/server'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -230,10 +232,10 @@ export async function PUT(request: Request) {
       }
     }
 
-    // Check if settings exist
+    // Check if settings exist and get current values for audit logging
     const { data: existingSettings } = await supabase
       .from('guild_settings')
-      .select('id')
+      .select('*')
       .eq('guild_id', guild_id)
       .single()
 
@@ -271,6 +273,30 @@ export async function PUT(request: Request) {
         return NextResponse.json({ error: 'Failed to create guild settings' }, { status: 500 })
       }
       result = data
+    }
+
+    // Audit logging - track settings changes
+    if (result) {
+      await logAudit({
+        supabase,
+        guildId: guild_id,
+        tableName: 'guild_settings',
+        recordId: result.id,
+        action: existingSettings ? 'UPDATE' : 'INSERT',
+        userId: user.id,
+        oldData: existingSettings || null,
+        newData: result,
+      })
+
+      // Analytics tracking
+      await trackEvent({
+        event: 'guild_settings_updated',
+        userId: user.id,
+        properties: {
+          guild_id,
+          is_new_settings: !existingSettings,
+        },
+      })
     }
 
     return NextResponse.json({ settings: result })
