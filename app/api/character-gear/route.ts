@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
     // Verify character exists and user has access
     const { data: character, error: charError } = await supabase
       .from('characters')
-      .select('id, user_id, guild_id')
+      .select('id, user_id')
       .eq('id', characterId)
       .single()
 
@@ -50,14 +50,40 @@ export async function GET(request: NextRequest) {
 
     // Check if user owns character or is in same guild
     if (character.user_id !== user.id) {
-      const { data: membership } = await supabase
-        .from('guild_members')
-        .select('id')
-        .eq('guild_id', character.guild_id)
-        .eq('user_id', user.id)
-        .single()
+      // Get guilds this character belongs to
+      const { data: characterGuilds } = await supabase
+        .from('character_guild_memberships')
+        .select('guild_id')
+        .eq('character_id', characterId)
+        .eq('is_active', true)
 
-      if (!membership) {
+      if (!characterGuilds || characterGuilds.length === 0) {
+        return NextResponse.json({ error: 'Not authorized' }, { status: 403 })
+      }
+
+      const guildIds = characterGuilds.map(g => g.guild_id)
+
+      // Check if requesting user has any characters in those guilds
+      const { data: userCharacters } = await supabase
+        .from('characters')
+        .select('id')
+        .eq('user_id', user.id)
+
+      if (!userCharacters || userCharacters.length === 0) {
+        return NextResponse.json({ error: 'Not authorized' }, { status: 403 })
+      }
+
+      const userCharacterIds = userCharacters.map(c => c.id)
+
+      const { data: sharedGuildMembership } = await supabase
+        .from('character_guild_memberships')
+        .select('id')
+        .in('character_id', userCharacterIds)
+        .in('guild_id', guildIds)
+        .eq('is_active', true)
+        .limit(1)
+
+      if (!sharedGuildMembership || sharedGuildMembership.length === 0) {
         return NextResponse.json({ error: 'Not authorized' }, { status: 403 })
       }
     }
@@ -157,24 +183,41 @@ export async function POST(request: NextRequest) {
 
     if (character.user_id !== user.id) {
       // Check if user is officer in character's guild
-      const { data: charWithGuild } = await supabase
-        .from('characters')
+      const { data: characterGuilds } = await supabase
+        .from('character_guild_memberships')
         .select('guild_id')
-        .eq('id', characterId)
-        .single()
+        .eq('character_id', characterId)
+        .eq('is_active', true)
 
-      if (charWithGuild) {
-        const { data: membership } = await supabase
-          .from('guild_members')
-          .select('role')
-          .eq('guild_id', charWithGuild.guild_id)
-          .eq('user_id', user.id)
-          .single()
+      if (!characterGuilds || characterGuilds.length === 0) {
+        return NextResponse.json({ error: 'Not authorized to modify this character' }, { status: 403 })
+      }
 
-        if (!membership || !['officer', 'guild_master'].includes(membership.role)) {
-          return NextResponse.json({ error: 'Not authorized to modify this character' }, { status: 403 })
-        }
-      } else {
+      const guildIds = characterGuilds.map(g => g.guild_id)
+
+      // Get user's characters
+      const { data: userCharacters } = await supabase
+        .from('characters')
+        .select('id')
+        .eq('user_id', user.id)
+
+      if (!userCharacters || userCharacters.length === 0) {
+        return NextResponse.json({ error: 'Not authorized to modify this character' }, { status: 403 })
+      }
+
+      const userCharacterIds = userCharacters.map(c => c.id)
+
+      // Check if user has officer role in any of the character's guilds
+      const { data: officerMembership } = await supabase
+        .from('character_guild_memberships')
+        .select('role')
+        .in('character_id', userCharacterIds)
+        .in('guild_id', guildIds)
+        .eq('is_active', true)
+        .in('role', ['Officer', 'Guild Master'])
+        .limit(1)
+
+      if (!officerMembership || officerMembership.length === 0) {
         return NextResponse.json({ error: 'Not authorized to modify this character' }, { status: 403 })
       }
     }
