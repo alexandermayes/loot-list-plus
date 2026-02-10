@@ -98,11 +98,12 @@ async function populateTokenClasses() {
     }
 
     // Create loot_item_classes entries for each allowed class
+    // spec_type must be 'primary' so tokens show in brackets 1-4
     const entries = allowedClasses.map(className => ({
       loot_item_id: token.id,
       class_id: classNameToId[className],
       spec_id: null,  // Token can be used by any spec of the class
-      spec_type: null
+      spec_type: 'primary'
     }))
 
     const { error: insertError } = await supabase
