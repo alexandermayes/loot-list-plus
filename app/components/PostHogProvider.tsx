@@ -10,7 +10,8 @@ import { createClient } from '@/utils/supabase/client'
 if (typeof window !== 'undefined' && process.env.NEXT_PUBLIC_POSTHOG_KEY) {
   posthog.init(process.env.NEXT_PUBLIC_POSTHOG_KEY, {
     // Use reverse proxy to bypass ad blockers
-    api_host: '/ingest',
+    // /a/ path looks like a normal API endpoint
+    api_host: '/a',
     ui_host: 'https://us.i.posthog.com',
     person_profiles: 'identified_only',
     capture_pageview: false, // We manually capture pageviews
