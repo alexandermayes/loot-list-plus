@@ -242,7 +242,7 @@ export default function SettingsPage() {
             <div className="flex items-center justify-between">
               <div>
                 <Label>Submission status updates</Label>
-                <p className="text-sm text-muted-foreground">Notify when your submission is reviewed</p>
+                <p className="text-sm text-muted-foreground">Get a Discord DM when your loot list is approved or rejected</p>
               </div>
               <Button
                 variant={preferences?.notify_submission_status ? "default" : "outline"}

@@ -1,7 +1,7 @@
 'use client'
 
 import { createClient } from '@/utils/supabase/client'
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import type { User } from '@supabase/supabase-js'
 import { useGuildContext } from '@/app/contexts/GuildContext'
@@ -120,16 +120,12 @@ export default function MasterLootPage() {
       setGuildId(activeGuild.id)
 
       // Get expansion info and create phase options
-      console.log('[Loot Submissions] Guild active_expansion_id:', activeGuild.active_expansion_id)
-
       if (activeGuild.active_expansion_id) {
-        const { data: expansion, error: expansionError } = await supabase
+        const { data: expansion } = await supabase
           .from('expansions')
           .select('id, name')
           .eq('id', activeGuild.active_expansion_id)
           .single()
-
-        console.log('[Loot Submissions] Expansion query result:', expansion, 'Error:', expansionError)
 
         if (expansion) {
           // Create phase options (1-5 is typical for WoW expansions)
@@ -141,12 +137,9 @@ export default function MasterLootPage() {
               expansion_name: expansion.name
             })
           }
-          console.log('[Loot Submissions] Setting phases:', phaseOptions)
           setPhases(phaseOptions)
           setActivePhase('all')
         }
-      } else {
-        console.log('[Loot Submissions] No active_expansion_id set on guild')
       }
       setInitialLoading(false)
     }
@@ -158,16 +151,6 @@ export default function MasterLootPage() {
 
   const loadSubmissions = useCallback(async (guildId: string, phase: Phase | 'all', expansionId?: string) => {
     setContentLoading(true)
-    console.log('[Loot Submissions] loadSubmissions called with:', { guildId, phase, expansionId })
-
-    // First, check if there are ANY submissions for this guild (debug query)
-    const { data: allGuildSubs, error: debugErr } = await supabase
-      .from('loot_submissions')
-      .select('id, status, expansion_id, phase, character_id')
-      .eq('guild_id', guildId)
-      .limit(10)
-
-    console.log('[Loot Submissions] DEBUG - All guild submissions:', { count: allGuildSubs?.length, data: allGuildSubs, error: debugErr })
 
     // Build query for submissions with character info
     // Exclude drafts - they haven't been submitted for review yet
@@ -205,8 +188,6 @@ export default function MasterLootPage() {
     query = query.order('submitted_at', { ascending: false })
 
     const { data: submissionsData, error } = await query
-
-    console.log('[Loot Submissions] Query result:', { count: submissionsData?.length, error, data: submissionsData })
 
     if (error) {
       console.error('Error loading submissions:', error)
@@ -279,13 +260,32 @@ export default function MasterLootPage() {
         .from('loot_submissions')
         .update({
           status,
-          review_notes: reviewNotes || null,
-          reviewed_at: new Date().toISOString()
+          review_notes: reviewNotes || null
         })
         .eq('id', submissionId)
         .select()
 
       if (error) throw error
+
+      if (!data || data.length === 0) {
+        throw new Error('No rows updated - check RLS policies')
+      }
+
+      // Send Discord DM notification (fire and forget - don't block on this)
+      const submission = submissions.find(s => s.id === submissionId)
+      const phaseNumber = typeof activePhase === 'object' ? activePhase?.phase : null
+      fetch('/api/discord/send-notification', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          submission_id: submissionId,
+          status,
+          review_notes: reviewNotes || undefined,
+          guild_name: activeGuild?.name,
+          character_name: submission?.member?.character_name,
+          phase: phaseNumber
+        })
+      }).catch(err => console.error('Failed to send Discord notification:', err))
 
       showNotification('success', `Submission ${status}`)
       setReviewNotes('')
@@ -375,6 +375,17 @@ export default function MasterLootPage() {
     if (filter === 'all') return true
     return sub.status === filter
   })
+
+  // Memoize grouped submission details to avoid recalculating on every render
+  const groupedSubmissionDetails = useMemo(() => {
+    const grouped: Record<number, any[]> = {}
+    for (const detail of submissionDetails) {
+      const rank = detail.rank
+      if (!grouped[rank]) grouped[rank] = []
+      grouped[rank].push(detail)
+    }
+    return Object.entries(grouped).sort(([a], [b]) => Number(b) - Number(a))
+  }, [submissionDetails])
 
   return (
     <div className="font-poppins">
@@ -614,16 +625,7 @@ export default function MasterLootPage() {
                 </tr>
               </thead>
               <tbody>
-                {Object.entries(
-                  submissionDetails.reduce((acc: Record<number, any[]>, detail: any) => {
-                    const rank = detail.rank
-                    if (!acc[rank]) acc[rank] = []
-                    acc[rank].push(detail)
-                    return acc
-                  }, {})
-                )
-                  .sort(([a], [b]) => Number(b) - Number(a))
-                  .map(([rank, items]) => {
+                {groupedSubmissionDetails.map(([rank, items]) => {
                     const rankNum = Number(rank)
                     const getRankColor = (r: number) => {
                       if (r >= 48) return 'from-red-900 to-red-700'
