@@ -10,7 +10,7 @@ import { ArrowLeft01Icon } from '@hugeicons/core-free-icons'
 import { getExpansionVisuals } from '@/utils/expansionVisuals'
 import { getRaidIcon, getRaidShorthand } from '@/utils/raidIcons'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+import { DateTimePicker } from '@/components/ui/date-time-picker'
 import { Switch } from '@/components/ui/switch'
 
 interface RaidTier {
@@ -153,13 +153,12 @@ function PhaseCard({
               Submission deadline
             </label>
             <div className="flex items-center gap-2">
-              <Input
-                type="datetime-local"
+              <DateTimePicker
                 value={deadlineInput}
                 onChange={(e) => onDeadlineInputChange(e.target.value)}
                 variant="rounded"
                 size="sm"
-                className="flex-1 text-[12px]"
+                className="flex-1"
               />
               <Button
                 variant="secondary"

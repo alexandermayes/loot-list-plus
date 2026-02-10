@@ -22,6 +22,8 @@ const inputVariants = cva(
     "hover:border-border-strong hover:bg-background-elevated/50",
     "focus:outline-none focus:border-accent",
     "disabled:cursor-not-allowed disabled:opacity-50 disabled:bg-muted/20",
+    // Style native date/datetime picker icons for dark mode
+    "[&::-webkit-calendar-picker-indicator]:brightness-0 [&::-webkit-calendar-picker-indicator]:invert [&::-webkit-calendar-picker-indicator]:opacity-50 [&::-webkit-calendar-picker-indicator]:hover:opacity-75 [&::-webkit-calendar-picker-indicator]:cursor-pointer",
   ],
   {
     variants: {
