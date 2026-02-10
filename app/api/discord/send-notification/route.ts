@@ -62,7 +62,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Submission not found' }, { status: 404 })
     }
 
-    const character = submission.characters as { id: string; name: string; user_id: string } | null
+    // Handle both array and object return types from Supabase relation
+    const charactersData = submission.characters
+    const character = (Array.isArray(charactersData) ? charactersData[0] : charactersData) as { id: string; name: string; user_id: string } | null
     if (!character?.user_id) {
       console.error('No character or user_id found for submission')
       return NextResponse.json({ error: 'Character not found' }, { status: 404 })
