@@ -34,6 +34,7 @@ export default function NotFound() {
               alt="Gnome engineer scratching his head at a broken monitor"
               className="w-full max-w-md mx-auto"
               draggable={false}
+              loading="lazy"
             />
           </div>
 
@@ -53,6 +54,7 @@ export default function NotFound() {
                   src="/images/hearthstone-icon.png"
                   alt=""
                   className="w-5 h-5"
+                  loading="lazy"
                 />
                 Hearth back home
               </Button>
