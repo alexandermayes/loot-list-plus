@@ -384,6 +384,11 @@ export default function LootList() {
     return byBoss
   }, [unrankedItems])
 
+  // PERFORMANCE: Create a Map for O(1) item lookups instead of O(n) .find() calls
+  const lootItemsById = useMemo(() => {
+    return new Map(lootItems.map(item => [item.id, item]))
+  }, [lootItems])
+
   // Bracket validation
   type BracketValidation = {
     bracketName: string
@@ -413,7 +418,7 @@ export default function LootList() {
 
         // Check slot 1
         if (item1Id) {
-          const item = lootItems.find(i => i.id === item1Id)
+          const item = lootItemsById.get(item1Id)
           if (item) {
             // Track allocation cost items
             const cost = item.allocation_cost || 0
@@ -444,7 +449,7 @@ export default function LootList() {
 
         // Check slot 2
         if (item2Id) {
-          const item = lootItems.find(i => i.id === item2Id)
+          const item = lootItemsById.get(item2Id)
           if (item) {
             // Track allocation cost items
             const cost = item.allocation_cost || 0
@@ -473,7 +478,7 @@ export default function LootList() {
 
             // Check if Reserved item has a companion
             if (item1Id) {
-              const item1 = lootItems.find(i => i.id === item1Id)
+              const item1 = lootItemsById.get(item1Id)
               if (item1?.classification === 'Reserved' || item.classification === 'Reserved') {
                 bracket.violations.push(`Reserved items must be alone at rank ${rank}`)
                 // Add errors to both slots
@@ -538,7 +543,7 @@ export default function LootList() {
     })
 
     return brackets.filter(b => b.violations.length > 0 || b.allocationPoints > 0)
-  }, [rankings, lootItems, enforceSlotRestrictions])
+  }, [rankings, lootItemsById, enforceSlotRestrictions])
   const hasValidationErrors = bracketValidations.some(b => b.violations.length > 0)
 
   // Get validation for a specific bracket by name

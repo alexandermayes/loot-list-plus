@@ -36,8 +36,12 @@ export async function POST(request: NextRequest) {
 
     const botToken = process.env.DISCORD_BOT_TOKEN
     if (!botToken) {
+      // MED-02 FIX: Return generic response to avoid configuration disclosure
       console.error('DISCORD_BOT_TOKEN not configured')
-      return NextResponse.json({ error: 'Bot not configured' }, { status: 500 })
+      return NextResponse.json({
+        sent: false,
+        reason: 'Notifications temporarily unavailable'
+      })
     }
 
     const supabase = await createClient()

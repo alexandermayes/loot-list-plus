@@ -1,7 +1,7 @@
 'use client'
 
 import { createClient } from '@/utils/supabase/client'
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import type { User } from '@supabase/supabase-js'
 import { useGuildContext } from '@/app/contexts/GuildContext'
@@ -75,6 +75,9 @@ export default function MasterLootPage() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState<{ type: 'single' | 'pending' | 'all', id?: string } | null>(null)
   const [deleting, setDeleting] = useState(false)
+
+  // PERFORMANCE: Track current request to prevent race conditions when rapidly clicking submissions
+  const currentDetailRequestRef = useRef<string | null>(null)
 
   const supabase = createClient()
   const router = useRouter()
@@ -301,6 +304,9 @@ export default function MasterLootPage() {
   }
 
   const viewSubmissionDetails = async (submissionId: string) => {
+    // Track this request to prevent race conditions
+    currentDetailRequestRef.current = submissionId
+
     setViewingSubmission(submissionId)
     setReviewNotes('') // Clear previous review notes
     setSubmissionDetails([]) // Clear previous data immediately
@@ -315,10 +321,13 @@ export default function MasterLootPage() {
       .eq('submission_id', submissionId)
       .order('rank', { ascending: false })
 
-    if (itemsData) {
-      setSubmissionDetails(itemsData as any)
+    // Only update state if this is still the current request (prevents race conditions)
+    if (currentDetailRequestRef.current === submissionId) {
+      if (itemsData) {
+        setSubmissionDetails(itemsData as any)
+      }
+      setLoadingDetails(false)
     }
-    setLoadingDetails(false)
   }
 
   const handleDeleteSubmissions = async () => {

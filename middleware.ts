@@ -185,8 +185,16 @@ export async function middleware(request: NextRequest) {
       const result = await rateLimiters[type].limit(identifier)
       success = result.success
       remaining = result.remaining
+    } else if (process.env.NODE_ENV === 'production') {
+      // MED-01 FIX: Fail secure in production when Redis is unavailable
+      // In-memory rate limiting is ineffective in serverless environments
+      console.error('[SECURITY] Rate limiting unavailable in production - blocking API request')
+      return NextResponse.json(
+        { error: 'Service temporarily unavailable' },
+        { status: 503 }
+      )
     } else {
-      // Use in-memory fallback for development
+      // Use in-memory fallback for development only
       const config = rateLimitConfig[type]
       const result = getInMemoryRateLimit(identifier, config.limit, config.windowMs)
       success = result.success

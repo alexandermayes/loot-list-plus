@@ -476,12 +476,63 @@ function MasterSheetContent() {
           return
         }
 
-        // Get all ranking submissions for all items at once
         const itemIds = itemsData.map((i: { id: string }) => i.id)
-        const { data: allRankingsData, error: rankingsError } = await supabase
-          .from('loot_submission_items')
-          .select('rank, slot, submission_id, loot_item_id')
-          .in('loot_item_id', itemIds)
+
+        // PERFORMANCE: Parallelize independent queries that only need itemIds
+        // These queries don't depend on each other, so run them concurrently
+        const [
+          rankingsResult,
+          lootHistoryResult,
+          blpResult,
+          prioritiesResults
+        ] = await Promise.all([
+          // Query 1: Get all ranking submissions for all items
+          supabase
+            .from('loot_submission_items')
+            .select('rank, slot, submission_id, loot_item_id')
+            .in('loot_item_id', itemIds),
+
+          // Query 2: Load loot history to filter out characters who already received items
+          supabase
+            .from('loot_history')
+            .select('character_id, loot_item_id')
+            .eq('guild_id', guildId)
+            .in('loot_item_id', itemIds),
+
+          // Query 3: Fetch BLP data (if enabled)
+          guildSettings.blp_enabled
+            ? fetch(`/api/blp?guild_id=${guildId}&item_ids=${itemIds.join(',')}`)
+                .then(res => res.ok ? res.json() : { data: {} })
+                .catch(() => ({ data: {} }))
+            : Promise.resolve({ data: {} }),
+
+          // Query 4: Load item priorities for all tiers in parallel
+          Promise.all(
+            activeTierIds.map(tierId =>
+              fetch(`/api/prio-list?guild_id=${guildId}&raid_tier_id=${tierId}`)
+                .then(res => res.ok ? res.json() : { priorities: [] })
+                .catch(() => ({ priorities: [] }))
+            )
+          )
+        ])
+
+        const { data: allRankingsData, error: rankingsError } = rankingsResult
+        const { data: lootHistoryData } = lootHistoryResult
+        const blpDataMap: Record<string, number> = blpResult.data || {}
+
+        // Merge priorities from all tiers
+        const prioritiesMap: Record<string, ItemPriority> = {}
+        for (const prioData of prioritiesResults) {
+          for (const prio of prioData.priorities || []) {
+            prioritiesMap[prio.item_id] = prio
+          }
+        }
+        setItemPriorities(prioritiesMap)
+
+        // Create a Set of "characterId-itemId" pairs for fast lookup
+        const receivedItemsSet = new Set<string>(
+          (lootHistoryData || []).map((h: { character_id: string; loot_item_id: string }) => `${h.character_id}-${h.loot_item_id}`)
+        )
 
         if (rankingsError) {
           console.error('Error loading rankings:', rankingsError)
@@ -498,6 +549,7 @@ function MasterSheetContent() {
 
         // Get all submissions (only approved lists show on master sheet)
         const submissionIds = [...new Set(allRankingsData.map((r: { submission_id: string }) => r.submission_id))]
+
         const { data: subsData, error: subsError } = await supabase
           .from('loot_submissions')
           .select('id, status, character_id')
@@ -532,63 +584,15 @@ function MasterSheetContent() {
             spec_id,
             class:wow_classes(name, color_hex),
             spec:class_specs(id, name),
-            character_guild_memberships!inner(role, membership_status)
+            character_guild_memberships(role, membership_status, is_active, guild_id)
           `)
           .in('id', characterIds)
-          .eq('character_guild_memberships.guild_id', activeGuild!.id)
 
         if (charError) {
           console.error('Error loading characters:', charError)
           setAllItemRankings(itemsData.map((item: LootItem) => ({ item, rankings: [] })))
           setContentLoading(false)
           return
-        }
-
-        // Load item priorities for all tiers in this phase
-        let prioritiesMap: Record<string, ItemPriority> = {}
-        try {
-          for (const tierId of activeTierIds) {
-            const prioResponse = await fetch(
-              `/api/prio-list?guild_id=${guildId}&raid_tier_id=${tierId}`
-            )
-            if (prioResponse.ok) {
-              const prioData = await prioResponse.json()
-              for (const prio of prioData.priorities || []) {
-                prioritiesMap[prio.item_id] = prio
-              }
-            }
-          }
-        } catch (err) {
-          console.error('Error loading item priorities:', err)
-        }
-        setItemPriorities(prioritiesMap)
-
-        // Load loot history to filter out characters who already received items
-        const { data: lootHistoryData } = await supabase
-          .from('loot_history')
-          .select('character_id, loot_item_id')
-          .eq('guild_id', guildId)
-          .in('loot_item_id', itemIds)
-
-        // Create a Set of "characterId-itemId" pairs for fast lookup
-        const receivedItemsSet = new Set<string>(
-          (lootHistoryData || []).map((h: { character_id: string; loot_item_id: string }) => `${h.character_id}-${h.loot_item_id}`)
-        )
-
-        // Fetch BLP data for all items in this phase
-        let blpDataMap: Record<string, number> = {}
-        if (guildSettings.blp_enabled) {
-          try {
-            const blpResponse = await fetch(
-              `/api/blp?guild_id=${guildId}&item_ids=${itemIds.join(',')}`
-            )
-            if (blpResponse.ok) {
-              const blpResult = await blpResponse.json()
-              blpDataMap = blpResult.data || {}
-            }
-          } catch (err) {
-            console.error('Error loading BLP data:', err)
-          }
         }
 
         // Pre-calculate attendance for all characters in a single batched query
@@ -628,7 +632,11 @@ function MasterSheetContent() {
             const attendanceData = attendanceCache[character.id] || { score: 0, raidsAttended: 0 }
             const attendance = attendanceData.score
             const raidsAttended = attendanceData.raidsAttended
-            const characterRole = (character as any).character_guild_memberships?.[0]?.role || 'Member'
+            // Find membership for the current guild (may not exist for approved submissions without membership)
+            const guildMembership = (character as any).character_guild_memberships?.find(
+              (m: { guild_id: string }) => m.guild_id === activeGuild!.id
+            )
+            const characterRole = guildMembership?.role || 'Member'
             const roleModifier = getRankModifier(characterRole, guildSettings)
 
             // Calculate priority bonus
@@ -658,7 +666,7 @@ function MasterSheetContent() {
             const badLuckBonus = calculateBadLuckBonus(timesPassed, guildSettings)
 
             // Get membership status and calculate trial penalty
-            const membershipStatus = (character as any).character_guild_memberships?.[0]?.membership_status || 'full'
+            const membershipStatus = guildMembership?.membership_status || 'full'
             const trialPenalty = getTrialPenalty(membershipStatus, guildSettings)
             const isTrial = membershipStatus === 'trial'
 
