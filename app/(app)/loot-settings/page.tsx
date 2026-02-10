@@ -7,7 +7,7 @@ import ItemLink from '@/app/components/ItemLink'
 import { useGuildContext } from '@/app/contexts/GuildContext'
 import { useNotification } from '@/app/contexts/NotificationContext'
 import { ExpansionGuard } from '@/app/components/ExpansionGuard'
-import { LoadingSpinner } from '@/components/ui/loading-spinner'
+import { LootSettingsPageSkeleton } from '@/components/ui/skeletons'
 import { Modal, ModalHeader, ModalTitle, ModalDescription, ModalBody, ModalFooter } from '@/components/ui/modal'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -1334,11 +1334,7 @@ export default function AdminLootItems() {
   }, [filteredItems, startIndex, endIndex])
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <LoadingSpinner />
-      </div>
-    )
+    return <LootSettingsPageSkeleton />
   }
 
   return (

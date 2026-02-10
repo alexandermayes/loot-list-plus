@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
+import { CharacterFormSkeleton } from '@/components/ui/skeletons'
 
 interface WowClass {
   id: string
@@ -36,13 +37,15 @@ export default function CreateCharacterPage() {
 
   const [classes, setClasses] = useState<WowClass[]>([])
   const [classSpecs, setClassSpecs] = useState<ClassSpec[]>([])
+  const [pageLoading, setPageLoading] = useState(true)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
   useEffect(() => {
     document.title = 'LootList+ • Create Character'
-    loadClasses()
-    loadClassSpecs()
+    Promise.all([loadClasses(), loadClassSpecs()]).then(() => {
+      setPageLoading(false)
+    })
   }, [])
 
   const loadClasses = async () => {
@@ -157,6 +160,10 @@ export default function CreateCharacterPage() {
       setError('An error occurred while creating the character')
       setLoading(false)
     }
+  }
+
+  if (pageLoading) {
+    return <CharacterFormSkeleton />
   }
 
   return (

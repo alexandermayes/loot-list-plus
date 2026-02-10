@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
+import { CharacterFormSkeleton } from '@/components/ui/skeletons'
 
 interface WowClass {
   id: string
@@ -236,11 +237,7 @@ export default function EditCharacterPage() {
   ).length
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-background-subtle p-8 flex items-center justify-center">
-        <p className="text-muted-foreground text-[16px]">Loading character...</p>
-      </div>
-    )
+    return <CharacterFormSkeleton />
   }
 
   if (!character) {

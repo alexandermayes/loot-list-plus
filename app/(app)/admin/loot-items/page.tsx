@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation'
 import ItemLink from '@/app/components/ItemLink'
 import { useGuildContext } from '@/app/contexts/GuildContext'
 import { ExpansionGuard } from '@/app/components/ExpansionGuard'
-import { LoadingSpinner } from '@/components/ui/loading-spinner'
+import { LootItemsPageSkeleton } from '@/components/ui/skeletons'
 import { Heading } from '@/components/ui/typography'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -403,11 +403,7 @@ export default function AdminLootItems() {
   }), [filteredItems])
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <LoadingSpinner />
-      </div>
-    )
+    return <LootItemsPageSkeleton />
   }
 
   return (

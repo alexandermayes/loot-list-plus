@@ -8,7 +8,7 @@ import { useRouter } from 'next/navigation'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { ArrowDown01Icon, ArrowUp01Icon, Upload01Icon, Cancel01Icon, MoreVerticalIcon } from '@hugeicons/core-free-icons'
 import LootHistoryTab from './components/LootHistoryTab'
-import { LoadingSpinner } from '@/components/ui/loading-spinner'
+import { RaidTrackingPageSkeleton } from '@/components/ui/skeletons'
 import { Heading } from '@/components/ui/typography'
 import { useGuildContext } from '@/app/contexts/GuildContext'
 import { useNotification } from '@/app/contexts/NotificationContext'
@@ -1809,11 +1809,7 @@ export default function RaidTrackingPage() {
   }, [raidDates, firstRaidDay])
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <LoadingSpinner />
-      </div>
-    )
+    return <RaidTrackingPageSkeleton />
   }
 
   const today = new Date().toISOString().split('T')[0]
