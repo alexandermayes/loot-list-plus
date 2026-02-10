@@ -127,7 +127,7 @@ export async function POST(request: NextRequest) {
       message += `\n\n**Officer Notes:**\n> ${review_notes.replace(/\n/g, '\n> ')}`
     }
 
-    message += `\n\n[View your loot list](https://lootlistplus.dev/loot-list)`
+    message += `\n\n[View your loot list](https://lootlistplus.com/loot-list)`
 
     // First, create a DM channel with the user
     const dmChannelResponse = await fetch('https://discord.com/api/v10/users/@me/channels', {
