@@ -4,12 +4,12 @@ import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import Image from 'next/image'
 import { scrollToSection } from '@/lib/animations'
-import { createClient } from '@/utils/supabase/client'
 import { Button } from '@/components/ui/button'
+
+const APP_URL = 'https://www.lootlistplus.com'
 
 export default function LandingNav() {
   const [scrolled, setScrolled] = useState(false)
-  const supabase = createClient()
 
   useEffect(() => {
     const handleScroll = () => {
@@ -18,16 +18,6 @@ export default function LandingNav() {
     window.addEventListener('scroll', handleScroll)
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
-
-  const handleDiscordLogin = async () => {
-    await supabase.auth.signInWithOAuth({
-      provider: 'discord',
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
-        scopes: 'identify guilds'
-      }
-    })
-  }
 
   return (
     <motion.header
@@ -86,17 +76,19 @@ export default function LandingNav() {
           <Button
             variant="primary"
             size="sm"
-            onClick={handleDiscordLogin}
+            asChild
             className="bg-white hover:bg-white/90 text-background font-poppins font-semibold shadow-md"
           >
-            <Image
-              src="/discord-icon.svg"
-              alt=""
-              width={18}
-              height={18}
-              className="w-4 h-4 md:w-[18px] md:h-[18px] brightness-0"
-            />
-            <span>Login</span>
+            <a href={APP_URL}>
+              <Image
+                src="/discord-icon.svg"
+                alt=""
+                width={18}
+                height={18}
+                className="w-4 h-4 md:w-[18px] md:h-[18px] brightness-0"
+              />
+              <span>Login</span>
+            </a>
           </Button>
         </nav>
       </div>

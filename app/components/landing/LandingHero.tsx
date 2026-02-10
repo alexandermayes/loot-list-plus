@@ -3,23 +3,13 @@
 import { motion } from 'framer-motion'
 import Image from 'next/image'
 import { heroFadeIn, staggerContainer, scrollToSection } from '@/lib/animations'
-import { createClient } from '@/utils/supabase/client'
 import { ArrowDown01Icon } from '@hugeicons/core-free-icons'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { Button } from '@/components/ui/button'
 
-export default function LandingHero() {
-  const supabase = createClient()
+const APP_URL = 'https://www.lootlistplus.com'
 
-  const handleDiscordLogin = async () => {
-    await supabase.auth.signInWithOAuth({
-      provider: 'discord',
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
-        scopes: 'identify guilds'
-      }
-    })
-  }
+export default function LandingHero() {
 
   return (
     <section id="hero" className="relative min-h-screen w-full overflow-hidden">
@@ -87,10 +77,10 @@ export default function LandingHero() {
               <Button
                 variant="primary"
                 size="lg"
-                onClick={handleDiscordLogin}
+                asChild
                 className="font-poppins font-semibold shadow-lg hover:shadow-xl"
               >
-                Try for free
+                <a href={APP_URL}>Try for free</a>
               </Button>
               <Button
                 variant="secondary"

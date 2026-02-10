@@ -3,32 +3,14 @@
 import { useRef } from 'react'
 import { motion, useInView } from 'framer-motion'
 import { fadeInUp, staggerContainer } from '@/lib/animations'
-import { createClient } from '@/utils/supabase/client'
 import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 
-interface LandingCTAProps {
-  onLogin?: () => void
-}
+const APP_URL = 'https://www.lootlistplus.com'
 
-export default function LandingCTA({ onLogin }: LandingCTAProps) {
+export default function LandingCTA() {
   const ref = useRef(null)
   const isInView = useInView(ref, { once: true, margin: '-100px' })
-  const supabase = createClient()
-
-  const handleDiscordLogin = async () => {
-    if (onLogin) {
-      onLogin()
-    } else {
-      await supabase.auth.signInWithOAuth({
-        provider: 'discord',
-        options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
-          scopes: 'identify guilds'
-        }
-      })
-    }
-  }
 
   return (
     <section id="cta" className="relative py-32 md:py-40 overflow-hidden">
@@ -94,30 +76,28 @@ export default function LandingCTA({ onLogin }: LandingCTAProps) {
             <Button
               variant="primary"
               size="lg"
-              onClick={handleDiscordLogin}
+              asChild
               className="gap-3 font-poppins font-semibold shadow-lg hover:shadow-xl"
             >
-              <Image
-                src="/discord-icon.svg"
-                alt="Discord"
-                width={24}
-                height={24}
-                className="w-6 h-6"
-              />
-              Continue with Discord
+              <a href={APP_URL}>
+                <Image
+                  src="/discord-icon.svg"
+                  alt="Discord"
+                  width={24}
+                  height={24}
+                  className="w-6 h-6"
+                />
+                Get started free
+              </a>
             </Button>
           </motion.div>
 
           {/* Secondary link */}
           <motion.p variants={fadeInUp} className="mt-6 text-sm text-foreground-muted">
             Already have an account?{' '}
-            <Button
-              variant="link"
-              onClick={handleDiscordLogin}
-              className="text-foreground hover:text-accent"
-            >
+            <a href={APP_URL} className="text-foreground hover:text-accent transition-colors">
               Log in
-            </Button>
+            </a>
           </motion.p>
 
           {/* Terms */}
