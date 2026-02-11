@@ -843,6 +843,20 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
 
       showNotification('success', submit ? 'Loot list submitted for review' : 'Draft saved')
 
+      // Notify officers when submitting (fire and forget)
+      if (submit && activeGuild) {
+        fetch('/api/discord/notify-officers', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            guild_id: activeGuild.id,
+            character_name: activeCharacter.name,
+            phase: selectedPhase,
+            guild_name: activeGuild.name
+          })
+        }).catch(err => console.error('Failed to notify officers:', err))
+      }
+
       // Update initial state to reflect saved state
       setInitialRankings({ ...rankings })
       setOriginalStatus(submit ? 'pending' : 'draft')
