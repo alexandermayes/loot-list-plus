@@ -116,6 +116,8 @@ export default function LoginPage() {
               {/* Learn more button */}
               <a
                 href="https://getlootlist.com"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="w-full bg-[#141519] hover:bg-[#1c1d24] text-white font-medium text-base px-5 py-3 rounded-full flex items-center justify-center transition-colors"
               >
                 Learn more
