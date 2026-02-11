@@ -71,8 +71,11 @@ export async function POST(request: NextRequest) {
     // Get unique user IDs from officers
     const officerUserIds = [...new Set(
       officers
-        .map(o => (o.characters as { user_id: string })?.user_id)
-        .filter(Boolean)
+        .map(o => {
+          const char = o.characters as unknown as { user_id: string } | null
+          return char?.user_id
+        })
+        .filter((id): id is string => Boolean(id))
     )]
 
     // Don't notify the submitter if they're an officer
