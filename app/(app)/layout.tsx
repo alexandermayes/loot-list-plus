@@ -183,7 +183,7 @@ function AppLayoutContent({
 
       {/* Floating Bug Report Button */}
       <Button
-        variant="accent"
+        variant="primary"
         size="icon"
         onClick={() => setShowFeedbackModal(true)}
         className="fixed bottom-6 right-6 w-14 h-14 rounded-full shadow-lg z-40"
