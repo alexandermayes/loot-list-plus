@@ -94,7 +94,6 @@ export async function POST(request: NextRequest) {
       .from('user_preferences')
       .select('user_id, discord_id')
       .in('user_id', filteredUserIds)
-      .eq('discord_verified', true)
       .not('discord_id', 'is', null)
 
     if (prefError) {
@@ -103,10 +102,10 @@ export async function POST(request: NextRequest) {
     }
 
     if (!preferences || preferences.length === 0) {
-      console.log('No officers with verified Discord IDs')
+      console.log('No officers with Discord IDs linked')
       return NextResponse.json({
         sent: false,
-        reason: 'No officers with verified Discord'
+        reason: 'No officers with Discord linked'
       })
     }
 
