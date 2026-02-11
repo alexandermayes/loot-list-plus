@@ -211,31 +211,50 @@ export default function MemberManager() {
   }
 
   const handleChangeRole = async (userId: string, newRole: string) => {
+    const member = members.find(m => m.user_id === userId)
+    if (!member) {
+      showNotification('error', 'Member not found')
+      return
+    }
+
+    const characterIds = member.characters.map(c => c.id)
+
+    // Optimistic update - update UI immediately
+    const optimisticData = {
+      ...membersData,
+      members: membersData!.members.map((m: any) =>
+        m.user_id === userId ? { ...m, role: newRole } : m
+      )
+    }
+
     try {
-      const member = members.find(m => m.user_id === userId)
-      if (!member) throw new Error('Member not found')
+      await refreshMembers(
+        async () => {
+          const response = await fetch('/api/guild-members', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              guild_id: activeGuild!.id,
+              target_user_id: userId,
+              character_ids: characterIds,
+              new_role: newRole
+            })
+          })
 
-      const characterIds = member.characters.map(c => c.id)
+          if (!response.ok) {
+            const error = await response.json()
+            throw new Error(error.error || 'Failed to update role')
+          }
 
-      const response = await fetch('/api/guild-members', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          guild_id: activeGuild!.id,
-          target_user_id: userId,
-          character_ids: characterIds,
-          new_role: newRole
-        })
-      })
-
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.error || 'Failed to update role')
-      }
-
-      showNotification('success', `Role changed to ${newRole}`)
-      // Invalidate the SWR cache to refetch
-      await refreshMembers()
+          showNotification('success', `Role changed to ${newRole}`)
+          return optimisticData
+        },
+        {
+          optimisticData,
+          rollbackOnError: true,
+          revalidate: false
+        }
+      )
     } catch (error: any) {
       showNotification('error', error.message || 'Couldn\'t update role. Try again.')
     }
@@ -248,25 +267,42 @@ export default function MemberManager() {
       confirmLabel: 'Remove',
       variant: 'danger',
       onConfirm: async () => {
+        const member = members.find(m => m.user_id === userId)
+        if (!member) {
+          showNotification('error', 'Member not found')
+          return
+        }
+
+        const characterIds = member.characters.map(c => c.id)
+
+        // Optimistic update - remove from UI immediately
+        const optimisticData = {
+          ...membersData,
+          members: membersData!.members.filter((m: any) => m.user_id !== userId)
+        }
+
         try {
-          const member = members.find(m => m.user_id === userId)
-          if (!member) throw new Error('Member not found')
+          await refreshMembers(
+            async () => {
+              const response = await fetch(
+                `/api/guild-members?guild_id=${activeGuild!.id}&target_user_id=${userId}&character_ids=${characterIds.join(',')}`,
+                { method: 'DELETE' }
+              )
 
-          const characterIds = member.characters.map(c => c.id)
+              if (!response.ok) {
+                const error = await response.json()
+                throw new Error(error.error || 'Failed to remove member')
+              }
 
-          const response = await fetch(
-            `/api/guild-members?guild_id=${activeGuild!.id}&target_user_id=${userId}&character_ids=${characterIds.join(',')}`,
-            { method: 'DELETE' }
+              showNotification('success', `${memberName} removed from guild`)
+              return optimisticData
+            },
+            {
+              optimisticData,
+              rollbackOnError: true,
+              revalidate: false
+            }
           )
-
-          if (!response.ok) {
-            const error = await response.json()
-            throw new Error(error.error || 'Failed to remove member')
-          }
-
-          showNotification('success', `${memberName} removed from guild`)
-          // Invalidate the SWR cache to refetch
-          await refreshMembers()
         } catch (error: any) {
           showNotification('error', error.message || 'Couldn\'t remove member. Try again.')
         }
@@ -276,7 +312,7 @@ export default function MemberManager() {
 
   const handleToggleTrialStatus = (userId: string, memberName: string, currentStatus: 'trial' | 'full') => {
     const newStatus = currentStatus === 'trial' ? 'full' : 'trial'
-    const actionText = newStatus === 'trial' ? 'set as trial' : 'promote to full member'
+    const actionText = newStatus === 'trial' ? 'set as trial' : 'promoted to full member'
 
     confirm({
       title: newStatus === 'trial' ? 'Set as Trial' : 'Promote Member',
@@ -284,30 +320,56 @@ export default function MemberManager() {
       confirmLabel: newStatus === 'trial' ? 'Set as Trial' : 'Promote',
       variant: newStatus === 'trial' ? 'warning' : 'default',
       onConfirm: async () => {
+        const member = members.find(m => m.user_id === userId)
+        if (!member) {
+          showNotification('error', 'Member not found')
+          return
+        }
+
+        const characterIds = member.characters.map(c => c.id)
+
+        // Optimistic update - update UI immediately
+        const optimisticData = {
+          ...membersData,
+          members: membersData!.members.map((m: any) =>
+            m.user_id === userId
+              ? {
+                  ...m,
+                  membership_status: newStatus,
+                  trial_started_at: newStatus === 'trial' ? new Date().toISOString() : m.trial_started_at
+                }
+              : m
+          )
+        }
+
         try {
-          const member = members.find(m => m.user_id === userId)
-          if (!member) throw new Error('Member not found')
+          await refreshMembers(
+            async () => {
+              const response = await fetch('/api/guild-members/trial-status', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  guild_id: activeGuild!.id,
+                  target_user_id: userId,
+                  character_ids: characterIds,
+                  new_status: newStatus
+                })
+              })
 
-          const characterIds = member.characters.map(c => c.id)
+              if (!response.ok) {
+                const error = await response.json()
+                throw new Error(error.error || 'Failed to update trial status')
+              }
 
-          const response = await fetch('/api/guild-members/trial-status', {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              guild_id: activeGuild!.id,
-              target_user_id: userId,
-              character_ids: characterIds,
-              new_status: newStatus
-            })
-          })
-
-          if (!response.ok) {
-            const error = await response.json()
-            throw new Error(error.error || 'Failed to update trial status')
-          }
-
-          showNotification('success', `${memberName} ${actionText}`)
-          await refreshMembers()
+              showNotification('success', `${memberName} ${actionText}`)
+              return optimisticData
+            },
+            {
+              optimisticData,
+              rollbackOnError: true,
+              revalidate: false
+            }
+          )
         } catch (error: any) {
           showNotification('error', error.message || 'Couldn\'t update trial status. Try again.')
         }
