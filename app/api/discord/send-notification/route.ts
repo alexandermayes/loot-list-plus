@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient, getAuthenticatedUser } from '@/utils/supabase/server'
+import { createServiceRoleClient } from '@/utils/supabase/service-role'
 
 interface NotificationPayload {
   submission_id: string
@@ -71,22 +72,14 @@ export async function POST(request: NextRequest) {
     }
 
     // Get user preferences including discord_id and notification settings
-    const { data: preferences, error: prefError } = await supabase
+    const { data: preferences } = await supabase
       .from('user_preferences')
       .select('discord_id, notify_submission_status')
       .eq('user_id', character.user_id)
       .single()
 
-    if (prefError || !preferences) {
-      console.log('No preferences found for user:', character.user_id)
-      return NextResponse.json({
-        sent: false,
-        reason: 'No user preferences found'
-      })
-    }
-
     // Check if user wants notifications
-    if (preferences.notify_submission_status === false) {
+    if (preferences?.notify_submission_status === false) {
       console.log('User has notifications disabled')
       return NextResponse.json({
         sent: false,
@@ -94,12 +87,23 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    // Check if we have their Discord ID
-    if (!preferences.discord_id) {
-      console.log('User has no Discord ID linked')
+    // Get Discord ID: prefer user_preferences, fall back to auth metadata
+    let discordId = preferences?.discord_id
+    if (!discordId) {
+      try {
+        const adminClient = createServiceRoleClient()
+        const { data: { user: targetUser } } = await adminClient.auth.admin.getUserById(character.user_id)
+        discordId = targetUser?.user_metadata?.provider_id || null
+      } catch (err) {
+        console.error('Error fetching auth metadata for Discord ID:', err)
+      }
+    }
+
+    if (!discordId) {
+      console.log('No Discord ID found for user:', character.user_id)
       return NextResponse.json({
         sent: false,
-        reason: 'No Discord ID linked'
+        reason: 'No Discord ID found'
       })
     }
 
@@ -139,7 +143,7 @@ export async function POST(request: NextRequest) {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        recipient_id: preferences.discord_id
+        recipient_id: discordId
       })
     })
 
@@ -184,7 +188,7 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    console.log(`Successfully sent DM to Discord user ${preferences.discord_id}`)
+    console.log(`Successfully sent DM to Discord user ${discordId}`)
     return NextResponse.json({
       sent: true,
       message: 'Notification sent successfully'

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient, getAuthenticatedUser } from '@/utils/supabase/server'
+import { createServiceRoleClient } from '@/utils/supabase/service-role'
 
 interface NotifyOfficersPayload {
   guild_id: string
@@ -90,19 +91,41 @@ export async function POST(request: NextRequest) {
     }
 
     // Get Discord IDs for these officers
-    const { data: preferences, error: prefError } = await supabase
+    // First check user_preferences for manually verified Discord IDs
+    const { data: preferences } = await supabase
       .from('user_preferences')
       .select('user_id, discord_id')
       .in('user_id', filteredUserIds)
-      .not('discord_id', 'is', null)
 
-    if (prefError) {
-      console.error('Error fetching officer preferences:', prefError)
-      return NextResponse.json({ error: 'Failed to fetch preferences' }, { status: 500 })
+    // Build a map of user_id -> discord_id from preferences
+    const discordIdMap = new Map<string, string>()
+    if (preferences) {
+      for (const pref of preferences) {
+        if (pref.discord_id) {
+          discordIdMap.set(pref.user_id, pref.discord_id)
+        }
+      }
     }
 
-    if (!preferences || preferences.length === 0) {
-      console.log('No officers with Discord IDs linked')
+    // For officers without a discord_id in preferences, fall back to auth metadata
+    const missingIds = filteredUserIds.filter(id => !discordIdMap.has(id))
+    if (missingIds.length > 0) {
+      try {
+        const adminClient = createServiceRoleClient()
+        for (const userId of missingIds) {
+          const { data: { user: authUser } } = await adminClient.auth.admin.getUserById(userId)
+          const providerId = authUser?.user_metadata?.provider_id
+          if (providerId) {
+            discordIdMap.set(userId, providerId)
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching auth metadata for Discord IDs:', err)
+      }
+    }
+
+    if (discordIdMap.size === 0) {
+      console.log('No officers with Discord IDs found')
       return NextResponse.json({
         sent: false,
         reason: 'No officers with Discord linked'
@@ -125,7 +148,7 @@ export async function POST(request: NextRequest) {
     let sentCount = 0
     let failedCount = 0
 
-    for (const pref of preferences) {
+    for (const [, discordId] of discordIdMap) {
       try {
         // Create DM channel
         const dmChannelResponse = await fetch('https://discord.com/api/v10/users/@me/channels', {
@@ -135,12 +158,12 @@ export async function POST(request: NextRequest) {
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
-            recipient_id: pref.discord_id
+            recipient_id: discordId
           })
         })
 
         if (!dmChannelResponse.ok) {
-          console.error(`Failed to create DM channel for ${pref.discord_id}:`, dmChannelResponse.status)
+          console.error(`Failed to create DM channel for ${discordId}:`, dmChannelResponse.status)
           failedCount++
           continue
         }
@@ -161,13 +184,13 @@ export async function POST(request: NextRequest) {
 
         if (messageResponse.ok) {
           sentCount++
-          console.log(`Sent submission notification to officer ${pref.discord_id}`)
+          console.log(`Sent submission notification to officer ${discordId}`)
         } else {
-          console.error(`Failed to send DM to ${pref.discord_id}:`, messageResponse.status)
+          console.error(`Failed to send DM to ${discordId}:`, messageResponse.status)
           failedCount++
         }
       } catch (err) {
-        console.error(`Error sending DM to ${pref.discord_id}:`, err)
+        console.error(`Error sending DM to ${discordId}:`, err)
         failedCount++
       }
     }
