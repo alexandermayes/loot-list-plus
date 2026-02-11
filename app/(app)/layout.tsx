@@ -183,13 +183,13 @@ function AppLayoutContent({
 
       {/* Floating Bug Report Button */}
       <Button
-        variant="secondary"
+        variant="accent"
         size="icon"
         onClick={() => setShowFeedbackModal(true)}
         className="fixed bottom-6 right-6 w-14 h-14 rounded-full shadow-lg z-40"
         title="Report a Bug"
       >
-        <HugeiconsIcon icon={Bug01Icon} size={24} className="text-muted-foreground" />
+        <HugeiconsIcon icon={Bug01Icon} size={24} />
       </Button>
 
       {/* Feedback Modal */}
