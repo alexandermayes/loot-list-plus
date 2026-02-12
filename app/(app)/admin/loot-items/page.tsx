@@ -5,6 +5,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import ItemLink from '@/app/components/ItemLink'
 import { useGuildContext } from '@/app/contexts/GuildContext'
+import { useNotification } from '@/app/contexts/NotificationContext'
 import { ExpansionGuard } from '@/app/components/ExpansionGuard'
 import { LootItemsPageSkeleton } from '@/components/ui/skeletons'
 import { Heading } from '@/components/ui/typography'
@@ -104,6 +105,7 @@ export default function AdminLootItems() {
   const supabase = createClient()
   const router = useRouter()
   const { activeGuild, activeMember, loading: guildLoading, isOfficer } = useGuildContext()
+  const { showNotification } = useNotification()
 
   const loadLootItems = async (expansionId: string) => {
     // Get raid tiers for active expansion
@@ -315,6 +317,7 @@ export default function AdminLootItems() {
       }))
     } else {
       console.error('Error adding spec:', error)
+      showNotification('error', 'Couldn\'t add spec. Try again.')
     }
   }
 
@@ -343,6 +346,7 @@ export default function AdminLootItems() {
       })
     } else {
       console.error('Error removing spec:', error)
+      showNotification('error', 'Couldn\'t remove spec. Try again.')
     }
   }
 
@@ -491,6 +495,7 @@ export default function AdminLootItems() {
                         type="checkbox"
                         checked={item.is_available}
                         onChange={() => toggleAvailability(item.id, item.is_available)}
+                        aria-label={`Toggle availability for ${item.name}`}
                         className="w-4 h-4 rounded border-border-strong bg-background-elevated accent-success cursor-pointer focus:ring-2 focus:ring-success/30 focus:ring-offset-0"
                       />
                     </td>

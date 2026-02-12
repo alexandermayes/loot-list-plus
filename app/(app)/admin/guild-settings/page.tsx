@@ -12,6 +12,7 @@ import ExpansionManager from './components/ExpansionManager'
 import RealmSelector from '@/app/components/RealmSelector'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { GuildSettingsContentSkeleton } from '@/components/ui/skeletons'
+import { EmptyState } from '@/components/ui/empty-state'
 import {
   Modal,
   ModalHeader,
@@ -26,6 +27,7 @@ import { useGuildMembers } from '@/app/hooks/use-api'
 import { Select } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { SecurityLockIcon } from '@hugeicons/core-free-icons'
 
 export default function GuildSettingsPage() {
   const [loading, setLoading] = useState(true)
@@ -58,6 +60,8 @@ export default function GuildSettingsPage() {
   const [isGuildCreator, setIsGuildCreator] = useState(false)
   const [showRolesModal, setShowRolesModal] = useState(false)
   const [showTransferModal, setShowTransferModal] = useState(false)
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [deleteConfirmInput, setDeleteConfirmInput] = useState('')
   const [roleRefreshKey, setRoleRefreshKey] = useState(0)
   const [transferring, setTransferring] = useState(false)
   const [selectedNewOwner, setSelectedNewOwner] = useState<string>('')
@@ -206,15 +210,6 @@ export default function GuildSettingsPage() {
   const handleDeleteGuild = async () => {
     if (!activeGuild) return
 
-    const confirmText = `DELETE ${activeGuild.name}`
-    const userInput = prompt(
-      `This will permanently delete "${activeGuild.name}" and all associated data including loot lists, attendance, and settings.\n\nThis cannot be undone.\n\nType "${confirmText}" to confirm:`
-    )
-
-    if (userInput !== confirmText) {
-      return
-    }
-
     setDeleting(true)
 
     try {
@@ -236,6 +231,8 @@ export default function GuildSettingsPage() {
       setDeleting(false)
     }
   }
+
+  const deleteConfirmText = activeGuild ? `DELETE ${activeGuild.name}` : ''
 
   const handleTransferOwnership = async () => {
     if (!activeGuild || !selectedNewOwner) return
@@ -273,8 +270,17 @@ export default function GuildSettingsPage() {
   // Show unauthorized message if not officer (after loading completes)
   if (!loading && !guildLoading && (!activeGuild || !isOfficer)) {
     return (
-      <div className="fixed inset-0 bg-background flex items-center justify-center">
-        <p className="text-muted-foreground">Unauthorized</p>
+      <div className="p-4 sm:p-6 lg:p-8 flex items-center justify-center min-h-[60vh]">
+        <EmptyState
+          icon={SecurityLockIcon}
+          title="Officers only"
+          description="Guild settings are only accessible to officers and the guild owner."
+          action={{
+            label: 'Back to overview',
+            onClick: () => router.push('/overview'),
+            variant: 'secondary'
+          }}
+        />
       </div>
     )
   }
@@ -466,8 +472,7 @@ export default function GuildSettingsPage() {
                   </div>
                   <Button
                     variant="destructive"
-                    onClick={handleDeleteGuild}
-                    loading={deleting}
+                    onClick={() => setShowDeleteModal(true)}
                     className="shrink-0 w-full sm:w-auto"
                   >
                     Delete guild
@@ -487,6 +492,49 @@ export default function GuildSettingsPage() {
               <ModalBody className="p-0">
                 <RoleManager onRolesChanged={() => setRoleRefreshKey(k => k + 1)} />
               </ModalBody>
+            </Modal>
+
+            {/* Delete Guild Confirmation Modal */}
+            <Modal open={showDeleteModal} onClose={() => { setShowDeleteModal(false); setDeleteConfirmInput(''); }} size="default">
+              <ModalHeader onClose={() => { setShowDeleteModal(false); setDeleteConfirmInput(''); }}>
+                <ModalTitle>Delete {activeGuild?.name}?</ModalTitle>
+                <ModalDescription>
+                  This will permanently delete all guild data including members, loot lists, attendance records and settings. This cannot be undone.
+                </ModalDescription>
+              </ModalHeader>
+              <ModalBody className="space-y-4">
+                <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-4">
+                  <p className="text-[13px] text-muted-foreground">
+                    Type <span className="font-mono font-semibold text-destructive">{deleteConfirmText}</span> to confirm.
+                  </p>
+                </div>
+                <Input
+                  value={deleteConfirmInput}
+                  onChange={(e) => setDeleteConfirmInput(e.target.value)}
+                  placeholder={deleteConfirmText}
+                  className="font-mono"
+                />
+              </ModalBody>
+              <ModalFooter>
+                <Button
+                  variant="secondary"
+                  onClick={() => { setShowDeleteModal(false); setDeleteConfirmInput(''); }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="destructive"
+                  onClick={() => {
+                    setShowDeleteModal(false)
+                    setDeleteConfirmInput('')
+                    handleDeleteGuild()
+                  }}
+                  disabled={deleteConfirmInput !== deleteConfirmText}
+                  loading={deleting}
+                >
+                  Delete guild
+                </Button>
+              </ModalFooter>
             </Modal>
 
             {/* Transfer Ownership Modal */}

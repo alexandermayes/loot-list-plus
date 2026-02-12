@@ -635,6 +635,7 @@ function MasterSheetContent() {
 
         if (rankingsError) {
           console.error('Error loading rankings:', rankingsError)
+          showNotification('error', 'Couldn\'t load rankings. Check your connection and try again.')
           setAllItemRankings(itemsData.map((item: LootItem) => ({ item, rankings: [] })))
           setContentLoading(false)
           return
@@ -804,6 +805,7 @@ function MasterSheetContent() {
 
       } catch (err) {
         console.error('Error loading rankings:', err)
+        showNotification('error', 'Couldn\'t load master sheet data. Check your connection and try again.')
         setAllItemRankings([])
       }
 
