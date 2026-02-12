@@ -39,12 +39,48 @@ interface Submission {
   item_count: number
 }
 
+interface RaidTierExpansion {
+  id: string
+  name: string
+}
+
+interface RaidTierRow {
+  id: string
+  name: string
+  is_active: boolean
+  expansion: RaidTierExpansion | RaidTierExpansion[]
+}
+
 interface RaidTier {
   id: string
   name: string
   is_active: boolean
-  expansion: {
+  expansion: RaidTierExpansion
+}
+
+interface RawSubmissionCharacter {
+  id: string
+  name: string | null
+  user_id: string
+  class: { name: string; color_hex: string } | Array<{ name: string; color_hex: string }>
+}
+
+interface RawLootSubmission {
+  id: string
+  status: string
+  submitted_at: string | null
+  review_notes: string | null
+  character_id: string
+}
+
+interface SubmissionDetailItem {
+  rank: number
+  loot_item: {
+    id: string
     name: string
+    boss_name: string
+    item_slot: string
+    wowhead_id: number
   }
 }
 
@@ -59,7 +95,7 @@ export default function MasterLootPage() {
   const [user, setUser] = useState<User | null>(null)
   const [guildId, setGuildId] = useState<string | null>(null)
   const [viewingSubmission, setViewingSubmission] = useState<string | null>(null)
-  const [submissionDetails, setSubmissionDetails] = useState<any[]>([])
+  const [submissionDetails, setSubmissionDetails] = useState<SubmissionDetailItem[]>([])
 
   const supabase = createClient()
   const router = useRouter()
@@ -91,7 +127,7 @@ export default function MasterLootPage() {
 
       setGuildId(activeGuild.id)
 
-      let tiersData: any[] = []
+      let tiersData: RaidTierRow[] = []
       if (activeGuild.active_expansion_id) {
         const { data: tiersResult } = await supabase
           .from('raid_tiers')
@@ -114,12 +150,12 @@ export default function MasterLootPage() {
       }
 
       if (tiersData && tiersData.length > 0) {
-        const transformedData = tiersData.map((tier: any) => ({
+        const transformedData = tiersData.map((tier: RaidTierRow) => ({
           ...tier,
           expansion: Array.isArray(tier.expansion) ? tier.expansion[0] : tier.expansion
         }))
-        setRaidTiers(transformedData as any)
-        const active = transformedData.find(t => t.is_active) as any
+        setRaidTiers(transformedData as RaidTier[])
+        const active = transformedData.find((t: RaidTier) => t.is_active) as RaidTier | undefined
         if (active) {
           setActiveTier(active)
         }
@@ -148,7 +184,7 @@ export default function MasterLootPage() {
     if (!submissionsData) return
 
     const submissionsWithDetails = await Promise.all(
-      submissionsData.map(async (sub: any) => {
+      submissionsData.map(async (sub: RawLootSubmission) => {
         const { data: characterData } = await supabase
           .from('characters')
           .select(`
@@ -160,6 +196,11 @@ export default function MasterLootPage() {
           .eq('id', sub.character_id)
           .single()
 
+        const typedCharacter = characterData as unknown as RawSubmissionCharacter | null
+        const charClass = typedCharacter?.class
+          ? (Array.isArray(typedCharacter.class) ? typedCharacter.class[0] : typedCharacter.class)
+          : null
+
         const { count } = await supabase
           .from('loot_submission_items')
           .select('*', { count: 'exact', head: true })
@@ -167,21 +208,21 @@ export default function MasterLootPage() {
 
         return {
           ...sub,
-          member: characterData ? {
-            character_name: characterData.name,
+          member: typedCharacter ? {
+            character_name: typedCharacter.name || 'Unknown',
             role: 'Member',
-            class: characterData.class
+            class: charClass
           } : null,
           item_count: count || 0,
           user: {
-            id: characterData?.user_id || '',
+            id: typedCharacter?.user_id || '',
             user_metadata: {}
           }
         }
       })
     )
 
-    setSubmissions(submissionsWithDetails as any)
+    setSubmissions(submissionsWithDetails as Submission[])
   }, [supabase])
 
   useEffect(() => {
@@ -213,8 +254,9 @@ export default function MasterLootPage() {
       if (guildId && activeTier) {
         await loadSubmissions(guildId, activeTier.id)
       }
-    } catch (error: any) {
-      showNotification('error', error.message || 'Couldn\'t update submission. Try again.')
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Couldn\'t update submission. Try again.'
+      showNotification('error', message)
       setReviewing(null)
     }
   }
@@ -232,7 +274,7 @@ export default function MasterLootPage() {
       .order('rank', { ascending: false })
 
     if (itemsData) {
-      setSubmissionDetails(itemsData as any)
+      setSubmissionDetails(itemsData as SubmissionDetailItem[])
     }
   }
 
@@ -343,7 +385,7 @@ export default function MasterLootPage() {
             <p className="text-muted-foreground text-center py-8">No items in this submission</p>
           ) : (
             <div className="space-y-2">
-              {submissionDetails.map((detail: any, idx: number) => (
+              {submissionDetails.map((detail: SubmissionDetailItem, idx: number) => (
                 <div key={idx} className="flex items-center justify-between py-2 border-b border-border">
                   <div>
                     <ItemLink

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient, getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
+import { trackApiError, trackEvent } from '@/utils/analytics/server'
 
 // WoW character name validation and formatting
 // Rules: 2-12 characters, letters only (accents allowed), first letter capitalized
@@ -96,6 +97,7 @@ export async function GET(
     )
   } catch (error) {
     console.error('Error in GET /api/characters/[id]:', error)
+    trackApiError('unknown', 'GET /api/characters/[id]', error instanceof Error ? error : new Error(String(error)))
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -211,9 +213,12 @@ export async function PUT(
       }
     }
 
+    trackEvent({ event: 'character_updated', userId: user.id, properties: { character_id: id } })
+
     return NextResponse.json({ character: enrichedCharacter })
   } catch (error) {
     console.error('Error in PUT /api/characters/[id]:', error)
+    trackApiError('unknown', 'PUT /api/characters/[id]', error instanceof Error ? error : new Error(String(error)))
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -361,6 +366,7 @@ export async function DELETE(
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error('Error in DELETE /api/characters/[id]:', error)
+    trackApiError('unknown', 'DELETE /api/characters/[id]', error instanceof Error ? error : new Error(String(error)))
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

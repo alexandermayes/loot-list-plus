@@ -1,5 +1,6 @@
 import { createClient, getAuthenticatedUser } from '@/utils/supabase/server'
 import { NextResponse } from 'next/server'
+import { trackApiError } from '@/utils/analytics/server'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -93,6 +94,7 @@ export async function GET(request: Request) {
     )
   } catch (error) {
     console.error('Error in prio-list GET:', error)
+    trackApiError('unknown', 'GET /api/prio-list', error instanceof Error ? error : new Error(String(error)))
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
@@ -236,6 +238,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ priority: result })
   } catch (error) {
     console.error('Error in prio-list POST:', error)
+    trackApiError('unknown', 'POST /api/prio-list', error instanceof Error ? error : new Error(String(error)))
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
@@ -335,6 +338,7 @@ export async function DELETE(request: Request) {
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error('Error in prio-list DELETE:', error)
+    trackApiError('unknown', 'DELETE /api/prio-list', error instanceof Error ? error : new Error(String(error)))
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

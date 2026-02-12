@@ -58,6 +58,34 @@ interface Phase {
   expansion_name: string
 }
 
+interface SubmissionDetailItem {
+  rank: number
+  loot_item: {
+    id: string
+    name: string
+    boss_name: string
+    item_slot: string
+    wowhead_id: number
+    classification: string | null
+  }
+}
+
+interface RawSubmissionCharacter {
+  name: string | null
+  class: { name: string; color_hex: string } | Array<{ name: string; color_hex: string }>
+}
+
+interface RawSubmission {
+  id: string
+  status: string
+  submitted_at: string | null
+  review_notes: string | null
+  character_id: string
+  expansion_id: string
+  phase: number
+  character: RawSubmissionCharacter | RawSubmissionCharacter[]
+}
+
 export default function MasterLootPage() {
   const [submissions, setSubmissions] = useState<Submission[]>([])
   const [phases, setPhases] = useState<Phase[]>([])
@@ -70,7 +98,7 @@ export default function MasterLootPage() {
   const [user, setUser] = useState<User | null>(null)
   const [guildId, setGuildId] = useState<string | null>(null)
     const [viewingSubmission, setViewingSubmission] = useState<string | null>(null)
-  const [submissionDetails, setSubmissionDetails] = useState<any[]>([])
+  const [submissionDetails, setSubmissionDetails] = useState<SubmissionDetailItem[]>([])
   const [loadingDetails, setLoadingDetails] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState<{ type: 'single' | 'pending' | 'all', id?: string } | null>(null)
@@ -217,7 +245,7 @@ export default function MasterLootPage() {
     })
 
     // Transform data to match expected format
-    const formattedSubmissions = submissionsData.map((sub: any) => {
+    const formattedSubmissions = submissionsData.map((sub: RawSubmission) => {
       const character = Array.isArray(sub.character) ? sub.character[0] : sub.character
       const charClass = Array.isArray(character?.class) ? character.class[0] : character?.class
 
@@ -245,7 +273,7 @@ export default function MasterLootPage() {
       }
     })
 
-    setSubmissions(formattedSubmissions as any)
+    setSubmissions(formattedSubmissions as Submission[])
     setContentLoading(false)
   }, [supabase])
 
@@ -324,7 +352,7 @@ export default function MasterLootPage() {
     // Only update state if this is still the current request (prevents race conditions)
     if (currentDetailRequestRef.current === submissionId) {
       if (itemsData) {
-        setSubmissionDetails(itemsData as any)
+        setSubmissionDetails(itemsData as SubmissionDetailItem[])
       }
       setLoadingDetails(false)
     }
@@ -387,7 +415,7 @@ export default function MasterLootPage() {
 
   // Memoize grouped submission details to avoid recalculating on every render
   const groupedSubmissionDetails = useMemo(() => {
-    const grouped: Record<number, any[]> = {}
+    const grouped: Record<number, SubmissionDetailItem[]> = {}
     for (const detail of submissionDetails) {
       const rank = detail.rank
       if (!grouped[rank]) grouped[rank] = []
@@ -644,7 +672,7 @@ export default function MasterLootPage() {
                       if (r >= 25) return 'from-green-900 to-green-700'
                       return 'from-blue-900 to-blue-700'
                     }
-                    const itemsArr = items as any[]
+                    const itemsArr = items as SubmissionDetailItem[]
                     return (
                       <tr key={rank} className="border-b border-border">
                         <td className={`px-3 py-2 font-semibold text-sm text-foreground bg-gradient-to-r ${getRankColor(rankNum)}`}>

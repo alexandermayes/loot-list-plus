@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient, getAuthenticatedUser } from '@/utils/supabase/server'
+import { trackApiError } from '@/utils/analytics/server'
 
 // POST - Delete a guild (only creator can delete)
 export async function POST(request: NextRequest) {
@@ -88,6 +89,7 @@ export async function POST(request: NextRequest) {
     })
   } catch (error) {
     console.error('Error in POST /api/guilds/delete:', error)
+    trackApiError('unknown', 'POST /api/guilds/delete', error instanceof Error ? error : new Error(String(error)))
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

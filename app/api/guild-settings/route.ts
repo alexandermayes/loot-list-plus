@@ -1,7 +1,7 @@
 import { createClient, getAuthenticatedUser } from '@/utils/supabase/server'
 import { NextResponse } from 'next/server'
 import { logAudit } from '@/utils/audit/log'
-import { trackEvent } from '@/utils/analytics/server'
+import { trackEvent, trackApiError } from '@/utils/analytics/server'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -155,6 +155,7 @@ export async function GET(request: Request) {
     )
   } catch (error) {
     console.error('Error in guild settings GET:', error)
+    trackApiError('unknown', 'GET /api/guild-settings', error instanceof Error ? error : new Error(String(error)))
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
@@ -302,6 +303,7 @@ export async function PUT(request: Request) {
     return NextResponse.json({ settings: result })
   } catch (error) {
     console.error('Error in guild settings PUT:', error)
+    trackApiError('unknown', 'PUT /api/guild-settings', error instanceof Error ? error : new Error(String(error)))
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

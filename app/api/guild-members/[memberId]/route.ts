@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient, getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { verifyOfficerPermissions } from '@/utils/server-roles'
+import { trackApiError, trackEvent } from '@/utils/analytics/server'
 
 // PATCH - Update guild member (role, etc) - LEGACY ENDPOINT for guild_members table
 export async function PATCH(
@@ -75,12 +76,15 @@ export async function PATCH(
       )
     }
 
+    trackEvent({ event: 'member_role_changed', userId: user.id, properties: { member_id: memberId, new_role: role, guild_id: targetMember.guild_id } })
+
     return NextResponse.json({
       success: true,
       message: `Role updated to ${role}`
     })
   } catch (error) {
     console.error('Error in PATCH /api/guild-members/[memberId]:', error)
+    trackApiError('unknown', 'PATCH /api/guild-members/[memberId]', error instanceof Error ? error : new Error(String(error)))
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -197,6 +201,7 @@ export async function DELETE(
     })
   } catch (error) {
     console.error('Error in DELETE /api/guild-members/[memberId]:', error)
+    trackApiError('unknown', 'DELETE /api/guild-members/[memberId]', error instanceof Error ? error : new Error(String(error)))
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

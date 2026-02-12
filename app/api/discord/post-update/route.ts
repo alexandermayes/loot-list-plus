@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthenticatedUser } from '@/utils/supabase/server'
+import { trackApiError } from '@/utils/analytics/server'
 
 interface UpdateItem {
   category: 'feature' | 'improvement' | 'fix'
@@ -96,6 +97,7 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('Error posting update to Discord:', error)
+    trackApiError('unknown', 'POST /api/discord/post-update', error instanceof Error ? error : new Error(String(error)))
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

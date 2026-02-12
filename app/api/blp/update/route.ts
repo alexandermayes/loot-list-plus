@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
+import { trackApiError } from '@/utils/analytics/server'
 
 interface UpdateBLPRequest {
   guild_id: string
@@ -123,6 +124,7 @@ export async function POST(request: NextRequest) {
     })
   } catch (error) {
     console.error('Error in POST /api/blp/update:', error)
+    trackApiError('unknown', 'POST /api/blp/update', error instanceof Error ? error : new Error(String(error)))
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

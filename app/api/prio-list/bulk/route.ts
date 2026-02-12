@@ -2,6 +2,7 @@ import { createClient, getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { NextResponse } from 'next/server'
 import { verifyOfficerPermissions } from '@/utils/server-roles'
+import { trackApiError } from '@/utils/analytics/server'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -119,6 +120,7 @@ export async function POST(request: Request) {
     })
   } catch (error) {
     console.error('Error in prio-list bulk POST:', error)
+    trackApiError('unknown', 'POST /api/prio-list/bulk', error instanceof Error ? error : new Error(String(error)))
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

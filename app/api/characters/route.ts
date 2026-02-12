@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient, getAuthenticatedUser } from '@/utils/supabase/server'
 import { getCached, invalidateCache, cacheKeys } from '@/utils/cache'
+import { trackApiError, trackEvent } from '@/utils/analytics/server'
 
 // WoW character name validation and formatting
 // Rules: 2-12 characters, letters only (accents allowed), first letter capitalized
@@ -80,6 +81,7 @@ export async function GET() {
     return NextResponse.json({ characters })
   } catch (error) {
     console.error('Error in GET /api/characters:', error)
+    trackApiError('unknown', 'GET /api/characters', error instanceof Error ? error : new Error(String(error)))
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -195,9 +197,12 @@ export async function POST(request: Request) {
     // Invalidate cache after creating character
     await invalidateCache(cacheKeys.userCharacters(user.id))
 
+    trackEvent({ event: 'character_created', userId: user.id, properties: { character_id: enrichedCharacter.id, character_name: enrichedCharacter.name } })
+
     return NextResponse.json({ character: enrichedCharacter }, { status: 201 })
   } catch (error) {
     console.error('Error in POST /api/characters:', error)
+    trackApiError('unknown', 'POST /api/characters', error instanceof Error ? error : new Error(String(error)))
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

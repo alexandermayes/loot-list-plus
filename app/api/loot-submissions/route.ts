@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
+import { trackApiError } from '@/utils/analytics/server'
 
 // GET - Fetch loot submission and rankings for a character/tier
 export async function GET(request: NextRequest) {
@@ -84,6 +85,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ submission, rankings })
   } catch (error) {
     console.error('Error in GET /api/loot-submissions:', error)
+    trackApiError('unknown', 'GET /api/loot-submissions', error instanceof Error ? error : new Error(String(error)))
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

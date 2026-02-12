@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
+import { trackApiError } from '@/utils/analytics/server'
 import {
   CLASS_PROFICIENCIES,
   canWearArmorType,
@@ -336,6 +337,7 @@ export async function GET(request: NextRequest) {
     )
   } catch (error) {
     console.error('Error in GET /api/loot-items:', error)
+    trackApiError('unknown', 'GET /api/loot-items', error instanceof Error ? error : new Error(String(error)))
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getAuthenticatedUser } from '@/utils/supabase/server'
+import { trackApiError } from '@/utils/analytics/server'
 
 // LOW-04: Maximum request body size (5MB to accommodate screenshots)
 const MAX_BODY_SIZE = 5 * 1024 * 1024 // 5MB
@@ -257,6 +258,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: true, githubIssueNumber })
   } catch (error) {
     console.error('Error in feedback API:', error)
+    trackApiError('unknown', 'POST /api/feedback', error instanceof Error ? error : new Error(String(error)))
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

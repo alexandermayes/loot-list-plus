@@ -3,6 +3,7 @@ import { createClient, getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { seedExpansionForGuild } from '@/app/services/expansionSeeder'
 import { getCached, invalidateCache, cacheKeys } from '@/utils/cache'
+import { trackApiError, trackEvent } from '@/utils/analytics/server'
 
 // POST - Create a new guild
 export async function POST(request: NextRequest) {
@@ -257,6 +258,8 @@ export async function POST(request: NextRequest) {
     // Invalidate guilds cache after creating
     await invalidateCache(cacheKeys.userGuilds(user.id))
 
+    trackEvent({ event: 'guild_created', userId: user.id, properties: { guild_id: guild.id, guild_name: guild.name } })
+
     return NextResponse.json({
       success: true,
       guild: {
@@ -268,6 +271,7 @@ export async function POST(request: NextRequest) {
     })
   } catch (error) {
     console.error('Error in POST /api/guilds:', error)
+    trackApiError('unknown', 'POST /api/guilds', error instanceof Error ? error : new Error(String(error)))
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -335,6 +339,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ guilds })
   } catch (error) {
     console.error('Error in GET /api/guilds:', error)
+    trackApiError('unknown', 'GET /api/guilds', error instanceof Error ? error : new Error(String(error)))
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -384,6 +389,7 @@ export async function DELETE(request: NextRequest) {
     })
   } catch (error) {
     console.error('Error in DELETE /api/guilds:', error)
+    trackApiError('unknown', 'DELETE /api/guilds', error instanceof Error ? error : new Error(String(error)))
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

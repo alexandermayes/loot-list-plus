@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient, getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
+import { trackApiError } from '@/utils/analytics/server'
 
 interface NotificationPayload {
   submission_id: string
@@ -196,6 +197,7 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('Error sending Discord notification:', error)
+    trackApiError('unknown', 'POST /api/discord/send-notification', error instanceof Error ? error : new Error(String(error)))
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

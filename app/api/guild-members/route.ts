@@ -3,6 +3,7 @@ import { createClient, getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { verifyOfficerPermissions, verifyRoleChangePermissions, verifyMemberRemovalPermissions } from '@/utils/server-roles'
 import { ROLE_POSITIONS } from '@/utils/roles'
+import { trackApiError } from '@/utils/analytics/server'
 
 // GET - List all members of a guild (uses service role to bypass RLS)
 export async function GET(request: NextRequest) {
@@ -221,6 +222,7 @@ export async function GET(request: NextRequest) {
     )
   } catch (error) {
     console.error('Error in GET /api/guild-members:', error)
+    trackApiError('unknown', 'GET /api/guild-members', error instanceof Error ? error : new Error(String(error)))
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
@@ -283,6 +285,7 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error('Error in PUT /api/guild-members:', error)
+    trackApiError('unknown', 'PUT /api/guild-members', error instanceof Error ? error : new Error(String(error)))
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
@@ -352,6 +355,7 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error('Error in DELETE /api/guild-members:', error)
+    trackApiError('unknown', 'DELETE /api/guild-members', error instanceof Error ? error : new Error(String(error)))
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

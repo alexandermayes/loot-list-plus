@@ -1,6 +1,7 @@
 'use client'
 
 import Image from 'next/image'
+import type { User } from '@supabase/supabase-js'
 import { createClient } from '@/utils/supabase/client'
 import { useState, useEffect, useRef, useCallback, useMemo, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
@@ -46,6 +47,101 @@ interface ItemRankings {
   rankings: PlayerRanking[]
 }
 
+interface MemberInfo {
+  character_name: string
+  role: string
+  class?: { id?: string; name: string; color_hex: string }
+}
+
+interface GuildSettings {
+  guild_id?: string
+  rolling_attendance_weeks?: number
+  raid_days_per_week?: number
+  first_raid_day?: number | null
+  second_raid_day?: number | null
+  third_raid_day?: number | null
+  fourth_raid_day?: number | null
+  fifth_raid_day?: number | null
+  decimal_places?: number
+  blp_enabled?: boolean
+  new_member_mode?: 'raw' | 'fair' | 'minimum_gate'
+  minimum_raid_days?: number
+  // Fields used by ScoreBreakdownModal
+  attendance_mode?: string
+  attendance_max_score?: number
+  attendance_breakpoints?: { threshold: number; percentage: number }[]
+  rank_modifier_gm?: number
+  rank_modifier_officer?: number
+  rank_modifier_member?: number
+  bad_luck_bonus_per_loss?: number
+  bad_luck_bonus_max?: number
+  priority_bonus_role?: number
+  priority_bonus_class_spec?: number
+  priority_bonus_character?: number
+  trial_penalty_enabled?: boolean
+  trial_penalty_value?: number
+  // Allow additional fields from guild_settings table
+  [key: string]: unknown
+}
+
+interface RaidTierExpansion {
+  id: string
+  name: string
+}
+
+interface RaidTierRow {
+  id: string
+  name: string
+  phase: number | null
+  is_active: boolean
+  is_guild_active: boolean
+  master_sheet_visible: boolean
+  expansion: RaidTierExpansion | RaidTierExpansion[]
+}
+
+interface RaidTier {
+  id: string
+  name: string
+  phase: number
+  is_active: boolean
+  is_guild_active: boolean
+  master_sheet_visible: boolean
+  expansion: RaidTierExpansion
+}
+
+interface CharacterClass {
+  name: string
+  color_hex: string
+}
+
+interface CharacterSpec {
+  id: string
+  name: string
+}
+
+interface CharacterGuildMembership {
+  role: string
+  membership_status: string
+  is_active?: boolean
+  guild_id?: string
+}
+
+interface CharacterWithRelations {
+  id: string
+  name: string | null
+  user_id: string
+  spec_id: string | null
+  class: CharacterClass | CharacterClass[]
+  spec: CharacterSpec | CharacterSpec[] | null
+  character_guild_memberships: CharacterGuildMembership[]
+}
+
+interface AggregateCharacterRow {
+  id: string
+  name: string | null
+  class: CharacterClass | CharacterClass[]
+}
+
 export default function MasterSheet() {
   return (
     <Suspense fallback={<MasterSheetContentSkeleton />}>
@@ -61,10 +157,10 @@ function MasterSheetContent() {
   const [initialLoading, setInitialLoading] = useState(true)
   const [contentLoading, setContentLoading] = useState(false)
   const [guildId, setGuildId] = useState<string | null>(null)
-  const [user, setUser] = useState<any>(null)
-  const [member, setMember] = useState<any>(null)
-  const [guildSettings, setGuildSettings] = useState<any>(null)
-  const [raidTiers, setRaidTiers] = useState<any[]>([])
+  const [user, setUser] = useState<User | null>(null)
+  const [member, setMember] = useState<MemberInfo | null>(null)
+  const [guildSettings, setGuildSettings] = useState<GuildSettings | null>(null)
+  const [raidTiers, setRaidTiers] = useState<RaidTier[]>([])
   const [phases, setPhases] = useState<number[]>([])
   const [selectedPhase, setSelectedPhase] = useState<number | null>(null)
   const [masterSheetVisible, setMasterSheetVisible] = useState<boolean>(false)
@@ -383,20 +479,21 @@ function MasterSheetContent() {
 
         if (tiersData && tiersData.length > 0) {
           // Transform data to ensure expansion is a single object (Supabase returns it as array)
-          const transformedData = tiersData.map((tier: any) => ({
+          const transformedData: RaidTier[] = tiersData.map((tier: RaidTierRow) => ({
             ...tier,
+            phase: tier.phase ?? 0,
             expansion: Array.isArray(tier.expansion) ? tier.expansion[0] : tier.expansion
           }))
 
           // Sort by Classic raid progression order
-          const sortedTiers = transformedData.sort((a: any, b: any) => {
+          const sortedTiers = transformedData.sort((a: RaidTier, b: RaidTier) => {
             return getRaidTierOrder(a.name) - getRaidTierOrder(b.name)
           })
 
           setRaidTiers(sortedTiers)
 
           // Extract unique phases from tiers
-          const uniquePhases = [...new Set(sortedTiers.map((t: any) => t.phase).filter((p: number | null) => p !== null))] as number[]
+          const uniquePhases = [...new Set<number>(sortedTiers.map((t: RaidTier) => t.phase).filter((p: number | null): p is number => p !== null))]
           uniquePhases.sort((a, b) => a - b)
           setPhases(uniquePhases)
 
@@ -408,7 +505,7 @@ function MasterSheetContent() {
               setSelectedPhase(parseInt(phaseFromUrl))
             } else {
               // Otherwise use phase with an active tier or first phase
-              const activeTierPhase = sortedTiers.find((t: any) => t.is_active)?.phase
+              const activeTierPhase = sortedTiers.find((t: RaidTier) => t.is_active)?.phase
               setSelectedPhase(activeTierPhase ?? uniquePhases[0])
             }
           }
@@ -430,7 +527,7 @@ function MasterSheetContent() {
   // Master sheet is visible if ANY tier in the phase has it visible
   useEffect(() => {
     if (phaseTiers.length > 0) {
-      const anyVisible = phaseTiers.some((t: any) => t.master_sheet_visible)
+      const anyVisible = phaseTiers.some((t: RaidTier) => t.master_sheet_visible)
       setMasterSheetVisible(anyVisible)
     } else if (selectedPhase !== null && phases.length > 0 && !phases.includes(selectedPhase)) {
       // Selected phase doesn't exist, reset to first available phase
@@ -597,9 +694,8 @@ function MasterSheetContent() {
 
         // Pre-calculate attendance for all characters in a single batched query
         // This replaces N individual queries with just 4 bulk queries total
-        type CharacterData = { id: string; user_id: string; name: string | null; spec_id: string | null }
         const attendanceCache = await calculateAttendanceBatch(
-          (charactersData || []).map((c: CharacterData) => ({ id: c.id, user_id: c.user_id }))
+          (charactersData || []).map((c: CharacterWithRelations) => ({ id: c.id, user_id: c.user_id }))
         )
 
         // Determine minimum raids required for eligibility
@@ -613,7 +709,7 @@ function MasterSheetContent() {
 
         // Create lookup maps for O(1) access (performance optimization - replaces O(n²) nested .find() calls)
         const subsById = new Map<string, SubmissionData>(subsData.map((s: SubmissionData) => [s.id, s]))
-        const characterById = new Map<string, CharacterData>(charactersData?.map((c: CharacterData) => [c.id, c]) || [])
+        const characterById = new Map<string, CharacterWithRelations>(charactersData?.map((c: CharacterWithRelations) => [c.id, c]) || [])
 
         for (const item of itemsData) {
           const itemRankingsData = allRankingsData.filter((r: RankingData) => r.loot_item_id === item.id)
@@ -623,7 +719,7 @@ function MasterSheetContent() {
             const sub = subsById.get(r.submission_id)
             if (!sub) continue
 
-            const character = sub.character_id ? characterById.get(sub.character_id) as any : undefined
+            const character = sub.character_id ? characterById.get(sub.character_id) : undefined
             if (!character) continue
 
             // Skip if character has already received this item
@@ -633,17 +729,19 @@ function MasterSheetContent() {
             const attendance = attendanceData.score
             const raidsAttended = attendanceData.raidsAttended
             // Find membership for the current guild (may not exist for approved submissions without membership)
-            const guildMembership = (character as any).character_guild_memberships?.find(
-              (m: { guild_id: string }) => m.guild_id === activeGuild!.id
+            const guildMembership = character.character_guild_memberships?.find(
+              (m: CharacterGuildMembership) => m.guild_id === activeGuild!.id
             )
             const characterRole = guildMembership?.role || 'Member'
             const roleModifier = getRankModifier(characterRole, guildSettings)
 
             // Calculate priority bonus
             const itemPriority = prioritiesMap[item.id]
-            const specId = (character as any).spec_id || null
-            const specName = (character as any).spec?.name || null
-            const className = (character.class as any)?.name || null
+            const charClass = Array.isArray(character.class) ? character.class[0] : character.class
+            const charSpec = Array.isArray(character.spec) ? character.spec[0] : character.spec
+            const specId = character.spec_id || null
+            const specName = charSpec?.name || null
+            const className = charClass?.name || null
 
             // Determine the character's role based on their spec
             let specRole: string | null = null
@@ -677,8 +775,8 @@ function MasterSheetContent() {
 
             rankings.push({
               player_name: character.name || 'Unknown',
-              class_name: (character.class as any)?.name || 'Unknown',
-              class_color: (character.class as any)?.color_hex || '#888888',
+              class_name: charClass?.name || 'Unknown',
+              class_color: charClass?.color_hex || '#888888',
               loot_score: lootScore,
               rank: r.rank,
               attendance_score: attendance,
@@ -822,11 +920,10 @@ function MasterSheetContent() {
         }
 
         // Populate players for each item
-        type AggregateCharacter = { id: string; name: string | null }
 
         // Create lookup maps for O(1) access (performance optimization)
         const submissionsById = new Map<string, AggregateSubmission>(submissionsData.map((s: AggregateSubmission) => [s.id, s]))
-        const aggregateCharacterById = new Map<string, AggregateCharacter>(charactersData?.map((c: AggregateCharacter) => [c.id, c]) || [])
+        const aggregateCharacterById = new Map<string, AggregateCharacterRow>(charactersData?.map((c: AggregateCharacterRow) => [c.id, c]) || [])
 
         for (const si of submissionItemsData) {
           if (!approvedSubmissionIds.has(si.submission_id)) continue
@@ -834,17 +931,19 @@ function MasterSheetContent() {
           const submission = submissionsById.get(si.submission_id)
           if (!submission) continue
 
-          const character = submission.character_id ? aggregateCharacterById.get(submission.character_id) as any : undefined
+          const character = submission.character_id ? aggregateCharacterById.get(submission.character_id) : undefined
           if (!character) continue
 
           const aggregate = aggregateMap[si.loot_item_id]
           if (!aggregate) continue
 
+          const charClass = Array.isArray(character.class) ? character.class[0] : character.class
+
           aggregate.players.push({
             character_id: character.id,
             character_name: character.name || 'Unknown',
-            class_name: (character.class as any)?.name || 'Unknown',
-            class_color: (character.class as any)?.color_hex || '#888888',
+            class_name: charClass?.name || 'Unknown',
+            class_color: charClass?.color_hex || '#888888',
             primary_rank: si.slot,
             item_rank: si.rank,
           })
@@ -936,7 +1035,7 @@ function MasterSheetContent() {
       const tierId = ir.item.raid_tier_id || 'unknown'
       if (!grouped[tierId]) {
         const tier = phaseTiers.find(t => t.id === tierId)
-        grouped[tierId] = { tier: tier || { id: tierId, name: 'Unknown', phase: 0 }, items: [] }
+        grouped[tierId] = { tier: tier || { id: tierId, name: 'Unknown', phase: 0, is_active: false, is_guild_active: false, master_sheet_visible: false, expansion: { id: '', name: '' } }, items: [] }
       }
       grouped[tierId].items.push(ir)
     })
@@ -1150,9 +1249,8 @@ function MasterSheetContent() {
     }
 
     // Pre-calculate attendance for all characters in a single batched query
-    type TierCharacterData = { id: string; user_id: string; name: string | null; spec_id: string | null }
     const attendanceCache = await calculateAttendanceBatch(
-      charactersData.map((c: TierCharacterData) => ({ id: c.id, user_id: c.user_id }))
+      charactersData.map((c: CharacterWithRelations) => ({ id: c.id, user_id: c.user_id }))
     )
 
     // Determine minimum raids required for eligibility
@@ -1164,7 +1262,7 @@ function MasterSheetContent() {
 
     // Create lookup maps for O(1) access (performance optimization)
     const tierSubsById = new Map<string, TierSubmissionData>(subsData.map((s: TierSubmissionData) => [s.id, s]))
-    const tierCharacterById = new Map<string, TierCharacterData>(charactersData.map((c: TierCharacterData) => [c.id, c]))
+    const tierCharacterById = new Map<string, CharacterWithRelations>(charactersData.map((c: CharacterWithRelations) => [c.id, c]))
 
     for (const item of itemsData) {
       const itemRankingsData = allRankingsData.filter((r: TierRankingData) => r.loot_item_id === item.id)
@@ -1174,7 +1272,7 @@ function MasterSheetContent() {
         const sub = tierSubsById.get(r.submission_id)
         if (!sub) continue
 
-        const character = sub.character_id ? tierCharacterById.get(sub.character_id) as any : undefined
+        const character = sub.character_id ? tierCharacterById.get(sub.character_id) : undefined
         if (!character) continue
 
         // Skip if character has already received this item
@@ -1183,14 +1281,16 @@ function MasterSheetContent() {
         const attendanceData = attendanceCache[character.id] || { score: 0, raidsAttended: 0 }
         const attendance = attendanceData.score
         const raidsAttended = attendanceData.raidsAttended
-        const characterRole = (character as any).character_guild_memberships?.[0]?.role || 'Member'
+        const characterRole = character.character_guild_memberships?.[0]?.role || 'Member'
         const roleModifier = getRankModifier(characterRole, guildSettings)
 
         // Calculate priority bonus
         const itemPriority = prioritiesMap[item.id]
-        const specId = (character as any).spec_id || null
-        const specName = (character as any).spec?.name || null
-        const className = (character.class as any)?.name || null
+        const charClass = Array.isArray(character.class) ? character.class[0] : character.class
+        const charSpec = Array.isArray(character.spec) ? character.spec[0] : character.spec
+        const specId = character.spec_id || null
+        const specName = charSpec?.name || null
+        const className = charClass?.name || null
 
         let specRole: string | null = null
         if (specName && className) {
@@ -1212,7 +1312,7 @@ function MasterSheetContent() {
         const badLuckBonus = calculateBadLuckBonus(tierTimesPassed, guildSettings)
 
         // Calculate trial penalty
-        const membershipStatus = (character as any).character_guild_memberships?.[0]?.membership_status || 'full'
+        const membershipStatus = character.character_guild_memberships?.[0]?.membership_status || 'full'
         const trialPenalty = getTrialPenalty(membershipStatus, guildSettings)
         const isTrial = membershipStatus === 'trial'
 
@@ -1223,8 +1323,8 @@ function MasterSheetContent() {
 
         rankings.push({
           player_name: character.name || 'Unknown',
-          class_name: (character.class as any)?.name || 'Unknown',
-          class_color: (character.class as any)?.color_hex || '#888888',
+          class_name: charClass?.name || 'Unknown',
+          class_color: charClass?.color_hex || '#888888',
           loot_score: lootScore,
           rank: r.rank,
           attendance_score: attendance,
@@ -1594,7 +1694,7 @@ function MasterSheetContent() {
                 onToggleRaidTierCollapse={toggleRaidTierCollapse}
                 onToggleBossCollapse={toggleBossCollapse}
                 activeCharacterId={activeCharacter?.id}
-                guildSettings={guildSettings}
+                guildSettings={guildSettings ?? undefined}
                 onCompare={handleCompare}
               />
             )}

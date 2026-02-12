@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient, getAuthenticatedUser } from '@/utils/supabase/server'
+import { trackApiError, trackEvent } from '@/utils/analytics/server'
 
 // POST - Leave a guild
 export async function POST(request: NextRequest) {
@@ -199,6 +200,8 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    trackEvent({ event: 'guild_left', userId: user.id, properties: { guild_id } })
+
     return NextResponse.json({
       success: true,
       message: 'Successfully left guild',
@@ -206,6 +209,7 @@ export async function POST(request: NextRequest) {
     })
   } catch (error) {
     console.error('Error in POST /api/guilds/leave:', error)
+    trackApiError('unknown', 'POST /api/guilds/leave', error instanceof Error ? error : new Error(String(error)))
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

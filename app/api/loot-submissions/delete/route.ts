@@ -3,7 +3,7 @@ import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { NextResponse } from 'next/server'
 import { verifyOfficerPermissions } from '@/utils/server-roles'
 import { logAudit } from '@/utils/audit/log'
-import { trackEvent } from '@/utils/analytics/server'
+import { trackEvent, trackApiError } from '@/utils/analytics/server'
 
 export async function DELETE(request: Request) {
   try {
@@ -172,6 +172,7 @@ export async function DELETE(request: Request) {
     })
   } catch (error) {
     console.error('Error in loot submissions DELETE:', error)
+    trackApiError('unknown', 'DELETE /api/loot-submissions/delete', error instanceof Error ? error : new Error(String(error)))
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
