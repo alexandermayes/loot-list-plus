@@ -79,7 +79,7 @@ export default function DevLoginPage() {
       // Redirect to overview or guild-select
       router.push('/overview')
     } catch (err) {
-      setError('An unexpected error occurred')
+      setError('Couldn\'t sign in. Try again.')
       setLoading(false)
     }
   }
@@ -104,7 +104,7 @@ export default function DevLoginPage() {
 
       router.push('/overview')
     } catch (err) {
-      setError('An unexpected error occurred')
+      setError('Couldn\'t sign in. Try again.')
       setLoading(false)
     }
   }
@@ -113,7 +113,7 @@ export default function DevLoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle className="text-xl">Dev Login</CardTitle>
+          <CardTitle className="text-xl">Dev login</CardTitle>
           <CardDescription>
             Development-only email/password login for testing
           </CardDescription>
@@ -161,7 +161,7 @@ export default function DevLoginPage() {
                 </div>
                 <div className="relative flex justify-center text-xs uppercase">
                   <span className="bg-background-elevated px-2 text-muted-foreground">
-                    Quick Login
+                    Quick login
                   </span>
                 </div>
               </div>
@@ -193,7 +193,7 @@ export default function DevLoginPage() {
               size="sm"
               onClick={() => router.push('/')}
             >
-              Back to Home
+              Back to home
             </Button>
           </div>
         </CardContent>

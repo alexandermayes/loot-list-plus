@@ -364,7 +364,7 @@ export default function ExpansionDetailPage({ params }: { params: Promise<{ expa
       }
 
       if (!data || data.length === 0) {
-        showNotification('error', 'Update failed. Check RLS policies.')
+        showNotification('error', 'Couldn\'t update. Check your permissions and try again.')
         return
       }
 
@@ -391,7 +391,7 @@ export default function ExpansionDetailPage({ params }: { params: Promise<{ expa
       if (error) throw error
 
       if (!data || data.length === 0) {
-        showNotification('error', 'Update failed. Check RLS policies.')
+        showNotification('error', 'Couldn\'t update. Check your permissions and try again.')
         return
       }
 
@@ -455,7 +455,7 @@ export default function ExpansionDetailPage({ params }: { params: Promise<{ expa
       const data = await response.json()
 
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to set current phase')
+        throw new Error(data.error || 'Couldn\'t set current phase. Try again.')
       }
 
       showNotification('success', `Phase ${phase} is now current`)
@@ -564,7 +564,7 @@ export default function ExpansionDetailPage({ params }: { params: Promise<{ expa
       {/* Current Phase Selector */}
       {uniquePhases.length > 0 && (
         <div className="bg-background-elevated border border-border rounded-xl p-5">
-          <h2 className="text-[18px] font-semibold text-foreground mb-2">Current Phase</h2>
+          <h2 className="text-[18px] font-semibold text-foreground mb-2">Current phase</h2>
           <p className="text-muted-foreground text-sm mb-4">
             Select the phase your guild is progressing through. All phases up to this point will be visible for loot list submissions.
           </p>

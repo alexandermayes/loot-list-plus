@@ -411,14 +411,14 @@ export default function AdminLootItems() {
       <div className="p-4 sm:p-6 lg:p-8 space-y-6 font-poppins">
         {/* Header */}
         <div>
-          <Heading level={1}>Loot Items</Heading>
+          <Heading level={1}>Loot items</Heading>
           <p className="text-muted-foreground mt-1 text-base">Manage loot items for your guild</p>
         </div>
 
         {/* Stats */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
           <div className="bg-background-elevated border border-border rounded-xl p-4">
-            <p className="text-muted-foreground text-sm">Total Items</p>
+            <p className="text-muted-foreground text-sm">Total items</p>
             <p className="text-2xl font-bold text-foreground">{itemStats.total}</p>
           </div>
           <div className="bg-background-elevated border border-border rounded-xl p-4">
@@ -439,7 +439,7 @@ export default function AdminLootItems() {
         <div className="bg-background-elevated border border-border rounded-xl p-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <Label className="mb-2">Search Items</Label>
+              <Label className="mb-2">Search items</Label>
               <Input
                 variant="rounded"
                 size="sm"
@@ -449,14 +449,14 @@ export default function AdminLootItems() {
               />
             </div>
             <div>
-              <Label className="mb-2">Filter by Raid</Label>
+              <Label className="mb-2">Filter by raid</Label>
               <Select
                 variant="rounded"
                 size="sm"
                 value={filterTier}
                 onChange={(e) => setFilterTier(e.target.value)}
               >
-                <option value="all">All Raids</option>
+                <option value="all">All raids</option>
                 {raidTiers.map(tier => (
                   <option key={tier.id} value={tier.name}>{tier.name}</option>
                 ))}
@@ -544,7 +544,7 @@ export default function AdminLootItems() {
                           }}
                           className="w-full text-[11px]"
                         >
-                          <option value="">+ Add Primary Spec...</option>
+                          <option value="">+ Add primary spec...</option>
                           {classSpecOptions.map(opt => {
                             const isAssigned = itemSpecs[item.id]?.primary.has(opt.id) || itemSpecs[item.id]?.secondary.has(opt.id)
                             return (
@@ -596,7 +596,7 @@ export default function AdminLootItems() {
                           }}
                           className="w-full text-[11px]"
                         >
-                          <option value="">+ Add Secondary Spec...</option>
+                          <option value="">+ Add secondary spec...</option>
                           {classSpecOptions.map(opt => {
                             const isAssigned = itemSpecs[item.id]?.primary.has(opt.id) || itemSpecs[item.id]?.secondary.has(opt.id)
                             return (
@@ -644,7 +644,7 @@ export default function AdminLootItems() {
 
         {filteredItems.length === 0 && (
           <div className="text-center py-12 text-muted-foreground">
-            No items found matching your filters
+            No items found matching your filters. Try adjusting your search or filter.
           </div>
         )}
       </div>

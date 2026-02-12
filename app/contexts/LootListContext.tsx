@@ -430,7 +430,7 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
         return {
           success: false,
           importedCount: 0,
-          error: data.error || 'Failed to fetch BIS items',
+          error: data.error || 'Couldn\'t fetch BIS items. Try again.',
           code: data.code
         }
       }
@@ -520,7 +520,7 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
       return {
         success: false,
         importedCount: 0,
-        error: error instanceof Error ? error.message : 'Failed to import BIS items'
+        error: error instanceof Error ? error.message : 'Couldn\'t import BIS items. Try again.'
       }
     } finally {
       setIsImportingBis(false)
@@ -628,7 +628,7 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
 
       if (deleteError) {
         console.error('[doAutoSave] Failed to delete items:', deleteError)
-        throw new Error(`Failed to delete items: ${deleteError.message}`)
+        throw new Error(`Couldn't delete items: ${deleteError.message}`)
       }
       console.log('[doAutoSave] Deleted items, rows affected:', deleteCount)
 
@@ -797,7 +797,7 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
 
       if (deleteError) {
         console.error('[saveSubmission] Failed to delete items:', deleteError)
-        throw new Error(`Failed to delete items: ${deleteError.message}`)
+        throw new Error(`Couldn't delete items: ${deleteError.message}`)
       }
 
       const rankingsToInsert = Object.entries(rankings).map(([key, loot_item_id]) => {

@@ -272,21 +272,21 @@ export default function ImportPage() {
 
           <div className="space-y-4">
             <div>
-              <Label className="mb-2">Import Type</Label>
+              <Label className="mb-2">Import type</Label>
               <Select
                 variant="rounded"
                 size="sm"
                 value={importType}
                 onChange={(e) => setImportType(e.target.value as any)}
               >
-                <option value="attendance">Attendance Records</option>
-                <option value="loot_items">Loot Items</option>
+                <option value="attendance">Attendance records</option>
+                <option value="loot_items">Loot items</option>
                 <option value="members">Guild Members (Not Available)</option>
               </Select>
             </div>
 
             <div>
-              <label className="block text-[13px] font-medium text-foreground mb-2">CSV File</label>
+              <label className="block text-[13px] font-medium text-foreground mb-2">CSV file</label>
               <input
                 type="file"
                 accept=".csv"
@@ -296,7 +296,7 @@ export default function ImportPage() {
             </div>
 
             <div className="bg-background-elevated rounded-xl p-4">
-              <h3 className="text-foreground font-medium mb-2 text-[14px]">Expected CSV Format:</h3>
+              <h3 className="text-foreground font-medium mb-2 text-[14px]">Expected CSV format:</h3>
               {importType === 'attendance' && (
                 <div className="text-muted-foreground text-[13px] space-y-1">
                   <p><strong className="text-foreground">Headers:</strong> date, character_name, signed_up, attended, no_call_no_show</p>
@@ -326,7 +326,7 @@ Thunderfury,Prince,Weapon,19019`}
               loading={loading}
               className="w-full"
             >
-              Import Data
+              Import data
             </Button>
           </div>
         </div>

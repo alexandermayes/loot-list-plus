@@ -79,7 +79,7 @@ export default function LootHistoryTab() {
       const result = await response.json()
 
       if (!response.ok) {
-        showNotification('error', result.error || 'Failed to load loot history')
+        showNotification('error', result.error || 'Couldn\'t load loot history. Try again.')
         return
       }
 
@@ -93,7 +93,7 @@ export default function LootHistoryTab() {
       setHasMore(offset + result.data.length < result.pagination.total)
     } catch (error) {
       console.error('Error fetching loot history:', error)
-      showNotification('error', 'Failed to load loot history')
+      showNotification('error', 'Couldn\'t load loot history. Try again.')
     } finally {
       setLoading(false)
       setLoadingMore(false)

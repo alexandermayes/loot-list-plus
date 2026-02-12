@@ -69,7 +69,7 @@ export default function LandingHero() {
               className="font-poppins text-base md:text-lg text-foreground-secondary mb-10 max-w-2xl"
             >
               LootList+ is a transparent loot management system for WoW guilds.
-              Fair distribution, attendance tracking, and complete visibility — all in one place.
+              Fair distribution, attendance tracking and complete visibility, all in one place.
             </motion.p>
 
             {/* CTA Buttons */}
@@ -80,7 +80,7 @@ export default function LandingHero() {
                 asChild
                 className="font-poppins font-semibold shadow-lg hover:shadow-xl"
               >
-                <a href={APP_URL}>Try for free</a>
+                <a href={APP_URL}>Start for free</a>
               </Button>
               <Button
                 variant="secondary"
@@ -88,13 +88,13 @@ export default function LandingHero() {
                 onClick={() => scrollToSection('features')}
                 className="font-poppins font-medium bg-background-elevated/80 hover:bg-background-elevated backdrop-blur-sm"
               >
-                See Features
+                See features
               </Button>
             </motion.div>
 
             {/* Privacy note */}
             <motion.p variants={heroFadeIn} className="mt-4 text-xs text-foreground-muted">
-              Sign in with Discord — we only use it for identity, email is optional.
+              Sign in with Discord. We only use it for identity, email is optional.
             </motion.p>
           </div>
         </div>

@@ -164,11 +164,11 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
       } else {
         // Clear cache on error
         localStorage.removeItem(cacheKey)
-        setDiscordError(data.error || 'Failed to load Discord servers')
+        setDiscordError(data.error || 'Couldn\'t load Discord servers. Check your connection and try again.')
       }
     } catch (err) {
       console.error('Error fetching Discord servers:', err)
-      setDiscordError('Failed to connect to Discord')
+      setDiscordError('Couldn\'t connect to Discord. Check your connection and try again.')
     }
   }
 
@@ -230,7 +230,7 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
           .limit(1)
 
         if (error) {
-          setNameError('Failed to validate')
+          setNameError('Couldn\'t validate name. Try again.')
           setNameAvailable(null)
         } else if (data && data.length > 0) {
           setNameAvailable(false)
@@ -240,7 +240,7 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
           setNameError('')
         }
       } catch (err) {
-        setNameError('Failed to validate')
+        setNameError('Couldn\'t validate name. Try again.')
         setNameAvailable(null)
       } finally {
         setCheckingName(false)
@@ -321,7 +321,7 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
       const data = await response.json()
 
       if (!response.ok) {
-        setError(data.error || 'Failed to create guild')
+        setError(data.error || 'Couldn\'t create guild. Try again.')
         setCreating(false)
         return
       }
@@ -332,7 +332,7 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
       window.location.href = '/overview'
     } catch (err) {
       console.error('Error creating guild:', err)
-      setError('An error occurred')
+      setError('Couldn\'t create guild. Check your connection and try again.')
       setCreating(false)
     }
   }
@@ -837,7 +837,7 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
                     Creating...
                   </>
                 ) : (
-                  'Create Guild'
+                  'Create guild'
                 )}
               </Button>
             ) : (

@@ -249,7 +249,7 @@ export function EditCharacterModal({ isOpen, onClose, character, onSuccess }: Ed
           {/* Character Name */}
           <div>
             <Label className="mb-2">
-              Character Name <span className="text-destructive">*</span>
+              Character name <span className="text-destructive">*</span>
             </Label>
             <Input
               type="text"
@@ -360,7 +360,7 @@ export function EditCharacterModal({ isOpen, onClose, character, onSuccess }: Ed
                 className="border-destructive/50 text-destructive hover:bg-destructive/10"
               >
                 <HugeiconsIcon icon={Delete01Icon} size={16} />
-                Delete Character
+                Delete character
               </Button>
             ) : (
               <div className="space-y-3">
@@ -388,7 +388,7 @@ export function EditCharacterModal({ isOpen, onClose, character, onSuccess }: Ed
                     disabled={deleting || deleteConfirmName.toLowerCase() !== character.name.toLowerCase()}
                   >
                     <HugeiconsIcon icon={Delete01Icon} size={16} />
-                    {deleting ? 'Deleting...' : 'Delete Forever'}
+                    {deleting ? 'Deleting...' : 'Delete forever'}
                   </Button>
                   <Button
                     type="button"
@@ -420,7 +420,7 @@ export function EditCharacterModal({ isOpen, onClose, character, onSuccess }: Ed
             loading={saving}
             disabled={!hasChanges}
           >
-            Save Changes
+            Save changes
           </Button>
         </ModalFooter>
       </form>

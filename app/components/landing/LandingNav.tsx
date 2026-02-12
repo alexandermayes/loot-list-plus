@@ -61,7 +61,7 @@ export default function LandingNav() {
               onClick={() => scrollToSection('how-it-works')}
               className="p-0 h-auto text-base font-medium text-foreground hover:text-accent hover:bg-transparent"
             >
-              How It Works
+              How it works
             </Button>
             <Button
               variant="ghost"
@@ -87,7 +87,7 @@ export default function LandingNav() {
                 height={18}
                 className="w-4 h-4 md:w-[18px] md:h-[18px] brightness-0"
               />
-              <span>Login</span>
+              <span>Log in</span>
             </a>
           </Button>
         </nav>

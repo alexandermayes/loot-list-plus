@@ -91,7 +91,7 @@ function getTip(userRanking: PlayerRanking, winnerRanking: PlayerRanking): strin
 
   // Very close - likely would have come down to a roll
   if (totalDiff < 1) {
-    return "You were neck and neck! With scores this close, it often comes down to the roll."
+    return "You were neck and neck. With scores this close, it often comes down to the roll."
   }
 
   // Attendance was the main factor
@@ -120,7 +120,7 @@ function getTip(userRanking: PlayerRanking, winnerRanking: PlayerRanking): strin
   }
 
   // Generic fallback
-  return "Keep showing up consistently and you'll be well-positioned for future drops!"
+  return "Keep showing up consistently and you'll be well-positioned for future drops."
 }
 
 export default function ScoreComparisonModal({
@@ -146,7 +146,7 @@ export default function ScoreComparisonModal({
         <div className="flex gap-4">
           {/* User Score */}
           <div className="flex-1 bg-background-subtle border border-border rounded-lg p-4 text-center">
-            <p className="text-muted-foreground text-[12px] uppercase tracking-wide mb-1">Your Score</p>
+            <p className="text-muted-foreground text-[12px] uppercase tracking-wide mb-1">Your score</p>
             <p className="text-foreground text-2xl font-semibold">{userRanking.loot_score.toFixed(1)}</p>
             <p className="text-foreground-secondary text-[13px]" style={{ color: userRanking.class_color }}>
               {userRanking.player_name}
@@ -155,7 +155,7 @@ export default function ScoreComparisonModal({
 
           {/* Winner Score */}
           <div className="flex-1 bg-accent/10 border border-accent/30 rounded-lg p-4 text-center">
-            <p className="text-muted-foreground text-[12px] uppercase tracking-wide mb-1">Winner's Score</p>
+            <p className="text-muted-foreground text-[12px] uppercase tracking-wide mb-1">Winner's score</p>
             <p className="text-accent text-2xl font-semibold">{winnerRanking.loot_score.toFixed(1)}</p>
             <p className="text-foreground-secondary text-[13px]" style={{ color: winnerRanking.class_color }}>
               {winnerRanking.player_name}
@@ -181,7 +181,7 @@ export default function ScoreComparisonModal({
 
           <div className="divide-y divide-border/50">
             <ScoreRow
-              label="Item Rank"
+              label="Item rank"
               icon={Target01Icon}
               iconColor="bg-yellow-500/20 text-yellow-500"
               userValue={userRanking.rank}
@@ -195,21 +195,21 @@ export default function ScoreComparisonModal({
               winnerValue={winnerRanking.attendance_score}
             />
             <ScoreRow
-              label="Role Modifier"
+              label="Role modifier"
               icon={UserIcon}
               iconColor="bg-purple-500/20 text-purple-500"
               userValue={userRanking.role_modifier}
               winnerValue={winnerRanking.role_modifier}
             />
             <ScoreRow
-              label="Bad Luck Bonus"
+              label="Bad luck bonus"
               icon={SparklesIcon}
               iconColor="bg-red-500/20 text-red-500"
               userValue={userRanking.bad_luck_bonus}
               winnerValue={winnerRanking.bad_luck_bonus}
             />
             <ScoreRow
-              label="Priority Bonus"
+              label="Priority bonus"
               icon={Award01Icon}
               iconColor="bg-green-500/20 text-green-500"
               userValue={userRanking.priority_bonus}
@@ -217,7 +217,7 @@ export default function ScoreComparisonModal({
             />
             {(userRanking.trial_penalty !== 0 || winnerRanking.trial_penalty !== 0) && (
               <ScoreRow
-                label="Trial Penalty"
+                label="Trial penalty"
                 icon={Time01Icon}
                 iconColor="bg-yellow-500/20 text-yellow-500"
                 userValue={userRanking.trial_penalty}
@@ -240,7 +240,7 @@ export default function ScoreComparisonModal({
       </ModalBody>
       <ModalFooter>
         <Button variant="primary" onClick={onClose} className="w-full">
-          Got it
+          Close
         </Button>
       </ModalFooter>
     </Modal>

@@ -275,7 +275,7 @@ export default function OnboardingModal({ open, onClose }: OnboardingModalProps)
                       <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-accent/50 via-yellow-500/50 to-accent/50 animate-gradient-x" />
                       <div className="absolute inset-[1px] rounded-lg bg-background-subtle" />
                       <p className="relative text-foreground-secondary text-[14px]">
-                        Ready to get started? Head to your <span className="text-accent font-medium">Loot List</span> and rank the items you want!
+                        Ready to get started? Head to your <span className="text-accent font-medium">Loot List</span> and rank the items you want.
                       </p>
                     </motion.div>
                   </div>
@@ -323,7 +323,7 @@ export default function OnboardingModal({ open, onClose }: OnboardingModalProps)
                 </Button>
               ) : (
                 <Button onClick={handleClose} className="flex-1 relative overflow-hidden group">
-                  <span className="relative z-10">Got it</span>
+                  <span className="relative z-10">Get started</span>
                   {/* Shine effect */}
                   <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 bg-gradient-to-r from-transparent via-white/20 to-transparent" />
                 </Button>

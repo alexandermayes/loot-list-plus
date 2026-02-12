@@ -122,7 +122,7 @@ export default function CreateCharacterPage() {
       const data = await response.json()
 
       if (!response.ok) {
-        setError(data.error || 'Failed to create character')
+        setError(data.error || 'Couldn\'t create character. Check the form and try again.')
         setLoading(false)
         return
       }
@@ -157,7 +157,7 @@ export default function CreateCharacterPage() {
       router.push('/characters/manage')
     } catch (err) {
       console.error('Error creating character:', err)
-      setError('An error occurred while creating the character')
+      setError('Couldn\'t create character. Check your connection and try again.')
       setLoading(false)
     }
   }
@@ -180,7 +180,7 @@ export default function CreateCharacterPage() {
             <span className="text-[14px]">Back</span>
           </Button>
 
-          <Heading level={1}>Create Character</Heading>
+          <Heading level={1}>Create character</Heading>
           <p className="text-muted-foreground mt-1 text-base">
             Add a new character to your account
           </p>
@@ -199,7 +199,7 @@ export default function CreateCharacterPage() {
             {/* Character Name */}
             <div>
               <Label size="lg" className="block mb-2">
-                Character Name <span className="text-destructive">*</span>
+                Character name <span className="text-destructive">*</span>
               </Label>
               <Input
                 type="text"
@@ -233,7 +233,7 @@ export default function CreateCharacterPage() {
             {classId && getAvailableSpecs().length > 0 && (
               <div>
                 <Label size="lg" className="block mb-2">
-                  Specialization (Optional)
+                  Specialization (optional)
                 </Label>
                 <Select
                   value={specId}
@@ -252,7 +252,7 @@ export default function CreateCharacterPage() {
             {/* Main/Alt Toggle */}
             <div>
               <Label size="lg" className="block mb-3">
-                Character Type
+                Character type
               </Label>
               <div className="flex gap-3">
                 <Button
@@ -295,7 +295,7 @@ export default function CreateCharacterPage() {
               loading={loading}
               loadingText="Creating..."
             >
-              Create Character
+              Create character
             </Button>
 
             <Button
@@ -304,7 +304,7 @@ export default function CreateCharacterPage() {
               size="lg"
               onClick={() => router.back()}
             >
-              Cancel
+              Go back
             </Button>
           </div>
         </form>

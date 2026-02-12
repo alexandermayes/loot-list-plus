@@ -263,7 +263,7 @@ export default function HelpArticlePage() {
             onClick={() => router.push('/help')}
             className="text-sm text-muted-foreground hover:text-foreground p-0 h-auto"
           >
-            Help Center
+            Help center
           </Button>
           <span className="text-muted-foreground">/</span>
           <span className="text-sm text-muted-foreground">{category.title}</span>
@@ -323,7 +323,7 @@ export default function HelpArticlePage() {
         <div className="mt-8 text-center">
           <Button variant="ghost" onClick={() => router.push('/help')}>
             <HugeiconsIcon icon={ArrowLeft01Icon} size={16} className="mr-2" />
-            Back to Help Center
+            Back to help center
           </Button>
         </div>
       </main>

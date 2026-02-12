@@ -71,7 +71,7 @@ export default function LoginPage() {
             onClick={handleDiscordLogin}
             className="bg-[#141519] hover:bg-[#1c1d24] text-white text-base font-semibold px-5 py-3 rounded-full transition-colors"
           >
-            Login
+            Log in
           </button>
         </div>
 
@@ -96,7 +96,7 @@ export default function LoginPage() {
 
               {/* Description */}
               <p className="text-[#a1a1a1] text-base text-center">
-                LootList+ is a transparent loot management system for WoW guilds. Includes loot submissions, attendance, tracking, and more!
+                LootList+ is a transparent loot management system for WoW guilds. Includes loot submissions, attendance tracking and more.
               </p>
             </div>
 
@@ -120,7 +120,7 @@ export default function LoginPage() {
                 rel="noopener noreferrer"
                 className="w-full bg-[#141519] hover:bg-[#1c1d24] text-white font-medium text-base px-5 py-3 rounded-full flex items-center justify-center transition-colors"
               >
-                Learn more
+                See how it works
               </a>
 
               {/* Terms and Privacy */}

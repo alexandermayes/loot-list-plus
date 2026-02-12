@@ -431,7 +431,7 @@ export function PrioListItemModal({
           Cancel
         </Button>
         <Button variant="primary" onClick={handleSave} loading={saving} disabled={!hasChanges}>
-          Save Priority
+          Save priority
         </Button>
       </ModalFooter>
     </Modal>

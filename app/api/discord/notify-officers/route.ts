@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient, getAuthenticatedUser } from '@/utils/supabase/server'
+import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { trackApiError } from '@/utils/analytics/server'
 
@@ -42,7 +42,9 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    const supabase = await createClient()
+    // Use service role client to bypass RLS - the authenticated user may be a
+    // non-officer raider whose session can't query officer memberships
+    const supabase = createServiceRoleClient()
 
     // Get all officers and guild masters for this guild with their Discord IDs
     const { data: officers, error: officersError } = await supabase
@@ -112,9 +114,8 @@ export async function POST(request: NextRequest) {
     const missingIds = filteredUserIds.filter(id => !discordIdMap.has(id))
     if (missingIds.length > 0) {
       try {
-        const adminClient = createServiceRoleClient()
         for (const userId of missingIds) {
-          const { data: { user: authUser } } = await adminClient.auth.admin.getUserById(userId)
+          const { data: { user: authUser } } = await supabase.auth.admin.getUserById(userId)
           const providerId = authUser?.user_metadata?.provider_id
           if (providerId) {
             discordIdMap.set(userId, providerId)

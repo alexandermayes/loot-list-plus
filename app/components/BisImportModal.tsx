@@ -100,7 +100,7 @@ export function BisImportModal({
       const data = await response.json()
 
       if (!response.ok) {
-        setGearError(data.error || 'Failed to import gear')
+        setGearError(data.error || 'Couldn\'t import gear. Try again.')
         return
       }
 
@@ -114,7 +114,7 @@ export function BisImportModal({
       }, 1000)
     } catch (err) {
       console.error('Error importing gear:', err)
-      setGearError('Failed to import gear. Please try again.')
+      setGearError('Couldn\'t import gear. Try again.')
     } finally {
       setGearLoading(false)
     }
@@ -140,7 +140,7 @@ export function BisImportModal({
   return (
     <Modal open={isOpen} onClose={handleClose} size="lg">
       <ModalHeader onClose={handleClose}>
-        <ModalTitle>Import BIS Items</ModalTitle>
+        <ModalTitle>Import BIS items</ModalTitle>
         <ModalDescription>
           Auto-fill your loot list with Best-in-Slot items for <strong>{characterName}</strong>
         </ModalDescription>
@@ -171,7 +171,7 @@ export function BisImportModal({
                 </>
               ) : (
                 <Text size="sm" className="text-destructive">
-                  {bisResult.error || 'Failed to import BIS items'}
+                  {bisResult.error || 'Couldn\'t import BIS items. Try again.'}
                 </Text>
               )}
             </div>
@@ -210,7 +210,7 @@ export function BisImportModal({
                   <div className={`w-2 h-2 rounded-full ${hasGearImported ? 'bg-success' : 'bg-muted-foreground'}`} />
                   <div className="text-left">
                     <Text size="sm" className="font-medium">
-                      Current Gear {hasGearImported ? '(Imported)' : '(Not Imported)'}
+                      Current gear {hasGearImported ? '(imported)' : '(not imported)'}
                     </Text>
                     <Text size="xs" color="muted">
                       {hasGearImported
@@ -233,7 +233,7 @@ export function BisImportModal({
                   {gearSuccess && (
                     <div className="flex items-center gap-2 p-3 bg-success/10 border border-success/30 rounded-lg">
                       <HugeiconsIcon icon={CheckmarkCircle02Icon} size={18} className="text-success" />
-                      <Text size="sm" className="text-success">Gear imported successfully!</Text>
+                      <Text size="sm" className="text-success">Gear imported successfully.</Text>
                     </div>
                   )}
 
@@ -288,7 +288,7 @@ export function BisImportModal({
                         loading={gearLoading}
                         disabled={!jsonInput.trim()}
                       >
-                        Import Gear
+                        Import gear
                       </Button>
                     </>
                   )}
@@ -313,7 +313,7 @@ export function BisImportModal({
             onClick={handleImportBis}
             loading={isImportingBis}
           >
-            Import BIS Items
+            Import BIS items
           </Button>
         )}
       </ModalFooter>

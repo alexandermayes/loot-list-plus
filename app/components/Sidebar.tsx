@@ -152,7 +152,7 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange, 
       const data = await response.json()
 
       if (!response.ok) {
-        showErrorToast(data.error || 'Failed to join guild')
+        showErrorToast(data.error || 'Couldn\'t join guild. Check the invite code and try again.')
         setJoining(false)
         return
       }
@@ -161,7 +161,7 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange, 
       window.location.href = '/overview'
     } catch (err) {
       console.error('Error joining guild:', err)
-      showErrorToast('An error occurred while joining the guild')
+      showErrorToast('Couldn\'t join guild. Check your connection and try again.')
       setJoining(false)
     }
   }
@@ -189,7 +189,7 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange, 
 
         if (!verifyResponse.ok) {
           const errorData = await verifyResponse.json()
-          setDiscordError(errorData.error || 'Discord verification required. Please go to your Profile to verify your Discord account.')
+          setDiscordError(errorData.error || 'Discord verification required. Go to your profile to verify your Discord account.')
           setDiscordLoading(false)
           return
         }
@@ -197,7 +197,7 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange, 
         console.log('Auto-verification successful')
       } catch (err) {
         console.error('Auto-verification failed:', err)
-        setDiscordError('Discord verification required. Please go to your Profile to verify your Discord account.')
+        setDiscordError('Discord verification required. Go to your profile to verify your Discord account.')
         setDiscordLoading(false)
         return
       }
@@ -211,7 +211,7 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange, 
       if (!response.ok) {
         const errorMessage = response.status === 429
           ? 'Discord rate limit reached. Please wait a moment and try again.'
-          : data.error || 'Failed to load guilds'
+          : data.error || 'Couldn\'t load guilds. Check your connection and try again.'
         setDiscordError(errorMessage)
         setDiscordLoading(false)
         return
@@ -221,7 +221,7 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange, 
       setDiscordLoading(false)
     } catch (err) {
       console.error('Error loading guilds:', err)
-      setDiscordError('Failed to load available guilds')
+      setDiscordError('Couldn\'t load available guilds. Check your connection and try again.')
       setDiscordLoading(false)
     }
   }
@@ -242,7 +242,7 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange, 
       const data = await response.json()
 
       if (!response.ok) {
-        setDiscordError(data.error || 'Failed to join guild')
+        setDiscordError(data.error || 'Couldn\'t join guild. Try again.')
         setJoining(false)
         return
       }
@@ -251,7 +251,7 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange, 
       window.location.href = '/overview'
     } catch (err) {
       console.error('Error joining guild:', err)
-      setDiscordError('An error occurred while joining the guild')
+      setDiscordError('Couldn\'t join guild. Check your connection and try again.')
       setJoining(false)
     }
   }
@@ -941,7 +941,7 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange, 
                   />
                   <div className="flex flex-col gap-1 text-center w-full">
                     <h2 className="font-poppins font-bold text-lg text-foreground">
-                      Join with Code
+                      Join with code
                     </h2>
                     <p className="font-poppins font-normal text-sm text-muted-foreground">
                       Paste the code from your guild officer.
@@ -984,7 +984,7 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange, 
                   className="icon-adaptive w-4 h-4"
                 />
                 <p className="font-poppins font-bold text-sm text-foreground">
-                  Need Help?
+                  Need help?
                 </p>
               </div>
               <p className="font-poppins font-normal text-xs text-muted-foreground text-center">
@@ -1053,7 +1053,7 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange, 
                       router.push('/profile')
                     }}
                   >
-                    Go to Profile to Verify Discord
+                    Go to profile to verify Discord
                   </Button>
                 )}
               </div>

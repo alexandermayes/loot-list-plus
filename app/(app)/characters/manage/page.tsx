@@ -43,7 +43,7 @@ export default function ManageCharactersPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <Heading level={1}>My Characters</Heading>
+          <Heading level={1}>My characters</Heading>
           <p className="text-muted-foreground mt-1 text-base">
             Manage your characters and their guild memberships
           </p>
@@ -55,7 +55,7 @@ export default function ManageCharactersPage() {
           className="rounded-[52px] w-full sm:w-auto"
         >
           <HugeiconsIcon icon={Add01Icon} size={20} />
-          Create Character
+          Create character
         </Button>
       </div>
 
@@ -67,7 +67,7 @@ export default function ManageCharactersPage() {
               <HugeiconsIcon icon={Add01Icon} size={32} className="text-foreground-muted" />
             </div>
             <h3 className="text-[24px] font-bold text-foreground mb-2">
-              No Characters Yet
+              No characters yet
             </h3>
             <p className="text-[14px] text-foreground-muted mb-6">
               Create your first character to start managing loot lists and joining guilds
@@ -77,7 +77,7 @@ export default function ManageCharactersPage() {
               onClick={() => setShowCreateModal(true)}
               className="rounded-[52px]"
             >
-              Create Your First Character
+              Create your first character
             </Button>
           </div>
         </div>
@@ -87,7 +87,7 @@ export default function ManageCharactersPage() {
           {userCharacters.some(c => c.is_main) && (
             <div>
               <h2 className="text-[18px] font-semibold text-foreground mb-4 px-2">
-                Main Characters
+                Main characters
               </h2>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 {userCharacters
@@ -109,7 +109,7 @@ export default function ManageCharactersPage() {
           {userCharacters.some(c => !c.is_main) && (
             <div>
               <h2 className="text-[18px] font-semibold text-foreground mb-4 px-2">
-                Alt Characters
+                Alt characters
               </h2>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 {userCharacters
@@ -133,7 +133,7 @@ export default function ManageCharactersPage() {
       {userCharacters.length > 0 && (
         <div className="bg-background-elevated border border-border rounded-xl p-6">
           <h3 className="text-[16px] font-semibold text-foreground mb-3">
-            Character Management Tips
+            Character management tips
           </h3>
           <ul className="space-y-2 text-[14px] text-foreground-muted">
             <li>• Click on a character to view and edit details</li>

@@ -204,7 +204,7 @@ export default function RoleManager({ onRolesChanged }: RoleManagerProps) {
       const results = await Promise.all(updates)
 
       if (results.some(r => r.error)) {
-        throw new Error('Failed to update positions')
+        throw new Error('Couldn\'t update positions. Try again.')
       }
 
       await loadRoles()

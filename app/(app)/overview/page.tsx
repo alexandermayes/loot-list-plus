@@ -37,20 +37,20 @@ function getClassIconUrl(className: string | undefined): string {
 // Get random WoW-themed greeting
 function getRandomGreeting(username: string): string {
   const greetings = [
-    `Welcome back, ${username}!`,
-    `Well met, ${username}!`,
-    `Greetings, ${username}!`,
-    `Lok'tar Ogar, ${username}!`,
-    `Strength and honor, ${username}!`,
-    `Light be with you, ${username}!`,
-    `Victory or death, ${username}!`,
+    `Welcome back, ${username}.`,
+    `Well met, ${username}.`,
+    `Greetings, ${username}.`,
+    `Lok'tar Ogar, ${username}.`,
+    `Strength and honor, ${username}.`,
+    `Light be with you, ${username}.`,
+    `Victory or death, ${username}.`,
     `Ready for raid, ${username}?`,
-    `May your loot be legendary, ${username}!`,
-    `Time to hunt some purples, ${username}!`,
-    `Zug zug, ${username}!`,
-    `For glory, ${username}!`,
-    `The hunt begins, ${username}!`,
-    `Let's get that loot, ${username}!`
+    `May your loot be epic, ${username}.`,
+    `Time to hunt some purples, ${username}.`,
+    `Zug zug, ${username}.`,
+    `For glory, ${username}.`,
+    `The hunt begins, ${username}.`,
+    `Let's get that loot, ${username}.`
   ]
 
   return greetings[Math.floor(Math.random() * greetings.length)]
@@ -257,7 +257,7 @@ function DashboardContent() {
       // Check if guild has active expansion set
       if (!activeGuild.active_expansion_id) {
         setRaidTiers([])
-        setError('Your guild needs to select an expansion. Ask an officer to go to Manage Expansions.')
+        setError('Your guild needs an active expansion. Ask an Officer to set one in expansion settings.')
         setLoading(false)
         return
       }
@@ -833,7 +833,7 @@ function DashboardContent() {
                   <p className="text-muted-foreground text-sm mt-1">{error}</p>
                   {isOfficer && (
                     <Button className="mt-3" onClick={() => router.push('/admin/expansions')}>
-                      Go to Manage Expansions
+                      Manage expansions
                     </Button>
                   )}
                 </div>
@@ -853,14 +853,14 @@ function DashboardContent() {
                 </div>
                 <div className="flex-1">
                   <h2 className="text-[24px] font-bold text-foreground">
-                    Create Your First Character
+                    Create your first character
                   </h2>
                   <p className="text-muted-foreground text-sm mt-1">
                     Add a character to start submitting loot lists and tracking your priority
                   </p>
                 </div>
                 <Button>
-                  Create Character
+                  Create character
                 </Button>
               </div>
             </div>
@@ -963,7 +963,7 @@ function DashboardContent() {
               <div className="flex items-center gap-4 mb-6">
                 <HugeiconsIcon icon={Award01Icon} size={32} className="text-accent flex-shrink-0" />
                 <div>
-                  <h2 className="text-[24px] font-bold text-foreground">Next in Line</h2>
+                  <h2 className="text-[24px] font-bold text-foreground">Next in line</h2>
                   <p className="text-sm text-muted-foreground mt-1">Your highest priority items</p>
                 </div>
               </div>

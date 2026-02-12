@@ -51,7 +51,7 @@ const updates: UpdateEntry[] = [
       {
         category: 'feature',
         title: 'Accent color customization',
-        description: 'Personalize your interface with WoW item quality colors (Legendary, Epic, Rare, and more).',
+        description: 'Personalize your interface with WoW item quality colors (Legendary, Epic, Rare and more).',
       },
       {
         category: 'feature',

@@ -384,7 +384,7 @@ export default function MasterLootPage() {
 
       if (!response.ok) {
         const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to delete submission')
+        throw new Error(errorData.error || 'Couldn\'t delete submission. Try again.')
       }
 
       const result = await response.json()
@@ -448,7 +448,7 @@ export default function MasterLootPage() {
                 onClick={() => setActivePhase('all')}
                 className="rounded-[40px] whitespace-nowrap"
               >
-                All Phases
+                All phases
               </Button>
               {phases.map((phase) => (
                 <Button
@@ -500,7 +500,7 @@ export default function MasterLootPage() {
                   setShowDeleteConfirm(true)
                 }}
               >
-                Delete Pending
+                Delete pending
               </Button>
               <Button
                 variant="destructive-outline"
@@ -510,7 +510,7 @@ export default function MasterLootPage() {
                   setShowDeleteConfirm(true)
                 }}
               >
-                Delete All
+                Delete all
               </Button>
             </div>
           </div>
@@ -522,8 +522,8 @@ export default function MasterLootPage() {
             ) : filteredSubmissions.length === 0 ? (
               <EmptyState
                 icon={ScrollIcon}
-                title="No submissions found"
-                description="No loot list submissions match your current filters"
+                title="No submissions yet"
+                description="Loot List submissions will appear here once raiders submit their lists."
                 variant="card"
               />
             ) : (
@@ -651,7 +651,7 @@ export default function MasterLootPage() {
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent"></div>
             </div>
           ) : submissionDetails.length === 0 ? (
-            <p className="text-muted-foreground text-center py-8">No items in this submission</p>
+            <p className="text-muted-foreground text-center py-8">This submission has no ranked items.</p>
           ) : (
             <table className="w-full">
               <thead>
@@ -717,7 +717,7 @@ export default function MasterLootPage() {
           <ModalFooter className="flex-col items-stretch gap-4">
             <div className="w-full">
               <Label htmlFor="review-notes" className="text-sm font-medium mb-2 block">
-                Review Notes (optional)
+                Review notes (optional)
               </Label>
               <Textarea
                 id="review-notes"
@@ -768,9 +768,9 @@ export default function MasterLootPage() {
       >
         <ModalHeader>
           <ModalTitle>
-            {deleteTarget?.type === 'single' ? 'Delete Submission?' :
-             deleteTarget?.type === 'pending' ? 'Delete Pending Lists?' :
-             'Delete All Lists?'}
+            {deleteTarget?.type === 'single' ? 'Delete submission?' :
+             deleteTarget?.type === 'pending' ? 'Delete pending lists?' :
+             'Delete all lists?'}
           </ModalTitle>
         </ModalHeader>
         <ModalBody>
@@ -803,7 +803,7 @@ export default function MasterLootPage() {
             }}
             disabled={deleting}
           >
-            Cancel
+            Keep submission
           </Button>
           <Button
             variant="destructive"
@@ -811,7 +811,7 @@ export default function MasterLootPage() {
             disabled={deleting}
             loading={deleting}
           >
-            Delete
+            Delete submission
           </Button>
         </ModalFooter>
       </Modal>

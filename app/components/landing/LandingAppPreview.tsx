@@ -86,7 +86,7 @@ function DashboardMockup() {
         transition={{ delay: 0.8, duration: 0.5 }}
       >
         <div className="bg-background border border-accent/30 rounded-lg px-3 py-2 shadow-lg shadow-accent/10">
-          <div className="text-[10px] text-accent font-semibold uppercase tracking-wider">Priority Queue</div>
+          <div className="text-[10px] text-accent font-semibold uppercase tracking-wider">Priority queue</div>
           <div className="text-xs text-foreground-secondary">Real-time rankings</div>
         </div>
       </motion.div>
@@ -99,7 +99,7 @@ function DashboardMockup() {
         transition={{ delay: 1, duration: 0.5 }}
       >
         <div className="bg-background border border-green-500/30 rounded-lg px-3 py-2 shadow-lg shadow-green-500/10">
-          <div className="text-[10px] text-green-400 font-semibold uppercase tracking-wider">Attendance Score</div>
+          <div className="text-[10px] text-green-400 font-semibold uppercase tracking-wider">Attendance score</div>
           <div className="text-xs text-foreground-secondary">94% this month</div>
         </div>
       </motion.div>
@@ -129,7 +129,7 @@ export default function LandingAppPreview() {
             variants={fadeInUp}
             className="inline-block px-4 py-1.5 bg-accent/10 text-accent text-xs font-semibold uppercase tracking-wider rounded-full mb-4"
           >
-            App Preview
+            App preview
           </motion.span>
           <motion.h2
             variants={fadeInUp}
@@ -141,7 +141,7 @@ export default function LandingAppPreview() {
             variants={fadeInUp}
             className="font-poppins text-base text-foreground-secondary max-w-2xl mx-auto"
           >
-            A clean, intuitive interface that makes loot management feel effortless.
+            A clean, intuitive interface that makes loot management straightforward.
           </motion.p>
         </motion.div>
 

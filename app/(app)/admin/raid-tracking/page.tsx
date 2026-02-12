@@ -649,12 +649,12 @@ export default function RaidTrackingPage() {
     if (error) {
       console.error('Failed to save attendance:', JSON.stringify(error, null, 2))
       console.error('Error details:', error.message, error.code, error.details, error.hint)
-      showNotification('error', error.message || 'Failed to save attendance')
+      showNotification('error', error.message || 'Couldn\'t save attendance. Try again.')
       // Revert local state on error
       await loadRaidAttendance(raidId)
     } else if (!data || data.length === 0) {
       console.error('No rows returned from upsert - possible RLS issue')
-      showNotification('error', 'Failed to save attendance - check permissions')
+      showNotification('error', 'Couldn\'t save attendance. Check your permissions and try again.')
       await loadRaidAttendance(raidId)
     }
   }
@@ -696,7 +696,7 @@ export default function RaidTrackingPage() {
 
     if (error) {
       console.error('Failed to toggle signup:', error)
-      showNotification('error', 'Failed to save signup status')
+      showNotification('error', 'Couldn\'t save signup status. Try again.')
       // Revert local state on error
       await loadRaidAttendance(raidId)
     }
@@ -717,7 +717,7 @@ export default function RaidTrackingPage() {
 
         if (error) {
           console.error('Failed to remove from raid:', error)
-          showNotification('error', 'Failed to remove from raid')
+          showNotification('error', 'Couldn\'t remove from raid. Try again.')
           return
         }
 
@@ -751,7 +751,7 @@ export default function RaidTrackingPage() {
 
     if (error) {
       console.error('Failed to reassign loot:', error)
-      showNotification('error', 'Failed to reassign loot')
+      showNotification('error', 'Couldn\'t reassign loot. Try again.')
       return
     }
 
@@ -1052,7 +1052,7 @@ export default function RaidTrackingPage() {
         title: 'Discard changes?',
         description: 'You have unsaved data in the form. Are you sure you want to close without importing?',
         confirmLabel: 'Discard',
-        cancelLabel: 'Keep Editing',
+        cancelLabel: 'Keep editing',
         variant: 'warning',
         onConfirm: () => {
           setShowImportModal(null)
@@ -1090,7 +1090,7 @@ export default function RaidTrackingPage() {
 
       if (attendanceError) {
         console.error('❌ Clear attendance error:', attendanceError)
-        showNotification('error', 'Failed to clear attendance data')
+        showNotification('error', 'Couldn\'t clear attendance data. Try again.')
       }
 
       // Delete all loot history for this raid
@@ -1101,7 +1101,7 @@ export default function RaidTrackingPage() {
 
       if (lootError) {
         console.error('❌ Clear loot error:', lootError)
-        showNotification('error', 'Failed to clear loot data')
+        showNotification('error', 'Couldn\'t clear loot data. Try again.')
       }
 
       // Clear local state
@@ -1129,7 +1129,7 @@ export default function RaidTrackingPage() {
       showNotification('success', 'Raid data cleared successfully')
     } catch (e) {
       console.error('❌ Clear raid data error:', e)
-      showNotification('error', 'Failed to clear raid data')
+      showNotification('error', 'Couldn\'t clear raid data. Try again.')
     } finally {
       setImporting(false)
     }
@@ -1367,7 +1367,7 @@ export default function RaidTrackingPage() {
 
       if (itemsToUse.length === 0) {
         results.loot.errors.push('Could not load loot items database. Please try again.')
-        showNotification('error', 'Loot import failed - items database not available')
+        showNotification('error', 'Couldn\'t import loot. Items database not available.')
         // Don't continue with loot import
         setImporting(false)
         setShowImportModal(null)
@@ -1504,7 +1504,7 @@ export default function RaidTrackingPage() {
     }
 
     const hasErrors = results.attendance.failed > 0 || results.loot.failed > 0 || results.signups.failed > 0
-    showNotification(hasErrors ? 'warning' : 'success', `Import complete! ${parts.join(' | ')}`)
+    showNotification(hasErrors ? 'warning' : 'success', `Import complete. ${parts.join(' | ')}`)
   }
 
   // Parse Gargul loot export format: DATE;[ITEM_ID];CHARACTER_NAME
@@ -1685,7 +1685,7 @@ export default function RaidTrackingPage() {
     // Show results
     showNotification(
       errorCount > 0 ? 'warning' : 'success',
-      `Loot import complete! ${successCount} items recorded${errorCount > 0 ? `, ${errorCount} errors` : ''}`
+      `Loot import complete. ${successCount} items recorded${errorCount > 0 ? `, ${errorCount} errors` : ''}`
     )
   }
 
@@ -1839,7 +1839,7 @@ export default function RaidTrackingPage() {
         <SegmentedControl
           options={[
             { value: 'tracking', label: 'Tracking' },
-            { value: 'history', label: 'Loot History' }
+            { value: 'history', label: 'Loot history' }
           ]}
           value={activeTab}
           onChange={setActiveTab}
@@ -1891,7 +1891,7 @@ export default function RaidTrackingPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
             </div>
-            <h3 className="text-[24px] font-bold text-foreground">{currentExpansion.expansion_name} Raids Haven't Started Yet</h3>
+            <h3 className="text-[24px] font-bold text-foreground">{currentExpansion.expansion_name} raids haven't started yet</h3>
             <p className="text-muted-foreground text-[14px]">
               Your first raid week for <span className="text-accent">{currentExpansion.expansion_name}</span> is scheduled to begin on{' '}
               <span className="text-foreground font-medium">
@@ -2023,7 +2023,7 @@ export default function RaidTrackingPage() {
                       className={hasImportedData ? 'border-success/50 text-success hover:bg-success/20' : ''}
                     >
                       <HugeiconsIcon icon={Upload01Icon} size={16} />
-                      <span className="hidden sm:inline">{hasImportedData ? 'Edit Import' : 'Import Data'}</span>
+                      <span className="hidden sm:inline">{hasImportedData ? 'Edit import' : 'Import data'}</span>
                       <span className="sm:hidden">{hasImportedData ? 'Edit' : 'Import'}</span>
                     </Button>
                   )}
@@ -2033,7 +2033,7 @@ export default function RaidTrackingPage() {
                     onClick={() => toggleSkipDay(raid.id, raid.is_skipped)}
                     className={raid.is_skipped ? 'bg-destructive/30 hover:bg-destructive/40' : ''}
                   >
-                    {raid.is_skipped ? 'Unskip' : 'Skip Day'}
+                    {raid.is_skipped ? 'Unskip' : 'Skip day'}
                   </Button>
                 </div>
               </div>
@@ -2049,9 +2049,9 @@ export default function RaidTrackingPage() {
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
                         </svg>
                       </div>
-                      <h4 className="text-[16px] font-semibold text-foreground mb-2">No Raiders with Approved Loot Lists</h4>
+                      <h4 className="text-[16px] font-semibold text-foreground mb-2">No raiders with approved loot lists</h4>
                       <p className="text-foreground-muted text-[13px] max-w-md mx-auto">
-                        Raiders will appear here once they submit and get their loot lists approved. Use the "Import Data" button to add attendance for this raid day.
+                        Raiders will appear here once they submit and get their loot lists approved. Use the "Import data" button to add attendance for this raid day.
                       </p>
                     </div>
                   ) : (
@@ -2152,11 +2152,11 @@ export default function RaidTrackingPage() {
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
                                   <DropdownMenuItem onClick={() => cycleAttendanceState(raid.id, member.character_id, member.user_id)}>
-                                    Change Status
+                                    Change status
                                   </DropdownMenuItem>
                                   {memberLoot.length > 0 && (
                                     <DropdownMenuItem onClick={() => setReassignModal({ raidId: raid.id, lootEntries: memberLoot, currentMember: member })}>
-                                      Reassign Loot
+                                      Reassign loot
                                     </DropdownMenuItem>
                                   )}
                                   <DropdownMenuSeparator />
@@ -2164,7 +2164,7 @@ export default function RaidTrackingPage() {
                                     onClick={() => removeFromAttendance(raid.id, member.character_id)}
                                     className="text-destructive"
                                   >
-                                    Remove from Raid
+                                    Remove from raid
                                   </DropdownMenuItem>
                                 </DropdownMenuContent>
                               </DropdownMenu>
@@ -2279,7 +2279,7 @@ export default function RaidTrackingPage() {
             Cancel
           </Button>
           <Button variant="primary" onClick={confirmSkipDay}>
-            Skip Day
+            Skip day
           </Button>
         </ModalFooter>
       </Modal>
@@ -2291,7 +2291,7 @@ export default function RaidTrackingPage() {
         size="xl"
       >
         <ModalHeader onClose={handleCloseImportModal}>
-          <ModalTitle>{showImportModal?.isEdit ? 'Edit Raid Data' : 'Import Raid Data'}</ModalTitle>
+          <ModalTitle>{showImportModal?.isEdit ? 'Edit raid data' : 'Import raid data'}</ModalTitle>
           {showImportModal && (
             <ModalDescription>
               {new Date(showImportModal.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
@@ -2406,14 +2406,14 @@ export default function RaidTrackingPage() {
               }}
               disabled={importing || (!attendanceData.trim() && !lootData.trim() && !signupsData.trim())}
             >
-              Clear Fields
+              Clear fields
             </Button>
             <Button
               variant="destructive"
               onClick={clearRaidData}
               disabled={importing}
             >
-              Clear Saved Data
+              Clear saved data
             </Button>
           </div>
           <div className="flex gap-2">
@@ -2429,7 +2429,7 @@ export default function RaidTrackingPage() {
               disabled={importing || (!attendanceData.trim() && !lootData.trim())}
               loading={importing}
             >
-              {showImportModal?.isEdit ? 'Save Changes' : 'Import All'}
+              {showImportModal?.isEdit ? 'Save changes' : 'Import all'}
             </Button>
           </div>
         </ModalFooter>
@@ -2487,7 +2487,7 @@ export default function RaidTrackingPage() {
         </ModalBody>
         <ModalFooter>
           <Button variant="secondary" onClick={skipLootItemSelection}>
-            Skip This Item
+            Skip this item
           </Button>
         </ModalFooter>
       </Modal>
@@ -2495,7 +2495,7 @@ export default function RaidTrackingPage() {
       {/* Reassign Loot Modal */}
       <Modal open={!!reassignModal} onClose={() => setReassignModal(null)} size="sm">
         <ModalHeader onClose={() => setReassignModal(null)}>
-          <ModalTitle>Reassign Loot</ModalTitle>
+          <ModalTitle>Reassign loot</ModalTitle>
           <ModalDescription>
             {reassignModal?.lootEntries.length === 1 ? (
               <ItemLink

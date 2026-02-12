@@ -167,7 +167,7 @@ export default function EditCharacterPage() {
       const data = await response.json()
 
       if (!response.ok) {
-        setError(data.error || 'Failed to update character')
+        setError(data.error || 'Couldn\'t update character. Check the form and try again.')
         setSaving(false)
         return
       }
@@ -179,7 +179,7 @@ export default function EditCharacterPage() {
       router.push('/characters/manage')
     } catch (err) {
       console.error('Error updating character:', err)
-      setError('An error occurred while updating the character')
+      setError('Couldn\'t update character. Check your connection and try again.')
       setSaving(false)
     }
   }
@@ -210,7 +210,7 @@ export default function EditCharacterPage() {
       const data = await response.json()
 
       if (!response.ok) {
-        setError(data.error || 'Failed to delete character')
+        setError(data.error || 'Couldn\'t delete character. Try again.')
         setDeleting(false)
         return
       }
@@ -222,7 +222,7 @@ export default function EditCharacterPage() {
       router.push('/characters/manage')
     } catch (err) {
       console.error('Error deleting character:', err)
-      setError('An error occurred while deleting the character')
+      setError('Couldn\'t delete character. Check your connection and try again.')
       setDeleting(false)
     }
   }
@@ -251,7 +251,7 @@ export default function EditCharacterPage() {
               size="lg"
               onClick={() => router.push('/characters/manage')}
             >
-              Back to Characters
+              Back to characters
             </Button>
           </div>
         </div>
@@ -270,10 +270,10 @@ export default function EditCharacterPage() {
             className="mb-4 px-0"
           >
             <HugeiconsIcon icon={ArrowLeft01Icon} size={16} />
-            <span className="text-[14px]">Back to Characters</span>
+            <span className="text-[14px]">Back to characters</span>
           </Button>
 
-          <Heading level={1}>Edit Character</Heading>
+          <Heading level={1}>Edit character</Heading>
           <p className="text-muted-foreground mt-1 text-base">
             Update character details and settings
           </p>
@@ -292,7 +292,7 @@ export default function EditCharacterPage() {
             {/* Character Name */}
             <div>
               <Label size="lg" className="block mb-2">
-                Character Name <span className="text-destructive">*</span>
+                Character name <span className="text-destructive">*</span>
               </Label>
               <Input
                 type="text"
@@ -326,7 +326,7 @@ export default function EditCharacterPage() {
             {classId && getAvailableSpecs().length > 0 && (
               <div>
                 <Label size="lg" className="block mb-2">
-                  Specialization (Optional)
+                  Specialization (optional)
                 </Label>
                 <Select
                   value={specId}
@@ -345,7 +345,7 @@ export default function EditCharacterPage() {
             {/* Main/Alt Toggle */}
             <div>
               <Label size="lg" className="block mb-3">
-                Character Type
+                Character type
               </Label>
               <div className="flex gap-3">
                 <Button
@@ -373,7 +373,7 @@ export default function EditCharacterPage() {
             {/* Guild Info */}
             {guildCount > 0 && (
               <div className="text-[13px] text-muted-foreground bg-background-subtle border border-border rounded-lg p-4">
-                <p className="font-medium text-foreground mb-1">Guild Memberships</p>
+                <p className="font-medium text-foreground mb-1">Guild memberships</p>
                 <p>This character is a member of {guildCount} guild{guildCount !== 1 ? 's' : ''}</p>
               </div>
             )}
@@ -389,7 +389,7 @@ export default function EditCharacterPage() {
               loading={saving}
               loadingText="Saving..."
             >
-              Save Changes
+              Save changes
             </Button>
 
             <Button
@@ -398,14 +398,14 @@ export default function EditCharacterPage() {
               size="lg"
               onClick={() => router.push('/characters/manage')}
             >
-              Cancel
+              Go back
             </Button>
           </div>
         </form>
 
         {/* Delete Character Section */}
         <div className="bg-background-elevated border border-destructive/30 rounded-xl p-6">
-          <h2 className="text-[18px] font-semibold text-destructive mb-2">Danger Zone</h2>
+          <h2 className="text-[18px] font-semibold text-destructive mb-2">Danger zone</h2>
           <p className="text-[14px] text-muted-foreground mb-4">
             Deleting a character is permanent and cannot be undone. This will delete all loot submissions and remove the character from all guilds.
           </p>
@@ -416,7 +416,7 @@ export default function EditCharacterPage() {
               onClick={() => setShowDeleteConfirm(true)}
             >
               <HugeiconsIcon icon={Delete01Icon} size={16} />
-              Delete Character
+              Delete character
             </Button>
           ) : (
             <div className="space-y-4">
@@ -442,7 +442,7 @@ export default function EditCharacterPage() {
                   loadingText="Deleting..."
                 >
                   <HugeiconsIcon icon={Delete01Icon} size={16} />
-                  Delete Forever
+                  Delete forever
                 </Button>
                 <Button
                   variant="secondary"

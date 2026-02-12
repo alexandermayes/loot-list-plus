@@ -1349,7 +1349,7 @@ function MasterSheetContent() {
 
   const handleExportToGargul = async () => {
     if (!guildId || !guildSettings || raidTiers.length === 0) {
-      showNotification('error', 'Unable to export - missing data')
+      showNotification('error', 'Couldn\'t export data. Check your guild settings.')
       return
     }
 
@@ -1397,7 +1397,7 @@ function MasterSheetContent() {
                 onClick={() => setShowScoreBreakdown(true)}
               >
                 <HugeiconsIcon icon={InformationCircleIcon} size={18} />
-                <span className="hidden sm:inline">How Scores Work</span>
+                <span className="hidden sm:inline">How scores work</span>
                 <span className="sm:hidden">Scores</span>
               </Button>
               {isOfficer && (
@@ -1600,14 +1600,14 @@ function MasterSheetContent() {
                   size="sm"
                   onClick={expandAll}
                 >
-                  Expand All
+                  Expand all
                 </Button>
                 <Button
                   variant="secondary"
                   size="sm"
                   onClick={collapseAll}
                 >
-                  Collapse All
+                  Collapse all
                 </Button>
               </div>
             </div>
@@ -1682,8 +1682,8 @@ function MasterSheetContent() {
             {sortedRaidTiers.length === 0 ? (
               <EmptyState
                 icon={ScrollIcon}
-                title="No loot items found"
-                description="No items found for this raid tier"
+                title="No loot items yet"
+                description="Items will appear here once loot is configured for this raid tier."
                 variant="card"
               />
             ) : (

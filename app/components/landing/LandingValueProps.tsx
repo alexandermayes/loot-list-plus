@@ -13,29 +13,29 @@ import {
 
 const valueProps = [
   {
-    title: 'Complete Transparency',
-    description: 'Every loot decision is visible to everyone. See who submitted what, attendance records, and exactly why loot was allocated the way it was. No more "loot council drama" — just data.',
+    title: 'Complete transparency',
+    description: 'Every loot decision is visible to everyone. See who submitted what, attendance records and exactly why loot was allocated the way it was. No more "loot council drama", just data.',
     icon: EyeIcon,
     color: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
     glowColor: 'shadow-blue-500/20'
   },
   {
-    title: 'Built-in Fairness',
-    description: 'Attendance-based scoring means consistent raiders get priority. The system tracks who shows up, on time, week after week — rewarding dedication automatically.',
+    title: 'Built-in fairness',
+    description: 'Attendance-based scoring means consistent raiders get priority. The system tracks who shows up, on time, week after week. Dedication gets rewarded automatically.',
     icon: BalanceScaleIcon,
     color: 'bg-green-500/10 text-green-400 border-green-500/20',
     glowColor: 'shadow-green-500/20'
   },
   {
-    title: 'Save Hours Every Week',
-    description: 'Auto-save, real-time validation, and streamlined workflows eliminate manual tracking. What used to take hours of spreadsheet work now happens in minutes.',
+    title: 'Save hours every week',
+    description: 'Auto-save, real-time validation and streamlined workflows eliminate manual tracking. What used to take hours of spreadsheet work now happens in minutes.',
     icon: DashboardSpeed01Icon,
     color: 'bg-accent/10 text-accent border-accent/20',
     glowColor: 'shadow-accent/20'
   },
   {
-    title: 'Replace the Chaos',
-    description: 'No more Discord messages, Google Sheets, or manual lists. Everything your guild needs is in one organized, searchable, always-up-to-date system.',
+    title: 'Replace the chaos',
+    description: 'No more Discord messages, Google Sheets or manual lists. Everything your guild needs is in one organized, searchable, always-up-to-date system.',
     icon: GridTableIcon,
     color: 'bg-purple-500/10 text-purple-400 border-purple-500/20',
     glowColor: 'shadow-purple-500/20'
@@ -100,7 +100,7 @@ export default function LandingValueProps() {
             variants={fadeInUp}
             className="font-poppins font-bold text-[28px] md:text-[36px] text-foreground mb-4"
           >
-            Built different
+            Built for guilds who take loot seriously
           </motion.h2>
           <motion.p
             variants={fadeInUp}

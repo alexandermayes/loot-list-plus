@@ -130,7 +130,7 @@ export default function ProfilePage() {
   const handleDeleteAccount = async () => {
     const confirmText = 'DELETE MY ACCOUNT'
     const userInput = prompt(
-      `This will permanently delete your account and all associated data including characters, loot lists, and guild memberships.\n\nThis cannot be undone.\n\nType "${confirmText}" to confirm:`
+      `This will permanently delete your account and all associated data including characters, loot lists and guild memberships.\n\nThis cannot be undone.\n\nType "${confirmText}" to confirm:`
     )
 
     if (userInput !== confirmText) return
@@ -244,7 +244,7 @@ export default function ProfilePage() {
   const tabs: { id: TabId; label: string; icon: any }[] = [
     { id: 'account', label: 'Account', icon: UserIcon },
     { id: 'preferences', label: 'Preferences', icon: Settings01Icon },
-    { id: 'guilds', label: 'My Guilds', icon: Shield01Icon },
+    { id: 'guilds', label: 'My guilds', icon: Shield01Icon },
   ]
 
   return (
@@ -274,7 +274,7 @@ export default function ProfilePage() {
               </div>
               <div className="flex items-center gap-1.5">
                 <HugeiconsIcon icon={CheckmarkCircle01Icon} size={14} className="text-success" />
-                <span>Discord Connected</span>
+                <span>Discord connected</span>
               </div>
             </div>
           </div>
@@ -312,7 +312,7 @@ export default function ProfilePage() {
                   <p className="text-muted-foreground text-[13px] mt-1">Control what notifications you receive</p>
                 </div>
                 <span className="px-3 py-1 bg-muted border border-border rounded-full text-muted-foreground text-[12px]">
-                  Coming Soon
+                  Coming soon
                 </span>
               </div>
             </div>
@@ -322,7 +322,7 @@ export default function ProfilePage() {
                   <HugeiconsIcon icon={Notification01Icon} size={24} className="text-muted-foreground" />
                 </div>
                 <h3 className="text-lg font-semibold text-foreground mb-1">Notification preferences coming soon</h3>
-                <p className="text-sm text-muted-foreground max-w-sm">You'll be able to customize notifications for loot deadlines, submission reviews, and more.</p>
+                <p className="text-sm text-muted-foreground max-w-sm">You'll be able to customize notifications for loot deadlines, submission reviews and more.</p>
               </div>
             </div>
           </div>
@@ -330,7 +330,7 @@ export default function ProfilePage() {
           {/* Danger Zone */}
           <div className="bg-background-elevated border border-destructive/30 rounded-xl overflow-hidden">
             <div className="px-6 py-4 border-b border-destructive/30">
-              <h2 className="text-[18px] font-semibold text-destructive">Danger Zone</h2>
+              <h2 className="text-[18px] font-semibold text-destructive">Danger zone</h2>
               <p className="text-muted-foreground text-[13px] mt-1">Irreversible and destructive actions</p>
             </div>
             <div className="p-4 sm:p-6 space-y-4">
@@ -363,10 +363,10 @@ export default function ProfilePage() {
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
                       <HugeiconsIcon icon={Delete02Icon} size={18} className="text-destructive" />
-                      <h3 className="text-[16px] font-semibold text-destructive">Delete Account</h3>
+                      <h3 className="text-[16px] font-semibold text-destructive">Delete account</h3>
                     </div>
                     <p className="text-[13px] text-muted-foreground">
-                      Permanently delete your account and all associated data. This includes your characters, loot lists, attendance records, and guild memberships. This action cannot be undone.
+                      Permanently delete your account and all associated data. This includes your characters, loot lists, attendance records and guild memberships. This action cannot be undone.
                     </p>
                   </div>
                   <Button
@@ -375,7 +375,7 @@ export default function ProfilePage() {
                     loading={deleting}
                     className="shrink-0 w-full sm:w-auto"
                   >
-                    Delete Account
+                    Delete account
                   </Button>
                 </div>
               </div>
@@ -511,7 +511,7 @@ export default function ProfilePage() {
         <div className="space-y-6">
           <div className="bg-background-elevated border border-border rounded-xl overflow-hidden">
             <div className="px-6 py-4 border-b border-border">
-              <h2 className="text-[18px] font-semibold text-foreground">My Guilds</h2>
+              <h2 className="text-[18px] font-semibold text-foreground">My guilds</h2>
               <p className="text-muted-foreground text-[13px] mt-1">Guilds you're a member of</p>
             </div>
             <div className="p-6">
@@ -576,7 +576,7 @@ export default function ProfilePage() {
                             disabled={leaving}
                           >
                             <HugeiconsIcon icon={Logout01Icon} size={16} />
-                            Leave Guild
+                            Leave guild
                           </Button>
                         )}
                       </div>
@@ -622,7 +622,7 @@ export default function ProfilePage() {
             onClick={() => setLeaveGuildId(null)}
             disabled={leaving}
           >
-            Cancel
+            Stay in guild
           </Button>
           <Button
             variant="destructive"
@@ -635,7 +635,7 @@ export default function ProfilePage() {
             disabled={leaving}
             loading={leaving}
           >
-            Leave Guild
+            Leave guild
           </Button>
         </ModalFooter>
       </Modal>

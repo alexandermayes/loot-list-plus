@@ -579,12 +579,12 @@ export default function AttendancePage() {
             <span className="text-[14px] font-medium" style={{ color: (activeCharacter.class as any)?.color_hex || '#fff' }}>
               {activeCharacter.name}
             </span>
-            <span className="text-foreground-muted text-[13px]">• Your Attendance</span>
+            <span className="text-foreground-muted text-[13px]">• Your attendance</span>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             <div className="bg-background-elevated border border-border rounded-xl p-6">
               <p className="text-muted-foreground text-sm mb-1">
-                Attendance Credit (Previous {guildSettings?.rolling_attendance_weeks || 4} Weeks)
+                Attendance credit (previous {guildSettings?.rolling_attendance_weeks || 4} weeks)
               </p>
               <p className={`text-[42px] font-bold leading-none ${
                 attendanceScore >= (guildSettings?.max_attendance_bonus || 8) * 0.75 ? 'text-success' :
@@ -596,7 +596,7 @@ export default function AttendancePage() {
             </div>
 
             <div className="bg-background-elevated border border-border rounded-xl p-6">
-              <p className="text-muted-foreground text-sm mb-1">Role Modifier</p>
+              <p className="text-muted-foreground text-sm mb-1">Role modifier</p>
               <p className={`text-[42px] font-bold leading-none ${roleModifier < 0 ? 'text-destructive' : roleModifier > 0 ? 'text-success' : 'text-foreground'}`}>
                 {roleModifier >= 0 ? '+' : ''}{roleModifier}
               </p>
@@ -604,7 +604,7 @@ export default function AttendancePage() {
             </div>
 
             <div className="bg-background-elevated border border-border rounded-xl p-6">
-              <p className="text-muted-foreground text-sm mb-1">Tracked Raids</p>
+              <p className="text-muted-foreground text-sm mb-1">Tracked raids</p>
               <p className="text-[42px] font-bold text-foreground leading-none">
                 {guildRaidEvents.length}
               </p>
@@ -614,11 +614,11 @@ export default function AttendancePage() {
         </>
       )}
 
-      {/* Guild Attendance Table */}
+      {/* Guild attendance Table */}
       <div className="bg-background-elevated border border-border rounded-xl overflow-hidden">
         <div className="p-4 border-b border-border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div>
-            <h2 className="text-foreground font-semibold">Guild Attendance</h2>
+            <h2 className="text-foreground font-semibold">Guild attendance</h2>
             <p className="text-foreground-muted text-[12px] mt-0.5">
               Current week + previous {guildSettings?.rolling_attendance_weeks || 4} weeks
             </p>
@@ -655,7 +655,7 @@ export default function AttendancePage() {
         ) : guildRaidEvents.length === 0 ? (
           <div className="p-8 text-center">
             <HugeiconsIcon icon={Calendar01Icon} size={48} className="text-foreground-muted mx-auto mb-3" />
-            <p className="text-foreground-muted">No raid events in the attendance window</p>
+            <p className="text-foreground-muted">No raid events in the attendance window. Your score updates after first pull.</p>
           </div>
         ) : (
           <div className="overflow-x-auto">

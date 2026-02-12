@@ -267,7 +267,7 @@ export default function WelcomeScreen() {
                   />
                   <div className="flex flex-col gap-1 text-center w-full">
                     <h2 className="font-poppins font-bold text-2xl text-foreground">
-                      Join with Code
+                      Join with code
                     </h2>
                     <p className="font-poppins font-normal text-sm text-muted-foreground">
                       Paste the code from your guild officer.
@@ -312,7 +312,7 @@ export default function WelcomeScreen() {
                   className="w-5 h-5"
                 />
                 <p className="font-poppins font-bold text-lg text-foreground">
-                  Need Help?
+                  Need help?
                 </p>
               </div>
               <p className="font-poppins font-normal text-sm text-muted-foreground text-center">
@@ -365,7 +365,7 @@ export default function WelcomeScreen() {
                     router.push('/profile')
                   }}
                 >
-                  Go to Profile to Verify Discord
+                  Go to profile to verify Discord
                 </Button>
               )}
             </div>

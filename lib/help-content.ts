@@ -66,7 +66,7 @@ If your guild already uses LootList+, you can join with an invite code or Discor
 2. Go to the guild selection screen
 3. Click "Join Guild"
 4. Enter the invite code
-5. You're in!
+5. You're in.
 
 ## Using Discord
 
@@ -82,7 +82,7 @@ Once you've joined a guild:
 
 1. Create a character (or multiple characters)
 2. Submit your loot lists for active raid tiers
-3. Start tracking your loot priority!
+3. Start tracking your loot priority.
         `,
       },
       {
@@ -190,7 +190,7 @@ When multiple players have the same priority score, they're "tied" for an item. 
 
 ## Improving Your Priority
 
-- **Show up to raids** - Attendance matters!
+- **Show up to raids** - Attendance matters.
 - **Rank items thoughtfully** - Use your high ranks wisely
 - **Be patient** - Priority naturally improves as others receive items
         `,
@@ -344,7 +344,7 @@ Your guild tracks raid attendance over a rolling window (e.g., last 4 weeks). Yo
 
 - **Attended** - You were at the raid
 - **Signed Up** - You signed up but didn't attend (partial credit if enabled)
-- **No Call No Show** - Missed without notice (may have penalties)
+- **No call no show** - Missed without notice (may have penalties)
 
 ## Checking Your Attendance
 
@@ -366,7 +366,7 @@ Track attendance via:
         content: `
 # Using the Master Sheet
 
-The master sheet shows everyone's priorities at a glance—essential during raids.
+The master sheet shows everyone's priorities at a glance, essential during raids.
 
 ## Accessing the Master Sheet
 

@@ -13,7 +13,7 @@ import {
 const steps = [
   {
     number: '01',
-    title: 'Connect Your Guild',
+    title: 'Connect your guild',
     description: 'Sign in with Discord and link your WoW guild. Your members can join instantly with their existing Discord accounts.',
     icon: LinkSquare02Icon,
     color: 'from-blue-500 to-blue-600'
@@ -27,7 +27,7 @@ const steps = [
   },
   {
     number: '03',
-    title: 'Distribute Fairly',
+    title: 'Distribute fairly',
     description: 'Officers review submissions and allocate loot using attendance-weighted priority scores. Transparent and unbiased.',
     icon: Award01Icon,
     color: 'from-green-500 to-green-600'
@@ -100,7 +100,7 @@ export default function LandingHowItWorks() {
             variants={fadeInUp}
             className="inline-block px-4 py-1.5 bg-accent/10 text-accent text-xs font-semibold uppercase tracking-wider rounded-full mb-4"
           >
-            How It Works
+            How it works
           </motion.span>
           <motion.h2
             variants={fadeInUp}

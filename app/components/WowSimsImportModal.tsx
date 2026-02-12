@@ -76,7 +76,7 @@ export function WowSimsImportModal({
       const data = await response.json()
 
       if (!response.ok) {
-        setError(data.error || 'Failed to import gear')
+        setError(data.error || 'Couldn\'t import gear. Try again.')
         setLoading(false)
         return
       }
@@ -97,7 +97,7 @@ export function WowSimsImportModal({
       }, 1500)
     } catch (err) {
       console.error('Error importing gear:', err)
-      setError('Failed to import gear. Please try again.')
+      setError('Couldn\'t import gear. Try again.')
     } finally {
       setLoading(false)
     }
@@ -106,7 +106,7 @@ export function WowSimsImportModal({
   return (
     <Modal open={isOpen} onClose={handleClose} size="lg">
       <ModalHeader onClose={handleClose}>
-        <ModalTitle>Import Gear from WowSims</ModalTitle>
+        <ModalTitle>Import gear from WowSims</ModalTitle>
         <ModalDescription>
           Import your current equipped gear for <strong>{characterName}</strong>
         </ModalDescription>
@@ -193,7 +193,7 @@ export function WowSimsImportModal({
             loading={loading}
             disabled={!jsonInput.trim()}
           >
-            Import Gear
+            Import gear
           </Button>
         )}
       </ModalFooter>

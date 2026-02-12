@@ -114,7 +114,7 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
       const data = await response.json()
 
       if (!response.ok) {
-        setError(data.error || 'Failed to submit feedback')
+        setError(data.error || 'Couldn\'t submit feedback. Try again.')
         return
       }
 
@@ -124,7 +124,7 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
       }, 2000)
     } catch (err) {
       console.error('Error submitting feedback:', err)
-      setError('Failed to submit feedback. Please try again.')
+      setError('Couldn\'t submit feedback. Try again.')
     } finally {
       setSubmitting(false)
     }
@@ -141,7 +141,7 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
                   <HugeiconsIcon icon={Bug01Icon} size={20} className="text-accent" />
                 </div>
                 <div>
-                  <ModalTitle>Report a Bug</ModalTitle>
+                  <ModalTitle>Report a bug</ModalTitle>
                   <ModalDescription>Help us improve LootList+</ModalDescription>
                 </div>
               </div>
@@ -162,7 +162,7 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
                   <HugeiconsIcon icon={Bug01Icon} size={20} className="text-accent" />
                 </div>
                 <div>
-                  <ModalTitle>Report a Bug</ModalTitle>
+                  <ModalTitle>Report a bug</ModalTitle>
                   <ModalDescription>Help us improve LootList+</ModalDescription>
                 </div>
               </div>
@@ -248,7 +248,7 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
                 disabled={!description.trim()}
               >
                 <HugeiconsIcon icon={SentIcon} size={16} />
-                Submit Feedback
+                Submit feedback
               </Button>
             </ModalFooter>
           </form>

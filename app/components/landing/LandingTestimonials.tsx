@@ -30,9 +30,9 @@ const testimonials = [
 ]
 
 const stats = [
-  { value: '500+', label: 'Active Guilds' },
+  { value: '500+', label: 'Active guilds' },
   { value: '25K+', label: 'Raiders' },
-  { value: '100K+', label: 'Items Distributed' },
+  { value: '100K+', label: 'Items distributed' },
   { value: '99.9%', label: 'Uptime' }
 ]
 

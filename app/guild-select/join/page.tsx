@@ -76,7 +76,7 @@ function JoinGuildContent() {
       const data = await response.json()
 
       if (!response.ok) {
-        setError(data.error || 'Invalid invite code')
+        setError(data.error || 'Couldn\'t validate invite code. Double-check the code and try again.')
         setValidating(false)
         return
       }
@@ -86,7 +86,7 @@ function JoinGuildContent() {
       setValidating(false)
     } catch (err) {
       console.error('Error validating code:', err)
-      setError('Failed to validate invite code')
+      setError('Couldn\'t validate invite code. Check your connection and try again.')
       setValidating(false)
     }
   }
@@ -113,7 +113,7 @@ function JoinGuildContent() {
       const data = await response.json()
 
       if (!response.ok) {
-        setError(data.error || 'Failed to join guild')
+        setError(data.error || 'Couldn\'t join guild. Check your connection and try again.')
         setJoining(false)
         return
       }
@@ -126,7 +126,7 @@ function JoinGuildContent() {
       }, 1500)
     } catch (err) {
       console.error('Error joining guild:', err)
-      setError('An error occurred while joining the guild')
+      setError('Couldn\'t join guild. Check your connection and try again.')
       setJoining(false)
     }
   }
@@ -171,7 +171,7 @@ function JoinGuildContent() {
           <div className="flex items-center justify-center w-16 h-16 rounded-full bg-success/20 mx-auto mb-4">
             <HugeiconsIcon icon={Key01Icon} size={32} className="text-success" />
           </div>
-          <Heading level={1} className="text-3xl text-primary">Join via Invite Code</Heading>
+          <Heading level={1} className="text-3xl text-primary">Join via invite code</Heading>
           <p className="text-muted-foreground">
             Enter the invite code provided by your guild officer
           </p>
@@ -188,7 +188,7 @@ function JoinGuildContent() {
           <CardContent>
             <form onSubmit={handleValidate} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="inviteCode">Invite Code</Label>
+                <Label htmlFor="inviteCode">Invite code</Label>
                 <div className="flex gap-2">
                   <Input
                     id="inviteCode"
@@ -244,7 +244,7 @@ function JoinGuildContent() {
                 </div>
                 {guildInfo.uses_remaining && (
                   <div>
-                    <p className="text-sm text-muted-foreground">Uses Remaining</p>
+                    <p className="text-sm text-muted-foreground">Uses remaining</p>
                     <p className="font-medium text-foreground">{guildInfo.uses_remaining}</p>
                   </div>
                 )}
@@ -255,7 +255,7 @@ function JoinGuildContent() {
                 className="w-full"
                 disabled={joining}
               >
-                {joining ? 'Joining Guild...' : 'Join Guild'}
+                {joining ? 'Joining guild...' : 'Join guild'}
               </Button>
             </CardContent>
           </Card>

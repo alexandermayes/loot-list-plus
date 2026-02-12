@@ -243,7 +243,7 @@ export default function MemberManager() {
 
           if (!response.ok) {
             const error = await response.json()
-            throw new Error(error.error || 'Failed to update role')
+            throw new Error(error.error || 'Couldn\'t update role. Try again.')
           }
 
           showNotification('success', `Role changed to ${newRole}`)
@@ -291,7 +291,7 @@ export default function MemberManager() {
 
               if (!response.ok) {
                 const error = await response.json()
-                throw new Error(error.error || 'Failed to remove member')
+                throw new Error(error.error || 'Couldn\'t remove member. Try again.')
               }
 
               showNotification('success', `${memberName} removed from guild`)
@@ -358,7 +358,7 @@ export default function MemberManager() {
 
               if (!response.ok) {
                 const error = await response.json()
-                throw new Error(error.error || 'Failed to update trial status')
+                throw new Error(error.error || 'Couldn\'t update trial status. Try again.')
               }
 
               showNotification('success', `${memberName} ${actionText}`)

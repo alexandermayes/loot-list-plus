@@ -264,7 +264,7 @@ export function CreateCharacterModal({ isOpen, onClose, onSuccess, suggestedName
           {/* Character Name */}
           <div>
             <Label className="mb-2">
-              Character Name <span className="text-destructive">*</span>
+              Character name <span className="text-destructive">*</span>
             </Label>
             <Input
               type="text"
@@ -367,7 +367,7 @@ export function CreateCharacterModal({ isOpen, onClose, onSuccess, suggestedName
             variant="primary"
             loading={loading}
           >
-            Create Character
+            Create character
           </Button>
         </ModalFooter>
       </form>

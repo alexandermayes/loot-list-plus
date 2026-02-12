@@ -155,7 +155,7 @@ export default function SettingsPage() {
   return (
     <div className="min-h-screen bg-background">
       <PageHeader
-        title="Profile Settings"
+        title="Profile settings"
         showBack
         backUrl="/profile"
       />
@@ -166,7 +166,7 @@ export default function SettingsPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <HugeiconsIcon icon={EyeIcon} size={20} />
-              Privacy Settings
+              Privacy settings
             </CardTitle>
             <CardDescription>Control what information is visible to other members</CardDescription>
           </CardHeader>
@@ -220,7 +220,7 @@ export default function SettingsPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <HugeiconsIcon icon={Notification01Icon} size={20} />
-              Notification Preferences
+              Notification preferences
             </CardTitle>
             <CardDescription>Choose what notifications you want to receive</CardDescription>
           </CardHeader>
@@ -274,7 +274,7 @@ export default function SettingsPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <HugeiconsIcon icon={Shield01Icon} size={20} />
-              Profile Customization
+              Profile customization
             </CardTitle>
             <CardDescription>Personalize your profile</CardDescription>
           </CardHeader>
@@ -309,7 +309,7 @@ export default function SettingsPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <HugeiconsIcon icon={CheckmarkCircle01Icon} size={20} className="text-success" />
-              Discord Server Verification
+              Discord server verification
             </CardTitle>
             <CardDescription>
               Verify you're a member of the guild's Discord server
@@ -321,7 +321,7 @@ export default function SettingsPage() {
                 <div className="flex items-center gap-2">
                   <Badge variant="default">
                     <HugeiconsIcon icon={CheckmarkCircle01Icon} size={12} className="mr-1" />
-                    Guild Member Verified
+                    Guild member verified
                   </Badge>
                   {preferences.last_verified_at && (
                     <p className="text-xs text-muted-foreground">
@@ -335,7 +335,7 @@ export default function SettingsPage() {
               </div>
             ) : (
               <div className="space-y-2">
-                <Badge variant="outline">Not Verified</Badge>
+                <Badge variant="outline">Not verified</Badge>
                 <p className="text-sm text-muted-foreground">
                   Click the button below to verify your Discord server membership.
                 </p>
@@ -347,7 +347,7 @@ export default function SettingsPage() {
               variant="outline"
             >
               <HugeiconsIcon icon={RefreshIcon} size={16} className={`mr-2 ${verifying ? 'animate-spin' : ''}`} />
-              {verifying ? 'Verifying...' : 'Verify Discord Server Membership'}
+              {verifying ? 'Verifying...' : 'Verify Discord server membership'}
             </Button>
           </CardContent>
         </Card>
@@ -362,7 +362,7 @@ export default function SettingsPage() {
             className="w-full sm:w-auto"
           >
             <HugeiconsIcon icon={FloppyDiskIcon} size={16} />
-            Save Preferences
+            Save preferences
           </Button>
         </div>
       </main>

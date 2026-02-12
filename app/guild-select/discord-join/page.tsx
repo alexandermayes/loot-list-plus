@@ -81,7 +81,7 @@ export default function DiscordJoinPage() {
         const data = await response.json()
 
         if (!response.ok) {
-          setError(data.error || 'Failed to load guilds')
+          setError(data.error || 'Couldn\'t load guilds. Check your connection and try again.')
           setLoading(false)
           return
         }
@@ -89,7 +89,7 @@ export default function DiscordJoinPage() {
         setAvailableGuilds(data.available_guilds || [])
       } catch (err) {
         console.error('Error loading guilds:', err)
-        setError('Failed to load available guilds')
+        setError('Couldn\'t load available guilds. Check your connection and try again.')
       }
 
       setLoading(false)
@@ -114,7 +114,7 @@ export default function DiscordJoinPage() {
       const data = await response.json()
 
       if (!response.ok && !data.success) {
-        setError(data.error || 'Failed to join guild')
+        setError(data.error || 'Couldn\'t join guild. Check your connection and try again.')
         setJoining(false)
         return
       }
@@ -133,7 +133,7 @@ export default function DiscordJoinPage() {
       }, 1500)
     } catch (err) {
       console.error('Error joining guild:', err)
-      setError('An error occurred while joining the guild')
+      setError('Couldn\'t join guild. Check your connection and try again.')
       setJoining(false)
     }
   }
@@ -193,7 +193,7 @@ export default function DiscordJoinPage() {
                 onClick={() => router.push('/profile')}
                 className="w-full"
               >
-                Go to Profile to Verify Discord
+                Go to profile to verify Discord
               </Button>
             </CardContent>
           </Card>
@@ -254,13 +254,13 @@ export default function DiscordJoinPage() {
                 variant="outline"
                 className="w-full"
               >
-                Back to Guild Selection
+                Back to guild selection
               </Button>
             </CardContent>
           </Card>
         ) : (
           <div className="space-y-4">
-            <h2 className="text-xl font-semibold text-foreground">Available Guilds</h2>
+            <h2 className="text-xl font-semibold text-foreground">Available guilds</h2>
             <div className="grid gap-4">
               {availableGuilds.map((guild) => (
                 <Card key={guild.id} className="border-border bg-card/80 hover:bg-card transition">
@@ -294,7 +294,7 @@ export default function DiscordJoinPage() {
                         disabled={joining}
                         className="ml-4"
                       >
-                        {joining ? 'Joining...' : 'Join Guild'}
+                        {joining ? 'Joining...' : 'Join guild'}
                       </Button>
                     </div>
                   </CardContent>

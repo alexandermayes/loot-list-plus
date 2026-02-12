@@ -188,7 +188,7 @@ export default function GuildSettingsPage() {
 
       if (!response.ok) {
         const data = await response.json()
-        throw new Error(data.error || 'Failed to update guild information')
+        throw new Error(data.error || 'Couldn\'t update guild information. Try again.')
       }
 
       showNotification('success', 'Guild settings saved' + (shouldFetchIcon && finalIconUrl ? '. Discord icon updated.' : ''))
@@ -226,7 +226,7 @@ export default function GuildSettingsPage() {
 
       if (!response.ok) {
         const data = await response.json()
-        throw new Error(data.error || 'Failed to delete guild')
+        throw new Error(data.error || 'Couldn\'t delete guild. Try again.')
       }
 
       // Force full page reload to guild select page
@@ -254,7 +254,7 @@ export default function GuildSettingsPage() {
 
       if (!response.ok) {
         const data = await response.json()
-        throw new Error(data.error || 'Failed to transfer ownership')
+        throw new Error(data.error || 'Couldn\'t transfer ownership. Try again.')
       }
 
       showNotification('success', 'Ownership transferred. You are now an Officer.')
@@ -283,8 +283,8 @@ export default function GuildSettingsPage() {
       <div className="p-4 sm:p-6 lg:p-8 space-y-6 font-poppins">
         {/* Header - Always visible */}
         <div>
-          <Heading level={1}>Guild Settings</Heading>
-          <p className="text-muted-foreground mt-1 text-base">Manage your guild configuration, members, and settings</p>
+          <Heading level={1}>Guild settings</Heading>
+          <p className="text-muted-foreground mt-1 text-base">Manage your guild configuration, members and settings</p>
         </div>
 
         {/* Show skeleton while loading */}
@@ -297,7 +297,7 @@ export default function GuildSettingsPage() {
           {/* Basic Information */}
           <div className="bg-background-elevated border border-border rounded-xl overflow-hidden">
             <div className="p-6 border-b border-border">
-              <h2 className="text-[24px] font-semibold text-foreground">Guild Information</h2>
+              <h2 className="text-[24px] font-semibold text-foreground">Guild information</h2>
               <p className="text-muted-foreground text-[13px] mt-1">
                 {isGuildCreator ? "Update your guild's basic details" : "Only the guild owner can edit these settings"}
               </p>
@@ -395,7 +395,7 @@ export default function GuildSettingsPage() {
                   loading={saving}
                   className="w-full"
                 >
-                  Save Changes
+                  Save changes
                 </Button>
               )}
             </div>
@@ -406,11 +406,11 @@ export default function GuildSettingsPage() {
             <div className="p-6 border-b border-border flex-shrink-0">
               <div className="flex items-start justify-between">
                 <div>
-                  <h2 className="text-[24px] font-semibold text-foreground">Current Members</h2>
+                  <h2 className="text-[24px] font-semibold text-foreground">Current members</h2>
                   <p className="text-muted-foreground text-[13px] mt-1">Manage guild members and roles</p>
                 </div>
                 <Button variant="secondary" size="sm" onClick={() => setShowRolesModal(true)}>
-                  Manage Roles
+                  Manage roles
                 </Button>
               </div>
             </div>
@@ -440,7 +440,7 @@ export default function GuildSettingsPage() {
               <div className="rounded-lg border border-warning/30 bg-warning/10 p-4">
                 <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
                   <div className="flex-1">
-                    <h3 className="text-[16px] font-semibold text-warning mb-1">Transfer Ownership</h3>
+                    <h3 className="text-[16px] font-semibold text-warning mb-1">Transfer ownership</h3>
                     <p className="text-[13px] text-muted-foreground">
                       Transfer guild ownership to another member. You will be demoted to Officer and lose owner privileges.
                     </p>
@@ -461,7 +461,7 @@ export default function GuildSettingsPage() {
                   <div className="flex-1">
                     <h3 className="text-[16px] font-semibold text-destructive mb-1">Delete this guild</h3>
                     <p className="text-[13px] text-muted-foreground">
-                      Once you delete a guild, there is no going back. This will permanently delete all guild data including members, loot lists, attendance records, and settings.
+                      Once you delete a guild, there is no going back. This will permanently delete all guild data including members, loot lists, attendance records and settings.
                     </p>
                   </div>
                   <Button
@@ -470,7 +470,7 @@ export default function GuildSettingsPage() {
                     loading={deleting}
                     className="shrink-0 w-full sm:w-auto"
                   >
-                    Delete Guild
+                    Delete guild
                   </Button>
                 </div>
               </div>
@@ -542,7 +542,7 @@ export default function GuildSettingsPage() {
                   loading={transferring}
                   className="bg-warning hover:bg-warning/90 text-black"
                 >
-                  Transfer Ownership
+                  Transfer ownership
                 </Button>
               </ModalFooter>
             </Modal>

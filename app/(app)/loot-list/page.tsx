@@ -237,7 +237,7 @@ export default function LootList() {
     confirm({
       title: 'Clear all rankings',
       description: 'Are you sure you want to clear all ranked items? This cannot be undone.',
-      confirmLabel: 'Clear All',
+      confirmLabel: 'Clear all',
       variant: 'danger',
       onConfirm: () => clearAllRankings()
     })
@@ -269,7 +269,7 @@ export default function LootList() {
     switch (status) {
       case 'approved': return 'Approved'
       case 'pending': return 'Pending'
-      case 'needs_revision': return 'Needs Revision'
+      case 'needs_revision': return 'Needs revision'
       case 'rejected': return 'Rejected'
       default: return 'Draft'
     }
@@ -614,7 +614,7 @@ export default function LootList() {
               {/* How to Rank Button */}
               <Button variant="secondary" onClick={() => setShowInstructionsModal(true)}>
                 <HugeiconsIcon icon={InformationCircleIcon} size={18} />
-                How to Rank
+                How to rank
               </Button>
             </div>
           </div>
@@ -792,7 +792,7 @@ export default function LootList() {
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                           </svg>
-                          Show {unrankedItems.length} Unranked
+                          Show {unrankedItems.length} unranked
                         </button>
                         {rankedCount > 0 && (
                           <button
@@ -805,7 +805,7 @@ export default function LootList() {
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                             </svg>
-                            Clear List
+                            Clear list
                           </button>
                         )}
                       </div>
@@ -829,7 +829,7 @@ export default function LootList() {
                     }
                     loading={isSaving}
                   >
-                    Submit for Review
+                    Submit for review
                   </Button>
                 </div>
               </div>
@@ -1228,7 +1228,7 @@ export default function LootList() {
         {/* No Bracket (38-25) - Main-spec */}
         <div className="bg-card border border-border rounded-xl overflow-hidden">
           <div className="bg-green-500/10 border-l-4 border-l-green-800/60 px-4 py-2">
-            <h2 className="text-[15px] font-semibold text-foreground">No Bracket (38-25) - Main-spec</h2>
+            <h2 className="text-[15px] font-semibold text-foreground">No bracket (38-25) - Main-spec</h2>
             <p className="text-green-200 text-[12px]">Still considered main-spec priority</p>
           </div>
           <div className="overflow-x-auto">
@@ -1319,7 +1319,7 @@ export default function LootList() {
           <ModalBody className="space-y-4">
             {/* Core Structure */}
             <div>
-              <h4 className="text-foreground font-semibold text-sm mb-2">Core Structure</h4>
+              <h4 className="text-foreground font-semibold text-sm mb-2">Core structure</h4>
               <p className="text-muted-foreground text-sm">
                 The system uses <span className="font-semibold text-foreground">50 desirability levels</span> (Level 50 being most desirable),
                 with each level containing <span className="font-semibold text-foreground">2 item slots</span> divided into 6 brackets.
@@ -1328,7 +1328,7 @@ export default function LootList() {
 
             {/* Brackets */}
             <div>
-              <h4 className="text-foreground font-semibold text-sm mb-2">Bracket Framework</h4>
+              <h4 className="text-foreground font-semibold text-sm mb-2">Bracket framework</h4>
               <ul className="text-muted-foreground text-sm space-y-1">
                 <li>• <span className="font-semibold text-destructive">Bracket 1:</span> Levels 50, 49, 48</li>
                 <li>• <span className="font-semibold text-accent">Bracket 2:</span> Levels 47, 46, 45</li>
@@ -1341,7 +1341,7 @@ export default function LootList() {
 
             {/* Key Rules */}
             <div>
-              <h4 className="text-foreground font-semibold text-sm mb-2">Key Rules (Brackets 1-4)</h4>
+              <h4 className="text-foreground font-semibold text-sm mb-2">Key rules (Brackets 1-4)</h4>
               <ul className="text-muted-foreground text-sm space-y-2">
                 <li>
                   <span className="font-semibold text-foreground">1. Allocation Point Limit:</span> Maximum 3 points per bracket.
@@ -1375,7 +1375,7 @@ export default function LootList() {
 
             {/* Important Notes */}
             <div className="bg-info/10 border border-info/30 rounded-xl p-4">
-              <h4 className="text-info font-semibold text-sm mb-2">Important Notes</h4>
+              <h4 className="text-info font-semibold text-sm mb-2">Important notes</h4>
               <ul className="text-info text-sm space-y-1">
                 <li>• Each item can only be selected once across all ranks</li>
                 <li>• Items in "No Bracket" don't guarantee unavailability - they indicate other classes receive priority</li>
@@ -1417,7 +1417,7 @@ export default function LootList() {
             {/* Panel Header */}
             <div className="p-4 border-b border-border flex items-center justify-between shrink-0">
               <div>
-                <h3 className="font-semibold text-foreground">Unranked Items</h3>
+                <h3 className="font-semibold text-foreground">Unranked items</h3>
                 <p className="text-xs text-muted-foreground">{unrankedItems.length} items not on your list</p>
               </div>
               <Button
@@ -1436,7 +1436,7 @@ export default function LootList() {
             <div className="flex-1 overflow-y-auto">
               {unrankedItems.length === 0 ? (
                 <div className="p-6 text-center">
-                  <p className="text-muted-foreground text-sm">All items are ranked!</p>
+                  <p className="text-muted-foreground text-sm">All items are ranked</p>
                 </div>
               ) : (
                 Object.keys(unrankedByBoss).sort().map(boss => (

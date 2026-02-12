@@ -267,7 +267,7 @@ export default function PendingSubmissionsPage() {
       <div className="max-w-6xl mx-auto">
         {/* Header - Always visible */}
         <div className="mb-8">
-          <Heading level={1}>Pending Submissions</Heading>
+          <Heading level={1}>Pending submissions</Heading>
           <p className="text-muted-foreground mt-1 text-base">
             Review and approve loot list submissions from your guild members
           </p>
@@ -283,7 +283,7 @@ export default function PendingSubmissionsPage() {
           <EmptyState
             icon={CheckmarkCircle01Icon}
             title="No pending submissions"
-            description="All submissions have been reviewed"
+            description="All submissions have been reviewed. New submissions from guild members will appear here."
             size="lg"
             variant="card"
           />
@@ -335,7 +335,7 @@ export default function PendingSubmissionsPage() {
                       </div>
                       {submission.updated_at !== submission.created_at && (
                         <div className="flex items-center gap-2">
-                          <span className="text-[13px] text-muted-foreground">Last Updated:</span>
+                          <span className="text-[13px] text-muted-foreground">Last updated:</span>
                           <span className="text-[13px] text-foreground">
                             {new Date(submission.updated_at).toLocaleString()}
                           </span>
@@ -375,7 +375,7 @@ export default function PendingSubmissionsPage() {
             {submissions.length > 0 && (
               <div className="mt-6 p-4 bg-background-elevated border border-border rounded-xl">
                 <p className="text-[13px] text-muted-foreground">
-                  Total Pending: <span className="text-foreground font-medium">{submissions.length}</span>
+                  Total pending: <span className="text-foreground font-medium">{submissions.length}</span>
                 </p>
               </div>
             )}

@@ -46,7 +46,7 @@ export function ExpansionGuard({ children }: { children: React.ReactNode }) {
             <div className="text-center space-y-4">
               <HugeiconsIcon icon={AlertCircleIcon} size={48} className="text-warning mx-auto" />
               <h2 className="text-xl font-semibold text-foreground">
-                No Expansion Set
+                No expansion set
               </h2>
               <p className="text-muted-foreground">
                 {isOfficer
@@ -56,11 +56,11 @@ export function ExpansionGuard({ children }: { children: React.ReactNode }) {
               <div className="flex flex-col gap-2">
                 {isOfficer && (
                   <Button onClick={() => router.push('/admin/expansions')}>
-                    Go to Manage Expansions
+                    Go to manage expansions
                   </Button>
                 )}
                 <Button variant="outline" onClick={() => router.push('/overview')}>
-                  Back to Dashboard
+                  Back to dashboard
                 </Button>
               </div>
             </div>

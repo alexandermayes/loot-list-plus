@@ -16,38 +16,38 @@ import Image from 'next/image'
 
 const features = [
   {
-    title: 'Loot Priority System',
+    title: 'Loot priority system',
     description: '50-level ranking with color-coded brackets. Raiders prioritize gear from most to least desired.',
     icon: CheckListIcon,
     color: 'text-red-400'
   },
   {
-    title: 'Attendance Tracking',
+    title: 'Attendance tracking',
     description: 'Credit scoring ensures fair distribution. Consistent raiders get prioritized loot.',
     icon: Calendar03Icon,
     color: 'text-green-400'
   },
   {
-    title: 'Officer Dashboard',
+    title: 'Officer dashboard',
     description: 'Streamlined review and approval workflow. Approve, reject, or request revisions with one click.',
     icon: UserGroupIcon,
     color: 'text-blue-400'
   },
   {
-    title: 'Master Loot Sheet',
+    title: 'Master Sheet',
     description: 'Complete guild visibility. See who wants what and make informed allocation decisions.',
     icon: GridTableIcon,
     color: 'text-purple-400'
   },
   {
-    title: 'Discord Integration',
+    title: 'Discord integration',
     description: 'One-click authentication. Your guild members sign in with their existing Discord accounts.',
     customIcon: '/discord-white.svg',
     color: 'text-[#5865F2]'
   },
   {
-    title: 'Multi-Raid Support',
-    description: 'Manage BWL, AQ40, Naxx, and beyond. Separate loot lists for each tier, all in one place.',
+    title: 'Multi-raid support',
+    description: 'Manage BWL, AQ40, Naxx and beyond. Separate loot lists for each tier, all in one place.',
     icon: Layers01Icon,
     color: 'text-amber-400'
   }

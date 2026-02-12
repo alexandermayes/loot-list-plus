@@ -462,7 +462,7 @@ export default function AdminLootItems() {
       if (!response.ok) {
         const errorData = await response.json()
         console.error('API Error:', errorData)
-        throw new Error(errorData.error || 'Failed to save settings')
+        throw new Error(errorData.error || 'Couldn\'t save settings. Try again.')
       }
 
       setShowSettingsModal(false)
@@ -1220,10 +1220,10 @@ export default function AdminLootItems() {
 
     // Check each role to see if all specs are selected
     const roleLabels: Record<string, string> = {
-      'tank': 'All Tanks',
-      'healer': 'All Healers',
-      'physical': 'All Physical DPS',
-      'caster': 'All Caster DPS'
+      'tank': 'All tanks',
+      'healer': 'All healers',
+      'physical': 'All physical DPS',
+      'caster': 'All caster DPS'
     }
 
     Object.entries(getRoleGroupSpecs).forEach(([role, roleSpecIds]) => {
@@ -1345,7 +1345,7 @@ export default function AdminLootItems() {
           <div>
             <Heading level={1}>Loot Management</Heading>
             <p className="text-muted-foreground mt-1 text-base">
-              {viewMode === 'items' ? 'Manage loot items and configure classifications' : 'Set role, class, and individual raider priorities'}
+              {viewMode === 'items' ? 'Manage loot items and configure classifications' : 'Set role, class and individual raider priorities'}
             </p>
           </div>
 
@@ -1369,7 +1369,7 @@ export default function AdminLootItems() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
               </svg>
-              Loot System Settings
+              Loot system settings
             </Button>
           </div>
         </div>
@@ -1380,7 +1380,7 @@ export default function AdminLootItems() {
             {/* Stats */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="bg-background-elevated border border-border rounded-xl p-4">
-                <p className="text-foreground-muted text-sm">Total Items</p>
+                <p className="text-foreground-muted text-sm">Total items</p>
                 <p className="text-2xl font-bold text-foreground">{filteredItems.length}</p>
               </div>
               <div className="bg-background-elevated border border-border rounded-xl p-4">
@@ -1463,7 +1463,7 @@ export default function AdminLootItems() {
                   </Select>
                 </div>
                 <div>
-                  <Label size="sm" className="block text-foreground-muted mb-2">Sort By</Label>
+                  <Label size="sm" className="block text-foreground-muted mb-2">Sort by</Label>
                   <Select
                     variant="pill"
                     size="sm"
@@ -1514,7 +1514,7 @@ export default function AdminLootItems() {
               <thead>
                 <tr className="bg-background-subtle border-b border-border">
                   <th className="px-4 py-2.5 text-left text-[12px] font-medium text-foreground-muted">On</th>
-                  <th className="px-4 py-2.5 text-left text-[12px] font-medium text-foreground-muted">Item Name</th>
+                  <th className="px-4 py-2.5 text-left text-[12px] font-medium text-foreground-muted">Item name</th>
                   <th className="px-4 py-2.5 text-left text-[12px] font-medium text-foreground-muted">Boss</th>
                   <th className="px-4 py-2.5 text-left text-[12px] font-medium text-foreground-muted">Slot</th>
                   <th className="px-4 py-2.5 text-left text-[12px] font-medium text-foreground-muted">Raid</th>
@@ -1577,15 +1577,15 @@ export default function AdminLootItems() {
                           {
                             label: '',
                             options: [
-                              { id: 'all', label: 'All Specs/Roles', isRoleGroup: true },
-                              { id: 'role:tank', label: 'All Tanks', isRoleGroup: true },
-                              { id: 'role:healer', label: 'All Healers', isRoleGroup: true },
-                              { id: 'role:physical', label: 'All Physical DPS', isRoleGroup: true },
-                              { id: 'role:caster', label: 'All Caster DPS', isRoleGroup: true }
+                              { id: 'all', label: 'All specs/roles', isRoleGroup: true },
+                              { id: 'role:tank', label: 'All tanks', isRoleGroup: true },
+                              { id: 'role:healer', label: 'All healers', isRoleGroup: true },
+                              { id: 'role:physical', label: 'All physical DPS', isRoleGroup: true },
+                              { id: 'role:caster', label: 'All caster DPS', isRoleGroup: true }
                             ]
                           },
                           {
-                            label: 'Individual Specs',
+                            label: 'Individual specs',
                             options: classSpecOptions.map(opt => ({
                               id: opt.id,
                               label: opt.label,
@@ -1612,15 +1612,15 @@ export default function AdminLootItems() {
                           {
                             label: '',
                             options: [
-                              { id: 'all', label: 'All Specs/Roles', isRoleGroup: true },
-                              { id: 'role:tank', label: 'All Tanks', isRoleGroup: true },
-                              { id: 'role:healer', label: 'All Healers', isRoleGroup: true },
-                              { id: 'role:physical', label: 'All Physical DPS', isRoleGroup: true },
-                              { id: 'role:caster', label: 'All Caster DPS', isRoleGroup: true }
+                              { id: 'all', label: 'All specs/roles', isRoleGroup: true },
+                              { id: 'role:tank', label: 'All tanks', isRoleGroup: true },
+                              { id: 'role:healer', label: 'All healers', isRoleGroup: true },
+                              { id: 'role:physical', label: 'All physical DPS', isRoleGroup: true },
+                              { id: 'role:caster', label: 'All caster DPS', isRoleGroup: true }
                             ]
                           },
                           {
-                            label: 'Individual Specs',
+                            label: 'Individual specs',
                             options: classSpecOptions.map(opt => ({
                               id: opt.id,
                               label: opt.label,
@@ -1790,7 +1790,7 @@ export default function AdminLootItems() {
 
         {filteredItems.length === 0 && (
           <div className="text-center py-12 text-foreground-muted">
-            No items found matching your filters
+            No items found matching your filters. Try broadening your search.
           </div>
         )}
           </>
@@ -2379,7 +2379,7 @@ export default function AdminLootItems() {
                           <HugeiconsIcon icon={Medal01Icon} size={18} className="text-muted-foreground" />
                           Rank, role and class bonuses
                         </CardTitle>
-                        <CardDescription>Fine-tune priority systems to value guild rank, raid roles, class needs, or individual contributions.</CardDescription>
+                        <CardDescription>Fine-tune priority systems to value guild rank, raid roles, class needs or individual contributions.</CardDescription>
                       </CardHeader>
                       <CardContent className="space-y-4">
 
@@ -2591,7 +2591,7 @@ export default function AdminLootItems() {
         size="sm"
       >
         <ModalHeader onClose={() => setNotesModalItem(null)}>
-          <ModalTitle>Officer Notes</ModalTitle>
+          <ModalTitle>Officer notes</ModalTitle>
           {notesModalItem && (
             <ModalDescription>
               <ItemLink wowheadId={notesModalItem.wowhead_id} name={notesModalItem.name} />

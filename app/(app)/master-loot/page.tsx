@@ -296,7 +296,7 @@ export default function MasterLootPage() {
           className="flex items-center gap-2 px-5 py-2.5 bg-muted hover:bg-muted border border-border rounded-lg text-foreground text-[14px] font-medium transition"
         >
           <HugeiconsIcon icon={Settings01Icon} size={16} />
-          Loot Settings
+          Loot settings
         </Link>
       </div>
 
@@ -329,7 +329,7 @@ export default function MasterLootPage() {
           <div className="space-y-3">
             {filteredSubmissions.length === 0 ? (
               <div className="bg-background-elevated border border-border rounded-xl p-8 text-center">
-                <p className="text-muted-foreground">No submissions found</p>
+                <p className="text-muted-foreground">No submissions yet. They will appear here once raiders submit their Loot Lists.</p>
               </div>
             ) : (
               filteredSubmissions.map((submission) => (
@@ -367,7 +367,7 @@ export default function MasterLootPage() {
                     onClick={() => viewSubmissionDetails(submission.id)}
                     className="w-full sm:w-auto"
                   >
-                    View Details
+                    View details
                   </Button>
                 </div>
               ))
@@ -382,7 +382,7 @@ export default function MasterLootPage() {
         </ModalHeader>
         <ModalBody>
           {submissionDetails.length === 0 ? (
-            <p className="text-muted-foreground text-center py-8">No items in this submission</p>
+            <p className="text-muted-foreground text-center py-8">This submission has no ranked items.</p>
           ) : (
             <div className="space-y-2">
               {submissionDetails.map((detail: SubmissionDetailItem, idx: number) => (
