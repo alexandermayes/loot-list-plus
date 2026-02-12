@@ -49,6 +49,23 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+  // Redirect getlootlist.com traffic to lootlistplus.com (301 permanent)
+  async redirects() {
+    return [
+      {
+        source: '/:path*',
+        has: [{ type: 'host', value: 'getlootlist.com' }],
+        destination: 'https://www.lootlistplus.com/:path*',
+        permanent: true,
+      },
+      {
+        source: '/:path*',
+        has: [{ type: 'host', value: 'www.getlootlist.com' }],
+        destination: 'https://www.lootlistplus.com/:path*',
+        permanent: true,
+      },
+    ]
+  },
   // Proxy PostHog requests through our domain to bypass ad blockers
   // Using /a/ prefix (looks like API) instead of /ingest which is in filter lists
   async rewrites() {

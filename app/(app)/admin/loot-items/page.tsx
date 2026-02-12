@@ -12,6 +12,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
 import { Label } from '@/components/ui/label'
+import { EmptyState } from '@/components/ui/empty-state'
+import { Search01Icon } from '@hugeicons/core-free-icons'
 import { normalizeBossName } from '@/utils/bossOrder'
 import { refreshWowheadTooltips } from '@/lib/wowhead'
 import { getRaidIcon } from '@/utils/raidIcons'
@@ -643,9 +645,12 @@ export default function AdminLootItems() {
         </div>
 
         {filteredItems.length === 0 && (
-          <div className="text-center py-12 text-muted-foreground">
-            No items found matching your filters. Try adjusting your search or filter.
-          </div>
+          <EmptyState
+            icon={Search01Icon}
+            title="No items found"
+            description="No items match your filters. Try adjusting your search or filter."
+            size="default"
+          />
         )}
       </div>
     </ExpansionGuard>

@@ -20,6 +20,7 @@ import {
   ModalFooter,
 } from '@/components/ui/modal'
 import { Button } from '@/components/ui/button'
+import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Heading } from '@/components/ui/typography'
@@ -648,10 +649,15 @@ export default function MasterLootPage() {
         <ModalBody className="p-0">
           {loadingDetails ? (
             <div className="flex items-center justify-center py-12">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent"></div>
+              <LoadingSpinner size="sm" />
             </div>
           ) : submissionDetails.length === 0 ? (
-            <p className="text-muted-foreground text-center py-8">This submission has no ranked items.</p>
+            <EmptyState
+              icon={ScrollIcon}
+              title="No ranked items"
+              description="This submission has no ranked items."
+              size="compact"
+            />
           ) : (
             <table className="w-full">
               <thead>

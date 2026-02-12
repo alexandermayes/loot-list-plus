@@ -36,6 +36,8 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Select } from '@/components/ui/select'
+import { EmptyState } from '@/components/ui/empty-state'
+import { Search01Icon } from '@hugeicons/core-free-icons'
 
 interface Member {
   character_id: string
@@ -2481,7 +2483,12 @@ export default function RaidTrackingPage() {
               lootSearchQuery.length === 0 ||
               item.name.toLowerCase().includes(lootSearchQuery.toLowerCase())
             ).length === 0 && (
-              <p className="text-muted-foreground text-sm text-center py-4">No items found</p>
+              <EmptyState
+                icon={Search01Icon}
+                title="No items found"
+                description="Try a different search term."
+                size="compact"
+              />
             )}
           </div>
         </ModalBody>

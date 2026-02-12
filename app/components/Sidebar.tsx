@@ -14,6 +14,7 @@ import { Input } from '@/components/ui/input'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { Cancel01Icon, Settings01Icon, Notification03Icon } from '@hugeicons/core-free-icons'
+import { usePendingSubmissionCount } from '../hooks/usePendingSubmissionCount'
 
 // Lazy load modal to reduce initial bundle size
 const CreateGuildModal = dynamic(() => import('./CreateGuildModal').then(mod => ({ default: mod.CreateGuildModal })), {
@@ -35,6 +36,7 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange, 
   const pathname = usePathname()
   const { activeGuild, userGuilds, switchGuild, hasMultipleGuilds, isOfficer, activeMember, loading } = useGuildContext()
   const { sidebarWidth, setSidebarWidth, isResizing, setIsResizing, minWidth, maxWidth } = useSidebar()
+  const { count: pendingSubmissionCount } = usePendingSubmissionCount(activeGuild?.id ?? null, isOfficer)
   const [guildDropdownOpen, setGuildDropdownOpen] = useState(false)
   const [showJoinModal, setShowJoinModal] = useState(false)
   const [modalView, setModalView] = useState<'main' | 'discord'>('main')
@@ -710,6 +712,11 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange, 
                   />
                 )}
                 <span className="whitespace-nowrap overflow-hidden text-ellipsis">{item.name}</span>
+                {item.view === 'loot-submissions' && pendingSubmissionCount > 0 && (
+                  <span className="ml-auto bg-accent text-accent-foreground text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
+                    {pendingSubmissionCount > 99 ? '99+' : pendingSubmissionCount}
+                  </span>
+                )}
               </Button>
             ))}
           </div>

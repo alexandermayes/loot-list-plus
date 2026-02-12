@@ -6,6 +6,8 @@ import dynamic from 'next/dynamic'
 import ItemLink from '@/app/components/ItemLink'
 import { useGuildContext } from '@/app/contexts/GuildContext'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
+import { EmptyState } from '@/components/ui/empty-state'
+import { Search01Icon } from '@hugeicons/core-free-icons'
 import { Button } from '@/components/ui/button'
 import { Select } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
@@ -669,9 +671,13 @@ export default function PriorityListTab() {
         <>
           {/* Items by Raid Tier, then by Boss */}
           {Object.keys(groupedByRaidTier).length === 0 ? (
-            <div className="bg-background-elevated border border-border rounded-xl p-8 text-center">
-              <p className="text-muted-foreground">No items found for this phase</p>
-            </div>
+            <EmptyState
+              icon={Search01Icon}
+              title="No items found"
+              description="No items found for this phase."
+              size="default"
+              variant="card"
+            />
           ) : (
             <div className="space-y-4">
               {/* Sort raid tiers by progression order */}

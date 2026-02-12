@@ -19,7 +19,8 @@ import StyledSelect from '@/app/components/StyledSelect'
 import MultiSelectDropdown from '@/app/components/MultiSelectDropdown'
 import { specMapping } from '@/utils/spec-role-mapping'
 import { HugeiconsIcon } from '@hugeicons/react'
-import { ArrowDown01Icon, ArrowUp01Icon, Settings01Icon, Calendar03Icon, Settings02Icon, UserAdd01Icon, DiceIcon, Medal01Icon, Clock01Icon, GiftIcon, StickyNote01Icon } from '@hugeicons/core-free-icons'
+import { ArrowDown01Icon, ArrowUp01Icon, Settings01Icon, Calendar03Icon, Settings02Icon, UserAdd01Icon, DiceIcon, Medal01Icon, Clock01Icon, GiftIcon, StickyNote01Icon, Search01Icon } from '@hugeicons/core-free-icons'
+import { EmptyState } from '@/components/ui/empty-state'
 import { Textarea } from '@/components/ui/textarea'
 import { refreshWowheadTooltips } from '@/lib/wowhead'
 import PriorityListTab from './components/PriorityListTab'
@@ -1789,9 +1790,12 @@ export default function AdminLootItems() {
         </div>
 
         {filteredItems.length === 0 && (
-          <div className="text-center py-12 text-foreground-muted">
-            No items found matching your filters. Try broadening your search.
-          </div>
+          <EmptyState
+            icon={Search01Icon}
+            title="No items found"
+            description="No items match your filters. Try broadening your search."
+            size="default"
+          />
         )}
           </>
         )}
