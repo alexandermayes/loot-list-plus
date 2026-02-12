@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { Copy01Icon, Cancel01Icon, Add01Icon } from '@hugeicons/core-free-icons'
+import { trackClientEvent } from '@/utils/analytics/client'
 
 interface InviteCode {
   id: string
@@ -87,6 +88,7 @@ export default function InviteCodeManager() {
       }
 
       showNotification('success', 'Invite code created')
+      trackClientEvent('invite_code_created')
       setShowGenerateForm(false)
       setExpiresAt('')
       setMaxUses('')

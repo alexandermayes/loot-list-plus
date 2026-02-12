@@ -20,6 +20,7 @@ import {
   ArrowUp01Icon
 } from '@hugeicons/core-free-icons'
 import { parseWowSimsExport } from '@/lib/wowsims-parser'
+import { trackClientEvent } from '@/utils/analytics/client'
 
 interface BisImportModalProps {
   isOpen: boolean
@@ -107,6 +108,7 @@ export function BisImportModal({
       setGearSuccess(true)
       setJsonInput('')
       onGearImported()
+      trackClientEvent('wowsims_gear_imported', { character_id: characterId })
 
       // Collapse gear section after successful import
       setTimeout(() => {
@@ -130,6 +132,7 @@ export function BisImportModal({
     })
 
     if (result.success) {
+      trackClientEvent('bis_import_completed', { imported_count: result.importedCount, character_id: characterId })
       // Auto-close after showing success
       setTimeout(() => {
         handleClose()

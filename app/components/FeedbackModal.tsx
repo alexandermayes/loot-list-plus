@@ -17,6 +17,8 @@ import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 
+import { trackClientEvent } from '@/utils/analytics/client'
+
 interface FeedbackModalProps {
   isOpen: boolean
   onClose: () => void
@@ -119,6 +121,7 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
       }
 
       setSuccess(true)
+      trackClientEvent('feedback_submitted', { has_screenshot: !!screenshot, page_url: window.location.pathname })
       setTimeout(() => {
         onClose()
       }, 2000)

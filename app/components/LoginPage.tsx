@@ -3,11 +3,13 @@
 import { createClient } from '@/utils/supabase/client'
 import Image from 'next/image'
 import Link from 'next/link'
+import { trackClientEvent } from '@/utils/analytics/client'
 
 export default function LoginPage() {
   const supabase = createClient()
 
   const handleDiscordLogin = async () => {
+    trackClientEvent('sign_in_clicked')
     await supabase.auth.signInWithOAuth({
       provider: 'discord',
       options: {

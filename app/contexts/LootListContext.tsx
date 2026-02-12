@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/utils/supabase/client'
 import { useGuildContext } from './GuildContext'
 import { useNotification } from './NotificationContext'
+import { trackClientEvent } from '@/utils/analytics/client'
 import {
   useRaidTiers,
   usePhaseLootItems,
@@ -842,6 +843,11 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
       }
 
       showNotification('success', submit ? 'Loot list submitted for review' : 'Draft saved')
+      trackClientEvent(submit ? 'loot_list_submitted' : 'loot_list_saved', {
+        character_id: activeCharacter.id,
+        phase: selectedPhase,
+        item_count: Object.keys(rankings).length
+      })
 
       // Notify officers when submitting (fire and forget)
       if (submit && activeGuild) {

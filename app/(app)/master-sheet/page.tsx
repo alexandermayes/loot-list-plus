@@ -28,6 +28,7 @@ import ScoreBreakdownModal from '@/app/components/ScoreBreakdownModal'
 import ScoreComparisonModal from '@/app/components/ScoreComparisonModal'
 import LootListSummaryView, { LootListAggregateItem } from '@/app/components/LootListSummaryView'
 import { refreshWowheadTooltips } from '@/lib/wowhead'
+import { trackClientEvent } from '@/utils/analytics/client'
 import { VirtualizedMasterSheet } from './components/VirtualizedMasterSheet'
 import type { PlayerRanking } from './components/BossSection'
 
@@ -189,6 +190,7 @@ function MasterSheetContent() {
   // Set page title
   useEffect(() => {
     document.title = 'LootList+ • Loot Rankings'
+    trackClientEvent('master_sheet_viewed')
   }, [])
 
   // Define raid tier progression order (Classic + TBC + WotLK)
@@ -1119,6 +1121,7 @@ function MasterSheetContent() {
       winnerRanking,
     })
     setShowScoreComparison(true)
+    trackClientEvent('score_comparison_viewed')
   }, [])
 
   // Generate Gargul DFT export format from rankings data (memoized callback)
@@ -1366,6 +1369,7 @@ function MasterSheetContent() {
 
       const exportData = formatRankingsForGargul(allTiersRankings)
       await navigator.clipboard.writeText(exportData)
+      trackClientEvent('gargul_export_completed', { item_count: allTiersRankings.length, tier_count: raidTiers.length })
       showNotification('success', `Exported ${allTiersRankings.length} items from ${raidTiers.length} raid tiers to clipboard`)
     } catch (err) {
       console.error('Export error:', err)
@@ -1394,7 +1398,7 @@ function MasterSheetContent() {
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
               <Button
                 variant="secondary"
-                onClick={() => setShowScoreBreakdown(true)}
+                onClick={() => { setShowScoreBreakdown(true); trackClientEvent('score_breakdown_viewed') }}
               >
                 <HugeiconsIcon icon={InformationCircleIcon} size={18} />
                 <span className="hidden sm:inline">How scores work</span>

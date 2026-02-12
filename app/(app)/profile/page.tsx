@@ -2,6 +2,7 @@
 
 import { createClient } from '@/utils/supabase/client'
 import { useState, useEffect } from 'react'
+import { trackClientEvent } from '@/utils/analytics/client'
 import { useRouter } from 'next/navigation'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { ProfileContentSkeleton } from '@/components/ui/skeletons'
@@ -155,6 +156,7 @@ export default function ProfilePage() {
       }
 
       // Account deleted successfully - redirect to home
+      trackClientEvent('account_deleted')
       window.location.href = '/'
     } catch (err) {
       console.error('Error deleting account:', err)

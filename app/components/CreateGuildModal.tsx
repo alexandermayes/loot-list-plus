@@ -19,6 +19,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { trackClientEvent } from '@/utils/analytics/client'
 
 interface DiscordGuild {
   id: string
@@ -84,6 +85,7 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
   // Load user and Discord servers on open
   useEffect(() => {
     if (isOpen) {
+      trackClientEvent('guild_creation_started')
       loadUserData()
       // Reset to first step
       setCurrentStep('discord')
@@ -327,6 +329,7 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
       }
 
       // Success!
+      trackClientEvent('guild_creation_completed', { guild_name: guildName.trim(), expansion, faction, realm: realm.trim() })
       onClose()
       onSuccess?.()
       window.location.href = '/overview'

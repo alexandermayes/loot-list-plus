@@ -1,7 +1,7 @@
 'use client'
 
 import Image from 'next/image'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { createClient } from '@/utils/supabase/client'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
@@ -12,6 +12,7 @@ import {
   ModalBody,
 } from '@/components/ui/modal'
 import { Input } from '@/components/ui/input'
+import { trackClientEvent } from '@/utils/analytics/client'
 
 export default function WelcomeScreen() {
   const [inviteCode, setInviteCode] = useState('')
@@ -122,6 +123,7 @@ export default function WelcomeScreen() {
       }
 
       // Success! Redirect to dashboard
+      trackClientEvent('onboarding_guild_joined', { join_method: 'discord', guild_id: guildId })
       window.location.href = '/overview'
     } catch (err) {
       console.error('Error joining guild:', err)
@@ -156,6 +158,7 @@ export default function WelcomeScreen() {
       }
 
       // Success! Redirect to dashboard
+      trackClientEvent('onboarding_guild_joined', { join_method: 'invite_code' })
       window.location.href = '/overview'
     } catch (err: any) {
       setError(err.message || 'Couldn\'t join guild. Check your connection and try again.')
@@ -187,6 +190,7 @@ export default function WelcomeScreen() {
       }
 
       // Success! Redirect to dashboard
+      trackClientEvent('onboarding_guild_joined', { join_method: 'invite_code' })
       window.location.href = '/overview'
     } catch (err: any) {
       setDiscordError(err.message || 'Couldn\'t join guild. Check your connection and try again.')
@@ -200,6 +204,10 @@ export default function WelcomeScreen() {
     setModalInviteCode('')
     setDiscordError('')
   }
+
+  useEffect(() => {
+    trackClientEvent('onboarding_viewed')
+  }, [])
 
   return (
     <>

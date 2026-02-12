@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react'
 import { createClient } from '@/utils/supabase/client'
+import { trackClientEvent } from '@/utils/analytics/client'
 
 // WoW item quality colors as accent options
 // Adjusted slightly from official values for better contrast in light/dark modes
@@ -161,6 +162,8 @@ export function AccentColorProvider({ children }: { children: React.ReactNode })
 
       if (error) {
         console.error('Failed to save accent color:', error)
+      } else {
+        trackClientEvent('accent_color_changed', { color })
       }
     } catch (error) {
       console.error('Failed to save accent color:', error)
