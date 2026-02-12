@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { updates } from '@/lib/updates-data'
+import { discordFetch } from '@/lib/discord'
 
 const categoryEmoji: Record<string, string> = {
   feature: '✨',
@@ -74,7 +75,7 @@ export async function GET(request: NextRequest) {
       timestamp: new Date().toISOString(),
     }
 
-    const webhookResponse = await fetch(webhookUrl, {
+    const webhookResponse = await discordFetch(webhookUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ embeds: [embed] }),

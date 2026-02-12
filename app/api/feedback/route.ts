@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { trackApiError } from '@/utils/analytics/server'
+import { discordFetch } from '@/lib/discord'
 
 // LOW-04: Maximum request body size (5MB to accommodate screenshots)
 const MAX_BODY_SIZE = 5 * 1024 * 1024 // 5MB
@@ -175,7 +176,7 @@ export async function POST(request: Request) {
     }
 
     // Send to Discord webhook
-    const response = await fetch(webhookUrl, {
+    const response = await discordFetch(webhookUrl, {
       method: 'POST',
       body: formData
     })

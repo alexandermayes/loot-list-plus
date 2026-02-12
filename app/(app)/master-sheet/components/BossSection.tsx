@@ -104,17 +104,17 @@ export const BossSection = memo(function BossSection({
 
       {/* Items Table - Collapsible */}
       {!isCollapsed && (
-        <div className="border-t border-border overflow-x-auto">
+        <div className="border-t border-border overflow-x-auto max-h-[70vh] overflow-y-auto">
           <table className="w-full min-w-[800px]">
-            <thead>
+            <thead className="sticky top-0 z-10">
               <tr className="bg-background-subtle">
-                <th className="px-5 py-2.5 text-left text-[12px] font-medium text-foreground-muted w-[280px]">Item</th>
-                <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted w-[100px]">Slot</th>
-                <th className="px-3 py-2.5 text-center text-[12px] font-medium text-foreground-muted w-[120px]">#1</th>
-                <th className="px-3 py-2.5 text-center text-[12px] font-medium text-foreground-muted w-[120px]">#2</th>
-                <th className="px-3 py-2.5 text-center text-[12px] font-medium text-foreground-muted w-[120px]">#3</th>
-                <th className="px-3 py-2.5 text-center text-[12px] font-medium text-foreground-muted w-[120px]">#4</th>
-                <th className="px-3 py-2.5 text-center text-[12px] font-medium text-foreground-muted w-[120px]">#5</th>
+                <th className="px-5 py-2.5 text-left text-[12px] font-medium text-foreground-muted w-[280px] bg-background-subtle">Item</th>
+                <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted w-[100px] bg-background-subtle">Slot</th>
+                <th className="px-3 py-2.5 text-center text-[12px] font-medium text-foreground-muted w-[120px] bg-background-subtle">#1</th>
+                <th className="px-3 py-2.5 text-center text-[12px] font-medium text-foreground-muted w-[120px] bg-background-subtle">#2</th>
+                <th className="px-3 py-2.5 text-center text-[12px] font-medium text-foreground-muted w-[120px] bg-background-subtle">#3</th>
+                <th className="px-3 py-2.5 text-center text-[12px] font-medium text-foreground-muted w-[120px] bg-background-subtle">#4</th>
+                <th className="px-3 py-2.5 text-center text-[12px] font-medium text-foreground-muted w-[120px] bg-background-subtle">#5</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
@@ -157,7 +157,7 @@ const ItemRow = memo(function ItemRow({
   return (
     <tr
       id={`item-${ir.item.id}`}
-      className={`transition-all hover:bg-muted ${ir.rankings.length === 0 ? 'bg-destructive/10' : ''}`}
+      className={`transition-colors hover:bg-muted ${ir.rankings.length === 0 ? 'bg-destructive/10' : ''}`}
     >
       <td className="px-5 py-2.5">
         <ItemLink

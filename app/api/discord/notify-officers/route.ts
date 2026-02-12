@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { trackApiError } from '@/utils/analytics/server'
+import { discordFetch } from '@/lib/discord'
 
 interface NotifyOfficersPayload {
   guild_id: string
@@ -153,7 +154,7 @@ export async function POST(request: NextRequest) {
     for (const [, discordId] of discordIdMap) {
       try {
         // Create DM channel
-        const dmChannelResponse = await fetch('https://discord.com/api/v10/users/@me/channels', {
+        const dmChannelResponse = await discordFetch('https://discord.com/api/v10/users/@me/channels', {
           method: 'POST',
           headers: {
             'Authorization': `Bot ${botToken}`,
@@ -173,7 +174,7 @@ export async function POST(request: NextRequest) {
         const dmChannel = await dmChannelResponse.json()
 
         // Send the message
-        const messageResponse = await fetch(`https://discord.com/api/v10/channels/${dmChannel.id}/messages`, {
+        const messageResponse = await discordFetch(`https://discord.com/api/v10/channels/${dmChannel.id}/messages`, {
           method: 'POST',
           headers: {
             'Authorization': `Bot ${botToken}`,

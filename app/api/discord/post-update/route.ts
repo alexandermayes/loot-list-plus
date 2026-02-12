@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { trackApiError } from '@/utils/analytics/server'
+import { discordFetch } from '@/lib/discord'
 
 interface UpdateItem {
   category: 'feature' | 'improvement' | 'fix'
@@ -72,7 +73,7 @@ export async function POST(request: NextRequest) {
       timestamp: new Date().toISOString(),
     }
 
-    const webhookResponse = await fetch(webhookUrl, {
+    const webhookResponse = await discordFetch(webhookUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

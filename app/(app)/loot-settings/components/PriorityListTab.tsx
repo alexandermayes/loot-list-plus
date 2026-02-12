@@ -759,14 +759,14 @@ export default function PriorityListTab() {
 
                                 {/* Items Table - Collapsible */}
                                 {!isCollapsed && (
-                                  <div className="border-t border-border overflow-x-auto">
+                                  <div className="border-t border-border overflow-x-auto max-h-[70vh] overflow-y-auto">
                                     <table className="w-full min-w-[600px]">
-                                      <thead>
+                                      <thead className="sticky top-0 z-10">
                                         <tr className="bg-background-subtle">
-                                          <th className="px-5 py-2.5 text-left text-[12px] font-medium text-foreground-muted">Item</th>
-                                          <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted w-[100px]">Slot</th>
-                                          <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted">Priority Summary</th>
-                                          <th className="px-3 py-2.5 text-center text-[12px] font-medium text-foreground-muted w-[180px]">Actions</th>
+                                          <th className="px-5 py-2.5 text-left text-[12px] font-medium text-foreground-muted bg-background-subtle">Item</th>
+                                          <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted w-[100px] bg-background-subtle">Slot</th>
+                                          <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted bg-background-subtle">Priority Summary</th>
+                                          <th className="px-3 py-2.5 text-center text-[12px] font-medium text-foreground-muted w-[180px] bg-background-subtle">Actions</th>
                                         </tr>
                                       </thead>
                                       <tbody className="divide-y divide-border">
@@ -777,7 +777,7 @@ export default function PriorityListTab() {
                                           return (
                                             <tr
                                               key={item.id}
-                                              className={`transition-all hover:bg-muted ${hasPriority ? 'bg-green-900/10' : ''}`}
+                                              className={`transition-colors hover:bg-muted ${hasPriority ? 'bg-green-900/10' : ''}`}
                                             >
                                               <td className="px-5 py-2.5">
                                                 <ItemLink

@@ -916,7 +916,7 @@ export default function LootList() {
               })()}
             </div>
           </div>
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto max-h-[70vh] overflow-y-auto">
             <table className="w-full table-fixed">
               <colgroup>
                 <col style={{ width: '64px' }} />
@@ -925,13 +925,13 @@ export default function LootList() {
                 <col style={{ width: '320px' }} />
                 <col style={{ width: '160px' }} />
               </colgroup>
-              <thead>
+              <thead className="sticky top-0 z-10">
                 <tr className="bg-background-subtle border-b border-border">
-                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted">Rank</th>
-                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted">Loot #1</th>
-                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted">Details</th>
-                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted">Loot #2</th>
-                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted">Details</th>
+                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted bg-background-subtle">Rank</th>
+                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted bg-background-subtle">Loot #1</th>
+                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted bg-background-subtle">Details</th>
+                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted bg-background-subtle">Loot #2</th>
+                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted bg-background-subtle">Details</th>
                 </tr>
               </thead>
               <tbody>
@@ -1006,7 +1006,7 @@ export default function LootList() {
               })()}
             </div>
           </div>
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto max-h-[70vh] overflow-y-auto">
             <table className="w-full table-fixed">
               <colgroup>
                 <col style={{ width: '64px' }} />
@@ -1015,13 +1015,13 @@ export default function LootList() {
                 <col style={{ width: '320px' }} />
                 <col style={{ width: '160px' }} />
               </colgroup>
-              <thead>
+              <thead className="sticky top-0 z-10">
                 <tr className="bg-background-subtle border-b border-border">
-                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted">Rank</th>
-                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted">Loot #1</th>
-                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted">Details</th>
-                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted">Loot #2</th>
-                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted">Details</th>
+                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted bg-background-subtle">Rank</th>
+                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted bg-background-subtle">Loot #1</th>
+                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted bg-background-subtle">Details</th>
+                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted bg-background-subtle">Loot #2</th>
+                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted bg-background-subtle">Details</th>
                 </tr>
               </thead>
               <tbody>
@@ -1096,7 +1096,7 @@ export default function LootList() {
               })()}
             </div>
           </div>
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto max-h-[70vh] overflow-y-auto">
             <table className="w-full table-fixed">
               <colgroup>
                 <col style={{ width: '64px' }} />
@@ -1105,13 +1105,13 @@ export default function LootList() {
                 <col style={{ width: '320px' }} />
                 <col style={{ width: '160px' }} />
               </colgroup>
-              <thead>
+              <thead className="sticky top-0 z-10">
                 <tr className="bg-background-subtle border-b border-border">
-                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted">Rank</th>
-                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted">Loot #1</th>
-                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted">Details</th>
-                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted">Loot #2</th>
-                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted">Details</th>
+                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted bg-background-subtle">Rank</th>
+                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted bg-background-subtle">Loot #1</th>
+                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted bg-background-subtle">Details</th>
+                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted bg-background-subtle">Loot #2</th>
+                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted bg-background-subtle">Details</th>
                 </tr>
               </thead>
               <tbody>
@@ -1186,7 +1186,7 @@ export default function LootList() {
               })()}
             </div>
           </div>
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto max-h-[70vh] overflow-y-auto">
             <table className="w-full table-fixed">
               <colgroup>
                 <col style={{ width: '64px' }} />
@@ -1195,13 +1195,13 @@ export default function LootList() {
                 <col style={{ width: '320px' }} />
                 <col style={{ width: '160px' }} />
               </colgroup>
-              <thead>
+              <thead className="sticky top-0 z-10">
                 <tr className="bg-background-subtle border-b border-border">
-                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted">Rank</th>
-                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted">Loot #1</th>
-                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted">Details</th>
-                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted">Loot #2</th>
-                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted">Details</th>
+                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted bg-background-subtle">Rank</th>
+                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted bg-background-subtle">Loot #1</th>
+                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted bg-background-subtle">Details</th>
+                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted bg-background-subtle">Loot #2</th>
+                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted bg-background-subtle">Details</th>
                 </tr>
               </thead>
               <tbody>
@@ -1231,7 +1231,7 @@ export default function LootList() {
             <h2 className="text-[15px] font-semibold text-foreground">No bracket (38-25) - Main-spec</h2>
             <p className="text-green-200 text-[12px]">Still considered main-spec priority</p>
           </div>
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto max-h-[70vh] overflow-y-auto">
             <table className="w-full table-fixed">
               <colgroup>
                 <col style={{ width: '64px' }} />
@@ -1240,13 +1240,13 @@ export default function LootList() {
                 <col style={{ width: '320px' }} />
                 <col style={{ width: '160px' }} />
               </colgroup>
-              <thead>
+              <thead className="sticky top-0 z-10">
                 <tr className="bg-background-subtle border-b border-border">
-                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted">Rank</th>
-                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted">Loot #1</th>
-                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted">Details</th>
-                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted">Loot #2</th>
-                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted">Details</th>
+                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted bg-background-subtle">Rank</th>
+                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted bg-background-subtle">Loot #1</th>
+                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted bg-background-subtle">Details</th>
+                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted bg-background-subtle">Loot #2</th>
+                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted bg-background-subtle">Details</th>
                 </tr>
               </thead>
               <tbody>
@@ -1274,7 +1274,7 @@ export default function LootList() {
             <h2 className="text-[15px] font-semibold text-foreground">Off-spec (24-1)</h2>
             <p className="text-blue-200 text-[12px]">Off-spec items to support guild flexibility</p>
           </div>
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto max-h-[70vh] overflow-y-auto">
             <table className="w-full table-fixed">
               <colgroup>
                 <col style={{ width: '64px' }} />
@@ -1283,13 +1283,13 @@ export default function LootList() {
                 <col style={{ width: '320px' }} />
                 <col style={{ width: '160px' }} />
               </colgroup>
-              <thead>
+              <thead className="sticky top-0 z-10">
                 <tr className="bg-background-subtle border-b border-border">
-                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted">Rank</th>
-                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted">Loot #1</th>
-                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted">Details</th>
-                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted">Loot #2</th>
-                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted">Details</th>
+                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted bg-background-subtle">Rank</th>
+                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted bg-background-subtle">Loot #1</th>
+                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted bg-background-subtle">Details</th>
+                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted bg-background-subtle">Loot #2</th>
+                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted bg-background-subtle">Details</th>
                 </tr>
               </thead>
               <tbody>

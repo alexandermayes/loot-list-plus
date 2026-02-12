@@ -531,7 +531,7 @@ export default function MasterLootPage() {
               filteredSubmissions.map((submission) => (
                 <div
                   key={submission.id}
-                  className="bg-background-elevated border border-border rounded-xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 hover:bg-muted transition-all cursor-pointer"
+                  className="bg-background-elevated border border-border rounded-xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 hover:bg-muted transition-colors cursor-pointer"
                   onClick={() => viewSubmissionDetails(submission.id)}
                 >
                   <div className="flex flex-wrap items-center gap-2 sm:gap-3">
@@ -660,11 +660,11 @@ export default function MasterLootPage() {
             />
           ) : (
             <table className="w-full">
-              <thead>
+              <thead className="sticky top-0 z-10">
                 <tr className="bg-background-subtle border-b border-border">
-                  <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground w-12">Rank</th>
-                  <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground">Item #1</th>
-                  <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground">Item #2</th>
+                  <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground w-12 bg-background-subtle">Rank</th>
+                  <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground bg-background-subtle">Item #1</th>
+                  <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground bg-background-subtle">Item #2</th>
                 </tr>
               </thead>
               <tbody>

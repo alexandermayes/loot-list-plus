@@ -489,7 +489,7 @@ export default function AdminLootItems() {
               </thead>
               <tbody className="divide-y divide-border">
                 {filteredItems.map((item) => (
-                  <tr key={item.id} className="hover:bg-muted">
+                  <tr key={item.id} className="hover:bg-muted transition-colors">
                     <td className="px-4 py-3">
                       <input
                         type="checkbox"

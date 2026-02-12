@@ -335,7 +335,7 @@ export default function MasterLootPage() {
               filteredSubmissions.map((submission) => (
                 <div
                   key={submission.id}
-                  className="bg-background-elevated border border-border rounded-xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-muted transition"
+                  className="bg-background-elevated border border-border rounded-xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-muted transition-colors"
                 >
                   <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                     <h3 className="text-[16px] sm:text-[20px] font-semibold text-foreground">

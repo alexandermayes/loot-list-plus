@@ -108,7 +108,7 @@ function AppLayoutContent({
           <div className="flex items-center gap-1">
             <Link
               href="/help"
-              className="p-2 rounded-full hover:bg-muted transition"
+              className="p-2 rounded-full hover:bg-muted transition-colors"
               aria-label="Help"
             >
               <Image
@@ -123,7 +123,7 @@ function AppLayoutContent({
               href="https://discord.gg/WWaUQZMz9M"
               target="_blank"
               rel="noopener noreferrer"
-              className="p-2 rounded-full hover:bg-muted transition"
+              className="p-2 rounded-full hover:bg-muted transition-colors"
               aria-label="Join Discord"
             >
               <Image
@@ -136,14 +136,14 @@ function AppLayoutContent({
             </a>
             <Link
               href="/updates"
-              className="p-2 rounded-full hover:bg-muted transition"
+              className="p-2 rounded-full hover:bg-muted transition-colors"
               aria-label="Updates"
             >
               <HugeiconsIcon icon={Notification03Icon} size={20} />
             </Link>
             <Link
               href="/profile"
-              className="p-2 rounded-full hover:bg-muted transition"
+              className="p-2 rounded-full hover:bg-muted transition-colors"
               aria-label="Profile"
             >
               {user?.user_metadata?.avatar_url ? (

@@ -294,29 +294,29 @@ export default function LootHistoryTab() {
         />
       ) : (
         <div className="bg-background-elevated border border-border rounded-xl overflow-hidden">
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto max-h-[calc(100vh-400px)] overflow-y-auto">
             <table className="w-full min-w-[800px]">
-              <thead>
+              <thead className="sticky top-0 z-10">
                 <tr className="bg-muted border-b border-border">
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-muted-foreground">
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-muted-foreground bg-muted">
                     Date
                   </th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-muted-foreground">
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-muted-foreground bg-muted">
                     Item
                   </th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-muted-foreground">
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-muted-foreground bg-muted">
                     Player
                   </th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-muted-foreground">
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-muted-foreground bg-muted">
                     Boss
                   </th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-muted-foreground">
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-muted-foreground bg-muted">
                     Raid
                   </th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-muted-foreground">
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-muted-foreground bg-muted">
                     Awarded By
                   </th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-muted-foreground">
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-muted-foreground bg-muted">
                     Notes
                   </th>
                 </tr>

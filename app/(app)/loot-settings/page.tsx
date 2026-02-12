@@ -1499,7 +1499,7 @@ export default function AdminLootItems() {
 
         {/* Items Table */}
         <div className="bg-background-elevated border border-border rounded-xl overflow-hidden">
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto max-h-[calc(100vh-300px)] overflow-y-auto">
             <table className="w-full table-fixed">
               <colgroup>
                 <col style={{ width: '50px' }} />
@@ -1512,16 +1512,16 @@ export default function AdminLootItems() {
                 <col style={{ width: '220px' }} />
                 <col style={{ width: '48px' }} />
               </colgroup>
-              <thead>
+              <thead className="sticky top-0 z-10">
                 <tr className="bg-background-subtle border-b border-border">
-                  <th className="px-4 py-2.5 text-left text-[12px] font-medium text-foreground-muted">On</th>
-                  <th className="px-4 py-2.5 text-left text-[12px] font-medium text-foreground-muted">Item name</th>
-                  <th className="px-4 py-2.5 text-left text-[12px] font-medium text-foreground-muted">Boss</th>
-                  <th className="px-4 py-2.5 text-left text-[12px] font-medium text-foreground-muted">Slot</th>
-                  <th className="px-4 py-2.5 text-left text-[12px] font-medium text-foreground-muted">Raid</th>
-                  <th className="px-4 py-2.5 text-left text-[12px] font-medium text-foreground-muted">Classification</th>
-                  <th className="px-4 py-2.5 text-left text-[12px] font-medium text-foreground-muted">Primary</th>
-                  <th className="px-4 py-2.5 text-left text-[12px] font-medium text-foreground-muted">Secondary</th>
+                  <th className="px-4 py-2.5 text-left text-[12px] font-medium text-foreground-muted bg-background-subtle">On</th>
+                  <th className="px-4 py-2.5 text-left text-[12px] font-medium text-foreground-muted bg-background-subtle">Item name</th>
+                  <th className="px-4 py-2.5 text-left text-[12px] font-medium text-foreground-muted bg-background-subtle">Boss</th>
+                  <th className="px-4 py-2.5 text-left text-[12px] font-medium text-foreground-muted bg-background-subtle">Slot</th>
+                  <th className="px-4 py-2.5 text-left text-[12px] font-medium text-foreground-muted bg-background-subtle">Raid</th>
+                  <th className="px-4 py-2.5 text-left text-[12px] font-medium text-foreground-muted bg-background-subtle">Classification</th>
+                  <th className="px-4 py-2.5 text-left text-[12px] font-medium text-foreground-muted bg-background-subtle">Primary</th>
+                  <th className="px-4 py-2.5 text-left text-[12px] font-medium text-foreground-muted bg-background-subtle">Secondary</th>
                   <th className="px-2 py-2.5 text-center text-[12px] font-medium text-foreground-muted w-12 sticky right-0 bg-background-subtle/80">Notes</th>
                 </tr>
               </thead>
