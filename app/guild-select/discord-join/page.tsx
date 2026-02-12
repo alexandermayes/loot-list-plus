@@ -231,8 +231,24 @@ export default function DiscordJoinPage() {
 
         {/* Error Message */}
         {error && (
-          <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/50">
+          <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/50 space-y-3">
             <p className="text-sm text-destructive">{error}</p>
+            {error.includes('connection expired') && (
+              <Button
+                size="sm"
+                onClick={async () => {
+                  await supabase.auth.signInWithOAuth({
+                    provider: 'discord',
+                    options: {
+                      redirectTo: `${window.location.origin}/auth/callback?next=/guild-select/discord-join`,
+                      scopes: 'identify guilds'
+                    }
+                  })
+                }}
+              >
+                Reconnect Discord
+              </Button>
+            )}
           </div>
         )}
 

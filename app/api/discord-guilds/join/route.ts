@@ -59,15 +59,24 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Get user's Discord access token from session
+    // Get user's Discord access token (with refresh attempt if needed)
     const { data: { session } } = await supabase.auth.getSession()
+    let providerToken = session?.provider_token
 
-    if (!session?.provider_token) {
-      console.log('No Discord access token available')
-      return NextResponse.json(
-        { error: 'Discord authentication expired. Please log out and log in again.' },
-        { status: 403 }
-      )
+    if (!providerToken) {
+      console.log('[DISCORD JOIN] No provider_token, attempting refresh...')
+      const { data: { session: refreshedSession }, error: refreshError } = await supabase.auth.refreshSession()
+
+      if (refreshError || !refreshedSession?.provider_token) {
+        console.log('[DISCORD JOIN] Token refresh failed:', refreshError?.message)
+        return NextResponse.json(
+          { error: 'Discord connection expired. Please log in again to reconnect.', code: 'discord_token_expired' },
+          { status: 403 }
+        )
+      }
+
+      providerToken = refreshedSession.provider_token
+      console.log('[DISCORD JOIN] Got provider_token after refresh')
     }
 
     // Fetch user's Discord guilds from Discord API
@@ -75,14 +84,22 @@ export async function POST(request: NextRequest) {
     try {
       const discordResponse = await fetch('https://discord.com/api/v10/users/@me/guilds', {
         headers: {
-          'Authorization': `Bearer ${session.provider_token}`
+          'Authorization': `Bearer ${providerToken}`
         }
       })
 
       if (!discordResponse.ok) {
         console.error('Failed to fetch Discord guilds for verification:', discordResponse.status)
+
+        if (discordResponse.status === 401 || discordResponse.status === 403) {
+          return NextResponse.json(
+            { error: 'Discord connection expired. Please log in again to reconnect.', code: 'discord_token_expired' },
+            { status: 403 }
+          )
+        }
+
         return NextResponse.json(
-          { error: 'Failed to verify Discord server membership' },
+          { error: 'Couldn\'t verify Discord server membership. Try again.' },
           { status: 500 }
         )
       }
@@ -91,7 +108,7 @@ export async function POST(request: NextRequest) {
     } catch (error) {
       console.error('Error fetching Discord guilds for verification:', error)
       return NextResponse.json(
-        { error: 'Failed to verify Discord server membership' },
+        { error: 'Couldn\'t verify Discord server membership. Try again.' },
         { status: 500 }
       )
     }

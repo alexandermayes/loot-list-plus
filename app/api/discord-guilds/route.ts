@@ -1,6 +1,35 @@
 import { NextResponse } from 'next/server'
 import { createClient, getAuthenticatedUser } from '@/utils/supabase/server'
 
+/**
+ * Attempt to get a valid Discord provider token from the session.
+ * If the initial session has no provider_token, tries refreshSession() once.
+ */
+async function getDiscordToken(supabase: Awaited<ReturnType<typeof createClient>>): Promise<string | null> {
+  const { data: { session } } = await supabase.auth.getSession()
+
+  if (session?.provider_token) {
+    return session.provider_token
+  }
+
+  // Token missing — attempt a session refresh to get a new provider_token
+  console.log('[DISCORD] No provider_token in session, attempting refresh...')
+  const { data: { session: refreshedSession }, error } = await supabase.auth.refreshSession()
+
+  if (error) {
+    console.log('[DISCORD] Session refresh failed:', error.message)
+    return null
+  }
+
+  if (refreshedSession?.provider_token) {
+    console.log('[DISCORD] Got provider_token after refresh')
+    return refreshedSession.provider_token
+  }
+
+  console.log('[DISCORD] No provider_token after refresh')
+  return null
+}
+
 // GET - List Discord guilds user can join
 export async function GET() {
   try {
@@ -26,14 +55,15 @@ export async function GET() {
       )
     }
 
-    // Get user's Discord access token from session
-    const { data: { session } } = await supabase.auth.getSession()
+    // Get user's Discord access token (with refresh attempt)
+    const providerToken = await getDiscordToken(supabase)
 
-    if (!session?.provider_token) {
-      console.log('No Discord access token available')
-      return NextResponse.json({
-        available_guilds: []
-      })
+    if (!providerToken) {
+      console.log('No Discord access token available after refresh attempt')
+      return NextResponse.json(
+        { error: 'Discord connection expired. Please log in again to reconnect.', code: 'discord_token_expired' },
+        { status: 403 }
+      )
     }
 
     // Fetch user's Discord guilds from Discord API
@@ -41,7 +71,7 @@ export async function GET() {
     try {
       const discordResponse = await fetch('https://discord.com/api/v10/users/@me/guilds', {
         headers: {
-          'Authorization': `Bearer ${session.provider_token}`
+          'Authorization': `Bearer ${providerToken}`
         }
       })
 
@@ -58,10 +88,10 @@ export async function GET() {
         const errorText = await discordResponse.text()
         console.error('Failed to fetch Discord guilds:', discordResponse.status, errorText)
 
-        // If it's a 401/403, likely means token doesn't have guilds scope
+        // If it's a 401/403, token is truly expired even after refresh
         if (discordResponse.status === 401 || discordResponse.status === 403) {
           return NextResponse.json(
-            { error: 'Discord authentication expired or missing permissions. Please log out and log in again to refresh your Discord connection.' },
+            { error: 'Discord connection expired. Please log in again to reconnect.', code: 'discord_token_expired' },
             { status: 403 }
           )
         }
