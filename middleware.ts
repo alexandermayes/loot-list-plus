@@ -152,6 +152,11 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next()
   }
 
+  // Skip rate limiting for Vercel Cron jobs (authenticated via CRON_SECRET)
+  if (pathname.startsWith('/api/cron')) {
+    return NextResponse.next()
+  }
+
   // LOW-02: Check request body size for POST/PUT/PATCH requests
   const method = request.method.toUpperCase()
   if (['POST', 'PUT', 'PATCH'].includes(method)) {
