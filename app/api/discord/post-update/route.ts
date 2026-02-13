@@ -27,6 +27,8 @@ const categoryLabel: Record<string, string> = {
   fix: 'Fixed',
 }
 
+const SUPER_ADMIN_IDS = process.env.SUPER_ADMIN_IDS?.split(',').filter(Boolean) || []
+
 /**
  * POST - Send an app update to the LootList+ Discord via webhook
  *
@@ -38,6 +40,11 @@ export async function POST(request: NextRequest) {
     const { user, error: authError } = await getAuthenticatedUser()
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    // Only super admins can post app updates to Discord
+    if (!SUPER_ADMIN_IDS.includes(user.id)) {
+      return NextResponse.json({ error: 'Only admins can post updates' }, { status: 403 })
     }
 
     const webhookUrl = process.env.DISCORD_WEBHOOK_UPDATES_URL

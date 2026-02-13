@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient, getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
+import { verifyOfficerPermissions } from '@/utils/server-roles'
 import { trackApiError } from '@/utils/analytics/server'
 import { discordFetch } from '@/lib/discord'
 
@@ -48,12 +49,14 @@ export async function POST(request: NextRequest) {
     }
 
     const supabase = await createClient()
+    const serviceSupabase = createServiceRoleClient()
 
     // Get submission with character info
     const { data: submission, error: subError } = await supabase
       .from('loot_submissions')
       .select(`
         id,
+        guild_id,
         character_id,
         characters(id, name, user_id)
       `)
@@ -63,6 +66,12 @@ export async function POST(request: NextRequest) {
     if (subError || !submission) {
       console.error('Error fetching submission:', subError)
       return NextResponse.json({ error: 'Submission not found' }, { status: 404 })
+    }
+
+    // Verify the caller is an officer in the submission's guild
+    const verification = await verifyOfficerPermissions(serviceSupabase, user.id, submission.guild_id)
+    if (!verification.hasPermission) {
+      return NextResponse.json({ error: 'Only officers can send submission notifications' }, { status: 403 })
     }
 
     // Handle both array and object return types from Supabase relation

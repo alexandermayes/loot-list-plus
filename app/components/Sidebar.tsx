@@ -481,6 +481,7 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange, 
                   }}
                   className="p-1 rounded-md hover:bg-background-subtle transition shrink-0"
                   title="Guild Settings"
+                  aria-label="Guild settings"
                 >
                   <HugeiconsIcon icon={Settings01Icon} size={18} className="text-muted-foreground" />
                 </button>
@@ -558,6 +559,7 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange, 
                         }}
                         className="p-2 mr-2 rounded-lg hover:bg-background-elevated transition"
                         title="Guild Settings"
+                        aria-label="Guild settings"
                       >
                         <HugeiconsIcon icon={Settings01Icon} size={16} className="text-muted-foreground hover:text-foreground" />
                       </Button>
@@ -902,6 +904,7 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange, 
                   setModalView('main')
                 }}
                 className="text-muted-foreground hover:text-foreground"
+                aria-label="Close"
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -1018,6 +1021,7 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange, 
                   size="icon"
                   onClick={() => setModalView('main')}
                   className="text-muted-foreground hover:text-foreground"
+                  aria-label="Go back"
                 >
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -1036,6 +1040,7 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange, 
                   setModalView('main')
                 }}
                 className="text-muted-foreground hover:text-foreground"
+                aria-label="Close"
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />

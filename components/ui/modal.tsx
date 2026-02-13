@@ -110,6 +110,7 @@ const ModalHeader = React.forwardRef<HTMLDivElement, ModalHeaderProps>(
         <button
           onClick={onClose}
           className="p-1 -m-1 text-muted-foreground hover:text-foreground transition-colors rounded-lg hover:bg-muted"
+          aria-label="Close"
         >
           <HugeiconsIcon icon={Cancel01Icon} size={24} />
         </button>

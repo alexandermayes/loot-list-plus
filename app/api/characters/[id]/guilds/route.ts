@@ -110,7 +110,9 @@ export async function POST(
 
     // Parse request body
     const body = await request.json()
-    const { guild_id, role = 'Member', joined_via = 'manual' } = body
+    const { guild_id, joined_via = 'manual' } = body
+    // Force role to 'Member' — never trust client-supplied role to prevent privilege escalation
+    const role = 'Member'
 
     if (!guild_id) {
       return NextResponse.json(

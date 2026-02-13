@@ -47,6 +47,30 @@ export async function POST(request: NextRequest) {
     // non-officer raider whose session can't query officer memberships
     const supabase = createServiceRoleClient()
 
+    // Verify the caller is a member of this guild
+    const { data: callerCharacters } = await supabase
+      .from('characters')
+      .select('id')
+      .eq('user_id', user.id)
+
+    if (!callerCharacters || callerCharacters.length === 0) {
+      return NextResponse.json({ error: 'Not a member of this guild' }, { status: 403 })
+    }
+
+    const callerCharacterIds = callerCharacters.map((c: { id: string }) => c.id)
+
+    const { data: callerMembership } = await supabase
+      .from('character_guild_memberships')
+      .select('id')
+      .eq('guild_id', guild_id)
+      .in('character_id', callerCharacterIds)
+      .eq('is_active', true)
+      .limit(1)
+
+    if (!callerMembership || callerMembership.length === 0) {
+      return NextResponse.json({ error: 'Not a member of this guild' }, { status: 403 })
+    }
+
     // Get all officers and guild masters for this guild with their Discord IDs
     const { data: officers, error: officersError } = await supabase
       .from('character_guild_memberships')

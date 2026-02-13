@@ -12,10 +12,12 @@ import {
   Modal,
   ModalHeader,
   ModalTitle,
+  ModalDescription,
   ModalBody,
   ModalFooter,
 } from '@/components/ui/modal'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { useConfirm } from '@/components/ui/confirm-modal'
 import { HugeiconsIcon } from '@hugeicons/react'
 import {
@@ -47,6 +49,8 @@ export default function ProfilePage() {
   const [leaving, setLeaving] = useState(false)
   const [disconnecting, setDisconnecting] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [deleteConfirmInput, setDeleteConfirmInput] = useState('')
   const [loggingOut, setLoggingOut] = useState(false)
   const [mounted, setMounted] = useState(false)
   const [selectedTheme, setSelectedTheme] = useState<string | null>(null)
@@ -128,14 +132,11 @@ export default function ProfilePage() {
     })
   }
 
+  const deleteConfirmText = 'DELETE MY ACCOUNT'
+
   const handleDeleteAccount = async () => {
-    const confirmText = 'DELETE MY ACCOUNT'
-    const userInput = prompt(
-      `This will permanently delete your account and all associated data including characters, loot lists and guild memberships.\n\nThis cannot be undone.\n\nType "${confirmText}" to confirm:`
-    )
-
-    if (userInput !== confirmText) return
-
+    setShowDeleteModal(false)
+    setDeleteConfirmInput('')
     setDeleting(true)
     try {
       const response = await fetch('/api/user/delete-account', {
@@ -373,7 +374,7 @@ export default function ProfilePage() {
                   </div>
                   <Button
                     variant="destructive"
-                    onClick={handleDeleteAccount}
+                    onClick={() => setShowDeleteModal(true)}
                     loading={deleting}
                     className="shrink-0 w-full sm:w-auto"
                   >
@@ -638,6 +639,45 @@ export default function ProfilePage() {
             loading={leaving}
           >
             Leave guild
+          </Button>
+        </ModalFooter>
+      </Modal>
+
+      {/* Delete Account Confirmation Modal */}
+      <Modal open={showDeleteModal} onClose={() => { setShowDeleteModal(false); setDeleteConfirmInput(''); }} size="default">
+        <ModalHeader onClose={() => { setShowDeleteModal(false); setDeleteConfirmInput(''); }}>
+          <ModalTitle>Delete your account?</ModalTitle>
+          <ModalDescription>
+            This will permanently delete your account and all associated data including your characters, loot lists, attendance records and guild memberships. This cannot be undone.
+          </ModalDescription>
+        </ModalHeader>
+        <ModalBody className="space-y-4">
+          <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-4">
+            <p className="text-[13px] text-muted-foreground">
+              Type <span className="font-mono font-semibold text-destructive">{deleteConfirmText}</span> to confirm.
+            </p>
+          </div>
+          <Input
+            value={deleteConfirmInput}
+            onChange={(e) => setDeleteConfirmInput(e.target.value)}
+            placeholder={deleteConfirmText}
+            className="font-mono"
+          />
+        </ModalBody>
+        <ModalFooter>
+          <Button
+            variant="secondary"
+            onClick={() => { setShowDeleteModal(false); setDeleteConfirmInput(''); }}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="destructive"
+            onClick={handleDeleteAccount}
+            disabled={deleteConfirmInput !== deleteConfirmText}
+            loading={deleting}
+          >
+            Delete account
           </Button>
         </ModalFooter>
       </Modal>

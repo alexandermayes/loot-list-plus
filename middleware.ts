@@ -206,8 +206,15 @@ export async function middleware(request: NextRequest) {
       remaining = result.remaining
     }
   } catch (error) {
-    // If rate limiting fails, allow the request through but log the error
     console.error('[Middleware] Rate limiting error:', error)
+    if (process.env.NODE_ENV === 'production') {
+      // Fail closed in production: don't allow requests through when rate limiting is broken
+      return NextResponse.json(
+        { error: 'Service temporarily unavailable' },
+        { status: 503 }
+      )
+    }
+    // In development, allow through so local dev isn't blocked
     success = true
     remaining = rateLimitConfig[type].limit
   }

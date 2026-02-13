@@ -108,6 +108,16 @@ const nextConfig: NextConfig = {
       },
     ];
   },
+  experimental: {
+    // Tree-shake large icon and animation libraries for smaller bundles
+    optimizePackageImports: [
+      '@hugeicons/core-free-icons',
+      '@hugeicons-pro/core-solid-rounded',
+      '@hugeicons/react',
+      'hugeicons-react',
+      'framer-motion',
+    ],
+  },
 };
 
 export default nextConfig;

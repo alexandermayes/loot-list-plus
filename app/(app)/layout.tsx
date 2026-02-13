@@ -188,6 +188,7 @@ function AppLayoutContent({
         onClick={() => setShowFeedbackModal(true)}
         className="fixed bottom-6 right-6 w-14 h-14 rounded-full shadow-lg z-40"
         title="Report a bug"
+        aria-label="Report a bug"
       >
         <HugeiconsIcon icon={Bug01Icon} size={24} />
       </Button>

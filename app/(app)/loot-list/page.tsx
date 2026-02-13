@@ -772,6 +772,7 @@ export default function LootList() {
                       size="icon"
                       onClick={() => setShowMoreMenu(!showMoreMenu)}
                       className="w-10 h-10"
+                      aria-label="More actions"
                     >
                       <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                         <circle cx="5" cy="12" r="2" />
@@ -1425,6 +1426,7 @@ export default function LootList() {
                 size="icon"
                 onClick={() => setShowUnrankedPanel(false)}
                 className="w-8 h-8"
+                aria-label="Close panel"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
