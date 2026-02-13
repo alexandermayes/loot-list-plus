@@ -441,6 +441,7 @@ export default function AttendancePage() {
             character:characters!inner (
               id,
               name,
+              user_id,
               class:wow_classes(name, color_hex)
             )
           `)
@@ -459,8 +460,23 @@ export default function AttendancePage() {
 
       if (!membershipsData) return
 
-      // Show all active guild members — don't filter by submission status.
-      const activeRaiders = membershipsData
+      // Get loot submissions joined to characters to get user_id.
+      // We join through user_id because submission character_id may differ from
+      // membership character_id when users switch their active character.
+      const { data: submissionsData } = await supabase
+        .from('loot_submissions')
+        .select('character_id, character:characters!inner(user_id)')
+        .eq('guild_id', guildId)
+        .in('status', ['draft', 'pending', 'approved'])
+
+      const userIdsWithSubmissions = new Set(
+        submissionsData?.map((s: any) => s.character?.user_id).filter(Boolean) || []
+      )
+
+      // Filter to only show members whose user has a loot submission
+      const activeRaiders = membershipsData.filter(
+        (m: any) => userIdsWithSubmissions.has(m.character?.user_id)
+      )
 
       if (activeRaiders.length === 0 || raidEvents.length === 0) {
         setGuildRaiders([])
@@ -675,8 +691,8 @@ export default function AttendancePage() {
         {guildRaiders.length === 0 ? (
           <div className="p-8 text-center">
             <HugeiconsIcon icon={Calendar01Icon} size={48} className="text-foreground-muted mx-auto mb-3" />
-            <p className="text-foreground-muted">No active raiders found</p>
-            <p className="text-foreground-muted text-sm mt-1">Raiders need approved loot submissions to appear here</p>
+            <p className="text-foreground-muted">No raiders with loot lists</p>
+            <p className="text-foreground-muted text-sm mt-1">Guild members with loot submissions will appear here</p>
           </div>
         ) : guildRaidEvents.length === 0 ? (
           <div className="p-8 text-center">

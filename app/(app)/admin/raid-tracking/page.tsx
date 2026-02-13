@@ -198,9 +198,21 @@ export default function RaidTrackingPage() {
           .eq('is_active', true)
 
         if (membershipsData) {
-          // Show all active guild members — don't filter by submission status.
-          // Raid tracking is for attendance; officers need to see everyone.
+          // Get all loot submissions for this guild, joined to characters to get user_id.
+          // We join through user_id because submission character_id may differ from
+          // membership character_id when users switch their active character.
+          const { data: submissionsData } = await supabase
+            .from('loot_submissions')
+            .select('character_id, character:characters!inner(user_id)')
+            .eq('guild_id', activeGuild.id)
+            .in('status', ['draft', 'pending', 'approved'])
+
+          const userIdsWithSubmissions = new Set(
+            submissionsData?.map((s: any) => s.character?.user_id).filter(Boolean) || []
+          )
+
           const formattedMembers: Member[] = membershipsData
+            .filter((m: any) => userIdsWithSubmissions.has(m.character?.user_id))
             .map((m: any) => ({
               character_id: m.character_id,
               user_id: m.character?.user_id,
@@ -1939,9 +1951,9 @@ export default function RaidTrackingPage() {
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
                         </svg>
                       </div>
-                      <h4 className="text-[16px] font-semibold text-foreground mb-2">No guild members found</h4>
+                      <h4 className="text-[16px] font-semibold text-foreground mb-2">No raiders with loot lists</h4>
                       <p className="text-foreground-muted text-[13px] max-w-md mx-auto">
-                        Active guild members will appear here. Use the "Import data" button to add attendance for this raid day.
+                        Guild members with loot submissions will appear here. Use the "Import data" button to add attendance for this raid day.
                       </p>
                     </div>
                   ) : (
