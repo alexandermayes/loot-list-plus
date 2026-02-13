@@ -821,6 +821,12 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
       lastSavedRef.current = new Date()
       localChangesRef.current = false
 
+      // Optimistically update the SWR submission data so the status banner updates immediately
+      mutateSubmission(
+        { submission: { ...submissionData?.submission, ...upsertedSub, status: newStatus } as any, rankings },
+        false // don't revalidate — we already have the correct data
+      )
+
       // Invalidate phase statuses (for the tab badges)
       if (activeCharacter && activeGuild && targetExpansionId) {
         invalidatePhaseSubmissionStatuses(activeCharacter.id, activeGuild.id, targetExpansionId)
@@ -830,7 +836,7 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
     }
 
     setIsSaving(false)
-  }, [activeCharacter, selectedPhase, targetExpansionId, activeGuild, rankings, submissionData, supabase, showNotification])
+  }, [activeCharacter, selectedPhase, targetExpansionId, activeGuild, rankings, submissionData, supabase, showNotification, mutateSubmission])
 
   // Refresh data - clears local changes to allow fresh data to load
   const refreshData = useCallback(() => {
