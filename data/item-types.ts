@@ -176,7 +176,7 @@ export const ITEM_TYPES: Record<number, ItemTypeInfo> = {
   28803: { armor_type: 'Leather' },           // Cowl of Nature's Breath
   28810: { armor_type: 'Mail' },              // Windshear Boots
   28824: { armor_type: 'Plate' },             // Gauntlets of Martial Perfection
-  28827: { armor_type: 'Leather' },           // Gauntlets of the Dragonslayer
+  28827: { armor_type: 'Mail' },              // Gauntlets of the Dragonslayer
   28828: { armor_type: 'Mail' },              // Gronn-Stitched Girdle
 
   // ============================================================================
