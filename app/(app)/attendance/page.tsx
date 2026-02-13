@@ -460,18 +460,21 @@ export default function AttendancePage() {
       if (!membershipsData) return
 
       // Get characters with approved loot submissions (active raiders)
-      const characterIds = membershipsData.map((m: any) => m.character_id)
-      const { data: approvedSubmissions } = await supabase
+      const { data: approvedSubmissions, error: approvedError } = await supabase
         .from('loot_submissions')
         .select('character_id')
         .eq('guild_id', guildId)
         .eq('status', 'approved')
-        .in('character_id', characterIds)
+
+      if (approvedError) {
+        console.error('Error fetching approved submissions:', approvedError)
+      }
 
       const approvedCharacterIds = new Set(approvedSubmissions?.map((s: { character_id: string }) => s.character_id) || [])
 
-      // Filter to only active raiders
-      const activeRaiders = membershipsData.filter((m: any) => approvedCharacterIds.has(m.character_id))
+      // Filter to only active raiders. If query failed, show all members.
+      const shouldFilter = !approvedError && approvedSubmissions !== null
+      const activeRaiders = membershipsData.filter((m: any) => !shouldFilter || approvedCharacterIds.has(m.character_id))
 
       if (activeRaiders.length === 0 || raidEvents.length === 0) {
         setGuildRaiders([])

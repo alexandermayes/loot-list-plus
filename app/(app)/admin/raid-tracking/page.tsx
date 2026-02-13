@@ -198,23 +198,26 @@ export default function RaidTrackingPage() {
           .eq('is_active', true)
 
         if (membershipsData) {
-          // Get all character IDs
-          const characterIds = membershipsData.map((m: any) => m.character_id)
-
           // Query to find which characters have approved loot submissions
-          const { data: approvedSubmissions } = await supabase
+          // Query all approved submissions for the guild and intersect client-side.
+          const { data: approvedSubmissions, error: approvedError } = await supabase
             .from('loot_submissions')
             .select('character_id')
             .eq('guild_id', activeGuild.id)
             .eq('status', 'approved')
-            .in('character_id', characterIds)
+
+          if (approvedError) {
+            console.error('Error fetching approved submissions:', approvedError)
+          }
 
           // Create a Set of character IDs with approved submissions for fast lookup
           const approvedCharacterIds = new Set(approvedSubmissions?.map((s: { character_id: string }) => s.character_id) || [])
 
-          // Filter to only include members with approved loot lists
+          // If we got approved submissions, filter to only those members.
+          // If the query failed, show all members so the page is still usable.
+          const shouldFilter = !approvedError && approvedSubmissions !== null
           const formattedMembers: Member[] = membershipsData
-            .filter((m: any) => approvedCharacterIds.has(m.character_id))
+            .filter((m: any) => !shouldFilter || approvedCharacterIds.has(m.character_id))
             .map((m: any) => ({
               character_id: m.character_id,
               user_id: m.character?.user_id,
