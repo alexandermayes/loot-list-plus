@@ -665,7 +665,8 @@ export default function MasterLootPage() {
               size="compact"
             />
           ) : (
-            <table className="w-full">
+            <div className="overflow-x-auto">
+            <table className="w-full min-w-[420px]">
               <thead className="sticky top-0 z-10">
                 <tr className="bg-background-subtle border-b border-border">
                   <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground w-12 bg-background-subtle">Rank</th>
@@ -723,6 +724,7 @@ export default function MasterLootPage() {
                   })}
               </tbody>
             </table>
+            </div>
           )}
         </ModalBody>
         {viewingSubmission && submissions.find(s => s.id === viewingSubmission)?.status === 'pending' && (
