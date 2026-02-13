@@ -196,7 +196,7 @@ export default function RaidTrackingPage() {
             )
           `)
           .eq('guild_id', activeGuild.id)
-          .in('status', ['draft', 'pending', 'approved'])
+          .eq('status', 'approved')
 
         // Also load memberships to get role info where available
         const { data: membershipsData } = await supabase

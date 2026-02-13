@@ -444,7 +444,7 @@ export default function AttendancePage() {
             )
           `)
           .eq('guild_id', guildId)
-          .in('status', ['draft', 'pending', 'approved']),
+          .eq('status', 'approved'),
 
         // Query 2: Get memberships for role info and join dates
         supabase
