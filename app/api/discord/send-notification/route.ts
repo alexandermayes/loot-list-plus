@@ -91,7 +91,6 @@ export async function POST(request: NextRequest) {
 
     // Check if user wants notifications
     if (preferences?.notify_submission_status === false) {
-      console.log('User has notifications disabled')
       return NextResponse.json({
         sent: false,
         reason: 'User has notifications disabled'
@@ -111,7 +110,6 @@ export async function POST(request: NextRequest) {
     }
 
     if (!discordId) {
-      console.log('No Discord ID found for user:', character.user_id)
       return NextResponse.json({
         sent: false,
         reason: 'No Discord ID found'
@@ -199,7 +197,6 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    console.log(`Successfully sent DM to Discord user ${discordId}`)
     return NextResponse.json({
       sent: true,
       message: 'Notification sent successfully'

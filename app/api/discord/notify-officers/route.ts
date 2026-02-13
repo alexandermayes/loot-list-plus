@@ -90,7 +90,6 @@ export async function POST(request: NextRequest) {
     }
 
     if (!officers || officers.length === 0) {
-      console.log('No officers found for guild:', guild_id)
       return NextResponse.json({
         sent: false,
         reason: 'No officers found'
@@ -111,7 +110,6 @@ export async function POST(request: NextRequest) {
     const filteredUserIds = officerUserIds.filter(id => id !== user.id)
 
     if (filteredUserIds.length === 0) {
-      console.log('No other officers to notify (submitter is the only officer)')
       return NextResponse.json({
         sent: false,
         reason: 'No other officers to notify'
@@ -152,7 +150,6 @@ export async function POST(request: NextRequest) {
     }
 
     if (discordIdMap.size === 0) {
-      console.log('No officers with Discord IDs found')
       return NextResponse.json({
         sent: false,
         reason: 'No officers with Discord linked'
@@ -211,7 +208,6 @@ export async function POST(request: NextRequest) {
 
         if (messageResponse.ok) {
           sentCount++
-          console.log(`Sent submission notification to officer ${discordId}`)
         } else {
           console.error(`Failed to send DM to ${discordId}:`, messageResponse.status)
           failedCount++
@@ -222,7 +218,6 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    console.log(`Notified ${sentCount} officers, ${failedCount} failed`)
     return NextResponse.json({
       sent: true,
       sentCount,

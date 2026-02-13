@@ -148,7 +148,7 @@ export async function DELETE(
 
     const rolePositionMap = new Map<string, number>()
     if (guildRoles && guildRoles.length > 0) {
-      guildRoles.forEach((r: any) => rolePositionMap.set(r.name, r.position))
+      guildRoles.forEach((r) => rolePositionMap.set(r.name, r.position))
     } else {
       rolePositionMap.set('Guild Master', 100)
       rolePositionMap.set('Officer', 50)

@@ -34,9 +34,6 @@ export async function GET() {
     // We know your server has an icon, so let's just construct the URL
     const iconUrl = `https://cdn.discordapp.com/icons/${discordServerId}/a_f3e5c8b7a6d9e4f1c2b3a5d6e7f8a9b0.png`
 
-    console.log('Attempting to update guild:', guildId)
-    console.log('With icon URL:', iconUrl)
-
     // Update guild with icon URL
     const { data, error } = await supabase
       .from('guilds')
@@ -46,12 +43,10 @@ export async function GET() {
       .eq('id', guildId)
       .select()
 
-    console.log('Update result:', { data, error })
-
     if (error) {
+      console.error('Error updating guild icon:', error)
       return NextResponse.json({
-        error: error.message,
-        details: error,
+        error: 'Couldn\'t update guild icon. Try again.',
         guild_id: guildId
       }, { status: 500 })
     }
@@ -71,10 +66,10 @@ export async function GET() {
       update_result: data,
       verification: checkData
     })
-  } catch (error: any) {
+  } catch (error: unknown) {
+    console.error('Error in force-update-icon:', error)
     return NextResponse.json({
-      error: error.message,
-      stack: error.stack
+      error: 'Something went wrong. Try again.'
     }, { status: 500 })
   }
 }

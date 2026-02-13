@@ -968,6 +968,7 @@ function MasterSheetContent() {
 
       } catch (err) {
         console.error('Error loading aggregate data:', err)
+        showNotification('error', 'Couldn\'t load aggregate data. Try refreshing the page.')
         setAggregateItems([])
       }
 
@@ -1193,6 +1194,7 @@ function MasterSheetContent() {
           }
         } catch (err) {
           console.error('Error loading item priorities:', err)
+          showNotification('warning', 'Couldn\'t load item priorities. Some data may be missing.')
         }
         return {}
       })(),
@@ -1217,6 +1219,7 @@ function MasterSheetContent() {
           }
         } catch (err) {
           console.error('Error loading BLP data:', err)
+          showNotification('warning', 'Couldn\'t load BLP data. Some data may be missing.')
         }
         return {}
       })(),

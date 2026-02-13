@@ -123,6 +123,7 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
       }
     } catch (err) {
       console.error('Error loading user data:', err)
+      setError('Couldn\'t load your account data. Check your connection and try again.')
     } finally {
       setLoading(false)
     }

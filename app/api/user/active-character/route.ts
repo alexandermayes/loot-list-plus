@@ -124,7 +124,11 @@ export async function PUT(request: Request) {
       .eq('user_id', user.id)
       .maybeSingle()
 
-    const updateData: any = {
+    const updateData: {
+      updated_at: string
+      active_character_id?: string | null
+      active_guild_id?: string | null
+    } = {
       updated_at: new Date().toISOString(),
     }
 

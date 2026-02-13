@@ -91,7 +91,6 @@ export default function CreateGuildPage() {
               const fifteenMinutes = 15 * 60 * 1000
 
               if (cachedData && cachedData.length > 0 && Date.now() - cacheTimestamp < fifteenMinutes) {
-                console.log('Using cached Discord servers:', cachedData.length)
                 setDiscordGuilds(cachedData)
                 setLoading(false)
                 return
@@ -107,7 +106,6 @@ export default function CreateGuildPage() {
           if (response.ok) {
             const data = await response.json()
             const guilds = data.guilds || []
-            console.log('Received Discord servers:', guilds.length, guilds)
             setDiscordGuilds(guilds)
 
             // Cache the results
@@ -122,7 +120,6 @@ export default function CreateGuildPage() {
               console.error('Discord rate limit:', errorData)
               // Fall back to stale cache if available
               if (cachedData && cachedData.length > 0) {
-                console.log('Using stale cached Discord servers due to rate limit:', cachedData.length)
                 setDiscordGuilds(cachedData)
                 // Don't show error, just use stale cache
               } else {
@@ -250,7 +247,6 @@ export default function CreateGuildPage() {
       if (document.visibilityState === 'visible' && hasServerId && hasServerId !== 'manual') {
         // Only recheck if bot was previously not installed
         if (botInstalled === false) {
-          console.log('Page became visible, rechecking bot installation...')
           checkBotInstallation()
         }
       }

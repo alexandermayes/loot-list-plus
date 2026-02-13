@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useGuildContext } from '@/app/contexts/GuildContext'
+import { useNotification } from '@/app/contexts/NotificationContext'
 import { createClient } from '@/utils/supabase/client'
 import {
   Modal,
@@ -36,6 +37,7 @@ interface CreateCharacterModalProps {
 
 export function CreateCharacterModal({ isOpen, onClose, onSuccess, suggestedName }: CreateCharacterModalProps) {
   const { activeGuild, refreshCharacters, switchCharacter } = useGuildContext()
+  const { showNotification } = useNotification()
   const supabase = createClient()
 
   const [name, setName] = useState('')
@@ -203,6 +205,7 @@ export function CreateCharacterModal({ isOpen, onClose, onSuccess, suggestedName
           }
         } catch (membershipErr) {
           console.error('Error adding character to guild:', membershipErr)
+          showNotification('warning', 'Character created but couldn\'t add to guild. Try from the character settings.')
         }
       }
 
@@ -226,6 +229,7 @@ export function CreateCharacterModal({ isOpen, onClose, onSuccess, suggestedName
           }
         } catch (activeCharErr) {
           console.error('Error setting active character:', activeCharErr)
+          showNotification('warning', 'Character created but couldn\'t set as active. Switch to it manually.')
         }
       }
 

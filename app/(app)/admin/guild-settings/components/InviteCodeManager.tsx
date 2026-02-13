@@ -57,6 +57,7 @@ export default function InviteCodeManager() {
       }
     } catch (error) {
       console.error('Error loading invite codes:', error)
+      showNotification('error', 'Couldn\'t load invite codes. Check your connection and try again.')
     } finally {
       setLoading(false)
     }

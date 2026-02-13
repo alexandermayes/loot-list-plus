@@ -117,41 +117,43 @@ export async function POST(
       )
     }
 
-    // Get invite code details
-    const { data: inviteCode, error: codeError } = await supabase
-      .from('guild_invite_codes')
-      .select('*')
-      .eq('code', code)
-      .single()
+    // Atomically validate and claim a use of the invite code via RPC.
+    // This prevents the race condition where concurrent requests could
+    // read the same current_uses value and both increment, exceeding max_uses.
+    const { data: redeemResult, error: redeemError } = await supabase
+      .rpc('redeem_invite_code', { code_input: code })
 
-    if (codeError || !inviteCode) {
+    if (redeemError) {
+      console.error('[INVITE JOIN] Error calling redeem_invite_code RPC:', redeemError)
+      return NextResponse.json(
+        { error: 'Internal server error' },
+        { status: 500 }
+      )
+    }
+
+    const redeemed = Array.isArray(redeemResult) ? redeemResult[0] : redeemResult
+
+    if (!redeemed) {
       return NextResponse.json(
         { error: 'Invalid invite code' },
         { status: 404 }
       )
     }
 
-    // Validate code (same checks as GET)
-    if (!inviteCode.is_active) {
-      return NextResponse.json(
-        { error: 'This invite code has been deactivated' },
-        { status: 400 }
-      )
+    // Map RPC error codes to user-facing error responses
+    if (redeemed.error_code) {
+      const errorMap: Record<string, { error: string; status: number }> = {
+        NOT_FOUND: { error: 'Invalid invite code', status: 404 },
+        DEACTIVATED: { error: 'This invite code has been deactivated', status: 400 },
+        EXPIRED: { error: 'This invite code has expired', status: 400 },
+        MAX_USES_REACHED: { error: 'This invite code has reached its maximum uses', status: 400 },
+      }
+      const mapped = errorMap[redeemed.error_code] || { error: 'Invalid invite code', status: 400 }
+      return NextResponse.json({ error: mapped.error }, { status: mapped.status })
     }
 
-    if (inviteCode.expires_at && new Date(inviteCode.expires_at) < new Date()) {
-      return NextResponse.json(
-        { error: 'This invite code has expired' },
-        { status: 400 }
-      )
-    }
-
-    if (inviteCode.max_uses && inviteCode.current_uses >= inviteCode.max_uses) {
-      return NextResponse.json(
-        { error: 'This invite code has reached its maximum uses' },
-        { status: 400 }
-      )
-    }
+    // Invite code is now atomically claimed. Extract details from the RPC result.
+    const guildId = redeemed.invite_guild_id
 
     // Use service role client to bypass RLS for character operations
     const serviceSupabase = createServiceRoleClient()
@@ -160,7 +162,7 @@ export async function POST(
     const { data: guildData } = await supabase
       .from('guilds')
       .select('realm')
-      .eq('id', inviteCode.guild_id)
+      .eq('id', guildId)
       .single()
 
     // Get or create a character for the user
@@ -175,11 +177,9 @@ export async function POST(
     if (existingCharacters && existingCharacters.length > 0) {
       // Use existing character
       characterId = existingCharacters[0].id
-      console.log('[INVITE JOIN] Using existing character:', characterId)
     } else {
       // Create a default character for the user
       const characterName = user.user_metadata?.full_name || user.user_metadata?.name || 'Guild Member'
-      console.log('[INVITE JOIN] Creating character with name:', characterName)
 
       const { data: newCharacter, error: charError } = await serviceSupabase
         .from('characters')
@@ -195,13 +195,12 @@ export async function POST(
       if (charError || !newCharacter) {
         console.error('[INVITE JOIN] Error creating character:', charError)
         return NextResponse.json(
-          { error: `Failed to create character: ${charError?.message || 'Unknown error'}` },
+          { error: 'Couldn\'t create your character. Try again.' },
           { status: 500 }
         )
       }
 
       characterId = newCharacter.id
-      console.log('[INVITE JOIN] Created character:', characterId)
     }
 
     // Check if character is already an ACTIVE member of this guild
@@ -209,7 +208,7 @@ export async function POST(
       .from('character_guild_memberships')
       .select('id, is_active')
       .eq('character_id', characterId)
-      .eq('guild_id', inviteCode.guild_id)
+      .eq('guild_id', guildId)
       .single()
 
     if (existingMembership) {
@@ -221,7 +220,6 @@ export async function POST(
       }
 
       // Reactivate inactive membership (user rejoining)
-      console.log('[INVITE JOIN] Reactivating inactive membership:', existingMembership.id)
       const { error: reactivateError } = await serviceSupabase
         .from('character_guild_memberships')
         .update({
@@ -235,7 +233,7 @@ export async function POST(
       if (reactivateError) {
         console.error('[INVITE JOIN] Error reactivating membership:', reactivateError)
         return NextResponse.json(
-          { error: `Failed to rejoin guild: ${reactivateError.message}` },
+          { error: 'Couldn\'t rejoin guild. Try again or contact an officer.' },
           { status: 500 }
         )
       }
@@ -246,32 +244,23 @@ export async function POST(
         .upsert({
           user_id: user.id,
           active_character_id: characterId,
-          active_guild_id: inviteCode.guild_id,
+          active_guild_id: guildId,
           updated_at: new Date().toISOString()
         })
 
-      // Increment current_uses
-      await supabase
-        .from('guild_invite_codes')
-        .update({ current_uses: inviteCode.current_uses + 1 })
-        .eq('id', inviteCode.id)
-
-      console.log('[INVITE JOIN] Guild rejoin complete!')
-
       return NextResponse.json({
         success: true,
-        guild_id: inviteCode.guild_id,
+        guild_id: guildId,
         message: 'Successfully rejoined guild'
       })
     }
 
     // Create character guild membership
-    console.log('[INVITE JOIN] Creating membership for character:', characterId, 'guild:', inviteCode.guild_id)
     const { error: memberError } = await serviceSupabase
       .from('character_guild_memberships')
       .insert({
         character_id: characterId,
-        guild_id: inviteCode.guild_id,
+        guild_id: guildId,
         role: 'Member',
         is_active: true,
         joined_at: new Date().toISOString(),
@@ -281,38 +270,24 @@ export async function POST(
     if (memberError) {
       console.error('[INVITE JOIN] Error creating character guild membership:', memberError)
       return NextResponse.json(
-        { error: `Failed to join guild: ${memberError.message}` },
+        { error: 'Couldn\'t join guild. Try again or contact an officer.' },
         { status: 500 }
       )
     }
 
     // Set as active character and guild for user
-    console.log('[INVITE JOIN] Setting active character and guild')
     await serviceSupabase
       .from('user_active_characters')
       .upsert({
         user_id: user.id,
         active_character_id: characterId,
-        active_guild_id: inviteCode.guild_id,
+        active_guild_id: guildId,
         updated_at: new Date().toISOString()
       })
 
-    // Increment current_uses
-    const { error: updateError } = await supabase
-      .from('guild_invite_codes')
-      .update({ current_uses: inviteCode.current_uses + 1 })
-      .eq('id', inviteCode.id)
-
-    if (updateError) {
-      console.error('Error updating invite code uses:', updateError)
-      // Not critical, continue
-    }
-
-    console.log('[INVITE JOIN] Guild join complete!')
-
     return NextResponse.json({
       success: true,
-      guild_id: inviteCode.guild_id,
+      guild_id: guildId,
       message: 'Successfully joined guild'
     })
   } catch (error) {

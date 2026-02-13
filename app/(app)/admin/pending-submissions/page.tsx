@@ -148,10 +148,6 @@ export default function PendingSubmissionsPage() {
     setProcessing(submissionId)
 
     try {
-      console.log('[handleApprove] Approving submission:', submissionId)
-      console.log('[handleApprove] isOfficer from context:', isOfficer)
-      console.log('[handleApprove] activeGuild:', activeGuild?.id)
-
       // First, verify we can see the submission (SELECT policy check)
       const { data: existingData, error: selectError } = await supabase
         .from('loot_submissions')
@@ -159,11 +155,8 @@ export default function PendingSubmissionsPage() {
         .eq('id', submissionId)
         .single()
 
-      console.log('[handleApprove] SELECT check:', { existingData, selectError })
-
       // Get current user ID
       const { data: { user } } = await supabase.auth.getUser()
-      console.log('[handleApprove] Current user:', user?.id)
 
       // Check current user's membership/role in the submission's guild
       const { data: membershipData, error: membershipError } = await supabase
@@ -180,12 +173,6 @@ export default function PendingSubmissionsPage() {
 
       // Filter to just current user's memberships
       const userMemberships = membershipData?.filter((m: any) => m.character?.user_id === user?.id)
-      console.log('[handleApprove] User memberships in submission guild:', {
-        allMemberships: membershipData?.length,
-        userMemberships,
-        membershipError,
-        submissionGuildId: existingData?.guild_id
-      })
 
       if (selectError || !existingData) {
         console.error('[handleApprove] Cannot find submission - SELECT policy may be blocking')
@@ -197,8 +184,6 @@ export default function PendingSubmissionsPage() {
         .update({ status: 'approved', updated_at: new Date().toISOString() })
         .eq('id', submissionId)
         .select()
-
-      console.log('[handleApprove] UPDATE result:', { data, error, count })
 
       if (error) {
         console.error('[handleApprove] Supabase error:', error)
@@ -230,15 +215,11 @@ export default function PendingSubmissionsPage() {
         setProcessing(submissionId)
 
         try {
-          console.log('[handleReject] Rejecting submission:', submissionId)
-
           const { data, error, count } = await supabase
             .from('loot_submissions')
             .update({ status: 'rejected', updated_at: new Date().toISOString() })
             .eq('id', submissionId)
             .select()
-
-          console.log('[handleReject] Result:', { data, error, count })
 
           if (error) {
             console.error('[handleReject] Supabase error:', error)

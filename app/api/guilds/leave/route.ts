@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
       .select('id')
       .eq('user_id', user.id)
 
-    let characterMemberships: any[] = []
+    let characterMemberships: { id: string; character_id: string }[] = []
     if (userCharacters && userCharacters.length > 0) {
       const characterIds = userCharacters.map(c => c.id)
       const { data: charMemberships } = await supabase

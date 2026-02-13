@@ -34,8 +34,6 @@ export async function POST(request: Request) {
       }, { status: 400 })
     }
 
-    console.log('Discord verification - User ID:', user.id, 'Discord ID:', discordId)
-
     // Update user preferences with verification status
     const { error: updateError } = await supabase
       .from('user_preferences')

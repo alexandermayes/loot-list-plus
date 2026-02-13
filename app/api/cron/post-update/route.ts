@@ -92,7 +92,6 @@ export async function GET(request: NextRequest) {
       headers: { Authorization: `Bearer ${redisToken}` },
     })
 
-    console.log(`[post-update] Posted to Discord: ${latest.date} (${latest.items.length} items)`)
     return NextResponse.json({ sent: true, date: latest.date, items: latest.items.length })
   } catch (error) {
     console.error('[post-update] Error:', error)

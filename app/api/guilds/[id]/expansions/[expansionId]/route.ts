@@ -130,7 +130,7 @@ export async function PATCH(
     }
 
     // Build expansion update object
-    const expansionUpdate: Record<string, any> = {}
+    const expansionUpdate: Record<string, string | number | null> = {}
 
     if (raidStartDate !== undefined) {
       expansionUpdate.raid_start_date = raidStartDate

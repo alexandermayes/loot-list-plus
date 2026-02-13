@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button'
 import { Select } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { allRoles, getRoleDisplayName, type Role } from '@/utils/spec-role-mapping'
+import { useNotification } from '@/app/contexts/NotificationContext'
 
 // Lazy load the modal to reduce initial bundle size
 const PrioListItemModal = dynamic(() => import('@/app/components/PrioListItemModal').then(mod => ({ default: mod.PrioListItemModal })), {
@@ -131,6 +132,7 @@ export default function PriorityListTab() {
 
   const supabase = createClient()
   const { activeGuild, loading: guildLoading, isOfficer } = useGuildContext()
+  const { showNotification } = useNotification()
 
   // Get unique phases from raid tiers
   const availablePhases = useMemo(() => {
@@ -238,6 +240,7 @@ export default function PriorityListTab() {
 
       } catch (error) {
         console.error('Error loading data:', error)
+        showNotification('error', 'Couldn\'t load priority list data. Check your connection and try again.')
       }
 
       setInitialLoading(false)
@@ -292,6 +295,7 @@ export default function PriorityListTab() {
         setPriorities(allPriorities)
       } catch (error) {
         console.error('Error loading items and priorities:', error)
+        showNotification('error', 'Couldn\'t load items and priorities. Try again.')
       }
 
       setContentLoading(false)
@@ -409,6 +413,7 @@ export default function PriorityListTab() {
       }
     } catch (error) {
       console.error('Error saving priority:', error)
+      showNotification('error', 'Couldn\'t save priority. Try again.')
     }
   }
 
@@ -430,6 +435,7 @@ export default function PriorityListTab() {
       }
     } catch (error) {
       console.error('Error clearing priority:', error)
+      showNotification('error', 'Couldn\'t clear priority. Try again.')
     }
   }
 

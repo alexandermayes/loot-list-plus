@@ -120,13 +120,19 @@ export async function GET(request: NextRequest) {
     }
 
     // Convert awarded items to a similar format and collect wowhead_ids
-    const awardedWowheadIds = (awardedItems || []).map((item: any) => ({
+    interface AwardedItemRow {
+      id: string
+      awarded_date: string
+      loot_items: { wowhead_id: number; name: string; item_slot: string } | null
+    }
+
+    const awardedWowheadIds = ((awardedItems || []) as unknown as AwardedItemRow[]).map((item) => ({
       wowhead_id: item.loot_items?.wowhead_id,
       item_name: item.loot_items?.name,
       slot: item.loot_items?.item_slot,
       awarded_date: item.awarded_date,
       source: 'loot_history' as const
-    })).filter((item: any) => item.wowhead_id)
+    })).filter((item) => item.wowhead_id)
 
     return NextResponse.json({
       character_id: characterId,

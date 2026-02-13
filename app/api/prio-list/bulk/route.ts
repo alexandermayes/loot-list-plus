@@ -52,8 +52,8 @@ export async function POST(request: Request) {
     }
 
     const defaultBonuses = priority_bonuses || { role: 5, class: 3, character: 2 }
-    const results: any[] = []
-    const errors: any[] = []
+    const results: Record<string, unknown>[] = []
+    const errors: { item_id: number; error: string }[] = []
 
     // Process each priority update
     for (const priority of priorities as BulkPriorityUpdate[]) {
@@ -88,7 +88,8 @@ export async function POST(request: Request) {
             .single()
 
           if (error) {
-            errors.push({ item_id: priority.item_id, error: error.message })
+            console.error(`Error updating priority for item ${priority.item_id}:`, error)
+            errors.push({ item_id: priority.item_id, error: 'Failed to update priority' })
           } else {
             results.push(data)
           }
@@ -101,13 +102,15 @@ export async function POST(request: Request) {
             .single()
 
           if (error) {
-            errors.push({ item_id: priority.item_id, error: error.message })
+            console.error(`Error inserting priority for item ${priority.item_id}:`, error)
+            errors.push({ item_id: priority.item_id, error: 'Failed to save priority' })
           } else {
             results.push(data)
           }
         }
-      } catch (err: any) {
-        errors.push({ item_id: priority.item_id, error: err.message })
+      } catch (err: unknown) {
+        console.error(`Unexpected error processing priority for item ${priority.item_id}:`, err)
+        errors.push({ item_id: priority.item_id, error: 'Failed to process priority' })
       }
     }
 

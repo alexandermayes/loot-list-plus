@@ -57,7 +57,6 @@ export async function POST(request: NextRequest) {
 
       if (guildToKeep) {
         keepGuildId = guildToKeep.id
-        console.log(`Keeping guild: ${keepGuildName} (${keepGuildId})`)
       }
     }
 
@@ -76,7 +75,7 @@ export async function POST(request: NextRequest) {
 
     if (membersError) {
       console.error('Error deleting guild members:', membersError)
-      return NextResponse.json({ error: membersError.message }, { status: 500 })
+      return NextResponse.json({ error: 'Couldn\'t delete guild members. Try again.' }, { status: 500 })
     }
 
     // Delete character guild memberships
@@ -148,7 +147,7 @@ export async function POST(request: NextRequest) {
 
     if (guildsError) {
       console.error('Error deleting guilds:', guildsError)
-      return NextResponse.json({ error: guildsError.message }, { status: 500 })
+      return NextResponse.json({ error: 'Couldn\'t delete guilds. Try again.' }, { status: 500 })
     }
 
     return NextResponse.json({

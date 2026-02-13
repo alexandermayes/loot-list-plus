@@ -97,7 +97,6 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    console.log(`Posted update to Discord: ${date} (${items.length} items)`)
     return NextResponse.json({
       sent: true,
       message: 'Update posted to Discord'

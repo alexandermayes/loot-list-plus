@@ -51,14 +51,12 @@ export default function DiscordJoinPage() {
 
       // Auto-verify if user logged in with Discord but not verified yet
       if (!preferences?.discord_verified) {
-        console.log('User not verified, attempting auto-verification on page load...')
         try {
           const verifyResponse = await fetch('/api/verify-discord', {
             method: 'POST'
           })
 
           if (verifyResponse.ok) {
-            console.log('Auto-verification successful on page load')
             setDiscordVerified(true)
           } else {
             setDiscordVerified(false)

@@ -60,7 +60,8 @@ export async function GET() {
     if (raidTiersError && raidTiersError.code === '42703') {
       results.push('is_guild_active column needs to be added via SQL Editor')
     } else if (raidTiersError) {
-      results.push(`raid_tiers migration: ${raidTiersError.message}`)
+      console.error('raid_tiers migration error:', raidTiersError)
+      results.push('raid_tiers migration failed')
     } else {
       results.push(`raid_tiers is_guild_active: OK (${updatedTiers?.length || 0} updated)`)
     }

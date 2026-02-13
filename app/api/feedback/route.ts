@@ -245,7 +245,6 @@ export async function POST(request: Request) {
         if (githubResponse.ok) {
           const githubData = await githubResponse.json()
           githubIssueNumber = githubData.number
-          console.log('GitHub issue created:', githubIssueNumber)
         } else {
           const errorText = await githubResponse.text()
           console.error('GitHub issue creation failed:', githubResponse.status, errorText)

@@ -67,7 +67,7 @@ async function handleRequest() {
       })
 
     if (updateError) {
-      return NextResponse.json({ error: updateError.message }, { status: 500 })
+      return NextResponse.json({ error: 'Couldn\'t update guild icon. Try again.' }, { status: 500 })
     }
 
     return NextResponse.json({
@@ -75,7 +75,8 @@ async function handleRequest() {
       message: 'Guild icon updated successfully',
       icon_url: data.iconUrl
     })
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+  } catch (error: unknown) {
+    console.error('Error in fix-guild-icon:', error)
+    return NextResponse.json({ error: 'Something went wrong. Try again.' }, { status: 500 })
   }
 }

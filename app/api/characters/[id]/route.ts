@@ -153,7 +153,16 @@ export async function PUT(
     }
 
     // Update character
-    const updateData: any = {
+    const updateData: {
+      updated_at: string
+      name?: string
+      realm?: string | null
+      class_id?: string
+      spec_id?: string | null
+      level?: number
+      is_main?: boolean
+      region?: string
+    } = {
       updated_at: new Date().toISOString(),
     }
 
@@ -362,7 +371,6 @@ export async function DELETE(
       )
     }
 
-    console.log('Character deleted successfully:', id)
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error('Error in DELETE /api/characters/[id]:', error)

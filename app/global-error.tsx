@@ -17,7 +17,7 @@ export default function GlobalError({
   // since it replaces the root layout when triggered
   return (
     <html lang="en">
-      <body className="bg-[#0a0a0c] text-[#f5f5f5]">
+      <body className="bg-[#0a0a0b] text-[#e4e4e7]">
         <div className="min-h-screen flex flex-col">
           {/* Simple Header */}
           <header className="border-b border-[#2a2a2e] bg-[#111114]">
@@ -51,11 +51,11 @@ export default function GlobalError({
 
               {/* Message */}
               <div className="space-y-3">
-                <h1 className="text-[32px] font-bold tracking-tight">
-                  Something went wrong
+                <h1 className="text-[32px] font-bold tracking-tight text-white">
+                  Something broke
                 </h1>
                 <p className="text-[16px] text-[#a1a1aa]">
-                  A critical error occurred. Try refreshing or head back home.
+                  A critical error occurred. Hit retry or hearth back home.
                 </p>
               </div>
 

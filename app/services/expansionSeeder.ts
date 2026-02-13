@@ -192,15 +192,9 @@ export async function seedExpansionForGuild(
   }
 
   try {
-    console.log(`[SEEDER] Starting seeding for ${expansionName}`)
-    console.log(`[SEEDER] Guild ID: ${guildId}`)
-    console.log(`[SEEDER] Expansion data found:`, !!expansionData)
-    console.log(`[SEEDER] Number of raids:`, expansionData.raids.length)
-
     // Check if guild already has this expansion
     const alreadyHas = await guildHasExpansion(supabase, guildId, expansionData.displayName)
     if (alreadyHas) {
-      console.log(`[SEEDER] Guild already has ${expansionData.displayName}`)
       return {
         expansionId: '',
         error: `Guild already has ${expansionData.displayName}. Each expansion can only be added once per guild.`
@@ -208,7 +202,6 @@ export async function seedExpansionForGuild(
     }
 
     // 1. Create the expansion record
-    console.log(`[SEEDER] Creating expansion record...`)
     let expansion: { id: string }
 
     if (useServiceRole) {
@@ -224,10 +217,9 @@ export async function seedExpansionForGuild(
 
       if (expError) {
         console.error('[SEEDER] Error creating expansion:', expError)
-        return { expansionId: '', error: `Failed to create expansion: ${expError.message}` }
+        return { expansionId: '', error: 'Failed to create expansion' }
       }
 
-      console.log(`[SEEDER] Expansion created with ID: ${expData.id}`)
       expansion = { id: expData.id }
     } else {
       // Use RPC when using regular client (bypasses RLS with auth checks)
@@ -239,7 +231,7 @@ export async function seedExpansionForGuild(
 
       if (expError) {
         console.error('Error creating expansion:', expError)
-        return { expansionId: '', error: `Failed to create expansion: ${expError.message}` }
+        return { expansionId: '', error: 'Failed to create expansion' }
       }
 
       expansion = { id: expansionId }
@@ -259,9 +251,7 @@ export async function seedExpansionForGuild(
     }
 
     // 3. Create raid tiers with their loot items
-    console.log(`[SEEDER] Creating ${expansionData.raids.length} raid tiers...`)
     for (const raid of expansionData.raids) {
-      console.log(`[SEEDER] Creating raid tier: ${raid.name} with ${raid.bosses.length} bosses`)
 
       // Create the raid tier
       // Note: is_active is kept for backward compatibility, but master_sheet_visible controls visibility
@@ -282,8 +272,6 @@ export async function seedExpansionForGuild(
         console.error(`[SEEDER] Error creating raid tier ${raid.name}:`, tierError)
         continue // Skip this raid but continue with others
       }
-
-      console.log(`[SEEDER] Raid tier ${raid.name} created with ID: ${tier.id}`)
 
       // 4. Prepare all loot items for this raid tier
       const lootItems = raid.bosses.flatMap(boss =>
@@ -319,7 +307,6 @@ export async function seedExpansionForGuild(
 
       // 5. Bulk insert all loot items for this raid tier
       if (lootItems.length > 0) {
-        console.log(`[SEEDER] Inserting ${lootItems.length} loot items for ${raid.name}`)
         const { error: lootError } = await supabase
           .from('loot_items')
           .insert(lootItems)
@@ -327,19 +314,16 @@ export async function seedExpansionForGuild(
         if (lootError) {
           console.error(`[SEEDER] Error inserting loot items for ${raid.name}:`, lootError)
           // Continue even if loot items fail - the raid tier structure is still created
-        } else {
-          console.log(`[SEEDER] Successfully inserted ${lootItems.length} items for ${raid.name}`)
         }
       }
     }
 
-    console.log(`[SEEDER] Seeding complete for ${expansionName}. Expansion ID: ${expansion.id}`)
     return { expansionId: expansion.id }
   } catch (error: any) {
     console.error('Unexpected error in seedExpansionForGuild:', error)
     return {
       expansionId: '',
-      error: `Unexpected error: ${error.message || 'Unknown error occurred'}`
+      error: 'Something went wrong while setting up the expansion'
     }
   }
 }

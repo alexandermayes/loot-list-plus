@@ -133,6 +133,7 @@ export default function MemberManager() {
       setRoles(data || [])
     } catch (error: any) {
       console.error('Error loading roles:', error)
+      showNotification('error', 'Couldn\'t load guild roles. Showing default roles instead.')
       // Fall back to default roles on any error
       setRoles([
         { id: '1', name: 'Member', color_hex: '#a1a1a1', position: 0, is_default: true },

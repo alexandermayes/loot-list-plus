@@ -58,7 +58,6 @@ export default function WelcomeScreen() {
 
     // If not verified but user logged in with Discord, auto-verify them
     if (!preferences?.discord_verified) {
-      console.log('User not verified, attempting auto-verification...')
       try {
         const verifyResponse = await fetch('/api/verify-discord', {
           method: 'POST'
@@ -71,7 +70,6 @@ export default function WelcomeScreen() {
           return
         }
 
-        console.log('Auto-verification successful')
       } catch (err) {
         console.error('Auto-verification failed:', err)
         setDiscordError('Discord verification required. Please go to your Profile to verify your Discord account.')

@@ -2,6 +2,15 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient, getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 
+/** Partial shape of a guild object from the Discord API (GET /users/@me/guilds) */
+interface DiscordGuild {
+  id: string
+  name: string
+  icon: string | null
+  owner: boolean
+  permissions: string
+}
+
 // POST - Join guild via Discord verification
 export async function POST(request: NextRequest) {
   try {
@@ -64,11 +73,9 @@ export async function POST(request: NextRequest) {
     let providerToken = session?.provider_token
 
     if (!providerToken) {
-      console.log('[DISCORD JOIN] No provider_token, attempting refresh...')
       const { data: { session: refreshedSession }, error: refreshError } = await supabase.auth.refreshSession()
 
       if (refreshError || !refreshedSession?.provider_token) {
-        console.log('[DISCORD JOIN] Token refresh failed:', refreshError?.message)
         return NextResponse.json(
           { error: 'Discord connection expired. Please log in again to reconnect.', code: 'discord_token_expired' },
           { status: 403 }
@@ -76,11 +83,10 @@ export async function POST(request: NextRequest) {
       }
 
       providerToken = refreshedSession.provider_token
-      console.log('[DISCORD JOIN] Got provider_token after refresh')
     }
 
     // Fetch user's Discord guilds from Discord API
-    let discordGuilds: any[] = []
+    let discordGuilds: DiscordGuild[] = []
     try {
       const discordResponse = await fetch('https://discord.com/api/v10/users/@me/guilds', {
         headers: {
@@ -115,11 +121,10 @@ export async function POST(request: NextRequest) {
 
     // Verify user is in the Discord server
     const isInDiscordServer = discordGuilds.some(
-      (dg: any) => dg.id === guild.discord_server_id
+      (dg) => dg.id === guild.discord_server_id
     )
 
     if (!isInDiscordServer) {
-      console.log(`User not in Discord server ${guild.discord_server_id}. User's guilds:`, discordGuilds.map(g => g.id))
       return NextResponse.json(
         { error: 'You must be a member of this guild\'s Discord server' },
         { status: 403 }
@@ -141,8 +146,6 @@ export async function POST(request: NextRequest) {
     // If user has no properly set up characters, join them to the guild anyway
     // but mark that they need to create a character
     if (!existingCharacters || existingCharacters.length === 0) {
-      console.log('[DISCORD JOIN] User has no characters, joining guild in pending state')
-
       // Set the guild as their active guild even without a character
       // This allows the sidebar to show the guild while prompting for character creation
       await serviceSupabase
@@ -163,7 +166,6 @@ export async function POST(request: NextRequest) {
     }
 
     const characterId = existingCharacters[0].id
-    console.log('[DISCORD JOIN] Using existing character:', characterId)
 
     // Check if character has any membership (active or inactive) in this guild
     const { data: existingMembership } = await serviceSupabase
@@ -176,7 +178,6 @@ export async function POST(request: NextRequest) {
     if (existingMembership) {
       if (existingMembership.is_active) {
         // Already an active member - just set as active guild and return success
-        console.log('[DISCORD JOIN] Already a member, setting as active guild')
         await serviceSupabase
           .from('user_active_characters')
           .upsert({
@@ -194,7 +195,6 @@ export async function POST(request: NextRequest) {
       }
 
       // Reactivate inactive membership (user rejoining)
-      console.log('[DISCORD JOIN] Reactivating inactive membership:', existingMembership.id)
       const { error: reactivateError } = await serviceSupabase
         .from('character_guild_memberships')
         .update({
@@ -208,7 +208,7 @@ export async function POST(request: NextRequest) {
       if (reactivateError) {
         console.error('[DISCORD JOIN] Error reactivating membership:', reactivateError)
         return NextResponse.json(
-          { error: `Failed to rejoin guild: ${reactivateError.message}` },
+          { error: 'Couldn\'t rejoin guild. Try again or contact an officer.' },
           { status: 500 }
         )
       }
@@ -223,8 +223,6 @@ export async function POST(request: NextRequest) {
           updated_at: new Date().toISOString()
         })
 
-      console.log('[DISCORD JOIN] Guild rejoin complete!')
-
       return NextResponse.json({
         success: true,
         guild_id: guild_id,
@@ -233,7 +231,6 @@ export async function POST(request: NextRequest) {
     }
 
     // Create character guild membership
-    console.log('[DISCORD JOIN] Creating membership for character:', characterId, 'guild:', guild_id)
     const { error: memberError } = await serviceSupabase
       .from('character_guild_memberships')
       .insert({
@@ -248,13 +245,12 @@ export async function POST(request: NextRequest) {
     if (memberError) {
       console.error('[DISCORD JOIN] Error creating character guild membership:', memberError)
       return NextResponse.json(
-        { error: `Failed to join guild: ${memberError.message}` },
+        { error: 'Couldn\'t join guild. Try again or contact an officer.' },
         { status: 500 }
       )
     }
 
     // Set as active character and guild for user
-    console.log('[DISCORD JOIN] Setting active character and guild')
     await serviceSupabase
       .from('user_active_characters')
       .upsert({
@@ -263,8 +259,6 @@ export async function POST(request: NextRequest) {
         active_guild_id: guild_id,
         updated_at: new Date().toISOString()
       })
-
-    console.log('[DISCORD JOIN] Guild join complete!')
 
     // Check if character needs setup (no class_id means they need to configure it)
     const { data: characterData } = await serviceSupabase

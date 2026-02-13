@@ -267,7 +267,11 @@ export async function GET(request: NextRequest) {
       // Count unique characters per item
       if (submissionItems) {
         const charactersByItem: Record<string, Set<string>> = {}
-        submissionItems.forEach((si: any) => {
+        interface SubmissionItemRow {
+          loot_item_id: string
+          loot_submissions: { character_id: string } | null
+        }
+        ;(submissionItems as unknown as SubmissionItemRow[]).forEach((si) => {
           const itemId = si.loot_item_id
           const charId = si.loot_submissions?.character_id
           if (itemId && charId) {
@@ -283,38 +287,6 @@ export async function GET(request: NextRequest) {
         })
       }
     }
-
-    // Debug: Log character info
-    console.log('[loot-items] Character:', {
-      class_id: character.class_id,
-      spec_id: character.spec_id,
-      className
-    })
-
-    // Debug: Log bracket filtering stats
-    const bracketStats = {
-      primary: filteredItemsWithSpecType.filter(i => i.character_spec_type === 'primary').length,
-      secondary: filteredItemsWithSpecType.filter(i => i.character_spec_type === 'secondary').length,
-      notPriod: filteredItemsWithSpecType.filter(i => i.character_spec_type === null && i.is_allocated).length,
-      unallocated: filteredItemsWithSpecType.filter(i => !i.is_allocated).length,
-      hasPrimaryOnly: filteredItemsWithSpecType.filter(i => i.has_primary_only).length,
-      total: filteredItemsWithSpecType.length
-    }
-    console.log('[loot-items] Bracket filtering stats:', bracketStats)
-
-    // Debug: Log a few example items with their bracket fields
-    const itemsWithClasses = filteredItemsWithSpecType.filter(i => i.is_allocated)
-    console.log('[loot-items] Allocated items:', itemsWithClasses.length)
-    itemsWithClasses.slice(0, 5).forEach(i => {
-      const classes = i.loot_item_classes as LootItemClassRestriction[]
-      console.log(`[loot-items] Item "${i.name}": spec_type=${i.character_spec_type}, allocated=${i.is_allocated}, primaryOnly=${i.has_primary_only}`,
-        ', entries=', classes.map(c => ({ spec_id: c.spec_id?.slice(0, 8), spec_type: c.spec_type })))
-    })
-
-    // Debug: Log class-agnostic items
-    const classAgnosticItems = filteredItemsWithSpecType.filter(i => isClassAgnosticSlot(i.item_slot))
-    console.log('[loot-items] Class-agnostic items:', classAgnosticItems.length,
-      classAgnosticItems.slice(0, 3).map(i => ({ name: i.name, slot: i.item_slot, spec_type: i.character_spec_type })))
 
     // Merge consensus counts and raid tier name into response
     const itemsWithConsensus = filteredItemsWithSpecType.map(item => {

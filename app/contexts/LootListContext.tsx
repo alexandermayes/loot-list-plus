@@ -588,15 +588,6 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
       let submissionId = currentSubmissionData?.submission?.id
 
       // Use upsert to handle race conditions and unique constraint
-      console.log('[doAutoSave] Upserting submission:', {
-        character_id: activeCharacter.id,
-        guild_id: activeGuild.id,
-        expansion_id: targetExpansionId,
-        phase: selectedPhase,
-        status: targetStatus,
-        existingId: submissionId
-      })
-
       const { data: upsertedSub, error: subError } = await supabase
         .from('loot_submissions')
         .upsert({
@@ -617,12 +608,10 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
         console.error('[doAutoSave] Failed to upsert submission:', subError)
         throw new Error(subError.message)
       }
-      console.log('[doAutoSave] Upserted submission:', upsertedSub.id)
       submissionId = upsertedSub.id
 
       // Delete existing rankings
-      console.log('[doAutoSave] Deleting existing items for submission:', submissionId)
-      const { error: deleteError, count: deleteCount } = await supabase
+      const { error: deleteError } = await supabase
         .from('loot_submission_items')
         .delete()
         .eq('submission_id', submissionId)
@@ -631,8 +620,6 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
         console.error('[doAutoSave] Failed to delete items:', deleteError)
         throw new Error(`Couldn't delete items: ${deleteError.message}`)
       }
-      console.log('[doAutoSave] Deleted items, rows affected:', deleteCount)
-
       // Insert new rankings
       const rankingsToInsert = Object.entries(currentRankings).map(([key, loot_item_id]) => {
         const [rankStr, slotStr] = key.split('-')
@@ -645,7 +632,6 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
       })
 
       if (rankingsToInsert.length > 0) {
-        console.log('[doAutoSave] Upserting items:', rankingsToInsert.length, 'for submission:', submissionId)
         const { data: upsertedItems, error: itemsError } = await supabase
           .from('loot_submission_items')
           .upsert(rankingsToInsert, { onConflict: 'submission_id,rank,slot', ignoreDuplicates: false })
@@ -655,20 +641,15 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
           console.error('[doAutoSave] Failed to upsert items:', itemsError)
           throw new Error(itemsError.message)
         }
-        console.log('[doAutoSave] Items upserted:', upsertedItems?.length)
-
         // Verify items were actually saved
-        const { data: verifyItems, error: verifyError } = await supabase
+        const { data: verifyItems } = await supabase
           .from('loot_submission_items')
           .select('id, submission_id, rank, slot')
           .eq('submission_id', submissionId)
 
-        console.log('[doAutoSave] Verification:', {
-          requestedCount: rankingsToInsert.length,
-          upsertedCount: upsertedItems?.length,
-          verifiedCount: verifyItems?.length,
-          verifyError
-        })
+        if (verifyItems && verifyItems.length !== rankingsToInsert.length) {
+          console.warn('[doAutoSave] Item count mismatch! Some items may not have been saved.')
+        }
       }
 
       // Mark this state as saved (store object copy for value comparison)
@@ -699,13 +680,6 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
   // Uses ref to avoid re-triggering when callback is recreated
   useEffect(() => {
     if (!activeCharacter || selectedPhase === null || !targetExpansionId || !activeGuild?.id || !initialLoadComplete) {
-      console.log('[autoSave effect] Skipping - missing required data:', {
-        hasCharacter: !!activeCharacter,
-        selectedPhase,
-        targetExpansionId,
-        hasGuild: !!activeGuild?.id,
-        initialLoadComplete
-      })
       return
     }
 
@@ -717,7 +691,6 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
       const matchesLastSaved = currentKeys.length === savedKeys.length &&
           currentKeys.every(key => rankings[key] === lastSaved[key])
       if (matchesLastSaved) {
-        console.log('[autoSave effect] Skipping - matches last saved')
         return
       }
     }
@@ -729,13 +702,10 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
     const matchesInitial = currentKeys.length === initialKeys.length &&
         currentKeys.every(key => rankings[key] === initial[key])
     if (matchesInitial) {
-      console.log('[autoSave effect] Skipping - matches initial state')
       return
     }
 
-    console.log('[autoSave effect] Changes detected, starting 1s debounce timer')
     const timer = setTimeout(() => {
-      console.log('[autoSave effect] Timer fired, calling doAutoSave')
       autoSaveRef.current()
     }, 1000) // 1 second debounce
 
@@ -756,15 +726,6 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
 
       // Use upsert to handle race conditions and unique constraint
       const newStatus = submit ? 'pending' : 'draft'
-      console.log('[saveSubmission] Upserting submission:', {
-        character_id: activeCharacter.id,
-        guild_id: activeGuild.id,
-        expansion_id: targetExpansionId,
-        phase: selectedPhase,
-        status: newStatus,
-        existingId: submissionId
-      })
-
       const { data: upsertedSub, error: subError } = await supabase
         .from('loot_submissions')
         .upsert({
@@ -786,11 +747,9 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
         console.error('[saveSubmission] Failed to upsert submission:', subError)
         throw subError
       }
-      console.log('[saveSubmission] Upserted submission:', upsertedSub.id)
       submissionId = upsertedSub.id
 
       // Delete and re-insert rankings
-      console.log('[saveSubmission] Deleting existing items for submission:', submissionId)
       const { error: deleteError } = await supabase
         .from('loot_submission_items')
         .delete()
@@ -812,7 +771,6 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
       })
 
       if (rankingsToInsert.length > 0) {
-        console.log('[saveSubmission] Inserting items:', rankingsToInsert.length, 'for submission:', submissionId)
         const { data: insertedItems, error: itemsError } = await supabase
           .from('loot_submission_items')
           .insert(rankingsToInsert)
@@ -822,20 +780,11 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
           console.error('[saveSubmission] Failed to insert items:', itemsError)
           throw itemsError
         }
-        console.log('[saveSubmission] Items inserted successfully:', insertedItems?.length)
-
         // Verify items were actually saved by querying them back
-        const { data: verifyItems, error: verifyError } = await supabase
+        const { data: verifyItems } = await supabase
           .from('loot_submission_items')
           .select('id, submission_id, rank, slot, loot_item_id')
           .eq('submission_id', submissionId)
-
-        console.log('[saveSubmission] Verification query:', {
-          requestedCount: rankingsToInsert.length,
-          insertedCount: insertedItems?.length,
-          verifiedCount: verifyItems?.length,
-          verifyError
-        })
 
         if (verifyItems && verifyItems.length !== rankingsToInsert.length) {
           console.warn('[saveSubmission] Item count mismatch! Some items may not have been saved.')

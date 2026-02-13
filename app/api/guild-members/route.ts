@@ -91,7 +91,7 @@ export async function GET(request: NextRequest) {
     // Create role position map (fallback to defaults if no custom roles)
     const rolePositionMap = new Map<string, number>()
     if (guildRoles && guildRoles.length > 0) {
-      guildRoles.forEach((r: any) => rolePositionMap.set(r.name, r.position))
+      guildRoles.forEach((r) => rolePositionMap.set(r.name, r.position))
     } else {
       // Default positions
       rolePositionMap.set('Guild Master', ROLE_POSITIONS.GUILD_MASTER)
@@ -100,8 +100,16 @@ export async function GET(request: NextRequest) {
     }
 
     // Group characters by user_id
+    interface CharacterData {
+      id: string
+      name: string
+      is_main: boolean
+      class: { name: string; color_hex: string } | null
+      spec: { name: string } | null
+    }
+
     const userCharacterMap = new Map<string, {
-      characters: any[]
+      characters: CharacterData[]
       role: string
       joined_at: string
       joined_via: string

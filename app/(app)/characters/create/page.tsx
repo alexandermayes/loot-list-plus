@@ -12,6 +12,7 @@ import { Select } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { CharacterFormSkeleton } from '@/components/ui/skeletons'
+import { useNotification } from '@/app/contexts/NotificationContext'
 
 interface WowClass {
   id: string
@@ -28,6 +29,7 @@ interface ClassSpec {
 export default function CreateCharacterPage() {
   const router = useRouter()
   const { activeGuild, refreshCharacters } = useGuildContext()
+  const { showNotification } = useNotification()
   const supabase = createClient()
 
   const [name, setName] = useState('')
@@ -144,9 +146,11 @@ export default function CreateCharacterPage() {
 
           if (!membershipResponse.ok) {
             console.error('Failed to add character to guild')
+            showNotification('error', 'Character created, but couldn\'t add to guild. Try adding manually from the character page.')
           }
         } catch (membershipErr) {
           console.error('Error adding character to guild:', membershipErr)
+          showNotification('error', 'Character created, but couldn\'t add to guild. Try adding manually from the character page.')
         }
       }
 

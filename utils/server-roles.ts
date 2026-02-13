@@ -3,6 +3,7 @@
  * Uses position-based checks instead of role names
  */
 
+import { SupabaseClient } from '@supabase/supabase-js'
 import { ROLE_POSITIONS, DEFAULT_ROLES, isOfficerPosition, isGuildMasterPosition } from './roles'
 
 interface GuildRole {
@@ -13,7 +14,7 @@ interface GuildRole {
 /**
  * Get guild roles from database, with fallback to defaults
  */
-export async function getGuildRoles(supabase: any, guildId: string): Promise<GuildRole[]> {
+export async function getGuildRoles(supabase: SupabaseClient, guildId: string): Promise<GuildRole[]> {
   const { data: roles, error } = await supabase
     .from('guild_roles')
     .select('name, position')
@@ -44,7 +45,7 @@ export function getRolePositionFromRoles(roleName: string, roles: GuildRole[]): 
  * This is the main function to use in API routes
  */
 export async function verifyOfficerPermissions(
-  serviceSupabase: any,
+  serviceSupabase: SupabaseClient,
   userId: string,
   guildId: string
 ): Promise<{ hasPermission: boolean; role?: string; position?: number; error?: string }> {
@@ -58,7 +59,7 @@ export async function verifyOfficerPermissions(
     return { hasPermission: false, error: 'No characters found' }
   }
 
-  const characterIds = userCharacters.map((c: any) => c.id)
+  const characterIds = userCharacters.map((c: { id: string }) => c.id)
 
   // Get ALL of user's memberships in this guild (they may have multiple characters with different roles)
   const { data: memberships } = await serviceSupabase
@@ -98,7 +99,7 @@ export async function verifyOfficerPermissions(
  * Check if user has guild master-level permissions in a guild
  */
 export async function verifyGuildMasterPermissions(
-  serviceSupabase: any,
+  serviceSupabase: SupabaseClient,
   userId: string,
   guildId: string
 ): Promise<{ hasPermission: boolean; role?: string; position?: number; error?: string }> {
@@ -119,7 +120,7 @@ export async function verifyGuildMasterPermissions(
  * Check if a user is the guild creator/owner
  */
 export async function isGuildCreator(
-  serviceSupabase: any,
+  serviceSupabase: SupabaseClient,
   userId: string,
   guildId: string
 ): Promise<boolean> {
@@ -141,7 +142,7 @@ export async function isGuildCreator(
  * 4. You cannot change your own role to Guild Master (unless you're the creator)
  */
 export async function verifyRoleChangePermissions(
-  serviceSupabase: any,
+  serviceSupabase: SupabaseClient,
   callerId: string,
   targetUserId: string,
   guildId: string,
@@ -208,7 +209,7 @@ export async function verifyRoleChangePermissions(
  * 2. Cannot remove someone with position >= your own (unless you're the creator)
  */
 export async function verifyMemberRemovalPermissions(
-  serviceSupabase: any,
+  serviceSupabase: SupabaseClient,
   callerId: string,
   targetUserId: string,
   guildId: string
@@ -261,7 +262,7 @@ export async function verifyMemberRemovalPermissions(
  * Returns the highest role among all the user's characters
  */
 export async function getUserGuildRole(
-  serviceSupabase: any,
+  serviceSupabase: SupabaseClient,
   userId: string,
   guildId: string
 ): Promise<{ role: string; position: number } | null> {
@@ -275,7 +276,7 @@ export async function getUserGuildRole(
     return null
   }
 
-  const characterIds = userCharacters.map((c: any) => c.id)
+  const characterIds = userCharacters.map((c: { id: string }) => c.id)
 
   // Get ALL of user's memberships in this guild (they may have multiple characters with different roles)
   const { data: memberships } = await serviceSupabase

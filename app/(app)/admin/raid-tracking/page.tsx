@@ -178,11 +178,6 @@ export default function RaidTrackingPage() {
         const data = await response.json()
         settings = data.settings
         setGuildSettings(settings)
-        console.log('📅 Loaded guild settings:', {
-          raid_days_per_week: settings.raid_days_per_week,
-          first_raid_day: settings.first_raid_day,
-          second_raid_day: settings.second_raid_day
-        })
       }
 
       // Load guild members
@@ -229,7 +224,6 @@ export default function RaidTrackingPage() {
           }))
           .sort((a: Member, b: Member) => a.character_name.localeCompare(b.character_name))
 
-        console.log(`👥 Loaded ${formattedMembers.length} raiders with approved loot lists (out of ${membershipsData.length} total members)`)
         setMembers(formattedMembers)
       }
 
@@ -249,23 +243,9 @@ export default function RaidTrackingPage() {
     const raidScheduleSource = expansion?.raid_days_per_week != null ? expansion : settings
     const { raid_days_per_week, first_raid_day, second_raid_day, third_raid_day, fourth_raid_day, fifth_raid_day } = raidScheduleSource
 
-    console.log('🔧 Generating raid dates with schedule:', {
-      source: expansion?.raid_days_per_week != null ? 'expansion' : 'guild_settings',
-      raid_days_per_week,
-      first_raid_day,
-      second_raid_day,
-      third_raid_day,
-      fourth_raid_day,
-      fifth_raid_day,
-      expansion_name: expansion?.expansion_name,
-      raid_start_date: expansion?.raid_start_date
-    })
-
     const raidDays = [first_raid_day, second_raid_day, third_raid_day, fourth_raid_day, fifth_raid_day]
       .filter(day => day !== null && day !== undefined)
       .slice(0, raid_days_per_week)
-
-    console.log('📋 Raid days of week:', raidDays, '(0=Sun, 1=Mon, 2=Tue, 3=Wed, 4=Thu, 5=Fri, 6=Sat)')
 
     // Generate dates: from expansion raid_start_date to today only
     const dates: string[] = []
@@ -277,11 +257,6 @@ export default function RaidTrackingPage() {
       ? new Date(expansion.raid_start_date + 'T00:00:00')
       : new Date(today.getTime() - (4 * 7 * 24 * 60 * 60 * 1000))
 
-    console.log('📅 Date range for', expansion?.expansion_name + ':', {
-      startDate: startDate.toISOString().split('T')[0],
-      today: today.toISOString().split('T')[0]
-    })
-
     let currentDate = new Date(startDate)
     while (currentDate <= today) {
       if (raidDays.includes(currentDate.getDay())) {
@@ -289,8 +264,6 @@ export default function RaidTrackingPage() {
       }
       currentDate.setDate(currentDate.getDate() + 1)
     }
-
-    console.log('✅ Generated dates:', dates.length, 'raid days')
 
     // Load or create raid events
     const { data: existingEvents } = await supabase
@@ -338,22 +311,16 @@ export default function RaidTrackingPage() {
       .in('raid_date', dates)
       .order('raid_date', { ascending: false })
 
-    console.log('🎯 Loaded raid events:', allEvents?.length || 0, 'events')
     if (eventsError) {
       console.error('❌ Error loading raid events:', eventsError)
     }
 
     // Filter events to only show ones that match the current raid schedule
-    console.log('🔍 Filtering events. Current raid days:', raidDays)
     const filteredEvents = allEvents?.filter((event: RaidEvent) => {
       const eventDate = new Date(event.raid_date + 'T00:00:00')
       const eventDayOfWeek = eventDate.getDay()
-      const matchesSchedule = raidDays.includes(eventDayOfWeek)
-      console.log(`  Event ${event.raid_date} (${['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][eventDayOfWeek]}, day ${eventDayOfWeek}): ${matchesSchedule ? '✓ KEEP' : '✗ SKIP'}`)
-      return matchesSchedule
+      return raidDays.includes(eventDayOfWeek)
     }) || []
-
-    console.log('✅ Filtered to', filteredEvents.length, 'events matching current schedule')
 
     // Deduplicate by date - prefer events that already have attendance records
     let deduplicatedEvents = filteredEvents
@@ -368,8 +335,6 @@ export default function RaidTrackingPage() {
         .in('raid_event_id', eventIds)
 
       const eventsWithAttendance = new Set(attendanceCheck?.map((r: { raid_event_id: string }) => r.raid_event_id) || [])
-      console.log('🔍 Events with attendance records:', [...eventsWithAttendance])
-
       // Deduplicate by date, preferring events with attendance
       const dateMap = new Map<string, typeof filteredEvents[0]>()
       filteredEvents.forEach((event: RaidEvent) => {
@@ -385,7 +350,6 @@ export default function RaidTrackingPage() {
       deduplicatedEvents = Array.from(dateMap.values())
         .sort((a, b) => b.raid_date.localeCompare(a.raid_date)) // Maintain DESC order
 
-      console.log('✅ Deduplicated to', deduplicatedEvents.length, 'events (removed', filteredEvents.length - deduplicatedEvents.length, 'duplicates)')
     }
 
     if (deduplicatedEvents && deduplicatedEvents.length > 0) {
@@ -394,7 +358,6 @@ export default function RaidTrackingPage() {
       // Auto-expand the most recent week
       const mostRecentRaid = deduplicatedEvents[0]
       const mostRecentWeekStart = getWeekStart(mostRecentRaid.raid_date, settings.first_raid_day ?? 0)
-      console.log('📌 Auto-expanding week:', mostRecentWeekStart)
       setExpandedWeeks(new Set([mostRecentWeekStart]))
 
       // Auto-expand the first raid day in the most recent week (earliest date in that week)
@@ -405,11 +368,8 @@ export default function RaidTrackingPage() {
       raidsInMostRecentWeek.sort((a: RaidEvent, b: RaidEvent) => a.raid_date.localeCompare(b.raid_date))
       const firstRaidInWeek = raidsInMostRecentWeek[0]
 
-      console.log('📍 Auto-expanding first raid in week:', firstRaidInWeek.raid_date)
       setExpandedRaids(new Set([firstRaidInWeek.id]))
       await loadRaidAttendance(firstRaidInWeek.id)
-    } else {
-      console.log('⚠️ No raid events found')
     }
   }
 
@@ -472,8 +432,6 @@ export default function RaidTrackingPage() {
 
     // Load loot history for this raid event
     try {
-      console.log('🎁 Loading loot for raid:', raidId)
-
       // First query: get loot records with item info (no character join to avoid null FK issues)
       const { data: lootRecords, error: lootError } = await supabase
         .from('loot_history')
@@ -489,8 +447,6 @@ export default function RaidTrackingPage() {
         `)
         .eq('raid_event_id', raidId)
         .order('awarded_date', { ascending: false })
-
-      console.log('🎁 Loot query result:', { lootRecords, lootError })
 
       if (!lootError && lootRecords) {
         // Get character IDs that are not null
@@ -528,14 +484,13 @@ export default function RaidTrackingPage() {
             awarded_date: r.awarded_date
           }
         })
-        console.log('🎁 Processed loot entries:', lootEntries.length)
         setRaidLoot(prev => ({ ...prev, [raidId]: lootEntries }))
       } else {
-        console.log('❌ Loot history query error:', lootError)
         setRaidLoot(prev => ({ ...prev, [raidId]: [] }))
       }
     } catch (e) {
-      console.log('❌ Loot history loading exception:', e)
+      console.error('Loot history loading exception:', e)
+      showNotification('error', 'Couldn\'t load loot history for this raid. Try again.')
       setRaidLoot(prev => ({ ...prev, [raidId]: [] }))
     }
   }
@@ -637,16 +592,12 @@ export default function RaidTrackingPage() {
       user_id: userId,
       ...newStatus
     }
-    console.log('[cycleAttendanceState] Upserting:', payload)
-
     const { data, error, status, statusText } = await supabase
       .from('attendance_records')
       .upsert(payload, {
         onConflict: 'raid_event_id,character_id'
       })
       .select()
-
-    console.log('[cycleAttendanceState] Response:', { data, error, status, statusText })
 
     if (error) {
       console.error('Failed to save attendance:', JSON.stringify(error, null, 2))
@@ -833,8 +784,6 @@ export default function RaidTrackingPage() {
       .map(name => name.trim())
       .filter(name => name.length > 0)
 
-    console.log(`📥 Importing ${names.length} names:`, names)
-
     const linkedUpdates: any[] = []
     const unlinkedUpdates: any[] = []
     let matchedCount = 0
@@ -912,9 +861,7 @@ export default function RaidTrackingPage() {
   // Load all loot items for the current expansion
   // Returns the items array so callers can use it immediately (since setState is async)
   const loadLootItems = async (): Promise<typeof lootItems> => {
-    console.log('📦 loadLootItems called', { activeGuild: activeGuild?.id, currentExpansion: currentExpansion?.expansion_id })
     if (!activeGuild || !currentExpansion) {
-      console.log('❌ Missing guild or expansion')
       return []
     }
 
@@ -924,7 +871,6 @@ export default function RaidTrackingPage() {
       .select('id')
       .eq('expansion_id', currentExpansion.expansion_id)
 
-    console.log('📦 Found tiers:', tiers?.length || 0)
     if (!tiers || tiers.length === 0) return []
 
     const tierIds = tiers.map((t: { id: string }) => t.id)
@@ -936,7 +882,6 @@ export default function RaidTrackingPage() {
       .in('raid_tier_id', tierIds)
       .order('name')
 
-    console.log('📦 Loaded loot items:', items?.length || 0)
     if (items) {
       setLootItems(items)
       return items
@@ -1139,15 +1084,7 @@ export default function RaidTrackingPage() {
 
   // Unified import function - imports all data at once
   const importAllRaidData = async () => {
-    console.log('📥 importAllRaidData called', { showImportModal, activeGuild: activeGuild?.id })
-    console.log('📥 Data to import:', {
-      attendance: attendanceData.trim().slice(0, 100),
-      loot: lootData.trim().slice(0, 100),
-      signups: signupsData.trim().slice(0, 100)
-    })
-
     if (!showImportModal || !activeGuild) {
-      console.log('❌ Import aborted: missing modal or guild')
       return
     }
 
@@ -1163,9 +1100,6 @@ export default function RaidTrackingPage() {
     if (attendanceData.trim() || showImportModal.isEdit) {
       const names = parseMRTNames(attendanceData)
       const namesLower = names.map(n => n.toLowerCase())
-
-      console.log('📥 Parsed attendance names:', names)
-      console.log('📥 Is edit mode:', showImportModal.isEdit)
 
       const linkedUpdates: any[] = []
       const unlinkedUpdates: any[] = []
@@ -1223,7 +1157,6 @@ export default function RaidTrackingPage() {
       })
 
       if (noShowUpdates.length > 0) {
-        console.log('📥 Marking', noShowUpdates.length, 'members as No Show (not in import)')
         linkedUpdates.push(...noShowUpdates)
       }
 
@@ -1250,7 +1183,6 @@ export default function RaidTrackingPage() {
           const idsToRemove = [...linkedToRemove, ...unlinkedToRemove]
 
           if (idsToRemove.length > 0) {
-            console.log('📥 Removing', idsToRemove.length, 'attendance records no longer in list')
             const { error: removeError } = await supabase
               .from('attendance_records')
               .delete()
@@ -1264,14 +1196,11 @@ export default function RaidTrackingPage() {
       }
 
       if (linkedUpdates.length > 0) {
-        console.log('📥 Upserting linked attendance:', linkedUpdates.length, 'records')
         const { error: upsertError } = await supabase
           .from('attendance_records')
           .upsert(linkedUpdates, { onConflict: 'raid_event_id,character_id' })
         if (upsertError) {
-          console.error('❌ Attendance upsert error:', upsertError)
-        } else {
-          console.log('✅ Attendance upsert successful')
+          console.error('Attendance upsert error:', upsertError)
         }
       }
 
@@ -1288,17 +1217,12 @@ export default function RaidTrackingPage() {
       }
 
       if (unlinkedUpdates.length > 0) {
-        console.log('📥 Inserting unlinked attendance:', unlinkedUpdates.length, 'records')
-
-        const { error: insertError, data: insertData } = await supabase
+        const { error: insertError } = await supabase
           .from('attendance_records')
           .insert(unlinkedUpdates)
-          .select()
 
         if (insertError) {
-          console.error('❌ Unlinked attendance insert error:', insertError.message, insertError.code, insertError.details, insertError.hint)
-        } else {
-          console.log('✅ Unlinked attendance inserted:', insertData?.length, 'records')
+          console.error('Unlinked attendance insert error:', insertError.message, insertError.code, insertError.details, insertError.hint)
         }
       }
     }
@@ -1345,26 +1269,18 @@ export default function RaidTrackingPage() {
           .in('character_id', signupCharacterIds)
 
         if (error) {
-          console.error('❌ Signup update error:', error)
-        } else {
-          console.log('✅ Updated signups for', signupCharacterIds.length, 'members')
+          console.error('Signup update error:', error)
         }
       }
     }
 
     // Import Loot
     if (lootData.trim()) {
-      console.log('📥 Starting loot import...')
-      console.log('📥 Current expansion:', currentExpansion?.expansion_name, '(id:', currentExpansion?.expansion_id, ')')
-      console.log('📥 Available loot items in state:', lootItems.length)
-
       // Get the items to use for matching - reload if state is empty
       // We use the returned value because React state updates are async
       let itemsToUse = lootItems
       if (itemsToUse.length === 0) {
-        console.log('📥 Loot items state empty - loading items...')
         itemsToUse = await loadLootItems()
-        console.log('📥 Loaded loot items:', itemsToUse.length)
       }
 
       if (itemsToUse.length === 0) {
@@ -1389,15 +1305,11 @@ export default function RaidTrackingPage() {
         .map(line => line.trim())
         .filter(line => line.length > 0)
 
-      console.log('📥 Loot lines to process:', lines.length)
-
       for (const line of lines) {
-        console.log('📥 Processing line:', line)
         const parts = line.split(';')
         if (parts.length !== 3) {
           results.loot.failed++
           results.loot.errors.push(`Invalid format: ${line}`)
-          console.log('❌ Invalid format (expected 3 parts, got', parts.length, ')')
           continue
         }
 
@@ -1406,12 +1318,10 @@ export default function RaidTrackingPage() {
         if (!itemIdMatch) {
           results.loot.failed++
           results.loot.errors.push(`Invalid item ID: ${itemIdStr}`)
-          console.log('❌ Invalid item ID format:', itemIdStr)
           continue
         }
 
         const itemId = parseInt(itemIdMatch[1])
-        console.log('📥 Looking for item with wowhead_id:', itemId, 'in', itemsToUse.length, 'items')
         // Use itemsToUse instead of lootItems state
         const matchedItem = itemsToUse.find(item => item.wowhead_id === itemId)
         const matchedCharacter = members.find(m =>
@@ -1429,10 +1339,8 @@ export default function RaidTrackingPage() {
 
           if (directLookup && directLookup.length > 0) {
             results.loot.errors.push(`Item #${itemId} (${directLookup[0].name}) exists but not in current expansion`)
-            console.log('❌ Item exists but wrong expansion:', directLookup[0].name, 'tier:', directLookup[0].raid_tier_id)
           } else {
             results.loot.errors.push(`Item #${itemId} not in database - may need to add to loot tables`)
-            console.log('❌ Item not found in database at all')
           }
           continue
         }
@@ -1453,11 +1361,9 @@ export default function RaidTrackingPage() {
         if (matchedCharacter) {
           // Linked character - use character_id
           insertData.character_id = matchedCharacter.character_id
-          console.log('✅ Matched item:', matchedItem.name, 'to linked character:', matchedCharacter.character_name)
         } else {
           // Unlinked character - use character_name
           insertData.character_name = charName
-          console.log('⚠️ Matched item:', matchedItem.name, 'to unlinked character:', charName)
         }
 
         const { error } = await supabase
@@ -1465,7 +1371,6 @@ export default function RaidTrackingPage() {
           .insert(insertData)
 
         if (error) {
-          console.log('❌ Loot insert error:', error.message, error.code)
           if (error.code === '23505') {
             results.loot.errors.push(`${characterName.trim()} already has ${matchedItem.name}`)
           } else {
@@ -1473,16 +1378,13 @@ export default function RaidTrackingPage() {
           }
           results.loot.failed++
         } else {
-          console.log('✅ Loot insert successful')
           results.loot.success++
         }
       }
     }
 
     // Reload attendance data
-    console.log('📥 Reloading attendance data...')
     await loadRaidAttendance(showImportModal.raidId)
-    console.log('📥 Import complete! Results:', results)
 
     setImporting(false)
     setShowImportModal(null)
@@ -1818,10 +1720,6 @@ export default function RaidTrackingPage() {
 
   // Check if raid start date is in the future
   const raidStartDateInFuture = currentExpansion?.raid_start_date && currentExpansion.raid_start_date > today
-
-  console.log('📊 Raids by week:', Object.entries(raidsByWeek).map(([week, raids]) =>
-    `${week}: ${raids.map(r => r.raid_date).join(', ')}`
-  ))
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 space-y-6 font-poppins">

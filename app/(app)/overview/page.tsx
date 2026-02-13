@@ -26,6 +26,7 @@ import { useGuildContext } from '@/app/contexts/GuildContext'
 import ItemLink from '@/app/components/ItemLink'
 import { calculateAttendanceScore, getRankModifier, calculateLootScore } from '@/utils/calculations'
 import { refreshWowheadTooltips } from '@/lib/wowhead'
+import { useNotification } from '@/app/contexts/NotificationContext'
 
 // Get WoWhead class icon URL
 function getClassIconUrl(className: string | undefined): string {
@@ -123,6 +124,7 @@ export default function Dashboard() {
 
 function DashboardContent() {
   const { activeGuild, activeMember, activeCharacter, userGuilds, loading: guildLoading, isOfficer, currentExpansion, characterMemberships } = useGuildContext()
+  const { showNotification } = useNotification()
   const [raidTiers, setRaidTiers] = useState<RaidTier[]>([])
   const [loading, setLoading] = useState(true)
   const [user, setUser] = useState<any>(null)
@@ -379,6 +381,7 @@ function DashboardContent() {
 
     } catch (error) {
       console.error('Error loading dashboard data:', error)
+      showNotification('error', 'Couldn\'t load dashboard data. Check your connection and try again.')
     }
   }
 
@@ -410,9 +413,6 @@ function DashboardContent() {
           const startDate = new Date()
           startDate.setDate(startDate.getDate() - (rollingWeeks * 7))
 
-          console.log('📊 [Overview] Loading attendance for character:', characterId)
-          console.log('📊 [Overview] Rolling weeks:', rollingWeeks, 'Start date:', startDate.toISOString().split('T')[0])
-
           // New member policy: check how to handle new members
           const newMemberMode = guildSettings.new_member_mode || 'raw'
           let effectiveStartDate = startDate
@@ -431,13 +431,11 @@ function DashboardContent() {
               // Use the later of startDate or joinedAt
               if (joinedAt > startDate) {
                 effectiveStartDate = joinedAt
-                console.log('📊 [Overview] New member (' + newMemberMode + ' mode) - using join date:', membership.joined_at)
               }
             }
           }
 
           const startDateStr = effectiveStartDate.toISOString().split('T')[0]
-          console.log('📊 [Overview] New member mode:', newMemberMode, 'Effective period start:', startDateStr)
 
           // Get expansion's raid day configuration
           let raidDays: number[] = []
@@ -472,16 +470,12 @@ function DashboardContent() {
               .slice(0, (guildSettings as any).raid_days_per_week || 2)
           }
 
-          console.log('📊 [Overview] Configured raid days:', raidDays)
-
           // First get raid events for the period
           const { data: raidEventsData, error: raidError } = await supabase
             .from('raid_events')
             .select('id, raid_date')
             .eq('guild_id', activeGuild.id)
             .gte('raid_date', startDateStr)
-
-          console.log('📊 [Overview] Raid events found:', raidEventsData?.length, 'Error:', raidError)
 
           // Filter to only raids on configured raid days
           const filteredRaidEvents = raidDays.length > 0 && raidEventsData
@@ -490,8 +484,6 @@ function DashboardContent() {
                 return raidDays.includes(eventDate.getDay())
               })
             : raidEventsData
-
-          console.log('📊 [Overview] Filtered to raid days:', filteredRaidEvents?.length)
 
           if (filteredRaidEvents && filteredRaidEvents.length > 0) {
             // Handle duplicate raid events - prefer IDs with attendance records
@@ -505,7 +497,6 @@ function DashboardContent() {
               .in('raid_event_id', raidEventIds)
 
             const raidIdsWithAttendance = new Set(existingAttendance?.map((r: { raid_event_id: string }) => r.raid_event_id) || [])
-            console.log('📊 [Overview] Raid IDs with attendance:', [...raidIdsWithAttendance])
 
             // Deduplicate by date, preferring IDs that have attendance records
             type RaidEvent = { id: string; raid_date: string }
@@ -531,19 +522,12 @@ function DashboardContent() {
               .eq('character_id', characterId)
               .in('raid_event_id', deduplicatedRaidIds)
 
-            console.log('📊 [Overview] Total raids (deduplicated):', totalRaids)
-            console.log('📊 [Overview] Attendance records found:', attendanceRecords?.length, 'Error:', attError)
-            console.log('📊 [Overview] Attendance records:', attendanceRecords)
-
             if (!attError && attendanceRecords && attendanceRecords.length > 0 && totalRaids > 0) {
               attendanceScore = calculateAttendanceScore(
                 attendanceRecords,
                 totalRaids,
                 guildSettings
               )
-              console.log('📊 [Overview] Calculated attendance score:', attendanceScore)
-            } else {
-              console.log('📊 [Overview] No attendance score calculated - missing data')
             }
           }
 
@@ -734,6 +718,7 @@ function DashboardContent() {
 
     } catch (error) {
       console.error('Error loading loot priority:', error)
+      showNotification('error', 'Couldn\'t load your loot priority. Try refreshing the page.')
     }
   }
 
@@ -788,6 +773,7 @@ function DashboardContent() {
 
     } catch (error) {
       console.error('Error loading received items:', error)
+      showNotification('error', 'Couldn\'t load your received items. Try refreshing the page.')
       setReceivedItems([])
     }
   }

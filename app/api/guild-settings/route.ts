@@ -6,6 +6,87 @@ import { trackEvent, trackApiError } from '@/utils/analytics/server'
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
+// Explicit allowlist of fields that can be updated by the client.
+// Fields like id, guild_id, created_at, and updated_at are never client-modifiable.
+const ALLOWED_SETTINGS_FIELDS = [
+  // General Settings
+  'raid_days_per_week',
+  'first_raid_day',
+  'second_raid_day',
+  'third_raid_day',
+  'fourth_raid_day',
+  'fifth_raid_day',
+  'reset_date',
+  'decimal_places',
+
+  // Attendance Settings
+  'attendance_type',
+  'rolling_attendance_weeks',
+  'use_signups',
+  'signup_weight',
+
+  // Attendance Bonus Tiers
+  'max_attendance_bonus',
+  'max_attendance_threshold',
+  'middle_attendance_bonus',
+  'middle_attendance_threshold',
+  'bottom_attendance_bonus',
+  'bottom_attendance_threshold',
+
+  // Minimum Raids
+  'minimum_raid_days_enabled',
+  'minimum_raid_days',
+
+  // New Member Policy
+  'new_member_mode',
+
+  // Late/Early Penalty
+  'late_early_penalty_enabled',
+  'late_early_penalty_value',
+
+  // Bad Luck Prevention
+  'see_item_bonus',
+  'see_item_bonus_value',
+  'pass_item_bonus',
+  'pass_item_bonus_value',
+
+  // Rank, Role, Class Bonuses
+  'guild_rank_bonuses_enabled',
+  'number_of_ranks',
+  'rank_modifiers',
+  'role_bonus_priority_single_item',
+  'class_bonus_priority_single_item',
+  'raid_roles_overall_bonus_priority',
+  'single_raider_overall_bonus',
+  'single_raider_bonus_single_item',
+
+  // Donation Settings
+  'donation_bonuses_enabled',
+  'donation_cap_enabled',
+  'donation_bonus_type',
+
+  // Trial System
+  'trial_penalty_enabled',
+  'trial_penalty_value',
+  'trial_auto_promote_enabled',
+  'trial_auto_promote_weeks',
+  'new_members_start_as_trial',
+] as const
+
+/**
+ * Pick only allowed fields from the input object.
+ * Any keys not in the allowlist are silently dropped.
+ */
+function pickAllowedSettings(input: Record<string, unknown>): Record<string, unknown> {
+  const sanitized: Record<string, unknown> = {}
+  for (const field of ALLOWED_SETTINGS_FIELDS) {
+    if (field in input) {
+      sanitized[field] = input[field]
+    }
+  }
+  return sanitized
+}
+
 export async function GET(request: Request) {
   try {
     // Fast auth check using getSession (no network call)
@@ -240,13 +321,20 @@ export async function PUT(request: Request) {
       .eq('guild_id', guild_id)
       .single()
 
+    // Sanitize input: only pick fields from the explicit allowlist
+    const sanitizedSettings = pickAllowedSettings(settings)
+
+    if (Object.keys(sanitizedSettings).length === 0) {
+      return NextResponse.json({ error: 'No valid settings fields provided' }, { status: 400 })
+    }
+
     let result
     if (existingSettings) {
       // Update existing settings
       const { data, error } = await supabase
         .from('guild_settings')
         .update({
-          ...settings,
+          ...sanitizedSettings,
           updated_at: new Date().toISOString()
         })
         .eq('guild_id', guild_id)
@@ -264,7 +352,7 @@ export async function PUT(request: Request) {
         .from('guild_settings')
         .insert({
           guild_id,
-          ...settings
+          ...sanitizedSettings
         })
         .select()
         .single()

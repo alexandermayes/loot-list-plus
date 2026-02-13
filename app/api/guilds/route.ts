@@ -97,7 +97,7 @@ export async function POST(request: NextRequest) {
       // Rollback: delete the guild since expansion seeding failed
       await supabase.from('guilds').delete().eq('id', guild.id)
       return NextResponse.json(
-        { error: seedError },
+        { error: 'Couldn\'t set up the expansion. Try again.' },
         { status: 500 }
       )
     }
@@ -177,18 +177,14 @@ export async function POST(request: NextRequest) {
       .eq('user_id', user.id)
       .limit(1)
 
-    console.log('[GUILD CREATE] Check existing characters:', { existingCharacters, checkError })
-
     let characterId: string
 
     if (existingCharacters && existingCharacters.length > 0) {
       // Use existing character
       characterId = existingCharacters[0].id
-      console.log('[GUILD CREATE] Using existing character:', characterId)
     } else {
       // Create a default character for the user (use service role to bypass RLS)
       const characterName = user.user_metadata?.full_name || user.user_metadata?.name || 'Guild Master'
-      console.log('[GUILD CREATE] Creating character with name:', characterName)
 
       const { data: newCharacter, error: charError } = await serviceSupabase
         .from('characters')
@@ -201,24 +197,20 @@ export async function POST(request: NextRequest) {
         .select('id')
         .single()
 
-      console.log('[GUILD CREATE] Character creation result:', { newCharacter, charError })
-
       if (charError || !newCharacter) {
         console.error('[GUILD CREATE] Error creating character:', charError)
         // Clean up guild if character creation fails
         await serviceSupabase.from('guilds').delete().eq('id', guild.id)
         return NextResponse.json(
-          { error: `Failed to create character: ${charError?.message || 'Unknown error'}` },
+          { error: 'Couldn\'t create your character. Try again.' },
           { status: 500 }
         )
       }
 
       characterId = newCharacter.id
-      console.log('[GUILD CREATE] Created character:', characterId)
     }
 
     // Create character guild membership for creator as Guild Master (use service role)
-    console.log('[GUILD CREATE] Creating membership for character:', characterId, 'guild:', guild.id)
     const { error: memberError } = await serviceSupabase
       .from('character_guild_memberships')
       .insert({
@@ -230,20 +222,17 @@ export async function POST(request: NextRequest) {
         joined_via: 'manual'
       })
 
-    console.log('[GUILD CREATE] Membership creation result:', { memberError })
-
     if (memberError) {
       console.error('[GUILD CREATE] Error creating character guild membership:', memberError)
       // Clean up guild if membership creation fails
       await serviceSupabase.from('guilds').delete().eq('id', guild.id)
       return NextResponse.json(
-        { error: `Failed to create guild membership: ${memberError.message}` },
+        { error: 'Couldn\'t create guild membership. Try again.' },
         { status: 500 }
       )
     }
 
     // Set as active character and guild for user (use service role)
-    console.log('[GUILD CREATE] Setting active character and guild')
     await serviceSupabase
       .from('user_active_characters')
       .upsert({
@@ -252,8 +241,6 @@ export async function POST(request: NextRequest) {
         active_guild_id: guild.id,
         updated_at: new Date().toISOString()
       })
-
-    console.log('[GUILD CREATE] Guild creation complete!')
 
     // Invalidate guilds cache after creating
     await invalidateCache(cacheKeys.userGuilds(user.id))
@@ -324,7 +311,24 @@ export async function GET(request: NextRequest) {
           throw memberError
         }
 
-        return memberships?.map((m: any) => ({
+        interface MembershipRow {
+          id: string
+          character_id: string
+          role: string
+          joined_at: string
+          character: { id: string; name: string; user_id: string } | null
+          guild: {
+            id: string
+            name: string
+            realm: string | null
+            faction: string
+            discord_server_id: string | null
+            created_by: string
+            is_active: boolean
+          } | null
+        }
+
+        return (memberships as unknown as MembershipRow[] | null)?.map((m) => ({
           membership_id: m.id,
           character_id: m.character_id,
           character_name: m.character?.name || 'Unknown',
@@ -378,7 +382,7 @@ export async function DELETE(request: NextRequest) {
     if (deleteError) {
       console.error('Error deleting guild:', deleteError)
       return NextResponse.json(
-        { error: deleteError.message || 'Failed to delete guild' },
+        { error: 'Couldn\'t delete guild. Try again.' },
         { status: 500 }
       )
     }

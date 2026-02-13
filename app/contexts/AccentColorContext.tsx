@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react'
 import { createClient } from '@/utils/supabase/client'
 import { trackClientEvent } from '@/utils/analytics/client'
+import { useNotification } from '@/app/contexts/NotificationContext'
 
 // WoW item quality colors as accent options
 // Adjusted slightly from official values for better contrast in light/dark modes
@@ -101,6 +102,7 @@ export function AccentColorProvider({ children }: { children: React.ReactNode })
   const [accentColor, setAccentColorState] = useState(DEFAULT_ACCENT_COLOR)
   const [isLoading, setIsLoading] = useState(true)
   const supabase = createClient()
+  const { showNotification } = useNotification()
 
   // Apply default accent color on mount (so CSS variables are set immediately)
   useEffect(() => {
@@ -162,13 +164,15 @@ export function AccentColorProvider({ children }: { children: React.ReactNode })
 
       if (error) {
         console.error('Failed to save accent color:', error)
+        showNotification('error', 'Couldn\'t save accent color. Try again.')
       } else {
         trackClientEvent('accent_color_changed', { color })
       }
     } catch (error) {
       console.error('Failed to save accent color:', error)
+      showNotification('error', 'Couldn\'t save accent color. Try again.')
     }
-  }, [supabase])
+  }, [supabase, showNotification])
 
   return (
     <AccentColorContext.Provider value={{ accentColor, setAccentColor, saveAccentColor, isLoading }}>

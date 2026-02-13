@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { Bug01Icon, Camera01Icon, SentIcon } from '@hugeicons/core-free-icons'
 import { Spinner } from '@/components/ui/loading-spinner'
+import { useNotification } from '@/app/contexts/NotificationContext'
 // html2canvas is dynamically imported in captureScreenshot() to reduce initial bundle size (~140KB)
 import {
   Modal,
@@ -32,6 +33,7 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
   const modalRef = useRef<HTMLDivElement>(null)
+  const { showNotification } = useNotification()
 
   // Capture screenshot when modal opens
   useEffect(() => {
@@ -79,6 +81,7 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
       setScreenshot(dataUrl)
     } catch (err) {
       console.error('Failed to capture screenshot:', err)
+      showNotification('warning', 'Couldn\'t capture screenshot. You can still submit feedback without one.')
     } finally {
       // Show the modal again
       if (modalRef.current) {

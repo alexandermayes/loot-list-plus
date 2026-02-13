@@ -3,6 +3,7 @@
 import { createContext, useContext, useState, useEffect, useRef, useCallback, useMemo, ReactNode } from 'react'
 import { createClient } from '@/utils/supabase/client'
 import { useRouter } from 'next/navigation'
+import { useNotification } from '@/app/contexts/NotificationContext'
 import type { User, AuthChangeEvent, Session } from '@supabase/supabase-js'
 
 // Types
@@ -162,6 +163,7 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
 
   const supabase = createClient()
   const router = useRouter()
+  const { showNotification } = useNotification()
 
   // Track if initial data load has completed to distinguish fresh login from token refresh
   // This prevents UI flashing when users tab away and return (Supabase fires SIGNED_IN on visibility change)
@@ -303,6 +305,7 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
 
     } catch (error) {
       console.error('Error in loadGuilds:', error)
+      showNotification('error', 'Couldn\'t load your guilds. Check your connection and try again.')
     } finally {
       setGuildsLoading(false)
       hasInitiallyLoaded.current = true
@@ -357,8 +360,6 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
         const specIds = characters
           .map((c: CharacterData) => c.spec_id)
           .filter(Boolean) as string[]
-
-        console.log('[GUILD CONTEXT] Fetching memberships for character IDs:', characterIds)
 
         // Run specs and memberships queries in parallel
         const [specsResult, membershipsResult] = await Promise.all([
@@ -431,9 +432,6 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
         }
 
         setUserCharacters(enrichedCharacters)
-
-        console.log('[GUILD CONTEXT] Memberships query result:', { memberships, membershipsError })
-        console.log('[GUILD CONTEXT] Memberships count:', memberships?.length || 0)
 
         if (membershipsError) {
           console.error('Error loading character memberships:', membershipsError)
@@ -519,7 +517,6 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
             class: membership.character?.class || { name: 'Unknown', color_hex: '#808080' }
           }))
 
-          console.log('[GUILD CONTEXT] Derived userGuilds from character memberships:', derivedGuilds.length)
           setUserGuilds(derivedGuilds)
         }
       } else {
@@ -534,9 +531,6 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
         .select('active_character_id, active_guild_id')
         .eq('user_id', user.id)
         .maybeSingle()
-
-      console.log('[GUILD CONTEXT] Active char data:', activeCharData)
-      console.log('[GUILD CONTEXT] Transformed memberships for active guild check:', transformedMemberships.length)
 
       if (activeCharData?.active_character_id) {
         // Find the character from our enriched characters (which have specs attached)
@@ -555,7 +549,6 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
         // Find the guild from memberships
         const membershipWithGuild = transformedMemberships.find(m => m.guild_id === activeCharData.active_guild_id)
         if (membershipWithGuild?.guild) {
-          console.log('[GUILD CONTEXT] Setting activeGuild from user_active_characters:', membershipWithGuild.guild.name)
           setActiveGuild(membershipWithGuild.guild as Guild)
         } else {
           // No active membership found for this guild
@@ -564,7 +557,6 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
           if (enrichedCharacters.length === 0) {
             // User has no characters - fetch the guild directly and show it
             // This is the "joined guild, needs to create character" state
-            console.log('[GUILD CONTEXT] User has no characters but has active_guild_id, fetching guild directly')
             const { data: pendingGuild } = await supabase
               .from('guilds')
               .select('*')
@@ -572,10 +564,8 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
               .single()
 
             if (pendingGuild) {
-              console.log('[GUILD CONTEXT] Setting activeGuild from pending state:', pendingGuild.name)
               setActiveGuild(pendingGuild as Guild)
             } else {
-              console.log('[GUILD CONTEXT] Pending guild not found, clearing')
               setActiveGuild(null)
               await supabase
                 .from('user_active_characters')
@@ -587,8 +577,6 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
             }
           } else {
             // User has characters but no membership in this guild - stale reference
-            console.log('[GUILD CONTEXT] No active membership found for active_guild_id, clearing stale reference:', activeCharData.active_guild_id)
-
             // Clear the stale active_guild_id
             await supabase
               .from('user_active_characters')
@@ -600,7 +588,6 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
 
             // If user has other guild memberships, set the first one as active
             if (transformedMemberships.length > 0 && transformedMemberships[0]?.guild) {
-              console.log('[GUILD CONTEXT] Setting activeGuild to first available membership:', transformedMemberships[0].guild.name)
               setActiveGuild(transformedMemberships[0].guild as Guild)
 
               await supabase
@@ -612,14 +599,12 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
                 .eq('user_id', user.id)
             } else {
               // User has no guild memberships - set activeGuild to null
-              console.log('[GUILD CONTEXT] User has no guild memberships, setting activeGuild to null')
               setActiveGuild(null)
             }
           }
         }
       } else if (transformedMemberships.length > 0 && transformedMemberships[0]?.guild) {
         // If no saved active guild, use first guild from character memberships
-        console.log('[GUILD CONTEXT] Setting activeGuild to first membership guild:', transformedMemberships[0].guild.name)
         setActiveGuild(transformedMemberships[0].guild as Guild)
 
         // Also save this as the active guild
@@ -633,11 +618,11 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
           })
       } else {
         // No saved active guild and no memberships - explicitly set activeGuild to null
-        console.log('[GUILD CONTEXT] No active guild and no memberships, setting activeGuild to null')
         setActiveGuild(null)
       }
     } catch (error) {
       console.error('Error in loadCharacters:', error)
+      showNotification('error', 'Couldn\'t load your characters. Check your connection and try again.')
     } finally {
       setCharactersLoading(false)
     }
@@ -651,10 +636,7 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
 
       if (error) {
         console.error('Error loading expansions:', error)
-        console.error('Error details:', JSON.stringify(error, null, 2))
-        console.error('Error code:', error?.code)
-        console.error('Error message:', error?.message)
-        console.error('Error hint:', error?.hint)
+        showNotification('error', 'Couldn\'t load expansion data. Check your connection and try again.')
         setGuildExpansions([])
         setCurrentExpansion(null)
         return
@@ -670,6 +652,7 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
       setViewingExpansionId(null)
     } catch (error) {
       console.error('Error in loadExpansions:', error)
+      showNotification('error', 'Couldn\'t load expansion data. Check your connection and try again.')
       setGuildExpansions([])
       setCurrentExpansion(null)
     }
@@ -761,8 +744,9 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
       router.refresh()
     } catch (error) {
       console.error('Error in switchGuild:', error)
+      showNotification('error', 'Couldn\'t switch guilds. Check your connection and try again.')
     }
-  }, [user, userGuilds, userCharacters, characterMemberships, supabase, router])
+  }, [user, userGuilds, userCharacters, characterMemberships, supabase, router, showNotification])
 
   // Switch to a different character
   const switchCharacter = useCallback(async (characterId: string) => {
@@ -809,8 +793,9 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
       }
     } catch (error) {
       console.error('Error in switchCharacter:', error)
+      showNotification('error', 'Couldn\'t switch characters. Check your connection and try again.')
     }
-  }, [user, userCharacters, activeGuild, characterMemberships, router])
+  }, [user, userCharacters, activeGuild, characterMemberships, router, showNotification])
 
   // Refresh guilds (useful after joining a new guild)
   const refreshGuilds = useCallback(async () => {
@@ -892,7 +877,6 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
       // Guild creator is always an officer (even without a character)
       // First check from cached activeGuild
       if (user && activeGuild.created_by && activeGuild.created_by === user.id) {
-        console.log('[GUILD CONTEXT] User is guild creator (cached), setting isOfficer=true')
         setIsOfficer(true)
         return
       }
@@ -905,14 +889,7 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
           .eq('id', activeGuild.id)
           .single()
 
-        console.log('[GUILD CONTEXT] Guild creator check:', {
-          userId: user.id,
-          guildCreatedBy: guildCheck?.created_by,
-          match: guildCheck?.created_by === user.id
-        })
-
         if (guildCheck?.created_by === user.id) {
-          console.log('[GUILD CONTEXT] User is guild creator (verified), setting isOfficer=true')
           setIsOfficer(true)
           return
         }

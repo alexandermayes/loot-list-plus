@@ -37,7 +37,7 @@ export async function PUT(request: NextRequest) {
     }
 
     // Build update object with only provided fields
-    const updateData: Record<string, any> = {}
+    const updateData: Record<string, string | null> = {}
     if (name !== undefined) updateData.name = name.trim()
     if (realm !== undefined) updateData.realm = realm?.trim() || null
     if (faction !== undefined) updateData.faction = faction

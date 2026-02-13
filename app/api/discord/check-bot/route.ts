@@ -30,7 +30,6 @@ export async function GET(request: NextRequest) {
 
     // Try to get guild information using the bot token
     // If the bot is in the guild, this will succeed. If not, it will return 403/404
-    console.log(`Checking bot installation for server ${serverId}`)
     const response = await fetch(`https://discord.com/api/v10/guilds/${serverId}`, {
       headers: {
         'Authorization': `Bot ${botToken}`
@@ -38,18 +37,15 @@ export async function GET(request: NextRequest) {
     })
 
     const responseText = await response.text()
-    console.log(`Discord API response: ${response.status}`, responseText)
 
     if (response.ok) {
       // Bot is in the guild
-      console.log(`Bot is installed in server ${serverId}`)
       return NextResponse.json({
         installed: true,
         message: 'Bot is installed in this server'
       })
     } else if (response.status === 403 || response.status === 404) {
       // Bot is not in the guild
-      console.log(`Bot is NOT installed in server ${serverId} (status: ${response.status})`)
       return NextResponse.json({
         installed: false,
         message: 'Bot is not installed in this server'

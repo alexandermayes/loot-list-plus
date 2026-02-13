@@ -126,6 +126,7 @@ export default function ProfilePage() {
           window.location.href = '/'
         } catch (err) {
           console.error('Error disconnecting:', err)
+          showNotification('error', 'Couldn\'t disconnect Discord. Check your connection and try again.')
           setDisconnecting(false)
         }
       }

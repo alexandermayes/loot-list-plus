@@ -281,15 +281,11 @@ export default function AdminLootItems() {
       const response = await fetch(`/api/guild-settings?guild_id=${guildId}`)
       if (response.ok) {
         const data = await response.json()
-        console.log('Guild settings loaded:', data)
-
         if (data.settings) {
           setSettings(prevSettings => ({
             ...prevSettings,
             ...data.settings
           }))
-
-          console.log('rank_modifiers:', data.settings.rank_modifiers)
 
           // Load roles from the guild_roles table (authoritative source)
           const { data: guildRolesData, error: rolesError } = await supabase
@@ -306,8 +302,6 @@ export default function AdminLootItems() {
             ? guildRolesData.map((r: { name: string; position: number }) => ({ name: r.name, position: r.position }))
             : []
 
-          console.log('Roles from guild_roles table:', rolesFromGuildRoles)
-
           // ONLY use guild_roles table if it has data
           // Otherwise fall back to other sources
           let allRoles: { name: string; position: number }[] = []
@@ -315,10 +309,8 @@ export default function AdminLootItems() {
           if (rolesFromGuildRoles.length > 0) {
             // Guild roles table is the authoritative source
             allRoles = rolesFromGuildRoles
-            console.log('Using guild_roles table as source')
           } else {
             // Fallback to old sources if guild_roles table is empty
-            console.log('Falling back to other sources')
             const rolesFromSettings = data.settings.rank_modifiers
               ? Object.keys(data.settings.rank_modifiers)
               : []
@@ -342,8 +334,6 @@ export default function AdminLootItems() {
             })
           }
 
-          console.log('Final roles to display:', allRoles)
-
           if (allRoles.length > 0) {
             setGuildRoles(allRoles)
 
@@ -363,6 +353,7 @@ export default function AdminLootItems() {
       }
     } catch (error) {
       console.error('Error loading guild settings:', error)
+      showNotification('error', 'Couldn\'t load loot settings. Check your connection and try again.')
     }
   }
 
@@ -371,8 +362,6 @@ export default function AdminLootItems() {
 
     setSavingSettings(true)
     try {
-      console.log('Saving settings:', settings)
-
       // Filter out any fields that the schema cache doesn't recognize yet
       // Only save the core fields that we know exist
       const safeSettings = {
@@ -446,8 +435,6 @@ export default function AdminLootItems() {
         blp_increment: settings.blp_increment,
         blp_maximum: settings.blp_maximum
       }
-
-      console.log('Filtered settings to save:', safeSettings)
 
       const response = await fetch('/api/guild-settings', {
         method: 'PUT',
@@ -639,7 +626,7 @@ export default function AdminLootItems() {
           .in('loot_item_id', batchIds)
 
         if (specError) {
-          console.error('❌ Error loading spec relations for batch:', specError)
+          console.error('Error loading spec relations for batch:', specError)
           continue
         }
 
@@ -657,24 +644,11 @@ export default function AdminLootItems() {
         }
       }
 
-      console.log('📊 Loaded', totalRelations, 'spec relations for', itemIds.length, 'items')
-      console.log('✅ Organized specs for', Object.keys(specs).length, 'items')
-      console.log('Sample item specs:', Object.values(specs).slice(0, 3).map(s => ({
-        primary: Array.from(s.primary).length,
-        secondary: Array.from(s.secondary).length
-      })))
-
       setItemSpecs(specs)
     }
   }
 
   const toggleAvailability = async (itemId: string, currentStatus: boolean) => {
-    console.log('🔄 Toggling availability for item:', itemId, 'from', currentStatus, 'to', !currentStatus)
-
-    // Check current auth state
-    const { data: { user: currentUser } } = await supabase.auth.getUser()
-    console.log('Current user:', currentUser?.id, currentUser?.email)
-
     const { data, error } = await supabase
       .from('loot_items')
       .update({ is_available: !currentStatus })
@@ -682,7 +656,7 @@ export default function AdminLootItems() {
       .select()
 
     if (error) {
-      console.error('❌ Error toggling availability:', {
+      console.error('Error toggling availability:', {
         message: error.message,
         details: error.details,
         hint: error.hint,
@@ -692,14 +666,12 @@ export default function AdminLootItems() {
       return
     }
 
-    console.log('✅ Toggled availability for item', itemId, 'Result:', data)
     setLootItems(items => items.map(item =>
       item.id === itemId ? { ...item, is_available: !currentStatus } : item
     ))
   }
 
   const updateClassification = async (itemId: string, classification: string) => {
-    console.log('🔄 Updating classification for item:', itemId, 'to', classification)
     const allocationCost = (classification === 'Reserved' || classification === 'Limited') ? 1 : 0
 
     const { data, error } = await supabase
@@ -712,7 +684,7 @@ export default function AdminLootItems() {
       .select()
 
     if (error) {
-      console.error('❌ Error updating classification:', {
+      console.error('Error updating classification:', {
         message: error.message,
         details: error.details,
         hint: error.hint,
@@ -722,7 +694,6 @@ export default function AdminLootItems() {
       return
     }
 
-    console.log('✅ Updated classification for item', itemId, 'to', classification, 'Result:', data)
     setLootItems(items => items.map(item =>
       item.id === itemId ? { ...item, classification, allocation_cost: allocationCost } : item
     ))
@@ -730,15 +701,11 @@ export default function AdminLootItems() {
 
   // Update officer notes for an item
   const updateNotes = async (itemId: string, notes: string): Promise<boolean> => {
-    console.log('📝 Updating notes for item:', itemId, 'notes:', notes)
-
     const { data, error } = await supabase
       .from('loot_items')
       .update({ officer_notes: notes || null })
       .eq('id', itemId)
       .select('id, officer_notes')
-
-    console.log('📝 Update response:', { data, error })
 
     if (error) {
       console.error('Error updating notes:', error)
@@ -753,7 +720,6 @@ export default function AdminLootItems() {
       return false
     }
 
-    console.log('📝 Notes saved successfully:', data[0])
     setItemNotes(prev => ({ ...prev, [itemId]: notes }))
     setLootItems(items => items.map(item =>
       item.id === itemId ? { ...item, officer_notes: notes || undefined } : item
@@ -831,7 +797,7 @@ export default function AdminLootItems() {
       })
 
     if (error) {
-      console.error('❌ Error adding spec:', {
+      console.error('Error adding spec:', {
         message: error.message,
         details: error.details,
         hint: error.hint,
@@ -840,8 +806,6 @@ export default function AdminLootItems() {
       showNotification('error', error.message || 'Couldn\'t add spec. Try again.')
       return
     }
-
-    console.log(`✅ Added ${specType} spec ${specIdOrRole} to item ${itemId}`)
 
     // Update local state
     setItemSpecs(prev => {
@@ -1008,7 +972,7 @@ export default function AdminLootItems() {
       .eq('spec_type', specType)
 
     if (error) {
-      console.error('❌ Error removing spec:', {
+      console.error('Error removing spec:', {
         message: error.message,
         details: error.details,
         code: error.code
@@ -1016,8 +980,6 @@ export default function AdminLootItems() {
       showNotification('error', error.message || 'Couldn\'t remove spec. Try again.')
       return
     }
-
-    console.log(`✅ Removed ${specType} spec ${specIdOrRole} from item ${itemId}`)
 
     // Update local state
     setItemSpecs(prev => {

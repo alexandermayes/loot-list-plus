@@ -1,6 +1,15 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/utils/supabase/server'
 
+/** Partial shape of a guild object from the Discord API (GET /users/@me/guilds) */
+interface DiscordGuild {
+  id: string
+  name: string
+  icon: string | null
+  owner: boolean
+  permissions: string
+}
+
 // GET - Fetch user's Discord servers with admin permissions
 export async function GET() {
   try {
@@ -47,25 +56,19 @@ export async function GET() {
       )
     }
 
-    const guilds = await discordResponse.json()
-
-    console.log('Discord returned guilds:', guilds.length)
+    const guilds: DiscordGuild[] = await discordResponse.json()
 
     // Filter for guilds where user has admin permissions
     const ADMINISTRATOR = BigInt(0x8)
     const MANAGE_GUILD = BigInt(0x20)
 
-    const adminGuilds = guilds.filter((guild: any) => {
+    const adminGuilds = guilds.filter((guild) => {
       const permissions = BigInt(guild.permissions || '0')
       const hasAdmin = (permissions & ADMINISTRATOR) === ADMINISTRATOR
       const hasManage = (permissions & MANAGE_GUILD) === MANAGE_GUILD
 
-      console.log(`Guild "${guild.name}": permissions=${guild.permissions}, hasAdmin=${hasAdmin}, hasManage=${hasManage}, owner=${guild.owner}`)
-
       return hasAdmin || hasManage || guild.owner
     })
-
-    console.log('Admin guilds filtered:', adminGuilds.length, adminGuilds.map((g: any) => g.name))
 
     return NextResponse.json({
       guilds: adminGuilds

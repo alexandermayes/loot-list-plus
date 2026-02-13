@@ -1,6 +1,15 @@
 import { NextResponse } from 'next/server'
 import { createClient, getAuthenticatedUser } from '@/utils/supabase/server'
 
+/** Partial shape of a guild object from the Discord API (GET /users/@me/guilds) */
+interface DiscordGuild {
+  id: string
+  name: string
+  icon: string | null
+  owner: boolean
+  permissions: string
+}
+
 /**
  * Attempt to get a valid Discord provider token from the session.
  * If the initial session has no provider_token, tries refreshSession() once.
@@ -13,20 +22,16 @@ async function getDiscordToken(supabase: Awaited<ReturnType<typeof createClient>
   }
 
   // Token missing — attempt a session refresh to get a new provider_token
-  console.log('[DISCORD] No provider_token in session, attempting refresh...')
   const { data: { session: refreshedSession }, error } = await supabase.auth.refreshSession()
 
   if (error) {
-    console.log('[DISCORD] Session refresh failed:', error.message)
     return null
   }
 
   if (refreshedSession?.provider_token) {
-    console.log('[DISCORD] Got provider_token after refresh')
     return refreshedSession.provider_token
   }
 
-  console.log('[DISCORD] No provider_token after refresh')
   return null
 }
 
@@ -59,7 +64,6 @@ export async function GET() {
     const providerToken = await getDiscordToken(supabase)
 
     if (!providerToken) {
-      console.log('No Discord access token available after refresh attempt')
       return NextResponse.json(
         { error: 'Discord connection expired. Please log in again to reconnect.', code: 'discord_token_expired' },
         { status: 403 }
@@ -67,7 +71,7 @@ export async function GET() {
     }
 
     // Fetch user's Discord guilds from Discord API
-    let discordGuilds: any[] = []
+    let discordGuilds: DiscordGuild[] = []
     try {
       const discordResponse = await fetch('https://discord.com/api/v10/users/@me/guilds', {
         headers: {
@@ -76,8 +80,6 @@ export async function GET() {
       })
 
       if (discordResponse.status === 429) {
-        const retryAfter = discordResponse.headers.get('Retry-After')
-        console.log('Discord rate limit hit, retry after:', retryAfter)
         return NextResponse.json(
           { error: 'Discord rate limit reached. Please wait a moment and try again.' },
           { status: 429 }
@@ -102,7 +104,6 @@ export async function GET() {
       }
 
       discordGuilds = await discordResponse.json()
-      console.log('Fetched Discord guilds:', discordGuilds.length)
     } catch (error) {
       console.error('Error fetching Discord guilds:', error)
       return NextResponse.json({
@@ -111,15 +112,13 @@ export async function GET() {
     }
 
     if (!Array.isArray(discordGuilds) || discordGuilds.length === 0) {
-      console.log('User has no Discord guilds')
       return NextResponse.json({
         available_guilds: []
       })
     }
 
     // Get Discord server IDs from user's Discord memberships
-    const userDiscordServerIds = discordGuilds.map((g: any) => g.id)
-    console.log('User Discord server IDs:', userDiscordServerIds)
+    const userDiscordServerIds = discordGuilds.map((g) => g.id)
 
     // Find LootList+ guilds that match user's Discord servers
     const { data: matchingGuilds, error: guildsError } = await supabase
@@ -127,11 +126,6 @@ export async function GET() {
       .select('id, name, realm, faction, discord_server_id, is_active')
       .in('discord_server_id', userDiscordServerIds)
       .eq('is_active', true)
-
-    console.log('Matching LootList+ guilds found:', matchingGuilds?.length || 0)
-    if (matchingGuilds && matchingGuilds.length > 0) {
-      console.log('Guild details:', matchingGuilds.map(g => ({ name: g.name, discord_id: g.discord_server_id })))
-    }
 
     if (guildsError) {
       console.error('Error fetching matching guilds:', guildsError)
@@ -170,13 +164,11 @@ export async function GET() {
     }
 
     // Note: We allow multiple guilds per discord_server_id (e.g., different raid teams or game versions)
-    console.log('Total matching guilds:', matchingGuilds.length)
-
     const availableGuilds = matchingGuilds
       .filter(guild => !existingGuildIds.has(guild.id))
       .map(guild => {
         // Find matching Discord guild for additional info
-        const discordGuild = discordGuilds.find((dg: any) => dg.id === guild.discord_server_id)
+        const discordGuild = discordGuilds.find((dg) => dg.id === guild.discord_server_id)
         return {
           ...guild,
           discord_name: discordGuild?.name || null,

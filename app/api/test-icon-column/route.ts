@@ -41,10 +41,10 @@ export async function GET() {
       .single()
 
     if (error) {
+      console.error('Error querying guilds table:', error)
       return NextResponse.json({
         status: 'error',
-        message: 'Column might not exist',
-        error: error.message
+        message: 'Couldn\'t query guild data. Try again.'
       })
     }
 
@@ -53,10 +53,11 @@ export async function GET() {
       message: 'icon_url column exists!',
       data
     })
-  } catch (error: any) {
+  } catch (error: unknown) {
+    console.error('Error in test-icon-column:', error)
     return NextResponse.json({
       status: 'error',
-      message: error.message
+      message: 'Something went wrong. Try again.'
     })
   }
 }

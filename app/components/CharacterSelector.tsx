@@ -8,6 +8,7 @@ import Image from 'next/image'
 import dynamic from 'next/dynamic'
 import { Spinner } from '@/components/ui/loading-spinner'
 import { Button } from '@/components/ui/button'
+import { useNotification } from '@/app/contexts/NotificationContext'
 
 // Lazy load modal to reduce initial bundle size
 const CreateCharacterModal = dynamic(() => import('./CreateCharacterModal').then(mod => ({ default: mod.CreateCharacterModal })), {
@@ -76,6 +77,7 @@ export function CharacterSelector() {
     loading
   } = useGuildContext()
 
+  const { showNotification } = useNotification()
   const [isOpen, setIsOpen] = useState(false)
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [addingToGuild, setAddingToGuild] = useState<string | null>(null)
@@ -130,9 +132,11 @@ export function CharacterSelector() {
       } else {
         const data = await response.json()
         console.error('Error adding character to guild:', data.error)
+        showNotification('error', data.error || 'Couldn\'t add character to guild. Try again.')
       }
     } catch (err) {
       console.error('Error adding character to guild:', err)
+      showNotification('error', 'Couldn\'t add character to guild. Check your connection and try again.')
     } finally {
       setAddingToGuild(null)
     }

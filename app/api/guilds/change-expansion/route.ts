@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
     if (seedError) {
       console.error('Error seeding new expansion:', seedError)
       return NextResponse.json(
-        { error: seedError },
+        { error: 'Couldn\'t set up the new expansion. Try again.' },
         { status: 500 }
       )
     }
