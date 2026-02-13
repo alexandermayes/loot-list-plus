@@ -198,20 +198,19 @@ export default function RaidTrackingPage() {
           .eq('guild_id', activeGuild.id)
           .eq('status', 'approved')
 
-        // Also load memberships to get role info where available
-        const { data: membershipsData } = await supabase
-          .from('character_guild_memberships')
-          .select('character_id, role, character:characters!inner(user_id)')
-          .eq('guild_id', activeGuild.id)
-          .eq('is_active', true)
+        // Fetch roles from guild-members API (uses service role to see all members)
+        const membersResponse = await fetch(`/api/guild-members?guild_id=${activeGuild.id}`)
+        const membersResult = membersResponse.ok ? await membersResponse.json() : null
 
-        // Build a role lookup by user_id from memberships
-        const roleByUserId: Record<string, string> = {}
-        membershipsData?.forEach((m: any) => {
-          if (m.character?.user_id) {
-            roleByUserId[m.character.user_id] = m.role || 'Member'
+        // Build a role lookup by character_id from the API response
+        const roleByCharacterId: Record<string, string> = {}
+        if (membersResult?.members) {
+          for (const member of membersResult.members) {
+            for (const char of member.characters || []) {
+              roleByCharacterId[char.id] = member.role || 'Member'
+            }
           }
-        })
+        }
 
         if (submissionsData && submissionsData.length > 0) {
           // Deduplicate by character_id (a user might have multiple submissions)
@@ -228,7 +227,7 @@ export default function RaidTrackingPage() {
               character_name: s.character?.name || 'Unknown',
               class_name: s.character?.class?.name || 'Unknown',
               class_color: s.character?.class?.color_hex || '#888888',
-              role: roleByUserId[s.character?.user_id] || 'Member'
+              role: roleByCharacterId[s.character_id] || 'Member'
             }))
             .sort((a: Member, b: Member) => a.character_name.localeCompare(b.character_name))
 

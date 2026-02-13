@@ -518,6 +518,17 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
           }))
 
           setUserGuilds(derivedGuilds)
+
+          // Update activeMember role from character_guild_memberships (new system)
+          // The legacy guild_members table role may be stale
+          setActiveMember(prev => {
+            if (!prev) return prev
+            const derived = derivedGuilds.find(g => g.guild.id === prev.guild_id)
+            if (derived && derived.member.role !== prev.role) {
+              return { ...prev, role: derived.member.role }
+            }
+            return prev
+          })
         }
       } else {
         setUserCharacters([])

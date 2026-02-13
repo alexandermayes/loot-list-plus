@@ -430,7 +430,7 @@ export default function AttendancePage() {
       // Build raider list from loot submissions directly.
       // Submitters may not have active guild memberships, so we can't rely
       // on character_guild_memberships as the sole source of truth.
-      const [submissionsResult, membershipsResult, attendanceResult] = await Promise.all([
+      const [submissionsResult, membersResponse, attendanceResult] = await Promise.all([
         // Query 1: Get all characters with loot submissions
         supabase
           .from('loot_submissions')
@@ -446,12 +446,8 @@ export default function AttendancePage() {
           .eq('guild_id', guildId)
           .eq('status', 'approved'),
 
-        // Query 2: Get memberships for role info and join dates
-        supabase
-          .from('character_guild_memberships')
-          .select('character_id, role, joined_at, character:characters!inner(user_id)')
-          .eq('guild_id', guildId)
-          .eq('is_active', true),
+        // Query 2: Fetch roles from guild-members API (uses service role to see all members)
+        fetch(`/api/guild-members?guild_id=${guildId}`).then(r => r.ok ? r.json() : null),
 
         // Query 3: Get all attendance records for these raid events
         supabase
@@ -461,7 +457,6 @@ export default function AttendancePage() {
       ])
 
       const submissionsData = submissionsResult.data
-      const membershipsData = membershipsResult.data
       const allAttendance = attendanceResult.data
 
       if (!submissionsData || submissionsData.length === 0 || raidEvents.length === 0) {
@@ -469,15 +464,17 @@ export default function AttendancePage() {
         return
       }
 
-      // Build role and join date lookups by user_id from memberships
-      const roleByUserId: Record<string, string> = {}
-      const joinDateByUserId: Record<string, string> = {}
-      membershipsData?.forEach((m: any) => {
-        if (m.character?.user_id) {
-          roleByUserId[m.character.user_id] = m.role || 'Member'
-          if (m.joined_at) joinDateByUserId[m.character.user_id] = m.joined_at
+      // Build role and join date lookups by character_id from API response
+      const roleByCharacterId: Record<string, string> = {}
+      const joinDateByCharacterId: Record<string, string> = {}
+      if (membersResponse?.members) {
+        for (const member of membersResponse.members) {
+          for (const char of member.characters || []) {
+            roleByCharacterId[char.id] = member.role || 'Member'
+            if (member.joined_at) joinDateByCharacterId[char.id] = member.joined_at
+          }
         }
-      })
+      }
 
       // Deduplicate submissions by character_id
       const seen = new Set<string>()
@@ -511,7 +508,7 @@ export default function AttendancePage() {
 
         // New member policy: check how to handle new members
         const newMemberMode = settings?.new_member_mode || 'raw'
-        const joinedAt = joinDateByUserId[userId]
+        const joinedAt = joinDateByCharacterId[s.character_id]
         const memberJoinDate = joinedAt ? new Date(joinedAt) : null
 
         // For 'fair' and 'minimum_gate' modes, filter raids to only those after member's join date
@@ -535,7 +532,7 @@ export default function AttendancePage() {
         return {
           id: s.character_id,
           name: char.name,
-          role: roleByUserId[userId] || 'Member',
+          role: roleByCharacterId[s.character_id] || 'Member',
           className: char.class?.name || 'Unknown',
           classColor: char.class?.color_hex || '#ffffff',
           attendanceScore: score,
