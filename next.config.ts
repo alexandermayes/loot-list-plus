@@ -1,20 +1,63 @@
 import type { NextConfig } from "next";
 
+const isDev = process.env.NODE_ENV === 'development';
+
+const cspDirectives = [
+  // Default: only allow same-origin resources
+  "default-src 'self'",
+
+  // Scripts: allow self, Wowhead tooltips, PostHog assets
+  // - unsafe-inline needed for Next.js inline scripts and Wowhead config
+  // - unsafe-eval only in dev for hot reload (stripped in production)
+  [
+    "script-src 'self'",
+    "'unsafe-inline'",
+    isDev ? "'unsafe-eval'" : '',
+    'https://wow.zamimg.com',
+    'https://us-assets.i.posthog.com',
+  ].filter(Boolean).join(' '),
+
+  // Styles: allow self and inline (Next.js injects inline styles)
+  "style-src 'self' 'unsafe-inline' https://wow.zamimg.com",
+
+  // Images: allow self, data URIs, blobs, and external CDNs for game assets
+  "img-src 'self' data: blob: https://cdn.discordapp.com https://wow.zamimg.com https://*.akamaihd.net https://static.wikia.nocookie.net",
+
+  // Fonts: self-hosted by Next.js via next/font, plus data URIs for inline fonts
+  "font-src 'self' data:",
+
+  // API connections: only domains the browser actually connects to
+  // Server-side-only domains (api.anthropic.com, api.linear.app, discord.com) are excluded
+  // since CSP only governs browser-initiated requests
+  "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://wow.zamimg.com https://nether.wowhead.com https://us.i.posthog.com https://us-assets.i.posthog.com",
+
+  // Prevent embedding in iframes (clickjacking protection)
+  "frame-ancestors 'none'",
+
+  // Restrict <base> tag to same origin
+  "base-uri 'self'",
+
+  // Restrict form submissions to same origin
+  "form-action 'self'",
+
+  // Disallow plugins (Flash, Java applets, etc.)
+  "object-src 'none'",
+
+  // Workers and service workers: allow same-origin and blob URLs
+  "worker-src 'self' blob:",
+
+  // Block all <frame>, <iframe>, <object>, <embed> content
+  "frame-src 'none'",
+
+  // Enforce HTTPS in production
+  ...(isDev ? [] : ['upgrade-insecure-requests']),
+];
+
 const securityHeaders = [
   {
     // Content Security Policy - prevent XSS and injection attacks
     key: 'Content-Security-Policy',
-    value: [
-      "default-src 'self'",
-      "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://wow.zamimg.com https://us-assets.i.posthog.com",
-      "style-src 'self' 'unsafe-inline' https://wow.zamimg.com",
-      "img-src 'self' data: blob: https://cdn.discordapp.com https://wow.zamimg.com https://*.akamaihd.net https://static.wikia.nocookie.net",
-      "font-src 'self' data:",
-      "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.anthropic.com https://api.linear.app https://discord.com https://wow.zamimg.com https://nether.wowhead.com https://us.i.posthog.com https://us-assets.i.posthog.com",
-      "frame-ancestors 'none'",
-      "base-uri 'self'",
-      "form-action 'self'",
-    ].join('; '),
+    value: cspDirectives.join('; '),
   },
   {
     // Prevent clickjacking attacks
@@ -114,7 +157,6 @@ const nextConfig: NextConfig = {
       '@hugeicons/core-free-icons',
       '@hugeicons-pro/core-solid-rounded',
       '@hugeicons/react',
-      'hugeicons-react',
       'framer-motion',
     ],
   },

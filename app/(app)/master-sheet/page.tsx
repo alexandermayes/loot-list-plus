@@ -1160,13 +1160,67 @@ function MasterSheetContent() {
 
     if (!itemsData || itemsData.length === 0) return []
 
-    // Get all ranking submissions for all items at once
     type TierLootItem = { id: string; name: string; boss_name: string; item_slot: string; wowhead_id: number }
     const itemIds = itemsData.map((i: TierLootItem) => i.id)
-    const { data: allRankingsData } = await supabase
-      .from('loot_submission_items')
-      .select('rank, slot, submission_id, loot_item_id')
-      .in('loot_item_id', itemIds)
+
+    // Fetch ranking submissions AND independent data (priorities, loot history, BLP) in parallel
+    // These only depend on itemIds/tierId, not on each other
+    const [
+      { data: allRankingsData },
+      prioritiesMap,
+      { data: lootHistoryData },
+      tierBlpDataMap,
+    ] = await Promise.all([
+      // Get all ranking submissions for all items at once
+      supabase
+        .from('loot_submission_items')
+        .select('rank, slot, submission_id, loot_item_id')
+        .in('loot_item_id', itemIds),
+
+      // Load item priorities for this tier
+      (async (): Promise<Record<string, ItemPriority>> => {
+        try {
+          const prioResponse = await fetch(
+            `/api/prio-list?guild_id=${guildId}&raid_tier_id=${tierId}`
+          )
+          if (prioResponse.ok) {
+            const prioData = await prioResponse.json()
+            const map: Record<string, ItemPriority> = {}
+            for (const prio of prioData.priorities || []) {
+              map[prio.item_id] = prio
+            }
+            return map
+          }
+        } catch (err) {
+          console.error('Error loading item priorities:', err)
+        }
+        return {}
+      })(),
+
+      // Load loot history to filter out characters who already received items
+      supabase
+        .from('loot_history')
+        .select('character_id, loot_item_id')
+        .eq('guild_id', guildId)
+        .in('loot_item_id', itemIds),
+
+      // Fetch BLP data for all items in this tier
+      (async (): Promise<Record<string, number>> => {
+        if (!guildSettings.blp_enabled) return {}
+        try {
+          const blpResponse = await fetch(
+            `/api/blp?guild_id=${guildId}&item_ids=${itemIds.join(',')}`
+          )
+          if (blpResponse.ok) {
+            const blpResult = await blpResponse.json()
+            return blpResult.data || {}
+          }
+        } catch (err) {
+          console.error('Error loading BLP data:', err)
+        }
+        return {}
+      })(),
+    ])
 
     if (!allRankingsData || allRankingsData.length === 0) {
       return itemsData.map((item: TierLootItem) => ({ item, rankings: [] }))
@@ -1210,48 +1264,9 @@ function MasterSheetContent() {
       return itemsData.map((item: TierLootItem) => ({ item, rankings: [] }))
     }
 
-    // Load item priorities for this tier
-    let prioritiesMap: Record<string, ItemPriority> = {}
-    try {
-      const prioResponse = await fetch(
-        `/api/prio-list?guild_id=${guildId}&raid_tier_id=${tierId}`
-      )
-      if (prioResponse.ok) {
-        const prioData = await prioResponse.json()
-        for (const prio of prioData.priorities || []) {
-          prioritiesMap[prio.item_id] = prio
-        }
-      }
-    } catch (err) {
-      console.error('Error loading item priorities:', err)
-    }
-
-    // Load loot history to filter out characters who already received items
-    const { data: lootHistoryData } = await supabase
-      .from('loot_history')
-      .select('character_id, loot_item_id')
-      .eq('guild_id', guildId)
-      .in('loot_item_id', itemIds)
-
     const receivedItemsSet = new Set<string>(
       (lootHistoryData || []).map((h: { character_id: string; loot_item_id: string }) => `${h.character_id}-${h.loot_item_id}`)
     )
-
-    // Fetch BLP data for all items in this tier
-    let tierBlpDataMap: Record<string, number> = {}
-    if (guildSettings.blp_enabled) {
-      try {
-        const blpResponse = await fetch(
-          `/api/blp?guild_id=${guildId}&item_ids=${itemIds.join(',')}`
-        )
-        if (blpResponse.ok) {
-          const blpResult = await blpResponse.json()
-          tierBlpDataMap = blpResult.data || {}
-        }
-      } catch (err) {
-        console.error('Error loading BLP data:', err)
-      }
-    }
 
     // Pre-calculate attendance for all characters in a single batched query
     const attendanceCache = await calculateAttendanceBatch(
@@ -1361,13 +1376,11 @@ function MasterSheetContent() {
     setIsExporting(true)
 
     try {
-      // Fetch rankings for all active raid tiers
-      const allTiersRankings: ItemRankings[] = []
-
-      for (const tier of raidTiers) {
-        const tierRankings = await fetchTierRankings(tier.id)
-        allTiersRankings.push(...tierRankings)
-      }
+      // Fetch rankings for all active raid tiers in parallel
+      const tierResults = await Promise.all(
+        raidTiers.map(tier => fetchTierRankings(tier.id))
+      )
+      const allTiersRankings = tierResults.flat()
 
       const exportData = formatRankingsForGargul(allTiersRankings)
       await navigator.clipboard.writeText(exportData)
