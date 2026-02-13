@@ -102,35 +102,85 @@ export const BossSection = memo(function BossSection({
         </div>
       </Button>
 
-      {/* Items Table - Collapsible */}
+      {/* Items - Collapsible */}
       {!isCollapsed && (
-        <div className="border-t border-border overflow-x-auto max-h-[70vh] overflow-y-auto">
-          <table className="w-full min-w-[800px]">
-            <thead className="sticky top-0 z-10">
-              <tr className="bg-background-subtle">
-                <th className="px-5 py-2.5 text-left text-[12px] font-medium text-foreground-muted w-[280px] bg-background-subtle">Item</th>
-                <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted w-[100px] bg-background-subtle">Slot</th>
-                <th className="px-3 py-2.5 text-center text-[12px] font-medium text-foreground-muted w-[120px] bg-background-subtle">#1</th>
-                <th className="px-3 py-2.5 text-center text-[12px] font-medium text-foreground-muted w-[120px] bg-background-subtle">#2</th>
-                <th className="px-3 py-2.5 text-center text-[12px] font-medium text-foreground-muted w-[120px] bg-background-subtle">#3</th>
-                <th className="px-3 py-2.5 text-center text-[12px] font-medium text-foreground-muted w-[120px] bg-background-subtle">#4</th>
-                <th className="px-3 py-2.5 text-center text-[12px] font-medium text-foreground-muted w-[120px] bg-background-subtle">#5</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
-              {items.map((ir) => (
-                <ItemRow
-                  key={ir.item.id}
-                  itemRanking={ir}
-                  activeCharacterId={activeCharacterId}
-                  decimalPlaces={decimalPlaces}
-                  minimumRaidDays={minimumRaidDays}
-                  onCompare={onCompare}
-                />
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <>
+          {/* Mobile Cards */}
+          <div className="sm:hidden border-t border-border divide-y divide-border">
+            {items.map((ir) => (
+              <div key={ir.item.id} className={`px-4 py-3 space-y-2 ${ir.rankings.length === 0 ? 'bg-destructive/10' : ''}`}>
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <ItemLink
+                      name={ir.item.name}
+                      wowheadId={ir.item.wowhead_id}
+                      className="font-medium text-[13px]"
+                    />
+                    <p className="text-[11px] text-foreground-muted mt-0.5">{ir.item.item_slot}</p>
+                  </div>
+                </div>
+                {ir.rankings.length > 0 ? (
+                  <div className="flex flex-wrap gap-x-3 gap-y-1">
+                    {ir.rankings.slice(0, 5).map((ranking, index) => {
+                      const isCurrentUser = activeCharacterId === ranking.character_id
+                      const canCompare = isCurrentUser && index > 0 && ir.rankings[0]
+                      return (
+                        <div
+                          key={index}
+                          className={`flex items-baseline gap-1 ${canCompare ? 'cursor-pointer' : ''}`}
+                          onClick={canCompare && onCompare ? () => onCompare(ir.item.name, ranking, ir.rankings[0]) : undefined}
+                        >
+                          <span className="text-[11px] text-foreground-muted">#{index + 1}</span>
+                          <span
+                            className={`text-[12px] font-medium ${isCurrentUser ? 'underline decoration-dotted underline-offset-2' : ''}`}
+                            style={{ color: ranking.class_color }}
+                          >
+                            {ranking.player_name}
+                            {ranking.is_trial && <span className="text-warning text-[9px] ml-0.5">(T)</span>}
+                            {!ranking.is_eligible && <span className="text-destructive text-[9px] ml-0.5">⊘</span>}
+                          </span>
+                          <span className="text-[10px] text-foreground-muted">{ranking.loot_score.toFixed(decimalPlaces)}</span>
+                          {canCompare && <span className="text-[9px] text-accent">Why?</span>}
+                        </div>
+                      )
+                    })}
+                  </div>
+                ) : (
+                  <p className="text-[11px] text-muted-foreground">No one has ranked this item</p>
+                )}
+              </div>
+            ))}
+          </div>
+
+          {/* Desktop Table */}
+          <div className="hidden sm:block border-t border-border overflow-x-auto max-h-[70vh] overflow-y-auto">
+            <table className="w-full min-w-[800px]">
+              <thead className="sticky top-0 z-10">
+                <tr className="bg-background-subtle">
+                  <th className="px-5 py-2.5 text-left text-[12px] font-medium text-foreground-muted w-[280px] bg-background-subtle">Item</th>
+                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted w-[100px] bg-background-subtle">Slot</th>
+                  <th className="px-3 py-2.5 text-center text-[12px] font-medium text-foreground-muted w-[120px] bg-background-subtle">#1</th>
+                  <th className="px-3 py-2.5 text-center text-[12px] font-medium text-foreground-muted w-[120px] bg-background-subtle">#2</th>
+                  <th className="px-3 py-2.5 text-center text-[12px] font-medium text-foreground-muted w-[120px] bg-background-subtle">#3</th>
+                  <th className="px-3 py-2.5 text-center text-[12px] font-medium text-foreground-muted w-[120px] bg-background-subtle">#4</th>
+                  <th className="px-3 py-2.5 text-center text-[12px] font-medium text-foreground-muted w-[120px] bg-background-subtle">#5</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {items.map((ir) => (
+                  <ItemRow
+                    key={ir.item.id}
+                    itemRanking={ir}
+                    activeCharacterId={activeCharacterId}
+                    decimalPlaces={decimalPlaces}
+                    minimumRaidDays={minimumRaidDays}
+                    onCompare={onCompare}
+                  />
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
       )}
     </div>
   )

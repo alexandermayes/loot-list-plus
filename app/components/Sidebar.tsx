@@ -473,17 +473,19 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange, 
                 </p>
               </div>
               {isOfficer && (
-                <button
+                <Button
+                  variant="ghost"
+                  size="icon"
                   onClick={(e) => {
                     e.stopPropagation()
                     handleNavClick('guild-settings')
                   }}
-                  className="p-1 rounded-md hover:bg-background-subtle transition shrink-0"
+                  className="h-auto w-auto p-[13px] !rounded-md hover:bg-background-subtle shrink-0"
                   title="Guild Settings"
                   aria-label="Guild settings"
                 >
                   <HugeiconsIcon icon={Settings01Icon} size={18} className="text-muted-foreground" />
-                </button>
+                </Button>
               )}
               <Image
                 src="/icons/arrow-down.svg"

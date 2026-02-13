@@ -294,7 +294,29 @@ export default function LootHistoryTab() {
         />
       ) : (
         <div className="bg-background-elevated border border-border rounded-xl overflow-hidden">
-          <div className="overflow-x-auto max-h-[calc(100vh-400px)] overflow-y-auto">
+          {/* Mobile Cards */}
+          <div className="sm:hidden divide-y divide-border">
+            {entries.map((entry) => (
+              <div key={entry.id} className="px-4 py-3 space-y-1">
+                <div className="flex items-start justify-between gap-2">
+                  <ItemLink name={entry.item_name} wowheadId={entry.wowhead_id} />
+                  <span className="text-[11px] text-muted-foreground whitespace-nowrap">{formatDate(entry.awarded_date)}</span>
+                </div>
+                <div className="flex items-center gap-2 text-[12px]">
+                  <span className="font-medium" style={{ color: entry.character_class_color || undefined }}>
+                    {entry.character_name}
+                  </span>
+                  <span className="text-muted-foreground">from {entry.boss_name}</span>
+                </div>
+                {entry.notes && (
+                  <p className="text-[11px] text-muted-foreground truncate">{entry.notes}</p>
+                )}
+              </div>
+            ))}
+          </div>
+
+          {/* Desktop Table */}
+          <div className="hidden sm:block overflow-x-auto max-h-[calc(100vh-400px)] overflow-y-auto">
             <table className="w-full min-w-[800px]">
               <thead className="sticky top-0 z-10">
                 <tr className="bg-muted border-b border-border">
