@@ -11,6 +11,7 @@ import { Heading } from '@/components/ui/typography'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 import RealmSelector from '@/app/components/RealmSelector'
 
 interface DiscordGuild {
@@ -786,9 +787,9 @@ export default function CreateGuildPage() {
 
           {/* Error Message */}
           {error && (
-            <div className="p-4 rounded-lg bg-destructive/10 border border-destructive/50">
-              <p className="text-sm text-destructive">{error}</p>
-            </div>
+            <Alert variant="destructive">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
           )}
 
           {successMessage && (

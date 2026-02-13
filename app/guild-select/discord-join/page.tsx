@@ -9,6 +9,7 @@ import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Heading } from '@/components/ui/typography'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 
 interface AvailableGuild {
   id: string
@@ -229,8 +230,8 @@ export default function DiscordJoinPage() {
 
         {/* Error Message */}
         {error && (
-          <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/50 space-y-3">
-            <p className="text-sm text-destructive">{error}</p>
+          <Alert variant="destructive" className="space-y-3">
+            <AlertDescription>{error}</AlertDescription>
             {error.includes('connection expired') && (
               <Button
                 size="sm"
@@ -247,7 +248,7 @@ export default function DiscordJoinPage() {
                 Reconnect Discord
               </Button>
             )}
-          </div>
+          </Alert>
         )}
 
         {/* Available Guilds */}

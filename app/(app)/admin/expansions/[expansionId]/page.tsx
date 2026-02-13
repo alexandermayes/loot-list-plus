@@ -12,6 +12,7 @@ import { getRaidIcon, getRaidShorthand } from '@/utils/raidIcons'
 import { Button } from '@/components/ui/button'
 import { DateTimePicker } from '@/components/ui/date-time-picker'
 import { Switch } from '@/components/ui/switch'
+import { LoadingSpinner } from '@/components/ui/loading-spinner'
 
 interface RaidTier {
   id: string
@@ -469,8 +470,8 @@ export default function ExpansionDetailPage({ params }: { params: Promise<{ expa
 
   if (loading || guildLoading) {
     return (
-      <div className="p-8 flex items-center justify-center">
-        <p className="text-foreground-muted">Loading...</p>
+      <div className="p-8 flex items-center justify-center min-h-[40vh]">
+        <LoadingSpinner />
       </div>
     )
   }

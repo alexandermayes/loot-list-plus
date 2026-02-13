@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { CharacterFormSkeleton } from '@/components/ui/skeletons'
 import { useNotification } from '@/app/contexts/NotificationContext'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 
 interface WowClass {
   id: string
@@ -192,9 +193,9 @@ export default function CreateCharacterPage() {
 
         {/* Error Message */}
         {error && (
-          <div className="mb-6 p-4 bg-destructive/10 border border-destructive rounded-xl">
-            <p className="text-destructive text-[14px]">{error}</p>
-          </div>
+          <Alert variant="destructive" className="mb-6">
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
         )}
 
         {/* Form */}

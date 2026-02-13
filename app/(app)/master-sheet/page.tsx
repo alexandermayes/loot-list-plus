@@ -435,89 +435,93 @@ function MasterSheetContent() {
         return
       }
 
-      setGuildId(activeGuild.id)
-      setMember({
-        character_name: activeCharacter.name,
-        role: 'Member', // Can be updated if needed from character_guild_memberships
-        class: activeCharacter.class
-      })
+      try {
+        setGuildId(activeGuild.id)
+        setMember({
+          character_name: activeCharacter.name,
+          role: 'Member', // Can be updated if needed from character_guild_memberships
+          class: activeCharacter.class
+        })
 
-      // Load guild settings
-      const { data: settingsData } = await supabase
-        .from('guild_settings')
-        .select('*')
-        .eq('guild_id', activeGuild.id)
-        .single()
+        // Load guild settings
+        const { data: settingsData } = await supabase
+          .from('guild_settings')
+          .select('*')
+          .eq('guild_id', activeGuild.id)
+          .single()
 
-      if (settingsData) {
-        setGuildSettings(settingsData)
-      }
-
-      // Load raid tiers for active expansion (single join query)
-      // Officers can see all tiers (including disabled ones), members only see active tiers
-      if (activeGuild?.active_expansion_id) {
-        let tiersQuery = supabase
-          .from('raid_tiers')
-          .select(`
-            id,
-            name,
-            phase,
-            is_active,
-            is_guild_active,
-            master_sheet_visible,
-            expansion:expansions!inner (
-              id,
-              name
-            )
-          `)
-          .eq('expansion.id', activeGuild.active_expansion_id)
-
-        // Only filter to active tiers for non-officers
-        if (!isOfficer) {
-          tiersQuery = tiersQuery.eq('is_guild_active', true)
+        if (settingsData) {
+          setGuildSettings(settingsData)
         }
 
-        const { data: tiersData } = await tiersQuery
+        // Load raid tiers for active expansion (single join query)
+        // Officers can see all tiers (including disabled ones), members only see active tiers
+        if (activeGuild?.active_expansion_id) {
+          let tiersQuery = supabase
+            .from('raid_tiers')
+            .select(`
+              id,
+              name,
+              phase,
+              is_active,
+              is_guild_active,
+              master_sheet_visible,
+              expansion:expansions!inner (
+                id,
+                name
+              )
+            `)
+            .eq('expansion.id', activeGuild.active_expansion_id)
 
-        if (tiersData && tiersData.length > 0) {
-          // Transform data to ensure expansion is a single object (Supabase returns it as array)
-          const transformedData: RaidTier[] = tiersData.map((tier: RaidTierRow) => ({
-            ...tier,
-            phase: tier.phase ?? 0,
-            expansion: Array.isArray(tier.expansion) ? tier.expansion[0] : tier.expansion
-          }))
+          // Only filter to active tiers for non-officers
+          if (!isOfficer) {
+            tiersQuery = tiersQuery.eq('is_guild_active', true)
+          }
 
-          // Sort by Classic raid progression order
-          const sortedTiers = transformedData.sort((a: RaidTier, b: RaidTier) => {
-            return getRaidTierOrder(a.name) - getRaidTierOrder(b.name)
-          })
+          const { data: tiersData } = await tiersQuery
 
-          setRaidTiers(sortedTiers)
+          if (tiersData && tiersData.length > 0) {
+            // Transform data to ensure expansion is a single object (Supabase returns it as array)
+            const transformedData: RaidTier[] = tiersData.map((tier: RaidTierRow) => ({
+              ...tier,
+              phase: tier.phase ?? 0,
+              expansion: Array.isArray(tier.expansion) ? tier.expansion[0] : tier.expansion
+            }))
 
-          // Extract unique phases from tiers
-          const uniquePhases = [...new Set<number>(sortedTiers.map((t: RaidTier) => t.phase).filter((p: number | null): p is number => p !== null))]
-          uniquePhases.sort((a, b) => a - b)
-          setPhases(uniquePhases)
+            // Sort by Classic raid progression order
+            const sortedTiers = transformedData.sort((a: RaidTier, b: RaidTier) => {
+              return getRaidTierOrder(a.name) - getRaidTierOrder(b.name)
+            })
 
-          // Only set default phase if we don't have one selected yet
-          if (selectedPhase === null && uniquePhases.length > 0) {
-            // Check if there's a phase in the query params first
-            const phaseFromUrl = searchParams.get('phase')
-            if (phaseFromUrl && uniquePhases.includes(parseInt(phaseFromUrl))) {
-              setSelectedPhase(parseInt(phaseFromUrl))
-            } else {
-              // Otherwise use phase with an active tier or first phase
-              const activeTierPhase = sortedTiers.find((t: RaidTier) => t.is_active)?.phase
-              setSelectedPhase(activeTierPhase ?? uniquePhases[0])
+            setRaidTiers(sortedTiers)
+
+            // Extract unique phases from tiers
+            const uniquePhases = [...new Set<number>(sortedTiers.map((t: RaidTier) => t.phase).filter((p: number | null): p is number => p !== null))]
+            uniquePhases.sort((a, b) => a - b)
+            setPhases(uniquePhases)
+
+            // Only set default phase if we don't have one selected yet
+            if (selectedPhase === null && uniquePhases.length > 0) {
+              // Check if there's a phase in the query params first
+              const phaseFromUrl = searchParams.get('phase')
+              if (phaseFromUrl && uniquePhases.includes(parseInt(phaseFromUrl))) {
+                setSelectedPhase(parseInt(phaseFromUrl))
+              } else {
+                // Otherwise use phase with an active tier or first phase
+                const activeTierPhase = sortedTiers.find((t: RaidTier) => t.is_active)?.phase
+                setSelectedPhase(activeTierPhase ?? uniquePhases[0])
+              }
             }
           }
         }
+      } catch (error) {
+        console.error('Error loading master sheet data:', error)
+      } finally {
+        setInitialLoading(false)
       }
-
-      setInitialLoading(false)
     }
 
-    loadData()
+    loadData().catch(console.error)
   }, [guildLoading, activeGuild, activeCharacter, isOfficer])
 
   // Get tiers for the currently selected phase (memoized to prevent infinite loops)

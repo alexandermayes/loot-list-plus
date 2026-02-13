@@ -12,6 +12,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Text } from '@/components/ui/typography'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { CheckmarkCircle02Icon, LinkSquare01Icon } from '@hugeicons/core-free-icons'
 import { parseWowSimsExport, type ParsedGear } from '@/lib/wowsims-parser'
@@ -130,9 +131,9 @@ export function WowSimsImportModal({
 
         {/* Error State */}
         {error && (
-          <div className="p-4 bg-destructive/10 border border-destructive/30 rounded-xl">
-            <Text size="sm" className="text-destructive">{error}</Text>
-          </div>
+          <Alert variant="destructive">
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
         )}
 
         {/* Instructions */}

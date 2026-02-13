@@ -188,47 +188,52 @@ export default function AdminLootItems() {
       return
     }
 
-    setMember(activeMember)
+    try {
+      setMember(activeMember)
 
-    // Load all WoW classes
-    const { data: classesData } = await supabase
-      .from('wow_classes')
-      .select('*')
-      .order('name')
+      // Load all WoW classes
+      const { data: classesData } = await supabase
+        .from('wow_classes')
+        .select('*')
+        .order('name')
 
-    if (classesData) {
-      setClasses(classesData)
-    }
-
-    // Load all class specs
-    const { data: specsData } = await supabase
-      .from('class_specs')
-      .select('*')
-      .order('name')
-
-    if (specsData) {
-      setClassSpecs(specsData)
-    }
-
-    // Load raid tiers for filtering (only for active expansion)
-    if (activeGuild.active_expansion_id) {
-      const { data: tiersData } = await supabase
-        .from('raid_tiers')
-        .select('id, name')
-        .eq('expansion_id', activeGuild.active_expansion_id)
-
-      if (tiersData) {
-        // Sort by progression order
-        const sortedTiers = tiersData.sort((a: { id: string; name: string }, b: { id: string; name: string }) =>
-          getRaidTierOrder(a.name) - getRaidTierOrder(b.name)
-        )
-        setRaidTiers(sortedTiers)
+      if (classesData) {
+        setClasses(classesData)
       }
 
-      // Load all loot items
-      await loadLootItems(activeGuild.active_expansion_id)
+      // Load all class specs
+      const { data: specsData } = await supabase
+        .from('class_specs')
+        .select('*')
+        .order('name')
+
+      if (specsData) {
+        setClassSpecs(specsData)
+      }
+
+      // Load raid tiers for filtering (only for active expansion)
+      if (activeGuild.active_expansion_id) {
+        const { data: tiersData } = await supabase
+          .from('raid_tiers')
+          .select('id, name')
+          .eq('expansion_id', activeGuild.active_expansion_id)
+
+        if (tiersData) {
+          // Sort by progression order
+          const sortedTiers = tiersData.sort((a: { id: string; name: string }, b: { id: string; name: string }) =>
+            getRaidTierOrder(a.name) - getRaidTierOrder(b.name)
+          )
+          setRaidTiers(sortedTiers)
+        }
+
+        // Load all loot items
+        await loadLootItems(activeGuild.active_expansion_id)
+      }
+    } catch (error) {
+      console.error('Error loading loot items data:', error)
+    } finally {
+      setLoading(false)
     }
-    setLoading(false)
   }
 
   // Set page title
@@ -238,7 +243,7 @@ export default function AdminLootItems() {
 
   useEffect(() => {
     if (!guildLoading) {
-      loadData()
+      loadData().catch(console.error)
     }
   }, [guildLoading, activeGuild])
 

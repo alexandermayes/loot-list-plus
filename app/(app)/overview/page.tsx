@@ -272,26 +272,30 @@ function DashboardContent() {
         return
       }
 
-      const { data: tiersData, error: tiersError } = await supabase
-        .from('raid_tiers')
-        .select('id, name, is_active')
-        .eq('expansion_id', expansionId)
-        .eq('is_guild_active', true)
+      try {
+        const { data: tiersData, error: tiersError } = await supabase
+          .from('raid_tiers')
+          .select('id, name, is_active')
+          .eq('expansion_id', expansionId)
+          .eq('is_guild_active', true)
 
-      if (tiersError) {
-        console.error('Error loading raid tiers:', tiersError)
-        setRaidTiers([])
-      } else {
-        setRaidTiers(tiersData || [])
+        if (tiersError) {
+          console.error('Error loading raid tiers:', tiersError)
+          setRaidTiers([])
+        } else {
+          setRaidTiers(tiersData || [])
+        }
+
+        // Load all dashboard data (pass raid tiers to filter by expansion)
+        await loadDashboardData(user.id, activeGuild.id, tiersData || [])
+      } catch (error) {
+        console.error('Error loading overview data:', error)
+      } finally {
+        setLoading(false)
       }
-
-      // Load all dashboard data (pass raid tiers to filter by expansion)
-      await loadDashboardData(user.id, activeGuild.id, tiersData || [])
-
-      setLoading(false)
     }
 
-    loadData()
+    loadData().catch(console.error)
   }, [guildLoading, activeGuild, activeCharacter, currentExpansion])
 
   // Function to load all dashboard data for current character

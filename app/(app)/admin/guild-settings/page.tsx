@@ -23,6 +23,7 @@ import {
 } from '@/components/ui/modal'
 import { Button } from '@/components/ui/button'
 import { Heading } from '@/components/ui/typography'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 import { useGuildMembers } from '@/app/hooks/use-api'
 import { Select } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
@@ -89,47 +90,50 @@ export default function GuildSettingsPage() {
         return
       }
 
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) {
-        router.push('/')
-        return
-      }
-      setUser(user)
+      try {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) {
+          router.push('/')
+          return
+        }
+        setUser(user)
 
-      // Check if officer using context
-      if (!isOfficer) {
-        router.push('/overview')
-        return
-      }
+        // Check if officer using context
+        if (!isOfficer) {
+          router.push('/overview')
+          return
+        }
 
-      if (!activeGuild) {
+        if (!activeGuild) {
+          return
+        }
+
+        // Set form values from active guild
+        setGuildName(activeGuild.name)
+        setRealm(activeGuild.realm || '')
+        setFaction(activeGuild.faction as 'Alliance' | 'Horde')
+        setDiscordServerId(activeGuild.discord_server_id || '')
+        setGuildIconUrl((activeGuild as any).icon_url || null)
+
+        // Store initial values for change detection
+        setInitialValues({
+          guildName: activeGuild.name,
+          realm: activeGuild.realm || '',
+          faction: activeGuild.faction as 'Alliance' | 'Horde',
+          discordServerId: activeGuild.discord_server_id || ''
+        })
+
+        // Check if user is the guild creator
+        setIsGuildCreator(activeGuild.created_by === user.id)
+      } catch (error) {
+        console.error('Error loading guild settings:', error)
+      } finally {
         setLoading(false)
-        return
       }
-
-      // Set form values from active guild
-      setGuildName(activeGuild.name)
-      setRealm(activeGuild.realm || '')
-      setFaction(activeGuild.faction as 'Alliance' | 'Horde')
-      setDiscordServerId(activeGuild.discord_server_id || '')
-      setGuildIconUrl((activeGuild as any).icon_url || null)
-
-      // Store initial values for change detection
-      setInitialValues({
-        guildName: activeGuild.name,
-        realm: activeGuild.realm || '',
-        faction: activeGuild.faction as 'Alliance' | 'Horde',
-        discordServerId: activeGuild.discord_server_id || ''
-      })
-
-      // Check if user is the guild creator
-      setIsGuildCreator(activeGuild.created_by === user.id)
-
-      setLoading(false)
     }
 
     if (!guildLoading) {
-      loadData()
+      loadData().catch(console.error)
     }
   }, [guildLoading, activeGuild])
 
@@ -503,11 +507,11 @@ export default function GuildSettingsPage() {
                 </ModalDescription>
               </ModalHeader>
               <ModalBody className="space-y-4">
-                <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-4">
-                  <p className="text-[13px] text-muted-foreground">
+                <Alert variant="destructive">
+                  <AlertDescription className="text-muted-foreground">
                     Type <span className="font-mono font-semibold text-destructive">{deleteConfirmText}</span> to confirm.
-                  </p>
-                </div>
+                  </AlertDescription>
+                </Alert>
                 <Input
                   value={deleteConfirmInput}
                   onChange={(e) => setDeleteConfirmInput(e.target.value)}

@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button'
 import { Heading } from '@/components/ui/typography'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 
 export default function JoinGuildPage() {
   return (
@@ -211,9 +212,9 @@ function JoinGuildContent() {
 
               {/* Error Message */}
               {error && (
-                <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/50">
-                  <p className="text-sm text-destructive">{error}</p>
-                </div>
+                <Alert variant="destructive">
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
               )}
             </form>
           </CardContent>

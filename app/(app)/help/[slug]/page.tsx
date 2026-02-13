@@ -13,7 +13,7 @@ import {
 } from '@hugeicons/core-free-icons'
 import { helpCategories, findArticle, type HelpArticle, type HelpCategory } from '@/lib/help-content'
 import { Button } from '@/components/ui/button'
-import { Heading, Text } from '@/components/ui/typography'
+import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { cn } from '@/lib/utils'
 
 // Map icon names to actual icons
@@ -238,8 +238,8 @@ export default function HelpArticlePage() {
 
   if (!articleData) {
     return (
-      <div className="p-4 sm:p-6 lg:p-8 flex items-center justify-center">
-        <Text color="muted">Loading...</Text>
+      <div className="p-8 flex items-center justify-center min-h-[40vh]">
+        <LoadingSpinner />
       </div>
     )
   }

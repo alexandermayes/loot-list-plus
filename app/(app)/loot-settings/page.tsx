@@ -21,6 +21,7 @@ import { specMapping } from '@/utils/spec-role-mapping'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { ArrowDown01Icon, ArrowUp01Icon, Settings01Icon, Calendar03Icon, Settings02Icon, UserAdd01Icon, DiceIcon, Medal01Icon, Clock01Icon, GiftIcon, StickyNote01Icon, Search01Icon } from '@hugeicons/core-free-icons'
 import { EmptyState } from '@/components/ui/empty-state'
+import { ErrorState } from '@/components/ui/error-state'
 import { Textarea } from '@/components/ui/textarea'
 import { refreshWowheadTooltips } from '@/lib/wowhead'
 import PriorityListTab from './components/PriorityListTab'
@@ -105,6 +106,7 @@ export default function AdminLootItems() {
   const [classes, setClasses] = useState<WowClass[]>([])
   const [classSpecs, setClassSpecs] = useState<ClassSpec[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [user, setUser] = useState<any>(null)
   const [member, setMember] = useState<any>(null)
   const [searchTerm, setSearchTerm] = useState('')
@@ -264,7 +266,7 @@ export default function AdminLootItems() {
 
   useEffect(() => {
     if (!guildLoading) {
-      loadData()
+      loadData().catch(console.error)
     }
   }, [guildLoading, activeGuild])
 
@@ -487,72 +489,78 @@ export default function AdminLootItems() {
       return
     }
 
-    setMember(activeMember)
+    try {
+      setMember(activeMember)
 
-    // Load guild settings (which also loads guild roles)
-    await loadSettings(activeGuild.id)
+      // Load guild settings (which also loads guild roles)
+      await loadSettings(activeGuild.id)
 
-    // Load all WoW classes
-    const { data: classesData } = await supabase
-      .from('wow_classes')
-      .select('*')
-      .order('name')
+      // Load all WoW classes
+      const { data: classesData } = await supabase
+        .from('wow_classes')
+        .select('*')
+        .order('name')
 
-    if (classesData) {
-      setClasses(classesData)
-    }
-
-    // Load all class specs with class information
-    const { data: specsData } = await supabase
-      .from('class_specs')
-      .select(`
-        id,
-        name,
-        class_id,
-        wow_classes!inner(name)
-      `)
-      .order('name')
-
-    if (specsData) {
-      // Transform specs to include combined name for role mapping
-      const transformedSpecs = specsData.map((spec: any) => {
-        // The wow_classes join returns an object or array
-        const className = Array.isArray(spec.wow_classes)
-          ? spec.wow_classes[0]?.name
-          : spec.wow_classes?.name
-
-        return {
-          ...spec,
-          class_name: className,
-          // Create combined name like "Holy Paladin" to match spec-role-mapping
-          combined_name: spec.name === className
-            ? spec.name // Hunter, Mage, Warlock, Rogue
-            : `${spec.name} ${className}` // "Holy Paladin", "Protection Warrior"
-        }
-      })
-      setClassSpecs(transformedSpecs as any)
-    }
-
-    // Load raid tiers for filtering (only for active expansion)
-    if (activeGuild.active_expansion_id) {
-      const { data: tiersData } = await supabase
-        .from('raid_tiers')
-        .select('id, name')
-        .eq('expansion_id', activeGuild.active_expansion_id)
-        .eq('is_guild_active', true)
-
-      if (tiersData) {
-        // Sort by progression order
-        const sortedTiers = tiersData.sort((a: { name: string }, b: { name: string }) =>
-          getRaidTierOrder(a.name) - getRaidTierOrder(b.name)
-        )
-        setRaidTiers(sortedTiers)
+      if (classesData) {
+        setClasses(classesData)
       }
 
-      // Load all loot items
-      await loadLootItems(activeGuild.active_expansion_id)
+      // Load all class specs with class information
+      const { data: specsData } = await supabase
+        .from('class_specs')
+        .select(`
+          id,
+          name,
+          class_id,
+          wow_classes!inner(name)
+        `)
+        .order('name')
+
+      if (specsData) {
+        // Transform specs to include combined name for role mapping
+        const transformedSpecs = specsData.map((spec: any) => {
+          // The wow_classes join returns an object or array
+          const className = Array.isArray(spec.wow_classes)
+            ? spec.wow_classes[0]?.name
+            : spec.wow_classes?.name
+
+          return {
+            ...spec,
+            class_name: className,
+            // Create combined name like "Holy Paladin" to match spec-role-mapping
+            combined_name: spec.name === className
+              ? spec.name // Hunter, Mage, Warlock, Rogue
+              : `${spec.name} ${className}` // "Holy Paladin", "Protection Warrior"
+          }
+        })
+        setClassSpecs(transformedSpecs as any)
+      }
+
+      // Load raid tiers for filtering (only for active expansion)
+      if (activeGuild.active_expansion_id) {
+        const { data: tiersData } = await supabase
+          .from('raid_tiers')
+          .select('id, name')
+          .eq('expansion_id', activeGuild.active_expansion_id)
+          .eq('is_guild_active', true)
+
+        if (tiersData) {
+          // Sort by progression order
+          const sortedTiers = tiersData.sort((a: { name: string }, b: { name: string }) =>
+            getRaidTierOrder(a.name) - getRaidTierOrder(b.name)
+          )
+          setRaidTiers(sortedTiers)
+        }
+
+        // Load all loot items
+        await loadLootItems(activeGuild.active_expansion_id)
+      }
+    } catch (error) {
+      console.error('Error loading loot settings data:', error)
+      setError("Couldn't load loot settings. Check your connection and try again.")
+    } finally {
+      setLoading(false)
     }
-    setLoading(false)
   }
 
   const loadLootItems = async (expansionId: string) => {
@@ -1298,6 +1306,23 @@ export default function AdminLootItems() {
 
   if (loading) {
     return <LootSettingsPageSkeleton />
+  }
+
+  if (error) {
+    return (
+      <div className="p-4 sm:p-6 lg:p-8 space-y-6 font-poppins">
+        <div>
+          <Heading level={1}>Loot Management</Heading>
+          <p className="text-muted-foreground mt-1 text-base">Manage loot items and configure classifications</p>
+        </div>
+        <ErrorState
+          message={error}
+          onRetry={() => window.location.reload()}
+          size="lg"
+          variant="card"
+        />
+      </div>
+    )
   }
 
   return (

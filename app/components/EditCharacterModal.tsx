@@ -16,6 +16,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
 import { Label } from '@/components/ui/label'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 
 interface WowClass {
   id: string
@@ -241,9 +242,9 @@ export function EditCharacterModal({ isOpen, onClose, character, onSuccess }: Ed
         <ModalBody className="space-y-5">
           {/* Error Message */}
           {error && (
-            <div className="p-4 bg-destructive/10 border border-destructive rounded-xl">
-              <p className="text-destructive text-[13px]">{error}</p>
-            </div>
+            <Alert variant="destructive">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
           )}
 
           {/* Character Name */}

@@ -64,14 +64,14 @@ export default function Error({
             <Button variant="primary" size="lg" onClick={reset}>
               Try again
             </Button>
-            <Link href="/">
+            <Link href="/overview">
               <Button variant="secondary" size="lg">
                 <img
                   src="/images/hearthstone-icon.png"
                   alt=""
                   className="w-5 h-5"
                 />
-                Hearth back home
+                Go to overview
               </Button>
             </Link>
           </div>

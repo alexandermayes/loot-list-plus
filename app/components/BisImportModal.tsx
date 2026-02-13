@@ -12,6 +12,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Text } from '@/components/ui/typography'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 import { HugeiconsIcon } from '@hugeicons/react'
 import {
   CheckmarkCircle02Icon,
@@ -241,9 +242,9 @@ export function BisImportModal({
                   )}
 
                   {gearError && (
-                    <div className="p-3 bg-destructive/10 border border-destructive/30 rounded-lg">
-                      <Text size="sm" className="text-destructive">{gearError}</Text>
-                    </div>
+                    <Alert variant="destructive">
+                      <AlertDescription>{gearError}</AlertDescription>
+                    </Alert>
                   )}
 
                   {!gearSuccess && (

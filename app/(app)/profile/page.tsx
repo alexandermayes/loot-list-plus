@@ -19,6 +19,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useConfirm } from '@/components/ui/confirm-modal'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 import { HugeiconsIcon } from '@hugeicons/react'
 import {
   UserIcon,
@@ -653,11 +654,11 @@ export default function ProfilePage() {
           </ModalDescription>
         </ModalHeader>
         <ModalBody className="space-y-4">
-          <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-4">
-            <p className="text-[13px] text-muted-foreground">
+          <Alert variant="destructive">
+            <AlertDescription className="text-muted-foreground">
               Type <span className="font-mono font-semibold text-destructive">{deleteConfirmText}</span> to confirm.
-            </p>
-          </div>
+            </AlertDescription>
+          </Alert>
           <Input
             value={deleteConfirmInput}
             onChange={(e) => setDeleteConfirmInput(e.target.value)}

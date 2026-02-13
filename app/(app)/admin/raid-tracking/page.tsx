@@ -169,73 +169,77 @@ export default function RaidTrackingPage() {
         return
       }
 
-      // Load guild settings (with cache busting)
-      const response = await fetch(`/api/guild-settings?guild_id=${activeGuild.id}&t=${Date.now()}`, {
-        cache: 'no-store'
-      })
-      let settings: any = null
-      if (response.ok) {
-        const data = await response.json()
-        settings = data.settings
-        setGuildSettings(settings)
-      }
+      try {
+        // Load guild settings (with cache busting)
+        const response = await fetch(`/api/guild-settings?guild_id=${activeGuild.id}&t=${Date.now()}`, {
+          cache: 'no-store'
+        })
+        let settings: any = null
+        if (response.ok) {
+          const data = await response.json()
+          settings = data.settings
+          setGuildSettings(settings)
+        }
 
-      // Load guild members
-      const { data: membershipsData } = await supabase
-        .from('character_guild_memberships')
-        .select(`
-          character_id,
-          role,
-          character:characters!inner (
-            id,
-            name,
-            user_id,
-            class:wow_classes(name, color_hex)
-          )
-        `)
-        .eq('guild_id', activeGuild.id)
-        .eq('is_active', true)
-
-      if (membershipsData) {
-        // Get all character IDs
-        const characterIds = membershipsData.map((m: any) => m.character_id)
-
-        // Query to find which characters have approved loot submissions
-        const { data: approvedSubmissions } = await supabase
-          .from('loot_submissions')
-          .select('character_id')
+        // Load guild members
+        const { data: membershipsData } = await supabase
+          .from('character_guild_memberships')
+          .select(`
+            character_id,
+            role,
+            character:characters!inner (
+              id,
+              name,
+              user_id,
+              class:wow_classes(name, color_hex)
+            )
+          `)
           .eq('guild_id', activeGuild.id)
-          .eq('status', 'approved')
-          .in('character_id', characterIds)
+          .eq('is_active', true)
 
-        // Create a Set of character IDs with approved submissions for fast lookup
-        const approvedCharacterIds = new Set(approvedSubmissions?.map((s: { character_id: string }) => s.character_id) || [])
+        if (membershipsData) {
+          // Get all character IDs
+          const characterIds = membershipsData.map((m: any) => m.character_id)
 
-        // Filter to only include members with approved loot lists
-        const formattedMembers: Member[] = membershipsData
-          .filter((m: any) => approvedCharacterIds.has(m.character_id))
-          .map((m: any) => ({
-            character_id: m.character_id,
-            user_id: m.character?.user_id,
-            character_name: m.character?.name || 'Unknown',
-            class_name: m.character?.class?.name || 'Unknown',
-            class_color: m.character?.class?.color_hex || '#888888',
-            role: m.role
-          }))
-          .sort((a: Member, b: Member) => a.character_name.localeCompare(b.character_name))
+          // Query to find which characters have approved loot submissions
+          const { data: approvedSubmissions } = await supabase
+            .from('loot_submissions')
+            .select('character_id')
+            .eq('guild_id', activeGuild.id)
+            .eq('status', 'approved')
+            .in('character_id', characterIds)
 
-        setMembers(formattedMembers)
+          // Create a Set of character IDs with approved submissions for fast lookup
+          const approvedCharacterIds = new Set(approvedSubmissions?.map((s: { character_id: string }) => s.character_id) || [])
+
+          // Filter to only include members with approved loot lists
+          const formattedMembers: Member[] = membershipsData
+            .filter((m: any) => approvedCharacterIds.has(m.character_id))
+            .map((m: any) => ({
+              character_id: m.character_id,
+              user_id: m.character?.user_id,
+              character_name: m.character?.name || 'Unknown',
+              class_name: m.character?.class?.name || 'Unknown',
+              class_color: m.character?.class?.color_hex || '#888888',
+              role: m.role
+            }))
+            .sort((a: Member, b: Member) => a.character_name.localeCompare(b.character_name))
+
+          setMembers(formattedMembers)
+        }
+
+        // Generate and load raid dates
+        if (settings) {
+          await generateRaidDates(activeGuild.id, settings, currentExpansion)
+        }
+      } catch (error) {
+        console.error('Error loading raid tracking data:', error)
+      } finally {
+        setLoading(false)
       }
-
-      // Generate and load raid dates
-      if (settings) {
-        await generateRaidDates(activeGuild.id, settings, currentExpansion)
-      }
-
-      setLoading(false)
     }
 
-    loadData()
+    loadData().catch(console.error)
   }, [guildLoading, activeGuild, isOfficer, currentExpansion])
 
   const generateRaidDates = async (guildId: string, settings: any, expansion: any) => {

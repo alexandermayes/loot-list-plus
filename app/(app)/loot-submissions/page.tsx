@@ -23,6 +23,7 @@ import { Button } from '@/components/ui/button'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Heading } from '@/components/ui/typography'
 import ItemLink from '@/app/components/ItemLink'
 import { refreshWowheadTooltips } from '@/lib/wowhead'
@@ -149,35 +150,40 @@ export default function MasterLootPage() {
         return
       }
 
-      setGuildId(activeGuild.id)
+      try {
+        setGuildId(activeGuild.id)
 
-      // Get expansion info and create phase options
-      if (activeGuild.active_expansion_id) {
-        const { data: expansion } = await supabase
-          .from('expansions')
-          .select('id, name')
-          .eq('id', activeGuild.active_expansion_id)
-          .single()
+        // Get expansion info and create phase options
+        if (activeGuild.active_expansion_id) {
+          const { data: expansion } = await supabase
+            .from('expansions')
+            .select('id, name')
+            .eq('id', activeGuild.active_expansion_id)
+            .single()
 
-        if (expansion) {
-          // Create phase options (1-5 is typical for WoW expansions)
-          const phaseOptions: Phase[] = []
-          for (let i = 1; i <= 5; i++) {
-            phaseOptions.push({
-              phase: i,
-              expansion_id: expansion.id,
-              expansion_name: expansion.name
-            })
+          if (expansion) {
+            // Create phase options (1-5 is typical for WoW expansions)
+            const phaseOptions: Phase[] = []
+            for (let i = 1; i <= 5; i++) {
+              phaseOptions.push({
+                phase: i,
+                expansion_id: expansion.id,
+                expansion_name: expansion.name
+              })
+            }
+            setPhases(phaseOptions)
+            setActivePhase('all')
           }
-          setPhases(phaseOptions)
-          setActivePhase('all')
         }
+      } catch (error) {
+        console.error('Error loading submissions data:', error)
+      } finally {
+        setInitialLoading(false)
       }
-      setInitialLoading(false)
     }
 
     if (!guildLoading) {
-      loadData()
+      loadData().catch(console.error)
     }
   }, [guildLoading, activeGuild])
 
@@ -792,11 +798,11 @@ export default function MasterLootPage() {
                   ? 'This will permanently delete all pending loot submissions for this guild. Users will need to recreate their lists.'
                   : 'This will permanently delete ALL loot submissions (pending, approved, and received) for this guild. This action cannot be undone.'}
               </p>
-              <div className="bg-destructive/10 border border-destructive/30 rounded-xl p-3">
-                <p className="text-sm text-destructive font-medium">
+              <Alert variant="destructive">
+                <AlertDescription className="font-medium">
                   This is a permanent action.
-                </p>
-              </div>
+                </AlertDescription>
+              </Alert>
             </div>
           </div>
         </ModalBody>

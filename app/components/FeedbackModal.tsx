@@ -17,6 +17,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 
 import { trackClientEvent } from '@/utils/analytics/client'
 
@@ -177,9 +178,9 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
             <ModalBody className="space-y-5">
               {/* Error Message */}
               {error && (
-                <div className="p-4 bg-destructive/10 border border-destructive rounded-xl">
-                  <p className="text-destructive text-[13px]">{error}</p>
-                </div>
+                <Alert variant="destructive">
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
               )}
 
               {/* Screenshot Preview */}

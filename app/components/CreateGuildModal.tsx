@@ -19,6 +19,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 import { trackClientEvent } from '@/utils/analytics/client'
 
 interface DiscordGuild {
@@ -807,9 +808,9 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
 
               {/* Error */}
               {error && (
-                <div className="mt-4 p-3 bg-destructive/10 border border-destructive/50 rounded-xl">
-                  <p className="text-[13px] text-destructive">{error}</p>
-                </div>
+                <Alert variant="destructive" className="mt-4">
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
               )}
             </div>
           )}

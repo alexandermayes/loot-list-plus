@@ -12,6 +12,7 @@ import {
   ModalBody,
 } from '@/components/ui/modal'
 import { Input } from '@/components/ui/input'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 import { trackClientEvent } from '@/utils/analytics/client'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { Cancel01Icon, InformationCircleIcon } from '@hugeicons/core-free-icons'
@@ -362,8 +363,8 @@ export default function WelcomeScreen() {
               <LoadingSpinner text="Loading available guilds..." />
             </div>
           ) : discordError ? (
-            <div className="flex flex-col gap-4 p-4 rounded-xl bg-destructive/10 border border-destructive/50">
-              <p className="text-[14px] text-destructive">{discordError}</p>
+            <Alert variant="destructive" className="flex flex-col gap-4">
+              <AlertDescription>{discordError}</AlertDescription>
               {discordError.includes('verification required') && (
                 <Button
                   onClick={() => {
@@ -389,7 +390,7 @@ export default function WelcomeScreen() {
                   Reconnect Discord
                 </Button>
               )}
-            </div>
+            </Alert>
           ) : availableGuilds.length === 0 ? (
             <div className="text-center py-8">
               <p className="font-bold text-[18px] text-foreground mb-2">No guilds found</p>

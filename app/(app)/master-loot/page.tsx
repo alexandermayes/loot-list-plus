@@ -7,6 +7,7 @@ import type { User } from '@supabase/supabase-js'
 import { useGuildContext } from '@/app/contexts/GuildContext'
 import { useNotification } from '@/app/contexts/NotificationContext'
 import { SubmissionsListSkeleton, TierTabsSkeleton } from '@/components/ui/skeletons'
+import { ErrorState } from '@/components/ui/error-state'
 import { Modal, ModalHeader, ModalTitle, ModalBody, ModalFooter } from '@/components/ui/modal'
 import { Button } from '@/components/ui/button'
 import { Heading } from '@/components/ui/typography'
@@ -89,6 +90,7 @@ export default function MasterLootPage() {
   const [raidTiers, setRaidTiers] = useState<RaidTier[]>([])
   const [activeTier, setActiveTier] = useState<RaidTier | null>(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [reviewing, setReviewing] = useState<string | null>(null)
   const [reviewNotes, setReviewNotes] = useState('')
   const [filter, setFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all')
@@ -125,46 +127,52 @@ export default function MasterLootPage() {
         return
       }
 
-      setGuildId(activeGuild.id)
+      try {
+        setGuildId(activeGuild.id)
 
-      let tiersData: RaidTierRow[] = []
-      if (activeGuild.active_expansion_id) {
-        const { data: tiersResult } = await supabase
-          .from('raid_tiers')
-          .select(`
-            id,
-            name,
-            is_active,
-            expansion:expansions!inner (
+        let tiersData: RaidTierRow[] = []
+        if (activeGuild.active_expansion_id) {
+          const { data: tiersResult } = await supabase
+            .from('raid_tiers')
+            .select(`
               id,
-              name
-            )
-          `)
-          .eq('expansion.id', activeGuild.active_expansion_id)
-          .eq('is_guild_active', true)
-          .order('name', { ascending: true })
+              name,
+              is_active,
+              expansion:expansions!inner (
+                id,
+                name
+              )
+            `)
+            .eq('expansion.id', activeGuild.active_expansion_id)
+            .eq('is_guild_active', true)
+            .order('name', { ascending: true })
 
-        if (tiersResult) {
-          tiersData = tiersResult
+          if (tiersResult) {
+            tiersData = tiersResult
+          }
         }
-      }
 
-      if (tiersData && tiersData.length > 0) {
-        const transformedData = tiersData.map((tier: RaidTierRow) => ({
-          ...tier,
-          expansion: Array.isArray(tier.expansion) ? tier.expansion[0] : tier.expansion
-        }))
-        setRaidTiers(transformedData as RaidTier[])
-        const active = transformedData.find((t: RaidTier) => t.is_active) as RaidTier | undefined
-        if (active) {
-          setActiveTier(active)
+        if (tiersData && tiersData.length > 0) {
+          const transformedData = tiersData.map((tier: RaidTierRow) => ({
+            ...tier,
+            expansion: Array.isArray(tier.expansion) ? tier.expansion[0] : tier.expansion
+          }))
+          setRaidTiers(transformedData as RaidTier[])
+          const active = transformedData.find((t: RaidTier) => t.is_active) as RaidTier | undefined
+          if (active) {
+            setActiveTier(active)
+          }
         }
+      } catch (error) {
+        console.error('Error loading master loot data:', error)
+        setError("Couldn't load master loot data. Check your connection and try again.")
+      } finally {
+        setLoading(false)
       }
-      setLoading(false)
     }
 
     if (!guildLoading) {
-      loadData()
+      loadData().catch(console.error)
     }
   }, [guildLoading, activeGuild])
 
@@ -306,6 +314,13 @@ export default function MasterLootPage() {
           <TierTabsSkeleton />
           <SubmissionsListSkeleton count={4} />
         </div>
+      ) : error ? (
+        <ErrorState
+          message={error}
+          onRetry={() => window.location.reload()}
+          size="lg"
+          variant="card"
+        />
       ) : (
         <>
       {/* Submissions */}

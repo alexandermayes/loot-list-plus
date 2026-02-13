@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/modal'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Select } from '@/components/ui/select'
 import { Label } from '@/components/ui/label'
 
@@ -260,9 +261,9 @@ export function CreateCharacterModal({ isOpen, onClose, onSuccess, suggestedName
         <ModalBody className="space-y-5">
           {/* Error Message */}
           {error && (
-            <div className="p-4 bg-destructive/10 border border-destructive rounded-xl">
-              <p className="text-destructive text-[13px]">{error}</p>
-            </div>
+            <Alert variant="destructive">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
           )}
 
           {/* Character Name */}

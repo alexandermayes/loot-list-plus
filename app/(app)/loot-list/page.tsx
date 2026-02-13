@@ -18,6 +18,7 @@ import { Heading } from '@/components/ui/typography'
 import { normalizeBossName } from '@/utils/bossOrder'
 import { getRaidIcon, getRaidShorthand } from '@/utils/raidIcons'
 import { StarFilledIcon, CheckFilledIcon, ClockFilledIcon, AlertFilledIcon, CancelFilledIcon } from '@/components/ui/icons'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { InformationCircleIcon } from '@hugeicons/core-free-icons'
 import { useLootList, type LootItem } from '@/app/contexts/LootListContext'
@@ -901,16 +902,18 @@ export default function LootList() {
                       <span className="text-xs">{isExpanded ? '▼' : '▶'}</span>
                     </Button>
                     {isExpanded && (
-                      <div className="bg-destructive/10 border border-destructive/30 rounded-lg px-3 py-2 max-w-md">
-                        <ul className="space-y-1 text-sm text-foreground">
-                          {validation.violations.map((violation, idx) => (
-                            <li key={idx} className="flex items-center gap-2">
-                              <span className="text-destructive">•</span>
-                              <span>{violation}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
+                      <Alert variant="destructive" className="max-w-md px-3 py-2">
+                        <AlertDescription>
+                          <ul className="space-y-1 text-sm text-foreground">
+                            {validation.violations.map((violation, idx) => (
+                              <li key={idx} className="flex items-center gap-2">
+                                <span className="text-destructive">•</span>
+                                <span>{violation}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </AlertDescription>
+                      </Alert>
                     )}
                   </div>
                 ) : null
@@ -991,16 +994,18 @@ export default function LootList() {
                       <span className="text-xs">{isExpanded ? '▼' : '▶'}</span>
                     </Button>
                     {isExpanded && (
-                      <div className="bg-destructive/10 border border-destructive/30 rounded-lg px-3 py-2 max-w-md">
-                        <ul className="space-y-1 text-sm text-foreground">
-                          {validation.violations.map((violation, idx) => (
-                            <li key={idx} className="flex items-center gap-2">
-                              <span className="text-destructive">•</span>
-                              <span>{violation}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
+                      <Alert variant="destructive" className="max-w-md px-3 py-2">
+                        <AlertDescription>
+                          <ul className="space-y-1 text-sm text-foreground">
+                            {validation.violations.map((violation, idx) => (
+                              <li key={idx} className="flex items-center gap-2">
+                                <span className="text-destructive">•</span>
+                                <span>{violation}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </AlertDescription>
+                      </Alert>
                     )}
                   </div>
                 ) : null
@@ -1081,16 +1086,18 @@ export default function LootList() {
                       <span className="text-xs">{isExpanded ? '▼' : '▶'}</span>
                     </Button>
                     {isExpanded && (
-                      <div className="bg-destructive/10 border border-destructive/30 rounded-lg px-3 py-2 max-w-md">
-                        <ul className="space-y-1 text-sm text-foreground">
-                          {validation.violations.map((violation, idx) => (
-                            <li key={idx} className="flex items-center gap-2">
-                              <span className="text-destructive">•</span>
-                              <span>{violation}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
+                      <Alert variant="destructive" className="max-w-md px-3 py-2">
+                        <AlertDescription>
+                          <ul className="space-y-1 text-sm text-foreground">
+                            {validation.violations.map((violation, idx) => (
+                              <li key={idx} className="flex items-center gap-2">
+                                <span className="text-destructive">•</span>
+                                <span>{violation}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </AlertDescription>
+                      </Alert>
                     )}
                   </div>
                 ) : null
@@ -1171,16 +1178,18 @@ export default function LootList() {
                       <span className="text-xs">{isExpanded ? '▼' : '▶'}</span>
                     </Button>
                     {isExpanded && (
-                      <div className="bg-destructive/10 border border-destructive/30 rounded-lg px-3 py-2 max-w-md">
-                        <ul className="space-y-1 text-sm text-foreground">
-                          {validation.violations.map((violation, idx) => (
-                            <li key={idx} className="flex items-center gap-2">
-                              <span className="text-destructive">•</span>
-                              <span>{violation}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
+                      <Alert variant="destructive" className="max-w-md px-3 py-2">
+                        <AlertDescription>
+                          <ul className="space-y-1 text-sm text-foreground">
+                            {validation.violations.map((violation, idx) => (
+                              <li key={idx} className="flex items-center gap-2">
+                                <span className="text-destructive">•</span>
+                                <span>{violation}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </AlertDescription>
+                      </Alert>
                     )}
                   </div>
                 ) : null

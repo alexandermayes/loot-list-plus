@@ -3,14 +3,16 @@
 export const dynamic = 'force-dynamic'
 
 import { createClient } from '@/utils/supabase/client'
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { Calendar01Icon, ArrowDown01Icon, ArrowUp01Icon } from '@hugeicons/core-free-icons'
 import { Button } from '@/components/ui/button'
 import { AttendanceStatsSkeleton, TableSkeleton } from '@/components/ui/skeletons'
+import { ErrorState } from '@/components/ui/error-state'
 import { Heading } from '@/components/ui/typography'
 import { calculateAttendanceScore, getRankModifier } from '@/utils/calculations'
+import { useNotification } from '@/app/contexts/NotificationContext'
 
 interface RaidEvent {
   id: string
@@ -61,6 +63,7 @@ export default function AttendancePage() {
   // Personal attendance state
   const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [user, setUser] = useState<any>(null)
   const [activeCharacter, setActiveCharacter] = useState<any>(null)
   const [guildId, setGuildId] = useState<string | null>(null)
@@ -87,6 +90,7 @@ export default function AttendancePage() {
 
   const supabase = createClient()
   const router = useRouter()
+  const { showNotification } = useNotification()
 
   // Set page title
   useEffect(() => {
@@ -162,351 +166,377 @@ export default function AttendancePage() {
 
   useEffect(() => {
     const loadData = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) {
-        router.push('/')
-        return
-      }
-      setUser(user)
-
-      // Get active character
-      const { data: activeCharData } = await supabase
-        .from('user_active_characters')
-        .select('active_character_id, active_guild_id')
-        .eq('user_id', user.id)
-        .single()
-
-      if (!activeCharData?.active_character_id || !activeCharData?.active_guild_id) {
-        setLoading(false)
-        return
-      }
-
-      // PERFORMANCE: Parallelize independent queries that only need activeCharData
-      const [
-        characterResult,
-        settingsResult,
-        guildResult,
-        membershipResult
-      ] = await Promise.all([
-        // Query 1: Get character details
-        supabase
-          .from('characters')
-          .select('id, name, class:wow_classes(name, color_hex)')
-          .eq('id', activeCharData.active_character_id)
-          .single(),
-
-        // Query 2: Load guild settings
-        supabase
-          .from('guild_settings')
-          .select('*')
-          .eq('guild_id', activeCharData.active_guild_id)
-          .single(),
-
-        // Query 3: Get guild data for expansion
-        supabase
-          .from('guilds')
-          .select('active_expansion_id')
-          .eq('id', activeCharData.active_guild_id)
-          .single(),
-
-        // Query 4: Get character's role in the guild
-        supabase
-          .from('character_guild_memberships')
-          .select('role')
-          .eq('character_id', activeCharData.active_character_id)
-          .eq('guild_id', activeCharData.active_guild_id)
-          .single()
-      ])
-
-      const characterData = characterResult.data
-      const settingsData = settingsResult.data
-      const guildData = guildResult.data
-      const membershipData = membershipResult.data
-
-      if (!characterData) {
-        setLoading(false)
-        return
-      }
-
-      setActiveCharacter(characterData)
-      setGuildId(activeCharData.active_guild_id)
-
-      if (settingsData) {
-        setGuildSettings(settingsData)
-      }
-
-      // Get expansion data if guild has an active expansion
-      let raidStartDate: string | null = null
-      let expansionRaidDays: typeof expansionRaidSchedule = null
-      if (guildData?.active_expansion_id) {
-        const { data: expansionData } = await supabase
-          .from('expansions')
-          .select('raid_start_date, raid_days_per_week, first_raid_day, second_raid_day, third_raid_day, fourth_raid_day, fifth_raid_day, timezone')
-          .eq('id', guildData.active_expansion_id)
-          .single()
-
-        raidStartDate = expansionData?.raid_start_date || null
-        setExpansionStartDate(raidStartDate)
-
-        if (expansionData) {
-          expansionRaidDays = {
-            raid_days_per_week: expansionData.raid_days_per_week ?? 2,
-            first_raid_day: expansionData.first_raid_day,
-            second_raid_day: expansionData.second_raid_day,
-            third_raid_day: expansionData.third_raid_day,
-            fourth_raid_day: expansionData.fourth_raid_day,
-            fifth_raid_day: expansionData.fifth_raid_day,
-            timezone: expansionData.timezone ?? 'America/New_York'
-          }
-          setExpansionRaidSchedule(expansionRaidDays)
+      try {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) {
+          router.push('/')
+          return
         }
-      }
+        setUser(user)
 
-      const role = membershipData?.role || 'Member'
-      setMemberRole(role)
+        // Get active character
+        const { data: activeCharData } = await supabase
+          .from('user_active_characters')
+          .select('active_character_id, active_guild_id')
+          .eq('user_id', user.id)
+          .single()
 
-      // Calculate role modifier using guild settings
-      const modifier = getRankModifier(role, settingsData || {})
-      setRoleModifier(modifier)
+        if (!activeCharData?.active_character_id || !activeCharData?.active_guild_id) {
+          return
+        }
 
-      // Calculate rolling attendance window
-      // Include current week + X previous weeks
-      const weeks = settingsData?.rolling_attendance_weeks || 4
-      // Use expansion's first raid day, fallback to guild settings, then default to 0
-      const firstRaidDay = expansionRaidDays?.first_raid_day ?? settingsData?.first_raid_day ?? 0
+        // PERFORMANCE: Parallelize independent queries that only need activeCharData
+        const [
+          characterResult,
+          settingsResult,
+          guildResult,
+          membershipResult
+        ] = await Promise.all([
+          // Query 1: Get character details
+          supabase
+            .from('characters')
+            .select('id, name, class:wow_classes(name, color_hex)')
+            .eq('id', activeCharData.active_character_id)
+            .single(),
 
-      // Calculate the start of the current week
-      const today = new Date()
-      const currentDay = today.getDay()
-      const daysToSubtract = (currentDay - firstRaidDay + 7) % 7
-      const currentWeekStartDate = new Date(today)
-      currentWeekStartDate.setDate(currentWeekStartDate.getDate() - daysToSubtract)
-      currentWeekStartDate.setHours(0, 0, 0, 0)
+          // Query 2: Load guild settings
+          supabase
+            .from('guild_settings')
+            .select('*')
+            .eq('guild_id', activeCharData.active_guild_id)
+            .single(),
 
-      // Period ends at today (include current week)
-      const periodEnd = new Date(today)
+          // Query 3: Get guild data for expansion
+          supabase
+            .from('guilds')
+            .select('active_expansion_id')
+            .eq('id', activeCharData.active_guild_id)
+            .single(),
 
-      // Period starts X weeks before the current week
-      const periodStart = new Date(currentWeekStartDate)
-      periodStart.setDate(periodStart.getDate() - (weeks * 7))
+          // Query 4: Get character's role in the guild
+          supabase
+            .from('character_guild_memberships')
+            .select('role')
+            .eq('character_id', activeCharData.active_character_id)
+            .eq('guild_id', activeCharData.active_guild_id)
+            .single()
+        ])
 
-      // Use expansion start date as lower bound if set
-      const lowerBound = raidStartDate
-        ? new Date(Math.max(new Date(raidStartDate).getTime(), periodStart.getTime()))
-        : periodStart
+        // Check critical queries for errors
+        if (characterResult.error) {
+          console.error('Failed to load character data:', characterResult.error)
+          setError("Couldn't load your character data. Check your connection and try again.")
+          return
+        }
 
-      // Get raid events in the rolling window (current week + previous X weeks)
-      const { data: raidEventsData } = await supabase
-        .from('raid_events')
-        .select('id, raid_date, is_skipped, notes')
-        .eq('guild_id', activeCharData.active_guild_id)
-        .gte('raid_date', lowerBound.toISOString().split('T')[0])
-        .lte('raid_date', periodEnd.toISOString().split('T')[0])
-        .eq('is_skipped', false)
-        .order('raid_date', { ascending: true })
+        if (settingsResult.error) {
+          console.error('Failed to load guild settings:', settingsResult.error)
+          setError("Couldn't load guild settings. Check your connection and try again.")
+          return
+        }
 
-      // Filter to only show raid days that match the expansion's configured schedule
-      // Use expansion raid days if available, otherwise fall back to guild settings
-      const raidDaysSource = expansionRaidDays || settingsData
-      const raidDays = [
-        raidDaysSource?.first_raid_day,
-        raidDaysSource?.second_raid_day,
-        raidDaysSource?.third_raid_day,
-        raidDaysSource?.fourth_raid_day,
-        raidDaysSource?.fifth_raid_day
-      ].filter(day => day !== null && day !== undefined)
-        .slice(0, raidDaysSource?.raid_days_per_week || 2)
+        const characterData = characterResult.data
+        const settingsData = settingsResult.data
+        const guildData = guildResult.data
+        const membershipData = membershipResult.data
 
-      const filteredRaidEvents = (raidEventsData || []).filter((event: RaidEvent) => {
-        const eventDate = new Date(event.raid_date + 'T00:00:00')
-        return raidDays.includes(eventDate.getDay())
-      })
+        if (!characterData) {
+          return
+        }
 
-      // IMPORTANT: Deduplicate by raid_date to handle duplicate entries in database
-      // First, find which raid IDs have attendance records, so we prefer those
-      const filteredRaidIds = filteredRaidEvents.map((e: RaidEvent) => e.id)
-      const { data: existingAttendance } = await supabase
-        .from('attendance_records')
-        .select('raid_event_id')
-        .in('raid_event_id', filteredRaidIds)
+        setActiveCharacter(characterData)
+        setGuildId(activeCharData.active_guild_id)
 
-      const raidIdsWithAttendance = new Set(existingAttendance?.map((r: { raid_event_id: string }) => r.raid_event_id) || [])
+        if (settingsData) {
+          setGuildSettings(settingsData)
+        }
 
-      // Deduplicate: prefer events that have attendance records
-      const deduplicatedRaidEvents: RaidEvent[] = Array.from(
-        filteredRaidEvents.reduce((map: Map<string, RaidEvent>, event: RaidEvent) => {
-          const existing = map.get(event.raid_date)
-          if (!existing) {
-            // First event for this date - keep it
-            map.set(event.raid_date, event)
-          } else if (raidIdsWithAttendance.has(event.id) && !raidIdsWithAttendance.has(existing.id)) {
-            // This event has attendance but the existing one doesn't - prefer this one
-            map.set(event.raid_date, event)
+        // Get expansion data if guild has an active expansion
+        let raidStartDate: string | null = null
+        let expansionRaidDays: typeof expansionRaidSchedule = null
+        if (guildData?.active_expansion_id) {
+          const { data: expansionData } = await supabase
+            .from('expansions')
+            .select('raid_start_date, raid_days_per_week, first_raid_day, second_raid_day, third_raid_day, fourth_raid_day, fifth_raid_day, timezone')
+            .eq('id', guildData.active_expansion_id)
+            .single()
+
+          raidStartDate = expansionData?.raid_start_date || null
+          setExpansionStartDate(raidStartDate)
+
+          if (expansionData) {
+            expansionRaidDays = {
+              raid_days_per_week: expansionData.raid_days_per_week ?? 2,
+              first_raid_day: expansionData.first_raid_day,
+              second_raid_day: expansionData.second_raid_day,
+              third_raid_day: expansionData.third_raid_day,
+              fourth_raid_day: expansionData.fourth_raid_day,
+              fifth_raid_day: expansionData.fifth_raid_day,
+              timezone: expansionData.timezone ?? 'America/New_York'
+            }
+            setExpansionRaidSchedule(expansionRaidDays)
           }
-          return map
-        }, new Map<string, RaidEvent>()).values()
-      )
+        }
 
-      setGuildRaidEvents(deduplicatedRaidEvents)
+        const role = membershipData?.role || 'Member'
+        setMemberRole(role)
 
-      // Get attendance records for personal view (use same tracked window)
-      const { data: recordsData } = await supabase
-        .from('attendance_records')
-        .select(`
-          raid_event_id,
-          signed_up,
-          attended,
-          no_call_no_show,
-          raid_event:raid_events!inner (
-            raid_date,
-            notes,
-            guild_id
-          )
-        `)
-        .eq('character_id', characterData.id)
-        .eq('raid_event.guild_id', activeCharData.active_guild_id)
-        .gte('raid_event.raid_date', lowerBound.toISOString().split('T')[0])
-        .lte('raid_event.raid_date', periodEnd.toISOString().split('T')[0])
-        .order('raid_event.raid_date', { ascending: false })
+        // Calculate role modifier using guild settings
+        const modifier = getRankModifier(role, settingsData || {})
+        setRoleModifier(modifier)
 
-      if (recordsData) {
-        setAttendanceRecords(recordsData as any)
-      }
+        // Calculate rolling attendance window
+        // Include current week + X previous weeks
+        const weeks = settingsData?.rolling_attendance_weeks || 4
+        // Use expansion's first raid day, fallback to guild settings, then default to 0
+        const firstRaidDay = expansionRaidDays?.first_raid_day ?? settingsData?.first_raid_day ?? 0
 
-      // Calculate personal attendance score using deduplicated events
-      if (deduplicatedRaidEvents.length > 0) {
-        const raidIds = deduplicatedRaidEvents.map((r: RaidEvent) => r.id)
+        // Calculate the start of the current week
+        const today = new Date()
+        const currentDay = today.getDay()
+        const daysToSubtract = (currentDay - firstRaidDay + 7) % 7
+        const currentWeekStartDate = new Date(today)
+        currentWeekStartDate.setDate(currentWeekStartDate.getDate() - daysToSubtract)
+        currentWeekStartDate.setHours(0, 0, 0, 0)
 
-        const { data: recentRecords } = await supabase
+        // Period ends at today (include current week)
+        const periodEnd = new Date(today)
+
+        // Period starts X weeks before the current week
+        const periodStart = new Date(currentWeekStartDate)
+        periodStart.setDate(periodStart.getDate() - (weeks * 7))
+
+        // Use expansion start date as lower bound if set
+        const lowerBound = raidStartDate
+          ? new Date(Math.max(new Date(raidStartDate).getTime(), periodStart.getTime()))
+          : periodStart
+
+        // Get raid events in the rolling window (current week + previous X weeks)
+        const { data: raidEventsData } = await supabase
+          .from('raid_events')
+          .select('id, raid_date, is_skipped, notes')
+          .eq('guild_id', activeCharData.active_guild_id)
+          .gte('raid_date', lowerBound.toISOString().split('T')[0])
+          .lte('raid_date', periodEnd.toISOString().split('T')[0])
+          .eq('is_skipped', false)
+          .order('raid_date', { ascending: true })
+
+        // Filter to only show raid days that match the expansion's configured schedule
+        // Use expansion raid days if available, otherwise fall back to guild settings
+        const raidDaysSource = expansionRaidDays || settingsData
+        const raidDays = [
+          raidDaysSource?.first_raid_day,
+          raidDaysSource?.second_raid_day,
+          raidDaysSource?.third_raid_day,
+          raidDaysSource?.fourth_raid_day,
+          raidDaysSource?.fifth_raid_day
+        ].filter(day => day !== null && day !== undefined)
+          .slice(0, raidDaysSource?.raid_days_per_week || 2)
+
+        const filteredRaidEvents = (raidEventsData || []).filter((event: RaidEvent) => {
+          const eventDate = new Date(event.raid_date + 'T00:00:00')
+          return raidDays.includes(eventDate.getDay())
+        })
+
+        // IMPORTANT: Deduplicate by raid_date to handle duplicate entries in database
+        // First, find which raid IDs have attendance records, so we prefer those
+        const filteredRaidIds = filteredRaidEvents.map((e: RaidEvent) => e.id)
+        const { data: existingAttendance } = await supabase
           .from('attendance_records')
-          .select('signed_up, attended, no_call_no_show')
+          .select('raid_event_id')
+          .in('raid_event_id', filteredRaidIds)
+
+        const raidIdsWithAttendance = new Set(existingAttendance?.map((r: { raid_event_id: string }) => r.raid_event_id) || [])
+
+        // Deduplicate: prefer events that have attendance records
+        const deduplicatedRaidEvents: RaidEvent[] = Array.from(
+          filteredRaidEvents.reduce((map: Map<string, RaidEvent>, event: RaidEvent) => {
+            const existing = map.get(event.raid_date)
+            if (!existing) {
+              // First event for this date - keep it
+              map.set(event.raid_date, event)
+            } else if (raidIdsWithAttendance.has(event.id) && !raidIdsWithAttendance.has(existing.id)) {
+              // This event has attendance but the existing one doesn't - prefer this one
+              map.set(event.raid_date, event)
+            }
+            return map
+          }, new Map<string, RaidEvent>()).values()
+        )
+
+        setGuildRaidEvents(deduplicatedRaidEvents)
+
+        // Get attendance records for personal view (use same tracked window)
+        const { data: recordsData } = await supabase
+          .from('attendance_records')
+          .select(`
+            raid_event_id,
+            signed_up,
+            attended,
+            no_call_no_show,
+            raid_event:raid_events!inner (
+              raid_date,
+              notes,
+              guild_id
+            )
+          `)
           .eq('character_id', characterData.id)
-          .in('raid_event_id', raidIds)
+          .eq('raid_event.guild_id', activeCharData.active_guild_id)
+          .gte('raid_event.raid_date', lowerBound.toISOString().split('T')[0])
+          .lte('raid_event.raid_date', periodEnd.toISOString().split('T')[0])
+          .order('raid_event.raid_date', { ascending: false })
 
-        if (recentRecords && recentRecords.length > 0) {
-          const score = calculateAttendanceScore(recentRecords, deduplicatedRaidEvents.length, settingsData || {})
-          setAttendanceScore(score)
+        if (recordsData) {
+          setAttendanceRecords(recordsData as any)
         }
+
+        // Calculate personal attendance score using deduplicated events
+        if (deduplicatedRaidEvents.length > 0) {
+          const raidIds = deduplicatedRaidEvents.map((r: RaidEvent) => r.id)
+
+          const { data: recentRecords } = await supabase
+            .from('attendance_records')
+            .select('signed_up, attended, no_call_no_show')
+            .eq('character_id', characterData.id)
+            .in('raid_event_id', raidIds)
+
+          if (recentRecords && recentRecords.length > 0) {
+            const score = calculateAttendanceScore(recentRecords, deduplicatedRaidEvents.length, settingsData || {})
+            setAttendanceScore(score)
+          }
+        }
+
+        // Load guild-wide attendance data
+        await loadGuildAttendance(activeCharData.active_guild_id, deduplicatedRaidEvents, settingsData)
+      } catch (error) {
+        console.error('Failed to load attendance data:', error)
+        setError("Couldn't load attendance data. Check your connection and try again.")
+        showNotification('error', "Couldn't load attendance data. Try refreshing the page.")
+      } finally {
+        setLoading(false)
       }
-
-      // Load guild-wide attendance data
-      await loadGuildAttendance(activeCharData.active_guild_id, deduplicatedRaidEvents, settingsData)
-
-      setLoading(false)
     }
 
-    loadData()
+    loadData().catch((error) => {
+      console.error('Unhandled error in loadData:', error)
+      setError("Couldn't load attendance data. Check your connection and try again.")
+      setLoading(false)
+    })
   }, [])
 
   const loadGuildAttendance = async (guildId: string, raidEvents: RaidEvent[], settings: any) => {
-    const raidEventIds = raidEvents.map(r => r.id)
+    try {
+      const raidEventIds = raidEvents.map(r => r.id)
 
-    // PERFORMANCE: Parallelize independent queries
-    // - membershipsData only needs guildId
-    // - allAttendance only needs raidEventIds (from function param)
-    const [membershipsResult, attendanceResult] = await Promise.all([
-      // Query 1: Get all active guild members
-      supabase
-        .from('character_guild_memberships')
-        .select(`
-          character_id,
-          role,
-          joined_at,
-          character:characters!inner (
-            id,
-            name,
-            class:wow_classes(name, color_hex)
-          )
-        `)
+      // PERFORMANCE: Parallelize independent queries
+      // - membershipsData only needs guildId
+      // - allAttendance only needs raidEventIds (from function param)
+      const [membershipsResult, attendanceResult] = await Promise.all([
+        // Query 1: Get all active guild members
+        supabase
+          .from('character_guild_memberships')
+          .select(`
+            character_id,
+            role,
+            joined_at,
+            character:characters!inner (
+              id,
+              name,
+              class:wow_classes(name, color_hex)
+            )
+          `)
+          .eq('guild_id', guildId)
+          .eq('is_active', true),
+
+        // Query 2: Get all attendance records for these raid events
+        supabase
+          .from('attendance_records')
+          .select('raid_event_id, character_id, signed_up, attended, no_call_no_show, was_late, was_benched')
+          .in('raid_event_id', raidEventIds)
+      ])
+
+      const membershipsData = membershipsResult.data
+      const allAttendance = attendanceResult.data
+
+      if (!membershipsData) return
+
+      // Get characters with approved loot submissions (active raiders)
+      const characterIds = membershipsData.map((m: any) => m.character_id)
+      const { data: approvedSubmissions } = await supabase
+        .from('loot_submissions')
+        .select('character_id')
         .eq('guild_id', guildId)
-        .eq('is_active', true),
+        .eq('status', 'approved')
+        .in('character_id', characterIds)
 
-      // Query 2: Get all attendance records for these raid events
-      supabase
-        .from('attendance_records')
-        .select('raid_event_id, character_id, signed_up, attended, no_call_no_show, was_late, was_benched')
-        .in('raid_event_id', raidEventIds)
-    ])
+      const approvedCharacterIds = new Set(approvedSubmissions?.map((s: { character_id: string }) => s.character_id) || [])
 
-    const membershipsData = membershipsResult.data
-    const allAttendance = attendanceResult.data
+      // Filter to only active raiders
+      const activeRaiders = membershipsData.filter((m: any) => approvedCharacterIds.has(m.character_id))
 
-    if (!membershipsData) return
-
-    // Get characters with approved loot submissions (active raiders)
-    const characterIds = membershipsData.map((m: any) => m.character_id)
-    const { data: approvedSubmissions } = await supabase
-      .from('loot_submissions')
-      .select('character_id')
-      .eq('guild_id', guildId)
-      .eq('status', 'approved')
-      .in('character_id', characterIds)
-
-    const approvedCharacterIds = new Set(approvedSubmissions?.map((s: { character_id: string }) => s.character_id) || [])
-
-    // Filter to only active raiders
-    const activeRaiders = membershipsData.filter((m: any) => approvedCharacterIds.has(m.character_id))
-
-    if (activeRaiders.length === 0 || raidEvents.length === 0) {
-      setGuildRaiders([])
-      return
-    }
-
-    // Build attendance map: characterId -> raidEventId -> status
-    const attendanceByCharacter: Record<string, Map<string, AttendanceStatus>> = {}
-    allAttendance?.forEach((record: { raid_event_id: string; character_id: string | null; signed_up: boolean; attended: boolean; no_call_no_show: boolean; was_late?: boolean; was_benched?: boolean }) => {
-      if (!record.character_id) return
-      if (!attendanceByCharacter[record.character_id]) {
-        attendanceByCharacter[record.character_id] = new Map()
+      if (activeRaiders.length === 0 || raidEvents.length === 0) {
+        setGuildRaiders([])
+        return
       }
-      attendanceByCharacter[record.character_id].set(record.raid_event_id, {
-        signed_up: record.signed_up,
-        attended: record.attended,
-        no_call_no_show: record.no_call_no_show,
-        was_late: record.was_late,
-        was_benched: record.was_benched
+
+      // Build attendance map: characterId -> raidEventId -> status
+      const attendanceByCharacter: Record<string, Map<string, AttendanceStatus>> = {}
+      allAttendance?.forEach((record: { raid_event_id: string; character_id: string | null; signed_up: boolean; attended: boolean; no_call_no_show: boolean; was_late?: boolean; was_benched?: boolean }) => {
+        if (!record.character_id) return
+        if (!attendanceByCharacter[record.character_id]) {
+          attendanceByCharacter[record.character_id] = new Map()
+        }
+        attendanceByCharacter[record.character_id].set(record.raid_event_id, {
+          signed_up: record.signed_up,
+          attended: record.attended,
+          no_call_no_show: record.no_call_no_show,
+          was_late: record.was_late,
+          was_benched: record.was_benched
+        })
       })
-    })
 
-    // Calculate attendance score for each raider
-    const raiders: GuildRaider[] = activeRaiders.map((m: any) => {
-      const char = m.character as any
-      const charAttendance = attendanceByCharacter[m.character_id] || new Map()
+      // Calculate attendance score for each raider
+      const raiders: GuildRaider[] = activeRaiders.map((m: any) => {
+        const char = m.character as any
+        const charAttendance = attendanceByCharacter[m.character_id] || new Map()
 
-      // New member policy: check how to handle new members
-      const newMemberMode = settings?.new_member_mode || 'raw'
-      const memberJoinDate = m.joined_at ? new Date(m.joined_at) : null
+        // New member policy: check how to handle new members
+        const newMemberMode = settings?.new_member_mode || 'raw'
+        const memberJoinDate = m.joined_at ? new Date(m.joined_at) : null
 
-      // For 'fair' and 'minimum_gate' modes, filter raids to only those after member's join date
-      const eligibleRaidEvents = (newMemberMode === 'fair' || newMemberMode === 'minimum_gate') && memberJoinDate
-        ? raidEvents.filter(r => new Date(r.raid_date + 'T00:00:00') >= memberJoinDate)
-        : raidEvents
+        // For 'fair' and 'minimum_gate' modes, filter raids to only those after member's join date
+        const eligibleRaidEvents = (newMemberMode === 'fair' || newMemberMode === 'minimum_gate') && memberJoinDate
+          ? raidEvents.filter(r => new Date(r.raid_date + 'T00:00:00') >= memberJoinDate)
+          : raidEvents
 
-      const eligibleRaidIds = new Set(eligibleRaidEvents.map(r => r.id))
+        const eligibleRaidIds = new Set(eligibleRaidEvents.map(r => r.id))
 
-      // Get records for score calculation (only for eligible raids)
-      const records = Array.from(charAttendance.entries())
-        .filter(([raidId]) => eligibleRaidIds.has(raidId))
-        .map(([, status]) => ({
-          signed_up: status.signed_up,
-          attended: status.attended,
-          no_call_no_show: status.no_call_no_show
-        }))
+        // Get records for score calculation (only for eligible raids)
+        const records = Array.from(charAttendance.entries())
+          .filter(([raidId]) => eligibleRaidIds.has(raidId))
+          .map(([, status]) => ({
+            signed_up: status.signed_up,
+            attended: status.attended,
+            no_call_no_show: status.no_call_no_show
+          }))
 
-      const score = calculateAttendanceScore(records, eligibleRaidEvents.length, settings || {})
+        const score = calculateAttendanceScore(records, eligibleRaidEvents.length, settings || {})
 
-      return {
-        id: m.character_id,
-        name: char.name,
-        role: m.role || 'Member',
-        className: char.class?.name || 'Unknown',
-        classColor: char.class?.color_hex || '#ffffff',
-        attendanceScore: score,
-        attendance: charAttendance
-      }
-    })
+        return {
+          id: m.character_id,
+          name: char.name,
+          role: m.role || 'Member',
+          className: char.class?.name || 'Unknown',
+          classColor: char.class?.color_hex || '#ffffff',
+          attendanceScore: score,
+          attendance: charAttendance
+        }
+      })
 
-    setGuildRaiders(raiders)
+      setGuildRaiders(raiders)
+    } catch (error) {
+      console.error('Failed to load guild attendance data:', error)
+      showNotification('error', "Couldn't load guild attendance data. Try refreshing the page.")
+    }
   }
 
   const getAttendanceState = (status: AttendanceStatus | undefined): string => {
@@ -570,6 +600,13 @@ export default function AttendancePage() {
           <AttendanceStatsSkeleton />
           <TableSkeleton rows={8} cols={6} />
         </>
+      ) : error ? (
+        <ErrorState
+          message={error}
+          onRetry={() => window.location.reload()}
+          size="lg"
+          variant="card"
+        />
       ) : (
         <>
           {/* Personal Summary Cards */}

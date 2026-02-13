@@ -8,6 +8,7 @@ import { HugeiconsIcon } from '@hugeicons/react'
 import { Add01Icon } from '@hugeicons/core-free-icons'
 import { Heading } from '@/components/ui/typography'
 import { Button } from '@/components/ui/button'
+import { LoadingSpinner } from '@/components/ui/loading-spinner'
 
 // Lazy load modals to reduce initial bundle size
 const CreateCharacterModal = dynamic(() => import('@/app/components/CreateCharacterModal').then(mod => ({ default: mod.CreateCharacterModal })), {
@@ -32,8 +33,8 @@ export default function ManageCharactersPage() {
 
   if (loading) {
     return (
-      <div className="p-8 flex items-center justify-center">
-        <p className="text-foreground-muted text-[16px]">Loading characters...</p>
+      <div className="p-8 flex items-center justify-center min-h-[40vh]">
+        <LoadingSpinner />
       </div>
     )
   }
