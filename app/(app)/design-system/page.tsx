@@ -216,7 +216,7 @@ export default function DesignSystemPage() {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="sticky top-0 z-40 bg-background/95 backdrop-blur border-b border-border">
+      <header className="sticky top-14 sm:top-0 z-20 bg-background/95 backdrop-blur border-b border-border">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div>
             <h1 className="text-xl font-bold text-foreground">Design System</h1>
@@ -233,7 +233,7 @@ export default function DesignSystemPage() {
       <div className="max-w-7xl mx-auto flex">
         {/* Sidebar Navigation */}
         <aside className="hidden lg:block w-52 shrink-0">
-          <nav className="sticky top-16 pt-8 pl-8 max-h-[calc(100vh-4rem)] overflow-y-auto">
+          <nav className="sticky top-[4.5rem] sm:top-16 pt-8 pl-8 max-h-[calc(100vh-4rem)] overflow-y-auto">
             <div className="space-y-6">
               {navSections.map((section) => (
                 <div key={section.title}>

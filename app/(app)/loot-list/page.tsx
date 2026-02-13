@@ -629,11 +629,11 @@ export default function LootList() {
 
         {/* Phase Tabs - Sticky */}
         {isLoading ? (
-          <div className="sticky top-0 z-20 px-4 sm:px-6 lg:px-8 py-1.5 bg-background">
+          <div className="sticky top-14 sm:top-0 z-20 px-4 sm:px-6 lg:px-8 py-1.5 bg-background">
             <TierTabsSkeleton />
           </div>
         ) : phases.length > 0 && (
-          <div className="sticky top-0 z-20 px-4 sm:px-6 lg:px-8 py-1.5 bg-background">
+          <div className="sticky top-14 sm:top-0 z-20 px-4 sm:px-6 lg:px-8 py-1.5 bg-background">
             {/* Mobile: Dropdown selector */}
             <div className="sm:hidden">
               <Select
@@ -738,7 +738,7 @@ export default function LootList() {
         <>
         {/* Status Banner */}
         {selectedPhase !== null && (
-          <div className="sticky top-14 z-10 -mb-2 pb-2 bg-background/95 backdrop-blur-md">
+          <div className="sticky top-14 sm:top-0 z-10 -mb-2 pb-2 bg-background/95 backdrop-blur-md">
             <div className={`rounded-xl p-4 sm:p-6 border ${submission ? getStatusColor(submission.status) : getStatusColor('draft')}`}>
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
@@ -926,7 +926,7 @@ export default function LootList() {
               })()}
             </div>
           </div>
-          <div className="overflow-x-auto max-h-[70vh] overflow-y-auto">
+          <div className="overflow-x-auto max-h-[60vh] sm:max-h-[70vh] overflow-y-auto">
             <table className="w-full table-fixed">
               <colgroup>
                 <col style={{ width: '64px' }} />
@@ -1018,7 +1018,7 @@ export default function LootList() {
               })()}
             </div>
           </div>
-          <div className="overflow-x-auto max-h-[70vh] overflow-y-auto">
+          <div className="overflow-x-auto max-h-[60vh] sm:max-h-[70vh] overflow-y-auto">
             <table className="w-full table-fixed">
               <colgroup>
                 <col style={{ width: '64px' }} />
@@ -1110,7 +1110,7 @@ export default function LootList() {
               })()}
             </div>
           </div>
-          <div className="overflow-x-auto max-h-[70vh] overflow-y-auto">
+          <div className="overflow-x-auto max-h-[60vh] sm:max-h-[70vh] overflow-y-auto">
             <table className="w-full table-fixed">
               <colgroup>
                 <col style={{ width: '64px' }} />
@@ -1202,7 +1202,7 @@ export default function LootList() {
               })()}
             </div>
           </div>
-          <div className="overflow-x-auto max-h-[70vh] overflow-y-auto">
+          <div className="overflow-x-auto max-h-[60vh] sm:max-h-[70vh] overflow-y-auto">
             <table className="w-full table-fixed">
               <colgroup>
                 <col style={{ width: '64px' }} />
@@ -1247,7 +1247,7 @@ export default function LootList() {
             <h2 className="text-[15px] font-semibold text-foreground">No bracket (38-25) - Main-spec</h2>
             <p className="text-green-200 text-[12px]">Still considered main-spec priority</p>
           </div>
-          <div className="overflow-x-auto max-h-[70vh] overflow-y-auto">
+          <div className="overflow-x-auto max-h-[60vh] sm:max-h-[70vh] overflow-y-auto">
             <table className="w-full table-fixed">
               <colgroup>
                 <col style={{ width: '64px' }} />
@@ -1290,7 +1290,7 @@ export default function LootList() {
             <h2 className="text-[15px] font-semibold text-foreground">Off-spec (24-1)</h2>
             <p className="text-blue-200 text-[12px]">Off-spec items to support guild flexibility</p>
           </div>
-          <div className="overflow-x-auto max-h-[70vh] overflow-y-auto">
+          <div className="overflow-x-auto max-h-[60vh] sm:max-h-[70vh] overflow-y-auto">
             <table className="w-full table-fixed">
               <colgroup>
                 <col style={{ width: '64px' }} />
@@ -1429,7 +1429,7 @@ export default function LootList() {
             showUnrankedPanel ? 'w-80 opacity-100' : 'w-0 opacity-0 overflow-hidden'
           }`}
         >
-          <div className="w-80 bg-background-elevated border border-border rounded-xl flex flex-col sticky top-14 max-h-[calc(100vh-4.5rem)]">
+          <div className="w-80 bg-background-elevated border border-border rounded-xl flex flex-col sticky top-14 sm:top-0 max-h-[calc(100vh-4.5rem)]">
             {/* Panel Header */}
             <div className="p-4 border-b border-border flex items-center justify-between shrink-0">
               <div>

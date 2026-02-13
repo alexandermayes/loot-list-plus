@@ -445,7 +445,7 @@ export default function MasterLootPage() {
           <TierTabsSkeleton />
         </div>
       ) : phases.length > 0 && (
-        <div className="sticky top-0 z-20 px-4 sm:px-6 lg:px-8 py-1.5 bg-background">
+        <div className="sticky top-14 sm:top-0 z-20 px-4 sm:px-6 lg:px-8 py-1.5 bg-background">
           <div className="flex items-center gap-3 overflow-x-auto pb-1">
             <div className="flex gap-2">
               {/* All Phases Button */}
@@ -666,7 +666,7 @@ export default function MasterLootPage() {
             />
           ) : (
             <div className="overflow-x-auto">
-            <table className="w-full min-w-[420px]">
+            <table className="w-full min-w-[320px] sm:min-w-[420px]">
               <thead className="sticky top-0 z-10">
                 <tr className="bg-background-subtle border-b border-border">
                   <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground w-12 bg-background-subtle">Rank</th>

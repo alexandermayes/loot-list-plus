@@ -82,7 +82,7 @@ function UpdateEntryCard({ entry }: { entry: UpdateEntry }) {
 
 export default function UpdatesPage() {
   return (
-    <div className="p-8">
+    <div className="p-4 sm:p-6 lg:p-8">
       <div className="max-w-2xl mx-auto">
         {/* Header */}
         <div className="flex items-center gap-3 mb-8">

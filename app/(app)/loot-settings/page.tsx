@@ -1499,7 +1499,7 @@ export default function AdminLootItems() {
                 <col style={{ width: '220px' }} />
                 <col style={{ width: '48px' }} />
               </colgroup>
-              <thead className="sticky top-0 z-10">
+              <thead className="sticky top-14 sm:top-0 z-10">
                 <tr className="bg-background-subtle border-b border-border">
                   <th className="px-4 py-2.5 text-left text-[12px] font-medium text-foreground-muted bg-background-subtle">On</th>
                   <th className="px-4 py-2.5 text-left text-[12px] font-medium text-foreground-muted bg-background-subtle">Item name</th>

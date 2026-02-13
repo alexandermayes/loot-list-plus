@@ -155,7 +155,7 @@ function Sidebar({
 }) {
   return (
     <nav className="w-64 flex-shrink-0 pr-8 border-r border-border">
-      <div className="sticky top-8">
+      <div className="sticky top-[4.5rem] sm:top-8">
         {helpCategories.map((category) => {
           const Icon = iconMap[category.icon] || Rocket01Icon
           const hasCurrentArticle = category.articles.some((a) => a.slug === currentSlug)

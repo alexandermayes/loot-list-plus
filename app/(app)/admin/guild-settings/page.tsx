@@ -412,7 +412,7 @@ export default function GuildSettingsPage() {
           </div>
 
           {/* Current Members - with fixed scroll */}
-          <div className="bg-background-elevated border border-border rounded-xl overflow-hidden flex flex-col" style={{ maxHeight: '600px' }}>
+          <div className="bg-background-elevated border border-border rounded-xl overflow-auto flex flex-col" style={{ maxHeight: '600px' }}>
             <div className="p-6 border-b border-border flex-shrink-0">
               <div className="flex items-start justify-between">
                 <div>

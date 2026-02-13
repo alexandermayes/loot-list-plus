@@ -703,10 +703,10 @@ export default function AttendancePage() {
             <p className="text-foreground-muted">No raid events in the attendance window. Your score updates after first pull.</p>
           </div>
         ) : (
-          <div className="-mx-4 sm:mx-0 overflow-x-auto max-h-[calc(100vh-300px)] overflow-y-auto">
+          <div className="-mx-4 sm:mx-0 overflow-x-auto max-h-[calc(100vh-356px)] sm:max-h-[calc(100vh-300px)] overflow-y-auto">
             <table className="w-full min-w-max">
               {/* Header row with week groupings */}
-              <thead className="sticky top-0 z-30">
+              <thead className="sticky top-14 sm:top-0 z-20">
                 <tr className="bg-background-subtle">
                   <th className="sticky left-0 z-20 bg-background-subtle px-4 py-2 text-left text-[11px] font-medium text-foreground-muted min-w-[160px]">
                     Character
