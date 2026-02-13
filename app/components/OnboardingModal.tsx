@@ -145,8 +145,8 @@ export default function OnboardingModal({ open, onClose }: OnboardingModalProps)
             </div>
           </div>
 
-          <ModalBody className="py-6 px-8">
-            <div className="relative h-[240px] overflow-hidden">
+          <ModalBody className="py-6 px-4 sm:px-8">
+            <div className="relative h-[360px] sm:h-[240px] overflow-hidden">
               <AnimatePresence mode="wait" custom={direction}>
                 <motion.div
                   key={step}
@@ -156,7 +156,15 @@ export default function OnboardingModal({ open, onClose }: OnboardingModalProps)
                   animate="center"
                   exit="exit"
                   transition={{ duration: 0.25, ease: "easeInOut" }}
-                  className="absolute inset-0"
+                  drag="x"
+                  dragConstraints={{ left: 0, right: 0 }}
+                  dragElastic={0.15}
+                  dragDirectionLock
+                  onDragEnd={(_, { offset }) => {
+                    if (offset.x < -50) nextStep()
+                    else if (offset.x > 50) prevStep()
+                  }}
+                  className="absolute inset-0 overflow-y-auto"
                 >
                 {step === 0 && (
                   <div className="space-y-6">
