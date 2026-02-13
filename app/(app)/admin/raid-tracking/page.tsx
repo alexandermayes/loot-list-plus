@@ -201,15 +201,31 @@ export default function RaidTrackingPage() {
           // Get all loot submissions for this guild, joined to characters to get user_id.
           // We join through user_id because submission character_id may differ from
           // membership character_id when users switch their active character.
-          const { data: submissionsData } = await supabase
+          const { data: submissionsData, error: submissionsError } = await supabase
             .from('loot_submissions')
-            .select('character_id, character:characters!inner(user_id)')
+            .select('character_id, status, character:characters!inner(user_id)')
             .eq('guild_id', activeGuild.id)
             .in('status', ['draft', 'pending', 'approved'])
+
+          // Also fetch without status filter to see all submissions
+          const { data: allSubs } = await supabase
+            .from('loot_submissions')
+            .select('character_id, status, character:characters!inner(user_id)')
+            .eq('guild_id', activeGuild.id)
+
+          console.log('submissionsData:', submissionsData)
+          console.log('submissionsError:', submissionsError)
+          console.log('all submissions (no status filter):', allSubs)
+          console.log('all submission statuses:', allSubs?.map((s: any) => s.status))
+          console.log('membership user_ids:', membershipsData.map((m: any) => m.character?.user_id))
+          console.log('submission user_ids:', submissionsData?.map((s: any) => s.character?.user_id))
 
           const userIdsWithSubmissions = new Set(
             submissionsData?.map((s: any) => s.character?.user_id).filter(Boolean) || []
           )
+
+          console.log('userIdsWithSubmissions:', [...userIdsWithSubmissions])
+          console.log('members before filter:', membershipsData.length)
 
           const formattedMembers: Member[] = membershipsData
             .filter((m: any) => userIdsWithSubmissions.has(m.character?.user_id))
