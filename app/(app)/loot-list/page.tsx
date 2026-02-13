@@ -385,10 +385,13 @@ export default function LootList() {
     return byBoss
   }, [unrankedItems])
 
-  // PERFORMANCE: Create a Map for O(1) item lookups instead of O(n) .find() calls
-  const lootItemsById = useMemo(() => {
-    return new Map(lootItems.map(item => [item.id, item]))
-  }, [lootItems])
+  // PERFORMANCE: Create Map for O(1) item lookups instead of O(n) .find() calls.
+  // Uses bracket14Items (not all lootItems) so validation only counts items visible in brackets 1-4.
+  // Rankings can reference items no longer in bracket14Items (e.g., allocation changed after save),
+  // which appear as empty "Select item" in the UI but would cause phantom validation errors.
+  const bracket14ItemsById = useMemo(() => {
+    return new Map(bracket14Items.map(item => [item.id, item]))
+  }, [bracket14Items])
 
   // Bracket validation
   type BracketValidation = {
@@ -418,8 +421,11 @@ export default function LootList() {
         const item2Id = rankings[`${rank}-2`]
 
         // Check slot 1
+        // Use bracket14ItemsById so validation only counts items visible in brackets 1-4.
+        // Rankings can reference items no longer in bracket14Items (e.g., allocation changed),
+        // which appear as empty "Select item" in the UI but would cause phantom validation errors.
         if (item1Id) {
-          const item = lootItemsById.get(item1Id)
+          const item = bracket14ItemsById.get(item1Id)
           if (item) {
             // Track allocation cost items
             const cost = item.allocation_cost || 0
@@ -450,7 +456,7 @@ export default function LootList() {
 
         // Check slot 2
         if (item2Id) {
-          const item = lootItemsById.get(item2Id)
+          const item = bracket14ItemsById.get(item2Id)
           if (item) {
             // Track allocation cost items
             const cost = item.allocation_cost || 0
@@ -479,7 +485,7 @@ export default function LootList() {
 
             // Check if Reserved item has a companion
             if (item1Id) {
-              const item1 = lootItemsById.get(item1Id)
+              const item1 = bracket14ItemsById.get(item1Id)
               if (item1?.classification === 'Reserved' || item.classification === 'Reserved') {
                 bracket.violations.push(`Reserved items must be alone at rank ${rank}`)
                 // Add errors to both slots
@@ -544,7 +550,7 @@ export default function LootList() {
     })
 
     return brackets.filter(b => b.violations.length > 0 || b.allocationPoints > 0)
-  }, [rankings, lootItemsById, enforceSlotRestrictions])
+  }, [rankings, bracket14ItemsById, enforceSlotRestrictions])
   const hasValidationErrors = bracketValidations.some(b => b.violations.length > 0)
 
   // Get validation for a specific bracket by name

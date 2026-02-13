@@ -35,26 +35,26 @@ function getClassIconUrl(className: string | undefined): string {
   return `https://wow.zamimg.com/images/wow/icons/large/classicon_${classNameLower}.jpg`
 }
 
-// Get random WoW-themed greeting
-function getRandomGreeting(username: string): string {
-  const greetings = [
-    `Welcome back, ${username}.`,
-    `Well met, ${username}.`,
-    `Greetings, ${username}.`,
-    `Lok'tar Ogar, ${username}.`,
-    `Strength and honor, ${username}.`,
-    `Light be with you, ${username}.`,
-    `Victory or death, ${username}.`,
-    `Ready for raid, ${username}?`,
-    `May your loot be epic, ${username}.`,
-    `Time to hunt some purples, ${username}.`,
-    `Zug zug, ${username}.`,
-    `For glory, ${username}.`,
-    `The hunt begins, ${username}.`,
-    `Let's get that loot, ${username}.`
-  ]
+// Get random WoW-themed greeting (returns [prefix, suffix] to allow coloring the name separately)
+const GREETINGS = [
+  ['Welcome back, ', '.'],
+  ['Well met, ', '.'],
+  ['Greetings, ', '.'],
+  ["Lok'tar Ogar, ", '.'],
+  ['Strength and honor, ', '.'],
+  ['Light be with you, ', '.'],
+  ['Victory or death, ', '.'],
+  ['Ready for raid, ', '?'],
+  ['May your loot be epic, ', '.'],
+  ['Time to hunt some purples, ', '.'],
+  ['Zug zug, ', '.'],
+  ['For glory, ', '.'],
+  ['The hunt begins, ', '.'],
+  ["Let's get that loot, ", '.'],
+] as const
 
-  return greetings[Math.floor(Math.random() * greetings.length)]
+function getRandomGreetingIndex(): number {
+  return Math.floor(Math.random() * GREETINGS.length)
 }
 
 interface RaidTier {
@@ -129,7 +129,8 @@ function DashboardContent() {
   const [loading, setLoading] = useState(true)
   const [user, setUser] = useState<any>(null)
   const [error, setError] = useState<string | null>(null)
-  const [greeting, setGreeting] = useState<string>('')
+  const [greetingIndex, setGreetingIndex] = useState<number | null>(null)
+  const [greetingName, setGreetingName] = useState<string>('')
 
   // New dashboard state
   const [allSubmissions, setAllSubmissions] = useState<LootSubmission[]>([]) // For current character
@@ -205,17 +206,23 @@ function DashboardContent() {
     setShowOnboarding(false)
   }
 
-  // Set greeting once when component mounts
+  // Set greeting based on active character name (falls back to profile name)
   useEffect(() => {
     const initGreeting = async () => {
+      if (greetingIndex === null) {
+        setGreetingIndex(getRandomGreetingIndex())
+      }
+      if (activeCharacter?.name) {
+        setGreetingName(activeCharacter.name)
+        return
+      }
       const { data: { user } } = await supabase.auth.getUser()
       if (user) {
-        const username = user?.user_metadata?.custom_claims?.global_name || user?.user_metadata?.full_name || user?.user_metadata?.name || 'User'
-        setGreeting(getRandomGreeting(username))
+        setGreetingName(user?.user_metadata?.custom_claims?.global_name || user?.user_metadata?.full_name || user?.user_metadata?.name || 'User')
       }
     }
     initGreeting()
-  }, []) // Empty dependency array - only run once on mount
+  }, [activeCharacter])
 
   // Handle dismissing an action
   const handleDismissAction = (e: React.MouseEvent, submissionId: string) => {
@@ -795,7 +802,10 @@ function DashboardContent() {
       {/* Header - Always visible but stable during loading */}
       <div>
         <Heading level={1}>
-          {isLoading ? 'Welcome back!' : (greeting || 'Welcome back!')}
+          {isLoading || greetingIndex === null || !greetingName
+            ? 'Welcome back!'
+            : <>{GREETINGS[greetingIndex][0]}<span style={{ color: activeCharacter?.class?.color_hex || undefined }}>{greetingName}</span>{GREETINGS[greetingIndex][1]}</>
+          }
         </Heading>
         <p className="text-muted-foreground mt-1 text-base">
           {isLoading
