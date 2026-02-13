@@ -198,47 +198,9 @@ export default function RaidTrackingPage() {
           .eq('is_active', true)
 
         if (membershipsData) {
-          // Query to find which characters have loot submissions (any non-rejected status).
-          // Auto-save reverts approved submissions to 'draft' when users edit their list,
-          // so we can't filter on 'approved' alone — include draft, pending, and approved.
-          const { data: submissions, error: submissionsError } = await supabase
-            .from('loot_submissions')
-            .select('character_id, status, guild_id')
-            .eq('guild_id', activeGuild.id)
-            .in('status', ['draft', 'pending', 'approved'])
-
-          if (submissionsError) {
-            console.error('Error fetching loot submissions:', submissionsError)
-          }
-
-          // DEBUG: Log all data to diagnose empty results
-          console.log('[DEBUG raid-tracking] activeGuild.id:', activeGuild.id)
-          console.log('[DEBUG raid-tracking] membershipsData count:', membershipsData.length)
-          console.log('[DEBUG raid-tracking] submissions:', submissions)
-          console.log('[DEBUG raid-tracking] submissionsError:', submissionsError)
-
-          // Also try a query with NO filters to see if any submissions exist at all
-          const { data: allSubs, error: allSubsError } = await supabase
-            .from('loot_submissions')
-            .select('character_id, status, guild_id')
-            .limit(10)
-          console.log('[DEBUG raid-tracking] all submissions (no filter, limit 10):', allSubs)
-          console.log('[DEBUG raid-tracking] allSubsError:', allSubsError)
-
-          // Create a Set of character IDs with submissions for fast lookup
-          const submittedCharacterIds = new Set(submissions?.map((s: { character_id: string }) => s.character_id) || [])
-
-          // DEBUG: Compare the actual IDs
-          const memberCharIds = membershipsData.map((m: any) => m.character_id)
-          console.log('[DEBUG raid-tracking] member character_ids:', memberCharIds)
-          console.log('[DEBUG raid-tracking] submission character_ids:', [...submittedCharacterIds])
-          console.log('[DEBUG raid-tracking] intersection:', memberCharIds.filter((id: string) => submittedCharacterIds.has(id)))
-
-          // If we got submissions, filter to only those members.
-          // If the query failed, show all members so the page is still usable.
-          const shouldFilter = !submissionsError && submissions !== null
+          // Show all active guild members — don't filter by submission status.
+          // Raid tracking is for attendance; officers need to see everyone.
           const formattedMembers: Member[] = membershipsData
-            .filter((m: any) => !shouldFilter || submittedCharacterIds.has(m.character_id))
             .map((m: any) => ({
               character_id: m.character_id,
               user_id: m.character?.user_id,
@@ -1977,9 +1939,9 @@ export default function RaidTrackingPage() {
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
                         </svg>
                       </div>
-                      <h4 className="text-[16px] font-semibold text-foreground mb-2">No raiders with loot lists</h4>
+                      <h4 className="text-[16px] font-semibold text-foreground mb-2">No guild members found</h4>
                       <p className="text-foreground-muted text-[13px] max-w-md mx-auto">
-                        Raiders will appear here once they save or submit their loot lists. Use the "Import data" button to add attendance for this raid day.
+                        Active guild members will appear here. Use the "Import data" button to add attendance for this raid day.
                       </p>
                     </div>
                   ) : (

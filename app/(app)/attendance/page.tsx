@@ -459,24 +459,8 @@ export default function AttendancePage() {
 
       if (!membershipsData) return
 
-      // Get characters with loot submissions (any non-rejected status).
-      // Auto-save reverts approved submissions to 'draft' when users edit,
-      // so include draft, pending, and approved to catch all active raiders.
-      const { data: submissions, error: submissionsError } = await supabase
-        .from('loot_submissions')
-        .select('character_id')
-        .eq('guild_id', guildId)
-        .in('status', ['draft', 'pending', 'approved'])
-
-      if (submissionsError) {
-        console.error('Error fetching loot submissions:', submissionsError)
-      }
-
-      const submittedCharacterIds = new Set(submissions?.map((s: { character_id: string }) => s.character_id) || [])
-
-      // Filter to only active raiders. If query failed, show all members.
-      const shouldFilter = !submissionsError && submissions !== null
-      const activeRaiders = membershipsData.filter((m: any) => !shouldFilter || submittedCharacterIds.has(m.character_id))
+      // Show all active guild members — don't filter by submission status.
+      const activeRaiders = membershipsData
 
       if (activeRaiders.length === 0 || raidEvents.length === 0) {
         setGuildRaiders([])
