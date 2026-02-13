@@ -126,7 +126,7 @@ const MultiSelectDropdown = memo(function MultiSelectDropdown({
 
   const renderButtonContent = () => {
     if (selectedIds.size === 0) {
-      return <span className="text-gray-400">{placeholder}</span>
+      return <span className="text-muted-foreground">{placeholder}</span>
     }
 
     // Check if all specs are selected (get all non-role-group options)
@@ -153,7 +153,7 @@ const MultiSelectDropdown = memo(function MultiSelectDropdown({
             <span style={{ color: entry.color || '#ffffff' }}>
               {entry.name}
             </span>
-            {index < displayEntries.length - 1 && <span className="text-gray-400">, </span>}
+            {index < displayEntries.length - 1 && <span className="text-muted-foreground">, </span>}
           </span>
         ))}
       </>

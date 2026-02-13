@@ -207,7 +207,7 @@ export default function ScoreBreakdownModal({ open, onClose, guildSettings }: Sc
               </div>
               <p className="text-foreground-secondary text-[13px]">
                 New members on trial status receive a {trialPenaltyValue} point penalty until promoted to full member.
-                Trial members are shown with <span className="text-yellow-400">(T)</span> in rankings.
+                Trial members are shown with <span className="text-warning">(T)</span> in rankings.
               </p>
             </div>
           )}

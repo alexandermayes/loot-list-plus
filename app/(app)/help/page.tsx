@@ -30,7 +30,7 @@ function CategoryCard({ category }: { category: HelpCategory }) {
   return (
     <div
       onClick={() => router.push(`/help/${category.articles[0]?.slug || ''}`)}
-      className="bg-background-elevated border border-border rounded-xl p-6 hover:border-accent/50 transition-all cursor-pointer group"
+      className="bg-background-elevated border border-border rounded-xl p-6 hover:border-accent/50 transition-colors cursor-pointer group"
     >
       <div className="flex items-start gap-4">
         <div className="w-12 h-12 bg-accent/10 rounded-lg flex items-center justify-center flex-shrink-0 group-hover:bg-accent/20 transition-colors">
@@ -67,7 +67,7 @@ function SearchResult({
   return (
     <div
       onClick={() => router.push(`/help/${article.slug}`)}
-      className="bg-background-elevated border border-border rounded-lg p-4 hover:border-accent/50 transition-all cursor-pointer"
+      className="bg-background-elevated border border-border rounded-lg p-4 hover:border-accent/50 transition-colors cursor-pointer"
     >
       <div className="flex items-center gap-2 mb-1">
         <span className="text-xs text-accent font-medium">{categoryTitle}</span>

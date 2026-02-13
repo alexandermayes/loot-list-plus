@@ -32,7 +32,7 @@ export function CharacterCard({
     <div
       className={`
         bg-background-elevated border border-border rounded-xl p-4
-        transition-all duration-200
+        transition-colors duration-200
         ${onClick ? 'cursor-pointer hover:bg-background-elevated hover:border-border-strong' : ''}
         ${isActive ? 'ring-2 ring-accent' : ''}
         ${className}

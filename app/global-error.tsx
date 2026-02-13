@@ -51,7 +51,7 @@ export default function GlobalError({
 
               {/* Message */}
               <div className="space-y-3">
-                <h1 className="text-[32px] font-bold tracking-tight text-white">
+                <h1 className="text-[32px] font-bold tracking-tight text-[#ffffff]">
                   Something broke
                 </h1>
                 <p className="text-[16px] text-[#a1a1aa]">
@@ -63,13 +63,13 @@ export default function GlobalError({
               <div className="mt-8 flex flex-col sm:flex-row gap-3 justify-center">
                 <button
                   onClick={reset}
-                  className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg bg-[#ff8000] text-white font-medium hover:bg-[#e67300] transition-colors"
+                  className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg bg-[#ff8000] text-[#ffffff] font-medium hover:bg-[#e67300] transition-colors"
                 >
                   Try again
                 </button>
                 <a
                   href="/"
-                  className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg bg-[#1f1f23] text-white font-medium hover:bg-[#2a2a2e] transition-colors border border-[#2a2a2e]"
+                  className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg bg-[#1f1f23] text-[#ffffff] font-medium hover:bg-[#2a2a2e] transition-colors border border-[#2a2a2e]"
                 >
                   <img
                     src="/images/hearthstone-icon.png"

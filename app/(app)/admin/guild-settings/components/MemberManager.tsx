@@ -426,7 +426,7 @@ export default function MemberManager() {
             // Determine icon based on position (not name)
             const getRoleIcon = () => {
               if (rolePosition >= ROLE_POSITIONS.GUILD_MASTER) return <HugeiconsIcon icon={CrownIcon} size={16} className="text-accent" />
-              if (rolePosition >= ROLE_POSITIONS.OFFICER) return <HugeiconsIcon icon={Shield01Icon} size={16} className="text-yellow-400" />
+              if (rolePosition >= ROLE_POSITIONS.OFFICER) return <HugeiconsIcon icon={Shield01Icon} size={16} className="text-warning" />
               return <HugeiconsIcon icon={UserIcon} size={16} className="text-muted-foreground" />
             }
 
@@ -453,11 +453,11 @@ export default function MemberManager() {
                           </span>
                         )}
                         {member.membership_status === 'trial' && (
-                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-yellow-500/20 text-yellow-400">
+                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-warning/20 text-warning">
                             <HugeiconsIcon icon={Time01Icon} size={10} />
                             Trial
                             {member.trial_started_at && (
-                              <span className="text-yellow-400/70">• {getTrialDuration(member.trial_started_at)}</span>
+                              <span className="text-warning/70">• {getTrialDuration(member.trial_started_at)}</span>
                             )}
                           </span>
                         )}
@@ -511,7 +511,7 @@ export default function MemberManager() {
                         variant="secondary"
                         size="sm"
                         onClick={() => handleToggleTrialStatus(member.user_id, displayName, member.membership_status)}
-                        className={`h-9 w-9 p-0 ${member.membership_status === 'trial' ? 'text-success hover:text-success' : 'text-yellow-400 hover:text-yellow-400'}`}
+                        className={`h-9 w-9 p-0 ${member.membership_status === 'trial' ? 'text-success hover:text-success' : 'text-warning hover:text-warning'}`}
                         title={member.membership_status === 'trial' ? 'Promote to full member' : 'Set as trial'}
                       >
                         <HugeiconsIcon icon={member.membership_status === 'trial' ? CheckmarkSquare01Icon : Time01Icon} size={16} />

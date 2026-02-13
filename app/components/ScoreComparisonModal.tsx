@@ -58,7 +58,7 @@ function ScoreRow({
 }) {
   const diff = winnerValue - userValue
   const diffFormatted = diff > 0 ? `+${diff.toFixed(1)}` : diff.toFixed(1)
-  const diffColor = diff > 0 ? 'text-red-400' : diff < 0 ? 'text-green-400' : 'text-muted-foreground'
+  const diffColor = diff > 0 ? 'text-destructive' : diff < 0 ? 'text-success' : 'text-muted-foreground'
 
   return (
     <div className="flex items-center gap-3 py-2">
@@ -165,7 +165,7 @@ export default function ScoreComparisonModal({
 
         {/* Difference Badge */}
         <div className="text-center">
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-red-500/10 border border-red-500/20 rounded-full text-red-400 text-[12px] font-medium">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-destructive/10 border border-destructive/20 rounded-full text-destructive text-[12px] font-medium">
             -{scoreDiff.toFixed(1)} points behind
           </span>
         </div>

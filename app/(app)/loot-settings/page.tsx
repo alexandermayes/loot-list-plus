@@ -1834,7 +1834,7 @@ export default function AdminLootItems() {
                   <CardDescription>Control how attendance bonuses are calculated. Consistent raiders get priority on loot.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <Label className="block mb-2">Type of attendance bonus</Label>
                       <Select
@@ -1861,6 +1861,7 @@ export default function AdminLootItems() {
                       <Input
                         variant="pill"
                         type="number"
+                        inputMode="numeric"
                         min="1"
                         value={settings.rolling_attendance_weeks}
                         onChange={(e) => setSettings({ ...settings, rolling_attendance_weeks: Number(e.target.value) })}
@@ -1873,11 +1874,12 @@ export default function AdminLootItems() {
                   {/* Linear: show max bonus */}
                   {settings.attendance_type === 'linear' && (
                     <div className="bg-background-elevated border border-border-strong p-4 rounded-xl">
-                      <div className="w-1/3">
+                      <div className="w-full sm:w-1/3">
                         <Label className="block mb-2">Maximum attendance bonus</Label>
                         <Input
                           variant="pill"
                           type="number"
+                          inputMode="numeric"
                           value={settings.max_attendance_bonus}
                           onChange={(e) => setSettings({ ...settings, max_attendance_bonus: Number(e.target.value) })}
                           placeholder="Points"
@@ -1892,7 +1894,7 @@ export default function AdminLootItems() {
                   {settings.attendance_type === 'breakpoint' && (
                     <div className="bg-background-elevated border border-border-strong p-4 rounded-xl">
                       <p className="text-muted-foreground text-[12px] mb-3">Configure bonus points for different attendance thresholds (points | threshold %)</p>
-                      <div className="grid grid-cols-3 gap-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                         <div>
                           <Label size="sm" className="block text-muted-foreground mb-1">Max attendance</Label>
                           <div className="flex gap-2">
@@ -1900,6 +1902,7 @@ export default function AdminLootItems() {
                               variant="pill"
                               size="sm"
                               type="number"
+                              inputMode="numeric"
                               value={settings.max_attendance_bonus}
                               onChange={(e) => setSettings({ ...settings, max_attendance_bonus: Number(e.target.value) })}
                               placeholder="Points"
@@ -1909,6 +1912,7 @@ export default function AdminLootItems() {
                               variant="pill"
                               size="sm"
                               type="number"
+                              inputMode="numeric"
                               step="0.1"
                               value={settings.max_attendance_threshold}
                               onChange={(e) => setSettings({ ...settings, max_attendance_threshold: Number(e.target.value) })}
@@ -1924,6 +1928,7 @@ export default function AdminLootItems() {
                               variant="pill"
                               size="sm"
                               type="number"
+                              inputMode="numeric"
                               value={settings.middle_attendance_bonus}
                               onChange={(e) => setSettings({ ...settings, middle_attendance_bonus: Number(e.target.value) })}
                               placeholder="Points"
@@ -1933,6 +1938,7 @@ export default function AdminLootItems() {
                               variant="pill"
                               size="sm"
                               type="number"
+                              inputMode="numeric"
                               step="0.1"
                               value={settings.middle_attendance_threshold}
                               onChange={(e) => setSettings({ ...settings, middle_attendance_threshold: Number(e.target.value) })}
@@ -1948,6 +1954,7 @@ export default function AdminLootItems() {
                               variant="pill"
                               size="sm"
                               type="number"
+                              inputMode="numeric"
                               value={settings.bottom_attendance_bonus}
                               onChange={(e) => setSettings({ ...settings, bottom_attendance_bonus: Number(e.target.value) })}
                               placeholder="Points"
@@ -1957,6 +1964,7 @@ export default function AdminLootItems() {
                               variant="pill"
                               size="sm"
                               type="number"
+                              inputMode="numeric"
                               step="0.1"
                               value={settings.bottom_attendance_threshold}
                               onChange={(e) => setSettings({ ...settings, bottom_attendance_threshold: Number(e.target.value) })}
@@ -1972,11 +1980,12 @@ export default function AdminLootItems() {
                   {/* Points-per-raid: show max cap */}
                   {settings.attendance_type === 'points-per-raid' && (
                     <div className="bg-background-elevated border border-border-strong p-4 rounded-xl">
-                      <div className="w-1/3">
+                      <div className="w-full sm:w-1/3">
                         <Label className="block mb-2">Max points cap</Label>
                         <Input
                           variant="pill"
                           type="number"
+                          inputMode="numeric"
                           value={settings.max_attendance_bonus}
                           onChange={(e) => setSettings({ ...settings, max_attendance_bonus: Number(e.target.value) })}
                           placeholder="Points"
@@ -1992,7 +2001,7 @@ export default function AdminLootItems() {
                   {/* Raid Signups */}
                   <div className="border-t border-border pt-4">
                     <p className="text-[13px] font-medium text-foreground mb-3">Raid signups</p>
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
                         <Label className="block mb-2">Use raid signups for attendance</Label>
                         <Select
@@ -2016,6 +2025,7 @@ export default function AdminLootItems() {
                         <Input
                           variant="pill"
                           type="number"
+                          inputMode="numeric"
                           min="0"
                           max="1"
                           step="0.05"
@@ -2036,7 +2046,7 @@ export default function AdminLootItems() {
                   {/* Attendance Penalties */}
                   <div className="border-t border-border pt-4">
                     <p className="text-[13px] font-medium text-foreground mb-3">Penalties</p>
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
                         <Label className="block mb-2">Late show / leave early penalty</Label>
                         <Select
@@ -2056,6 +2066,7 @@ export default function AdminLootItems() {
                         <Input
                           variant="pill"
                           type="number"
+                          inputMode="numeric"
                           step="0.05"
                           value={settings.late_early_penalty_value}
                           onChange={(e) => setSettings({ ...settings, late_early_penalty_value: Number(e.target.value) })}
@@ -2155,6 +2166,7 @@ export default function AdminLootItems() {
                               <Input
                                 variant="pill"
                                 type="number"
+                                inputMode="numeric"
                                 min="1"
                                 max="20"
                                 value={settings.minimum_raid_days}
@@ -2171,7 +2183,7 @@ export default function AdminLootItems() {
                           <p className="text-[13px] font-medium text-foreground pt-2">Trial system</p>
                           <p className="text-muted-foreground text-[12px] -mt-2">Apply a score penalty to members on trial status until promoted to full member.</p>
 
-                          <div className="grid grid-cols-2 gap-4">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
                               <Label className="block mb-2">Enable trial penalty</Label>
                               <Select
@@ -2190,6 +2202,7 @@ export default function AdminLootItems() {
                               <Input
                                 variant="pill"
                                 type="number"
+                                inputMode="numeric"
                                 step="0.5"
                                 value={settings.trial_penalty_value}
                                 onChange={(e) => setSettings({ ...settings, trial_penalty_value: Number(e.target.value) })}
@@ -2214,7 +2227,7 @@ export default function AdminLootItems() {
                             <p className="text-muted-foreground text-[11px] mt-1">When enabled, new members joining the guild will automatically be set to trial status</p>
                           </div>
 
-                          <div className="grid grid-cols-2 gap-4">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
                               <Label className="block mb-2">Auto-promote trials</Label>
                               <Select
@@ -2233,6 +2246,7 @@ export default function AdminLootItems() {
                               <Input
                                 variant="pill"
                                 type="number"
+                                inputMode="numeric"
                                 min="1"
                                 max="52"
                                 value={settings.trial_auto_promote_weeks}
@@ -2256,7 +2270,7 @@ export default function AdminLootItems() {
                         <CardDescription>Provide bonus points to raiders who experience bad RNG luck. Rewards players who see their desired items drop but lose the roll, or who generously pass on items to help others progress.</CardDescription>
                       </CardHeader>
                       <CardContent className="space-y-4">
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                           <Label className="block mb-2">Bonus for seeing item but not receiving</Label>
                           <Select
@@ -2275,6 +2289,7 @@ export default function AdminLootItems() {
                           <Input
                             variant="pill"
                             type="number"
+                            inputMode="numeric"
                             value={settings.see_item_bonus_value}
                             onChange={(e) => setSettings({ ...settings, see_item_bonus_value: Number(e.target.value) })}
                             disabled={!settings.see_item_bonus}
@@ -2283,7 +2298,7 @@ export default function AdminLootItems() {
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                           <Label className="block mb-2">Bonus for passing an item</Label>
                           <Select
@@ -2302,6 +2317,7 @@ export default function AdminLootItems() {
                           <Input
                             variant="pill"
                             type="number"
+                            inputMode="numeric"
                             value={settings.pass_item_bonus_value}
                             onChange={(e) => setSettings({ ...settings, pass_item_bonus_value: Number(e.target.value) })}
                             disabled={!settings.pass_item_bonus}
@@ -2334,6 +2350,7 @@ export default function AdminLootItems() {
                               <Input
                                 variant="pill"
                                 type="number"
+                                inputMode="numeric"
                                 step="0.01"
                                 min="0.01"
                                 max="10"
@@ -2349,6 +2366,7 @@ export default function AdminLootItems() {
                               <Input
                                 variant="pill"
                                 type="number"
+                                inputMode="numeric"
                                 step="0.1"
                                 min="0.1"
                                 max="50"
@@ -2393,7 +2411,7 @@ export default function AdminLootItems() {
                             <p className="text-[13px] font-medium text-foreground">Rank bonuses</p>
                             <p className="text-[11px] text-muted-foreground">Can be positive or negative. For negative, use - before number (e.g., -1)</p>
                           </div>
-                          <div className="grid grid-cols-3 gap-3">
+                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                             {[...guildRoles].sort((a, b) => b.position - a.position).map((role) => (
                               <div key={role.name}>
                                 <Label size="sm" className="block text-foreground-muted mb-1">{role.name}</Label>
@@ -2401,6 +2419,7 @@ export default function AdminLootItems() {
                                   variant="pill"
                                   size="sm"
                                   type="number"
+                                  inputMode="numeric"
                                   step="0.1"
                                   value={settings.rank_modifiers[role.name] === 0 || settings.rank_modifiers[role.name] === undefined ? '' : settings.rank_modifiers[role.name]}
                                   onChange={(e) => {
@@ -2427,7 +2446,7 @@ export default function AdminLootItems() {
                         </div>
                       )}
 
-                      <div className="grid grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                           <Label className="block mb-2">Role bonus priority on single item</Label>
                           <Select
@@ -2457,7 +2476,7 @@ export default function AdminLootItems() {
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                           <Label className="block mb-2">Raid roles overall bonus priority</Label>
                           <Select

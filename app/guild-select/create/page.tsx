@@ -537,7 +537,7 @@ export default function CreateGuildPage() {
           {showManualEntry && (
             <div className="space-y-2">
               <Label htmlFor="manualServerId" className="flex items-center gap-2 text-base">
-                Discord server ID <span className="text-red-500">*</span>
+                Discord server ID <span className="text-destructive">*</span>
                 <a href="https://support.discord.com/hc/en-us/articles/206346498-Where-can-I-find-my-User-Server-Message-ID"
                    target="_blank"
                    rel="noopener noreferrer"
@@ -833,7 +833,7 @@ export default function CreateGuildPage() {
             </p>
           )}
           {discordVerified && ((selectedDiscordServer && selectedDiscordServer !== 'manual') || (showManualEntry && manualServerId.trim())) && botInstalled === false && (
-            <p className="text-sm text-yellow-400 text-center -mt-3">
+            <p className="text-sm text-warning text-center -mt-3">
               Add the bot to your Discord server to continue
             </p>
           )}
