@@ -228,6 +228,12 @@ export default function RaidTrackingPage() {
           // Create a Set of character IDs with submissions for fast lookup
           const submittedCharacterIds = new Set(submissions?.map((s: { character_id: string }) => s.character_id) || [])
 
+          // DEBUG: Compare the actual IDs
+          const memberCharIds = membershipsData.map((m: any) => m.character_id)
+          console.log('[DEBUG raid-tracking] member character_ids:', memberCharIds)
+          console.log('[DEBUG raid-tracking] submission character_ids:', [...submittedCharacterIds])
+          console.log('[DEBUG raid-tracking] intersection:', memberCharIds.filter((id: string) => submittedCharacterIds.has(id)))
+
           // If we got submissions, filter to only those members.
           // If the query failed, show all members so the page is still usable.
           const shouldFilter = !submissionsError && submissions !== null
