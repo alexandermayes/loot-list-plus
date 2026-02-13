@@ -181,12 +181,13 @@ export default function RaidTrackingPage() {
           setGuildSettings(settings)
         }
 
-        // Load guild members
-        const { data: membershipsData } = await supabase
-          .from('character_guild_memberships')
+        // Build raider list from loot submissions directly.
+        // Submitters may not have active guild memberships, so we can't rely
+        // on character_guild_memberships as the sole source of truth.
+        const { data: submissionsData } = await supabase
+          .from('loot_submissions')
           .select(`
             character_id,
-            role,
             character:characters!inner (
               id,
               name,
@@ -195,47 +196,39 @@ export default function RaidTrackingPage() {
             )
           `)
           .eq('guild_id', activeGuild.id)
+          .in('status', ['draft', 'pending', 'approved'])
+
+        // Also load memberships to get role info where available
+        const { data: membershipsData } = await supabase
+          .from('character_guild_memberships')
+          .select('character_id, role, character:characters!inner(user_id)')
+          .eq('guild_id', activeGuild.id)
           .eq('is_active', true)
 
-        if (membershipsData) {
-          // Get all loot submissions for this guild, joined to characters to get user_id.
-          // We join through user_id because submission character_id may differ from
-          // membership character_id when users switch their active character.
-          const { data: submissionsData, error: submissionsError } = await supabase
-            .from('loot_submissions')
-            .select('character_id, status, character:characters!inner(user_id)')
-            .eq('guild_id', activeGuild.id)
-            .in('status', ['draft', 'pending', 'approved'])
+        // Build a role lookup by user_id from memberships
+        const roleByUserId: Record<string, string> = {}
+        membershipsData?.forEach((m: any) => {
+          if (m.character?.user_id) {
+            roleByUserId[m.character.user_id] = m.role || 'Member'
+          }
+        })
 
-          // Also fetch without status filter to see all submissions
-          const { data: allSubs } = await supabase
-            .from('loot_submissions')
-            .select('character_id, status, character:characters!inner(user_id)')
-            .eq('guild_id', activeGuild.id)
-
-          console.log('submissionsData:', submissionsData)
-          console.log('submissionsError:', submissionsError)
-          console.log('all submissions (no status filter):', allSubs)
-          console.log('all submission statuses:', allSubs?.map((s: any) => s.status))
-          console.log('membership user_ids:', membershipsData.map((m: any) => m.character?.user_id))
-          console.log('submission user_ids:', submissionsData?.map((s: any) => s.character?.user_id))
-
-          const userIdsWithSubmissions = new Set(
-            submissionsData?.map((s: any) => s.character?.user_id).filter(Boolean) || []
-          )
-
-          console.log('userIdsWithSubmissions:', [...userIdsWithSubmissions])
-          console.log('members before filter:', membershipsData.length)
-
-          const formattedMembers: Member[] = membershipsData
-            .filter((m: any) => userIdsWithSubmissions.has(m.character?.user_id))
-            .map((m: any) => ({
-              character_id: m.character_id,
-              user_id: m.character?.user_id,
-              character_name: m.character?.name || 'Unknown',
-              class_name: m.character?.class?.name || 'Unknown',
-              class_color: m.character?.class?.color_hex || '#888888',
-              role: m.role
+        if (submissionsData && submissionsData.length > 0) {
+          // Deduplicate by character_id (a user might have multiple submissions)
+          const seen = new Set<string>()
+          const formattedMembers: Member[] = submissionsData
+            .filter((s: any) => {
+              if (seen.has(s.character_id)) return false
+              seen.add(s.character_id)
+              return true
+            })
+            .map((s: any) => ({
+              character_id: s.character_id,
+              user_id: s.character?.user_id,
+              character_name: s.character?.name || 'Unknown',
+              class_name: s.character?.class?.name || 'Unknown',
+              class_color: s.character?.class?.color_hex || '#888888',
+              role: roleByUserId[s.character?.user_id] || 'Member'
             }))
             .sort((a: Member, b: Member) => a.character_name.localeCompare(b.character_name))
 

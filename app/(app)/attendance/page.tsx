@@ -427,17 +427,15 @@ export default function AttendancePage() {
     try {
       const raidEventIds = raidEvents.map(r => r.id)
 
-      // PERFORMANCE: Parallelize independent queries
-      // - membershipsData only needs guildId
-      // - allAttendance only needs raidEventIds (from function param)
-      const [membershipsResult, attendanceResult] = await Promise.all([
-        // Query 1: Get all active guild members
+      // Build raider list from loot submissions directly.
+      // Submitters may not have active guild memberships, so we can't rely
+      // on character_guild_memberships as the sole source of truth.
+      const [submissionsResult, membershipsResult, attendanceResult] = await Promise.all([
+        // Query 1: Get all characters with loot submissions
         supabase
-          .from('character_guild_memberships')
+          .from('loot_submissions')
           .select(`
             character_id,
-            role,
-            joined_at,
             character:characters!inner (
               id,
               name,
@@ -446,42 +444,48 @@ export default function AttendancePage() {
             )
           `)
           .eq('guild_id', guildId)
+          .in('status', ['draft', 'pending', 'approved']),
+
+        // Query 2: Get memberships for role info and join dates
+        supabase
+          .from('character_guild_memberships')
+          .select('character_id, role, joined_at, character:characters!inner(user_id)')
+          .eq('guild_id', guildId)
           .eq('is_active', true),
 
-        // Query 2: Get all attendance records for these raid events
+        // Query 3: Get all attendance records for these raid events
         supabase
           .from('attendance_records')
           .select('raid_event_id, character_id, signed_up, attended, no_call_no_show, was_late, was_benched')
           .in('raid_event_id', raidEventIds)
       ])
 
+      const submissionsData = submissionsResult.data
       const membershipsData = membershipsResult.data
       const allAttendance = attendanceResult.data
 
-      if (!membershipsData) return
-
-      // Get loot submissions joined to characters to get user_id.
-      // We join through user_id because submission character_id may differ from
-      // membership character_id when users switch their active character.
-      const { data: submissionsData } = await supabase
-        .from('loot_submissions')
-        .select('character_id, character:characters!inner(user_id)')
-        .eq('guild_id', guildId)
-        .in('status', ['draft', 'pending', 'approved'])
-
-      const userIdsWithSubmissions = new Set(
-        submissionsData?.map((s: any) => s.character?.user_id).filter(Boolean) || []
-      )
-
-      // Filter to only show members whose user has a loot submission
-      const activeRaiders = membershipsData.filter(
-        (m: any) => userIdsWithSubmissions.has(m.character?.user_id)
-      )
-
-      if (activeRaiders.length === 0 || raidEvents.length === 0) {
+      if (!submissionsData || submissionsData.length === 0 || raidEvents.length === 0) {
         setGuildRaiders([])
         return
       }
+
+      // Build role and join date lookups by user_id from memberships
+      const roleByUserId: Record<string, string> = {}
+      const joinDateByUserId: Record<string, string> = {}
+      membershipsData?.forEach((m: any) => {
+        if (m.character?.user_id) {
+          roleByUserId[m.character.user_id] = m.role || 'Member'
+          if (m.joined_at) joinDateByUserId[m.character.user_id] = m.joined_at
+        }
+      })
+
+      // Deduplicate submissions by character_id
+      const seen = new Set<string>()
+      const activeRaiders = submissionsData.filter((s: any) => {
+        if (seen.has(s.character_id)) return false
+        seen.add(s.character_id)
+        return true
+      })
 
       // Build attendance map: characterId -> raidEventId -> status
       const attendanceByCharacter: Record<string, Map<string, AttendanceStatus>> = {}
@@ -500,13 +504,15 @@ export default function AttendancePage() {
       })
 
       // Calculate attendance score for each raider
-      const raiders: GuildRaider[] = activeRaiders.map((m: any) => {
-        const char = m.character as any
-        const charAttendance = attendanceByCharacter[m.character_id] || new Map()
+      const raiders: GuildRaider[] = activeRaiders.map((s: any) => {
+        const char = s.character as any
+        const charAttendance = attendanceByCharacter[s.character_id] || new Map()
+        const userId = char.user_id
 
         // New member policy: check how to handle new members
         const newMemberMode = settings?.new_member_mode || 'raw'
-        const memberJoinDate = m.joined_at ? new Date(m.joined_at) : null
+        const joinedAt = joinDateByUserId[userId]
+        const memberJoinDate = joinedAt ? new Date(joinedAt) : null
 
         // For 'fair' and 'minimum_gate' modes, filter raids to only those after member's join date
         const eligibleRaidEvents = (newMemberMode === 'fair' || newMemberMode === 'minimum_gate') && memberJoinDate
@@ -527,9 +533,9 @@ export default function AttendancePage() {
         const score = calculateAttendanceScore(records, eligibleRaidEvents.length, settings || {})
 
         return {
-          id: m.character_id,
+          id: s.character_id,
           name: char.name,
-          role: m.role || 'Member',
+          role: roleByUserId[userId] || 'Member',
           className: char.class?.name || 'Unknown',
           classColor: char.class?.color_hex || '#ffffff',
           attendanceScore: score,
