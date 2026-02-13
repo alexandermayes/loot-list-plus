@@ -203,13 +203,27 @@ export default function RaidTrackingPage() {
           // so we can't filter on 'approved' alone — include draft, pending, and approved.
           const { data: submissions, error: submissionsError } = await supabase
             .from('loot_submissions')
-            .select('character_id')
+            .select('character_id, status, guild_id')
             .eq('guild_id', activeGuild.id)
             .in('status', ['draft', 'pending', 'approved'])
 
           if (submissionsError) {
             console.error('Error fetching loot submissions:', submissionsError)
           }
+
+          // DEBUG: Log all data to diagnose empty results
+          console.log('[DEBUG raid-tracking] activeGuild.id:', activeGuild.id)
+          console.log('[DEBUG raid-tracking] membershipsData count:', membershipsData.length)
+          console.log('[DEBUG raid-tracking] submissions:', submissions)
+          console.log('[DEBUG raid-tracking] submissionsError:', submissionsError)
+
+          // Also try a query with NO filters to see if any submissions exist at all
+          const { data: allSubs, error: allSubsError } = await supabase
+            .from('loot_submissions')
+            .select('character_id, status, guild_id')
+            .limit(10)
+          console.log('[DEBUG raid-tracking] all submissions (no filter, limit 10):', allSubs)
+          console.log('[DEBUG raid-tracking] allSubsError:', allSubsError)
 
           // Create a Set of character IDs with submissions for fast lookup
           const submittedCharacterIds = new Set(submissions?.map((s: { character_id: string }) => s.character_id) || [])
