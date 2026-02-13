@@ -459,22 +459,24 @@ export default function AttendancePage() {
 
       if (!membershipsData) return
 
-      // Get characters with approved loot submissions (active raiders)
-      const { data: approvedSubmissions, error: approvedError } = await supabase
+      // Get characters with loot submissions (any non-rejected status).
+      // Auto-save reverts approved submissions to 'draft' when users edit,
+      // so include draft, pending, and approved to catch all active raiders.
+      const { data: submissions, error: submissionsError } = await supabase
         .from('loot_submissions')
         .select('character_id')
         .eq('guild_id', guildId)
-        .eq('status', 'approved')
+        .in('status', ['draft', 'pending', 'approved'])
 
-      if (approvedError) {
-        console.error('Error fetching approved submissions:', approvedError)
+      if (submissionsError) {
+        console.error('Error fetching loot submissions:', submissionsError)
       }
 
-      const approvedCharacterIds = new Set(approvedSubmissions?.map((s: { character_id: string }) => s.character_id) || [])
+      const submittedCharacterIds = new Set(submissions?.map((s: { character_id: string }) => s.character_id) || [])
 
       // Filter to only active raiders. If query failed, show all members.
-      const shouldFilter = !approvedError && approvedSubmissions !== null
-      const activeRaiders = membershipsData.filter((m: any) => !shouldFilter || approvedCharacterIds.has(m.character_id))
+      const shouldFilter = !submissionsError && submissions !== null
+      const activeRaiders = membershipsData.filter((m: any) => !shouldFilter || submittedCharacterIds.has(m.character_id))
 
       if (activeRaiders.length === 0 || raidEvents.length === 0) {
         setGuildRaiders([])

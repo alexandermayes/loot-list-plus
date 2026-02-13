@@ -198,26 +198,27 @@ export default function RaidTrackingPage() {
           .eq('is_active', true)
 
         if (membershipsData) {
-          // Query to find which characters have approved loot submissions
-          // Query all approved submissions for the guild and intersect client-side.
-          const { data: approvedSubmissions, error: approvedError } = await supabase
+          // Query to find which characters have loot submissions (any non-rejected status).
+          // Auto-save reverts approved submissions to 'draft' when users edit their list,
+          // so we can't filter on 'approved' alone — include draft, pending, and approved.
+          const { data: submissions, error: submissionsError } = await supabase
             .from('loot_submissions')
             .select('character_id')
             .eq('guild_id', activeGuild.id)
-            .eq('status', 'approved')
+            .in('status', ['draft', 'pending', 'approved'])
 
-          if (approvedError) {
-            console.error('Error fetching approved submissions:', approvedError)
+          if (submissionsError) {
+            console.error('Error fetching loot submissions:', submissionsError)
           }
 
-          // Create a Set of character IDs with approved submissions for fast lookup
-          const approvedCharacterIds = new Set(approvedSubmissions?.map((s: { character_id: string }) => s.character_id) || [])
+          // Create a Set of character IDs with submissions for fast lookup
+          const submittedCharacterIds = new Set(submissions?.map((s: { character_id: string }) => s.character_id) || [])
 
-          // If we got approved submissions, filter to only those members.
+          // If we got submissions, filter to only those members.
           // If the query failed, show all members so the page is still usable.
-          const shouldFilter = !approvedError && approvedSubmissions !== null
+          const shouldFilter = !submissionsError && submissions !== null
           const formattedMembers: Member[] = membershipsData
-            .filter((m: any) => !shouldFilter || approvedCharacterIds.has(m.character_id))
+            .filter((m: any) => !shouldFilter || submittedCharacterIds.has(m.character_id))
             .map((m: any) => ({
               character_id: m.character_id,
               user_id: m.character?.user_id,
@@ -1956,9 +1957,9 @@ export default function RaidTrackingPage() {
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
                         </svg>
                       </div>
-                      <h4 className="text-[16px] font-semibold text-foreground mb-2">No raiders with approved loot lists</h4>
+                      <h4 className="text-[16px] font-semibold text-foreground mb-2">No raiders with loot lists</h4>
                       <p className="text-foreground-muted text-[13px] max-w-md mx-auto">
-                        Raiders will appear here once they submit and get their loot lists approved. Use the "Import data" button to add attendance for this raid day.
+                        Raiders will appear here once they save or submit their loot lists. Use the "Import data" button to add attendance for this raid day.
                       </p>
                     </div>
                   ) : (
