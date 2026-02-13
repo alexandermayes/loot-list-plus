@@ -76,8 +76,8 @@ export const ITEM_TYPES: Record<number, ItemTypeInfo> = {
   28515: { armor_type: 'Cloth' },     // Bands of Nefarious Deeds
   28517: { armor_type: 'Cloth' },     // Boots of Foretelling
   28518: { armor_type: 'Plate' },     // Iron Gauntlets of the Maiden
-  28519: { armor_type: 'Leather' },   // Gloves of Quickening
-  28520: { armor_type: 'Leather' },   // Gloves of Centering
+  28519: { armor_type: 'Mail' },   // Gloves of Quickening
+  28520: { armor_type: 'Mail' },   // Gloves of Centering
   28521: { armor_type: 'Leather' },   // Mitts of the Treemender
   28522: { weapon_type: 'One-Handed Mace' }, // Shard of the Virtuous
 
@@ -85,7 +85,7 @@ export const ITEM_TYPES: Record<number, ItemTypeInfo> = {
   28572: { weapon_type: 'Dagger' },           // Blade of the Unrequited
   28573: { weapon_type: 'Two-Handed Sword' }, // Despair
   28578: { armor_type: 'Cloth' },             // Masquerade Gown
-  28583: { armor_type: 'Leather' },           // Big Bad Wolf's Head
+  28583: { armor_type: 'Mail' },           // Big Bad Wolf's Head
   28581: { weapon_type: 'Gun' },              // Wolfslayer Sniper Rifle
   28584: { weapon_type: 'Fist Weapon' },      // Big Bad Wolf's Paw
   28585: { armor_type: 'Cloth' },             // Ruby Slippers
@@ -94,7 +94,7 @@ export const ITEM_TYPES: Record<number, ItemTypeInfo> = {
   28587: { weapon_type: 'Staff' },            // Legacy
 
   // The Curator
-  28612: { armor_type: 'Plate' },             // Pauldrons of the Solace-Giver
+  28612: { armor_type: 'Cloth' },             // Pauldrons of the Solace-Giver
   28621: { armor_type: 'Plate' },             // Wrynn Dynasty Greaves
   28633: { weapon_type: 'Staff' },            // Staff of Infinite Mysteries
   28631: { armor_type: 'Mail' },              // Dragon-Quake Shoulderguards
@@ -106,7 +106,7 @@ export const ITEM_TYPES: Record<number, ItemTypeInfo> = {
   28654: { armor_type: 'Cloth' },             // Malefic Girdle
   28655: { armor_type: 'Leather' },           // Cord of Nature's Sustenance
   28657: { weapon_type: 'One-Handed Mace' },  // Fool's Bane
-  28656: { armor_type: 'Leather' },           // Girdle of the Prowler
+  28656: { armor_type: 'Mail' },           // Girdle of the Prowler
   28662: { armor_type: 'Plate' },             // Breastplate of the Lightbinder
 
   // Shade of Aran
@@ -121,11 +121,11 @@ export const ITEM_TYPES: Record<number, ItemTypeInfo> = {
   // Netherspite
   28732: { armor_type: 'Leather' },           // Cowl of Defiance
   28729: { weapon_type: 'One-Handed Sword' }, // Spiteblade
-  28735: { armor_type: 'Leather' },           // Earthblood Chestguard
+  28735: { armor_type: 'Mail' },           // Earthblood Chestguard
   28733: { armor_type: 'Plate' },             // Girdle of Truth
   28741: { armor_type: 'Leather' },           // Skulker's Greaves
   28740: { armor_type: 'Mail' },              // Rip-Flayer Leggings
-  28743: { armor_type: 'Cloth' },             // Mantle of Abrahmis
+  28743: { armor_type: 'Plate' },             // Mantle of Abrahmis
   28742: { armor_type: 'Cloth' },             // Pantaloons of Repentance
   28744: { armor_type: 'Cloth' },             // Uni-Mind Headdress
 
@@ -156,7 +156,7 @@ export const ITEM_TYPES: Record<number, ItemTypeInfo> = {
   28602: { armor_type: 'Cloth' },             // Robe of the Elder Scribes
   28604: { weapon_type: 'Staff' },            // Nightstaff of the Everliving
   28608: { armor_type: 'Plate' },             // Ironstriders of Urgency
-  28610: { armor_type: 'Leather' },           // Ferocious Swift-Kickers
+  28610: { armor_type: 'Mail' },           // Ferocious Swift-Kickers
 
   // ============================================================================
   // GRUUL'S LAIR
@@ -167,7 +167,7 @@ export const ITEM_TYPES: Record<number, ItemTypeInfo> = {
   28796: { armor_type: 'Leather' },           // Malefic Mask of the Shadows
   28799: { armor_type: 'Cloth' },             // Belt of Divine Inspiration
   28800: { weapon_type: 'Two-Handed Mace' },  // Hammer of the Naaru
-  28801: { armor_type: 'Plate' },             // Maulgar's Warhelm
+  28801: { armor_type: 'Mail' },             // Maulgar's Warhelm
 
   // Gruul the Dragonkiller
   28794: { weapon_type: 'Two-Handed Axe' },   // Axe of the Gronn Lords
@@ -177,7 +177,7 @@ export const ITEM_TYPES: Record<number, ItemTypeInfo> = {
   28810: { armor_type: 'Mail' },              // Windshear Boots
   28824: { armor_type: 'Plate' },             // Gauntlets of Martial Perfection
   28827: { armor_type: 'Mail' },              // Gauntlets of the Dragonslayer
-  28828: { armor_type: 'Mail' },              // Gronn-Stitched Girdle
+  28828: { armor_type: 'Leather' },              // Gronn-Stitched Girdle
 
   // ============================================================================
   // MAGTHERIDON'S LAIR
@@ -187,10 +187,10 @@ export const ITEM_TYPES: Record<number, ItemTypeInfo> = {
   28774: { weapon_type: 'Polearm' },          // Glaive of the Pit
   28775: { armor_type: 'Plate' },             // Thundering Greathelm
   28776: { armor_type: 'Leather' },           // Liar's Tongue Gloves
-  28779: { armor_type: 'Mail' },              // Girdle of the Endless Pit
+  28779: { armor_type: 'Plate' },              // Girdle of the Endless Pit
   28780: { armor_type: 'Cloth' },             // Soul-Eater's Handwraps
   28782: { weapon_type: 'Staff' },            // Crystalheart Pulse-Staff
-  28778: { armor_type: 'Plate' },             // Terror Pit Girdle
+  28778: { armor_type: 'Mail' },             // Terror Pit Girdle
   28783: { weapon_type: 'Wand' },             // Eredar Wand of Obliteration
   29458: { weapon_type: 'Shield' },           // Aegis of the Vindicator
 
@@ -204,13 +204,13 @@ export const ITEM_TYPES: Record<number, ItemTypeInfo> = {
   // ============================================================================
 
   // Hydross the Unstable
-  30047: { armor_type: 'Plate' },             // Blackfathom Warbands
+  30047: { armor_type: 'Mail' },             // Blackfathom Warbands
   30048: { armor_type: 'Plate' },             // Brighthelm of Justice
   30054: { armor_type: 'Mail' },              // Ranger-General's Chestguard
-  30050: { armor_type: 'Leather' },           // Boots of the Shifting Nightmare
+  30050: { armor_type: 'Cloth' },           // Boots of the Shifting Nightmare
   30056: { armor_type: 'Cloth' },             // Robe of Hateful Echoes
-  30053: { armor_type: 'Leather' },           // Pauldrons of the Wardancer
-  30055: { armor_type: 'Cloth' },             // Shoulderpads of the Stranger
+  30053: { armor_type: 'Plate' },           // Pauldrons of the Wardancer
+  30055: { armor_type: 'Leather' },             // Shoulderpads of the Stranger
   32516: { armor_type: 'Cloth' },             // Wraps of Purification
 
   // The Lurker Below
@@ -228,7 +228,7 @@ export const ITEM_TYPES: Record<number, ItemTypeInfo> = {
   30091: { armor_type: 'Mail' },              // True-Aim Stalker Bands
   30092: { armor_type: 'Leather' },           // Orca-Hide Boots
   30095: { weapon_type: 'Dagger' },           // Fang of the Leviathan
-  30097: { armor_type: 'Leather' },           // Coral-Barbed Shoulderpads
+  30097: { armor_type: 'Mail' },           // Coral-Barbed Shoulderpads
 
   // Fathom-Lord Karathress
   30090: { weapon_type: 'Two-Handed Mace' },  // World Breaker
@@ -237,7 +237,7 @@ export const ITEM_TYPES: Record<number, ItemTypeInfo> = {
 
   // Morogrim Tidewalker
   30068: { armor_type: 'Mail' },              // Girdle of the Tidal Call
-  30079: { armor_type: 'Leather' },           // Illidari Shoulderpads
+  30079: { armor_type: 'Cloth' },           // Illidari Shoulderpads
   30075: { armor_type: 'Leather' },           // Gnarled Chestpiece of the Ancients
   30080: { weapon_type: 'Wand' },             // Luminescent Rod of the Naaru
   30081: { armor_type: 'Plate' },             // Warboots of Obliteration
@@ -246,8 +246,8 @@ export const ITEM_TYPES: Record<number, ItemTypeInfo> = {
   30085: { armor_type: 'Mail' },              // Mantle of the Tireless Tracker
 
   // Lady Vashj
-  30102: { armor_type: 'Mail' },              // Krakken-Heart Breastplate
-  30104: { armor_type: 'Leather' },           // Cobra-Lash Boots
+  30102: { armor_type: 'Plate' },              // Krakken-Heart Breastplate
+  30104: { armor_type: 'Mail' },           // Cobra-Lash Boots
   30103: { weapon_type: 'Dagger' },           // Fang of Vashj
   30105: { weapon_type: 'Bow' },              // Serpent Spine Longbow
   30106: { armor_type: 'Leather' },           // Belt of One-Hundred Deaths
@@ -264,116 +264,116 @@ export const ITEM_TYPES: Record<number, ItemTypeInfo> = {
   29918: { armor_type: 'Cloth' },             // Mindstorm Wristbands
   29921: { armor_type: 'Mail' },              // Fire Crest Breastplate
   29924: { weapon_type: 'One-Handed Axe' },   // Netherbane
-  29947: { armor_type: 'Mail' },              // Gloves of the Searing Grip
+  29947: { armor_type: 'Leather' },              // Gloves of the Searing Grip
   29949: { weapon_type: 'Gun' },              // Arcanite Steam-Pistol
   32944: { weapon_type: 'Fist Weapon' },      // Talon of the Phoenix
 
   // Void Reaver
   29983: { armor_type: 'Plate' },             // Fel-Steel Warhelm
   29984: { armor_type: 'Leather' },           // Girdle of Zaetar
-  29985: { armor_type: 'Mail' },              // Pauldrons of the Vanquished Hero
-  29986: { armor_type: 'Leather' },           // Cowl of the Grand Engineer
-  29987: { armor_type: 'Cloth' },             // Girdle of Fallen Stars
-  29988: { weapon_type: 'One-Handed Mace' },  // Cosmic Infuser
-  29989: { weapon_type: 'Fist Weapon' },      // Warp-Spring Coil
-  29990: { weapon_type: 'One-Handed Sword' }, // Infinity Blade
-  29991: { weapon_type: 'One-Handed Sword' }, // Warp Slicer
-  29992: { weapon_type: 'Bow' },              // Royal Gauntlets of Silvermoon
-  29993: { weapon_type: 'Staff' },            // Staff of Disintegration
+  29985: { armor_type: 'Mail' },              // Void Reaver Greaves
+  29986: { armor_type: 'Cloth' },           // Cowl of the Grand Engineer
+  29987: { armor_type: 'Cloth' },             // Gauntlets of the Sun King
+  29988: { weapon_type: 'Staff' },  // The Nexus Key
+  29989: { weapon_type: 'Fist Weapon' },      // Sunshower Light Cloak
+  29990: { armor_type: 'Cloth' }, // Crown of the Sun
+  29991: { armor_type: 'Mail' }, // Sunhawk Leggings
+  29992: { weapon_type: 'Bow' },              // Royal Cloak of the Sunstriders
+  29993: { weapon_type: 'Staff' },            // Twinblade of the Phoenix
 
   // High Astromancer Solarian
   29962: { weapon_type: 'Dagger' },           // Heartrazor
-  29963: { armor_type: 'Leather' },           // Void Star Talisman
-  29964: { armor_type: 'Cloth' },             // Warp Slicer
-  29965: { armor_type: 'Mail' },              // Girdle of the Prowler
-  29966: { armor_type: 'Plate' },             // Vambraces of Ending
-  29967: { armor_type: 'Leather' },           // Ethereum Life-Staff
-  29968: { armor_type: 'Mail' },              // Boots of the Protector
-  29969: { armor_type: 'Plate' },             // Vestments of the Sea-Witch
-  29970: { armor_type: 'Leather' },           // Light-Collar of the Incarnate
-  29971: { armor_type: 'Mail' },              // Solarian's Sapphire
-  29972: { armor_type: 'Plate' },             // Trousers of the Astromancer
-  29973: { armor_type: 'Cloth' },             // Star-Soul Breeches
-  29974: { armor_type: 'Leather' },           // Greaves of the Penitent Knight
-  29975: { armor_type: 'Plate' },             // Band of Determination
+  29963: { armor_type: 'Leather' },           // Enraged Fiery Soul
+  29964: { armor_type: 'Leather' },             // Blackstorm Leggings
+  29965: { armor_type: 'Plate' },              // Girdle of the Righteous Path
+  29966: { armor_type: 'Leather' },             // Vambraces of Ending
+  29967: { armor_type: 'Leather' },           // Nether Vest
+  29968: { armor_type: 'Mail' },              // Nether Leggings
+  29969: { armor_type: 'Plate' },             // Sparky's Discarded Helmet
+  29970: { armor_type: 'Leather' },           // Wildfeather Leggings
+  29971: { armor_type: 'Mail' },              // Dragonstrike Leggings
+  29972: { armor_type: 'Cloth' },             // Trousers of the Astromancer
+  29973: { armor_type: 'Leather' },             // Primalstorm Breastplate
+  29974: { armor_type: 'Leather' },           // Living Crystal Breastplate
+  29975: { armor_type: 'Mail' },             // Golden Dragonstrike Breastplate
 
   // Kael'thas Sunstrider
-  30015: { armor_type: 'Cloth' },             // The Nexus Key
-  30016: { armor_type: 'Mail' },              // Crown of the Sun
-  30017: { armor_type: 'Plate' },             // Sunshower Light Cloak
+  30015: { armor_type: 'Cloth' },             // The Sun King's Talisman
+  30016: { armor_type: 'Plate' },              // X-52 Technician's Helm
+  30017: { armor_type: 'Plate' },             // Telonicus' Pendant of Mayhem
   30018: { armor_type: 'Leather' },           // Lord Sanguinar's Claim
-  30019: { armor_type: 'Mail' },              // Twinblade of the Phoenix
-  30020: { armor_type: 'Plate' },             // Fire-Cord of the Magus
-  30021: { armor_type: 'Leather' },           // Bands of the Celestial Archer
-  30022: { armor_type: 'Mail' },              // Leggings of Murderous Intent
-  30023: { armor_type: 'Plate' },             // Gauntlets of the Sun-King
+  30019: { armor_type: 'Mail' },              // Area 52 Defender's Pants
+  30020: { armor_type: 'Cloth' },             // Fire-Cord of the Magus
+  30021: { weapon_type: 'Staff' },           // Wildfury Greatstaff
+  30022: { armor_type: 'Mail' },              // Pendant of the Perilous
+  30023: { armor_type: 'Plate' },             // Totem of the Maelstrom
   30024: { armor_type: 'Cloth' },             // Mantle of the Elven Kings
-  30027: { armor_type: 'Plate' },             // Royal Cloak of the Sunstriders
-  30028: { weapon_type: 'Staff' },            // Devastation
-  30029: { armor_type: 'Leather' },           // Thalassian Wildercloak
-  30030: { armor_type: 'Mail' },              // Sunstrider Warboots
-  30031: { armor_type: 'Plate' },             // Axe of the Nexus-Kings
-  30032: { weapon_type: 'Bow' },              // Red Havoc Boots
-  30033: { armor_type: 'Plate' },             // Crown of the Sun
+  30027: { armor_type: 'Plate' },             // Boots of Courage Unending
+  30028: { weapon_type: 'Staff' },            // Seventh Ring of the Tirisfalen
+  30029: { armor_type: 'Leather' },           // Bark-Gloves of Ancient Wisdom
+  30030: { armor_type: 'Mail' },              // Girdle of Fallen Stars
+  30031: { armor_type: 'Plate' },             // Red Havoc Boots
+  30032: { armor_type: 'Plate' },              // Red Belt of Battle
+  30033: { armor_type: 'Plate' },             // Boots of the Protector
 
   // ============================================================================
   // HYJAL SUMMIT
   // ============================================================================
 
   // Rage Winterchill
-  30863: { armor_type: 'Cloth' },             // Blessed Adamantite Bracers
-  30868: { armor_type: 'Cloth' },             // Rejuvenating Bracers
-  30864: { armor_type: 'Leather' },           // Bracers of the Pathfinder
-  30869: { armor_type: 'Leather' },           // Howling Wind Bracers
-  30865: { weapon_type: 'One-Handed Sword' }, // Tracker's Blade
-  30870: { armor_type: 'Mail' },              // Cuffs of Devastation
+  30863: { armor_type: 'Leather' },             // Deadly Cuffs
+  30868: { armor_type: 'Leather' },             // Rejuvenating Bracers
+  30864: { armor_type: 'Mail' },           // Bracers of the Pathfinder
+  30869: { armor_type: 'Mail' },           // Howling Wind Bracers
+  30865: { weapon_type: 'Dagger' }, // Tracker's Blade
+  30870: { armor_type: 'Cloth' },              // Cuffs of Devastation
   30866: { armor_type: 'Plate' },             // Blood-stained Pauldrons
-  30871: { armor_type: 'Plate' },             // Bracers of the Forgotten Protector
+  30871: { armor_type: 'Cloth' },             // Bracers of Martyrdom
 
   // Anetheron
-  30878: { armor_type: 'Cloth' },             // Glimmering Steel Mantle
-  30879: { armor_type: 'Leather' },           // Don Rodrigo's Poncho
-  30880: { armor_type: 'Mail' },              // Chronicle of Dark Secrets
+  30878: { armor_type: 'Plate' },             // Glimmering Steel Mantle
+  30879: { armor_type: 'Leather' },           // Don Alejandro's Money Belt
+  30880: { armor_type: 'Mail' },              // Quickstrider Moccasins
   30881: { weapon_type: 'One-Handed Sword' }, // Blade of Infamy
-  30882: { weapon_type: 'Two-Handed Sword' }, // Pillar of Ferocity
-  30883: { weapon_type: 'Staff' },            // Enchanted Leather Sandals
-  30884: { armor_type: 'Leather' },           // Hatefury Mantle
-  30885: { armor_type: 'Mail' },              // Archbishop's Slippers
-  30886: { armor_type: 'Plate' },             // Golden Links of Restoration
-  30887: { armor_type: 'Cloth' },             // Quickstrider Moccasins
-  30888: { armor_type: 'Leather' },           // Anetheron's Noose
+  30882: { weapon_type: 'Shield' }, // Bastion of Light
+  30883: { weapon_type: 'Staff' },            // Pillar of Ferocity
+  30884: { armor_type: 'Cloth' },           // Hatefury Mantle
+  30885: { armor_type: 'Cloth' },              // Archbishop's Slippers
+  30886: { armor_type: 'Leather' },             // Enchanted Leather Sandals
+  30887: { armor_type: 'Mail' },             // Golden Links of Restoration
+  30888: { armor_type: 'Cloth' },           // Anetheron's Noose
 
   // Kaz'rogal
-  30889: { armor_type: 'Cloth' },             // Leggings of Channeled Elements
-  30890: { armor_type: 'Leather' },           // Boneweave Girdle
-  30891: { armor_type: 'Mail' },              // Black Featherlight Boots
-  30892: { armor_type: 'Plate' },             // Beast-tamer's Shoulders
-  30893: { armor_type: 'Cloth' },             // Sun-touched Chain Leggings
-  30894: { armor_type: 'Leather' },           // Blue Suede Shoes
-  30895: { armor_type: 'Mail' },              // Angelista's Sash
+  30889: { weapon_type: 'Shield' },             // Kaz'rogal's Hardened Heart
+  30890: { armor_type: 'Leather' },           // Collection of Souls
+  30891: { armor_type: 'Leather' },              // Black Featherlight Boots
+  30892: { armor_type: 'Mail' },             // Beast-Tamer's Shoulders
+  30893: { armor_type: 'Mail' },             // Sun-Touched Chain Leggings
+  30894: { armor_type: 'Cloth' },           // Blue Suede Shoes
+  30895: { armor_type: 'Cloth' },              // Angelista's Sash
   30896: { armor_type: 'Plate' },             // Glory of the Defender
 
   // Azgalor
-  30897: { armor_type: 'Cloth' },             // Girdle of Hope
+  30897: { armor_type: 'Plate' },             // Girdle of Hope
   30898: { armor_type: 'Leather' },           // Shady Dealer's Pantaloons
-  30899: { armor_type: 'Mail' },              // Don Alejandro's Money Belt
-  30900: { armor_type: 'Plate' },             // Bow-stitched Leggings
+  30899: { armor_type: 'Leather' },              // Don Rodrigo's Poncho
+  30900: { armor_type: 'Mail' },             // Bow-Stitched Leggings
   30901: { weapon_type: 'Dagger' },           // Boundless Agony
   30902: { weapon_type: 'Two-Handed Sword' }, // Cataclysm's Edge
 
   // Archimonde
-  30903: { armor_type: 'Cloth' },             // Midnight Chestguard
-  30904: { armor_type: 'Leather' },           // Savior's Grasp
-  30905: { armor_type: 'Mail' },              // Midnight Legguards
+  30903: { armor_type: 'Plate' },             // Legguards of Endless Rage
+  30904: { armor_type: 'Plate' },           // Savior's Grasp
+  30905: { armor_type: 'Leather' },              // Midnight Chestguard
   30906: { weapon_type: 'Bow' },              // Bristleblitz Striker
-  30907: { armor_type: 'Cloth' },             // Mail of Fevered Pursuit
+  30907: { armor_type: 'Mail' },             // Mail of Fevered Pursuit
   30908: { weapon_type: 'Staff' },            // Apostle of Argus
-  30909: { armor_type: 'Mail' },              // Leggings of Eternity
+  30909: { weapon_type: 'Shield' },              // Antonidas' Aegis of Rapt Concentration
   30910: { weapon_type: 'Fist Weapon' },      // Tempest of Chaos
-  30911: { weapon_type: 'Two-Handed Sword' }, // Syphon of the Nathrezim
-  30912: { armor_type: 'Leather' },           // Leggings of Eternity (duplicate)
+  30911: { weapon_type: 'Two-Handed Sword' }, // Scepter of Purification
+  30912: { armor_type: 'Cloth' },           // Leggings of Eternity (duplicate)
   30913: { armor_type: 'Cloth' },             // Robes of Rhonin
-  30914: { armor_type: 'Cloth' },             // Bristleblitz Striker (duplicate)
+  30914: { armor_type: 'Leather' },             // Belt of the Crescent Moon
 
   // ============================================================================
   // BLACK TEMPLE
@@ -381,8 +381,8 @@ export const ITEM_TYPES: Record<number, ItemTypeInfo> = {
 
   32515: { armor_type: 'Plate' },             // Wristguards of Determination
   32267: { armor_type: 'Plate' },             // Boots of the Resilient
-  32237: { weapon_type: 'One-Handed Mace' },  // The Maelstrom's Fury
-  32234: { armor_type: 'Leather' },           // Fists of Mukoa
+  32237: { weapon_type: 'Dagger' },  // The Maelstrom's Fury
+  32234: { armor_type: 'Mail' },           // Fists of Mukoa
   32241: { armor_type: 'Mail' },              // Helm of Soothing Currents
   32239: { armor_type: 'Cloth' },             // Slippers of the Seacaller
   32232: { armor_type: 'Plate' },             // Eternium Shell Bracers
@@ -393,35 +393,35 @@ export const ITEM_TYPES: Record<number, ItemTypeInfo> = {
   32340: { armor_type: 'Cloth' },             // Garments of Temperance
   32252: { armor_type: 'Leather' },           // Nether Shadow Tunic
   32268: { armor_type: 'Plate' },             // Myrmidon's Treads
-  32243: { armor_type: 'Cloth' },             // Pearl Inlaid Boots
-  32280: { armor_type: 'Leather' },           // Softstep Boots of Tracking
-  32278: { armor_type: 'Leather' },           // Grips of Silent Justice
+  32243: { armor_type: 'Plate' },             // Pearl Inlaid Boots
+  32280: { armor_type: 'Plate' },           // Gauntlets of Enforcement
+  32278: { armor_type: 'Plate' },           // Grips of Silent Justice
   32263: { armor_type: 'Plate' },             // Praetorian's Legguards
   32377: { armor_type: 'Leather' },           // Mantle of Darkness
   32250: { armor_type: 'Plate' },             // Pauldrons of Abyssal Fury
-  32264: { armor_type: 'Leather' },           // Shoulders of the Hidden Predator
-  32276: { armor_type: 'Cloth' },             // Flashfire Girdle
+  32264: { armor_type: 'Mail' },           // Shoulders of the Hidden Predator
+  32276: { armor_type: 'Mail' },             // Flashfire Girdle
   32333: { armor_type: 'Plate' },             // Girdle of Stability
-  32328: { armor_type: 'Plate' },             // Girdle of the Lightbearer
+  32328: { armor_type: 'Leather' },             // Botanist's Gloves of Growth
   32259: { armor_type: 'Mail' },              // Bands of the Coming Storm
   32270: { armor_type: 'Cloth' },             // Focused Mana Bindings
-  32281: { armor_type: 'Leather' },           // Insidious Bands
-  32279: { armor_type: 'Leather' },           // The Seeker's Wristguards
+  32281: { armor_type: 'Leather' },           // Design: Brilliant Crimson Spinel
+  32279: { armor_type: 'Plate' },           // The Seeker's Wristguards
   32253: { weapon_type: 'Crossbow' },         // Legionkiller
   32240: { armor_type: 'Leather' },           // Guise of the Tidal Lurker
   32271: { armor_type: 'Leather' },           // Kilt of Immortal Nature
   32273: { armor_type: 'Cloth' },             // Amice of Brilliant Light
-  32324: { armor_type: 'Plate' },             // Girdle of Lordaeron's Fallen
-  32258: { armor_type: 'Leather' },           // Naturalist's Preserving Cinch
-  32251: { armor_type: 'Leather' },           // Wraps of Precise Flight
+  32324: { armor_type: 'Leather' },             // Insidious Bands
+  32258: { armor_type: 'Mail' },           // Naturalist's Preserving Cinch
+  32251: { armor_type: 'Mail' },           // Wraps of Precise Flight
   32513: { armor_type: 'Cloth' },             // Wristbands of Divine Influence
   32262: { weapon_type: 'One-Handed Sword' }, // Syphon of the Nathrezim
   32256: { armor_type: 'Cloth' },             // Waistwrap of Infinity
   32248: { weapon_type: 'Polearm' },          // Halberd of Desolation
-  32269: { weapon_type: 'One-Handed Sword' }, // Messenger of Fate
-  32326: { weapon_type: 'Two-Handed Axe' },   // Soul Cleaver
+  32269: { weapon_type: 'Dagger' }, // Messenger of Fate
+  32326: { weapon_type: 'Thrown' },   // Twisted Blades of Zarak
   32254: { weapon_type: 'One-Handed Axe' },   // The Brutalizer
-  32330: { armor_type: 'Leather' },           // Botanist's Gloves of Growth
+  32330: { armor_type: 'Leather' },           // Totem of Ancestral Guidance
   32345: { armor_type: 'Plate' },             // Dreadboots of the Legion
   32352: { armor_type: 'Leather' },           // Naturewarden's Treads
   32353: { armor_type: 'Cloth' },             // Gloves of Unfailing Faith
@@ -432,17 +432,17 @@ export const ITEM_TYPES: Record<number, ItemTypeInfo> = {
   32517: { armor_type: 'Mail' },              // The Wavemender's Mantle
   32519: { armor_type: 'Cloth' },             // Belt of Divine Guidance
   32339: { armor_type: 'Leather' },           // Belt of Primal Majesty
-  32346: { armor_type: 'Leather' },           // Boneweave Girdle
+  32346: { armor_type: 'Mail' },           // Boneweave Girdle
   32342: { armor_type: 'Plate' },             // Girdle of Mighty Resolve
-  32354: { armor_type: 'Cloth' },             // Crown of Empowered Fate
-  32351: { armor_type: 'Cloth' },             // Elunite Empowered Bracers
+  32354: { armor_type: 'Plate' },             // Crown of Empowered Fate
+  32351: { armor_type: 'Leather' },             // Elunite Empowered Bracers
   32366: { armor_type: 'Leather' },           // Shadowmaster's Boots
-  32471: { weapon_type: 'One-Handed Sword' }, // Shard of Azzinoth
+  32471: { weapon_type: 'Dagger' }, // Shard of Azzinoth
   32332: { weapon_type: 'Two-Handed Mace' },  // Torch of the Damned
   32235: { armor_type: 'Leather' },           // Cursed Vision of Sargeras
   32376: { armor_type: 'Mail' },              // Forest Prowler's Helm
   32363: { weapon_type: 'Wand' },             // Naaru-Blessed Life Rod
-  32609: { armor_type: 'Plate' },             // Boots of the Divine Light
+  32609: { armor_type: 'Cloth' },             // Boots of the Divine Light
   32837: { weapon_type: 'One-Handed Sword' }, // Warglaive of Azzinoth (Main Hand)
   32838: { weapon_type: 'One-Handed Sword' }, // Warglaive of Azzinoth (Off Hand)
   32500: { weapon_type: 'One-Handed Mace' },  // Crystal Spire of Karabor
@@ -451,49 +451,49 @@ export const ITEM_TYPES: Record<number, ItemTypeInfo> = {
   // SUNWELL PLATEAU
   // ============================================================================
 
-  34437: { armor_type: 'Mail' },              // Skyshatter Bracers
-  34195: { armor_type: 'Leather' },           // Belt of the Wastelands
+  34437: { armor_type: 'Mail' },              // Skyshatter Bands
+  34195: { armor_type: 'Leather' },           // Shoulderpads of Vehemence
   34352: { armor_type: 'Plate' },             // Borderland Fortress Grips
   34181: { armor_type: 'Cloth' },             // Leggings of Calamity
-  34167: { armor_type: 'Cloth' },             // Pantaloons of Calming Strife
-  34202: { armor_type: 'Leather' },           // Equilibrium Epaulets
-  34168: { armor_type: 'Leather' },           // Shoulderpads of Vehemence
-  34208: { armor_type: 'Cloth' },             // Spaulders of Reclamation
+  34167: { armor_type: 'Plate' },             // Legplates of the Holy Juggernaut
+  34202: { armor_type: 'Cloth' },           // Shawl of Wonderment
+  34168: { armor_type: 'Mail' },           // Starstalker Legguards
+  34208: { armor_type: 'Mail' },             // Equilibrium Epaulets
   34190: { armor_type: 'Cloth' },             // Crimson Paragon's Cover
   34165: { weapon_type: 'Dagger' },           // Fang of Kalecgos
-  34206: { armor_type: 'Plate' },             // Grip of Mannoroth
-  34210: { armor_type: 'Plate' },             // Mounting Vengeance
+  34206: { armor_type: 'Plate' },             // Book of Highborne Hymns
+  34210: { armor_type: 'Cloth' },             // Amice of the Convoker
   34176: { weapon_type: 'One-Handed Mace' },  // Reign of Misery
   34188: { armor_type: 'Leather' },           // Leggings of the Immortal Night
-  34199: { weapon_type: 'One-Handed Sword' }, // Sunflare
-  34341: { armor_type: 'Leather' },           // Borderland Paingrips
+  34199: { weapon_type: 'One-Handed Sword' }, // Archon's Gavel
+  34341: { armor_type: 'Plate' },           // Borderland Paingrips
   34344: { armor_type: 'Cloth' },             // Handguards of Defiled Worlds
   34340: { armor_type: 'Cloth' },             // Dark Conjuror's Collar
   34342: { armor_type: 'Cloth' },             // Handguards of the Dawn
   34333: { armor_type: 'Mail' },              // Coif of Alleria
   34245: { armor_type: 'Leather' },           // Cover of Ursol the Wise
-  34345: { armor_type: 'Cloth' },             // Crown of Anasterian
+  34345: { armor_type: 'Plate' },             // Crown of Anasterian
   34244: { armor_type: 'Leather' },           // Duplicitous Guise
   34243: { armor_type: 'Plate' },             // Helm of Burning Righteousness
   34329: { weapon_type: 'Dagger' },           // Crux of the Apocalypse
   34247: { weapon_type: 'Two-Handed Sword' }, // Apolyon, the Soul-Render
-  34331: { weapon_type: 'Dagger' },           // Hand of the Deceiver
-  34336: { weapon_type: 'One-Handed Sword' }, // Sunflare (duplicate ID?)
+  34331: { weapon_type: 'Fist Weapon' },           // Hand of the Deceiver
+  34336: { weapon_type: 'Dagger' }, // Sunflare (duplicate ID?)
   34334: { weapon_type: 'Bow' },              // Thori'dal, the Stars' Fury
-  34233: { armor_type: 'Leather' },           // Sunglow Vest
-  34445: { armor_type: 'Leather' },           // Slayer's Boots
+  34233: { armor_type: 'Cloth' },           // Robes of Faltered Light
+  34445: { armor_type: 'Leather' },           // Thunderheart Bracers
 
   // ============================================================================
   // ZUL'AMAN
   // ============================================================================
 
   30917: { armor_type: 'Leather' },           // Razorfury Mantle
-  30915: { armor_type: 'Leather' },           // Belt of Seething Fury
-  30919: { armor_type: 'Leather' },           // Valestalker Girdle
-  30873: { armor_type: 'Cloth' },             // Stillwater Boots
+  30915: { armor_type: 'Plate' },           // Belt of Seething Fury
+  30919: { armor_type: 'Mail' },           // Valestalker Girdle
+  30873: { armor_type: 'Mail' },             // Stillwater Boots
   30916: { armor_type: 'Cloth' },             // Leggings of Channeled Elements
   30874: { weapon_type: 'One-Handed Sword' }, // The Unbreakable Will
-  33286: { armor_type: 'Leather' },           // Mojo-mender's Mask
+  33286: { armor_type: 'Mail' },           // Mojo-Mender's Mask
   33322: { armor_type: 'Leather' },           // Shimmer-pelt Vest
   33446: { armor_type: 'Plate' },             // Girdle of Stromgarde's Hope
   33328: { armor_type: 'Mail' },              // Arrow-fall Chestguard
@@ -501,26 +501,26 @@ export const ITEM_TYPES: Record<number, ItemTypeInfo> = {
   33533: { armor_type: 'Mail' },              // Avalanche Leggings
   33211: { armor_type: 'Leather' },           // Bladeangel's Money Belt
   33432: { armor_type: 'Mail' },              // Coif of the Jungle Stalker
-  33479: { armor_type: 'Plate' },             // Grimgrin Faceguard
+  33479: { armor_type: 'Leather' },             // Grimgrin Faceguard
   33356: { armor_type: 'Leather' },           // Helm of Natural Regeneration
   33453: { armor_type: 'Cloth' },             // Hood of Hexing
   33464: { armor_type: 'Mail' },              // Hex Lord's Voodoo Pauldrons
   33206: { armor_type: 'Mail' },              // Pauldrons of Primal Fury
-  33191: { armor_type: 'Mail' },              // Jungle Stompers
-  33216: { armor_type: 'Leather' },           // Chestguard of Hidden Purpose
+  33191: { armor_type: 'Plate' },              // Jungle Stompers
+  33216: { armor_type: 'Plate' },           // Chestguard of Hidden Purpose
   33473: { armor_type: 'Plate' },             // Chestguard of the Warlord
   33469: { armor_type: 'Mail' },              // Hauberk of the Empire's Champion
   33329: { armor_type: 'Leather' },           // Shadowtooth Trollskin Cuirass
-  33357: { armor_type: 'Leather' },           // Footpads of Madness
+  33357: { armor_type: 'Cloth' },           // Footpads of Madness
   33303: { armor_type: 'Plate' },             // Skullshatter Warboots
   33463: { armor_type: 'Cloth' },             // Hood of the Third Eye
-  33327: { armor_type: 'Cloth' },             // Mask of Introspection
-  33285: { armor_type: 'Leather' },           // Fury of the Ursine
+  33327: { armor_type: 'Plate' },             // Mask of Introspection
+  33285: { armor_type: 'Cloth' },           // Fury of the Ursine
   33283: { weapon_type: 'One-Handed Mace' },  // Amani Punisher
   33421: { armor_type: 'Plate' },             // Battleworn Tuskguard
   33468: { weapon_type: 'One-Handed Mace' },  // Dark Blessing
   33388: { weapon_type: 'One-Handed Sword' }, // Heartless
-  33215: { armor_type: 'Leather' },           // Bloodstained Elven Battlevest
+  33215: { armor_type: 'Plate' },           // Bloodstained Elven Battlevest
   33476: { weapon_type: 'One-Handed Axe' },   // Cleaver of the Unforgiving
   33478: { weapon_type: 'Two-Handed Sword' }, // Jin'rohk, The Great Apocalypse
 
@@ -656,10 +656,10 @@ export const ITEM_TYPES: Record<number, ItemTypeInfo> = {
   16947: { armor_type: 'Mail' },              // Helmet of Ten Storms
 
   // Judgement (Paladin) - Plate
-  16951: { armor_type: 'Plate' },             // Judgement Bindings
-  16952: { armor_type: 'Plate' },             // Judgement Belt
-  16953: { armor_type: 'Plate' },             // Judgement Spaulders
-  16955: { armor_type: 'Plate' },             // Judgement Crown
+  16951: { armor_type: 'Plate' },             // Judgment Bindings
+  16952: { armor_type: 'Plate' },             // Judgment Belt
+  16953: { armor_type: 'Plate' },             // Judgment Spaulders
+  16955: { armor_type: 'Plate' },             // Judgment Crown
 
   // Wrath (Warrior) - Plate
   16959: { armor_type: 'Plate' },             // Bracelets of Wrath
@@ -678,7 +678,7 @@ export const ITEM_TYPES: Record<number, ItemTypeInfo> = {
   17071: { weapon_type: 'Dagger' },           // Gutgore Ripper
   17072: { weapon_type: 'Gun' },              // Blastershot Launcher
   17073: { weapon_type: 'Two-Handed Mace' },  // Earthshaker
-  17074: { weapon_type: 'Two-Handed Sword' }, // Shadowstrike
+  17074: { weapon_type: 'Polearm' }, // Shadowstrike
   17075: { weapon_type: 'One-Handed Sword' }, // Vis'kag the Bloodletter
   17076: { weapon_type: 'Two-Handed Sword' }, // Bonereaver's Edge
   17077: { weapon_type: 'Wand' },             // Crimson Shocker
@@ -695,12 +695,12 @@ export const ITEM_TYPES: Record<number, ItemTypeInfo> = {
   // Classic armor drops
   18809: { armor_type: 'Cloth' },             // Sash of Whispered Secrets
   18810: { armor_type: 'Leather' },           // Wild Growth Spaulders
-  18812: { armor_type: 'Leather' },           // Wristguards of True Flight
-  18817: { armor_type: 'Plate' },             // Crown of Destruction
+  18812: { armor_type: 'Mail' },           // Wristguards of True Flight
+  18817: { armor_type: 'Mail' },             // Crown of Destruction
   18823: { armor_type: 'Leather' },           // Aged Core Leather Gloves
   18824: { armor_type: 'Plate' },             // Magma Tempered Boots
-  18829: { armor_type: 'Leather' },           // Deep Earth Spaulders
-  18870: { armor_type: 'Leather' },           // Helm of the Lifegiver
+  18829: { armor_type: 'Mail' },           // Deep Earth Spaulders
+  18870: { armor_type: 'Mail' },           // Helm of the Lifegiver
   18872: { armor_type: 'Cloth' },             // Manastorm Leggings
   18875: { armor_type: 'Leather' },           // Salamander Scale Pants
   18878: { weapon_type: 'Dagger' },           // Sorcerous Dagger
@@ -713,7 +713,7 @@ export const ITEM_TYPES: Record<number, ItemTypeInfo> = {
   // BWL Weapons
   19335: { weapon_type: 'One-Handed Mace' },  // Spineshatter
   19346: { weapon_type: 'Dagger' },           // Dragonfang Blade
-  19347: { weapon_type: 'Fist Weapon' },      // Claw of Chromaggus
+  19347: { weapon_type: 'Dagger' },      // Claw of Chromaggus
   19348: { weapon_type: 'Shield' },           // Red Dragonscale Protector
   19349: { weapon_type: 'Shield' },           // Elementium Reinforced Bulwark
   19350: { weapon_type: 'Bow' },              // Heartstriker
@@ -728,7 +728,7 @@ export const ITEM_TYPES: Record<number, ItemTypeInfo> = {
   19368: { weapon_type: 'Gun' },              // Dragonbreath Hand Cannon
 
   // BWL Armor
-  19369: { armor_type: 'Leather' },           // Gloves of Rapid Evolution
+  19369: { armor_type: 'Cloth' },           // Gloves of Rapid Evolution
   19370: { armor_type: 'Cloth' },             // Mantle of the Blackwing Cabal
   19372: { armor_type: 'Plate' },             // Helm of Endless Rage
   19373: { armor_type: 'Mail' },              // Black Brood Pauldrons
@@ -744,52 +744,52 @@ export const ITEM_TYPES: Record<number, ItemTypeInfo> = {
   19391: { armor_type: 'Cloth' },             // Shimmering Geta
   19392: { armor_type: 'Plate' },             // Girdle of the Fallen Crusader
   19393: { armor_type: 'Mail' },              // Primalist's Linked Waistguard
-  19394: { armor_type: 'Mail' },              // Drake Talon Pauldrons
+  19394: { armor_type: 'Plate' },              // Drake Talon Pauldrons
   19396: { armor_type: 'Leather' },           // Taut Dragonhide Belt
-  19400: { armor_type: 'Leather' },           // Firemaw's Clutch
+  19400: { armor_type: 'Cloth' },           // Firemaw's Clutch
   19401: { armor_type: 'Mail' },              // Primalist's Linked Legguards
   19402: { armor_type: 'Plate' },             // Legguards of the Fallen Crusader
   19405: { armor_type: 'Leather' },           // Malfurion's Blessed Bulwark
-  19407: { armor_type: 'Leather' },           // Ebony Flame Gloves
-  19433: { armor_type: 'Leather' },           // Emberweave Leggings
+  19407: { armor_type: 'Cloth' },           // Ebony Flame Gloves
+  19433: { armor_type: 'Mail' },           // Emberweave Leggings
 
   // ============================================================================
   // AQ20/AQ40
   // ============================================================================
 
   21492: { weapon_type: 'Two-Handed Sword' }, // Manslayer of the Qiraji
-  21493: { armor_type: 'Plate' },             // Boots of the Vanguard
-  21494: { armor_type: 'Cloth' },             // Southwind's Grasp
-  21496: { armor_type: 'Plate' },             // Bracers of Qiraji Command
-  21497: { armor_type: 'Plate' },             // Boots of the Qiraji General
+  21493: { armor_type: 'Leather' },             // Boots of the Vanguard
+  21494: { armor_type: 'Leather' },             // Southwind's Grasp
+  21496: { armor_type: 'Cloth' },             // Bracers of Qiraji Command
+  21497: { armor_type: 'Mail' },             // Boots of the Qiraji General
   21498: { weapon_type: 'Dagger' },           // Qiraji Sacrificial Dagger
   21499: { armor_type: 'Cloth' },             // Vestments of the Shifting Sands
-  21500: { armor_type: 'Leather' },           // Belt of the Inquisition
+  21500: { armor_type: 'Cloth' },           // Belt of the Inquisition
   21501: { armor_type: 'Leather' },           // Toughened Silithid Hide Gloves
   21502: { armor_type: 'Mail' },              // Sand Reaver Wristguards
-  21503: { armor_type: 'Leather' },           // Belt of the Sand Reaver
+  21503: { armor_type: 'Plate' },           // Belt of the Sand Reaver
 
   // ============================================================================
   // HYJAL SUMMIT ADDITIONS
   // ============================================================================
 
   29977: { armor_type: 'Cloth' },             // Star-Soul Breeches
-  29951: { armor_type: 'Leather' },           // Star-Strider Boots
-  30861: { armor_type: 'Cloth' },             // Furious Shackles
-  30862: { armor_type: 'Cloth' },             // Blessed Adamantite Bracers
+  29951: { armor_type: 'Mail' },           // Star-Strider Boots
+  30861: { armor_type: 'Plate' },             // Furious Shackles
+  30862: { armor_type: 'Plate' },             // Blessed Adamantite Bracers
   30026: { armor_type: 'Mail' },              // Bands of the Celestial Archer
   29996: { weapon_type: 'One-Handed Mace' },  // Rod of the Sun King
 
   // Additional TK items
-  30236: { armor_type: 'Leather' },           // Leggings of Murderous Intent
+  30236: { armor_type: 'Leather' },           // Chestguard of the Vanquished Champion
 
   // ============================================================================
   // ZUL'GURUB (Classic)
   // ============================================================================
 
   19896: { weapon_type: 'Fist Weapon' },      // Thekal's Grasp
-  19897: { armor_type: 'Leather' },           // Betrayer's Boots
-  19899: { armor_type: 'Mail' },              // Ritualistic Legguards
+  19897: { armor_type: 'Cloth' },           // Betrayer's Boots
+  19899: { armor_type: 'Cloth' },              // Ritualistic Legguards
   19901: { weapon_type: 'One-Handed Sword' }, // Zulian Slicer
   19903: { weapon_type: 'Dagger' },           // Fang of Venoxis
   19904: { armor_type: 'Mail' },              // Runed Bloodstained Hauberk
@@ -819,8 +819,8 @@ export const ITEM_TYPES: Record<number, ItemTypeInfo> = {
   19869: { armor_type: 'Leather' },           // Blooddrenched Grips
   19874: { weapon_type: 'Polearm' },          // Halberd of Smiting
   19877: { armor_type: 'Leather' },           // Animist's Leggings
-  19878: { armor_type: 'Mail' },              // Bloodsoaked Pauldrons
-  19895: { armor_type: 'Leather' },           // Bloodtinged Kilt
+  19878: { armor_type: 'Plate' },              // Bloodsoaked Pauldrons
+  19895: { armor_type: 'Cloth' },           // Bloodtinged Kilt
   19944: { weapon_type: 'Staff' },            // Nat Pagle's Fish Terminator
   19945: { armor_type: 'Leather' },           // Lizardscale Eyepatch
   19946: { weapon_type: 'Polearm' },          // Tigule's Harpoon
@@ -833,7 +833,7 @@ export const ITEM_TYPES: Record<number, ItemTypeInfo> = {
   19886: { armor_type: 'Cloth' },             // The Hexxer's Cover
   19889: { armor_type: 'Leather' },           // Blooddrenched Leggings
   19890: { weapon_type: 'One-Handed Mace' },  // Jin'do's Hexxer
-  19929: { armor_type: 'Leather' },           // Bloodtinged Gloves
+  19929: { armor_type: 'Cloth' },           // Bloodtinged Gloves
   19964: { weapon_type: 'Wand' },             // Renataki's Soul Conduit
   19965: { weapon_type: 'Dagger' },           // Wushoolay's Poker
   19968: { weapon_type: 'One-Handed Mace' },  // Fiery Retributer
