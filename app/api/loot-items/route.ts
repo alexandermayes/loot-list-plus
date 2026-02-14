@@ -18,6 +18,9 @@ interface LootItemClassRestriction {
   class_id: string
   spec_id: string | null
   spec_type: string | null
+  class_name?: string | null
+  class_color?: string | null
+  spec_name?: string | null
 }
 
 // GET - Fetch loot items for a raid tier, filtered by character spec
@@ -113,6 +116,15 @@ export async function GET(request: NextRequest) {
       console.error('Error fetching loot items:', itemsError)
       return NextResponse.json({ error: 'Failed to fetch loot items' }, { status: 500 })
     }
+
+    // Fetch class/spec reference data for enriching loot_item_classes
+    const [{ data: allClasses }, { data: allSpecs }] = await Promise.all([
+      supabase.from('wow_classes').select('id, name, color_hex'),
+      supabase.from('class_specs').select('id, name, class_id'),
+    ])
+
+    const classMap = new Map(allClasses?.map(c => [c.id, c]) || [])
+    const specMap = new Map(allSpecs?.map(s => [s.id, s]) || [])
 
     // Get character's class name for proficiency filtering
     // wow_classes is a single object from the foreign key join (not an array)
@@ -288,12 +300,19 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Merge consensus counts and raid tier name into response
+    // Merge consensus counts, raid tier name, and enriched class data into response
     const itemsWithConsensus = filteredItemsWithSpecType.map(item => {
       const raidTier = item.raid_tiers as { name: string } | { name: string }[] | null
       const raidTierName = Array.isArray(raidTier) ? raidTier[0]?.name : raidTier?.name
+      const classes = item.loot_item_classes as LootItemClassRestriction[]
       return {
         ...item,
+        loot_item_classes: (classes || []).map(lic => ({
+          ...lic,
+          class_name: classMap.get(lic.class_id)?.name || null,
+          class_color: classMap.get(lic.class_id)?.color_hex || null,
+          spec_name: lic.spec_id ? specMap.get(lic.spec_id)?.name || null : null,
+        })),
         raid_tier_name: raidTierName || null,
         consensus_count: consensusCounts[item.id] || 0
       }

@@ -11,6 +11,7 @@ import { useState, useRef, useEffect, useMemo, useCallback } from 'react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import ItemLink from './ItemLink'
+import ClassPrioritySubline from './ClassPrioritySubline'
 import { getBossOrder, normalizeBossName } from '@/utils/bossOrder'
 import { refreshWowheadTooltips } from '@/lib/wowhead'
 
@@ -22,6 +23,14 @@ interface Item {
   classification?: string
   consensus_count?: number  // Number of other guildmates who ranked this item
   dps_gain?: number  // Expected DPS/HPS gain from this item
+  loot_item_classes?: {
+    class_id: string
+    spec_id: string | null
+    spec_type: string | null
+    class_name?: string | null
+    class_color?: string | null
+    spec_name?: string | null
+  }[]
 }
 
 interface SearchableItemSelectProps {
@@ -319,30 +328,44 @@ export default function SearchableItemSelect({
                         disabled={isDisabled}
                         className={`w-full px-3 py-2 h-auto text-left justify-start rounded-none flex items-center gap-2 min-w-0 ${
                           isDisabled ? 'opacity-50 cursor-not-allowed' : ''
-                        } ${value === item.id ? 'bg-muted' : ''}`}
+                        }`}
                       >
-                        <span className="truncate flex-1 min-w-0">
-                          <ItemLink name={item.name} wowheadId={item.wowhead_id} clickable={false} />
+                        <span className="flex-1 min-w-0 whitespace-normal">
+                          <span className="flex items-center gap-2">
+                            <span className="truncate whitespace-nowrap">
+                              <ItemLink name={item.name} wowheadId={item.wowhead_id} clickable={false} />
+                            </span>
+                            {item.dps_gain && item.dps_gain > 0 && (
+                              <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-accent/20 text-accent flex-shrink-0">
+                                +{item.dps_gain.toLocaleString()} DPS
+                              </span>
+                            )}
+                            {isOwned && (
+                              <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-success/20 text-success flex-shrink-0">
+                                Owned
+                              </span>
+                            )}
+                            {item.consensus_count && item.consensus_count > 0 && (
+                              <span className="text-xs text-muted-foreground flex-shrink-0">
+                                {item.consensus_count} ranked
+                              </span>
+                            )}
+                            {item.classification && item.classification !== 'Unlimited' && (
+                              <span className="text-xs text-muted-foreground flex-shrink-0">
+                                [{item.classification}]
+                              </span>
+                            )}
+                          </span>
+                          <ClassPrioritySubline lootItemClasses={item.loot_item_classes} />
                         </span>
-                        {item.dps_gain && item.dps_gain > 0 && (
-                          <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-accent/20 text-accent flex-shrink-0">
-                            +{item.dps_gain.toLocaleString()} DPS
-                          </span>
-                        )}
-                        {isOwned && (
-                          <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-success/20 text-success flex-shrink-0">
-                            Owned
-                          </span>
-                        )}
-                        {item.consensus_count && item.consensus_count > 0 && (
-                          <span className="text-xs text-muted-foreground flex-shrink-0">
-                            {item.consensus_count} ranked
-                          </span>
-                        )}
-                        {item.classification && item.classification !== 'Unlimited' && (
-                          <span className="text-xs text-muted-foreground flex-shrink-0">
-                            [{item.classification}]
-                          </span>
+                        {value === item.id && (
+                          <img
+                            src="/icons/tick.svg"
+                            alt="Selected"
+                            width={16}
+                            height={16}
+                            className="icon-adaptive w-4 h-4 shrink-0"
+                          />
                         )}
                       </Button>
                     )

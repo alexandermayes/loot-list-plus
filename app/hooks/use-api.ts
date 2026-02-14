@@ -161,6 +161,9 @@ export interface LootItem {
     class_id: string
     spec_id: string | null
     spec_type: string | null
+    class_name?: string | null
+    class_color?: string | null
+    spec_name?: string | null
   }[]
   consensus_count?: number  // Number of OTHER guildmates who ranked this item
   character_spec_type?: 'primary' | 'secondary' | null  // The spec_type for the current character (for bracket filtering)

@@ -40,7 +40,7 @@ const ItemLink = memo(function ItemLink({ name, wowheadId, className = '', click
       href={clickable ? `https://www.wowhead.com/${domain}/item=${wowheadId}` : '#'}
       target={clickable ? "_blank" : undefined}
       rel={clickable ? "noopener noreferrer" : undefined}
-      className={`inline-flex items-center gap-1 ${className}`}
+      className={`inline-flex items-center gap-1 min-w-0 ${className}`}
       style={{
         color: '#a335ee'
       }}
@@ -58,7 +58,7 @@ const ItemLink = memo(function ItemLink({ name, wowheadId, className = '', click
           loading="eager"
         />
       )}
-      <span>{name}</span>
+      <span className="truncate">{name}</span>
     </a>
   )
 })
