@@ -541,25 +541,6 @@ export default function RaidTrackingPage() {
     }
   }
 
-  const getCellLabel = (state: CellState) => {
-    switch (state) {
-      case 'attended': return 'Attended'
-      case 'late': return 'Late'
-      case 'standby': return 'Standby'
-      case 'no-show': return 'No Show'
-      default: return 'Not Set'
-    }
-  }
-
-  const getShortLabel = (state: CellState) => {
-    switch (state) {
-      case 'attended': return 'A'
-      case 'late': return 'L'
-      case 'standby': return 'S'
-      case 'no-show': return 'N'
-      default: return '?'
-    }
-  }
 
   const setAttendanceStatus = async (raidId: string, characterId: string, userId: string, state: CellState) => {
     const current = attendance[raidId]?.[characterId]
@@ -1976,15 +1957,6 @@ export default function RaidTrackingPage() {
                   <>
                   {/* Row-based raider list */}
                   <div className="space-y-1">
-                    {/* Column Headers - hidden on mobile */}
-                    <div className={`hidden sm:grid ${guildSettings?.use_signups ? 'grid-cols-[20px_16px_1fr_120px_32px]' : 'grid-cols-[20px_1fr_120px_32px]'} gap-3 px-3 py-2 text-[11px] text-muted-foreground font-medium border-b border-border`}>
-                      <div>{/* Attended checkbox column */}</div>
-                      {guildSettings?.use_signups && <div>{/* Signup checkbox column */}</div>}
-                      <div>Raider</div>
-                      <div>Status</div>
-                      <div>{/* Actions column */}</div>
-                    </div>
-
                     {/* Linked Members */}
                     {members.map(member => {
                       const status = attendance[raid.id]?.[member.character_id]
@@ -1997,112 +1969,119 @@ export default function RaidTrackingPage() {
                       return (
                         <div
                           key={member.character_id}
-                          className={`
-                            ${guildSettings?.use_signups ? 'sm:grid-cols-[20px_16px_1fr_120px_32px]' : 'sm:grid-cols-[20px_1fr_120px_32px]'} sm:grid sm:gap-3 sm:items-center
-                            flex flex-col gap-2
-                            px-3 py-2 rounded-lg transition-colors ${getCellStyle(state)}
-                          `}
+                          className={`flex flex-col gap-2 px-3 py-2 rounded-lg transition-colors ${getCellStyle(state)}`}
                         >
-                          {/* Top row with attended checkbox, signup, name, status select, actions */}
-                          <div className="flex items-center justify-between sm:contents">
-                            <div className="flex items-center gap-2 min-w-0 flex-1 sm:contents">
-                              {/* Attended Checkbox */}
-                              <Checkbox
-                                checked={state !== 'empty'}
-                                onCheckedChange={() => toggleAttended(raid.id, member.character_id, member.user_id)}
-                                className="h-5 w-5 flex-shrink-0"
-                                title="Mark as attended"
-                              />
+                          <div className="flex items-center gap-3">
+                            {/* Attended Checkbox */}
+                            <Checkbox
+                              checked={state !== 'empty'}
+                              onCheckedChange={() => toggleAttended(raid.id, member.character_id, member.user_id)}
+                              className="h-5 w-5 flex-shrink-0"
+                              title="Mark as attended"
+                            />
 
-                              {/* Signup Checkbox */}
-                              {guildSettings?.use_signups && (
-                                <Checkbox
-                                  checked={isSignedUp}
-                                  onCheckedChange={() => toggleSignup(raid.id, member.character_id, member.user_id)}
-                                  className="h-4 w-4 flex-shrink-0"
-                                  title="Signed up for this raid"
-                                />
+                            {/* Raider Name + Status Badge + Loot */}
+                            <div className="flex items-center gap-2 min-w-0 flex-1">
+                              <span
+                                className="font-medium text-[13px] truncate"
+                                style={{ color: member.class_color }}
+                              >
+                                {member.character_name}
+                              </span>
+
+                              {/* Status badge - only show for non-default states */}
+                              {state === 'late' && (
+                                <span className="text-[11px] font-medium text-warning bg-warning/15 px-1.5 py-0.5 rounded flex-shrink-0">Late</span>
+                              )}
+                              {state === 'standby' && (
+                                <span className="text-[11px] font-medium text-warning bg-warning/15 px-1.5 py-0.5 rounded flex-shrink-0">Standby</span>
+                              )}
+                              {state === 'no-show' && (
+                                <span className="text-[11px] font-medium text-destructive bg-destructive/15 px-1.5 py-0.5 rounded flex-shrink-0">No Show</span>
+                              )}
+                              {isSignedUp && (
+                                <span className="text-[11px] font-medium text-accent bg-accent/15 px-1.5 py-0.5 rounded flex-shrink-0">Signed up</span>
                               )}
 
-                              {/* Raider Name + Loot */}
-                              <div className="flex items-center gap-2 min-w-0 flex-1">
-                                <span
-                                  className="font-medium text-[13px] truncate"
-                                  style={{ color: member.class_color }}
-                                >
-                                  {member.character_name}
-                                </span>
-
-                                {/* Desktop: Inline Loot Items */}
-                                {memberLoot.length > 0 && (
-                                  <div className="hidden sm:flex items-center gap-2 text-[12px] min-w-0">
-                                    <span className="text-muted-foreground">→</span>
-                                    {memberLoot.map(loot => (
-                                      <div key={loot.id} className="flex items-center gap-1 group min-w-0">
-                                        <ItemLink name={loot.item_name} wowheadId={loot.item_wowhead_id} className="text-[12px] truncate" />
-                                        <Button
-                                          variant="ghost"
-                                          size="icon"
-                                          onClick={(e) => { e.stopPropagation(); deleteLootEntry(loot.id, raid.id) }}
-                                          className="opacity-0 group-hover:opacity-100 text-destructive hover:text-destructive/80 flex-shrink-0 h-5 w-5 p-0"
-                                          title="Remove loot"
-                                        >
-                                          <HugeiconsIcon icon={Cancel01Icon} size={14} />
-                                        </Button>
-                                      </div>
-                                    ))}
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-
-                            {/* Status Select */}
-                            <div className="w-[120px] flex-shrink-0">
-                              {state !== 'empty' ? (
-                                <select
-                                  value={state}
-                                  onChange={(e) => setAttendanceStatus(raid.id, member.character_id, member.user_id, e.target.value as CellState)}
-                                  className="w-full text-[12px] bg-transparent border border-border rounded-md px-2 py-1 text-foreground cursor-pointer focus:outline-none focus:ring-2 focus:ring-ring"
-                                >
-                                  <option value="attended">Attended</option>
-                                  <option value="late">Late</option>
-                                  <option value="standby">Standby</option>
-                                  <option value="no-show">No Show</option>
-                                </select>
-                              ) : (
-                                <span className="text-[12px] text-muted-foreground px-2">Not set</span>
+                              {/* Desktop: Inline Loot Items */}
+                              {memberLoot.length > 0 && (
+                                <div className="hidden sm:flex items-center gap-2 text-[12px] min-w-0">
+                                  <span className="text-muted-foreground">→</span>
+                                  {memberLoot.map(loot => (
+                                    <div key={loot.id} className="flex items-center gap-1 group min-w-0">
+                                      <ItemLink name={loot.item_name} wowheadId={loot.item_wowhead_id} className="text-[12px] truncate" />
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={(e) => { e.stopPropagation(); deleteLootEntry(loot.id, raid.id) }}
+                                        className="opacity-0 group-hover:opacity-100 text-destructive hover:text-destructive/80 flex-shrink-0 h-5 w-5 p-0"
+                                        title="Remove loot"
+                                      >
+                                        <HugeiconsIcon icon={Cancel01Icon} size={14} />
+                                      </Button>
+                                    </div>
+                                  ))}
+                                </div>
                               )}
                             </div>
 
                             {/* Actions Dropdown */}
-                            <div className="w-8 flex-shrink-0">
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" size="icon" className="h-7 w-7">
-                                    <HugeiconsIcon icon={MoreVerticalIcon} size={16} />
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                  {memberLoot.length > 0 && (
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-7 w-7 flex-shrink-0">
+                                  <HugeiconsIcon icon={MoreVerticalIcon} size={16} />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                {/* Status overrides */}
+                                <DropdownMenuItem
+                                  onClick={() => setAttendanceStatus(raid.id, member.character_id, member.user_id, 'late')}
+                                  className={state === 'late' ? 'bg-muted' : ''}
+                                >
+                                  Mark as late
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={() => setAttendanceStatus(raid.id, member.character_id, member.user_id, 'standby')}
+                                  className={state === 'standby' ? 'bg-muted' : ''}
+                                >
+                                  Mark as standby
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={() => setAttendanceStatus(raid.id, member.character_id, member.user_id, 'no-show')}
+                                  className={state === 'no-show' ? 'bg-muted' : ''}
+                                >
+                                  Mark as no show
+                                </DropdownMenuItem>
+                                {guildSettings?.use_signups && (
+                                  <>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem onClick={() => toggleSignup(raid.id, member.character_id, member.user_id)}>
+                                      {isSignedUp ? 'Remove signup' : 'Mark as signed up'}
+                                    </DropdownMenuItem>
+                                  </>
+                                )}
+                                {memberLoot.length > 0 && (
+                                  <>
+                                    <DropdownMenuSeparator />
                                     <DropdownMenuItem onClick={() => setReassignModal({ raidId: raid.id, lootEntries: memberLoot, currentMember: member })}>
                                       Reassign loot
                                     </DropdownMenuItem>
-                                  )}
-                                  {memberLoot.length > 0 && <DropdownMenuSeparator />}
-                                  <DropdownMenuItem
-                                    onClick={() => removeFromAttendance(raid.id, member.character_id)}
-                                    className="text-destructive"
-                                  >
-                                    Remove from raid
-                                  </DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            </div>
+                                  </>
+                                )}
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem
+                                  onClick={() => removeFromAttendance(raid.id, member.character_id)}
+                                  className="text-destructive"
+                                >
+                                  Remove from raid
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
                           </div>
 
                           {/* Mobile: Loot items on separate line */}
                           {memberLoot.length > 0 && (
-                            <div className="flex items-center gap-2 text-[12px] sm:hidden pl-7 flex-wrap">
+                            <div className="flex items-center gap-2 text-[12px] sm:hidden pl-8 flex-wrap">
                               <span className="text-muted-foreground">→</span>
                               {memberLoot.map(loot => (
                                 <div key={loot.id} className="flex items-center gap-1">
@@ -2135,24 +2114,20 @@ export default function RaidTrackingPage() {
                       return (
                         <div
                           key={`unlinked-${idx}`}
-                          className={`
-                            ${guildSettings?.use_signups ? 'sm:grid-cols-[20px_16px_1fr_120px_32px]' : 'sm:grid-cols-[20px_1fr_120px_32px]'} sm:grid sm:gap-3 sm:items-center
-                            flex items-center gap-2
-                            px-3 py-2 rounded-lg transition-colors opacity-60 ${getCellStyle(state)}
-                          `}
+                          className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors opacity-60 ${getCellStyle(state)}`}
                         >
-                          {/* Empty space for attended checkbox column */}
-                          <div />
-                          {/* Empty space for signup checkbox column */}
-                          {guildSettings?.use_signups && <div />}
-                          {/* Name */}
-                          <span className="font-medium text-muted-foreground text-[13px] truncate" title={`${attendee.character_name} (No account)`}>
-                            {attendee.character_name}
-                          </span>
-                          {/* Status label (read-only) */}
-                          <span className="text-[12px] text-muted-foreground px-2">{getCellLabel(state)}</span>
-                          {/* Empty space for actions column */}
-                          <div />
+                          {/* Empty space for checkbox alignment */}
+                          <div className="h-5 w-5 flex-shrink-0" />
+                          {/* Name + Status Badges */}
+                          <div className="flex items-center gap-2 min-w-0 flex-1">
+                            <span className="font-medium text-muted-foreground text-[13px] truncate" title={`${attendee.character_name} (account not linked)`}>
+                              {attendee.character_name}
+                            </span>
+                            {state === 'late' && <span className="text-[11px] font-medium text-warning bg-warning/15 px-1.5 py-0.5 rounded flex-shrink-0">Late</span>}
+                            {state === 'standby' && <span className="text-[11px] font-medium text-warning bg-warning/15 px-1.5 py-0.5 rounded flex-shrink-0">Standby</span>}
+                            {state === 'no-show' && <span className="text-[11px] font-medium text-destructive bg-destructive/15 px-1.5 py-0.5 rounded flex-shrink-0">No Show</span>}
+                            {state === 'attended' && <span className="text-[11px] font-medium text-success bg-success/15 px-1.5 py-0.5 rounded flex-shrink-0">Attended</span>}
+                          </div>
                         </div>
                       )
                     })}
