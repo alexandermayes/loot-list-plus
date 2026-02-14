@@ -23,13 +23,13 @@ export function Skeleton({ className }: SkeletonProps) {
  */
 export function StatCardSkeleton() {
   return (
-    <div className="bg-background-elevated border border-border rounded-xl p-6">
+    <div className="bg-background-elevated border border-border rounded-xl p-3 sm:p-6">
       <div className="flex items-center justify-between">
         <div className="space-y-3">
-          <Skeleton className="h-4 w-24" />
-          <Skeleton className="h-10 w-16" />
+          <Skeleton className="h-4 w-16 sm:w-24" />
+          <Skeleton className="h-8 sm:h-10 w-12 sm:w-16" />
         </div>
-        <Skeleton className="w-12 h-12 rounded-full" />
+        <Skeleton className="w-10 h-10 sm:w-12 sm:h-12 rounded-full" />
       </div>
     </div>
   )
@@ -109,12 +109,12 @@ export function LootCardSkeleton() {
  */
 export function SubmissionCardSkeleton() {
   return (
-    <div className="bg-background-elevated border border-border rounded-xl p-5 flex items-center justify-between">
-      <div className="flex items-center gap-3">
+    <div className="bg-background-elevated border border-border rounded-xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div className="flex items-center gap-3 flex-wrap">
         <Skeleton className="h-5 w-24" />
         <Skeleton className="h-6 w-16 rounded-full" />
         <Skeleton className="h-5 w-20 rounded-full" />
-        <Skeleton className="h-4 w-32" />
+        <Skeleton className="h-4 w-32 hidden sm:block" />
       </div>
       <div className="flex gap-2">
         <Skeleton className="h-10 w-28 rounded-[40px]" />
@@ -129,16 +129,16 @@ export function SubmissionCardSkeleton() {
  */
 export function GuildCardSkeleton() {
   return (
-    <div className="flex items-center justify-between p-4 bg-background-inset border border-border rounded-lg">
-      <div className="flex items-center gap-4">
-        <Skeleton className="w-12 h-12 rounded-full" />
+    <div className="flex items-center justify-between gap-3 p-4 bg-background-inset border border-border rounded-lg">
+      <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+        <Skeleton className="w-10 h-10 sm:w-12 sm:h-12 rounded-full shrink-0" />
         <div className="space-y-2">
-          <Skeleton className="h-5 w-32" />
-          <Skeleton className="h-4 w-24" />
+          <Skeleton className="h-5 w-24 sm:w-32" />
+          <Skeleton className="h-4 w-20 sm:w-24" />
           <Skeleton className="h-5 w-16 rounded" />
         </div>
       </div>
-      <Skeleton className="h-10 w-28 rounded-[52px]" />
+      <Skeleton className="h-10 w-20 sm:w-28 rounded-[52px] shrink-0" />
     </div>
   )
 }
@@ -242,17 +242,17 @@ export function ProfileContentSkeleton() {
   return (
     <div className="space-y-6">
       {/* Header Card */}
-      <div className="bg-background-elevated border border-border rounded-xl p-6">
-        <div className="flex items-center gap-6">
-          <Skeleton className="w-20 h-20 rounded-full" />
-          <div className="flex-1 space-y-2">
+      <div className="bg-background-elevated border border-border rounded-xl p-4 sm:p-6">
+        <div className="flex items-center gap-4 sm:gap-6">
+          <Skeleton className="w-16 h-16 sm:w-20 sm:h-20 rounded-full shrink-0" />
+          <div className="flex-1 min-w-0 space-y-2">
             <Skeleton className="h-7 w-40" />
             <div className="flex items-center gap-4">
               <Skeleton className="h-4 w-32" />
-              <Skeleton className="h-4 w-28" />
+              <Skeleton className="h-4 w-28 hidden sm:block" />
             </div>
           </div>
-          <Skeleton className="h-12 w-28 rounded-[52px]" />
+          <Skeleton className="h-12 w-28 rounded-[52px] hidden sm:block" />
         </div>
       </div>
 

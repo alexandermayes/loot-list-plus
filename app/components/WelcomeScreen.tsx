@@ -235,7 +235,7 @@ export default function WelcomeScreen() {
           <div className="flex flex-col gap-6 w-full">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-2.5 w-full">
               {/* Join via Discord */}
-              <div className="bg-background-elevated border border-border rounded-[40px] p-6 pt-[43px] pb-6 flex flex-col items-center">
+              <div className="bg-background-elevated border border-border rounded-[24px] sm:rounded-[40px] p-4 pt-6 sm:p-6 sm:pt-[43px] pb-4 sm:pb-6 flex flex-col items-center">
                 <div className="flex flex-col gap-6 items-center w-full flex-1">
                   <Image
                     src="/icons/discord-large.svg"
@@ -265,7 +265,7 @@ export default function WelcomeScreen() {
               </div>
 
               {/* Join with Code */}
-              <div className="bg-background-elevated border border-border rounded-[40px] p-6 pt-[43px] pb-6 flex flex-col items-center">
+              <div className="bg-background-elevated border border-border rounded-[24px] sm:rounded-[40px] p-4 pt-6 sm:p-6 sm:pt-[43px] pb-4 sm:pb-6 flex flex-col items-center">
                 <div className="flex flex-col gap-6 items-center w-full flex-1">
                   <Image
                     src="/icons/password-validation.svg"
@@ -311,7 +311,7 @@ export default function WelcomeScreen() {
             </div>
 
             {/* Help Section */}
-            <div className="flex flex-col gap-2.5 items-center p-6 rounded-[40px] w-full lg:w-[409px] mx-auto">
+            <div className="flex flex-col gap-2.5 items-center p-4 sm:p-6 rounded-[24px] sm:rounded-[40px] w-full lg:w-[409px] mx-auto">
               <div className="flex items-center justify-center gap-2.5">
                 <Image
                   src="/icons/help.svg"

@@ -146,7 +146,7 @@ export default function OnboardingModal({ open, onClose }: OnboardingModalProps)
           </div>
 
           <ModalBody className="py-6 px-4 sm:px-8">
-            <div className="relative h-[360px] sm:h-[240px] overflow-hidden">
+            <div className="relative h-[300px] sm:h-[240px] overflow-hidden">
               <AnimatePresence mode="wait" custom={direction}>
                 <motion.div
                   key={step}

@@ -263,7 +263,7 @@ export function CharacterSelector() {
           />
 
           {/* Dropdown Content */}
-          <div className="absolute top-full mt-2 left-0 right-0 bg-background-elevated border border-border rounded-[12px] shadow-lg z-50 py-2 overflow-hidden">
+          <div className="absolute top-full mt-2 left-0 right-0 bg-background-elevated border border-border rounded-[12px] shadow-lg z-50 py-2 overflow-hidden overflow-y-auto max-h-[60vh]">
             {/* Current Guild Characters */}
             {activeGuild && charactersInGuild.length > 0 && (
               <div>
