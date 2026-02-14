@@ -600,7 +600,7 @@ export default function LootList() {
                 )}
               </p>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
               {/* Expansion Selector - Dropdown */}
               {guildExpansions.length > 1 && (
                 <Select
@@ -621,7 +621,8 @@ export default function LootList() {
               {/* How to Rank Button */}
               <Button variant="secondary" onClick={() => setShowInstructionsModal(true)}>
                 <HugeiconsIcon icon={InformationCircleIcon} size={18} />
-                How to rank
+                <span className="hidden sm:inline">How to rank</span>
+                <span className="sm:hidden">Info</span>
               </Button>
             </div>
           </div>
@@ -770,7 +771,7 @@ export default function LootList() {
                     </p>
                   </div>
                 </div>
-                <div className="flex flex-wrap items-center gap-3">
+                <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                   <span className="text-sm opacity-75">{rankedCount} items ranked</span>
                   {/* More Menu Dropdown */}
                   <div className="relative" ref={moreMenuRef}>

@@ -847,19 +847,19 @@ function DashboardContent() {
               onClick={() => setShowCreateCharacterModal(true)}
               className="bg-background-elevated border border-border rounded-xl p-6 hover:border-accent/50 transition cursor-pointer"
             >
-              <div className="flex items-center gap-4">
-                <div className="w-16 h-16 bg-muted border border-border-strong rounded-full flex items-center justify-center">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                <div className="w-16 h-16 bg-muted border border-border-strong rounded-full flex items-center justify-center flex-shrink-0">
                   <HugeiconsIcon icon={Add01Icon} size={32} className="text-muted-foreground" />
                 </div>
                 <div className="flex-1">
-                  <h2 className="text-[24px] font-bold text-foreground">
+                  <h2 className="text-[20px] sm:text-[24px] font-bold text-foreground">
                     Create your first character
                   </h2>
                   <p className="text-muted-foreground text-sm mt-1">
                     Add a character to start submitting loot lists and tracking your priority
                   </p>
                 </div>
-                <Button>
+                <Button className="w-full sm:w-auto">
                   Create character
                 </Button>
               </div>
@@ -888,7 +888,7 @@ function DashboardContent() {
                     <h2 className="text-[24px] font-bold" style={{ color: activeCharacter.class?.color_hex || '#fff' }}>
                       {activeCharacter.name}
                     </h2>
-                    <div className="flex items-center gap-3 mt-1">
+                    <div className="flex items-center gap-3 mt-1 flex-wrap">
                       {(activeCharacter.spec || activeCharacter.class) && (
                         <span className="text-sm text-muted-foreground">
                           {activeCharacter.spec?.name && activeCharacter.class?.name
@@ -913,41 +913,41 @@ function DashboardContent() {
               </div>
 
               {/* Stats Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 lg:flex-1">
+              <div className="grid grid-cols-3 lg:grid-cols-3 gap-3 sm:gap-6 lg:flex-1">
                 {/* Completed Lists */}
-                <div className="bg-background-elevated border border-border rounded-xl p-6">
-                  <div className="flex items-center justify-between">
+                <div className="bg-background-elevated border border-border rounded-xl p-3 sm:p-6">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center sm:justify-between gap-2">
                     <div>
-                      <p className="text-sm text-muted-foreground">Completed lists</p>
-                      <p className="text-[42px] font-bold text-foreground mt-2 leading-none">{stats.completedLists}</p>
+                      <p className="text-xs sm:text-sm text-muted-foreground">Completed lists</p>
+                      <p className="text-[28px] sm:text-[42px] font-bold text-foreground mt-1 sm:mt-2 leading-none">{stats.completedLists}</p>
                     </div>
-                    <div className="w-12 h-12 bg-success/20 rounded-full flex items-center justify-center">
+                    <div className="hidden sm:flex w-12 h-12 bg-success/20 rounded-full items-center justify-center">
                       <HugeiconsIcon icon={CheckmarkCircle01Icon} size={24} className="text-success" />
                     </div>
                   </div>
                 </div>
 
                 {/* Pending Reviews */}
-                <div className="bg-background-elevated border border-border rounded-xl p-6">
-                  <div className="flex items-center justify-between">
+                <div className="bg-background-elevated border border-border rounded-xl p-3 sm:p-6">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center sm:justify-between gap-2">
                     <div>
-                      <p className="text-sm text-muted-foreground">Pending reviews</p>
-                      <p className="text-[42px] font-bold text-foreground mt-2 leading-none">{stats.pendingReviews}</p>
+                      <p className="text-xs sm:text-sm text-muted-foreground">Pending reviews</p>
+                      <p className="text-[28px] sm:text-[42px] font-bold text-foreground mt-1 sm:mt-2 leading-none">{stats.pendingReviews}</p>
                     </div>
-                    <div className="w-12 h-12 bg-warning/20 rounded-full flex items-center justify-center">
+                    <div className="hidden sm:flex w-12 h-12 bg-warning/20 rounded-full items-center justify-center">
                       <HugeiconsIcon icon={AlertCircleIcon} size={24} className="text-warning" />
                     </div>
                   </div>
                 </div>
 
                 {/* Actions Needed */}
-                <div className="bg-background-elevated border border-border rounded-xl p-6">
-                  <div className="flex items-center justify-between">
+                <div className="bg-background-elevated border border-border rounded-xl p-3 sm:p-6">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center sm:justify-between gap-2">
                     <div>
-                      <p className="text-sm text-muted-foreground">Actions needed</p>
-                      <p className="text-[42px] font-bold text-foreground mt-2 leading-none">{visibleActionsCount}</p>
+                      <p className="text-xs sm:text-sm text-muted-foreground">Actions needed</p>
+                      <p className="text-[28px] sm:text-[42px] font-bold text-foreground mt-1 sm:mt-2 leading-none">{visibleActionsCount}</p>
                     </div>
-                    <div className="w-12 h-12 bg-warning/20 rounded-full flex items-center justify-center">
+                    <div className="hidden sm:flex w-12 h-12 bg-warning/20 rounded-full items-center justify-center">
                       <HugeiconsIcon icon={AlertCircleIcon} size={24} className="text-warning" />
                     </div>
                   </div>

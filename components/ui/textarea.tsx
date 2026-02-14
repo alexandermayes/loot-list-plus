@@ -30,9 +30,9 @@ const textareaVariants = cva(
         rounded: "rounded-xl border-border",
       },
       size: {
-        sm: "min-h-[80px] px-4 py-3 text-[12px]",
-        default: "min-h-[100px] px-5 py-4 text-[13px]",
-        lg: "min-h-[120px] px-6 py-5 text-[14px]",
+        sm: "min-h-[80px] px-4 py-3 text-[16px] sm:text-[12px]",
+        default: "min-h-[100px] px-5 py-4 text-[16px] sm:text-[13px]",
+        lg: "min-h-[120px] px-6 py-5 text-[16px] sm:text-[14px]",
       },
     },
     defaultVariants: {

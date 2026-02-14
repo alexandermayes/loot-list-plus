@@ -557,7 +557,7 @@ export default function MasterLootPage() {
                       {submission.item_count} items • Submitted {submission.submitted_at ? new Date(submission.submitted_at).toLocaleDateString('en-US', { month: 'numeric', day: 'numeric', year: 'numeric' }) : 'N/A'}
                     </span>
                   </div>
-                  <div className="flex gap-2 flex-shrink-0">
+                  <div className="flex gap-2 flex-shrink-0 flex-wrap sm:flex-nowrap">
                     {submission.status === 'pending' && (
                       <>
                         <Button

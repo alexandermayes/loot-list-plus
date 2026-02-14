@@ -626,34 +626,35 @@ export default function AttendancePage() {
             </span>
             <span className="text-foreground-muted text-[13px]">• Your attendance</span>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-            <div className="bg-background-elevated border border-border rounded-xl p-6">
-              <p className="text-muted-foreground text-sm mb-1">
-                Attendance credit (previous {guildSettings?.rolling_attendance_weeks || 4} weeks)
+          <div className="grid grid-cols-3 gap-3 sm:gap-6">
+            <div className="bg-background-elevated border border-border rounded-xl p-3 sm:p-6">
+              <p className="text-muted-foreground text-xs sm:text-sm mb-1">
+                <span className="hidden sm:inline">Attendance credit (previous {guildSettings?.rolling_attendance_weeks || 4} weeks)</span>
+                <span className="sm:hidden">Credit</span>
               </p>
-              <p className={`text-[42px] font-bold leading-none ${
+              <p className={`text-[28px] sm:text-[42px] font-bold leading-none ${
                 attendanceScore >= (guildSettings?.max_attendance_bonus || 8) * 0.75 ? 'text-success' :
                 attendanceScore >= (guildSettings?.max_attendance_bonus || 8) * 0.5 ? 'text-warning' :
                 'text-destructive'
               }`}>
-                {attendanceScore.toFixed(guildSettings?.decimal_places || 2)} <span className="text-[18px] text-muted-foreground">/ {(guildSettings?.max_attendance_bonus || 8).toFixed(guildSettings?.decimal_places || 2)}</span>
+                {attendanceScore.toFixed(guildSettings?.decimal_places || 2)} <span className="text-[14px] sm:text-[18px] text-muted-foreground">/ {(guildSettings?.max_attendance_bonus || 8).toFixed(guildSettings?.decimal_places || 2)}</span>
               </p>
             </div>
 
-            <div className="bg-background-elevated border border-border rounded-xl p-6">
-              <p className="text-muted-foreground text-sm mb-1">Role modifier</p>
-              <p className={`text-[42px] font-bold leading-none ${roleModifier < 0 ? 'text-destructive' : roleModifier > 0 ? 'text-success' : 'text-foreground'}`}>
+            <div className="bg-background-elevated border border-border rounded-xl p-3 sm:p-6">
+              <p className="text-muted-foreground text-xs sm:text-sm mb-1">Role modifier</p>
+              <p className={`text-[28px] sm:text-[42px] font-bold leading-none ${roleModifier < 0 ? 'text-destructive' : roleModifier > 0 ? 'text-success' : 'text-foreground'}`}>
                 {roleModifier >= 0 ? '+' : ''}{roleModifier}
               </p>
-              <p className="text-muted-foreground text-sm mt-2">{memberRole}</p>
+              <p className="text-muted-foreground text-xs sm:text-sm mt-2">{memberRole}</p>
             </div>
 
-            <div className="bg-background-elevated border border-border rounded-xl p-6">
-              <p className="text-muted-foreground text-sm mb-1">Tracked raids</p>
-              <p className="text-[42px] font-bold text-foreground leading-none">
+            <div className="bg-background-elevated border border-border rounded-xl p-3 sm:p-6">
+              <p className="text-muted-foreground text-xs sm:text-sm mb-1">Tracked raids</p>
+              <p className="text-[28px] sm:text-[42px] font-bold text-foreground leading-none">
                 {guildRaidEvents.length}
               </p>
-              <p className="text-muted-foreground text-sm mt-2">Current + previous {guildSettings?.rolling_attendance_weeks || 4} weeks</p>
+              <p className="text-muted-foreground text-xs sm:text-sm mt-2"><span className="hidden sm:inline">Current + previous {guildSettings?.rolling_attendance_weeks || 4} weeks</span><span className="sm:hidden">{guildSettings?.rolling_attendance_weeks || 4}wk window</span></p>
             </div>
           </div>
         </>
@@ -708,13 +709,13 @@ export default function AttendancePage() {
               {/* Header row with week groupings */}
               <thead className="sticky top-14 sm:top-0 z-20">
                 <tr className="bg-background-subtle">
-                  <th className="sticky left-0 z-20 bg-background-subtle px-4 py-2 text-left text-[11px] font-medium text-foreground-muted min-w-[160px]">
+                  <th className="sticky left-0 z-20 bg-background-subtle px-2 sm:px-4 py-2 text-left text-[11px] font-medium text-foreground-muted min-w-[100px] sm:min-w-[160px]">
                     Character
                   </th>
-                  <th className="sticky left-[160px] z-20 bg-background-subtle px-3 py-2 text-left text-[11px] font-medium text-foreground-muted min-w-[100px]">
+                  <th className="sticky left-[100px] sm:left-[160px] z-20 bg-background-subtle px-2 sm:px-3 py-2 text-center text-[11px] font-medium text-foreground-muted min-w-[56px] sm:min-w-[70px] hidden sm:table-cell">
                     Role
                   </th>
-                  <th className="sticky left-[260px] z-20 bg-background-subtle px-3 py-2 text-center text-[11px] font-medium text-foreground-muted min-w-[70px]">
+                  <th className="sticky left-[100px] sm:left-[260px] z-20 bg-background-subtle px-2 sm:px-3 py-2 text-center text-[11px] font-medium text-foreground-muted min-w-[56px] sm:min-w-[70px]">
                     Credit
                   </th>
                   {/* Week grouping headers */}
@@ -732,9 +733,9 @@ export default function AttendancePage() {
                 </tr>
                 {/* Sub-header for individual dates */}
                 <tr className="bg-background-subtle/80">
-                  <th className="sticky left-0 z-20 bg-background-subtle/80 px-4 py-1.5" />
-                  <th className="sticky left-[160px] z-20 bg-background-subtle/80 px-3 py-1.5" />
-                  <th className="sticky left-[260px] z-20 bg-background-subtle/80 px-3 py-1.5" />
+                  <th className="sticky left-0 z-20 bg-background-subtle/80 px-2 sm:px-4 py-1.5" />
+                  <th className="sticky left-[100px] sm:left-[160px] z-20 bg-background-subtle/80 px-2 sm:px-3 py-1.5 hidden sm:table-cell" />
+                  <th className="sticky left-[100px] sm:left-[260px] z-20 bg-background-subtle/80 px-2 sm:px-3 py-1.5" />
                   {raidsByWeek.flatMap(week =>
                     week.raids.map(raid => (
                       <th
@@ -752,15 +753,15 @@ export default function AttendancePage() {
               <tbody className="divide-y divide-border">
                 {sortedRaiders.map(raider => (
                   <tr key={raider.id} className="hover:bg-muted transition-colors">
-                    <td className="sticky left-0 z-10 bg-background-elevated group-hover:bg-muted px-4 py-2.5">
-                      <span className="font-medium text-[13px]" style={{ color: raider.classColor }}>
+                    <td className="sticky left-0 z-10 bg-background-elevated group-hover:bg-muted px-2 sm:px-4 py-2.5">
+                      <span className="font-medium text-[12px] sm:text-[13px]" style={{ color: raider.classColor }}>
                         {raider.name}
                       </span>
                     </td>
-                    <td className="sticky left-[160px] z-10 bg-background-elevated group-hover:bg-muted px-3 py-2.5 text-[12px] text-muted-foreground">
+                    <td className="sticky left-[100px] sm:left-[160px] z-10 bg-background-elevated group-hover:bg-muted px-2 sm:px-3 py-2.5 text-[12px] text-muted-foreground hidden sm:table-cell">
                       {raider.role}
                     </td>
-                    <td className="sticky left-[260px] z-10 bg-background-elevated group-hover:bg-muted px-3 py-2.5 text-center">
+                    <td className="sticky left-[100px] sm:left-[260px] z-10 bg-background-elevated group-hover:bg-muted px-2 sm:px-3 py-2.5 text-center">
                       <span className={`font-semibold text-[13px] ${
                         raider.attendanceScore >= (guildSettings?.max_attendance_bonus || 8) * 0.75 ? 'text-success' :
                         raider.attendanceScore >= (guildSettings?.max_attendance_bonus || 8) * 0.5 ? 'text-warning' :

@@ -71,17 +71,18 @@ export default function Navigation({
   }, [])
 
   return (
-    <header className="bg-card border-b border-border px-6 py-4">
-      <div className="max-w-6xl mx-auto flex items-center justify-between">
-        <div className="flex items-center gap-4">
+    <header className="bg-card border-b border-border px-3 sm:px-6 py-3 sm:py-4">
+      <div className="max-w-6xl mx-auto flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2 sm:gap-4 min-w-0">
           {showBack && (
             <Button
               variant="ghost"
               size="sm"
               onClick={() => router.push(backUrl)}
+              className="shrink-0"
             >
               <HugeiconsIcon icon={ArrowLeft01Icon} size={16} />
-              Back
+              <span className="hidden sm:inline">Back</span>
             </Button>
           )}
           <Image
@@ -89,15 +90,15 @@ export default function Navigation({
             alt="LootList+"
             width={160}
             height={34}
-            className="h-8 w-auto cursor-pointer"
+            className="h-6 sm:h-8 w-auto cursor-pointer shrink-0"
             priority
             onClick={() => router.push('/overview')}
           />
           {title && showBack && (
-            <span className="text-muted-foreground">•</span>
+            <span className="text-muted-foreground hidden sm:inline">•</span>
           )}
           {title && showBack && (
-            <h1 className="text-lg font-semibold text-foreground">{title}</h1>
+            <h1 className="text-sm sm:text-lg font-semibold text-foreground truncate">{title}</h1>
           )}
         </div>
 
@@ -114,7 +115,7 @@ export default function Navigation({
             </Button>
 
             {dropdownOpen && (
-              <div className="absolute top-full mt-2 left-0 w-64 bg-background-elevated border border-border-strong rounded-lg shadow-lg z-50">
+              <div className="absolute top-full mt-2 right-0 sm:left-0 w-[calc(100vw-24px)] max-w-[256px] bg-background-elevated border border-border-strong rounded-lg shadow-lg z-50">
                 <div className="p-2">
                   <div className="px-3 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                     Your Guilds
@@ -162,20 +163,20 @@ export default function Navigation({
           </div>
         )}
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 sm:gap-4">
           {(characterName || user) && (
             <>
               <Button
                 variant="ghost"
                 onClick={() => router.push('/profile')}
-                className="h-auto py-1 px-2"
+                className="h-auto py-1 px-2 min-w-0"
               >
-                <div className="text-right">
-                  <p className="text-foreground font-medium">
+                <div className="text-right hidden sm:block">
+                  <p className="text-foreground font-medium truncate max-w-[160px]">
                     {user?.user_metadata?.custom_claims?.global_name || user?.user_metadata?.full_name || user?.user_metadata?.name || characterName || 'User'}
                   </p>
                   {characterName && (
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-sm text-muted-foreground truncate max-w-[160px]">
                       {characterName}
                       {className && role && (
                         <span style={{ color: classColor || '#888' }}> • {className}</span>
@@ -189,7 +190,7 @@ export default function Navigation({
                       ? user.user_metadata.avatar_url
                       : `https://cdn.discordapp.com/avatars/${user.user_metadata.provider_id}/${user.user_metadata.avatar_url}.png`}
                     alt="Avatar"
-                    className="w-10 h-10 rounded-full border-2 border-border"
+                    className="w-8 h-8 sm:w-10 sm:h-10 rounded-full border-2 border-border"
                     onError={(e) => {
                       const target = e.target as HTMLImageElement
                       target.src = 'https://cdn.discordapp.com/embed/avatars/0.png'
@@ -203,9 +204,10 @@ export default function Navigation({
             variant="ghost"
             size="sm"
             onClick={handleLogout}
+            className="shrink-0"
           >
             <HugeiconsIcon icon={Logout01Icon} size={16} />
-            Sign Out
+            <span className="hidden sm:inline">Sign Out</span>
           </Button>
         </div>
       </div>

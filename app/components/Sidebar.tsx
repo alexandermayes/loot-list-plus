@@ -326,7 +326,7 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange, 
     <>
     {/* Toast Notification */}
     <div
-      className={`fixed top-4 left-1/2 -translate-x-1/2 z-[200] transition-all duration-300 ease-out ${
+      className={`fixed top-[env(safe-area-inset-top,16px)] left-1/2 -translate-x-1/2 z-[200] transition-all duration-300 ease-out mt-4 ${
         showToast ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4 pointer-events-none'
       }`}
     >
@@ -499,7 +499,7 @@ export default function Sidebar({ user, currentView = 'overview', onViewChange, 
 
           {/* Guild Dropdown */}
           {guildDropdownOpen && (
-            <div className="absolute top-full mt-2 left-0 w-full bg-background-elevated border border-border rounded-[12px] shadow-lg overflow-hidden z-50 py-2">
+            <div className="absolute top-full mt-2 left-0 w-full bg-background-elevated border border-border rounded-[12px] shadow-lg overflow-hidden overflow-y-auto max-h-[60vh] z-50 py-2">
               {/* Guilds Section */}
               <div className="px-3 pt-2 pb-1">
                 <p className="font-poppins font-medium text-[10px] text-muted-foreground uppercase tracking-wide">

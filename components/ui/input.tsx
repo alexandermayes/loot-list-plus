@@ -32,9 +32,9 @@ const inputVariants = cva(
         rounded: "rounded-xl border-border",
       },
       size: {
-        sm: "h-9 px-3 text-[12px]",
-        default: "h-11 px-4 text-[13px]",
-        lg: "h-12 px-5 text-[14px]",
+        sm: "h-9 px-3 text-[16px] sm:text-[12px]",
+        default: "h-11 px-4 text-[16px] sm:text-[13px]",
+        lg: "h-12 px-5 text-[16px] sm:text-[14px]",
       },
     },
     defaultVariants: {

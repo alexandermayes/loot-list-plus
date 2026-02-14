@@ -393,11 +393,11 @@ export default function ProfilePage() {
         <div className="space-y-6">
           {/* Appearance */}
           <div className="bg-background-elevated border border-border rounded-xl overflow-hidden">
-            <div className="px-6 py-4 border-b border-border">
+            <div className="px-4 sm:px-6 py-4 border-b border-border">
               <h2 className="text-[18px] font-semibold text-foreground">Appearance</h2>
               <p className="text-muted-foreground text-[13px] mt-1">Customize how LootList+ looks</p>
             </div>
-            <div className="p-6 space-y-6">
+            <div className="p-4 sm:p-6 space-y-6">
               {/* Theme Toggle */}
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
@@ -472,17 +472,17 @@ export default function ProfilePage() {
               </div>
 
               {/* Accent Color */}
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-background-subtle border border-border rounded-lg flex items-center justify-center">
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-10 h-10 bg-background-subtle border border-border rounded-lg flex items-center justify-center shrink-0">
                     <HugeiconsIcon icon={PaintBoardIcon} size={20} />
                   </div>
-                  <div>
+                  <div className="min-w-0">
                     <p className="text-foreground font-medium">Accent Color</p>
-                    <p className="text-[13px] text-muted-foreground">Choose your preferred accent color</p>
+                    <p className="text-[13px] text-muted-foreground hidden sm:block">Choose your preferred accent color</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-2 sm:gap-1.5">
                   {ACCENT_COLORS.map((color) => {
                     const isSelected = accentColor === color.value
                     return (
@@ -493,7 +493,7 @@ export default function ProfilePage() {
                           setAccentColor(color.value)
                           saveAccentColor(color.value)
                         }}
-                        className={`w-6 h-6 rounded-full transition-all ${
+                        className={`w-8 h-8 sm:w-6 sm:h-6 rounded-full transition-all ${
                           isSelected
                             ? 'ring-2 ring-foreground ring-offset-2 ring-offset-background'
                             : 'opacity-60 hover:opacity-100'
