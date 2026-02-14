@@ -533,11 +533,11 @@ export default function RaidTrackingPage() {
 
   const getCellStyle = (state: CellState) => {
     switch (state) {
-      case 'attended': return 'bg-success/30 border-success text-success'
-      case 'late': return 'bg-warning/30 border-warning text-warning'
-      case 'standby': return 'bg-warning/30 border-warning text-warning'
-      case 'no-show': return 'bg-destructive/30 border-destructive text-destructive'
-      default: return 'bg-background-elevated border-border'
+      case 'attended': return 'bg-background-elevated border border-border border-l-2 border-l-success'
+      case 'late': return 'bg-background-elevated border border-border border-l-2 border-l-warning'
+      case 'standby': return 'bg-background-elevated border border-border border-l-2 border-l-warning'
+      case 'no-show': return 'bg-background-elevated border border-border border-l-2 border-l-destructive'
+      default: return 'bg-background-elevated border border-border'
     }
   }
 
@@ -561,28 +561,27 @@ export default function RaidTrackingPage() {
     }
   }
 
-  const cycleAttendanceState = async (raidId: string, characterId: string, userId: string) => {
+  const setAttendanceStatus = async (raidId: string, characterId: string, userId: string, state: CellState) => {
     const current = attendance[raidId]?.[characterId]
-    const currentState = getCellState(current)
     const preserveSignedUp = current?.signed_up || false
 
-    // Cycle: Attended → Late → Standby → No Show → Attended (no empty state once set)
     let newStatus: AttendanceStatus
-    switch (currentState) {
+    switch (state) {
       case 'attended':
-        newStatus = { signed_up: preserveSignedUp, attended: true, no_call_no_show: false, was_late: true, was_benched: false }
+        newStatus = { signed_up: preserveSignedUp, attended: true, no_call_no_show: false, was_late: false, was_benched: false }
         break
       case 'late':
-        newStatus = { signed_up: preserveSignedUp, attended: false, no_call_no_show: false, was_late: false, was_benched: true }
+        newStatus = { signed_up: preserveSignedUp, attended: true, no_call_no_show: false, was_late: true, was_benched: false }
         break
       case 'standby':
-        newStatus = { signed_up: preserveSignedUp, attended: false, no_call_no_show: true, was_late: false, was_benched: false }
+        newStatus = { signed_up: preserveSignedUp, attended: false, no_call_no_show: false, was_late: false, was_benched: true }
         break
       case 'no-show':
+        newStatus = { signed_up: preserveSignedUp, attended: false, no_call_no_show: true, was_late: false, was_benched: false }
+        break
       case 'empty':
       default:
-        // First click or cycling from no-show starts at Attended
-        newStatus = { signed_up: preserveSignedUp, attended: true, no_call_no_show: false, was_late: false, was_benched: false }
+        newStatus = { signed_up: preserveSignedUp, attended: false, no_call_no_show: false, was_late: false, was_benched: false }
         break
     }
 
@@ -595,14 +594,14 @@ export default function RaidTrackingPage() {
       }
     }))
 
-    // Save to database with error handling
+    // Save to database
     const payload = {
       raid_event_id: raidId,
       character_id: characterId,
       user_id: userId,
       ...newStatus
     }
-    const { data, error, status, statusText } = await supabase
+    const { data, error } = await supabase
       .from('attendance_records')
       .upsert(payload, {
         onConflict: 'raid_event_id,character_id'
@@ -611,14 +610,23 @@ export default function RaidTrackingPage() {
 
     if (error) {
       console.error('Failed to save attendance:', JSON.stringify(error, null, 2))
-      console.error('Error details:', error.message, error.code, error.details, error.hint)
       showNotification('error', error.message || 'Couldn\'t save attendance. Try again.')
-      // Revert local state on error
       await loadRaidAttendance(raidId)
     } else if (!data || data.length === 0) {
       console.error('No rows returned from upsert - possible RLS issue')
       showNotification('error', 'Couldn\'t save attendance. Check your permissions and try again.')
       await loadRaidAttendance(raidId)
+    }
+  }
+
+  const toggleAttended = (raidId: string, characterId: string, userId: string) => {
+    const current = attendance[raidId]?.[characterId]
+    const currentState = getCellState(current)
+
+    if (currentState === 'empty') {
+      setAttendanceStatus(raidId, characterId, userId, 'attended')
+    } else {
+      setAttendanceStatus(raidId, characterId, userId, 'empty')
     }
   }
 
@@ -1969,11 +1977,12 @@ export default function RaidTrackingPage() {
                   {/* Row-based raider list */}
                   <div className="space-y-1">
                     {/* Column Headers - hidden on mobile */}
-                    <div className="hidden sm:grid grid-cols-[auto_1fr_auto_auto] gap-3 px-3 py-2 text-[11px] text-muted-foreground font-medium border-b border-border">
-                      <div className="w-4">{/* Signup checkbox column */}</div>
+                    <div className={`hidden sm:grid ${guildSettings?.use_signups ? 'grid-cols-[20px_16px_1fr_120px_32px]' : 'grid-cols-[20px_1fr_120px_32px]'} gap-3 px-3 py-2 text-[11px] text-muted-foreground font-medium border-b border-border`}>
+                      <div>{/* Attended checkbox column */}</div>
+                      {guildSettings?.use_signups && <div>{/* Signup checkbox column */}</div>}
                       <div>Raider</div>
-                      <div className="text-center w-20">Status</div>
-                      <div className="w-8">{/* Actions column */}</div>
+                      <div>Status</div>
+                      <div>{/* Actions column */}</div>
                     </div>
 
                     {/* Linked Members */}
@@ -1989,14 +1998,22 @@ export default function RaidTrackingPage() {
                         <div
                           key={member.character_id}
                           className={`
-                            sm:grid sm:grid-cols-[auto_1fr_auto_auto] sm:gap-3 sm:items-center
+                            ${guildSettings?.use_signups ? 'sm:grid-cols-[20px_16px_1fr_120px_32px]' : 'sm:grid-cols-[20px_1fr_120px_32px]'} sm:grid sm:gap-3 sm:items-center
                             flex flex-col gap-2
-                            px-3 py-2 rounded-lg border transition ${getCellStyle(state)}
+                            px-3 py-2 rounded-lg transition-colors ${getCellStyle(state)}
                           `}
                         >
-                          {/* Mobile: Top row with checkbox, name, status, and actions */}
+                          {/* Top row with attended checkbox, signup, name, status select, actions */}
                           <div className="flex items-center justify-between sm:contents">
-                            <div className="flex items-center gap-2 min-w-0 flex-1">
+                            <div className="flex items-center gap-2 min-w-0 flex-1 sm:contents">
+                              {/* Attended Checkbox */}
+                              <Checkbox
+                                checked={state !== 'empty'}
+                                onCheckedChange={() => toggleAttended(raid.id, member.character_id, member.user_id)}
+                                className="h-5 w-5 flex-shrink-0"
+                                title="Mark as attended"
+                              />
+
                               {/* Signup Checkbox */}
                               {guildSettings?.use_signups && (
                                 <Checkbox
@@ -2006,50 +2023,55 @@ export default function RaidTrackingPage() {
                                   title="Signed up for this raid"
                                 />
                               )}
-                              {!guildSettings?.use_signups && <div className="w-4 hidden sm:block" />}
 
-                              {/* Raider Name */}
-                              <Button
-                                variant="ghost"
-                                onClick={() => cycleAttendanceState(raid.id, member.character_id, member.user_id)}
-                                className="font-medium text-[13px] hover:underline truncate p-0 h-auto"
-                                style={{ color: member.class_color }}
-                              >
-                                {member.character_name}
-                              </Button>
+                              {/* Raider Name + Loot */}
+                              <div className="flex items-center gap-2 min-w-0 flex-1">
+                                <span
+                                  className="font-medium text-[13px] truncate"
+                                  style={{ color: member.class_color }}
+                                >
+                                  {member.character_name}
+                                </span>
 
-                              {/* Status - inline on mobile */}
-                              <span className="sm:hidden text-[11px] font-medium text-muted-foreground flex-shrink-0">
-                                ({getCellLabel(state)})
-                              </span>
-
-                              {/* Desktop: Inline Loot Items */}
-                              {memberLoot.length > 0 && (
-                                <div className="hidden sm:flex items-center gap-2 text-[12px] min-w-0">
-                                  <span className="text-muted-foreground">→</span>
-                                  {memberLoot.map(loot => (
-                                    <div key={loot.id} className="flex items-center gap-1 group min-w-0">
-                                      <ItemLink name={loot.item_name} wowheadId={loot.item_wowhead_id} className="text-[12px] truncate" />
-                                      <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        onClick={(e) => { e.stopPropagation(); deleteLootEntry(loot.id, raid.id) }}
-                                        className="opacity-0 group-hover:opacity-100 text-destructive hover:text-destructive/80 flex-shrink-0 h-5 w-5 p-0"
-                                        title="Remove loot"
-                                      >
-                                        <HugeiconsIcon icon={Cancel01Icon} size={14} />
-                                      </Button>
-                                    </div>
-                                  ))}
-                                </div>
-                              )}
+                                {/* Desktop: Inline Loot Items */}
+                                {memberLoot.length > 0 && (
+                                  <div className="hidden sm:flex items-center gap-2 text-[12px] min-w-0">
+                                    <span className="text-muted-foreground">→</span>
+                                    {memberLoot.map(loot => (
+                                      <div key={loot.id} className="flex items-center gap-1 group min-w-0">
+                                        <ItemLink name={loot.item_name} wowheadId={loot.item_wowhead_id} className="text-[12px] truncate" />
+                                        <Button
+                                          variant="ghost"
+                                          size="icon"
+                                          onClick={(e) => { e.stopPropagation(); deleteLootEntry(loot.id, raid.id) }}
+                                          className="opacity-0 group-hover:opacity-100 text-destructive hover:text-destructive/80 flex-shrink-0 h-5 w-5 p-0"
+                                          title="Remove loot"
+                                        >
+                                          <HugeiconsIcon icon={Cancel01Icon} size={14} />
+                                        </Button>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
                             </div>
 
-                            {/* Desktop: Status Badge */}
-                            <div className="hidden sm:block w-20 text-center">
-                              <span className="text-[12px] font-medium">
-                                {getCellLabel(state)}
-                              </span>
+                            {/* Status Select */}
+                            <div className="w-[120px] flex-shrink-0">
+                              {state !== 'empty' ? (
+                                <select
+                                  value={state}
+                                  onChange={(e) => setAttendanceStatus(raid.id, member.character_id, member.user_id, e.target.value as CellState)}
+                                  className="w-full text-[12px] bg-transparent border border-border rounded-md px-2 py-1 text-foreground cursor-pointer focus:outline-none focus:ring-2 focus:ring-ring"
+                                >
+                                  <option value="attended">Attended</option>
+                                  <option value="late">Late</option>
+                                  <option value="standby">Standby</option>
+                                  <option value="no-show">No Show</option>
+                                </select>
+                              ) : (
+                                <span className="text-[12px] text-muted-foreground px-2">Not set</span>
+                              )}
                             </div>
 
                             {/* Actions Dropdown */}
@@ -2061,15 +2083,12 @@ export default function RaidTrackingPage() {
                                   </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
-                                  <DropdownMenuItem onClick={() => cycleAttendanceState(raid.id, member.character_id, member.user_id)}>
-                                    Change status
-                                  </DropdownMenuItem>
                                   {memberLoot.length > 0 && (
                                     <DropdownMenuItem onClick={() => setReassignModal({ raidId: raid.id, lootEntries: memberLoot, currentMember: member })}>
                                       Reassign loot
                                     </DropdownMenuItem>
                                   )}
-                                  <DropdownMenuSeparator />
+                                  {memberLoot.length > 0 && <DropdownMenuSeparator />}
                                   <DropdownMenuItem
                                     onClick={() => removeFromAttendance(raid.id, member.character_id)}
                                     className="text-destructive"
@@ -2083,7 +2102,7 @@ export default function RaidTrackingPage() {
 
                           {/* Mobile: Loot items on separate line */}
                           {memberLoot.length > 0 && (
-                            <div className="flex items-center gap-2 text-[12px] sm:hidden pl-6 flex-wrap">
+                            <div className="flex items-center gap-2 text-[12px] sm:hidden pl-7 flex-wrap">
                               <span className="text-muted-foreground">→</span>
                               {memberLoot.map(loot => (
                                 <div key={loot.id} className="flex items-center gap-1">
@@ -2117,28 +2136,23 @@ export default function RaidTrackingPage() {
                         <div
                           key={`unlinked-${idx}`}
                           className={`
-                            sm:grid sm:grid-cols-[auto_1fr_auto_auto] sm:gap-3 sm:items-center
-                            flex flex-col gap-2
-                            px-3 py-2 rounded-lg border transition opacity-60 ${getCellStyle(state)}
+                            ${guildSettings?.use_signups ? 'sm:grid-cols-[20px_16px_1fr_120px_32px]' : 'sm:grid-cols-[20px_1fr_120px_32px]'} sm:grid sm:gap-3 sm:items-center
+                            flex items-center gap-2
+                            px-3 py-2 rounded-lg transition-colors opacity-60 ${getCellStyle(state)}
                           `}
                         >
-                          <div className="flex items-center justify-between sm:contents">
-                            <div className="flex items-center gap-2 min-w-0 flex-1">
-                              <div className="w-4 hidden sm:block" />
-                              <span className="font-medium text-muted-foreground text-[13px] truncate" title={`${attendee.character_name} (No account)`}>
-                                {attendee.character_name}
-                              </span>
-                              <span className="sm:hidden text-[11px] font-medium text-muted-foreground flex-shrink-0">
-                                ({getCellLabel(state)})
-                              </span>
-                            </div>
-                            <div className="hidden sm:block w-20 text-center">
-                              <span className="text-[12px] font-medium">
-                                {getCellLabel(state)}
-                              </span>
-                            </div>
-                            <div className="w-8" />
-                          </div>
+                          {/* Empty space for attended checkbox column */}
+                          <div />
+                          {/* Empty space for signup checkbox column */}
+                          {guildSettings?.use_signups && <div />}
+                          {/* Name */}
+                          <span className="font-medium text-muted-foreground text-[13px] truncate" title={`${attendee.character_name} (No account)`}>
+                            {attendee.character_name}
+                          </span>
+                          {/* Status label (read-only) */}
+                          <span className="text-[12px] text-muted-foreground px-2">{getCellLabel(state)}</span>
+                          {/* Empty space for actions column */}
+                          <div />
                         </div>
                       )
                     })}
