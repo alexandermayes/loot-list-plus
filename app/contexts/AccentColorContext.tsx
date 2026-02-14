@@ -6,14 +6,14 @@ import { trackClientEvent } from '@/utils/analytics/client'
 import { useNotification } from '@/app/contexts/NotificationContext'
 
 // WoW item quality colors as accent options
-// Adjusted slightly from official values for better contrast in light/dark modes
+// Adjusted from official WoW values for readable white text on solid backgrounds
 export const ACCENT_COLORS = [
   { name: 'Legendary', value: '#ff8000' },   // Default - WoW Legendary orange
   { name: 'Epic', value: '#a335ee' },        // WoW Epic purple
   { name: 'Rare', value: '#0070dd' },        // WoW Rare blue
-  { name: 'Uncommon', value: '#1eff00' },    // WoW Uncommon green
-  { name: 'Artifact', value: '#e6cc80' },    // WoW Artifact gold
-  { name: 'Heirloom', value: '#00ccff' },    // WoW Heirloom/Blizzard blue
+  { name: 'Uncommon', value: '#15b300' },    // WoW Uncommon green (darkened from #1eff00)
+  { name: 'Artifact', value: '#c5a840' },    // WoW Artifact gold (darkened from #e6cc80)
+  { name: 'Heirloom', value: '#0099cc' },    // WoW Heirloom blue (darkened from #00ccff)
 ] as const
 
 export const DEFAULT_ACCENT_COLOR = '#ff8000'
@@ -24,9 +24,9 @@ const ACCENT_FILTERS: Record<string, string> = {
   '#ff8000': 'invert(55%) sepia(89%) saturate(2274%) hue-rotate(1deg) brightness(101%) contrast(105%)',
   '#a335ee': 'invert(29%) sepia(98%) saturate(2472%) hue-rotate(262deg) brightness(87%) contrast(98%)',
   '#0070dd': 'invert(31%) sepia(93%) saturate(1565%) hue-rotate(196deg) brightness(96%) contrast(101%)',
-  '#1eff00': 'invert(74%) sepia(86%) saturate(2475%) hue-rotate(76deg) brightness(112%) contrast(119%)',
-  '#e6cc80': 'invert(86%) sepia(21%) saturate(748%) hue-rotate(356deg) brightness(94%) contrast(92%)',
-  '#00ccff': 'invert(64%) sepia(85%) saturate(2537%) hue-rotate(161deg) brightness(101%) contrast(104%)',
+  '#15b300': 'invert(50%) sepia(95%) saturate(1200%) hue-rotate(80deg) brightness(92%) contrast(105%)',
+  '#c5a840': 'invert(70%) sepia(50%) saturate(600%) hue-rotate(10deg) brightness(90%) contrast(95%)',
+  '#0099cc': 'invert(45%) sepia(90%) saturate(1200%) hue-rotate(165deg) brightness(92%) contrast(100%)',
 }
 
 interface AccentColorContextType {
@@ -89,7 +89,6 @@ function applyAccentColor(hex: string) {
   root.style.setProperty('--ring', `${hsl.h} ${hsl.s}% ${hsl.l}%`)
 
   // Set foreground color based on lightness (dark text for light colors, white for dark)
-  // Use 60% as threshold - colors like Artifact gold (#e6cc80, ~77% lightness) need dark text
   const foreground = hsl.l > 60 ? '0 0% 10%' : '0 0% 100%'
   root.style.setProperty('--accent-foreground', foreground)
 
