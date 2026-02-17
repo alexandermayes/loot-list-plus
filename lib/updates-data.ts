@@ -14,6 +14,41 @@ export interface UpdateEntry {
 
 export const updates: UpdateEntry[] = [
   {
+    date: 'February 17, 2026',
+    items: [
+      {
+        category: 'feature',
+        title: 'Dashboard insight widgets',
+        description: 'New overview widgets for score breakdown, attendance snapshot, trial progress, upcoming raids and competition indicators.',
+      },
+      {
+        category: 'feature',
+        title: 'Attendance trend sparkline',
+        description: 'A mini chart in the attendance widget showing your weekly attendance over the last 8 weeks.',
+      },
+      {
+        category: 'feature',
+        title: 'BLP highlights on priority items',
+        description: 'See your Bad Luck Protection bonus directly on each priority item.',
+      },
+      {
+        category: 'feature',
+        title: 'Low-competition callout',
+        description: 'Spot items on your list with little or no competition for easy wins.',
+      },
+      {
+        category: 'improvement',
+        title: 'Loot efficiency stat',
+        description: 'The "Recently received" section now shows how many items you\'ve won out of your total list.',
+      },
+      {
+        category: 'improvement',
+        title: 'Simplified raid attendance UI',
+        description: 'Attendance tracking now uses a checkbox with status cycle instead of separate controls.',
+      },
+    ],
+  },
+  {
     date: 'February 11, 2026',
     items: [
       {
