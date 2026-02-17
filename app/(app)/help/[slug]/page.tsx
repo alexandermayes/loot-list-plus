@@ -8,6 +8,7 @@ import {
   ScrollIcon,
   Settings01Icon,
   Calendar01Icon,
+  HelpCircleIcon,
   ArrowLeft01Icon,
   ArrowRight01Icon,
 } from '@hugeicons/core-free-icons'
@@ -22,6 +23,7 @@ const iconMap: Record<string, typeof Rocket01Icon> = {
   ScrollIcon: ScrollIcon,
   Settings01Icon: Settings01Icon,
   Calendar01Icon: Calendar01Icon,
+  HelpCircleIcon: HelpCircleIcon,
 }
 
 // Simple markdown renderer (basic support for common elements)
@@ -154,8 +156,7 @@ function Sidebar({
   onNavigate: (slug: string) => void
 }) {
   return (
-    <nav className="w-64 flex-shrink-0 pr-8 border-r border-border">
-      <div className="sticky top-[4.5rem] sm:top-8">
+    <nav className="w-64 flex-shrink-0 pr-8 border-r border-border self-start sticky top-0 max-h-screen overflow-y-auto py-4 sm:py-6 lg:py-8">
         {helpCategories.map((category) => {
           const Icon = iconMap[category.icon] || Rocket01Icon
           const hasCurrentArticle = category.articles.some((a) => a.slug === currentSlug)
@@ -198,7 +199,6 @@ function Sidebar({
             </div>
           )
         })}
-      </div>
     </nav>
   )
 }
@@ -247,14 +247,14 @@ export default function HelpArticlePage() {
   const { article, category } = articleData
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 flex flex-col lg:flex-row">
+    <div className="p-4 sm:p-6 lg:px-8 lg:py-0 flex flex-col lg:flex-row">
       {/* Sidebar - hidden on mobile, shown on desktop */}
       <div className="hidden lg:block">
         <Sidebar currentSlug={slug} onNavigate={(newSlug) => router.push(`/help/${newSlug}`)} />
       </div>
 
       {/* Main Content */}
-      <main className="flex-1 lg:pl-8 max-w-3xl">
+      <main className="flex-1 lg:pl-8 lg:py-8 max-w-3xl">
         {/* Breadcrumb */}
         <div className="flex items-center gap-2 mb-6">
           <Button

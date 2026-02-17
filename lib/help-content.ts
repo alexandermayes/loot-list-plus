@@ -667,6 +667,121 @@ Officers control which raid tiers are visible on the Master Sheet using the **Lo
       },
     ],
   },
+  {
+    id: 'faq',
+    title: 'FAQ',
+    description: 'Common questions about how loot priority works',
+    icon: 'HelpCircleIcon',
+    articles: [
+      {
+        slug: 'how-ties-are-broken',
+        title: 'How ties are broken',
+        description: 'What happens when two players have the same Loot Score',
+        content: `
+# How ties are broken
+
+When two or more players have the same Loot Score for an item, it's settled by **/roll**. Highest roll wins.
+
+## Why ties happen
+
+Ties are most common when players rank an item at the same position and have similar attendance. The more raiders in your guild, the more likely you'll see ties on popular items.
+
+## Recent loot and fairness
+
+Getting an item earlier in the night doesn't automatically disqualify you from winning another piece. Recent loot is context, not a hard "one item per night" rule. If your Loot Score is higher (or you win the tiebreak roll), the item is yours.
+        `,
+      },
+      {
+        slug: 'ranking-strategy',
+        title: 'Ranking strategy tips',
+        description: 'How to approach ranking items on your Loot List',
+        content: `
+# Ranking strategy tips
+
+Your Loot List should reflect what you actually want. Here are common questions about how to approach it.
+
+## Should I rank non-BiS items high?
+
+Yes, if they're a big upgrade. Don't avoid ranking a strong item high because you're worried it'll "cost" you your BiS later. The system rewards honest rankings.
+
+If an item is a major upgrade for you now, rank it where it deserves to be. Your priority on other items isn't affected by winning something else (unless your guild uses Bad Luck Bonus, which resets on loot).
+
+## What if I only want a few items?
+
+That's fine. You don't need to fill every slot. A focused list with 10-15 high-priority items beats padding your list with things you don't care about.
+
+## Can I rank the same item twice?
+
+No. Each item can only appear once on your list. If you want a specific piece badly, rank it high and let the Loot Score do the work.
+
+## Should I spread my rankings or stack the top?
+
+Both are valid strategies:
+
+- **Stacking the top** means your best items get maximum priority, but you may miss mid-tier upgrades
+- **Spreading out** gives you decent priority across more items
+
+Most raiders do best with a mix: stack your top bracket with the pieces you need most, then fill in solid upgrades in the middle ranks.
+        `,
+      },
+      {
+        slug: 'token-ranking',
+        title: 'How to rank tokens',
+        description: 'Rules for ranking tier tokens and set pieces',
+        content: `
+# How to rank tokens
+
+Tier tokens (like Conqueror, Protector, Vanquisher) follow the same ranking system as other items, with a few notes.
+
+## Main-spec tokens
+
+Rank tokens for your main spec in your regular brackets just like any other item. Place them based on how much you want the set piece.
+
+## Off-spec tokens
+
+If you want a token for an off-spec set, rank it in the off-spec bracket (ranks 24 and below). This keeps main-spec tokens prioritized for players who need them for their primary role.
+
+## Token classifications
+
+Officers classify tokens the same way as other items (Reserved, Limited, Unlimited). Check the classification before ranking to understand the allocation cost.
+
+## Multiple set pieces from the same token
+
+Some tier tokens unlock multiple set slots. If you want the 4-piece bonus, you'll need to rank each token that drops from different bosses. Spread them across your list based on which set pieces matter most to your build.
+        `,
+      },
+      {
+        slug: 'loot-council-role',
+        title: 'When does Loot Council step in?',
+        description: 'Understanding when and why LC overrides happen',
+        content: `
+# When does Loot Council step in?
+
+The short answer: rarely. LootList+ is designed to resolve almost everything through Loot Score alone. Loot Council exists as a final check, not a regular part of distribution.
+
+## LC is an override, not a tiebreaker
+
+Ties are handled by /roll. Loot Council is a separate tool that lets officers redirect loot when the numbers alone would hurt the raid. Think of it as a safety net for situations like:
+
+- **Key upgrades** - A tank weapon drops during progression and it needs to go to the right person
+- **Emergency swaps** - A player is about to bench their character or leave the guild
+- **Progression-sensitive bottlenecks** - Gearing a specific role would meaningfully help the raid clear content
+
+## The system is list-first
+
+The vast majority of loot decisions are settled by Loot Score alone. LC intervention is the exception, not the rule. Officers aren't sitting in judgment on every drop. They're watching for the rare case where following the numbers blindly would hurt the guild.
+
+## Transparency
+
+All Loot Scores are visible on the Master Sheet. Every player can see exactly where they stand for every item. If you disagree with a decision, the numbers are right there.
+
+## What if an item isn't on anyone's list?
+
+If an item drops and nobody ranked it, it goes to free roll. /roll determines the winner, same as any other unlisted loot.
+        `,
+      },
+    ],
+  },
 ]
 
 // Helper function to find an article by slug

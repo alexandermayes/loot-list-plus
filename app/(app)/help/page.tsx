@@ -8,6 +8,7 @@ import {
   ScrollIcon,
   Settings01Icon,
   Calendar01Icon,
+  HelpCircleIcon,
   Search01Icon,
   ArrowRight01Icon,
 } from '@hugeicons/core-free-icons'
@@ -21,6 +22,7 @@ const iconMap: Record<string, typeof Rocket01Icon> = {
   ScrollIcon: ScrollIcon,
   Settings01Icon: Settings01Icon,
   Calendar01Icon: Calendar01Icon,
+  HelpCircleIcon: HelpCircleIcon,
 }
 
 function CategoryCard({ category }: { category: HelpCategory }) {
