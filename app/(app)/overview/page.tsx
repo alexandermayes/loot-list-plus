@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import dynamic from 'next/dynamic'
 import WelcomeScreen from '@/app/components/WelcomeScreen'
 import { HugeiconsIcon } from '@hugeicons/react'
-import { UserIcon, CheckmarkCircle01Icon, AlertCircleIcon, Award01Icon, Cancel01Icon, Add01Icon } from '@hugeicons/core-free-icons'
+import { UserIcon, CheckmarkCircle01Icon, AlertCircleIcon, Award01Icon, Cancel01Icon, Add01Icon, Calendar03Icon, Shield01Icon, AnalyticsUpIcon } from '@hugeicons/core-free-icons'
 
 // Lazy load modals to reduce initial bundle size
 const CreateCharacterModal = dynamic(() => import('@/app/components/CreateCharacterModal').then(mod => ({ default: mod.CreateCharacterModal })), {
@@ -24,9 +24,34 @@ import { StatusBadge, type SubmissionStatus } from '@/components/ui/status-badge
 import { Heading } from '@/components/ui/typography'
 import { useGuildContext } from '@/app/contexts/GuildContext'
 import ItemLink from '@/app/components/ItemLink'
-import { calculateAttendanceScore, getRankModifier, calculateLootScore } from '@/utils/calculations'
+import { calculateAttendanceScore, getRankModifier, calculateLootScore, getTrialPenalty, calculateBadLuckBonus } from '@/utils/calculations'
 import { refreshWowheadTooltips } from '@/lib/wowhead'
 import { useNotification } from '@/app/contexts/NotificationContext'
+
+// Get next N raid dates from configured raid days
+function getNextRaidDates(raidDays: number[], timezone: string, count = 2): Date[] {
+  const dates: Date[] = []
+  const now = new Date()
+  // Iterate forward from today up to 14 days to find next raid dates
+  for (let i = 0; i < 14 && dates.length < count; i++) {
+    const candidate = new Date(now)
+    candidate.setDate(candidate.getDate() + i)
+    if (raidDays.includes(candidate.getDay())) {
+      dates.push(candidate)
+    }
+  }
+  return dates
+}
+
+// Get ISO week key for grouping dates by week (e.g. "2026-07")
+function getISOWeekKey(date: Date): string {
+  const d = new Date(date)
+  d.setHours(0, 0, 0, 0)
+  d.setDate(d.getDate() + 3 - ((d.getDay() + 6) % 7))
+  const yearStart = new Date(d.getFullYear(), 0, 4)
+  const weekNum = Math.ceil(((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7)
+  return `${d.getFullYear()}-${String(weekNum).padStart(2, '0')}`
+}
 
 // Get WoWhead class icon URL
 function getClassIconUrl(className: string | undefined): string {
@@ -61,6 +86,7 @@ interface RaidTier {
   id: string
   name: string
   is_active: boolean
+  phase?: number
 }
 
 interface Character {
@@ -78,11 +104,14 @@ interface Character {
 interface LootSubmission {
   id: string
   character_id: string
-  raid_tier_id: string
+  raid_tier_id: string | null
+  expansion_id: string | null
+  phase: number | null
   status: string
   updated_at: string
   character: Character
   raid_tier: RaidTier
+  phase_label: string
 }
 
 interface TiedCharacter {
@@ -148,8 +177,54 @@ function DashboardContent() {
     actionsNeeded: 0
   })
 
+  // Loot list deadline for empty state messaging
+  const [lootListDeadline, setLootListDeadline] = useState<string | null>(null)
+
   // Guild settings for display formatting
   const [decimalPlaces, setDecimalPlaces] = useState<number>(2)
+
+  // Widget state
+  const [scoreBreakdown, setScoreBreakdown] = useState<{
+    attendanceScore: number
+    roleModifier: number
+    roleName: string
+    trialPenalty: number
+    blpRange: { min: number; max: number } | null
+  } | null>(null)
+
+  const [attendanceData, setAttendanceData] = useState<{
+    percentage: number
+    attended: number
+    total: number
+    tierInfo?: { current: string; nextTier: string; raidsNeeded: number; nextBonus: number }
+  } | null>(null)
+
+  const [trialData, setTrialData] = useState<{
+    isTrial: boolean
+    startedAt: string | null
+    weeksCompleted: number
+    weeksRequired: number
+    autoPromote: boolean
+  } | null>(null)
+
+  const [nextRaidDates, setNextRaidDates] = useState<Date[]>([])
+
+  const [competitionData, setCompetitionData] = useState<Record<string, {
+    totalWanting: number
+    userRank: number
+  }>>({})
+
+  // Quick-win widget state
+  const [attendanceTrend, setAttendanceTrend] = useState<number[]>([])
+  const [lootEfficiency, setLootEfficiency] = useState<{ received: number; total: number } | null>(null)
+  const [itemBlpData, setItemBlpData] = useState<Record<string, { timesPassed: number; bonus: number }>>({})
+  const [lowCompetitionItems, setLowCompetitionItems] = useState<Array<{
+    item_id: string
+    item_name: string
+    wowhead_id: number
+    boss_name: string
+    competitors: number
+  }>>([])
 
   const supabase = createClient()
   const router = useRouter()
@@ -282,7 +357,7 @@ function DashboardContent() {
       try {
         const { data: tiersData, error: tiersError } = await supabase
           .from('raid_tiers')
-          .select('id, name, is_active')
+          .select('id, name, is_active, phase')
           .eq('expansion_id', expansionId)
           .eq('is_guild_active', true)
 
@@ -293,8 +368,27 @@ function DashboardContent() {
           setRaidTiers(tiersData || [])
         }
 
-        // Load all dashboard data (pass raid tiers to filter by expansion)
-        await loadDashboardData(user.id, activeGuild.id, tiersData || [])
+        // Fetch loot list deadline from expansion phase_deadlines
+        const { data: expansionDeadlineData } = await supabase
+          .from('expansions')
+          .select('phase_deadlines')
+          .eq('id', expansionId)
+          .single()
+
+        if (expansionDeadlineData?.phase_deadlines) {
+          // Find the nearest future deadline across all phases
+          const deadlines = Object.values(expansionDeadlineData.phase_deadlines as Record<string, string | null>)
+            .filter((d): d is string => d !== null)
+            .sort()
+          const now = new Date().toISOString()
+          const nextDeadline = deadlines.find(d => d > now) || deadlines[deadlines.length - 1] || null
+          setLootListDeadline(nextDeadline)
+        } else {
+          setLootListDeadline(null)
+        }
+
+        // Load all dashboard data (pass raid tiers and expansion to filter)
+        await loadDashboardData(user.id, activeGuild.id, tiersData || [], expansionId)
       } catch (error) {
         console.error('Error loading overview data:', error)
       } finally {
@@ -306,7 +400,7 @@ function DashboardContent() {
   }, [guildLoading, activeGuild, activeCharacter, currentExpansion])
 
   // Function to load all dashboard data for current character
-  const loadDashboardData = async (userId: string, guildId: string, currentExpansionTiers: RaidTier[]) => {
+  const loadDashboardData = async (userId: string, guildId: string, currentExpansionTiers: RaidTier[], expansionId: string) => {
     try {
       if (!activeCharacter) {
         return
@@ -321,47 +415,49 @@ function DashboardContent() {
         class: activeCharacter.class
       }
 
-      // Get tier IDs for current expansion only
-      const currentExpansionTierIds = currentExpansionTiers.map(t => t.id)
-
-      // Get submissions for CURRENT CHARACTER ONLY for current expansion tiers
+      // Get submissions for CURRENT CHARACTER ONLY for current expansion
       const { data: submissions, error: submissionsError } = await supabase
         .from('loot_submissions')
-        .select('id, character_id, guild_id, raid_tier_id, status, updated_at')
+        .select('id, character_id, guild_id, raid_tier_id, expansion_id, phase, status, updated_at')
         .eq('character_id', activeCharacter.id)
         .eq('guild_id', guildId)
-        .in('raid_tier_id', currentExpansionTierIds)
+        .eq('expansion_id', expansionId)
         .order('updated_at', { ascending: false })
 
       if (submissionsError) {
         console.error('Error loading submissions:', submissionsError)
       }
 
-      // Get raid tier data separately to avoid join issues
-      const submissionRaidTierIds = submissions?.map((s: { raid_tier_id: string }) => s.raid_tier_id) || []
-      let raidTierMap: Record<string, RaidTier> = {}
-
-      if (submissionRaidTierIds.length > 0) {
-        const { data: tiers } = await supabase
-          .from('raid_tiers')
-          .select('id, name, is_active')
-          .in('id', submissionRaidTierIds)
-
-        if (tiers) {
-          raidTierMap = Object.fromEntries(tiers.map((t: { id: string; name: string; is_active: boolean | null }) => [t.id, t]))
+      // Build a phase-to-tier-names map for display labels
+      const phaseTierNames: Record<number, string[]> = {}
+      for (const tier of currentExpansionTiers) {
+        if (tier.phase != null) {
+          if (!phaseTierNames[tier.phase]) phaseTierNames[tier.phase] = []
+          phaseTierNames[tier.phase].push(tier.name)
         }
       }
 
       // Transform submissions for current character
-      const transformedSubmissions: LootSubmission[] = (submissions || []).map((sub: { id: string; character_id: string; raid_tier_id: string; status: string; updated_at: string }) => ({
-        id: sub.id,
-        character_id: sub.character_id,
-        raid_tier_id: sub.raid_tier_id,
-        status: sub.status,
-        updated_at: sub.updated_at,
-        character: currentCharacter,
-        raid_tier: raidTierMap[sub.raid_tier_id] || { id: sub.raid_tier_id, name: 'Unknown', is_active: false }
-      }))
+      type SubmissionRow = { id: string; character_id: string; raid_tier_id: string | null; expansion_id: string | null; phase: number | null; status: string; updated_at: string }
+      const transformedSubmissions: LootSubmission[] = (submissions || []).map((sub: SubmissionRow) => {
+        const phaseLabel = sub.phase != null && phaseTierNames[sub.phase]
+          ? `Phase ${sub.phase}: ${phaseTierNames[sub.phase].join(', ')}`
+          : sub.phase != null
+            ? `Phase ${sub.phase}`
+            : 'Unknown'
+        return {
+          id: sub.id,
+          character_id: sub.character_id,
+          raid_tier_id: sub.raid_tier_id,
+          expansion_id: sub.expansion_id,
+          phase: sub.phase,
+          status: sub.status,
+          updated_at: sub.updated_at,
+          character: currentCharacter,
+          raid_tier: { id: sub.raid_tier_id || sub.id, name: phaseLabel, is_active: true },
+          phase_label: phaseLabel,
+        }
+      })
 
       setAllSubmissions(transformedSubmissions)
 
@@ -406,12 +502,23 @@ function DashboardContent() {
       // Initialize default values for attendance and modifiers
       let attendanceScore = 0
       let roleModifier = 0
+      let trialPenaltyValue = 0
+      let attendedRaidCount = 0
+      let totalRaidCount = 0
+      let membershipStatus = 'full'
+      let trialStartedAt: string | null = null
+      let characterRole = 'Member'
+      let savedGuildSettings: any = null
+      let savedRaidDays: number[] = []
+      let savedTimezone = 'UTC'
+      let savedDeduplicatedRaidEvents: Array<{ id: string; raid_date: string }> = []
+      let savedAttendanceRecords: Array<{ raid_event_id: string; attended: boolean }> = []
 
       // Try to get guild settings and attendance (may not be set up yet)
       try {
         const { data: guildSettings, error: settingsError } = await supabase
           .from('guild_settings')
-          .select('attendance_type, rolling_attendance_weeks, use_signups, signup_weight, max_attendance_bonus, max_attendance_threshold, middle_attendance_bonus, middle_attendance_threshold, bottom_attendance_bonus, bottom_attendance_threshold, rank_modifiers, decimal_places, new_member_mode')
+          .select('*')
           .eq('guild_id', activeGuild.id)
           .single()
 
@@ -428,20 +535,26 @@ function DashboardContent() {
           const newMemberMode = guildSettings.new_member_mode || 'raw'
           let effectiveStartDate = startDate
 
-          // For 'fair' and 'minimum_gate' modes, use join date filtering
-          if ((newMemberMode === 'fair' || newMemberMode === 'minimum_gate') && characterId) {
+          // Always fetch membership for trial/role data
+          if (characterId) {
             const { data: membership } = await supabase
               .from('character_guild_memberships')
-              .select('joined_at')
+              .select('joined_at, membership_status, trial_started_at, role')
               .eq('character_id', characterId)
               .eq('guild_id', activeGuild.id)
               .single()
 
-            if (membership?.joined_at) {
-              const joinedAt = new Date(membership.joined_at)
-              // Use the later of startDate or joinedAt
-              if (joinedAt > startDate) {
-                effectiveStartDate = joinedAt
+            if (membership) {
+              membershipStatus = membership.membership_status || 'full'
+              trialStartedAt = membership.trial_started_at || null
+              characterRole = membership.role || 'Member'
+
+              // For 'fair' and 'minimum_gate' modes, use join date filtering
+              if ((newMemberMode === 'fair' || newMemberMode === 'minimum_gate') && membership.joined_at) {
+                const joinedAt = new Date(membership.joined_at)
+                if (joinedAt > startDate) {
+                  effectiveStartDate = joinedAt
+                }
               }
             }
           }
@@ -453,7 +566,7 @@ function DashboardContent() {
           if (activeGuild?.active_expansion_id) {
             const { data: expansionData } = await supabase
               .from('expansions')
-              .select('raid_days_per_week, first_raid_day, second_raid_day, third_raid_day, fourth_raid_day, fifth_raid_day')
+              .select('raid_days_per_week, first_raid_day, second_raid_day, third_raid_day, fourth_raid_day, fifth_raid_day, timezone')
               .eq('id', activeGuild.active_expansion_id)
               .single()
 
@@ -466,6 +579,7 @@ function DashboardContent() {
                 expansionData.fifth_raid_day
               ].filter((day): day is number => day !== null && day !== undefined)
                 .slice(0, expansionData.raid_days_per_week || 2)
+              savedTimezone = (expansionData as any).timezone || 'UTC'
             }
           }
 
@@ -480,6 +594,10 @@ function DashboardContent() {
             ].filter((day): day is number => day !== null && day !== undefined)
               .slice(0, (guildSettings as any).raid_days_per_week || 2)
           }
+
+          // Save for widget use
+          savedGuildSettings = guildSettings
+          savedRaidDays = raidDays
 
           // First get raid events for the period
           const { data: raidEventsData, error: raidError } = await supabase
@@ -529,7 +647,7 @@ function DashboardContent() {
             // Now fetch attendance records using the deduplicated raid IDs
             const { data: attendanceRecords, error: attError } = await supabase
               .from('attendance_records')
-              .select('signed_up, attended, no_call_no_show')
+              .select('raid_event_id, signed_up, attended, no_call_no_show')
               .eq('character_id', characterId)
               .in('raid_event_id', deduplicatedRaidIds)
 
@@ -539,10 +657,16 @@ function DashboardContent() {
                 totalRaids,
                 guildSettings
               )
+              attendedRaidCount = attendanceRecords.filter((r: { attended: boolean }) => r.attended).length
+              totalRaidCount = totalRaids
+              // Save for sparkline computation
+              savedDeduplicatedRaidEvents = deduplicatedRaidEvents as Array<{ id: string; raid_date: string }>
+              savedAttendanceRecords = attendanceRecords as Array<{ raid_event_id: string; attended: boolean }>
             }
           }
 
-          roleModifier = getRankModifier('Member', guildSettings)
+          roleModifier = getRankModifier(characterRole, guildSettings)
+          trialPenaltyValue = getTrialPenalty(membershipStatus, guildSettings)
         }
       } catch (error) {
         // Attendance system not set up yet, use rank only
@@ -586,12 +710,125 @@ function DashboardContent() {
         return
       }
 
+      // Filter out items from raid tiers where master_sheet_visible is false
+      let filteredItems = items
+      const raidTierIds = [...new Set(items.map((i: { raid_tier_id: string }) => i.raid_tier_id).filter(Boolean))]
+      if (raidTierIds.length > 0) {
+        const { data: visibleTiers } = await supabase
+          .from('raid_tiers')
+          .select('id')
+          .in('id', raidTierIds)
+          .eq('master_sheet_visible', true)
+
+        if (visibleTiers) {
+          const visibleTierIds = new Set(visibleTiers.map((t: { id: string }) => t.id))
+          filteredItems = items.filter((i: { raid_tier_id: string }) => visibleTierIds.has(i.raid_tier_id))
+        }
+      }
+
+      if (filteredItems.length === 0) {
+        setLootPriority([])
+        return
+      }
+
+      // Use filtered item IDs for downstream queries
+      const filteredItemIds = [...new Set(filteredItems.map((i: { id: string }) => i.id))]
+
+      // Fetch BLP data, competition data, and loot efficiency in parallel
+      let blpData: Record<string, number> = {}
+      let competitionMap: Record<string, { totalWanting: number; userRank: number }> = {}
+      let totalReceivedCount = 0
+
+      await Promise.all([
+        // BLP: fetch times_passed for this character's items
+        (async () => {
+          if (savedGuildSettings?.blp_enabled) {
+            try {
+              const { data: blpRecords } = await supabase
+                .from('blp_tracking')
+                .select('loot_item_id, times_passed')
+                .eq('character_id', characterId)
+                .in('loot_item_id', filteredItemIds)
+              if (blpRecords) {
+                for (const rec of blpRecords) {
+                  blpData[rec.loot_item_id] = rec.times_passed || 0
+                }
+              }
+            } catch {
+              // BLP not critical
+            }
+          }
+        })(),
+        // Competition: count others wanting the same items
+        (async () => {
+          try {
+            const { data: allSubmissionsForItems } = await supabase
+              .from('loot_submission_items')
+              .select(`
+                loot_item_id,
+                rank,
+                submission:loot_submissions!inner (
+                  character_id,
+                  guild_id,
+                  status
+                )
+              `)
+              .in('loot_item_id', filteredItemIds)
+              .eq('submission.guild_id', activeGuild.id)
+              .eq('submission.status', 'approved')
+
+            if (allSubmissionsForItems) {
+              // Group by item, count unique characters, find user's rank position
+              const itemMap = new Map<string, Array<{ character_id: string; rank: number }>>()
+              for (const sub of allSubmissionsForItems) {
+                const submission = Array.isArray((sub as any).submission) ? (sub as any).submission[0] : (sub as any).submission
+                if (!submission) continue
+                const list = itemMap.get(sub.loot_item_id) || []
+                list.push({ character_id: submission.character_id, rank: sub.rank })
+                itemMap.set(sub.loot_item_id, list)
+              }
+
+              for (const [itemId, entries] of itemMap) {
+                const uniqueCharacters = new Set(entries.map(e => e.character_id))
+                const othersCount = uniqueCharacters.size - (uniqueCharacters.has(characterId) ? 1 : 0)
+
+                // Find user's rank for this item
+                const userEntry = entries.find(e => e.character_id === characterId)
+                const userRank = userEntry ? entries
+                  .filter(e => e.rank > userEntry.rank)
+                  .reduce((acc, e) => {
+                    acc.add(e.character_id)
+                    return acc
+                  }, new Set<string>()).size + 1 : uniqueCharacters.size
+
+                competitionMap[itemId] = { totalWanting: othersCount, userRank }
+              }
+            }
+          } catch {
+            // Competition data not critical
+          }
+        })(),
+        // Loot efficiency: count total received items
+        (async () => {
+          try {
+            const { count } = await supabase
+              .from('loot_history')
+              .select('id', { count: 'exact', head: true })
+              .eq('character_id', characterId)
+              .eq('guild_id', activeGuild.id)
+            totalReceivedCount = count || 0
+          } catch {
+            // Not critical
+          }
+        })()
+      ])
+
       // Build priority items with character's rank and competition info
       const priorityItems: LootPriorityItem[] = []
 
       // Collect all item/rank pairs we need to check for ties (BATCHED - avoids N+1)
       type LootItemData = { id: string; name: string; wowhead_id: number; boss_name: string; classification: string | null; raid_tier_id: string }
-      const itemRankPairs = items
+      const itemRankPairs = filteredItems
         .map((item: LootItemData) => {
           const charRanking = submissionItems.find((si: SubmissionItemData) => si.loot_item_id === item.id)
           return charRanking ? { itemId: item.id, rank: charRanking.rank } : null
@@ -674,7 +911,7 @@ function DashboardContent() {
         submissionsByItem.set(sub.loot_item_id, existing)
       }
 
-      for (const item of items) {
+      for (const item of filteredItems) {
         // Find this character's ranking for this item
         const charRanking = submissionItems.find((si: SubmissionItemData) => si.loot_item_id === item.id)
 
@@ -702,7 +939,8 @@ function DashboardContent() {
             })
 
           // Calculate loot score for this item
-          const lootScore = calculateLootScore(charRanking.rank, attendanceScore, roleModifier)
+          const itemBlp = savedGuildSettings?.blp_enabled ? calculateBadLuckBonus(blpData[item.id] || 0, savedGuildSettings) : 0
+          const lootScore = calculateLootScore(charRanking.rank, attendanceScore, roleModifier, itemBlp, 0, trialPenaltyValue)
 
           priorityItems.push({
             item_id: item.id,
@@ -726,6 +964,142 @@ function DashboardContent() {
         .slice(0, 5)
 
       setLootPriority(topPriority)
+
+      // Hoist computed values to widget state
+      // Score breakdown
+      const blpValues = Object.values(blpData).map(tp => calculateBadLuckBonus(tp, savedGuildSettings || {}))
+      setScoreBreakdown({
+        attendanceScore,
+        roleModifier,
+        roleName: characterRole,
+        trialPenalty: trialPenaltyValue,
+        blpRange: savedGuildSettings?.blp_enabled && blpValues.length > 0
+          ? { min: Math.min(...blpValues), max: Math.max(...blpValues) }
+          : null
+      })
+
+      // Attendance snapshot
+      const attPercentage = totalRaidCount > 0 ? attendedRaidCount / totalRaidCount : 0
+      let tierInfo: { current: string; nextTier: string; raidsNeeded: number; nextBonus: number } | undefined
+      if (savedGuildSettings?.attendance_type === 'breakpoint' && totalRaidCount > 0) {
+        const thresholds = [
+          { name: 'High', threshold: savedGuildSettings.max_attendance_threshold, bonus: savedGuildSettings.max_attendance_bonus },
+          { name: 'Mid', threshold: savedGuildSettings.middle_attendance_threshold, bonus: savedGuildSettings.middle_attendance_bonus },
+          { name: 'Low', threshold: savedGuildSettings.bottom_attendance_threshold, bonus: savedGuildSettings.bottom_attendance_bonus },
+        ]
+        let currentTier = 'None'
+        let nextTier = thresholds[thresholds.length - 1]
+        for (let i = 0; i < thresholds.length; i++) {
+          if (attPercentage >= thresholds[i].threshold) {
+            currentTier = thresholds[i].name
+            nextTier = i > 0 ? thresholds[i - 1] : thresholds[i]
+            break
+          }
+        }
+        if (currentTier !== thresholds[0].name) {
+          const raidsNeeded = Math.ceil(nextTier.threshold * totalRaidCount) - attendedRaidCount
+          tierInfo = {
+            current: currentTier,
+            nextTier: nextTier.name,
+            raidsNeeded: Math.max(0, raidsNeeded),
+            nextBonus: nextTier.bonus
+          }
+        }
+      }
+      setAttendanceData({
+        percentage: Math.round(attPercentage * 100),
+        attended: attendedRaidCount,
+        total: totalRaidCount,
+        tierInfo
+      })
+
+      // Trial progress
+      if (membershipStatus === 'trial') {
+        const weeksRequired = savedGuildSettings?.trial_auto_promote_weeks || 4
+        let weeksCompleted = 0
+        if (trialStartedAt) {
+          const started = new Date(trialStartedAt)
+          const now = new Date()
+          weeksCompleted = Math.floor((now.getTime() - started.getTime()) / (7 * 24 * 60 * 60 * 1000))
+        }
+        setTrialData({
+          isTrial: true,
+          startedAt: trialStartedAt,
+          weeksCompleted: Math.min(weeksCompleted, weeksRequired),
+          weeksRequired,
+          autoPromote: savedGuildSettings?.trial_auto_promote_enabled || false
+        })
+      } else {
+        setTrialData(null)
+      }
+
+      // Next raid dates
+      if (savedRaidDays.length > 0) {
+        setNextRaidDates(getNextRaidDates(savedRaidDays, savedTimezone, 2))
+      } else {
+        setNextRaidDates([])
+      }
+
+      // Competition data
+      setCompetitionData(competitionMap)
+
+      // Quick Win 1: Attendance trend sparkline (weekly breakdown)
+      if (savedDeduplicatedRaidEvents.length > 0 && savedAttendanceRecords.length > 0) {
+        const attendedIds = new Set(
+          savedAttendanceRecords.filter(r => r.attended).map(r => r.raid_event_id)
+        )
+        const weekMap = new Map<string, { total: number; attended: number }>()
+        for (const event of savedDeduplicatedRaidEvents) {
+          const d = new Date(event.raid_date + 'T00:00:00')
+          const weekKey = getISOWeekKey(d)
+          const entry = weekMap.get(weekKey) || { total: 0, attended: 0 }
+          entry.total++
+          if (attendedIds.has(event.id)) entry.attended++
+          weekMap.set(weekKey, entry)
+        }
+        const sorted = [...weekMap.entries()].sort((a, b) => a[0].localeCompare(b[0]))
+        const last8 = sorted.slice(-8)
+        setAttendanceTrend(last8.map(([, v]) => v.total > 0 ? v.attended / v.total : 0))
+      } else {
+        setAttendanceTrend([])
+      }
+
+      // Quick Win 2: Loot efficiency
+      setLootEfficiency({ received: totalReceivedCount, total: filteredItemIds.length })
+
+      // Quick Win 3: Per-item BLP data for highlights
+      if (savedGuildSettings?.blp_enabled && Object.keys(blpData).length > 0) {
+        const blpMap: Record<string, { timesPassed: number; bonus: number }> = {}
+        for (const [itemId, tp] of Object.entries(blpData)) {
+          const bonus = calculateBadLuckBonus(tp, savedGuildSettings || {})
+          if (bonus > 0) {
+            blpMap[itemId] = { timesPassed: tp, bonus }
+          }
+        }
+        setItemBlpData(blpMap)
+      } else {
+        setItemBlpData({})
+      }
+
+      // Quick Win 4: Low-competition items (not in top 5, 0-1 competitors)
+      const topItemIds = new Set(topPriority.map(p => p.item_id))
+      const lowComp: Array<{ item_id: string; item_name: string; wowhead_id: number; boss_name: string; competitors: number }> = []
+      for (const item of filteredItems) {
+        if (topItemIds.has(item.id)) continue
+        const comp = competitionMap[item.id]
+        const competitors = comp?.totalWanting ?? 0
+        if (competitors <= 1) {
+          lowComp.push({
+            item_id: item.id,
+            item_name: item.name,
+            wowhead_id: item.wowhead_id,
+            boss_name: item.boss_name,
+            competitors
+          })
+        }
+      }
+      lowComp.sort((a, b) => a.competitors - b.competitors || a.item_name.localeCompare(b.item_name))
+      setLowCompetitionItems(lowComp.slice(0, 3))
 
     } catch (error) {
       console.error('Error loading loot priority:', error)
@@ -956,6 +1330,157 @@ function DashboardContent() {
             </div>
           )}
 
+          {/* Insights Row */}
+          {activeCharacter && (scoreBreakdown || attendanceData) && (
+            <div className={`grid grid-cols-1 ${trialData?.isTrial ? 'md:grid-cols-3' : 'md:grid-cols-2 lg:grid-cols-3'} gap-4`}>
+              {/* Widget 1: Score Breakdown */}
+              {scoreBreakdown && (
+                <div className="bg-background-elevated border border-border rounded-xl p-5">
+                  <div className="flex items-center gap-2 mb-4">
+                    <HugeiconsIcon icon={AnalyticsUpIcon} size={18} className="text-accent" />
+                    <h3 className="text-[15px] font-semibold text-foreground">Score breakdown</h3>
+                  </div>
+                  <div className="space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[13px] text-foreground-secondary">Attendance</span>
+                      <span className="text-[13px] font-medium text-foreground">+{scoreBreakdown.attendanceScore.toFixed(decimalPlaces)}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-[13px] text-foreground-secondary">Role bonus <span className="text-muted-foreground">({scoreBreakdown.roleName})</span></span>
+                      <span className={`text-[13px] font-medium ${scoreBreakdown.roleModifier >= 0 ? 'text-foreground' : 'text-destructive'}`}>
+                        {scoreBreakdown.roleModifier >= 0 ? '+' : ''}{scoreBreakdown.roleModifier.toFixed(decimalPlaces)}
+                      </span>
+                    </div>
+                    {scoreBreakdown.trialPenalty !== 0 && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-[13px] text-foreground-secondary">Trial penalty</span>
+                        <span className="text-[13px] font-medium text-destructive">{scoreBreakdown.trialPenalty.toFixed(decimalPlaces)}</span>
+                      </div>
+                    )}
+                    <div className="flex items-center justify-between">
+                      <span className="text-[13px] text-foreground-secondary">Bad luck protection</span>
+                      <span className="text-[13px] font-medium text-muted-foreground">
+                        {scoreBreakdown.blpRange
+                          ? `+${scoreBreakdown.blpRange.min.toFixed(decimalPlaces)} to +${scoreBreakdown.blpRange.max.toFixed(decimalPlaces)}`
+                          : 'Not enabled'}
+                      </span>
+                    </div>
+                    <div className="border-t border-border pt-2 mt-2">
+                      <p className="text-[11px] text-muted-foreground">Base score before item ranking</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Widget 2: Attendance Snapshot */}
+              {attendanceData && (
+                <div className="bg-background-elevated border border-border rounded-xl p-5">
+                  <div className="flex items-center gap-2 mb-4">
+                    <HugeiconsIcon icon={CheckmarkCircle01Icon} size={18} className="text-accent" />
+                    <h3 className="text-[15px] font-semibold text-foreground">Attendance</h3>
+                  </div>
+                  <div className="flex items-baseline gap-2 mb-1">
+                    <span className="text-[28px] font-bold text-foreground leading-none">{attendanceData.percentage}%</span>
+                    <span className="text-[13px] text-foreground-secondary">{attendanceData.attended} of {attendanceData.total} raids</span>
+                  </div>
+                  {/* Progress bar */}
+                  <div className="w-full h-2 bg-background-inset rounded-full mt-3 overflow-hidden">
+                    <div
+                      className="h-full bg-accent rounded-full transition-all duration-500"
+                      style={{ width: `${Math.min(attendanceData.percentage, 100)}%` }}
+                    />
+                  </div>
+                  {/* Attendance trend sparkline */}
+                  {attendanceTrend.length >= 2 && (
+                    <div className="mt-3 flex items-center gap-2">
+                      <svg viewBox="0 0 100 24" className="w-full h-6" preserveAspectRatio="none">
+                        <polyline
+                          points={attendanceTrend.map((v, i) => `${(i / (attendanceTrend.length - 1)) * 100},${24 - v * 20 - 2}`).join(' ')}
+                          fill="none"
+                          stroke="hsl(var(--accent))"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                      <span className="text-[10px] text-muted-foreground whitespace-nowrap flex-shrink-0">
+                        {attendanceTrend.length}w
+                      </span>
+                    </div>
+                  )}
+                  {attendanceData.tierInfo && (
+                    <p className="text-[11px] text-muted-foreground mt-2">
+                      {attendanceData.tierInfo.raidsNeeded > 0
+                        ? `${attendanceData.tierInfo.raidsNeeded} more raid${attendanceData.tierInfo.raidsNeeded !== 1 ? 's' : ''} to reach ${attendanceData.tierInfo.nextTier} tier (+${attendanceData.tierInfo.nextBonus.toFixed(decimalPlaces)})`
+                        : `${attendanceData.tierInfo.current} tier`}
+                    </p>
+                  )}
+                  {attendanceData.total === 0 && (
+                    <p className="text-[11px] text-muted-foreground mt-2">No raids logged yet</p>
+                  )}
+                </div>
+              )}
+
+              {/* Widget 3: Trial Progress (conditional) OR Widget 4: Upcoming Raids */}
+              {trialData?.isTrial ? (
+                <div className="bg-background-elevated border border-border rounded-xl p-5">
+                  <div className="flex items-center gap-2 mb-4">
+                    <HugeiconsIcon icon={Shield01Icon} size={18} className="text-warning" />
+                    <h3 className="text-[15px] font-semibold text-foreground">Trial progress</h3>
+                  </div>
+                  <div className="flex items-baseline gap-2 mb-1">
+                    <span className="text-[28px] font-bold text-foreground leading-none">
+                      Week {trialData.weeksCompleted}
+                    </span>
+                    <span className="text-[13px] text-foreground-secondary">of {trialData.weeksRequired}</span>
+                  </div>
+                  {/* Progress bar */}
+                  <div className="w-full h-2 bg-background-inset rounded-full mt-3 overflow-hidden">
+                    <div
+                      className="h-full bg-warning rounded-full transition-all duration-500"
+                      style={{ width: `${Math.min((trialData.weeksCompleted / trialData.weeksRequired) * 100, 100)}%` }}
+                    />
+                  </div>
+                  <p className="text-[11px] text-muted-foreground mt-2">
+                    {trialData.autoPromote
+                      ? trialData.weeksCompleted >= trialData.weeksRequired
+                        ? 'Eligible for promotion'
+                        : `Auto-promote after ${trialData.weeksRequired} weeks`
+                      : 'Promotion at officer discretion'}
+                  </p>
+                </div>
+              ) : (
+                <div className="bg-background-elevated border border-border rounded-xl p-5">
+                  <div className="flex items-center gap-2 mb-4">
+                    <HugeiconsIcon icon={Calendar03Icon} size={18} className="text-accent" />
+                    <h3 className="text-[15px] font-semibold text-foreground">Next raid</h3>
+                  </div>
+                  {nextRaidDates.length > 0 ? (
+                    <div className="space-y-2">
+                      {nextRaidDates.map((date, i) => (
+                        <div key={i} className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-accent/10 rounded-lg flex flex-col items-center justify-center flex-shrink-0">
+                            <span className="text-[10px] font-medium text-accent leading-none">
+                              {date.toLocaleDateString(undefined, { month: 'short' }).toUpperCase()}
+                            </span>
+                            <span className="text-[16px] font-bold text-foreground leading-tight">
+                              {date.getDate()}
+                            </span>
+                          </div>
+                          <span className="text-[13px] text-foreground-secondary">
+                            {date.toLocaleDateString(undefined, { weekday: 'long' })}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-[13px] text-muted-foreground">No raid schedule set</p>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Loot Priority and Received Items Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Next in Line - Top Items */}
@@ -971,8 +1496,9 @@ function DashboardContent() {
                 <EmptyState
                   icon={ScrollIcon}
                   title="No priority items yet"
-                  description="Submit your loot list to see your priorities here"
+                  description={`Submit your loot list and once it's approved and the tier is visible, your priorities will show up here.${lootListDeadline ? ` Deadline: ${new Date(lootListDeadline).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}.` : ''}`}
                   size="compact"
+                  action={{ label: "Create a list", onClick: () => router.push('/loot-list'), variant: "primary" }}
                 />
               ) : (
                 <div className="space-y-3">
@@ -987,10 +1513,12 @@ function DashboardContent() {
                           <span className="text-accent font-bold text-lg">#{index + 1}</span>
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1">
-                            <ItemLink name={item.item_name} wowheadId={item.wowhead_id} clickable={true} showIcon={true} />
+                          <div className="flex items-center gap-2 mb-1 min-w-0">
+                            <div className="min-w-0 flex-1">
+                              <ItemLink name={item.item_name} wowheadId={item.wowhead_id} clickable={true} showIcon={true} />
+                            </div>
                             {item.classification && item.classification !== 'Unlimited' && (
-                              <span className="text-xs px-2 py-0.5 bg-accent/20 text-accent rounded-full border border-accent/30">
+                              <span className="text-xs px-2 py-0.5 bg-accent/20 text-accent rounded-full border border-accent/30 flex-shrink-0 whitespace-nowrap">
                                 {item.classification}
                               </span>
                             )}
@@ -999,6 +1527,14 @@ function DashboardContent() {
                             <span>{item.boss_name}</span>
                             <span>•</span>
                             <span className="font-semibold text-foreground">{item.loot_score.toFixed(decimalPlaces)}</span>
+                            {itemBlpData[item.item_id] && (
+                              <>
+                                <span>•</span>
+                                <span className="text-accent font-medium" title={`Passed ${itemBlpData[item.item_id].timesPassed} time${itemBlpData[item.item_id].timesPassed !== 1 ? 's' : ''}`}>
+                                  +{itemBlpData[item.item_id].bonus.toFixed(decimalPlaces)} BLP
+                                </span>
+                              </>
+                            )}
                             {item.tied_characters.length > 0 && (
                               <>
                                 <span>•</span>
@@ -1014,10 +1550,37 @@ function DashboardContent() {
                               </>
                             )}
                           </div>
+                          {competitionData[item.item_id] && competitionData[item.item_id].totalWanting > 0 && (
+                            <div className="flex items-center gap-1 text-[11px] text-muted-foreground mt-1">
+                              <span>{competitionData[item.item_id].totalWanting} other{competitionData[item.item_id].totalWanting !== 1 ? 's' : ''} want this</span>
+                              <span>·</span>
+                              <span className={competitionData[item.item_id].userRank === 1 ? 'text-success font-medium' : ''}>
+                                you&apos;re #{competitionData[item.item_id].userRank}
+                              </span>
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>
                   ))}
+                </div>
+              )}
+              {/* Low-competition callout */}
+              {lowCompetitionItems.length > 0 && (
+                <div className="mt-4 bg-success/5 border border-success/20 rounded-xl p-4">
+                  <p className="text-[12px] font-semibold text-success mb-2">Low competition on your list</p>
+                  <div className="space-y-1.5">
+                    {lowCompetitionItems.map(item => (
+                      <div key={item.item_id} className="flex items-center justify-between min-w-0">
+                        <div className="min-w-0 flex-1">
+                          <ItemLink name={item.item_name} wowheadId={item.wowhead_id} clickable={true} showIcon={true} />
+                        </div>
+                        <span className="text-[11px] text-muted-foreground ml-2 flex-shrink-0">
+                          {item.competitors === 0 ? 'No competition' : '1 other'}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
@@ -1028,7 +1591,11 @@ function DashboardContent() {
                 <HugeiconsIcon icon={CheckmarkCircle01Icon} size={32} className="text-success flex-shrink-0" />
                 <div>
                   <h2 className="text-[24px] font-bold text-foreground">Recently received</h2>
-                  <p className="text-sm text-muted-foreground mt-1">Your recent loot awards</p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    {lootEfficiency && lootEfficiency.total > 0
+                      ? `Won ${lootEfficiency.received} of ${lootEfficiency.total} items`
+                      : 'Your recent loot awards'}
+                  </p>
                 </div>
               </div>
               {receivedItems.length === 0 ? (
@@ -1037,6 +1604,7 @@ function DashboardContent() {
                   title="No loot received yet"
                   description="Your awarded items will appear here"
                   size="compact"
+                  action={{ label: "View master sheet", onClick: () => router.push('/master-sheet'), variant: "secondary" }}
                 />
               ) : (
                 <div className="space-y-3">
@@ -1050,10 +1618,12 @@ function DashboardContent() {
                           <HugeiconsIcon icon={CheckmarkCircle01Icon} size={20} className="text-success" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1">
-                            <ItemLink name={item.item_name} wowheadId={item.wowhead_id} clickable={true} showIcon={true} />
+                          <div className="flex items-center gap-2 mb-1 min-w-0">
+                            <div className="min-w-0 flex-1">
+                              <ItemLink name={item.item_name} wowheadId={item.wowhead_id} clickable={true} showIcon={true} />
+                            </div>
                             {item.classification && item.classification !== 'Unlimited' && (
-                              <span className="text-xs px-2 py-0.5 bg-success/20 text-success rounded-full border border-success/30">
+                              <span className="text-xs px-2 py-0.5 bg-success/20 text-success rounded-full border border-success/30 flex-shrink-0 whitespace-nowrap">
                                 {item.classification}
                               </span>
                             )}

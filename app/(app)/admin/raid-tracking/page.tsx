@@ -600,14 +600,21 @@ export default function RaidTrackingPage() {
     }
   }
 
-  const toggleAttended = (raidId: string, characterId: string, userId: string) => {
+  const cycleStatus = (raidId: string, characterId: string, userId: string) => {
     const current = attendance[raidId]?.[characterId]
     const currentState = getCellState(current)
+    const cycle: CellState[] = ['empty', 'attended', 'late', 'standby', 'no-show']
+    const currentIdx = cycle.indexOf(currentState)
+    const nextState = cycle[(currentIdx + 1) % cycle.length]
+    setAttendanceStatus(raidId, characterId, userId, nextState)
+  }
 
-    if (currentState === 'empty') {
-      setAttendanceStatus(raidId, characterId, userId, 'attended')
-    } else {
-      setAttendanceStatus(raidId, characterId, userId, 'empty')
+  const markAllAttended = async (raidId: string, raidMembers: Member[]) => {
+    for (const member of raidMembers) {
+      const state = getCellState(attendance[raidId]?.[member.character_id])
+      if (state === 'empty') {
+        await setAttendanceStatus(raidId, member.character_id, member.user_id, 'attended')
+      }
     }
   }
 
@@ -1955,7 +1962,16 @@ export default function RaidTrackingPage() {
                     </div>
                   ) : (
                   <>
-                  {/* Row-based raider list */}
+                  {/* Mark all attended button */}
+                  {members.some(m => getCellState(attendance[raid.id]?.[m.character_id]) === 'empty') && (
+                    <div className="flex justify-end mb-2">
+                      <Button variant="success-outline" size="sm" onClick={() => markAllAttended(raid.id, members)}>
+                        Mark all attended
+                      </Button>
+                    </div>
+                  )}
+
+                  {/* Click-row raider list */}
                   <div className="space-y-1">
                     {/* Linked Members */}
                     {members.map(member => {
@@ -1969,19 +1985,15 @@ export default function RaidTrackingPage() {
                       return (
                         <div
                           key={member.character_id}
-                          className={`flex flex-col gap-2 px-3 py-2 rounded-lg transition-colors ${getCellStyle(state)}`}
+                          className={`flex flex-col rounded-lg transition-colors ${getCellStyle(state)}`}
                         >
-                          <div className="flex items-center gap-3">
-                            {/* Attended Checkbox */}
-                            <Checkbox
-                              checked={state !== 'empty'}
-                              onCheckedChange={() => toggleAttended(raid.id, member.character_id, member.user_id)}
-                              className="h-5 w-5 flex-shrink-0"
-                              title="Mark as attended"
-                            />
-
-                            {/* Raider Name + Status Badge + Loot */}
-                            <div className="flex items-center gap-2 min-w-0 flex-1">
+                          <div className="flex items-center">
+                            {/* Clickable area - cycles status */}
+                            <button
+                              type="button"
+                              onClick={() => cycleStatus(raid.id, member.character_id, member.user_id)}
+                              className="flex items-center gap-2 min-w-0 flex-1 px-3 py-2 text-left cursor-pointer hover:bg-muted/50 rounded-l-lg transition-colors"
+                            >
                               <span
                                 className="font-medium text-[13px] truncate"
                                 style={{ color: member.class_color }}
@@ -1989,51 +2001,42 @@ export default function RaidTrackingPage() {
                                 {member.character_name}
                               </span>
 
-                              {/* Status badge - only show for non-default states */}
-                              {state === 'late' && (
-                                <span className="text-[11px] font-medium text-warning bg-warning/15 px-1.5 py-0.5 rounded flex-shrink-0">Late</span>
-                              )}
-                              {state === 'standby' && (
-                                <span className="text-[11px] font-medium text-warning bg-warning/15 px-1.5 py-0.5 rounded flex-shrink-0">Standby</span>
-                              )}
-                              {state === 'no-show' && (
-                                <span className="text-[11px] font-medium text-destructive bg-destructive/15 px-1.5 py-0.5 rounded flex-shrink-0">No Show</span>
-                              )}
-                              {isSignedUp && (
-                                <span className="text-[11px] font-medium text-accent bg-accent/15 px-1.5 py-0.5 rounded flex-shrink-0">Signed up</span>
-                              )}
-
-                              {/* Desktop: Inline Loot Items */}
+                              {/* Desktop: Inline Loot Items (names only, no interactive elements inside button) */}
                               {memberLoot.length > 0 && (
-                                <div className="hidden sm:flex items-center gap-2 text-[12px] min-w-0">
+                                <span className="hidden sm:flex items-center gap-2 text-[12px] min-w-0">
                                   <span className="text-muted-foreground">→</span>
                                   {memberLoot.map(loot => (
-                                    <div key={loot.id} className="flex items-center gap-1 group min-w-0">
+                                    <span key={loot.id} className="min-w-0">
                                       <ItemLink name={loot.item_name} wowheadId={loot.item_wowhead_id} className="text-[12px] truncate" />
-                                      <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        onClick={(e) => { e.stopPropagation(); deleteLootEntry(loot.id, raid.id) }}
-                                        className="opacity-0 group-hover:opacity-100 text-destructive hover:text-destructive/80 flex-shrink-0 h-5 w-5 p-0"
-                                        title="Remove loot"
-                                      >
-                                        <HugeiconsIcon icon={Cancel01Icon} size={14} />
-                                      </Button>
-                                    </div>
+                                    </span>
                                   ))}
-                                </div>
+                                </span>
                               )}
-                            </div>
 
-                            {/* Actions Dropdown */}
+                              <span className="flex-1" />
+
+                              {/* Status pill */}
+                              {state === 'attended' && <span className="text-[11px] font-medium text-success bg-success/15 px-2 py-0.5 rounded-full flex-shrink-0">Attended</span>}
+                              {state === 'late' && <span className="text-[11px] font-medium text-warning bg-warning/15 px-2 py-0.5 rounded-full flex-shrink-0">Late</span>}
+                              {state === 'standby' && <span className="text-[11px] font-medium text-warning bg-warning/15 px-2 py-0.5 rounded-full flex-shrink-0">Standby</span>}
+                              {state === 'no-show' && <span className="text-[11px] font-medium text-destructive bg-destructive/15 px-2 py-0.5 rounded-full flex-shrink-0">No Show</span>}
+                              {isSignedUp && <span className="text-[11px] font-medium text-accent bg-accent/15 px-2 py-0.5 rounded-full flex-shrink-0">Signed up</span>}
+                            </button>
+
+                            {/* Three-dot menu (outside click target) */}
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-7 w-7 flex-shrink-0">
+                                <Button variant="ghost" size="icon" className="h-7 w-7 flex-shrink-0 mr-1">
                                   <HugeiconsIcon icon={MoreVerticalIcon} size={16} />
                                 </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
-                                {/* Status overrides */}
+                                <DropdownMenuItem
+                                  onClick={() => setAttendanceStatus(raid.id, member.character_id, member.user_id, 'attended')}
+                                  className={state === 'attended' ? 'bg-muted' : ''}
+                                >
+                                  Mark as attended
+                                </DropdownMenuItem>
                                 <DropdownMenuItem
                                   onClick={() => setAttendanceStatus(raid.id, member.character_id, member.user_id, 'late')}
                                   className={state === 'late' ? 'bg-muted' : ''}
@@ -2051,6 +2054,12 @@ export default function RaidTrackingPage() {
                                   className={state === 'no-show' ? 'bg-muted' : ''}
                                 >
                                   Mark as no show
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={() => setAttendanceStatus(raid.id, member.character_id, member.user_id, 'empty')}
+                                  className={state === 'empty' ? 'bg-muted' : ''}
+                                >
+                                  Clear status
                                 </DropdownMenuItem>
                                 {guildSettings?.use_signups && (
                                   <>
@@ -2081,7 +2090,7 @@ export default function RaidTrackingPage() {
 
                           {/* Mobile: Loot items on separate line */}
                           {memberLoot.length > 0 && (
-                            <div className="flex items-center gap-2 text-[12px] sm:hidden pl-8 flex-wrap">
+                            <div className="flex items-center gap-2 text-[12px] sm:hidden px-3 pb-2 flex-wrap">
                               <span className="text-muted-foreground">→</span>
                               {memberLoot.map(loot => (
                                 <div key={loot.id} className="flex items-center gap-1">
@@ -2114,19 +2123,17 @@ export default function RaidTrackingPage() {
                       return (
                         <div
                           key={`unlinked-${idx}`}
-                          className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors opacity-60 ${getCellStyle(state)}`}
+                          className={`flex items-center px-3 py-2 rounded-lg opacity-60 ${getCellStyle(state)}`}
                         >
-                          {/* Empty space for checkbox alignment */}
-                          <div className="h-5 w-5 flex-shrink-0" />
-                          {/* Name + Status Badges */}
                           <div className="flex items-center gap-2 min-w-0 flex-1">
                             <span className="font-medium text-muted-foreground text-[13px] truncate" title={`${attendee.character_name} (account not linked)`}>
                               {attendee.character_name}
                             </span>
-                            {state === 'late' && <span className="text-[11px] font-medium text-warning bg-warning/15 px-1.5 py-0.5 rounded flex-shrink-0">Late</span>}
-                            {state === 'standby' && <span className="text-[11px] font-medium text-warning bg-warning/15 px-1.5 py-0.5 rounded flex-shrink-0">Standby</span>}
-                            {state === 'no-show' && <span className="text-[11px] font-medium text-destructive bg-destructive/15 px-1.5 py-0.5 rounded flex-shrink-0">No Show</span>}
-                            {state === 'attended' && <span className="text-[11px] font-medium text-success bg-success/15 px-1.5 py-0.5 rounded flex-shrink-0">Attended</span>}
+                            <span className="flex-1" />
+                            {state === 'attended' && <span className="text-[11px] font-medium text-success bg-success/15 px-2 py-0.5 rounded-full flex-shrink-0">Attended</span>}
+                            {state === 'late' && <span className="text-[11px] font-medium text-warning bg-warning/15 px-2 py-0.5 rounded-full flex-shrink-0">Late</span>}
+                            {state === 'standby' && <span className="text-[11px] font-medium text-warning bg-warning/15 px-2 py-0.5 rounded-full flex-shrink-0">Standby</span>}
+                            {state === 'no-show' && <span className="text-[11px] font-medium text-destructive bg-destructive/15 px-2 py-0.5 rounded-full flex-shrink-0">No Show</span>}
                           </div>
                         </div>
                       )

@@ -24,7 +24,7 @@ export const helpCategories: HelpCategory[] = [
   {
     id: 'getting-started',
     title: 'Getting Started',
-    description: 'Learn the basics of LootList+ and set up your guild',
+    description: 'Learn the basics of LootList+ and set up your account',
     icon: 'RocketIcon',
     articles: [
       {
@@ -34,84 +34,146 @@ export const helpCategories: HelpCategory[] = [
         content: `
 # Welcome to LootList+
 
-LootList+ is a loot council management tool designed for World of Warcraft guilds. It helps you:
+LootList+ is a loot priority system for World of Warcraft guilds. It speeds up raid loot distribution, sets clear expectations and removes drama.
 
-- **Manage loot lists** - Raiders submit their item priorities before raids
-- **Track attendance** - Monitor who shows up and factor it into loot decisions
-- **Coordinate loot council** - Officers can review submissions and make fair decisions
-- **View the master sheet** - See everyone's priorities at a glance during raids
+- **Loot Lists** - Raiders rank items by priority before raids
+- **Attendance tracking** - Attendance factors into your Loot Score automatically
+- **Loot Score** - A transparent formula combining ranking, attendance and role modifiers
+- **Master Sheet** - Officers see everyone's priorities at a glance during raids
 
 ## How it works
 
-1. **Guild officers** set up the guild, configure raid tiers, and manage members
-2. **Raiders** create characters and submit their loot lists for each raid tier
-3. **Officers** review and approve loot lists
-4. **During raids**, use the master sheet to quickly see who wants each item
+1. **Join a guild** using an invite code or Discord
+2. **Create a character** and pick your class and spec
+3. **Submit your Loot List** ranking items from 50 (highest) to 1 (lowest)
+4. **Officers review** and approve your list
+5. **During raids**, the Master Sheet shows who gets priority on each drop
+
+## Your dashboard
+
+The **Overview** page is your home base. It shows:
+
+- Your Loot Score breakdown (ranking + attendance + modifiers)
+- Attendance snapshot and progress
+- Top 5 items you're next in line for
+- Recently received loot
+- Any Loot Lists that need your attention
 
 Ready to get started? Check out the guides below.
         `,
       },
       {
         slug: 'joining-a-guild',
-        title: 'Joining a Guild',
-        description: 'How to join an existing guild using an invite code',
+        title: 'Joining a guild',
+        description: 'How to join an existing guild using an invite code or Discord',
         content: `
-# Joining a Guild
+# Joining a guild
 
-If your guild already uses LootList+, you can join with an invite code or Discord integration.
+If your guild already uses LootList+, you can join with an invite code or through Discord.
 
-## Using an Invite Code
+## Using an invite code
 
-1. Ask your guild officers for an invite code
-2. Go to the guild selection screen
-3. Click "Join Guild"
-4. Enter the invite code
-5. You're in.
+1. Ask your guild officer for an invite code
+2. On the welcome screen, paste the code into the **Join with code** field
+3. Click **Join**
 
 ## Using Discord
 
-If your guild uses Discord integration:
+If your guild has Discord integration enabled:
 
-1. Click "Join via Discord" on the guild selection screen
-2. Authorize the Discord connection
-3. You'll automatically join guilds linked to your Discord servers
+1. Click **Select guild** on the welcome screen
+2. LootList+ checks which Discord servers you're in and matches them with guilds
+3. Pick your guild and click **Join**
 
-## After Joining
+If no guilds appear, your Discord servers may not have LootList+ linked yet. Ask your guild officer to enable Discord integration or give you an invite code.
 
-Once you've joined a guild:
+## After joining
 
-1. Create a character (or multiple characters)
-2. Submit your loot lists for active raid tiers
-3. Start tracking your loot priority.
+Once you're in a guild:
+
+1. Create a character using the character selector in the sidebar
+2. Submit your Loot Lists for active raid phases
+3. Check the **Overview** page to see your Loot Score and priorities
+
+## Multiple guilds
+
+You can be a member of multiple guilds. Switch between them using the guild selector at the top of the sidebar. Each guild has its own Loot Lists, attendance and settings.
         `,
       },
       {
         slug: 'creating-a-character',
-        title: 'Creating a Character',
-        description: 'How to add your WoW characters to your profile',
+        title: 'Creating a character',
+        description: 'How to add your WoW characters to LootList+',
         content: `
-# Creating a Character
+# Creating a character
 
-Characters are how you submit loot lists and track your loot history.
+Characters are how you submit Loot Lists and track your priority.
 
-## Adding a New Character
+## Adding a new character
 
-1. Go to **Characters** > **Manage**
-2. Click **Create Character**
-3. Fill in your character details:
-   - **Name** - Your character's name
-   - **Realm** - Your server (optional)
-   - **Class** - Your WoW class
-   - **Spec** - Your specialization (optional)
-   - **Level** - Your character level (optional)
-4. Toggle **Main Character** if this is your primary raider
-5. Click **Save**
+1. Click the **character selector** in the sidebar
+2. Click **Create character**
+3. Fill in your details:
+   - **Name** - Your character's in-game name
+   - **Class** - Your WoW class (warrior, paladin, etc.)
+   - **Specialization** - Your spec (holy, arms, etc.)
+   - **Main or alt** - Toggle whether this is your primary raider
+4. Click **Create**
 
-## Managing Multiple Characters
+Your character is automatically added to your active guild and becomes your selected character.
 
-You can add multiple characters if you raid on alts. Use the character switcher in the sidebar to change which character you're viewing.
+## Main vs alt
 
-Your **main character** is highlighted and used for certain guild-wide views.
+Your **main** character is your primary raider. It's prioritized in the character selector and used for guild-wide views. You can change which character is your main anytime from the manage characters page.
+
+## Managing characters
+
+Open the character selector in the sidebar and click **Manage characters** to:
+
+- Edit character details (class, spec, name)
+- Switch between main and alt designation
+- See which guilds each character belongs to
+
+## Multiple characters in one guild
+
+If you raid on alts, each character gets its own Loot List and attendance record. Use the character selector to switch between them.
+
+## Adding a character to another guild
+
+If a character exists but isn't in your current guild, it appears under "Not in [Guild Name]" in the character selector. Click the add button to join them to the guild.
+        `,
+      },
+      {
+        slug: 'profile-settings',
+        title: 'Profile and preferences',
+        description: 'Customize your account settings and appearance',
+        content: `
+# Profile and preferences
+
+Access your profile by clicking your name at the bottom of the sidebar.
+
+## Account tab
+
+- **Discord connection** - Shows your linked Discord account and verification status
+- **Sign out** - Log out of LootList+
+- **Danger zone** - Disconnect Discord or permanently delete your account
+
+## Preferences tab
+
+- **Theme** - Choose between System, Light or Dark mode
+- **Accent color** - Pick from 6 WoW item quality colors:
+  - Legendary (orange, default)
+  - Epic (purple)
+  - Rare (blue)
+  - Uncommon (green)
+  - Artifact (gold)
+  - Heirloom (cyan)
+
+Your accent color applies to buttons, links, active states and focus rings across the app.
+
+## Guilds tab
+
+View all guilds you belong to, your role in each and leave guilds you no longer need. Guild Masters can't leave directly. Transfer ownership or delete the guild from Guild Settings first.
         `,
       },
     ],
@@ -129,70 +191,119 @@ Your **main character** is highlighted and used for certain guild-wide views.
         content: `
 # Submitting a Loot List
 
-Your loot list tells officers which items you want and how much you want them.
+Your Loot List tells officers which items you want and how badly you want them.
 
-## Creating Your List
+## How ranking works
+
+Rank items from **50 (highest priority) to 1 (lowest priority)**. Each rank has 2 item slots. Higher number = higher priority.
+
+## Creating your list
 
 1. Go to **Loot List** from the sidebar
-2. Select the raid tier you want to submit for
-3. Browse available items by boss or slot
-4. **Rank items** by priority (1 = highest priority)
-5. Click **Submit for Review**
+2. Select the phase you want to submit for
+3. Browse items organized into bracket sections
+4. Use the item dropdowns to place items into rank slots
+5. Click **Submit for Review** when you're done
 
-## Ranking Tips
+Your list auto-saves as a draft while you work.
 
-- **Be honest** - Rank items based on actual upgrade value
-- **Consider your spec** - Focus on items that benefit your role
-- **Check classifications** - Some items are "Limited" and require higher priority
-- **Don't rank everything** - Only rank items you genuinely want
+## Brackets
 
-## After Submission
+Your list is divided into bracket sections, each with specific rules:
 
-Your list goes to officers for review. You'll see one of these statuses:
+- **Brackets 1-4** (ranks 50-39) - Your highest priority items with allocation limits
+- **No bracket** (ranks 38-25) - Main-spec items with no allocation limits
+- **Off-spec** (ranks 24-1) - Lower priority items for guild flexibility
 
+### Bracket rules (brackets 1-4 only)
+
+Each bracket has a **3-point allocation limit**:
+- **Reserved** items cost 1 point
+- **Limited** items cost 1 point
+- **Unlimited** items cost 0 points
+
+You can also only have 1 item of each type per bracket (no duplicate weapon types), and Reserved items must be alone at their rank (no companion item in slot 2).
+
+## Item classifications
+
+Officers assign classifications to each item:
+
+- **Reserved** - High-demand items. 1 allocation point, must be alone at rank.
+- **Limited** - Moderate-demand items. 1 allocation point.
+- **Unlimited** - Freely available items. 0 allocation points.
+
+## Submission statuses
+
+After submitting, your list goes through review:
+
+- **Draft** - Saved but not submitted to officers
 - **Pending** - Waiting for officer review
-- **Approved** - Your list is active
-- **Needs Revision** - Officers have feedback; check comments and resubmit
+- **Approved** - Your list is active and counts toward priority
+- **Needs revision** - Officers left feedback. Check review notes and resubmit.
+- **Rejected** - The submission was rejected. Revise and resubmit.
 
-## Editing Your List
+## Tips
 
-You can edit a draft list anytime. Once submitted, you may need officer approval to make changes.
+- **Rank honestly** based on actual upgrade value
+- **Focus on your spec** and prioritize items that benefit your role
+- **Check classifications** before spending allocation points
+- **You don't need to fill every slot.** Only rank items you genuinely want.
+- Use the **unranked items** sidebar (from the menu) to see what you haven't ranked yet
+- Use **Import BIS** to pull your best-in-slot gear from WowSims
         `,
       },
       {
         slug: 'understanding-priority',
-        title: 'Understanding Priority',
-        description: 'How loot priority is calculated',
+        title: 'Understanding Loot Score',
+        description: 'How your Loot Score is calculated',
         content: `
-# Understanding Priority
+# Understanding Loot Score
 
-Your loot priority determines where you stand in line for each item.
+Your Loot Score determines where you stand in line for each item. It's fully transparent so there are no surprises.
 
-## Priority Score
+## The formula
 
-Your priority score combines several factors:
+\`Loot Score = Rank + Attendance Score + Role Modifier - Trial Penalty + Bad Luck Bonus\`
 
-- **Item Rank** - How highly you ranked the item (higher rank = more priority)
-- **Attendance** - Your raid attendance percentage
-- **Role Modifiers** - Guild-configured bonuses for certain roles
+### Rank
 
-## Viewing Your Priority
+How high you ranked the item on your Loot List. Rank 50 = 50 points, rank 1 = 1 point. This is the biggest factor.
 
-Check your priority in several places:
+### Attendance score
 
-- **Overview** - See your top priority items in "Next in Line"
-- **Master Sheet** - View all characters' priorities for each item
-- **Loot List** - See your rankings and current standing
+Based on your raid attendance over a rolling window (e.g., last 4 weeks). Higher attendance = more points, up to a configurable max (commonly 8 points).
+
+If your guild uses **attendance tiers**, reaching milestones (like "High" tier) unlocks bonus points.
+
+### Role modifier
+
+Guild-configured bonuses or penalties based on your role. Officers and Guild Masters may receive a small bonus.
+
+### Trial penalty
+
+New members marked as trials receive a score penalty. This resets once you're promoted to full member.
+
+### Bad luck bonus
+
+If enabled, you gain extra points the longer you go without receiving loot. Resets when you receive an item.
+
+## Viewing your score
+
+Check your Loot Score in several places:
+
+- **Overview** - Score breakdown widget shows each component
+- **Master Sheet** - Click any item to see the full score breakdown for all players wanting it
+- **Next in line** - Your overview shows your top 5 priority items
 
 ## Ties
 
-When multiple players have the same priority score, they're "tied" for an item. The loot council decides between tied players.
+When players have the same Loot Score, they're tied for the item. Ties are broken by /roll.
 
-## Improving Your Priority
+## Improving your score
 
-- **Show up to raids** - Attendance matters.
-- **Rank items thoughtfully** - Use your high ranks wisely
-- **Be patient** - Priority naturally improves as others receive items
+- **Show up to raids.** Attendance is the easiest way to boost your score.
+- **Rank items thoughtfully.** High ranks on fewer items beats spreading thin.
+- **Be patient.** Priority naturally improves as others receive items.
         `,
       },
     ],
@@ -200,123 +311,189 @@ When multiple players have the same priority score, they're "tied" for an item. 
   {
     id: 'guild-management',
     title: 'Guild Management',
-    description: 'For officers: configure your guild settings',
+    description: 'For officers: configure your guild and manage loot',
     icon: 'Settings01Icon',
     articles: [
       {
         slug: 'guild-setup',
-        title: 'Setting Up Your Guild',
+        title: 'Setting up your guild',
         description: 'Initial configuration for new guilds',
         content: `
-# Setting Up Your Guild
+# Setting up your guild
 
 This guide is for guild officers setting up LootList+ for the first time.
 
-## Step 1: Create the Guild
+## Step 1: Create the guild
 
-1. Click **Create Guild** on the guild selection screen
-2. Enter your guild name and realm
+1. On the welcome screen, click **Select guild** or use an invite code
+2. If creating a new guild, enter your guild name, realm and faction
 3. You'll automatically become the Guild Master
 
-## Step 2: Configure Expansion
+## Step 2: Configure your expansion
 
-1. Go to **Admin** > **Manage Expansions**
-2. Select your current expansion
-3. Enable the raid tiers your guild is progressing
+1. Open **Guild Settings** (gear icon next to your guild name in the sidebar)
+2. In the Expansion section, select your current expansion
+3. Set your **raid start date** and **raid schedule** (days per week, specific days, timezone)
+4. Enable the raid tiers your guild is progressing through
+5. Toggle **Loot** to include a tier in Loot Lists and **Ranks** to show rankings on the Master Sheet
 
-## Step 3: Set Up Loot Items
+## Step 3: Configure loot items
 
-Each raid tier needs loot items configured:
+1. Go to **Loot Management** in the sidebar (officer-only section)
+2. Browse items by raid tier
+3. Set item classifications: Reserved, Limited or Unlimited
+4. Assign primary and secondary specs to items (controls which classes can rank them)
 
-1. Go to **Admin** > **Manage Expansions** > Select a tier
-2. Import items from Wowhead or add manually
-3. Set item classifications (Limited, Open, etc.)
+## Step 4: Invite members
 
-## Step 4: Invite Members
-
-1. Go to **Admin** > **Guild Settings**
-2. Create invite codes or set up Discord integration
+1. Open **Guild Settings** (gear icon in the sidebar)
+2. Create invite codes with optional expiration and usage limits
 3. Share codes with your raiders
+4. Or set up **Discord integration** by adding your Discord server ID so members join automatically
 
-## Step 5: Configure Settings
+## Step 5: Review and approve
 
-Customize how loot priority works:
+Once members submit their Loot Lists:
 
-- **Attendance tracking** - Rolling weeks, signup weight
-- **Role modifiers** - Bonuses for tanks, healers, etc.
-- **Priority formula** - How scores are calculated
+1. Go to **Loot Submissions** in the sidebar
+2. Review each submission for reasonable rankings
+3. Approve, reject or request revisions with review notes
         `,
       },
       {
         slug: 'managing-members',
-        title: 'Managing Members',
-        description: 'Add, remove, and configure guild members',
+        title: 'Managing members',
+        description: 'Roles, trials and member administration',
         content: `
-# Managing Members
+# Managing members
 
 Control who's in your guild and what they can do.
 
-## Member Roles
+## Roles
 
-- **Guild Master** - Full control over everything
-- **Officer** - Can manage loot, approve lists, run raids
-- **Member** - Can submit loot lists and view their priority
+- **Guild Master** - Full control over everything. Can delete the guild and transfer ownership.
+- **Officer** - Can manage loot, approve submissions, track raids and manage members below their rank.
+- **Member** - Can submit Loot Lists, view priorities and track attendance.
 
-## Adding Members
+Custom roles can be created with positions between Officer and Member for more granular permissions.
+
+## Adding members
 
 Members join via:
 
-- **Invite codes** - Generate in Guild Settings
-- **Discord** - Automatic if you've linked Discord
+- **Invite codes** - Generate in Guild Settings with optional expiration and max uses
+- **Discord** - Automatic if you've linked your Discord server ID
 
-## Removing Members
+## Managing members
 
-1. Go to **Admin** > **Guild Settings** > **Members**
-2. Find the member
-3. Click **Remove**
+1. Open **Guild Settings** (gear icon next to your guild name in the sidebar)
+2. The members list shows all characters with their class, spec, role and trial status
 
-Their loot history is preserved but they lose access.
+From here you can:
 
-## Changing Roles
+- **Change roles** - Use the role dropdown (you can only assign roles below your own rank)
+- **Toggle trial status** - Set new members as trials (they receive a Loot Score penalty) or promote to full member
+- **Remove members** - Kick from the guild. They can rejoin with a new invite code.
 
-1. Find the member in Guild Settings
-2. Use the role dropdown to change their permission level
+## Trial system
+
+Trial members receive a Loot Score penalty to give established raiders priority. The trial duration is tracked automatically. Officers can promote trials to full members at any time.
+
+## Role manager
+
+Open the role manager from Guild Settings to:
+
+- Create custom roles (up to 10 total)
+- Reorder role hierarchy
+- Edit role names and colors
+- Delete custom roles
+
+## Danger zone (Guild Master only)
+
+- **Transfer ownership** - Hand the guild to another member. You'll be demoted to Officer.
+- **Delete guild** - Permanently removes the guild, all members, Loot Lists and attendance data. Requires typing the guild name to confirm.
         `,
       },
       {
         slug: 'reviewing-submissions',
-        title: 'Reviewing Loot Submissions',
-        description: 'How to review and approve loot lists',
+        title: 'Reviewing loot submissions',
+        description: 'How to review and approve Loot Lists from your raiders',
         content: `
-# Reviewing Loot Submissions
+# Reviewing loot submissions
 
-Officers review loot lists before they become active.
+Officers review Loot Lists before they become active on the Master Sheet.
 
-## Pending Submissions
+## Finding submissions
 
-1. Go to **Admin** > **Pending Submissions**
-2. You'll see all lists waiting for review
-3. Click a submission to view details
+1. Go to **Loot Submissions** in the sidebar (officer-only section)
+2. Filter by phase or status: All, Pending, Approved, Rejected
+3. Click a submission to view the full ranked list
 
-## Reviewing a List
+## What to check
 
-Check for:
-
-- **Reasonable rankings** - Do priorities make sense for their class/spec?
-- **Item classifications** - Are limited items ranked appropriately?
-- **Completeness** - Did they rank enough items?
+- **Rankings make sense for the class/spec** - A holy priest ranking a melee weapon is suspicious
+- **Item classifications respected** - Reserved items should be high-priority picks
+- **Reasonable spread** - Are they ranking enough items or only going for one thing?
 
 ## Actions
 
-- **Approve** - List becomes active
-- **Request Revision** - Add a comment explaining what to fix
-- **Reject** - Rare, for invalid submissions
+- **Approve** - The list becomes active and shows on the Master Sheet
+- **Reject** - For invalid or problematic submissions
+- **Review notes** - Add feedback in the text area before approving or rejecting. The raider sees these notes on their Loot List page.
 
-## Best Practices
+## Bulk actions
 
-- Review promptly so raiders can see their priority
+- **Delete pending** - Remove all pending submissions at once
+- **Delete all** - Clear all submissions for the selected phase
+
+## Best practices
+
+- Review submissions promptly so raiders can see their priority
 - Be consistent with feedback across all members
-- Communicate ranking guidelines to your guild
+- Communicate ranking guidelines before the submission deadline
+        `,
+      },
+      {
+        slug: 'loot-management',
+        title: 'Loot Management',
+        description: 'Configure items, classifications and spec assignments',
+        content: `
+# Loot Management
+
+The Loot Management page lets officers configure which items are available and how they're classified.
+
+## Accessing loot management
+
+Go to **Loot Management** in the sidebar. This page is only visible to officers.
+
+## Item classifications
+
+Every item has a classification that affects how it can be ranked:
+
+- **Reserved** (1 allocation point) - High-demand items. Must be placed alone at a rank (no companion item). Shown with a red badge.
+- **Limited** (1 allocation point) - Moderate-demand items. Can share a rank with another item. Shown with an orange badge.
+- **Unlimited** (0 allocation points) - Freely available items. No ranking restrictions. Shown with a green badge.
+
+## Spec assignments
+
+For each item, you can assign:
+
+- **Primary specs** - The specs this item is intended for. Shown with green badges.
+- **Secondary specs** - Alternative specs that can use the item. Shown with orange badges.
+
+Spec assignments help raiders know which items are relevant to them.
+
+## Stats dashboard
+
+The top of the page shows:
+- Total items count
+- Available items
+- Reserved items
+- Limited items
+
+## Filtering
+
+Use the search bar to find items by name or boss, and filter by raid tier.
         `,
       },
     ],
@@ -329,34 +506,113 @@ Check for:
     articles: [
       {
         slug: 'attendance-tracking',
-        title: 'Attendance Tracking',
-        description: 'How attendance affects loot priority',
+        title: 'Attendance tracking',
+        description: 'How attendance affects your Loot Score',
         content: `
-# Attendance Tracking
+# Attendance tracking
 
 Attendance rewards players who consistently show up to raids.
 
-## How It Works
+## How it works
 
-Your guild tracks raid attendance over a rolling window (e.g., last 4 weeks). Your attendance percentage factors into your loot priority score.
+Your guild tracks raid attendance over a **rolling window** (e.g., last 4 weeks). Your attendance score factors directly into your Loot Score.
 
-## Attendance Statuses
+## Attendance statuses
+
+Officers mark each raider with one of these statuses per raid:
 
 - **Attended** - You were at the raid
-- **Signed Up** - You signed up but didn't attend (partial credit if enabled)
-- **No call no show** - Missed without notice (may have penalties)
+- **Late** - You showed up but arrived late
+- **Benched** - You were online but sat out (partial credit)
+- **Signed up** - You signed up but didn't attend
+- **No-show** - Missed without notice
 
-## Checking Your Attendance
+## Viewing your attendance
 
-View your attendance history in your **Profile** or **Overview** page.
+Check your attendance in two places:
 
-## For Officers
+- **Overview** - Shows your attendance percentage, raids attended count and progress toward the next tier (if your guild uses attendance tiers)
+- **Attendance** page - Shows the full attendance grid with raids grouped by week
 
-Track attendance via:
+## Attendance tiers
 
-- Manual entry in Raid Tracking
-- Integration with raid logging addons
-- Discord bot commands
+If your guild uses the breakpoint attendance mode, reaching milestones unlocks bonus points:
+
+- **High tier** - Maximum attendance bonus (e.g., +8 pts)
+- **Mid tier** - Moderate bonus (e.g., +5 pts)
+- **Low tier** - Small bonus (e.g., +2 pts)
+
+Your Overview page shows how many more raids you need to reach the next tier.
+
+## New member handling
+
+Guilds can configure how new members are scored:
+
+- **Raw** - Count all raids from the start of the rolling window
+- **Fair** - Only count raids after you joined
+- **Minimum gate** - Only count after joining, with a minimum raid threshold
+
+## For officers
+
+Track attendance from the **Raid Tracking** page in the sidebar. Create raid events, mark attendance for each member and record loot drops.
+        `,
+      },
+      {
+        slug: 'raid-tracking',
+        title: 'Raid tracking for officers',
+        description: 'How to log raids, track attendance and record loot',
+        content: `
+# Raid tracking for officers
+
+The Raid Tracking page is where officers log raids, record attendance and track loot distribution.
+
+## Accessing raid tracking
+
+Go to **Raid Tracking** in the sidebar. This page is only visible to officers.
+
+## Creating raid events
+
+Log each raid night with:
+
+- **Date** - When the raid happened
+- **Notes** - Optional details about the run
+- **Skip raid** - Mark a scheduled raid as cancelled with a reason
+
+## Recording attendance
+
+For each raid event, mark every member's status:
+
+- **Signed up** - Member signed up for the raid
+- **Attended** - Member was present
+- **No-show** - Member didn't show without notice
+- **Late** - Member arrived late
+- **Benched** - Member was available but sat out
+
+## Recording loot
+
+When items drop, record who received them:
+
+- Select the character who received the item
+- Select the item from the loot table
+- Award date is tracked automatically
+
+## Loot history
+
+The loot history tab shows all awarded items with:
+
+- Character name (colored by class)
+- Item name with Wowhead tooltip
+- Award date
+
+## Raid schedule
+
+Configure your raid schedule in **Guild Settings** under the expansion section:
+
+- Days per week (1-5)
+- Specific raid days
+- Guild timezone
+
+The attendance system uses this schedule to calculate the rolling attendance window.
         `,
       },
       {
@@ -366,33 +622,47 @@ Track attendance via:
         content: `
 # Using the Master Sheet
 
-The master sheet shows everyone's priorities at a glance, essential during raids.
+The Master Sheet compiles all approved Loot Lists into a single view. It's the primary tool for loot distribution during raids.
 
 ## Accessing the Master Sheet
 
-Click **Master Sheet** in the sidebar.
+Click **Master Sheet** in the sidebar. It's available to all guild members (when officers enable visibility for a raid tier).
 
-## Features
+## How it's organized
 
-- **Filter by boss** - See items from a specific encounter
-- **Sort by priority** - Highest priority players at top
-- **View tied players** - See who's competing for items
-- **Item tooltips** - Hover for Wowhead item details
+- **Tabs** for each raid tier (Molten Core, Blackwing Lair, etc.)
+- **Collapsible boss sections** within each tier
+- **Items listed under each boss** with all players who ranked them
 
-## During Raids
+## What you see for each item
+
+- Player name (colored by class)
+- Their **rank** (position on their list)
+- Their **Loot Score** (the combined priority number)
+- Whether they're **tied** with other players
+
+Players are sorted by Loot Score, highest first.
+
+## Score breakdown
+
+Click on any player's score to see the full breakdown: rank + attendance + role modifier + trial penalty + bad luck bonus.
+
+## During raids
 
 When an item drops:
 
-1. Find the item on the master sheet
-2. See who has it ranked and their priority scores
-3. Award to the highest priority player (or loot council decision for ties)
-4. Mark item as awarded to update priorities
+1. Find the item on the Master Sheet (use the boss section to narrow it down)
+2. See who has it ranked and their Loot Scores
+3. Award to the highest priority player
+4. Ties are broken by /roll
 
-## Tips
+## Officer view
 
-- Keep the master sheet open on a second monitor
-- Use boss filters to quickly find relevant items
-- Award items promptly to keep priorities accurate
+Officers see an additional **aggregate view** that shows total demand for each item across all raiders, useful for understanding which items are most contested.
+
+## Visibility
+
+Officers control which raid tiers are visible on the Master Sheet using the **Loot** and **Ranks** toggles in Guild Settings. This lets you phase out old content or hide upcoming tiers.
         `,
       },
     ],

@@ -600,7 +600,7 @@ export default function LootList() {
                 )}
               </p>
             </div>
-            <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+            <div className="flex items-center gap-2 sm:gap-3">
               {/* Expansion Selector - Dropdown */}
               {guildExpansions.length > 1 && (
                 <Select
