@@ -341,24 +341,38 @@ export default function LootList() {
     const isNotPriod = (item: LootItem) =>
       !item.character_spec_type && item.is_allocated === true
 
+    // LC items are included in every pool so they appear in dropdowns (as non-selectable),
+    // but excluded from rankable filtering logic
+    const lcItems = lootItems.filter(item => item.is_loot_council)
+
     // Brackets 1-4: PRIMARY + SECONDARY + UNALLOCATED
     // UNALLOCATED = item has no loot_item_classes entries (is_allocated is false/undefined)
-    const bracket14Items = lootItems.filter(item =>
-      item.character_spec_type === 'primary' ||
-      item.character_spec_type === 'secondary' ||
-      !item.is_allocated  // false or undefined = unallocated
-    )
+    const bracket14Items = [
+      ...lootItems.filter(item =>
+        !item.is_loot_council && (
+          item.character_spec_type === 'primary' ||
+          item.character_spec_type === 'secondary' ||
+          !item.is_allocated  // false or undefined = unallocated
+        )
+      ),
+      ...lcItems,
+    ]
 
     // No Bracket: Everything from Brackets 1-4 + notPriod with primary-only
     // CASCADE: includes all bracket14Items plus additional items
-    const noBracketItems = lootItems.filter(item =>
-      // Include everything from Brackets 1-4
-      item.character_spec_type === 'primary' ||
-      item.character_spec_type === 'secondary' ||
-      !item.is_allocated ||  // false or undefined = unallocated
-      // Plus notPriod items where item has primary-only (no secondary assignments)
-      (isNotPriod(item) && item.has_primary_only === true)
-    )
+    const noBracketItems = [
+      ...lootItems.filter(item =>
+        !item.is_loot_council && (
+          // Include everything from Brackets 1-4
+          item.character_spec_type === 'primary' ||
+          item.character_spec_type === 'secondary' ||
+          !item.is_allocated ||  // false or undefined = unallocated
+          // Plus notPriod items where item has primary-only (no secondary assignments)
+          (isNotPriod(item) && item.has_primary_only === true)
+        )
+      ),
+      ...lcItems,
+    ]
 
     // Off-spec: ALL equippable items (superset of everything)
     const offSpecItems = lootItems
@@ -366,10 +380,10 @@ export default function LootList() {
     return { bracket14Items, noBracketItems, offSpecItems }
   }, [lootItems])
 
-  // Compute unranked items (all spec items not yet on the list)
+  // Compute unranked items (all spec items not yet on the list, excluding LC items)
   const unrankedItems = useMemo(() => {
     const rankedItemIds = new Set(Object.values(rankings))
-    return lootItems.filter(item => !rankedItemIds.has(item.id))
+    return lootItems.filter(item => !rankedItemIds.has(item.id) && !item.is_loot_council)
   }, [lootItems, rankings])
 
   // Group unranked items by boss for display

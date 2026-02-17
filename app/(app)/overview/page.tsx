@@ -131,6 +131,7 @@ interface LootPriorityItem {
   classification: string
   boss_name: string
   raid_tier_id: string
+  is_loot_council?: boolean
 }
 
 interface ReceivedItem {
@@ -702,7 +703,7 @@ function DashboardContent() {
       // Fetch item details
       const { data: items } = await supabase
         .from('loot_items')
-        .select('id, name, wowhead_id, boss_name, classification, raid_tier_id')
+        .select('id, name, wowhead_id, boss_name, classification, raid_tier_id, is_loot_council')
         .in('id', itemIds)
 
       if (!items) {
@@ -953,7 +954,8 @@ function DashboardContent() {
             tied_characters: tiedCharacters,
             classification: item.classification || 'Unlimited',
             boss_name: item.boss_name,
-            raid_tier_id: item.raid_tier_id
+            raid_tier_id: item.raid_tier_id,
+            is_loot_council: item.is_loot_council
           })
         }
       }
@@ -1086,6 +1088,7 @@ function DashboardContent() {
       const lowComp: Array<{ item_id: string; item_name: string; wowhead_id: number; boss_name: string; competitors: number }> = []
       for (const item of filteredItems) {
         if (topItemIds.has(item.id)) continue
+        if (item.is_loot_council) continue // LC items aren't competing
         const comp = competitionMap[item.id]
         const competitors = comp?.totalWanting ?? 0
         if (competitors <= 1) {
@@ -1517,6 +1520,9 @@ function DashboardContent() {
                             <div className="min-w-0 flex-1">
                               <ItemLink name={item.item_name} wowheadId={item.wowhead_id} clickable={true} showIcon={true} />
                             </div>
+                            {item.is_loot_council && (
+                              <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-accent/20 text-accent flex-shrink-0">Loot Council</span>
+                            )}
                             {item.classification && item.classification !== 'Unlimited' && (
                               <span className="text-xs px-2 py-0.5 bg-accent/20 text-accent rounded-full border border-accent/30 flex-shrink-0 whitespace-nowrap">
                                 {item.classification}
@@ -1525,9 +1531,13 @@ function DashboardContent() {
                           </div>
                           <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
                             <span>{item.boss_name}</span>
-                            <span>•</span>
-                            <span className="font-semibold text-foreground">{item.loot_score.toFixed(decimalPlaces)}</span>
-                            {itemBlpData[item.item_id] && (
+                            {!item.is_loot_council && (
+                              <>
+                                <span>•</span>
+                                <span className="font-semibold text-foreground">{item.loot_score.toFixed(decimalPlaces)}</span>
+                              </>
+                            )}
+                            {!item.is_loot_council && itemBlpData[item.item_id] && (
                               <>
                                 <span>•</span>
                                 <span className="text-accent font-medium" title={`Passed ${itemBlpData[item.item_id].timesPassed} time${itemBlpData[item.item_id].timesPassed !== 1 ? 's' : ''}`}>
@@ -1535,7 +1545,7 @@ function DashboardContent() {
                                 </span>
                               </>
                             )}
-                            {item.tied_characters.length > 0 && (
+                            {!item.is_loot_council && item.tied_characters.length > 0 && (
                               <>
                                 <span>•</span>
                                 <span className="text-warning">Tied with:</span>
@@ -1550,7 +1560,7 @@ function DashboardContent() {
                               </>
                             )}
                           </div>
-                          {competitionData[item.item_id] && competitionData[item.item_id].totalWanting > 0 && (
+                          {!item.is_loot_council && competitionData[item.item_id] && competitionData[item.item_id].totalWanting > 0 && (
                             <div className="flex items-center gap-1 text-[11px] text-muted-foreground mt-1">
                               <span>{competitionData[item.item_id].totalWanting} other{competitionData[item.item_id].totalWanting !== 1 ? 's' : ''} want this</span>
                               <span>·</span>

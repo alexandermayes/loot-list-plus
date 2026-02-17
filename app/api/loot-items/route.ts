@@ -103,7 +103,7 @@ export async function GET(request: NextRequest) {
       .from('loot_items')
       .select(`
         id, name, boss_name, item_slot, wowhead_id,
-        classification, item_type, allocation_cost, is_available, roles,
+        classification, item_type, allocation_cost, is_available, is_loot_council, roles,
         armor_type, weapon_type, raid_tier_id,
         loot_item_classes(class_id, spec_id, spec_type),
         raid_tiers(name)

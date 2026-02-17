@@ -18,6 +18,11 @@ export const updates: UpdateEntry[] = [
     items: [
       {
         category: 'feature',
+        title: 'Loot Council items',
+        description: 'Officers can mark items as Loot Council. LC items are visible on the master sheet and loot list but cannot be ranked by raiders.',
+      },
+      {
+        category: 'feature',
         title: 'Dashboard insight widgets',
         description: 'New overview widgets for score breakdown, attendance snapshot, trial progress, upcoming raids and competition indicators.',
       },

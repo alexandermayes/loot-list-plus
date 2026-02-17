@@ -39,6 +39,7 @@ interface LootItem {
   item_slot: string
   wowhead_id: number
   raid_tier_id?: string
+  is_loot_council?: boolean
 }
 
 // PlayerRanking type imported from ./components/BossSection
@@ -567,7 +568,7 @@ function MasterSheetContent() {
         // Get all loot items for all active tiers in this phase
         const { data: itemsData } = await supabase
           .from('loot_items')
-          .select('id, name, boss_name, item_slot, wowhead_id, raid_tier_id')
+          .select('id, name, boss_name, item_slot, wowhead_id, raid_tier_id, is_loot_council')
           .in('raid_tier_id', activeTierIds)
           .eq('is_available', true)
           .order('boss_name')
@@ -845,7 +846,7 @@ function MasterSheetContent() {
         // Get all loot items for all active tiers in this phase
         const { data: itemsData } = await supabase
           .from('loot_items')
-          .select('id, name, boss_name, item_slot, wowhead_id, classification, raid_tier_id')
+          .select('id, name, boss_name, item_slot, wowhead_id, classification, raid_tier_id, is_loot_council')
           .in('raid_tier_id', activeTierIds)
           .eq('is_available', true)
           .order('boss_name')
@@ -1157,7 +1158,7 @@ function MasterSheetContent() {
     // Get all loot items for this tier
     const { data: itemsData } = await supabase
       .from('loot_items')
-      .select('id, name, boss_name, item_slot, wowhead_id')
+      .select('id, name, boss_name, item_slot, wowhead_id, is_loot_council')
       .eq('raid_tier_id', tierId)
       .eq('is_available', true)
       .order('boss_name')
@@ -1165,7 +1166,7 @@ function MasterSheetContent() {
 
     if (!itemsData || itemsData.length === 0) return []
 
-    type TierLootItem = { id: string; name: string; boss_name: string; item_slot: string; wowhead_id: number }
+    type TierLootItem = { id: string; name: string; boss_name: string; item_slot: string; wowhead_id: number; is_loot_council?: boolean }
     const itemIds = itemsData.map((i: TierLootItem) => i.id)
 
     // Fetch ranking submissions AND independent data (priorities, loot history, BLP) in parallel

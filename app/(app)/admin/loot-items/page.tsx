@@ -30,6 +30,7 @@ interface LootItem {
   item_type: string
   allocation_cost: number
   is_available: boolean
+  is_loot_council: boolean
   raid_tier: {
     name: string
   }
@@ -131,6 +132,7 @@ export default function AdminLootItems() {
         item_type,
         allocation_cost,
         is_available,
+        is_loot_council,
         raid_tier:raid_tiers(name)
       `)
       .in('raid_tier_id', tierIds)
@@ -265,6 +267,22 @@ export default function AdminLootItems() {
       setLootItems(items => items.map(item =>
         item.id === itemId ? { ...item, is_available: !currentStatus } : item
       ))
+    }
+  }
+
+  const toggleLootCouncil = async (itemId: string, currentStatus: boolean) => {
+    const { error } = await supabase
+      .from('loot_items')
+      .update({ is_loot_council: !currentStatus })
+      .eq('id', itemId)
+
+    if (!error) {
+      setLootItems(items => items.map(item =>
+        item.id === itemId ? { ...item, is_loot_council: !currentStatus } : item
+      ))
+      showNotification('success', `Item ${!currentStatus ? 'marked as' : 'removed from'} Loot Council`)
+    } else {
+      showNotification('error', 'Failed to update. Try again.')
     }
   }
 
@@ -411,6 +429,7 @@ export default function AdminLootItems() {
     available: filteredItems.filter(i => i.is_available).length,
     reserved: filteredItems.filter(i => i.classification === 'Reserved').length,
     limited: filteredItems.filter(i => i.classification === 'Limited').length,
+    lootCouncil: filteredItems.filter(i => i.is_loot_council).length,
   }), [filteredItems])
 
   if (loading) {
@@ -427,7 +446,7 @@ export default function AdminLootItems() {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 sm:gap-4">
           <div className="bg-background-elevated border border-border rounded-xl p-4">
             <p className="text-muted-foreground text-sm">Total items</p>
             <p className="text-2xl font-bold text-foreground">{itemStats.total}</p>
@@ -443,6 +462,10 @@ export default function AdminLootItems() {
           <div className="bg-background-elevated border border-border rounded-xl p-4">
             <p className="text-muted-foreground text-sm">Limited</p>
             <p className="text-2xl font-bold text-warning">{itemStats.limited}</p>
+          </div>
+          <div className="bg-background-elevated border border-border rounded-xl p-4">
+            <p className="text-muted-foreground text-sm">Loot Council</p>
+            <p className="text-2xl font-bold text-accent">{itemStats.lootCouncil}</p>
           </div>
         </div>
 
@@ -483,6 +506,7 @@ export default function AdminLootItems() {
               <thead className="sticky top-0 z-10">
                 <tr className="bg-muted border-b border-border">
                   <th className="px-4 py-3 text-left text-sm font-semibold text-muted-foreground bg-muted">Available</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-muted-foreground bg-muted">LC</th>
                   <th className="px-4 py-3 text-left text-sm font-semibold text-muted-foreground bg-muted">Item Name</th>
                   <th className="px-4 py-3 text-left text-sm font-semibold text-muted-foreground bg-muted">Boss</th>
                   <th className="px-4 py-3 text-left text-sm font-semibold text-muted-foreground bg-muted">Slot</th>
@@ -502,6 +526,16 @@ export default function AdminLootItems() {
                         onChange={() => toggleAvailability(item.id, item.is_available)}
                         aria-label={`Toggle availability for ${item.name}`}
                         className="w-4 h-4 rounded border-border-strong bg-background-elevated accent-success cursor-pointer focus:ring-2 focus:ring-success/30 focus:ring-offset-0"
+                      />
+                    </td>
+                    <td className="px-4 py-3">
+                      <input
+                        type="checkbox"
+                        checked={item.is_loot_council}
+                        onChange={() => toggleLootCouncil(item.id, item.is_loot_council)}
+                        disabled={!item.is_available}
+                        aria-label={`Toggle Loot Council for ${item.name}`}
+                        className="w-4 h-4 rounded border-border-strong bg-background-elevated accent-accent cursor-pointer focus:ring-2 focus:ring-accent/30 focus:ring-offset-0 disabled:opacity-40 disabled:cursor-not-allowed"
                       />
                     </td>
                     <td className="px-4 py-3 text-foreground">

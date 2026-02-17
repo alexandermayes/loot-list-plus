@@ -23,6 +23,7 @@ interface Item {
   classification?: string
   consensus_count?: number  // Number of other guildmates who ranked this item
   dps_gain?: number  // Expected DPS/HPS gain from this item
+  is_loot_council?: boolean  // Item decided by loot council, not rankable
   loot_item_classes?: {
     class_id: string
     spec_id: string | null
@@ -231,9 +232,11 @@ export default function SearchableItemSelect({
               <span className="truncate">
                 <ItemLink name={selectedItem.name} wowheadId={selectedItem.wowhead_id} clickable={false} />
               </span>
-              {selectedItem.classification && selectedItem.classification !== 'Unlimited' && (
+              {selectedItem.is_loot_council ? (
+                <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-accent/20 text-accent flex-shrink-0">Loot Council</span>
+              ) : selectedItem.classification && selectedItem.classification !== 'Unlimited' ? (
                 <span className="text-xs text-muted-foreground flex-shrink-0">[{selectedItem.classification}]</span>
-              )}
+              ) : null}
             </>
           ) : (
             <span className="truncate">{placeholder}</span>
@@ -312,7 +315,8 @@ export default function SearchableItemSelect({
                   </div>
                   {/* Boss Items */}
                   {itemsByBoss[boss].map(item => {
-                    const isDisabled = disabled.has(item.id) && currentValue !== item.id
+                    const isLc = item.is_loot_council === true
+                    const isDisabled = (disabled.has(item.id) && currentValue !== item.id) || isLc
                     const isOwned = ownedWowheadIds.has(item.wowhead_id)
                     return (
                       <Button
@@ -335,28 +339,36 @@ export default function SearchableItemSelect({
                             <span className="truncate whitespace-nowrap">
                               <ItemLink name={item.name} wowheadId={item.wowhead_id} clickable={false} />
                             </span>
-                            {item.dps_gain && item.dps_gain > 0 && (
+                            {isLc ? (
                               <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-accent/20 text-accent flex-shrink-0">
-                                +{item.dps_gain.toLocaleString()} DPS
+                                Loot Council
                               </span>
-                            )}
-                            {isOwned && (
-                              <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-success/20 text-success flex-shrink-0">
-                                Owned
-                              </span>
-                            )}
-                            {item.consensus_count && item.consensus_count > 0 && (
-                              <span className="text-xs text-muted-foreground flex-shrink-0">
-                                {item.consensus_count} ranked
-                              </span>
-                            )}
-                            {item.classification && item.classification !== 'Unlimited' && (
-                              <span className="text-xs text-muted-foreground flex-shrink-0">
-                                [{item.classification}]
-                              </span>
+                            ) : (
+                              <>
+                                {item.dps_gain && item.dps_gain > 0 && (
+                                  <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-accent/20 text-accent flex-shrink-0">
+                                    +{item.dps_gain.toLocaleString()} DPS
+                                  </span>
+                                )}
+                                {isOwned && (
+                                  <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-success/20 text-success flex-shrink-0">
+                                    Owned
+                                  </span>
+                                )}
+                                {item.consensus_count && item.consensus_count > 0 && (
+                                  <span className="text-xs text-muted-foreground flex-shrink-0">
+                                    {item.consensus_count} ranked
+                                  </span>
+                                )}
+                                {item.classification && item.classification !== 'Unlimited' && (
+                                  <span className="text-xs text-muted-foreground flex-shrink-0">
+                                    [{item.classification}]
+                                  </span>
+                                )}
+                              </>
                             )}
                           </span>
-                          <ClassPrioritySubline lootItemClasses={item.loot_item_classes} />
+                          {!isLc && <ClassPrioritySubline lootItemClasses={item.loot_item_classes} />}
                         </span>
                         {value === item.id && (
                           <img

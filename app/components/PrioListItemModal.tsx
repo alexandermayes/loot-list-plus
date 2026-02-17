@@ -25,6 +25,7 @@ interface LootItem {
   wowhead_id: number
   classification: string
   is_available: boolean
+  is_loot_council?: boolean
 }
 
 interface ItemPriority {

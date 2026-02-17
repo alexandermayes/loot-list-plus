@@ -12,6 +12,7 @@ interface LootItem {
   item_slot: string
   wowhead_id: number
   raid_tier_id?: string
+  is_loot_council?: boolean
 }
 
 interface PlayerRanking {
@@ -108,7 +109,7 @@ export const BossSection = memo(function BossSection({
           {/* Mobile Cards */}
           <div className="sm:hidden border-t border-border divide-y divide-border">
             {items.map((ir) => (
-              <div key={ir.item.id} className={`px-4 py-3 space-y-2 ${ir.rankings.length === 0 ? 'bg-destructive/10' : ''}`}>
+              <div key={ir.item.id} className={`px-4 py-3 space-y-2 ${!ir.item.is_loot_council && ir.rankings.length === 0 ? 'bg-destructive/10' : ''}`}>
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
                     <ItemLink
@@ -119,7 +120,9 @@ export const BossSection = memo(function BossSection({
                     <p className="text-[11px] text-foreground-muted mt-0.5">{ir.item.item_slot}</p>
                   </div>
                 </div>
-                {ir.rankings.length > 0 ? (
+                {ir.item.is_loot_council ? (
+                  <span className="text-[11px] font-medium px-2 py-0.5 rounded bg-accent/20 text-accent">Loot Council</span>
+                ) : ir.rankings.length > 0 ? (
                   <div className="flex flex-wrap gap-x-3 gap-y-1">
                     {ir.rankings.slice(0, 5).map((ranking, index) => {
                       const isCurrentUser = activeCharacterId === ranking.character_id
@@ -207,7 +210,7 @@ const ItemRow = memo(function ItemRow({
   return (
     <tr
       id={`item-${ir.item.id}`}
-      className={`transition-colors hover:bg-muted ${ir.rankings.length === 0 ? 'bg-destructive/10' : ''}`}
+      className={`transition-colors hover:bg-muted ${!ir.item.is_loot_council && ir.rankings.length === 0 ? 'bg-destructive/10' : ''}`}
     >
       <td className="px-5 py-2.5">
         <ItemLink
@@ -219,50 +222,56 @@ const ItemRow = memo(function ItemRow({
       <td className="px-3 py-2.5 text-[12px] text-foreground-muted">
         {ir.item.item_slot}
       </td>
-      {[0, 1, 2, 3, 4].map((index) => {
-        const ranking = ir.rankings[index]
-        const isCurrentUser = ranking && activeCharacterId === ranking.character_id
-        const canCompare = isCurrentUser && index > 0 && ir.rankings[0]
-        return (
-          <td key={index} className="px-3 py-2.5 text-center">
-            {ranking ? (
-              <div
-                className={`flex flex-col items-center ${
-                  isCurrentUser ? 'relative' : ''
-                } ${
-                  canCompare ? 'cursor-pointer hover:bg-accent/10 rounded-lg p-1 -m-1 transition-colors' : ''
-                } ${
-                  !ranking.is_eligible ? 'opacity-50' : ''
-                }`}
-                onClick={canCompare && onCompare ? () => {
-                  onCompare(ir.item.name, ranking, ir.rankings[0])
-                } : undefined}
-              >
-                <span
-                  className={`text-[13px] font-medium ${isCurrentUser ? 'underline decoration-dotted underline-offset-2' : ''}`}
-                  style={{ color: ranking.class_color }}
+      {ir.item.is_loot_council ? (
+        <td colSpan={5} className="px-3 py-2.5 text-center">
+          <span className="text-[12px] font-medium px-2.5 py-0.5 rounded bg-accent/20 text-accent">Loot Council</span>
+        </td>
+      ) : (
+        [0, 1, 2, 3, 4].map((index) => {
+          const ranking = ir.rankings[index]
+          const isCurrentUser = ranking && activeCharacterId === ranking.character_id
+          const canCompare = isCurrentUser && index > 0 && ir.rankings[0]
+          return (
+            <td key={index} className="px-3 py-2.5 text-center">
+              {ranking ? (
+                <div
+                  className={`flex flex-col items-center ${
+                    isCurrentUser ? 'relative' : ''
+                  } ${
+                    canCompare ? 'cursor-pointer hover:bg-accent/10 rounded-lg p-1 -m-1 transition-colors' : ''
+                  } ${
+                    !ranking.is_eligible ? 'opacity-50' : ''
+                  }`}
+                  onClick={canCompare && onCompare ? () => {
+                    onCompare(ir.item.name, ranking, ir.rankings[0])
+                  } : undefined}
                 >
-                  {ranking.player_name}
-                  {ranking.is_trial && (
-                    <span className="text-warning text-[10px] ml-0.5" title="Trial member">(T)</span>
+                  <span
+                    className={`text-[13px] font-medium ${isCurrentUser ? 'underline decoration-dotted underline-offset-2' : ''}`}
+                    style={{ color: ranking.class_color }}
+                  >
+                    {ranking.player_name}
+                    {ranking.is_trial && (
+                      <span className="text-warning text-[10px] ml-0.5" title="Trial member">(T)</span>
+                    )}
+                    {!ranking.is_eligible && (
+                      <span className="text-destructive text-[10px] ml-0.5" title={`Ineligible: ${ranking.raids_attended}/${minimumRaidDays} raids attended`}>⊘</span>
+                    )}
+                  </span>
+                  <span className="text-[11px] text-foreground-muted">
+                    {ranking.loot_score.toFixed(decimalPlaces)}
+                  </span>
+                  {canCompare && (
+                    <span className="text-[10px] text-accent mt-0.5">Why?</span>
                   )}
-                  {!ranking.is_eligible && (
-                    <span className="text-destructive text-[10px] ml-0.5" title={`Ineligible: ${ranking.raids_attended}/${minimumRaidDays} raids attended`}>⊘</span>
-                  )}
-                </span>
-                <span className="text-[11px] text-foreground-muted">
-                  {ranking.loot_score.toFixed(decimalPlaces)}
-                </span>
-                {canCompare && (
-                  <span className="text-[10px] text-accent mt-0.5">Why?</span>
-                )}
-              </div>
-            ) : (
-              <span className="text-muted-foreground">—</span>
-            )}
-          </td>
-        )
-      })}
+                </div>
+              ) : (
+                <span className="text-muted-foreground">—</span>
+              )}
+            </td>
+          )
+        })
+      )}
     </tr>
   )
 })
