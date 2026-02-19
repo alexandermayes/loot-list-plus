@@ -494,8 +494,8 @@ export default function LootList() {
               allocationItems.push({ rank, slot: 1, itemId: item1Id, cost })
             }
 
-            // Track item types for duplicate detection
-            if (item.item_type) {
+            // Track item types for duplicate detection (skip tokens — different tokens are distinct items)
+            if (item.item_type && item.item_type !== 'Token') {
               if (!itemTypesInBracket[item.item_type]) {
                 itemTypesInBracket[item.item_type] = { count: 0, items: [] }
               }
@@ -525,8 +525,8 @@ export default function LootList() {
               allocationItems.push({ rank, slot: 2, itemId: item2Id, cost })
             }
 
-            // Track item types for duplicate detection
-            if (item.item_type) {
+            // Track item types for duplicate detection (skip tokens — different tokens are distinct items)
+            if (item.item_type && item.item_type !== 'Token') {
               if (!itemTypesInBracket[item.item_type]) {
                 itemTypesInBracket[item.item_type] = { count: 0, items: [] }
               }

@@ -93,8 +93,8 @@ export function canPlaceInBracket(
     return false
   }
 
-  // Rule 2: Check duplicate item_type
-  if (item.item_type && bracket.itemTypesUsed.has(item.item_type)) {
+  // Rule 2: Check duplicate item_type (skip for tokens — different tokens are distinct items)
+  if (item.item_type && item.item_type !== 'Token' && bracket.itemTypesUsed.has(item.item_type)) {
     return false
   }
 
@@ -140,7 +140,7 @@ export function placeInBracket(
 ): void {
   bracket.placements.set(`${rank}-${slot}`, item.id)
   bracket.currentPoints += item.allocation_cost || 0
-  if (item.item_type) {
+  if (item.item_type && item.item_type !== 'Token') {
     bracket.itemTypesUsed.add(item.item_type)
   }
   if (item.item_slot) {
