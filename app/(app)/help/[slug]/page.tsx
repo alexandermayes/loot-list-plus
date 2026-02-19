@@ -186,7 +186,7 @@ function Sidebar({
                     size="sm"
                     onClick={() => onNavigate(article.slug)}
                     className={cn(
-                      'w-full justify-start text-sm py-1.5 px-2',
+                      'w-full justify-start text-sm py-1.5 px-2 h-auto whitespace-normal text-left',
                       article.slug === currentSlug
                         ? 'bg-accent/10 text-accent font-medium'
                         : 'text-muted-foreground hover:text-foreground hover:bg-muted'
