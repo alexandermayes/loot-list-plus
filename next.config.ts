@@ -93,26 +93,14 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   // Redirect non-www getlootlist.com to www (canonical)
-  // The root page (/) shows a landing page on getlootlist.com via hostname-based routing in app/page.tsx
-  // All other paths on getlootlist.com redirect to lootlistplus.com
+  // The landing page is served on www.getlootlist.com via hostname-based routing in app/page.tsx
+  // App routes on getlootlist.com are behind auth so they naturally show login if accessed directly
   async redirects() {
     return [
       {
-        source: '/:path+',
+        source: '/:path*',
         has: [{ type: 'host', value: 'getlootlist.com' }],
-        destination: 'https://www.lootlistplus.com/:path+',
-        permanent: true,
-      },
-      {
-        source: '/:path+',
-        has: [{ type: 'host', value: 'www.getlootlist.com' }],
-        destination: 'https://www.lootlistplus.com/:path+',
-        permanent: true,
-      },
-      {
-        source: '/',
-        has: [{ type: 'host', value: 'getlootlist.com' }],
-        destination: 'https://www.getlootlist.com/',
+        destination: 'https://www.getlootlist.com/:path*',
         permanent: true,
       },
     ]
