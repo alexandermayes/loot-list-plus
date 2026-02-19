@@ -688,13 +688,14 @@ export default function LootList() {
           </div>
         </div>
 
-        {/* Phase Tabs - Sticky */}
+        {/* Sticky Header: Phase Tabs + Status Banner pinned together */}
+        <div className="sticky top-14 sm:top-0 z-20 bg-background">
         {isLoading ? (
-          <div className="sticky top-14 sm:top-0 z-20 px-4 sm:px-6 lg:px-8 py-1.5 bg-background">
+          <div className="px-4 sm:px-6 lg:px-8 py-1.5">
             <TierTabsSkeleton />
           </div>
         ) : phases.length > 0 && (
-          <div className="sticky top-14 sm:top-0 z-20 px-4 sm:px-6 lg:px-8 py-1.5 bg-background">
+          <div className="px-4 sm:px-6 lg:px-8 py-1.5">
             {/* Mobile: Dropdown selector */}
             <div className="sm:hidden">
               <Select
@@ -788,18 +789,9 @@ export default function LootList() {
           </div>
         )}
 
-        {/* Main Content - Flex container for loot list and sidebar */}
-        <div className="flex gap-6 px-4 sm:px-6 lg:px-8 pt-1.5 pb-6">
-        {/* Loot List Content */}
-        <div className={`flex-1 min-w-0 space-y-6 transition-all duration-300 ${showUnrankedPanel ? 'pr-0' : ''}`}>
-        {/* Content Loading State */}
-        {(isLoading || isContentLoading) ? (
-          <LootListContentSkeleton />
-        ) : (
-        <>
-        {/* Status Banner */}
-        {selectedPhase !== null && (
-          <div>
+        {/* Status Banner - inside sticky header */}
+        {!isLoading && !isContentLoading && selectedPhase !== null && (
+          <div className="px-4 sm:px-6 lg:px-8 pb-2">
             <div className={`rounded-xl p-4 sm:p-6 border ${submission ? getStatusColor(submission.status) : getStatusColor('draft')}`}>
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
@@ -910,7 +902,17 @@ export default function LootList() {
             </div>
           </div>
         )}
+        </div>
 
+        {/* Main Content - Flex container for loot list and sidebar */}
+        <div className="flex gap-6 px-4 sm:px-6 lg:px-8 pt-1.5 pb-6">
+        {/* Loot List Content */}
+        <div className={`flex-1 min-w-0 space-y-6 transition-all duration-300 ${showUnrankedPanel ? 'pr-0' : ''}`}>
+        {/* Content Loading State */}
+        {(isLoading || isContentLoading) ? (
+          <LootListContentSkeleton />
+        ) : (
+        <>
         {/* Deadline Warning */}
         {phaseDeadline && isPastDeadline() && (
           <div className="bg-yellow-900/50 border border-yellow-500 rounded-xl p-4 text-yellow-200">
