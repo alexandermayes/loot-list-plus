@@ -192,6 +192,7 @@ export default function LootList() {
     isSaving,
     isImportingBis,
     hasChanges,
+    originalStatus,
     setSelectedPhase,
     handleItemSelect,
     clearAllRankings,
@@ -323,10 +324,48 @@ export default function LootList() {
 
   // Legacy: Keep selectedItems for duplicate detection (checks ALL selected items)
   const selectedItems = useMemo(() => new Set(Object.values(rankings)), [rankings])
-  const duplicateItems = useMemo(() =>
-    Object.values(rankings).filter((itemId, index, arr) => arr.indexOf(itemId) !== index),
-    [rankings]
-  )
+  // Token-aware duplicate detection:
+  // Non-token items are duplicates if they appear anywhere more than once.
+  // Token items are only duplicates if they appear more than once within the SAME bracket section.
+  const duplicateItems = useMemo(() => {
+    const itemSlotMap = new Map(lootItems.map(item => [item.id, item.item_slot]))
+
+    // Track token appearances per bracket section
+    const bracket14Tokens: string[] = []
+    const noBracketTokens: string[] = []
+    const offSpecTokens: string[] = []
+    const nonTokenItemIds: string[] = []
+
+    Object.entries(rankings).forEach(([key, itemId]) => {
+      const rank = parseInt(key.split('-')[0])
+      const slot = itemSlotMap.get(itemId)
+      const isToken = slot ? isTokenSlot(slot) : false
+
+      if (isToken) {
+        if (rank >= 39) bracket14Tokens.push(itemId)
+        else if (rank >= 25) noBracketTokens.push(itemId)
+        else offSpecTokens.push(itemId)
+      } else {
+        nonTokenItemIds.push(itemId)
+      }
+    })
+
+    const dupes: string[] = []
+
+    // Non-token items: any global duplicate is an error
+    nonTokenItemIds.forEach((itemId, index, arr) => {
+      if (arr.indexOf(itemId) !== index) dupes.push(itemId)
+    })
+
+    // Token items: only flag duplicates within the same bracket section
+    ;[bracket14Tokens, noBracketTokens, offSpecTokens].forEach(sectionTokens => {
+      sectionTokens.forEach((itemId, index, arr) => {
+        if (arr.indexOf(itemId) !== index) dupes.push(itemId)
+      })
+    })
+
+    return dupes
+  }, [rankings, lootItems])
 
   // Filter items by spec type for different bracket sections
   // Items CASCADE down: Brackets 1-4 ⊆ No Bracket ⊆ Off-spec
@@ -848,7 +887,7 @@ export default function LootList() {
                       rankedCount === 0 ||
                       duplicateItems.length > 0 ||
                       hasValidationErrors ||
-                      (!hasChanges && (submission?.status === 'approved' || submission?.status === 'pending'))
+                      (!hasChanges && (originalStatus === 'approved' || originalStatus === 'pending'))
                     }
                     loading={isSaving}
                   >
@@ -884,7 +923,7 @@ export default function LootList() {
         {/* Duplicate Warning */}
         {duplicateItems.length > 0 && (
           <div className="bg-red-900/50 border border-red-500 rounded-xl p-4 text-red-300">
-            <strong>Warning:</strong> You have selected the same item multiple times. Each item can only appear once.
+            <strong>Warning:</strong> You have duplicate items in the same bracket section. Non-token items can only appear once. Tokens can appear once per section.
           </div>
         )}
 
