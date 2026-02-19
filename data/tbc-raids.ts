@@ -305,6 +305,7 @@ export const gruulslair: Raid = {
         { name: 'Gauntlets of the Dragonslayer', slot: 'Hands', wowhead_id: 28827 },
         { name: 'Gronn-Stitched Girdle', slot: 'Waist', wowhead_id: 28828 },
         { name: 'Dragonspine Trophy', slot: 'Trinket', wowhead_id: 28830 },
+        { name: 'Shuriken of Negation', slot: 'Thrown', wowhead_id: 28826 },
         // Tier 4 Leg Tokens
         { name: 'Leggings of the Fallen Hero', slot: 'Token', wowhead_id: 29765 },
         { name: 'Leggings of the Fallen Champion', slot: 'Token', wowhead_id: 29766 },
@@ -375,6 +376,9 @@ export const serpentshrinecavern: Raid = {
         { name: 'Living Root of the Wildheart', slot: 'Trinket', wowhead_id: 30664 },
         { name: 'Wraps of Purification', slot: 'Wrist', wowhead_id: 32516 },
         { name: 'Band of Vile Aggression', slot: 'Finger', wowhead_id: 33055 },
+        { name: 'Pendant of the Perilous', slot: 'Neck', wowhead_id: 30022 },
+        { name: 'Totem of the Maelstrom', slot: 'Relic', wowhead_id: 30023 },
+        { name: 'Serpentshrine Shuriken', slot: 'Thrown', wowhead_id: 30029 },
       ],
     },
     {
@@ -393,6 +397,8 @@ export const serpentshrinecavern: Raid = {
         { name: 'Velvet Boots of the Guardian', slot: 'Feet', wowhead_id: 30067 },
         { name: 'Earring of Soulful Meditation', slot: 'Trinket', wowhead_id: 30665 },
         { name: 'The Seal of Danzalar', slot: 'Finger', wowhead_id: 33054 },
+        { name: 'Boots of Courage Unending', slot: 'Feet', wowhead_id: 30098 },
+        { name: 'Spyglass of the Hidden Fleet', slot: 'Trinket', wowhead_id: 30001 },
       ],
     },
     {
@@ -408,6 +414,7 @@ export const serpentshrinecavern: Raid = {
         { name: 'Gloves of the Vanquished Hero', slot: 'Token', wowhead_id: 30240 },
         { name: 'Gloves of the Vanquished Champion', slot: 'Token', wowhead_id: 30241 },
         { name: 'Gloves of the Vanquished Defender', slot: 'Token', wowhead_id: 30239 },
+        { name: 'Wildfury Greatstaff', slot: 'Two-Hand', wowhead_id: 30883 },
       ],
     },
     {
@@ -527,6 +534,8 @@ export const tempestkeep: Raid = {
         { name: 'Solarian\'s Sapphire', slot: 'Trinket', wowhead_id: 30446 },
         { name: 'Void Star Talisman', slot: 'Trinket', wowhead_id: 30449 },
         { name: 'Boots of the Resilient', slot: 'Feet', wowhead_id: 32267 },
+        { name: 'Sunhawk Leggings', slot: 'Legs', wowhead_id: 30134 },
+        { name: 'Thalassian Wildercloak', slot: 'Back', wowhead_id: 30135 },
       ],
     },
     {
@@ -552,6 +561,8 @@ export const tempestkeep: Raid = {
         { name: 'Chestguard of the Vanquished Hero', slot: 'Token', wowhead_id: 30237 },
         { name: 'Chestguard of the Vanquished Champion', slot: 'Token', wowhead_id: 30238 },
         { name: 'Chestguard of the Vanquished Defender', slot: 'Token', wowhead_id: 30236 },
+        { name: 'The Nexus Key', slot: 'Main Hand', wowhead_id: 30095 },
+        { name: 'Royal Gauntlets of Silvermoon', slot: 'Hands', wowhead_id: 30106 },
       ],
     },
     {

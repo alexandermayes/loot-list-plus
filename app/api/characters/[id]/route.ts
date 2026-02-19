@@ -26,7 +26,10 @@ function validateCharacterName(name: string): { valid: boolean; error?: string; 
   }
 
   // Format: first letter uppercase, rest lowercase (like WoW)
-  const formatted = trimmed.charAt(0).toUpperCase() + trimmed.slice(1).toLowerCase()
+  // Guard against characters like ß where toUpperCase() expands to multiple chars (ß → SS)
+  const firstChar = trimmed.charAt(0)
+  const upperFirst = firstChar.toUpperCase()
+  const formatted = (upperFirst.length > 1 ? firstChar : upperFirst) + trimmed.slice(1).toLowerCase()
 
   return { valid: true, formatted }
 }
