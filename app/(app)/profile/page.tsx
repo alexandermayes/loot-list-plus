@@ -42,7 +42,6 @@ import { useAccentColor, ACCENT_COLORS, DEFAULT_ACCENT_COLOR } from '@/app/conte
 type TabId = 'account' | 'preferences' | 'guilds'
 
 export default function ProfilePage() {
-  const [user, setUser] = useState<any>(null)
   const [allGuilds, setAllGuilds] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<TabId>('account')
@@ -66,7 +65,7 @@ export default function ProfilePage() {
       setSelectedTheme(theme)
     }
   }, [theme, selectedTheme])
-  const { switchGuild } = useGuildContext()
+  const { switchGuild, user } = useGuildContext()
   const { showNotification } = useNotification()
   const { confirm, ConfirmDialog } = useConfirm()
   const supabase = createClient()
@@ -170,12 +169,7 @@ export default function ProfilePage() {
 
   useEffect(() => {
     const loadProfile = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) {
-        router.push('/')
-        return
-      }
-      setUser(user)
+      if (!user) return
 
       // Get all guild memberships from character-based system
       const { data: userCharacters } = await supabase
@@ -275,7 +269,7 @@ export default function ProfilePage() {
             <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 mt-1 text-[13px] text-muted-foreground">
               <div className="flex items-center gap-1.5">
                 <HugeiconsIcon icon={Calendar01Icon} size={14} />
-                <span>Member since {new Date(user?.created_at).toLocaleDateString()}</span>
+                <span>Member since {user?.created_at ? new Date(user.created_at).toLocaleDateString() : ''}</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <HugeiconsIcon icon={CheckmarkCircle01Icon} size={14} className="text-success" />

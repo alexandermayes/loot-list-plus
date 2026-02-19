@@ -108,7 +108,6 @@ export default function AdminLootItems() {
   const [classSpecs, setClassSpecs] = useState<ClassSpec[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [user, setUser] = useState<any>(null)
   const [member, setMember] = useState<any>(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('')
@@ -471,13 +470,6 @@ export default function AdminLootItems() {
     if (guildLoading) {
       return
     }
-
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) {
-      router.push('/')
-      return
-    }
-    setUser(user)
 
     // Check if officer using context
     if (!isOfficer) {

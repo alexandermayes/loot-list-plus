@@ -2,7 +2,6 @@
 
 import { createClient } from '@/utils/supabase/client'
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
 import { ProfileSettingsSkeleton } from '@/components/ui/skeletons'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { PageHeader } from '@/components/ui/page-header'
@@ -14,6 +13,7 @@ import { Input } from '@/components/ui/input'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { EyeIcon, ViewOffIcon, Notification01Icon, Shield01Icon, FloppyDiskIcon, CheckmarkCircle01Icon, RefreshIcon } from '@hugeicons/core-free-icons'
 import { useNotification } from '@/app/contexts/NotificationContext'
+import { useGuildContext } from '@/app/contexts/GuildContext'
 
 interface UserPreferences {
   show_discord_username: boolean
@@ -37,7 +37,7 @@ export default function SettingsPage() {
   const [verifying, setVerifying] = useState(false)
   const supabase = createClient()
   const { showNotification } = useNotification()
-  const router = useRouter()
+  const { user } = useGuildContext()
 
   // Check if form has unsaved changes
   const hasChanges = preferences && initialPreferences && (
@@ -56,11 +56,7 @@ export default function SettingsPage() {
   }, [])
 
   const loadPreferences = async () => {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) {
-      router.push('/')
-      return
-    }
+    if (!user) return
 
     const { data, error } = await supabase
       .from('user_preferences')
@@ -95,7 +91,6 @@ export default function SettingsPage() {
 
     setSaving(true)
 
-    const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
 
     const { error } = await supabase

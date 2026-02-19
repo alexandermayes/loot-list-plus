@@ -119,7 +119,7 @@ export default function RaidTrackingPage() {
 
   const supabase = createClient()
   const router = useRouter()
-  const { activeGuild, isOfficer, loading: guildLoading, currentExpansion } = useGuildContext()
+  const { activeGuild, isOfficer, loading: guildLoading, currentExpansion, user } = useGuildContext()
   const { showNotification } = useNotification()
   const { confirm, ConfirmDialog } = useConfirm()
 
@@ -153,12 +153,6 @@ export default function RaidTrackingPage() {
     if (guildLoading) return
 
     const loadData = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) {
-        router.push('/')
-        return
-      }
-
       if (!isOfficer) {
         router.push('/overview')
         return
@@ -1298,7 +1292,6 @@ export default function RaidTrackingPage() {
         return
       }
 
-      const { data: { user } } = await supabase.auth.getUser()
       const { data: eventData } = await supabase
         .from('raid_events')
         .select('raid_tier_id')
@@ -1511,9 +1504,6 @@ export default function RaidTrackingPage() {
     if (!showImportModal || !activeGuild) return
 
     setImporting(true)
-
-    // Get current user for awarded_by
-    const { data: { user } } = await supabase.auth.getUser()
 
     // Get the raid event to find the raid_tier_id
     const raidEvent = raidDates.find(r => r.id === showImportModal.raidId)

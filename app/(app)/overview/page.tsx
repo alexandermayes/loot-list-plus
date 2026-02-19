@@ -153,11 +153,10 @@ export default function Dashboard() {
 }
 
 function DashboardContent() {
-  const { activeGuild, activeMember, activeCharacter, userGuilds, loading: guildLoading, isOfficer, currentExpansion, characterMemberships } = useGuildContext()
+  const { activeGuild, activeMember, activeCharacter, userGuilds, loading: guildLoading, isOfficer, currentExpansion, characterMemberships, user } = useGuildContext()
   const { showNotification } = useNotification()
   const [raidTiers, setRaidTiers] = useState<RaidTier[]>([])
   const [loading, setLoading] = useState(true)
-  const [user, setUser] = useState<any>(null)
   const [error, setError] = useState<string | null>(null)
   const [greetingIndex, setGreetingIndex] = useState<number | null>(null)
   const [greetingName, setGreetingName] = useState<string>('')
@@ -284,21 +283,17 @@ function DashboardContent() {
 
   // Set greeting based on active character name (falls back to profile name)
   useEffect(() => {
-    const initGreeting = async () => {
-      if (greetingIndex === null) {
-        setGreetingIndex(getRandomGreetingIndex())
-      }
-      if (activeCharacter?.name) {
-        setGreetingName(activeCharacter.name)
-        return
-      }
-      const { data: { user } } = await supabase.auth.getUser()
-      if (user) {
-        setGreetingName(user?.user_metadata?.custom_claims?.global_name || user?.user_metadata?.full_name || user?.user_metadata?.name || 'User')
-      }
+    if (greetingIndex === null) {
+      setGreetingIndex(getRandomGreetingIndex())
     }
-    initGreeting()
-  }, [activeCharacter])
+    if (activeCharacter?.name) {
+      setGreetingName(activeCharacter.name)
+      return
+    }
+    if (user) {
+      setGreetingName(user?.user_metadata?.custom_claims?.global_name || user?.user_metadata?.full_name || user?.user_metadata?.name || 'User')
+    }
+  }, [activeCharacter, user])
 
   // Handle dismissing an action
   const handleDismissAction = (e: React.MouseEvent, submissionId: string) => {
@@ -320,13 +315,7 @@ function DashboardContent() {
 
   useEffect(() => {
     const loadData = async () => {
-      // Check if logged in
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) {
-        router.push('/')
-        return
-      }
-      setUser(user)
+      if (!user) return
 
       // Wait for guild context to load
       if (guildLoading) {
@@ -398,7 +387,7 @@ function DashboardContent() {
     }
 
     loadData().catch(console.error)
-  }, [guildLoading, activeGuild, activeCharacter, currentExpansion])
+  }, [user, guildLoading, activeGuild, activeCharacter, currentExpansion])
 
   // Function to load all dashboard data for current character
   const loadDashboardData = async (userId: string, guildId: string, currentExpansionTiers: RaidTier[], expansionId: string) => {

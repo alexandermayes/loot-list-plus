@@ -3,7 +3,6 @@
 import { createClient } from '@/utils/supabase/client'
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import type { User } from '@supabase/supabase-js'
 import { useGuildContext } from '@/app/contexts/GuildContext'
 import { useNotification } from '@/app/contexts/NotificationContext'
 import { SubmissionsListSkeleton, TierTabsSkeleton } from '@/components/ui/skeletons'
@@ -94,7 +93,6 @@ export default function MasterLootPage() {
   const [reviewing, setReviewing] = useState<string | null>(null)
   const [reviewNotes, setReviewNotes] = useState('')
   const [filter, setFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all')
-  const [user, setUser] = useState<User | null>(null)
   const [guildId, setGuildId] = useState<string | null>(null)
   const [viewingSubmission, setViewingSubmission] = useState<string | null>(null)
   const [submissionDetails, setSubmissionDetails] = useState<SubmissionDetailItem[]>([])
@@ -110,13 +108,6 @@ export default function MasterLootPage() {
 
   useEffect(() => {
     const loadData = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) {
-        router.push('/')
-        return
-      }
-      setUser(user)
-
       if (!guildLoading && !isOfficer) {
         router.push('/overview')
         return

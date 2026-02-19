@@ -23,7 +23,6 @@ const CreateGuildModal = dynamic(() => import('./CreateGuildModal').then(mod => 
 })
 
 interface SidebarProps {
-  user?: any
   currentView?: string
   onViewChange?: (view: string) => void
   isMobileOverlay?: boolean
@@ -32,10 +31,10 @@ interface SidebarProps {
 
 const MOBILE_SIDEBAR_WIDTH = 280
 
-export default function Sidebar({ user, currentView = 'overview', onViewChange, isMobileOverlay = false, onNavigate }: SidebarProps) {
+export default function Sidebar({ currentView = 'overview', onViewChange, isMobileOverlay = false, onNavigate }: SidebarProps) {
   const router = useRouter()
   const pathname = usePathname()
-  const { activeGuild, userGuilds, switchGuild, hasMultipleGuilds, isOfficer, activeMember, loading } = useGuildContext()
+  const { user, activeGuild, userGuilds, switchGuild, hasMultipleGuilds, isOfficer, activeMember, loading } = useGuildContext()
   const { sidebarWidth, setSidebarWidth, isResizing, setIsResizing, minWidth, maxWidth } = useSidebar()
   const { count: pendingSubmissionCount } = usePendingSubmissionCount(activeGuild?.id ?? null, isOfficer)
   const [guildDropdownOpen, setGuildDropdownOpen] = useState(false)

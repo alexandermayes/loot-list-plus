@@ -47,11 +47,11 @@ interface Member {
 
 export default function MemberManager() {
   const [roles, setRoles] = useState<GuildRole[]>([])
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null)
   const [guildCreatorId, setGuildCreatorId] = useState<string | null>(null)
 
   const supabase = createClient()
-  const { activeGuild } = useGuildContext()
+  const { activeGuild, user } = useGuildContext()
+  const currentUserId = user?.id ?? null
   const { showNotification } = useNotification()
   const { confirm, ConfirmDialog } = useConfirm()
 
@@ -75,15 +75,6 @@ export default function MemberManager() {
       discordName: m.discordName
     }))
   }, [membersData])
-
-  // Load current user
-  useEffect(() => {
-    const loadCurrentUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      setCurrentUserId(user?.id || null)
-    }
-    loadCurrentUser()
-  }, [])
 
   // Load guild creator
   useEffect(() => {

@@ -42,7 +42,7 @@ export default function PendingSubmissionsPage() {
 
   const supabase = createClient()
   const router = useRouter()
-  const { activeGuild, loading: guildLoading, isOfficer } = useGuildContext()
+  const { activeGuild, loading: guildLoading, isOfficer, user } = useGuildContext()
   const { showNotification } = useNotification()
   const { confirm, ConfirmDialog } = useConfirm()
 
@@ -154,9 +154,6 @@ export default function PendingSubmissionsPage() {
         .select('id, status, guild_id, character_id')
         .eq('id', submissionId)
         .single()
-
-      // Get current user ID
-      const { data: { user } } = await supabase.auth.getUser()
 
       // Check current user's membership/role in the submission's guild
       const { data: membershipData, error: membershipError } = await supabase

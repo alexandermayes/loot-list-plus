@@ -4,7 +4,6 @@ export const dynamic = 'force-dynamic'
 
 import { createClient } from '@/utils/supabase/client'
 import { useState, useEffect, useMemo, useCallback } from 'react'
-import { useRouter } from 'next/navigation'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { Calendar01Icon, ArrowDown01Icon, ArrowUp01Icon } from '@hugeicons/core-free-icons'
 import { Button } from '@/components/ui/button'
@@ -13,6 +12,7 @@ import { ErrorState } from '@/components/ui/error-state'
 import { Heading } from '@/components/ui/typography'
 import { calculateAttendanceScore, getRankModifier } from '@/utils/calculations'
 import { useNotification } from '@/app/contexts/NotificationContext'
+import { useGuildContext } from '@/app/contexts/GuildContext'
 
 interface RaidEvent {
   id: string
@@ -64,7 +64,7 @@ export default function AttendancePage() {
   const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [user, setUser] = useState<any>(null)
+  const { user } = useGuildContext()
   const [activeCharacter, setActiveCharacter] = useState<any>(null)
   const [guildId, setGuildId] = useState<string | null>(null)
   const [attendanceScore, setAttendanceScore] = useState(0)
@@ -89,7 +89,6 @@ export default function AttendancePage() {
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc')
 
   const supabase = createClient()
-  const router = useRouter()
   const { showNotification } = useNotification()
 
   // Set page title
@@ -166,14 +165,9 @@ export default function AttendancePage() {
 
   useEffect(() => {
     const loadData = async () => {
-      try {
-        const { data: { user } } = await supabase.auth.getUser()
-        if (!user) {
-          router.push('/')
-          return
-        }
-        setUser(user)
+      if (!user) return
 
+      try {
         // Get active character
         const { data: activeCharData } = await supabase
           .from('user_active_characters')
@@ -421,7 +415,7 @@ export default function AttendancePage() {
       setError("Couldn't load attendance data. Check your connection and try again.")
       setLoading(false)
     })
-  }, [])
+  }, [user])
 
   const loadGuildAttendance = async (guildId: string, raidEvents: RaidEvent[], settings: any) => {
     try {

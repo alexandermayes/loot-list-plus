@@ -98,6 +98,7 @@ export interface GuildExpansion {
 // Separate interface for data (changes frequently, triggers re-renders)
 export interface GuildDataContextType {
   // Existing State
+  user: User | null
   activeGuild: Guild | null
   activeMember: GuildMember | null
   userGuilds: GuildMembership[]
@@ -958,6 +959,7 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
   // Memoize data value to prevent unnecessary re-renders
   // This object changes when data state changes
   const dataValue = useMemo<GuildDataContextType>(() => ({
+    user,
     activeGuild,
     activeMember,
     userGuilds,
@@ -972,6 +974,7 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
     hasMultipleGuilds,
     hasMultipleCharacters
   }), [
+    user,
     activeGuild,
     activeMember,
     userGuilds,

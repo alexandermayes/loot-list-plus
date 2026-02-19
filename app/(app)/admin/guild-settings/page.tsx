@@ -1,6 +1,5 @@
 'use client'
 
-import { createClient } from '@/utils/supabase/client'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useGuildContext } from '@/app/contexts/GuildContext'
@@ -33,7 +32,6 @@ import { SecurityLockIcon } from '@hugeicons/core-free-icons'
 export default function GuildSettingsPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
-  const [user, setUser] = useState<any>(null)
 
   // Form state
   const [guildName, setGuildName] = useState('')
@@ -67,9 +65,8 @@ export default function GuildSettingsPage() {
   const [transferring, setTransferring] = useState(false)
   const [selectedNewOwner, setSelectedNewOwner] = useState<string>('')
 
-  const supabase = createClient()
   const router = useRouter()
-  const { activeGuild, loading: guildLoading, isOfficer, refreshGuilds } = useGuildContext()
+  const { activeGuild, loading: guildLoading, isOfficer, refreshGuilds, user } = useGuildContext()
   const { showNotification } = useNotification()
 
   // Fetch guild members for ownership transfer
@@ -91,13 +88,6 @@ export default function GuildSettingsPage() {
       }
 
       try {
-        const { data: { user } } = await supabase.auth.getUser()
-        if (!user) {
-          router.push('/')
-          return
-        }
-        setUser(user)
-
         // Check if officer using context
         if (!isOfficer) {
           router.push('/overview')
@@ -124,7 +114,7 @@ export default function GuildSettingsPage() {
         })
 
         // Check if user is the guild creator
-        setIsGuildCreator(activeGuild.created_by === user.id)
+        setIsGuildCreator(activeGuild.created_by === user!.id)
       } catch (error) {
         console.error('Error loading guild settings:', error)
       } finally {

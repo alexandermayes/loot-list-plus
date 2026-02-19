@@ -1,9 +1,7 @@
 'use client'
 
 import { usePathname } from 'next/navigation'
-import { useEffect, useState } from 'react'
-import { createClient } from '@/utils/supabase/client'
-import { useRouter } from 'next/navigation'
+import { useState } from 'react'
 import dynamic from 'next/dynamic'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -15,6 +13,7 @@ import { HugeiconsIcon } from '@hugeicons/react'
 import { Bug01Icon, Notification03Icon } from '@hugeicons/core-free-icons'
 import { SidebarProvider, useSidebar } from '@/app/contexts/SidebarContext'
 import { AccentColorProvider } from '@/app/contexts/AccentColorContext'
+import { useGuildContext } from '@/app/contexts/GuildContext'
 
 const FeedbackModal = dynamic(() => import('@/app/components/FeedbackModal').then(mod => ({ default: mod.FeedbackModal })), {
   loading: () => null
@@ -26,11 +25,8 @@ function AppLayoutContent({
   children: React.ReactNode
 }) {
   const pathname = usePathname()
-  const router = useRouter()
-  const [user, setUser] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
+  const { user, loading } = useGuildContext()
   const [showFeedbackModal, setShowFeedbackModal] = useState(false)
-  const supabase = createClient()
   const { sidebarWidth, isResizing, isMobile, isMobileMenuOpen, closeMobileMenu } = useSidebar()
 
   // Map pathname to currentView for sidebar highlighting
@@ -50,19 +46,6 @@ function AppLayoutContent({
     return ''
   }
 
-  useEffect(() => {
-    const checkAuth = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) {
-        router.push('/')
-        return
-      }
-      setUser(user)
-      setLoading(false)
-    }
-    checkAuth()
-  }, [router, supabase])
-
   if (loading) {
     return <LoadingSpinner fullScreen />
   }
@@ -71,7 +54,7 @@ function AppLayoutContent({
     <div className="min-h-screen bg-background-elevated">
       {/* Desktop Sidebar - hidden on mobile/tablet */}
       {!isMobile && (
-        <Sidebar user={user} currentView={getCurrentView()} />
+        <Sidebar currentView={getCurrentView()} />
       )}
 
       {/* Mobile/Tablet Sidebar Overlay */}
@@ -84,7 +67,7 @@ function AppLayoutContent({
             aria-hidden="true"
           />
           {/* Sidebar */}
-          <Sidebar user={user} currentView={getCurrentView()} isMobileOverlay onNavigate={closeMobileMenu} />
+          <Sidebar currentView={getCurrentView()} isMobileOverlay onNavigate={closeMobileMenu} />
         </>
       )}
 

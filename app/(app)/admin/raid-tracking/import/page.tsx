@@ -3,7 +3,6 @@
 import { createClient } from '@/utils/supabase/client'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import type { User } from '@supabase/supabase-js'
 import { useGuildContext } from '@/app/contexts/GuildContext'
 import { useNotification } from '@/app/contexts/NotificationContext'
 import { Heading } from '@/components/ui/typography'
@@ -13,7 +12,6 @@ import { Button } from '@/components/ui/button'
 
 export default function ImportPage() {
   const [loading, setLoading] = useState(false)
-  const [user, setUser] = useState<User | null>(null)
   const [guildId, setGuildId] = useState<string | null>(null)
   const [file, setFile] = useState<File | null>(null)
   const [importType, setImportType] = useState<'attendance' | 'loot_items' | 'members'>('attendance')
@@ -29,29 +27,18 @@ export default function ImportPage() {
   }, [])
 
   useEffect(() => {
-    const checkAuth = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) {
-        router.push('/')
-        return
-      }
-      setUser(user)
+    if (guildLoading) return
 
-      // Check if officer using context
-      if (!guildLoading && !isOfficer) {
-        router.push('/overview')
-        return
-      }
-
-      if (activeGuild) {
-        setGuildId(activeGuild.id)
-      }
+    // Check if officer using context
+    if (!isOfficer) {
+      router.push('/overview')
+      return
     }
 
-    if (!guildLoading) {
-      checkAuth()
+    if (activeGuild) {
+      setGuildId(activeGuild.id)
     }
-  }, [guildLoading, activeGuild])
+  }, [guildLoading, activeGuild, isOfficer])
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {

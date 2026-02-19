@@ -1,10 +1,9 @@
 'use client'
 
 import Image from 'next/image'
-import type { User } from '@supabase/supabase-js'
 import { createClient } from '@/utils/supabase/client'
 import { useState, useEffect, useRef, useCallback, useMemo, Suspense } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
 import { calculateAttendanceScore, getRankModifier, calculateLootScore, calculatePriorityBonus, getTrialPenalty, calculateBadLuckBonus, type ItemPriority } from '@/utils/calculations'
 import { getSpecRoles } from '@/utils/spec-role-mapping'
 import { getBossOrder, normalizeBossName } from '@/utils/bossOrder'
@@ -159,7 +158,6 @@ function MasterSheetContent() {
   const [initialLoading, setInitialLoading] = useState(true)
   const [contentLoading, setContentLoading] = useState(false)
   const [guildId, setGuildId] = useState<string | null>(null)
-  const [user, setUser] = useState<User | null>(null)
   const [member, setMember] = useState<MemberInfo | null>(null)
   const [guildSettings, setGuildSettings] = useState<GuildSettings | null>(null)
   const [raidTiers, setRaidTiers] = useState<RaidTier[]>([])
@@ -184,7 +182,6 @@ function MasterSheetContent() {
   const [aggregateBossFilter, setAggregateBossFilter] = useState<string | null>(null)
 
   const supabase = createClient()
-  const router = useRouter()
   const searchParams = useSearchParams()
   const scrollPendingRef = useRef<string | null>(null)
 
@@ -416,15 +413,6 @@ function MasterSheetContent() {
       if (guildLoading) {
         return
       }
-
-      const { data: { user } } = await supabase.auth.getUser()
-
-      if (!user) {
-        router.push('/')
-        return
-      }
-
-      setUser(user)
 
       if (!activeGuild) {
         setInitialLoading(false)

@@ -95,7 +95,6 @@ export default function AdminLootItems() {
   const [classes, setClasses] = useState<WowClass[]>([])
   const [classSpecs, setClassSpecs] = useState<ClassSpec[]>([])
   const [loading, setLoading] = useState(true)
-  const [user, setUser] = useState<any>(null)
   const [member, setMember] = useState<any>(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [filterTier, setFilterTier] = useState<string>('all')
@@ -172,13 +171,6 @@ export default function AdminLootItems() {
   }
 
   const loadData = async () => {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) {
-      router.push('/')
-      return
-    }
-    setUser(user)
-
     // Check if officer using context
     if (!isOfficer) {
       router.push('/overview')
