@@ -92,19 +92,27 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
-  // Redirect getlootlist.com traffic to lootlistplus.com (301 permanent)
+  // Redirect non-www getlootlist.com to www (canonical)
+  // The root page (/) shows a landing page on getlootlist.com via hostname-based routing in app/page.tsx
+  // All other paths on getlootlist.com redirect to lootlistplus.com
   async redirects() {
     return [
       {
-        source: '/:path*',
+        source: '/:path+',
         has: [{ type: 'host', value: 'getlootlist.com' }],
-        destination: 'https://www.lootlistplus.com/:path*',
+        destination: 'https://www.lootlistplus.com/:path+',
         permanent: true,
       },
       {
-        source: '/:path*',
+        source: '/:path+',
         has: [{ type: 'host', value: 'www.getlootlist.com' }],
-        destination: 'https://www.lootlistplus.com/:path*',
+        destination: 'https://www.lootlistplus.com/:path+',
+        permanent: true,
+      },
+      {
+        source: '/',
+        has: [{ type: 'host', value: 'getlootlist.com' }],
+        destination: 'https://www.getlootlist.com/',
         permanent: true,
       },
     ]
