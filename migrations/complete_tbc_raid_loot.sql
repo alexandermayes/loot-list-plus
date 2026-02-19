@@ -60,9 +60,9 @@ BEGIN
         IF v_raid_tier_id IS NOT NULL THEN
             INSERT INTO loot_items (raid_tier_id, name, boss_name, item_slot, wowhead_id, is_available)
             VALUES
-                (v_raid_tier_id, 'Chestguard of the Fallen Hero', 'Magtheridon', 'Token', 29755, true),
+                (v_raid_tier_id, 'Chestguard of the Fallen Hero', 'Magtheridon', 'Token', 29753, true),
                 (v_raid_tier_id, 'Chestguard of the Fallen Champion', 'Magtheridon', 'Token', 29754, true),
-                (v_raid_tier_id, 'Chestguard of the Fallen Defender', 'Magtheridon', 'Token', 29753, true),
+                (v_raid_tier_id, 'Chestguard of the Fallen Defender', 'Magtheridon', 'Token', 29755, true),
                 -- Pit Lord's Satchel (bag)
                 (v_raid_tier_id, 'Pit Lord''s Satchel', 'Magtheridon', 'Bag', 34845, true)
             ON CONFLICT DO NOTHING;
@@ -82,25 +82,25 @@ BEGIN
             -- Leotheras - T5 Glove Tokens
             INSERT INTO loot_items (raid_tier_id, name, boss_name, item_slot, wowhead_id, is_available)
             VALUES
-                (v_raid_tier_id, 'Gloves of the Vanquished Hero', 'Leotheras the Blind', 'Token', 30241, true),
-                (v_raid_tier_id, 'Gloves of the Vanquished Champion', 'Leotheras the Blind', 'Token', 30239, true),
-                (v_raid_tier_id, 'Gloves of the Vanquished Defender', 'Leotheras the Blind', 'Token', 30240, true)
+                (v_raid_tier_id, 'Gloves of the Vanquished Hero', 'Leotheras the Blind', 'Token', 30240, true),
+                (v_raid_tier_id, 'Gloves of the Vanquished Champion', 'Leotheras the Blind', 'Token', 30241, true),
+                (v_raid_tier_id, 'Gloves of the Vanquished Defender', 'Leotheras the Blind', 'Token', 30239, true)
             ON CONFLICT DO NOTHING;
 
             -- Karathress - T5 Leg Tokens
             INSERT INTO loot_items (raid_tier_id, name, boss_name, item_slot, wowhead_id, is_available)
             VALUES
-                (v_raid_tier_id, 'Leggings of the Vanquished Hero', 'Fathom-Lord Karathress', 'Token', 30247, true),
-                (v_raid_tier_id, 'Leggings of the Vanquished Champion', 'Fathom-Lord Karathress', 'Token', 30245, true),
-                (v_raid_tier_id, 'Leggings of the Vanquished Defender', 'Fathom-Lord Karathress', 'Token', 30246, true)
+                (v_raid_tier_id, 'Leggings of the Vanquished Hero', 'Fathom-Lord Karathress', 'Token', 30246, true),
+                (v_raid_tier_id, 'Leggings of the Vanquished Champion', 'Fathom-Lord Karathress', 'Token', 30247, true),
+                (v_raid_tier_id, 'Leggings of the Vanquished Defender', 'Fathom-Lord Karathress', 'Token', 30245, true)
             ON CONFLICT DO NOTHING;
 
             -- Lady Vashj - T5 Helm Tokens + Quest Item
             INSERT INTO loot_items (raid_tier_id, name, boss_name, item_slot, wowhead_id, is_available)
             VALUES
-                (v_raid_tier_id, 'Helm of the Vanquished Hero', 'Lady Vashj', 'Token', 30244, true),
-                (v_raid_tier_id, 'Helm of the Vanquished Champion', 'Lady Vashj', 'Token', 30242, true),
-                (v_raid_tier_id, 'Helm of the Vanquished Defender', 'Lady Vashj', 'Token', 30243, true),
+                (v_raid_tier_id, 'Helm of the Vanquished Hero', 'Lady Vashj', 'Token', 30243, true),
+                (v_raid_tier_id, 'Helm of the Vanquished Champion', 'Lady Vashj', 'Token', 30244, true),
+                (v_raid_tier_id, 'Helm of the Vanquished Defender', 'Lady Vashj', 'Token', 30242, true),
                 (v_raid_tier_id, 'Vashj''s Vial Remnant', 'Lady Vashj', 'Quest', 31544, true)
             ON CONFLICT DO NOTHING;
         END IF;
@@ -119,17 +119,17 @@ BEGIN
             -- Void Reaver - T5 Shoulder Tokens
             INSERT INTO loot_items (raid_tier_id, name, boss_name, item_slot, wowhead_id, is_available)
             VALUES
-                (v_raid_tier_id, 'Pauldrons of the Vanquished Hero', 'Void Reaver', 'Token', 30250, true),
-                (v_raid_tier_id, 'Pauldrons of the Vanquished Champion', 'Void Reaver', 'Token', 30248, true),
-                (v_raid_tier_id, 'Pauldrons of the Vanquished Defender', 'Void Reaver', 'Token', 30249, true)
+                (v_raid_tier_id, 'Pauldrons of the Vanquished Hero', 'Void Reaver', 'Token', 30249, true),
+                (v_raid_tier_id, 'Pauldrons of the Vanquished Champion', 'Void Reaver', 'Token', 30250, true),
+                (v_raid_tier_id, 'Pauldrons of the Vanquished Defender', 'Void Reaver', 'Token', 30248, true)
             ON CONFLICT DO NOTHING;
 
             -- Kael'thas - T5 Chest Tokens + Ashes of Al'ar + Quest Items
             INSERT INTO loot_items (raid_tier_id, name, boss_name, item_slot, wowhead_id, is_available)
             VALUES
-                (v_raid_tier_id, 'Chestguard of the Vanquished Hero', 'Kael''thas Sunstrider', 'Token', 30238, true),
-                (v_raid_tier_id, 'Chestguard of the Vanquished Champion', 'Kael''thas Sunstrider', 'Token', 30236, true),
-                (v_raid_tier_id, 'Chestguard of the Vanquished Defender', 'Kael''thas Sunstrider', 'Token', 30237, true),
+                (v_raid_tier_id, 'Chestguard of the Vanquished Hero', 'Kael''thas Sunstrider', 'Token', 30237, true),
+                (v_raid_tier_id, 'Chestguard of the Vanquished Champion', 'Kael''thas Sunstrider', 'Token', 30238, true),
+                (v_raid_tier_id, 'Chestguard of the Vanquished Defender', 'Kael''thas Sunstrider', 'Token', 30236, true),
                 -- Legendary Mount
                 (v_raid_tier_id, 'Ashes of Al''ar', 'Kael''thas Sunstrider', 'Mount', 32458, true),
                 -- Quest Items
