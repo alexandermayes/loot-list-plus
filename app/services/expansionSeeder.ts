@@ -6,6 +6,7 @@ import { TBC_ITEM_CLASSIFICATIONS } from '@/data/tbc-item-classifications'
 import { CLASSIC_ITEM_ROLES } from '@/data/classic-item-roles'
 import { TBC_ITEM_ROLES } from '@/data/tbc-item-roles'
 import { EXPANSION_PHASES, getExpansionSlug } from '@/data/expansion-phases'
+import { getTokenClasses, isTokenSlot } from '@/data/token-class-mapping'
 
 /**
  * Expansion Seeding Service
@@ -251,6 +252,9 @@ export async function seedExpansionForGuild(
     }
 
     // 3. Create raid tiers with their loot items
+    // Lazy-loaded class name -> id mapping for token class seeding
+    const classNameToId: Record<string, string> = {}
+
     for (const raid of expansionData.raids) {
 
       // Create the raid tier
@@ -307,13 +311,65 @@ export async function seedExpansionForGuild(
 
       // 5. Bulk insert all loot items for this raid tier
       if (lootItems.length > 0) {
-        const { error: lootError } = await supabase
+        const { data: insertedItems, error: lootError } = await supabase
           .from('loot_items')
           .insert(lootItems)
+          .select('id, name, item_slot')
 
         if (lootError) {
           console.error(`[SEEDER] Error inserting loot items for ${raid.name}:`, lootError)
           // Continue even if loot items fail - the raid tier structure is still created
+        }
+
+        // 6. Seed loot_item_classes for tokens (class restrictions for bracket placement)
+        if (insertedItems) {
+          const tokenItems = insertedItems.filter(item => isTokenSlot(item.item_slot))
+
+          if (tokenItems.length > 0) {
+            // Fetch wow_classes for name -> id mapping (lazy-load once)
+            if (Object.keys(classNameToId).length === 0) {
+              const { data: wowClasses } = await supabase
+                .from('wow_classes')
+                .select('id, name')
+              if (wowClasses) {
+                wowClasses.forEach(c => { classNameToId[c.name] = c.id })
+              }
+            }
+
+            const tokenClassEntries: Array<{
+              loot_item_id: string
+              class_id: string
+              spec_id: null
+              spec_type: 'primary'
+            }> = []
+
+            for (const token of tokenItems) {
+              const allowedClasses = getTokenClasses(token.name)
+              if (!allowedClasses) continue
+
+              for (const className of allowedClasses) {
+                const classId = classNameToId[className]
+                if (classId) {
+                  tokenClassEntries.push({
+                    loot_item_id: token.id,
+                    class_id: classId,
+                    spec_id: null,
+                    spec_type: 'primary'
+                  })
+                }
+              }
+            }
+
+            if (tokenClassEntries.length > 0) {
+              const { error: tokenClassError } = await supabase
+                .from('loot_item_classes')
+                .insert(tokenClassEntries)
+
+              if (tokenClassError) {
+                console.error(`[SEEDER] Error inserting token class mappings for ${raid.name}:`, tokenClassError)
+              }
+            }
+          }
         }
       }
     }

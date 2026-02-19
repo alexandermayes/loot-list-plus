@@ -448,6 +448,7 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
       // Build item lookup map with all fields needed for bracket validation
       const itemsById = new Map<string, BracketItem>()
       const validWowheadIds = new Map<string, number>() // id -> wowhead_id
+      const lcItemIds = new Set<string>() // Loot Council items (not rankable)
       for (const item of (itemsData?.items || [])) {
         itemsById.set(item.id, {
           id: item.id,
@@ -457,6 +458,7 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
           allocation_cost: item.allocation_cost,
         })
         validWowheadIds.set(item.id, item.wowhead_id)
+        if (item.is_loot_council) lcItemIds.add(item.id)
       }
 
       // Sort BIS items by priority (BIS first, then alt)
@@ -485,6 +487,9 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
 
         const item = itemsById.get(bisItem.loot_item_id)
         if (!item) continue
+
+        // Skip Loot Council items (not rankable by raiders)
+        if (lcItemIds.has(bisItem.loot_item_id)) continue
 
         // Try to find a valid slot in brackets first
         const bracketSlot = findNextValidSlot(item, bracketStates, enforceSlotRestrictions, itemsById)
