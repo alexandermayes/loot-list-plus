@@ -14,7 +14,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Select } from '@/components/ui/select'
 import { useConfirm } from '@/components/ui/confirm-modal'
-import { Heading } from '@/components/ui/typography'
+import { Heading, Text, LabelText } from '@/components/ui/typography'
 import { normalizeBossName } from '@/utils/bossOrder'
 import { getRaidIcon, getRaidShorthand } from '@/utils/raidIcons'
 import { StarFilledIcon, CheckFilledIcon, ClockFilledIcon, AlertFilledIcon, CancelFilledIcon } from '@/components/ui/icons'
@@ -1395,72 +1395,101 @@ export default function LootList() {
           <ModalHeader onClose={() => setShowInstructionsModal(false)}>
             <ModalTitle>How to rank</ModalTitle>
           </ModalHeader>
-          <ModalBody className="space-y-4">
-            {/* Core Structure */}
+          <ModalBody className="space-y-5">
+            {/* Overview */}
             <div>
-              <h4 className="text-foreground font-semibold text-sm mb-2">Core structure</h4>
-              <p className="text-muted-foreground text-sm">
-                The system uses <span className="font-semibold text-foreground">50 desirability levels</span> (Level 50 being most desirable),
-                with each level containing <span className="font-semibold text-foreground">2 item slots</span> divided into 6 brackets.
-              </p>
+              <LabelText size="xs" className="mb-2 block">Overview</LabelText>
+              <Text size="sm" color="muted">
+                The system uses <Text as="span" size="sm" weight="semibold" color="default">50 desirability levels</Text> (level 50 = most desirable),
+                with each level containing <Text as="span" size="sm" weight="semibold" color="default">2 item slots</Text>, divided into 6 brackets.
+              </Text>
             </div>
 
-            {/* Brackets */}
-            <div>
-              <h4 className="text-foreground font-semibold text-sm mb-2">Bracket framework</h4>
-              <ul className="text-muted-foreground text-sm space-y-1">
-                <li>• <span className="font-semibold text-destructive">Bracket 1:</span> Levels 50, 49, 48</li>
-                <li>• <span className="font-semibold text-accent">Bracket 2:</span> Levels 47, 46, 45</li>
-                <li>• <span className="font-semibold text-warning">Bracket 3:</span> Levels 44, 43, 42</li>
-                <li>• <span className="font-semibold text-yellow-400">Bracket 4:</span> Levels 41, 40, 39</li>
-                <li>• <span className="font-semibold text-success">No Bracket:</span> Levels 38-25 (Still main-spec priority)</li>
-                <li>• <span className="font-semibold text-info">Off-spec:</span> Levels 24-1 (Enhances guild flexibility)</li>
-              </ul>
+            {/* Bracket reference */}
+            <div className="bg-background-elevated border border-border rounded-xl overflow-hidden">
+              <div className="px-4 py-3 border-b border-border">
+                <LabelText size="xs">Bracket reference</LabelText>
+              </div>
+              <div className="divide-y divide-border">
+                {[
+                  { name: 'Bracket 1', levels: '50, 49, 48', color: 'bg-red-500', note: null },
+                  { name: 'Bracket 2', levels: '47, 46, 45', color: 'bg-accent', note: null },
+                  { name: 'Bracket 3', levels: '44, 43, 42', color: 'bg-yellow-500', note: null },
+                  { name: 'Bracket 4', levels: '41, 40, 39', color: 'bg-yellow-400', note: null },
+                  { name: 'No Bracket', levels: '38 – 25', color: 'bg-success', note: 'Main-spec priority' },
+                  { name: 'Off-spec', levels: '24 – 1', color: 'bg-info', note: 'Guild flexibility' },
+                ].map((bracket) => (
+                  <div key={bracket.name} className="flex items-center gap-3 px-4 py-2.5">
+                    <span className={`w-2.5 h-2.5 rounded-full ${bracket.color} shrink-0`} />
+                    <span className="text-sm font-semibold text-foreground w-24 shrink-0">{bracket.name}</span>
+                    <span className="text-sm text-muted-foreground font-mono">{bracket.levels}</span>
+                    {bracket.note && (
+                      <span className="text-xs text-muted-foreground ml-auto">{bracket.note}</span>
+                    )}
+                  </div>
+                ))}
+              </div>
+              <div className="px-4 py-3 bg-background-subtle border-t border-border flex items-center gap-3 flex-wrap">
+                <Text as="span" size="sm" color="muted">Max 3 pts per bracket:</Text>
+                <span className="flex items-center gap-1.5">
+                  <ClassificationBadge classification="Reserved" compact /> <Text as="span" size="xs" color="muted">= 1 pt</Text>
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <ClassificationBadge classification="Limited" compact /> <Text as="span" size="xs" color="muted">= 1 pt</Text>
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <ClassificationBadge classification="Unlimited" compact /> <Text as="span" size="xs" color="muted">= 0 pts</Text>
+                </span>
+              </div>
             </div>
 
-            {/* Key Rules */}
-            <div>
-              <h4 className="text-foreground font-semibold text-sm mb-2">Key rules (Brackets 1-4)</h4>
-              <ul className="text-muted-foreground text-sm space-y-2">
-                <li>
-                  <span className="font-semibold text-foreground">1. Allocation Point Limit:</span> Maximum 3 points per bracket.
-                  <ul className="ml-4 mt-1 space-y-0.5">
-                    <li>- <span className="text-destructive">Reserved items</span> cost 1 point</li>
-                    <li>- <span className="text-warning">Limited items</span> cost 1 point</li>
-                    <li>- <span className="text-success">Unlimited items</span> cost 0 points</li>
-                  </ul>
-                </li>
-                <li>
-                  <span className="font-semibold text-foreground">2. Type Restriction:</span> Brackets 1-4 may only contain 1 item of a type
-                  (no duplicate weapon types in same bracket).
-                </li>
-                <li>
-                  <span className="font-semibold text-foreground">3. Reserved Items:</span> Must be the sole entry at that desirability level
-                  (cannot have another item in the same rank).
-                </li>
-                <li>
-                  <span className="font-semibold text-foreground">4. Equal Priority:</span> Both item slots per level receive equal priority when filled.
-                </li>
-                <li>
-                  <span className="font-semibold text-foreground">5. Dual Weapons:</span> Two identical non-unique weapons are permitted if not hand-specific
-                  (e.g., two of the same dagger).
-                </li>
-                <li>
-                  <span className="font-semibold text-foreground">6. Off-spec Importance:</span> Completing off-spec selections enhances guild flexibility
-                  and is encouraged.
-                </li>
-              </ul>
+            {/* Rules for Brackets 1-4 */}
+            <div className="bg-background-elevated border border-border rounded-xl overflow-hidden">
+              <div className="px-4 py-3 border-b border-border">
+                <LabelText size="xs">Rules for Brackets 1-4</LabelText>
+              </div>
+              <div className="divide-y divide-border">
+                {[
+                  { num: 1, title: 'Allocation point limit', desc: 'Maximum 3 points per bracket. Reserved and Limited items cost 1 point each. Unlimited items cost 0.' },
+                  { num: 2, title: 'Type restriction', desc: 'Only 1 item of a given type per bracket. No duplicate weapon types in the same bracket.' },
+                  { num: 3, title: 'Reserved items', desc: 'Must be the sole entry at that desirability level. Cannot share a rank with another item.' },
+                  { num: 4, title: 'Equal priority', desc: 'Both item slots at a level receive equal priority when filled.' },
+                  { num: 5, title: 'Dual weapons', desc: 'Two identical non-unique weapons are allowed if not hand-specific (e.g., two of the same dagger).' },
+                  { num: 6, title: 'Off-spec importance', desc: 'Completing off-spec selections enhances guild flexibility and is encouraged.' },
+                ].map((rule) => (
+                  <div key={rule.num} className="flex items-start gap-3 px-4 py-3">
+                    <span className="flex items-center justify-center w-5 h-5 rounded-md bg-accent/15 text-accent text-xs font-bold shrink-0 mt-0.5">
+                      {rule.num}
+                    </span>
+                    <div>
+                      <Text as="span" size="sm" weight="semibold">{rule.title}</Text>
+                      <Text size="sm" color="muted" className="mt-0.5">{rule.desc}</Text>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
 
-            {/* Important Notes */}
-            <div className="bg-info/10 border border-info/30 rounded-xl p-4">
-              <h4 className="text-info font-semibold text-sm mb-2">Important notes</h4>
-              <ul className="text-info text-sm space-y-1">
-                <li>• Each item can only be selected once across all ranks</li>
-                <li>• Items in "No Bracket" don't guarantee unavailability - they indicate other classes receive priority</li>
-                <li>• <span className="text-destructive font-semibold">If your rank number is tied, you will roll</span></li>
-              </ul>
-            </div>
+            {/* Important notes */}
+            <Alert variant="info">
+              <AlertDescription>
+                <Text as="span" size="sm" weight="semibold" className="block mb-2">Important notes</Text>
+                <ul className="space-y-1.5 text-sm">
+                  <li className="flex items-start gap-2">
+                    <span className="mt-0.5 shrink-0">&bull;</span>
+                    <span>Each item can only be selected once across all ranks</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="mt-0.5 shrink-0">&bull;</span>
+                    <span>Items in &quot;No Bracket&quot; don&apos;t guarantee unavailability. They indicate other classes receive priority.</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="mt-0.5 shrink-0">&bull;</span>
+                    <span className="text-destructive font-semibold">If your rank number is tied, you will roll</span>
+                  </li>
+                </ul>
+              </AlertDescription>
+            </Alert>
           </ModalBody>
         </Modal>
 
