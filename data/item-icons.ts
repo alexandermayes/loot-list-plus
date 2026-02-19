@@ -814,6 +814,7 @@ export const ITEM_ICONS: Record<number, string> = {
   28823: 'spell_shadow_unholyfrenzy',
   28824: 'inv_gauntlets_31',
   28825: 'inv_shield_30',
+  28826: 'inv_misc_ahnqirajtrinket_03',
   28827: 'inv_gauntlets_25',
   28828: 'inv_belt_26',
   28830: 'inv_misc_bone_03',
