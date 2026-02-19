@@ -328,6 +328,10 @@ export default function LootList() {
   // Non-token items are duplicates if they appear anywhere more than once.
   // Token items are only duplicates if they appear more than once within the SAME bracket section.
   const duplicateItems = useMemo(() => {
+    // If loot items haven't loaded yet, we can't determine token vs non-token.
+    // Skip duplicate detection entirely to avoid false positives.
+    if (lootItems.length === 0) return []
+
     const itemSlotMap = new Map(lootItems.map(item => [item.id, item.item_slot]))
 
     // Track token appearances per bracket section
@@ -339,9 +343,12 @@ export default function LootList() {
     Object.entries(rankings).forEach(([key, itemId]) => {
       const rank = parseInt(key.split('-')[0])
       const slot = itemSlotMap.get(itemId)
-      const isToken = slot ? isTokenSlot(slot) : false
 
-      if (isToken) {
+      // If we can't resolve the item's slot (e.g. item not in current tier data),
+      // skip it rather than misclassifying it as a non-token
+      if (!slot) return
+
+      if (isTokenSlot(slot)) {
         if (rank >= 39) bracket14Tokens.push(itemId)
         else if (rank >= 25) noBracketTokens.push(itemId)
         else offSpecTokens.push(itemId)
@@ -792,7 +799,7 @@ export default function LootList() {
         <>
         {/* Status Banner */}
         {selectedPhase !== null && (
-          <div className="sticky top-14 sm:top-0 z-10 -mb-2 pb-2 bg-background/95 backdrop-blur-md">
+          <div>
             <div className={`rounded-xl p-4 sm:p-6 border ${submission ? getStatusColor(submission.status) : getStatusColor('draft')}`}>
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
