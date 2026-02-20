@@ -3,6 +3,8 @@ import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { TBC_BIS, type BisTierData, type BisItem } from '@/data/bis/tbc-bis'
 
+export const dynamic = 'force-dynamic'
+
 /**
  * Normalize raid tier names to match BIS data keys.
  * Database may have variations like "Tempest Keep: The Eye" but BIS data uses "Tempest Keep".

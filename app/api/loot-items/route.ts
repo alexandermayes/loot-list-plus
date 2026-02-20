@@ -14,6 +14,8 @@ import {
 import { getItemTypeInfo, inferArmorType, inferWeaponType } from '@/data/item-types'
 import { isTokenSlot, canClassUseToken } from '@/data/token-class-mapping'
 
+export const dynamic = 'force-dynamic'
+
 interface LootItemClassRestriction {
   class_id: string
   spec_id: string | null
