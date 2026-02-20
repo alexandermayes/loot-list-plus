@@ -339,9 +339,9 @@ export const magtheridonslair: Raid = {
         { name: 'Eye of Magtheridon', slot: 'Trinket', wowhead_id: 28789 },
         { name: 'Aegis of the Vindicator', slot: 'Off Hand', wowhead_id: 29458 },
         // Tier 4 Chest Tokens
-        { name: 'Chestguard of the Fallen Hero', slot: 'Token', wowhead_id: 29753 },
+        { name: 'Chestguard of the Fallen Hero', slot: 'Token', wowhead_id: 29755 },
         { name: 'Chestguard of the Fallen Champion', slot: 'Token', wowhead_id: 29754 },
-        { name: 'Chestguard of the Fallen Defender', slot: 'Token', wowhead_id: 29755 },
+        { name: 'Chestguard of the Fallen Defender', slot: 'Token', wowhead_id: 29753 },
         // Quest Item
         { name: 'Magtheridon\'s Head', slot: 'Quest', wowhead_id: 32385 },
         // 20-Slot Bag
@@ -411,9 +411,9 @@ export const serpentshrinecavern: Raid = {
         { name: 'Coral-Barbed Shoulderpads', slot: 'Shoulder', wowhead_id: 30097 },
         { name: 'Tsunami Talisman', slot: 'Trinket', wowhead_id: 30627 },
         // Tier 5 Glove Tokens
-        { name: 'Gloves of the Vanquished Hero', slot: 'Token', wowhead_id: 30240 },
-        { name: 'Gloves of the Vanquished Champion', slot: 'Token', wowhead_id: 30241 },
-        { name: 'Gloves of the Vanquished Defender', slot: 'Token', wowhead_id: 30239 },
+        { name: 'Gloves of the Vanquished Hero', slot: 'Token', wowhead_id: 30241 },
+        { name: 'Gloves of the Vanquished Champion', slot: 'Token', wowhead_id: 30239 },
+        { name: 'Gloves of the Vanquished Defender', slot: 'Token', wowhead_id: 30240 },
         { name: 'Wildfury Greatstaff', slot: 'Two-Hand', wowhead_id: 30883 },
       ],
     },
@@ -427,9 +427,9 @@ export const serpentshrinecavern: Raid = {
         { name: 'Sextant of Unstable Currents', slot: 'Trinket', wowhead_id: 30626 },
         { name: 'Fathom-Brooch of the Tidewalker', slot: 'Trinket', wowhead_id: 30663 },
         // Tier 5 Leg Tokens
-        { name: 'Leggings of the Vanquished Hero', slot: 'Token', wowhead_id: 30246 },
-        { name: 'Leggings of the Vanquished Champion', slot: 'Token', wowhead_id: 30247 },
-        { name: 'Leggings of the Vanquished Defender', slot: 'Token', wowhead_id: 30245 },
+        { name: 'Leggings of the Vanquished Hero', slot: 'Token', wowhead_id: 30247 },
+        { name: 'Leggings of the Vanquished Champion', slot: 'Token', wowhead_id: 30245 },
+        { name: 'Leggings of the Vanquished Defender', slot: 'Token', wowhead_id: 30246 },
       ],
     },
     {
@@ -466,9 +466,9 @@ export const serpentshrinecavern: Raid = {
         { name: 'Glorious Gauntlets of Crestfall', slot: 'Hands', wowhead_id: 30112 },
         { name: 'Prism of Inner Calm', slot: 'Trinket', wowhead_id: 30621 },
         // Tier 5 Helm Tokens
-        { name: 'Helm of the Vanquished Hero', slot: 'Token', wowhead_id: 30243 },
-        { name: 'Helm of the Vanquished Champion', slot: 'Token', wowhead_id: 30244 },
-        { name: 'Helm of the Vanquished Defender', slot: 'Token', wowhead_id: 30242 },
+        { name: 'Helm of the Vanquished Hero', slot: 'Token', wowhead_id: 30244 },
+        { name: 'Helm of the Vanquished Champion', slot: 'Token', wowhead_id: 30242 },
+        { name: 'Helm of the Vanquished Defender', slot: 'Token', wowhead_id: 30243 },
         // Quest Item
         { name: 'Vashj\'s Vial Remnant', slot: 'Quest', wowhead_id: 31544 },
       ],
@@ -513,9 +513,9 @@ export const tempestkeep: Raid = {
         { name: 'Fel Reaver\'s Piston', slot: 'Trinket', wowhead_id: 30619 },
         { name: 'Wristguards of Determination', slot: 'Wrist', wowhead_id: 32515 },
         // Tier 5 Shoulder Tokens
-        { name: 'Pauldrons of the Vanquished Hero', slot: 'Token', wowhead_id: 30249 },
-        { name: 'Pauldrons of the Vanquished Champion', slot: 'Token', wowhead_id: 30250 },
-        { name: 'Pauldrons of the Vanquished Defender', slot: 'Token', wowhead_id: 30248 },
+        { name: 'Pauldrons of the Vanquished Hero', slot: 'Token', wowhead_id: 30250 },
+        { name: 'Pauldrons of the Vanquished Champion', slot: 'Token', wowhead_id: 30248 },
+        { name: 'Pauldrons of the Vanquished Defender', slot: 'Token', wowhead_id: 30249 },
       ],
     },
     {
@@ -558,9 +558,9 @@ export const tempestkeep: Raid = {
         { name: 'Sunshower Light Cloak', slot: 'Back', wowhead_id: 30237 },
         { name: 'Rod of the Sun King', slot: 'Main Hand', wowhead_id: 29996 },
         // Tier 5 Chest Tokens
-        { name: 'Chestguard of the Vanquished Hero', slot: 'Token', wowhead_id: 30237 },
-        { name: 'Chestguard of the Vanquished Champion', slot: 'Token', wowhead_id: 30238 },
-        { name: 'Chestguard of the Vanquished Defender', slot: 'Token', wowhead_id: 30236 },
+        { name: 'Chestguard of the Vanquished Hero', slot: 'Token', wowhead_id: 30238 },
+        { name: 'Chestguard of the Vanquished Champion', slot: 'Token', wowhead_id: 30236 },
+        { name: 'Chestguard of the Vanquished Defender', slot: 'Token', wowhead_id: 30237 },
         { name: 'The Nexus Key', slot: 'Main Hand', wowhead_id: 30095 },
         { name: 'Royal Gauntlets of Silvermoon', slot: 'Hands', wowhead_id: 30106 },
       ],

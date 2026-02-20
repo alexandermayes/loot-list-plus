@@ -69,21 +69,21 @@ export const TBC_BIS: BisExpansionData = {
       'Neck': [{ wowhead_id: 28781, priority: 'alt' }]  // Karaborian Talisman
     },
     'Serpentshrine Cavern': {
-      'Head': [{ wowhead_id: 30244, priority: 'bis' }],  // Helm of the Vanquished Champion (T5 token)
+      'Head': [{ wowhead_id: 30242, priority: 'bis' }],  // Helm of the Vanquished Champion (T5 token)
       'Neck': [{ wowhead_id: 30018, priority: 'bis' }],  // Lord Sanguinar's Claim
-      'Shoulder': [{ wowhead_id: 30250, priority: 'bis' }],  // Pauldrons of the Vanquished Champion (T5 token)
-      'Chest': [{ wowhead_id: 30238, priority: 'bis' }],  // Chestguard of the Vanquished Champion (T5 token)
+      'Shoulder': [{ wowhead_id: 30248, priority: 'bis' }],  // Pauldrons of the Vanquished Champion (T5 token)
+      'Chest': [{ wowhead_id: 30236, priority: 'bis' }],  // Chestguard of the Vanquished Champion (T5 token)
       'Waist': [{ wowhead_id: 30038, priority: 'bis' }],  // Belt of One-Hundred Deaths
-      'Legs': [{ wowhead_id: 30247, priority: 'bis' }],  // Leggings of the Vanquished Champion (T5 token)
-      'Hands': [{ wowhead_id: 30241, priority: 'bis' }],  // Gloves of the Vanquished Champion (T5 token)
+      'Legs': [{ wowhead_id: 30245, priority: 'bis' }],  // Leggings of the Vanquished Champion (T5 token)
+      'Hands': [{ wowhead_id: 30239, priority: 'bis' }],  // Gloves of the Vanquished Champion (T5 token)
       'Trinket': [
         { wowhead_id: 30664, priority: 'bis' }  // Living Root of the Wildheart
       ]
     },
     'Tempest Keep': {
-      'Head': [{ wowhead_id: 30244, priority: 'bis' }],  // Helm of the Vanquished Champion (T5 token)
-      'Shoulder': [{ wowhead_id: 30250, priority: 'bis' }],  // Pauldrons of the Vanquished Champion (T5 token)
-      'Chest': [{ wowhead_id: 30238, priority: 'bis' }],  // Chestguard of the Vanquished Champion (T5 token)
+      'Head': [{ wowhead_id: 30242, priority: 'bis' }],  // Helm of the Vanquished Champion (T5 token)
+      'Shoulder': [{ wowhead_id: 30248, priority: 'bis' }],  // Pauldrons of the Vanquished Champion (T5 token)
+      'Chest': [{ wowhead_id: 30236, priority: 'bis' }],  // Chestguard of the Vanquished Champion (T5 token)
       'Wrist': [{ wowhead_id: 29918, priority: 'alt' }],  // Mindstorm Wristbands
       'Waist': [{ wowhead_id: 30038, priority: 'alt' }],  // Belt of Blasting (crafted, but useful)
       'Main Hand': [{ wowhead_id: 30723, priority: 'bis' }]  // Talon of the Phoenix
@@ -170,7 +170,7 @@ export const TBC_BIS: BisExpansionData = {
       'Neck': [{ wowhead_id: 30022, priority: 'bis' }],  // Pendant of the Perilous
       'Shoulder': [{ wowhead_id: 30055, priority: 'bis' }],  // Shoulderpads of the Stranger
       'Back': [{ wowhead_id: 30098, priority: 'bis' }],  // Razor-Scale Battlecloak
-      'Chest': [{ wowhead_id: 30238, priority: 'bis' }],  // Chestguard of the Vanquished Champion (T5 token)
+      'Chest': [{ wowhead_id: 30236, priority: 'bis' }],  // Chestguard of the Vanquished Champion (T5 token)
       'Wrist': [{ wowhead_id: 30057, priority: 'bis' }],  // Bracers of Eradication
       'Hands': [{ wowhead_id: 29947, priority: 'bis' }],  // Gloves of the Searing Grip
       'Waist': [{ wowhead_id: 30106, priority: 'bis' }],  // Belt of One-Hundred Deaths
@@ -191,9 +191,9 @@ export const TBC_BIS: BisExpansionData = {
       'Relic': [{ wowhead_id: 27484, priority: 'bis' }]  // Libram of Avengement
     },
     'Tempest Keep': {
-      'Head': [{ wowhead_id: 30244, priority: 'bis' }],  // Helm of the Vanquished Champion (T5 token)
-      'Shoulder': [{ wowhead_id: 30250, priority: 'bis' }],  // Pauldrons of the Vanquished Champion (T5 token)
-      'Chest': [{ wowhead_id: 30238, priority: 'bis' }],  // Chestguard of the Vanquished Champion (T5 token)
+      'Head': [{ wowhead_id: 30242, priority: 'bis' }],  // Helm of the Vanquished Champion (T5 token)
+      'Shoulder': [{ wowhead_id: 30248, priority: 'bis' }],  // Pauldrons of the Vanquished Champion (T5 token)
+      'Chest': [{ wowhead_id: 30236, priority: 'bis' }],  // Chestguard of the Vanquished Champion (T5 token)
       'Back': [{ wowhead_id: 30098, priority: 'bis' }],  // Razor-Scale Battlecloak
       'Trinket': [{ wowhead_id: 30627, priority: 'bis' }],  // Tsunami Talisman
       'Two-Hand': [{ wowhead_id: 30311, priority: 'bis' }]  // Warp Slicer
@@ -276,17 +276,17 @@ export const TBC_BIS: BisExpansionData = {
     },
     'Serpentshrine Cavern': {
       'Head': [
-        { wowhead_id: 30244, priority: 'bis' },  // Helm of the Vanquished Champion (T5 token)
+        { wowhead_id: 30242, priority: 'bis' },  // Helm of the Vanquished Champion (T5 token)
         { wowhead_id: 32473, priority: 'alt' }   // Tankatronic Goggles
       ],
       'Neck': [{ wowhead_id: 30007, priority: 'bis' }],  // The Darkener's Grasp
-      'Shoulder': [{ wowhead_id: 30250, priority: 'bis' }],  // Pauldrons of the Vanquished Champion (T5 token)
+      'Shoulder': [{ wowhead_id: 30248, priority: 'bis' }],  // Pauldrons of the Vanquished Champion (T5 token)
       'Back': [{ wowhead_id: 30084, priority: 'bis' }],  // Crimson Paragon's Cover
-      'Chest': [{ wowhead_id: 30238, priority: 'bis' }],  // Chestguard of the Vanquished Champion (T5 token)
+      'Chest': [{ wowhead_id: 30236, priority: 'bis' }],  // Chestguard of the Vanquished Champion (T5 token)
       'Wrist': [{ wowhead_id: 29463, priority: 'bis' }],  // Sha'tari Vindicator's Waistguard
-      'Hands': [{ wowhead_id: 30241, priority: 'bis' }],  // Gloves of the Vanquished Champion (T5 token)
+      'Hands': [{ wowhead_id: 30239, priority: 'bis' }],  // Gloves of the Vanquished Champion (T5 token)
       'Waist': [{ wowhead_id: 30096, priority: 'bis' }],  // Girdle of the Invulnerable
-      'Legs': [{ wowhead_id: 30247, priority: 'bis' }],  // Leggings of the Vanquished Champion (T5 token)
+      'Legs': [{ wowhead_id: 30245, priority: 'bis' }],  // Leggings of the Vanquished Champion (T5 token)
       'Feet': [{ wowhead_id: 30020, priority: 'bis' }],  // Fire Crest Breastplate
       'Finger': [
         { wowhead_id: 30834, priority: 'bis' },  // Shapeshifter's Signet
@@ -301,9 +301,9 @@ export const TBC_BIS: BisExpansionData = {
       'Relic': [{ wowhead_id: 27917, priority: 'bis' }]  // Libram of Repentance
     },
     'Tempest Keep': {
-      'Head': [{ wowhead_id: 30244, priority: 'bis' }],  // Helm of the Vanquished Champion (T5 token)
-      'Shoulder': [{ wowhead_id: 30250, priority: 'bis' }],  // Pauldrons of the Vanquished Champion (T5 token)
-      'Chest': [{ wowhead_id: 30238, priority: 'bis' }],  // Chestguard of the Vanquished Champion (T5 token)
+      'Head': [{ wowhead_id: 30242, priority: 'bis' }],  // Helm of the Vanquished Champion (T5 token)
+      'Shoulder': [{ wowhead_id: 30248, priority: 'bis' }],  // Pauldrons of the Vanquished Champion (T5 token)
+      'Chest': [{ wowhead_id: 30236, priority: 'bis' }],  // Chestguard of the Vanquished Champion (T5 token)
       'Trinket': [{ wowhead_id: 30629, priority: 'bis' }],  // Scarab of Displacement
       'Main Hand': [{ wowhead_id: 30058, priority: 'alt' }]  // Mallet of the Tides
     },
@@ -384,15 +384,15 @@ export const TBC_BIS: BisExpansionData = {
       'Neck': [{ wowhead_id: 28781, priority: 'alt' }]  // Karaborian Talisman
     },
     'Serpentshrine Cavern': {
-      'Head': [{ wowhead_id: 30244, priority: 'bis' }],  // Helm of the Vanquished Champion (T5 token)
+      'Head': [{ wowhead_id: 30242, priority: 'bis' }],  // Helm of the Vanquished Champion (T5 token)
       'Neck': [{ wowhead_id: 30018, priority: 'bis' }],  // Lord Sanguinar's Claim
-      'Shoulder': [{ wowhead_id: 30250, priority: 'bis' }],  // Pauldrons of the Vanquished Champion (T5 token)
+      'Shoulder': [{ wowhead_id: 30248, priority: 'bis' }],  // Pauldrons of the Vanquished Champion (T5 token)
       'Back': [{ wowhead_id: 30008, priority: 'bis' }],  // Devastation
-      'Chest': [{ wowhead_id: 30238, priority: 'bis' }],  // Chestguard of the Vanquished Champion (T5 token)
+      'Chest': [{ wowhead_id: 30236, priority: 'bis' }],  // Chestguard of the Vanquished Champion (T5 token)
       'Wrist': [{ wowhead_id: 29918, priority: 'bis' }],  // Mindstorm Wristbands
-      'Hands': [{ wowhead_id: 30241, priority: 'bis' }],  // Gloves of the Vanquished Champion (T5 token)
+      'Hands': [{ wowhead_id: 30239, priority: 'bis' }],  // Gloves of the Vanquished Champion (T5 token)
       'Waist': [{ wowhead_id: 30038, priority: 'bis' }],  // Belt of Blasting
-      'Legs': [{ wowhead_id: 30247, priority: 'bis' }],  // Leggings of the Vanquished Champion (T5 token)
+      'Legs': [{ wowhead_id: 30245, priority: 'bis' }],  // Leggings of the Vanquished Champion (T5 token)
       'Feet': [{ wowhead_id: 30037, priority: 'bis' }],  // Boots of Blasting
       'Finger': [
         { wowhead_id: 30109, priority: 'bis' },  // Ring of Endless Coils
@@ -407,9 +407,9 @@ export const TBC_BIS: BisExpansionData = {
       'Relic': [{ wowhead_id: 30023, priority: 'bis' }]  // Totem of the Maelstrom
     },
     'Tempest Keep': {
-      'Head': [{ wowhead_id: 30244, priority: 'bis' }],  // Helm of the Vanquished Champion (T5 token)
-      'Shoulder': [{ wowhead_id: 30250, priority: 'bis' }],  // Pauldrons of the Vanquished Champion (T5 token)
-      'Chest': [{ wowhead_id: 30238, priority: 'bis' }],  // Chestguard of the Vanquished Champion (T5 token)
+      'Head': [{ wowhead_id: 30242, priority: 'bis' }],  // Helm of the Vanquished Champion (T5 token)
+      'Shoulder': [{ wowhead_id: 30248, priority: 'bis' }],  // Pauldrons of the Vanquished Champion (T5 token)
+      'Chest': [{ wowhead_id: 30236, priority: 'bis' }],  // Chestguard of the Vanquished Champion (T5 token)
       'Main Hand': [{ wowhead_id: 30723, priority: 'bis' }],  // Talon of the Phoenix
       'Off Hand': [{ wowhead_id: 30049, priority: 'alt' }]  // Fathomstone
     },
@@ -493,23 +493,23 @@ export const TBC_BIS: BisExpansionData = {
     },
     'Serpentshrine Cavern': {
       'Head': [
-        { wowhead_id: 30244, priority: 'bis' },  // Helm of the Vanquished Champion (T5 token)
+        { wowhead_id: 30242, priority: 'bis' },  // Helm of the Vanquished Champion (T5 token)
         { wowhead_id: 29035, priority: 'alt' }   // Cyclone Faceguard (T4)
       ],
       'Neck': [{ wowhead_id: 30015, priority: 'bis' }],  // The Sun King's Talisman
       'Shoulder': [
-        { wowhead_id: 30250, priority: 'bis' },  // Pauldrons of the Vanquished Champion (T5 token)
+        { wowhead_id: 30248, priority: 'bis' },  // Pauldrons of the Vanquished Champion (T5 token)
         { wowhead_id: 29037, priority: 'alt' }   // Cyclone Shoulderguards (T4)
       ],
       'Back': [{ wowhead_id: 29992, priority: 'bis' }],  // Royal Cloak of the Sunstriders
       'Chest': [
-        { wowhead_id: 30238, priority: 'bis' },  // Chestguard of the Vanquished Champion (T5 token)
+        { wowhead_id: 30236, priority: 'bis' },  // Chestguard of the Vanquished Champion (T5 token)
         { wowhead_id: 30107, priority: 'alt' }   // Vestments of the Sea-Witch
       ],
       'Wrist': [{ wowhead_id: 29918, priority: 'bis' }],  // Mindstorm Wristbands
-      'Hands': [{ wowhead_id: 30241, priority: 'bis' }],  // Gloves of the Vanquished Champion (T5 token)
+      'Hands': [{ wowhead_id: 30239, priority: 'bis' }],  // Gloves of the Vanquished Champion (T5 token)
       'Waist': [{ wowhead_id: 30038, priority: 'bis' }],  // Belt of Blasting
-      'Legs': [{ wowhead_id: 30247, priority: 'bis' }],  // Leggings of the Vanquished Champion (T5 token)
+      'Legs': [{ wowhead_id: 30245, priority: 'bis' }],  // Leggings of the Vanquished Champion (T5 token)
       'Feet': [{ wowhead_id: 30037, priority: 'bis' }],  // Boots of Blasting
       'Finger': [
         { wowhead_id: 30109, priority: 'bis' },  // Ring of Endless Coils
@@ -524,9 +524,9 @@ export const TBC_BIS: BisExpansionData = {
       'Relic': [{ wowhead_id: 29389, priority: 'bis' }]  // Totem of the Void
     },
     'Tempest Keep': {
-      'Head': [{ wowhead_id: 30244, priority: 'bis' }],  // Helm of the Vanquished Champion (T5 token)
-      'Shoulder': [{ wowhead_id: 30250, priority: 'bis' }],  // Pauldrons of the Vanquished Champion (T5 token)
-      'Chest': [{ wowhead_id: 30238, priority: 'bis' }],  // Chestguard of the Vanquished Champion (T5 token)
+      'Head': [{ wowhead_id: 30242, priority: 'bis' }],  // Helm of the Vanquished Champion (T5 token)
+      'Shoulder': [{ wowhead_id: 30248, priority: 'bis' }],  // Pauldrons of the Vanquished Champion (T5 token)
+      'Chest': [{ wowhead_id: 30236, priority: 'bis' }],  // Chestguard of the Vanquished Champion (T5 token)
       'Trinket': [{ wowhead_id: 30626, priority: 'bis' }],  // Sextant of Unstable Currents
       'Main Hand': [{ wowhead_id: 30723, priority: 'bis' }]  // Talon of the Phoenix
     },
@@ -610,13 +610,13 @@ export const TBC_BIS: BisExpansionData = {
       'Back': [{ wowhead_id: 28797, priority: 'alt' }]  // Cloak of the Pit Stalker
     },
     'Serpentshrine Cavern': {
-      'Head': [{ wowhead_id: 30244, priority: 'bis' }],  // Helm of the Vanquished Champion (T5 token)
+      'Head': [{ wowhead_id: 30242, priority: 'bis' }],  // Helm of the Vanquished Champion (T5 token)
       'Neck': [{ wowhead_id: 30017, priority: 'bis' }],  // Telonicus's Pendant of Mayhem
       'Shoulder': [{ wowhead_id: 30055, priority: 'bis' }],  // Shoulderpads of the Stranger
       'Back': [{ wowhead_id: 29994, priority: 'bis' }],  // Thalassian Wildercloak
-      'Chest': [{ wowhead_id: 30238, priority: 'bis' }],  // Chestguard of the Vanquished Champion (T5 token)
+      'Chest': [{ wowhead_id: 30236, priority: 'bis' }],  // Chestguard of the Vanquished Champion (T5 token)
       'Wrist': [{ wowhead_id: 29966, priority: 'bis' }],  // Vambraces of Ending
-      'Hands': [{ wowhead_id: 30241, priority: 'bis' }],  // Gloves of the Vanquished Champion (T5 token)
+      'Hands': [{ wowhead_id: 30239, priority: 'bis' }],  // Gloves of the Vanquished Champion (T5 token)
       'Waist': [{ wowhead_id: 30106, priority: 'bis' }],  // Belt of One-Hundred Deaths
       'Legs': [{ wowhead_id: 29995, priority: 'bis' }],  // Leggings of Murderous Intent
       'Feet': [{ wowhead_id: 30104, priority: 'bis' }],  // Cobra-Lash Boots
@@ -633,9 +633,9 @@ export const TBC_BIS: BisExpansionData = {
       'Relic': [{ wowhead_id: 27815, priority: 'bis' }]  // Totem of the Astral Winds
     },
     'Tempest Keep': {
-      'Head': [{ wowhead_id: 30244, priority: 'bis' }],  // Helm of the Vanquished Champion (T5 token)
-      'Shoulder': [{ wowhead_id: 30250, priority: 'bis' }],  // Pauldrons of the Vanquished Champion (T5 token)
-      'Chest': [{ wowhead_id: 30238, priority: 'bis' }],  // Chestguard of the Vanquished Champion (T5 token)
+      'Head': [{ wowhead_id: 30242, priority: 'bis' }],  // Helm of the Vanquished Champion (T5 token)
+      'Shoulder': [{ wowhead_id: 30248, priority: 'bis' }],  // Pauldrons of the Vanquished Champion (T5 token)
+      'Chest': [{ wowhead_id: 30236, priority: 'bis' }],  // Chestguard of the Vanquished Champion (T5 token)
       'Trinket': [{ wowhead_id: 30627, priority: 'bis' }],  // Tsunami Talisman
       'Main Hand': [{ wowhead_id: 30311, priority: 'bis' }],  // Warp Slicer
       'Off Hand': [{ wowhead_id: 30312, priority: 'bis' }]  // Infinity Blade
@@ -713,19 +713,19 @@ export const TBC_BIS: BisExpansionData = {
       'Legs': [{ wowhead_id: 29767, priority: 'bis' }]  // Leggings of the Fallen Defender (T4 token)
     },
     "Magtheridon's Lair": {
-      'Chest': [{ wowhead_id: 29755, priority: 'bis' }],  // Chestguard of the Fallen Defender (T4 token)
+      'Chest': [{ wowhead_id: 29753, priority: 'bis' }],  // Chestguard of the Fallen Defender (T4 token)
       'Neck': [{ wowhead_id: 28781, priority: 'alt' }]  // Karaborian Talisman
     },
     'Serpentshrine Cavern': {
-      'Head': [{ wowhead_id: 30242, priority: 'bis' }],  // Helm of the Vanquished Defender (T5 token)
+      'Head': [{ wowhead_id: 30243, priority: 'bis' }],  // Helm of the Vanquished Defender (T5 token)
       'Neck': [{ wowhead_id: 30018, priority: 'bis' }],  // Lord Sanguinar's Claim
-      'Shoulder': [{ wowhead_id: 30248, priority: 'bis' }],  // Pauldrons of the Vanquished Defender (T5 token)
+      'Shoulder': [{ wowhead_id: 30249, priority: 'bis' }],  // Pauldrons of the Vanquished Defender (T5 token)
       'Back': [{ wowhead_id: 30008, priority: 'bis' }],  // Devastation
-      'Chest': [{ wowhead_id: 30236, priority: 'bis' }],  // Chestguard of the Vanquished Defender (T5 token)
+      'Chest': [{ wowhead_id: 30237, priority: 'bis' }],  // Chestguard of the Vanquished Defender (T5 token)
       'Wrist': [{ wowhead_id: 29918, priority: 'bis' }],  // Mindstorm Wristbands
-      'Hands': [{ wowhead_id: 30239, priority: 'bis' }],  // Gloves of the Vanquished Defender (T5 token)
+      'Hands': [{ wowhead_id: 30240, priority: 'bis' }],  // Gloves of the Vanquished Defender (T5 token)
       'Waist': [{ wowhead_id: 30038, priority: 'bis' }],  // Belt of Blasting
-      'Legs': [{ wowhead_id: 30245, priority: 'bis' }],  // Leggings of the Vanquished Defender (T5 token)
+      'Legs': [{ wowhead_id: 30246, priority: 'bis' }],  // Leggings of the Vanquished Defender (T5 token)
       'Feet': [{ wowhead_id: 30037, priority: 'bis' }],  // Boots of Blasting
       'Finger': [
         { wowhead_id: 30109, priority: 'bis' },  // Ring of Endless Coils
@@ -740,9 +740,9 @@ export const TBC_BIS: BisExpansionData = {
       'Relic': [{ wowhead_id: 28568, priority: 'bis' }]  // Idol of the Avian Heart
     },
     'Tempest Keep': {
-      'Head': [{ wowhead_id: 30242, priority: 'bis' }],  // Helm of the Vanquished Defender (T5 token)
-      'Shoulder': [{ wowhead_id: 30248, priority: 'bis' }],  // Pauldrons of the Vanquished Defender (T5 token)
-      'Chest': [{ wowhead_id: 30236, priority: 'bis' }],  // Chestguard of the Vanquished Defender (T5 token)
+      'Head': [{ wowhead_id: 30243, priority: 'bis' }],  // Helm of the Vanquished Defender (T5 token)
+      'Shoulder': [{ wowhead_id: 30249, priority: 'bis' }],  // Pauldrons of the Vanquished Defender (T5 token)
+      'Chest': [{ wowhead_id: 30237, priority: 'bis' }],  // Chestguard of the Vanquished Defender (T5 token)
       'Main Hand': [{ wowhead_id: 30723, priority: 'bis' }],  // Talon of the Phoenix
       'Off Hand': [{ wowhead_id: 30049, priority: 'alt' }]  // Fathomstone
     },
@@ -796,7 +796,7 @@ export const TBC_BIS: BisExpansionData = {
       'Neck': [{ wowhead_id: 28674, priority: 'bis' }],  // Saberclaw Talisman
       'Shoulder': [{ wowhead_id: 28631, priority: 'bis' }],  // Dragon-Quake Shoulderguards
       'Back': [{ wowhead_id: 28672, priority: 'bis' }],  // Drape of the Dark Reavers
-      'Chest': [{ wowhead_id: 29755, priority: 'bis' }],  // Chestguard of the Fallen Defender (T4 token)
+      'Chest': [{ wowhead_id: 29753, priority: 'bis' }],  // Chestguard of the Fallen Defender (T4 token)
       'Wrist': [{ wowhead_id: 28453, priority: 'bis' }],  // Bracers of the White Stag
       'Hands': [{ wowhead_id: 28506, priority: 'bis' }],  // Gloves of Dexterous Manipulation
       'Waist': [{ wowhead_id: 28656, priority: 'bis' }],  // Girdle of the Prowler
@@ -821,7 +821,7 @@ export const TBC_BIS: BisExpansionData = {
       'Two-Hand': [{ wowhead_id: 28794, priority: 'bis' }]  // Axe of the Gronn Lords (for bear)
     },
     "Magtheridon's Lair": {
-      'Chest': [{ wowhead_id: 29755, priority: 'bis' }],  // Chestguard of the Fallen Defender (T4 token)
+      'Chest': [{ wowhead_id: 29753, priority: 'bis' }],  // Chestguard of the Fallen Defender (T4 token)
       'Back': [{ wowhead_id: 28797, priority: 'alt' }]  // Cloak of the Pit Stalker
     },
     'Serpentshrine Cavern': {
@@ -831,7 +831,7 @@ export const TBC_BIS: BisExpansionData = {
       'Back': [{ wowhead_id: 29994, priority: 'bis' }],  // Thalassian Wildercloak
       'Chest': [{ wowhead_id: 30101, priority: 'bis' }],  // Bloodsea Brigand's Vest
       'Wrist': [{ wowhead_id: 29966, priority: 'bis' }],  // Vambraces of Ending
-      'Hands': [{ wowhead_id: 30239, priority: 'bis' }],  // Gloves of the Vanquished Defender (T5 token)
+      'Hands': [{ wowhead_id: 30240, priority: 'bis' }],  // Gloves of the Vanquished Defender (T5 token)
       'Waist': [{ wowhead_id: 30106, priority: 'bis' }],  // Belt of One-Hundred Deaths
       'Legs': [{ wowhead_id: 29995, priority: 'bis' }],  // Leggings of Murderous Intent
       'Feet': [{ wowhead_id: 30104, priority: 'bis' }],  // Cobra-Lash Boots
@@ -847,9 +847,9 @@ export const TBC_BIS: BisExpansionData = {
       'Relic': [{ wowhead_id: 28372, priority: 'bis' }]  // Idol of the Wild
     },
     'Tempest Keep': {
-      'Head': [{ wowhead_id: 30242, priority: 'bis' }],  // Helm of the Vanquished Defender (T5 token)
-      'Shoulder': [{ wowhead_id: 30248, priority: 'bis' }],  // Pauldrons of the Vanquished Defender (T5 token)
-      'Chest': [{ wowhead_id: 30236, priority: 'bis' }],  // Chestguard of the Vanquished Defender (T5 token)
+      'Head': [{ wowhead_id: 30243, priority: 'bis' }],  // Helm of the Vanquished Defender (T5 token)
+      'Shoulder': [{ wowhead_id: 30249, priority: 'bis' }],  // Pauldrons of the Vanquished Defender (T5 token)
+      'Chest': [{ wowhead_id: 30237, priority: 'bis' }],  // Chestguard of the Vanquished Defender (T5 token)
       'Trinket': [{ wowhead_id: 30627, priority: 'bis' }],  // Tsunami Talisman
       'Two-Hand': [{ wowhead_id: 30318, priority: 'bis' }]  // Netherstrand Longbow (for stat stick)
     },
@@ -902,7 +902,7 @@ export const TBC_BIS: BisExpansionData = {
       'Neck': [{ wowhead_id: 28762, priority: 'bis' }],  // Adornment of Stolen Souls
       'Shoulder': [{ wowhead_id: 28726, priority: 'bis' }],  // Mantle of the Mind Flayer
       'Back': [{ wowhead_id: 28766, priority: 'bis' }],  // Ruby Drape of the Mysticant
-      'Chest': [{ wowhead_id: 29755, priority: 'bis' }],  // Chestguard of the Fallen Defender (T4 token)
+      'Chest': [{ wowhead_id: 29753, priority: 'bis' }],  // Chestguard of the Fallen Defender (T4 token)
       'Wrist': [{ wowhead_id: 28515, priority: 'bis' }],  // Bands of Nefarious Deeds
       'Hands': [{ wowhead_id: 28521, priority: 'bis' }],  // Mitts of the Treemender
       'Waist': [{ wowhead_id: 28654, priority: 'bis' }],  // Malefic Girdle
@@ -925,19 +925,19 @@ export const TBC_BIS: BisExpansionData = {
       'Trinket': [{ wowhead_id: 28830, priority: 'alt' }]  // Dragonspine Trophy
     },
     "Magtheridon's Lair": {
-      'Chest': [{ wowhead_id: 29755, priority: 'bis' }],  // Chestguard of the Fallen Defender (T4 token)
+      'Chest': [{ wowhead_id: 29753, priority: 'bis' }],  // Chestguard of the Fallen Defender (T4 token)
       'Trinket': [{ wowhead_id: 28789, priority: 'bis' }]  // Eye of Magtheridon
     },
     'Serpentshrine Cavern': {
-      'Head': [{ wowhead_id: 30242, priority: 'bis' }],  // Helm of the Vanquished Defender (T5 token)
+      'Head': [{ wowhead_id: 30243, priority: 'bis' }],  // Helm of the Vanquished Defender (T5 token)
       'Neck': [{ wowhead_id: 30015, priority: 'bis' }],  // The Sun King's Talisman
-      'Shoulder': [{ wowhead_id: 30248, priority: 'bis' }],  // Pauldrons of the Vanquished Defender (T5 token)
+      'Shoulder': [{ wowhead_id: 30249, priority: 'bis' }],  // Pauldrons of the Vanquished Defender (T5 token)
       'Back': [{ wowhead_id: 29992, priority: 'bis' }],  // Royal Cloak of the Sunstriders
-      'Chest': [{ wowhead_id: 30236, priority: 'bis' }],  // Chestguard of the Vanquished Defender (T5 token)
+      'Chest': [{ wowhead_id: 30237, priority: 'bis' }],  // Chestguard of the Vanquished Defender (T5 token)
       'Wrist': [{ wowhead_id: 29918, priority: 'bis' }],  // Mindstorm Wristbands
-      'Hands': [{ wowhead_id: 30239, priority: 'bis' }],  // Gloves of the Vanquished Defender (T5 token)
+      'Hands': [{ wowhead_id: 30240, priority: 'bis' }],  // Gloves of the Vanquished Defender (T5 token)
       'Waist': [{ wowhead_id: 30038, priority: 'bis' }],  // Belt of Blasting
-      'Legs': [{ wowhead_id: 30245, priority: 'bis' }],  // Leggings of the Vanquished Defender (T5 token)
+      'Legs': [{ wowhead_id: 30246, priority: 'bis' }],  // Leggings of the Vanquished Defender (T5 token)
       'Feet': [{ wowhead_id: 30037, priority: 'bis' }],  // Boots of Blasting
       'Finger': [
         { wowhead_id: 30109, priority: 'bis' },  // Ring of Endless Coils
@@ -952,9 +952,9 @@ export const TBC_BIS: BisExpansionData = {
       'Relic': [{ wowhead_id: 27518, priority: 'bis' }]  // Ivory Idol of the Moongoddess
     },
     'Tempest Keep': {
-      'Head': [{ wowhead_id: 30242, priority: 'bis' }],  // Helm of the Vanquished Defender (T5 token)
-      'Shoulder': [{ wowhead_id: 30248, priority: 'bis' }],  // Pauldrons of the Vanquished Defender (T5 token)
-      'Chest': [{ wowhead_id: 30236, priority: 'bis' }],  // Chestguard of the Vanquished Defender (T5 token)
+      'Head': [{ wowhead_id: 30243, priority: 'bis' }],  // Helm of the Vanquished Defender (T5 token)
+      'Shoulder': [{ wowhead_id: 30249, priority: 'bis' }],  // Pauldrons of the Vanquished Defender (T5 token)
+      'Chest': [{ wowhead_id: 30237, priority: 'bis' }],  // Chestguard of the Vanquished Defender (T5 token)
       'Trinket': [{ wowhead_id: 30626, priority: 'bis' }],  // Sextant of Unstable Currents
       'Two-Hand': [{ wowhead_id: 30316, priority: 'bis' }]  // Staff of Disintegration
     },
@@ -1032,22 +1032,22 @@ export const TBC_BIS: BisExpansionData = {
       'Trinket': [{ wowhead_id: 28830, priority: 'alt' }]  // Dragonspine Trophy
     },
     "Magtheridon's Lair": {
-      'Chest': [{ wowhead_id: 29755, priority: 'bis' }],  // Chestguard of the Fallen Defender (T4 token)
+      'Chest': [{ wowhead_id: 29753, priority: 'bis' }],  // Chestguard of the Fallen Defender (T4 token)
       'Finger': [{ wowhead_id: 28790, priority: 'bis' }]  // Naaru Lightwarden's Band
     },
     'Serpentshrine Cavern': {
       'Head': [
-        { wowhead_id: 30242, priority: 'bis' },  // Helm of the Vanquished Defender (T5 token)
+        { wowhead_id: 30243, priority: 'bis' },  // Helm of the Vanquished Defender (T5 token)
         { wowhead_id: 32473, priority: 'alt' }   // Tankatronic Goggles
       ],
       'Neck': [{ wowhead_id: 30007, priority: 'bis' }],  // The Darkener's Grasp
-      'Shoulder': [{ wowhead_id: 30248, priority: 'bis' }],  // Pauldrons of the Vanquished Defender (T5 token)
+      'Shoulder': [{ wowhead_id: 30249, priority: 'bis' }],  // Pauldrons of the Vanquished Defender (T5 token)
       'Back': [{ wowhead_id: 30084, priority: 'bis' }],  // Crimson Paragon's Cover
-      'Chest': [{ wowhead_id: 30236, priority: 'bis' }],  // Chestguard of the Vanquished Defender (T5 token)
+      'Chest': [{ wowhead_id: 30237, priority: 'bis' }],  // Chestguard of the Vanquished Defender (T5 token)
       'Wrist': [{ wowhead_id: 29463, priority: 'bis' }],  // Sha'tari Vindicator's Waistguard
-      'Hands': [{ wowhead_id: 30239, priority: 'bis' }],  // Gloves of the Vanquished Defender (T5 token)
+      'Hands': [{ wowhead_id: 30240, priority: 'bis' }],  // Gloves of the Vanquished Defender (T5 token)
       'Waist': [{ wowhead_id: 30096, priority: 'bis' }],  // Girdle of the Invulnerable
-      'Legs': [{ wowhead_id: 30245, priority: 'bis' }],  // Leggings of the Vanquished Defender (T5 token)
+      'Legs': [{ wowhead_id: 30246, priority: 'bis' }],  // Leggings of the Vanquished Defender (T5 token)
       'Feet': [{ wowhead_id: 30018, priority: 'bis' }],  // Lord Sanguinar's Claim
       'Finger': [
         { wowhead_id: 30834, priority: 'bis' },  // Shapeshifter's Signet
@@ -1062,9 +1062,9 @@ export const TBC_BIS: BisExpansionData = {
       'Ranged': [{ wowhead_id: 30105, priority: 'bis' }]  // Serpent Spine Longbow
     },
     'Tempest Keep': {
-      'Head': [{ wowhead_id: 30242, priority: 'bis' }],  // Helm of the Vanquished Defender (T5 token)
-      'Shoulder': [{ wowhead_id: 30248, priority: 'bis' }],  // Pauldrons of the Vanquished Defender (T5 token)
-      'Chest': [{ wowhead_id: 30236, priority: 'bis' }],  // Chestguard of the Vanquished Defender (T5 token)
+      'Head': [{ wowhead_id: 30243, priority: 'bis' }],  // Helm of the Vanquished Defender (T5 token)
+      'Shoulder': [{ wowhead_id: 30249, priority: 'bis' }],  // Pauldrons of the Vanquished Defender (T5 token)
+      'Chest': [{ wowhead_id: 30237, priority: 'bis' }],  // Chestguard of the Vanquished Defender (T5 token)
       'Trinket': [{ wowhead_id: 30629, priority: 'bis' }],  // Scarab of Displacement
       'Main Hand': [{ wowhead_id: 30058, priority: 'alt' }]  // Mallet of the Tides
     },
@@ -1142,20 +1142,20 @@ export const TBC_BIS: BisExpansionData = {
       'Trinket': [{ wowhead_id: 28830, priority: 'bis' }]  // Dragonspine Trophy
     },
     "Magtheridon's Lair": {
-      'Chest': [{ wowhead_id: 29755, priority: 'bis' }],  // Chestguard of the Fallen Defender (T4 token)
+      'Chest': [{ wowhead_id: 29753, priority: 'bis' }],  // Chestguard of the Fallen Defender (T4 token)
       'Waist': [{ wowhead_id: 28779, priority: 'alt' }]  // Girdle of the Endless Pit
     },
     'Serpentshrine Cavern': {
-      'Head': [{ wowhead_id: 30242, priority: 'bis' }],  // Helm of the Vanquished Defender (T5 token)
+      'Head': [{ wowhead_id: 30243, priority: 'bis' }],  // Helm of the Vanquished Defender (T5 token)
       'Neck': [{ wowhead_id: 30022, priority: 'bis' }],  // Pendant of the Perilous
       'Shoulder': [{ wowhead_id: 30055, priority: 'bis' }],  // Shoulderpads of the Stranger
       'Back': [{ wowhead_id: 30098, priority: 'bis' }],  // Razor-Scale Battlecloak
       'Chest': [
-        { wowhead_id: 30236, priority: 'bis' },  // Chestguard of the Vanquished Defender (T5 token)
+        { wowhead_id: 30237, priority: 'bis' },  // Chestguard of the Vanquished Defender (T5 token)
         { wowhead_id: 30101, priority: 'alt' }   // Bloodsea Brigand's Vest
       ],
       'Wrist': [{ wowhead_id: 30057, priority: 'bis' }],  // Bracers of Eradication
-      'Hands': [{ wowhead_id: 30239, priority: 'bis' }],  // Gloves of the Vanquished Defender (T5 token)
+      'Hands': [{ wowhead_id: 30240, priority: 'bis' }],  // Gloves of the Vanquished Defender (T5 token)
       'Waist': [{ wowhead_id: 30106, priority: 'bis' }],  // Belt of One-Hundred Deaths
       'Legs': [{ wowhead_id: 29995, priority: 'bis' }],  // Leggings of Murderous Intent
       'Feet': [{ wowhead_id: 30081, priority: 'bis' }],  // Warboots of Obliteration
@@ -1171,9 +1171,9 @@ export const TBC_BIS: BisExpansionData = {
       'Ranged': [{ wowhead_id: 30105, priority: 'bis' }]  // Serpent Spine Longbow
     },
     'Tempest Keep': {
-      'Head': [{ wowhead_id: 30242, priority: 'bis' }],  // Helm of the Vanquished Defender (T5 token)
-      'Shoulder': [{ wowhead_id: 30248, priority: 'bis' }],  // Pauldrons of the Vanquished Defender (T5 token)
-      'Chest': [{ wowhead_id: 30236, priority: 'bis' }],  // Chestguard of the Vanquished Defender (T5 token)
+      'Head': [{ wowhead_id: 30243, priority: 'bis' }],  // Helm of the Vanquished Defender (T5 token)
+      'Shoulder': [{ wowhead_id: 30249, priority: 'bis' }],  // Pauldrons of the Vanquished Defender (T5 token)
+      'Chest': [{ wowhead_id: 30237, priority: 'bis' }],  // Chestguard of the Vanquished Defender (T5 token)
       'Trinket': [{ wowhead_id: 30627, priority: 'bis' }],  // Tsunami Talisman
       'Two-Hand': [{ wowhead_id: 30311, priority: 'bis' }]  // Warp Slicer
     },
@@ -1250,19 +1250,19 @@ export const TBC_BIS: BisExpansionData = {
       'Trinket': [{ wowhead_id: 28823, priority: 'alt' }]  // Eye of Gruul
     },
     "Magtheridon's Lair": {
-      'Chest': [{ wowhead_id: 29755, priority: 'bis' }],  // Chestguard of the Fallen Defender (T4 token)
+      'Chest': [{ wowhead_id: 29753, priority: 'bis' }],  // Chestguard of the Fallen Defender (T4 token)
       'Trinket': [{ wowhead_id: 28789, priority: 'alt' }]  // Eye of Magtheridon
     },
     'Serpentshrine Cavern': {
-      'Head': [{ wowhead_id: 30242, priority: 'bis' }],  // Helm of the Vanquished Defender (T5 token)
+      'Head': [{ wowhead_id: 30243, priority: 'bis' }],  // Helm of the Vanquished Defender (T5 token)
       'Neck': [{ wowhead_id: 30018, priority: 'bis' }],  // Lord Sanguinar's Claim
-      'Shoulder': [{ wowhead_id: 30248, priority: 'bis' }],  // Pauldrons of the Vanquished Defender (T5 token)
+      'Shoulder': [{ wowhead_id: 30249, priority: 'bis' }],  // Pauldrons of the Vanquished Defender (T5 token)
       'Back': [{ wowhead_id: 30008, priority: 'bis' }],  // Devastation
-      'Chest': [{ wowhead_id: 30236, priority: 'bis' }],  // Chestguard of the Vanquished Defender (T5 token)
+      'Chest': [{ wowhead_id: 30237, priority: 'bis' }],  // Chestguard of the Vanquished Defender (T5 token)
       'Wrist': [{ wowhead_id: 29918, priority: 'bis' }],  // Mindstorm Wristbands
-      'Hands': [{ wowhead_id: 30239, priority: 'bis' }],  // Gloves of the Vanquished Defender (T5 token)
+      'Hands': [{ wowhead_id: 30240, priority: 'bis' }],  // Gloves of the Vanquished Defender (T5 token)
       'Waist': [{ wowhead_id: 30038, priority: 'bis' }],  // Belt of Blasting
-      'Legs': [{ wowhead_id: 30245, priority: 'bis' }],  // Leggings of the Vanquished Defender (T5 token)
+      'Legs': [{ wowhead_id: 30246, priority: 'bis' }],  // Leggings of the Vanquished Defender (T5 token)
       'Feet': [{ wowhead_id: 30037, priority: 'bis' }],  // Boots of Blasting
       'Finger': [
         { wowhead_id: 30109, priority: 'bis' },  // Ring of Endless Coils
@@ -1277,9 +1277,9 @@ export const TBC_BIS: BisExpansionData = {
       'Ranged': [{ wowhead_id: 29982, priority: 'bis' }]  // Wand of the Forgotten Star
     },
     'Tempest Keep': {
-      'Head': [{ wowhead_id: 30242, priority: 'bis' }],  // Helm of the Vanquished Defender (T5 token)
-      'Shoulder': [{ wowhead_id: 30248, priority: 'bis' }],  // Pauldrons of the Vanquished Defender (T5 token)
-      'Chest': [{ wowhead_id: 30236, priority: 'bis' }],  // Chestguard of the Vanquished Defender (T5 token)
+      'Head': [{ wowhead_id: 30243, priority: 'bis' }],  // Helm of the Vanquished Defender (T5 token)
+      'Shoulder': [{ wowhead_id: 30249, priority: 'bis' }],  // Pauldrons of the Vanquished Defender (T5 token)
+      'Chest': [{ wowhead_id: 30237, priority: 'bis' }],  // Chestguard of the Vanquished Defender (T5 token)
       'Trinket': [{ wowhead_id: 30664, priority: 'bis' }],  // Living Root of the Wildheart
       'Main Hand': [{ wowhead_id: 30723, priority: 'bis' }]  // Talon of the Phoenix
     },
@@ -1357,25 +1357,25 @@ export const TBC_BIS: BisExpansionData = {
       'Trinket': [{ wowhead_id: 28830, priority: 'alt' }]  // Dragonspine Trophy (still good for spriest)
     },
     "Magtheridon's Lair": {
-      'Chest': [{ wowhead_id: 29755, priority: 'bis' }],  // Chestguard of the Fallen Defender (T4 token)
+      'Chest': [{ wowhead_id: 29753, priority: 'bis' }],  // Chestguard of the Fallen Defender (T4 token)
       'Trinket': [{ wowhead_id: 28789, priority: 'bis' }]  // Eye of Magtheridon
     },
     'Serpentshrine Cavern': {
       'Head': [
         { wowhead_id: 32494, priority: 'bis' },  // Destruction Holo-gogs
-        { wowhead_id: 30242, priority: 'alt' }   // Helm of the Vanquished Defender (T5 token)
+        { wowhead_id: 30243, priority: 'alt' }   // Helm of the Vanquished Defender (T5 token)
       ],
       'Neck': [{ wowhead_id: 30015, priority: 'bis' }],  // The Sun King's Talisman
-      'Shoulder': [{ wowhead_id: 30248, priority: 'bis' }],  // Pauldrons of the Vanquished Defender (T5 token)
+      'Shoulder': [{ wowhead_id: 30249, priority: 'bis' }],  // Pauldrons of the Vanquished Defender (T5 token)
       'Back': [{ wowhead_id: 29992, priority: 'bis' }],  // Royal Cloak of the Sunstriders
       'Chest': [
         { wowhead_id: 30107, priority: 'bis' },  // Vestments of the Sea-Witch
-        { wowhead_id: 30236, priority: 'alt' }   // Chestguard of the Vanquished Defender (T5 token)
+        { wowhead_id: 30237, priority: 'alt' }   // Chestguard of the Vanquished Defender (T5 token)
       ],
       'Wrist': [{ wowhead_id: 29918, priority: 'bis' }],  // Mindstorm Wristbands
-      'Hands': [{ wowhead_id: 30239, priority: 'bis' }],  // Gloves of the Vanquished Defender (T5 token)
+      'Hands': [{ wowhead_id: 30240, priority: 'bis' }],  // Gloves of the Vanquished Defender (T5 token)
       'Waist': [{ wowhead_id: 30038, priority: 'bis' }],  // Belt of Blasting
-      'Legs': [{ wowhead_id: 30245, priority: 'bis' }],  // Leggings of the Vanquished Defender (T5 token)
+      'Legs': [{ wowhead_id: 30246, priority: 'bis' }],  // Leggings of the Vanquished Defender (T5 token)
       'Feet': [{ wowhead_id: 30037, priority: 'bis' }],  // Boots of Blasting
       'Finger': [
         { wowhead_id: 30109, priority: 'bis' },  // Ring of Endless Coils
@@ -1390,9 +1390,9 @@ export const TBC_BIS: BisExpansionData = {
       'Ranged': [{ wowhead_id: 29982, priority: 'bis' }]  // Wand of the Forgotten Star
     },
     'Tempest Keep': {
-      'Head': [{ wowhead_id: 30242, priority: 'bis' }],  // Helm of the Vanquished Defender (T5 token)
-      'Shoulder': [{ wowhead_id: 30248, priority: 'bis' }],  // Pauldrons of the Vanquished Defender (T5 token)
-      'Chest': [{ wowhead_id: 30236, priority: 'bis' }],  // Chestguard of the Vanquished Defender (T5 token)
+      'Head': [{ wowhead_id: 30243, priority: 'bis' }],  // Helm of the Vanquished Defender (T5 token)
+      'Shoulder': [{ wowhead_id: 30249, priority: 'bis' }],  // Pauldrons of the Vanquished Defender (T5 token)
+      'Chest': [{ wowhead_id: 30237, priority: 'bis' }],  // Chestguard of the Vanquished Defender (T5 token)
       'Trinket': [{ wowhead_id: 30626, priority: 'bis' }],  // Sextant of Unstable Currents
       'Main Hand': [{ wowhead_id: 30723, priority: 'bis' }]  // Talon of the Phoenix
     },
@@ -1470,12 +1470,12 @@ export const TBC_BIS: BisExpansionData = {
       'Finger': [{ wowhead_id: 28823, priority: 'alt' }]  // Eye of Gruul
     },
     "Magtheridon's Lair": {
-      'Chest': [{ wowhead_id: 29753, priority: 'bis' }],  // Chestguard of the Fallen Hero (T4 token)
+      'Chest': [{ wowhead_id: 29755, priority: 'bis' }],  // Chestguard of the Fallen Hero (T4 token)
       'Trinket': [{ wowhead_id: 28789, priority: 'alt' }],  // Eye of Magtheridon
       'Ranged': [{ wowhead_id: 28782, priority: 'bis' }]  // Eredar Wand of Obliteration
     },
     'Serpentshrine Cavern': {
-      'Head': [{ wowhead_id: 30243, priority: 'bis' }],  // Helm of the Vanquished Hero (T5 token)
+      'Head': [{ wowhead_id: 30244, priority: 'bis' }],  // Helm of the Vanquished Hero (T5 token)
       'Neck': [
         { wowhead_id: 30015, priority: 'bis' },  // The Sun King's Talisman
         { wowhead_id: 29368, priority: 'alt' }   // Manasurge Pendant
@@ -1489,7 +1489,7 @@ export const TBC_BIS: BisExpansionData = {
         { wowhead_id: 29918, priority: 'bis' },  // Mindstorm Wristbands
         { wowhead_id: 28515, priority: 'alt' }   // Bands of Nefarious Deeds
       ],
-      'Hands': [{ wowhead_id: 30240, priority: 'bis' }],  // Gloves of the Vanquished Hero (T5 token)
+      'Hands': [{ wowhead_id: 30241, priority: 'bis' }],  // Gloves of the Vanquished Hero (T5 token)
       'Waist': [
         { wowhead_id: 30038, priority: 'bis' },  // Belt of Blasting
         { wowhead_id: 30064, priority: 'alt' }   // Cord of Screaming Terrors
@@ -1514,8 +1514,8 @@ export const TBC_BIS: BisExpansionData = {
       'Held In Off-hand': [{ wowhead_id: 30049, priority: 'bis' }]  // Fathomstone
     },
     'Tempest Keep': {
-      'Shoulder': [{ wowhead_id: 30249, priority: 'bis' }],  // Pauldrons of the Vanquished Hero (T5 token)
-      'Chest': [{ wowhead_id: 30237, priority: 'bis' }],  // Chestguard of the Vanquished Hero (T5 token)
+      'Shoulder': [{ wowhead_id: 30250, priority: 'bis' }],  // Pauldrons of the Vanquished Hero (T5 token)
+      'Chest': [{ wowhead_id: 30238, priority: 'bis' }],  // Chestguard of the Vanquished Hero (T5 token)
       'Trinket': [{ wowhead_id: 30626, priority: 'bis' }],  // Sextant of Unstable Currents
       'Main Hand': [{ wowhead_id: 30723, priority: 'bis' }]  // Talon of the Phoenix
     },
@@ -1593,17 +1593,17 @@ export const TBC_BIS: BisExpansionData = {
       'Finger': [{ wowhead_id: 28823, priority: 'alt' }]  // Eye of Gruul
     },
     "Magtheridon's Lair": {
-      'Chest': [{ wowhead_id: 29753, priority: 'bis' }],  // Chestguard of the Fallen Hero (T4 token)
+      'Chest': [{ wowhead_id: 29755, priority: 'bis' }],  // Chestguard of the Fallen Hero (T4 token)
       'Back': [{ wowhead_id: 28797, priority: 'alt' }]  // Cloak of the Pit Stalker
     },
     'Serpentshrine Cavern': {
-      'Head': [{ wowhead_id: 30243, priority: 'bis' }],  // Helm of the Vanquished Hero (T5 token)
+      'Head': [{ wowhead_id: 30244, priority: 'bis' }],  // Helm of the Vanquished Hero (T5 token)
       'Neck': [{ wowhead_id: 30017, priority: 'bis' }],  // Telonicus's Pendant of Mayhem
-      'Shoulder': [{ wowhead_id: 30249, priority: 'bis' }],  // Pauldrons of the Vanquished Hero (T5 token)
+      'Shoulder': [{ wowhead_id: 30250, priority: 'bis' }],  // Pauldrons of the Vanquished Hero (T5 token)
       'Back': [{ wowhead_id: 29994, priority: 'bis' }],  // Thalassian Wildercloak
-      'Chest': [{ wowhead_id: 30237, priority: 'bis' }],  // Chestguard of the Vanquished Hero (T5 token)
+      'Chest': [{ wowhead_id: 30238, priority: 'bis' }],  // Chestguard of the Vanquished Hero (T5 token)
       'Wrist': [{ wowhead_id: 29966, priority: 'bis' }],  // Vambraces of Ending
-      'Hands': [{ wowhead_id: 30240, priority: 'bis' }],  // Gloves of the Vanquished Hero (T5 token)
+      'Hands': [{ wowhead_id: 30241, priority: 'bis' }],  // Gloves of the Vanquished Hero (T5 token)
       'Waist': [{ wowhead_id: 30040, priority: 'bis' }],  // Belt of Deep Shadow
       'Legs': [{ wowhead_id: 29995, priority: 'bis' }],  // Leggings of Murderous Intent
       'Feet': [{ wowhead_id: 30104, priority: 'bis' }],  // Cobra-Lash Boots
@@ -1620,9 +1620,9 @@ export const TBC_BIS: BisExpansionData = {
       'Ranged': [{ wowhead_id: 30318, priority: 'bis' }]  // Netherstrand Longbow
     },
     'Tempest Keep': {
-      'Head': [{ wowhead_id: 30243, priority: 'bis' }],  // Helm of the Vanquished Hero (T5 token)
-      'Shoulder': [{ wowhead_id: 30249, priority: 'bis' }],  // Pauldrons of the Vanquished Hero (T5 token)
-      'Chest': [{ wowhead_id: 30237, priority: 'bis' }],  // Chestguard of the Vanquished Hero (T5 token)
+      'Head': [{ wowhead_id: 30244, priority: 'bis' }],  // Helm of the Vanquished Hero (T5 token)
+      'Shoulder': [{ wowhead_id: 30250, priority: 'bis' }],  // Pauldrons of the Vanquished Hero (T5 token)
+      'Chest': [{ wowhead_id: 30238, priority: 'bis' }],  // Chestguard of the Vanquished Hero (T5 token)
       'Trinket': [{ wowhead_id: 30627, priority: 'bis' }],  // Tsunami Talisman
       'Ranged': [{ wowhead_id: 30318, priority: 'bis' }]  // Netherstrand Longbow
     },
@@ -1701,13 +1701,13 @@ export const TBC_BIS: BisExpansionData = {
       'Neck': [{ wowhead_id: 28822, priority: 'alt' }]  // Collar of Cho'gall
     },
     "Magtheridon's Lair": {
-      'Chest': [{ wowhead_id: 29753, priority: 'bis' }],  // Chestguard of the Fallen Hero (T4 token)
+      'Chest': [{ wowhead_id: 29755, priority: 'bis' }],  // Chestguard of the Fallen Hero (T4 token)
       'Ranged': [{ wowhead_id: 28782, priority: 'bis' }]  // Eredar Wand of Obliteration
     },
     'Serpentshrine Cavern': {
       'Head': [
         { wowhead_id: 32494, priority: 'bis' },  // Destruction Holo-gogs
-        { wowhead_id: 30243, priority: 'alt' }   // Helm of the Vanquished Hero (T5 token)
+        { wowhead_id: 30244, priority: 'alt' }   // Helm of the Vanquished Hero (T5 token)
       ],
       'Neck': [{ wowhead_id: 30015, priority: 'bis' }],  // The Sun King's Talisman
       'Shoulder': [
@@ -1720,7 +1720,7 @@ export const TBC_BIS: BisExpansionData = {
       ],
       'Chest': [
         { wowhead_id: 30107, priority: 'bis' },  // Vestments of the Sea-Witch
-        { wowhead_id: 30237, priority: 'alt' }   // Chestguard of the Vanquished Hero (T5 token)
+        { wowhead_id: 30238, priority: 'alt' }   // Chestguard of the Vanquished Hero (T5 token)
       ],
       'Wrist': [
         { wowhead_id: 29918, priority: 'bis' },  // Mindstorm Wristbands
@@ -1735,7 +1735,7 @@ export const TBC_BIS: BisExpansionData = {
         { wowhead_id: 30064, priority: 'alt' }   // Cord of Screaming Terrors
       ],
       'Legs': [
-        { wowhead_id: 30246, priority: 'bis' },  // Leggings of the Vanquished Hero (T5 token)
+        { wowhead_id: 30247, priority: 'bis' },  // Leggings of the Vanquished Hero (T5 token)
         { wowhead_id: 30734, priority: 'alt' }   // Leggings of the Seventh Circle
       ],
       'Feet': [
@@ -1761,9 +1761,9 @@ export const TBC_BIS: BisExpansionData = {
       'Ranged': [{ wowhead_id: 29982, priority: 'bis' }]  // Wand of the Forgotten Star
     },
     'Tempest Keep': {
-      'Head': [{ wowhead_id: 30243, priority: 'bis' }],  // Helm of the Vanquished Hero (T5 token)
+      'Head': [{ wowhead_id: 30244, priority: 'bis' }],  // Helm of the Vanquished Hero (T5 token)
       'Shoulder': [{ wowhead_id: 30215, priority: 'bis' }],  // Voidheart Mantle (T5)
-      'Chest': [{ wowhead_id: 30237, priority: 'bis' }],  // Chestguard of the Vanquished Hero (T5 token)
+      'Chest': [{ wowhead_id: 30238, priority: 'bis' }],  // Chestguard of the Vanquished Hero (T5 token)
       'Trinket': [{ wowhead_id: 30626, priority: 'bis' }],  // Sextant of Unstable Currents
       'Main Hand': [{ wowhead_id: 30723, priority: 'bis' }]  // Talon of the Phoenix
     },
@@ -1848,21 +1848,21 @@ export const TBC_BIS: BisExpansionData = {
       'Back': [{ wowhead_id: 28797, priority: 'alt' }]  // Cloak of the Pit Stalker
     },
     'Serpentshrine Cavern': {
-      'Head': [{ wowhead_id: 30244, priority: 'bis' }],  // Helm of the Vanquished Champion (T5 token)
+      'Head': [{ wowhead_id: 30242, priority: 'bis' }],  // Helm of the Vanquished Champion (T5 token)
       'Neck': [{ wowhead_id: 29381, priority: 'bis' }],  // Choker of Vile Intent
       'Shoulder': [
-        { wowhead_id: 30250, priority: 'bis' },  // Pauldrons of the Vanquished Champion (T5 token)
+        { wowhead_id: 30248, priority: 'bis' },  // Pauldrons of the Vanquished Champion (T5 token)
         { wowhead_id: 30055, priority: 'alt' }   // Shoulderpads of the Stranger
       ],
       'Back': [{ wowhead_id: 28672, priority: 'bis' }],  // Drape of the Dark Reavers
       'Chest': [
         { wowhead_id: 30101, priority: 'bis' },  // Bloodsea Brigand's Vest
-        { wowhead_id: 30238, priority: 'alt' }   // Chestguard of the Vanquished Champion (T5 token)
+        { wowhead_id: 30236, priority: 'alt' }   // Chestguard of the Vanquished Champion (T5 token)
       ],
       'Wrist': [{ wowhead_id: 29966, priority: 'bis' }],  // Vambraces of Ending
-      'Hands': [{ wowhead_id: 30241, priority: 'bis' }],  // Gloves of the Vanquished Champion (T5 token)
+      'Hands': [{ wowhead_id: 30239, priority: 'bis' }],  // Gloves of the Vanquished Champion (T5 token)
       'Waist': [{ wowhead_id: 30106, priority: 'bis' }],  // Belt of One-Hundred Deaths
-      'Legs': [{ wowhead_id: 30247, priority: 'bis' }],  // Leggings of the Vanquished Champion (T5 token)
+      'Legs': [{ wowhead_id: 30245, priority: 'bis' }],  // Leggings of the Vanquished Champion (T5 token)
       'Feet': [{ wowhead_id: 28545, priority: 'bis' }],  // Edgewalker Longboots
       'Finger': [
         { wowhead_id: 30052, priority: 'bis' },  // Ring of Lethality
@@ -1877,9 +1877,9 @@ export const TBC_BIS: BisExpansionData = {
       'Ranged': [{ wowhead_id: 29949, priority: 'bis' }]  // Arcanite Steam-Pistol
     },
     'Tempest Keep': {
-      'Head': [{ wowhead_id: 30244, priority: 'bis' }],  // Helm of the Vanquished Champion (T5 token)
-      'Shoulder': [{ wowhead_id: 30250, priority: 'bis' }],  // Pauldrons of the Vanquished Champion (T5 token)
-      'Chest': [{ wowhead_id: 30238, priority: 'bis' }],  // Chestguard of the Vanquished Champion (T5 token)
+      'Head': [{ wowhead_id: 30242, priority: 'bis' }],  // Helm of the Vanquished Champion (T5 token)
+      'Shoulder': [{ wowhead_id: 30248, priority: 'bis' }],  // Pauldrons of the Vanquished Champion (T5 token)
+      'Chest': [{ wowhead_id: 30236, priority: 'bis' }],  // Chestguard of the Vanquished Champion (T5 token)
       'Trinket': [{ wowhead_id: 30627, priority: 'bis' }],  // Tsunami Talisman
       'Main Hand': [{ wowhead_id: 30311, priority: 'bis' }],  // Warp Slicer
       'Off Hand': [{ wowhead_id: 30312, priority: 'bis' }]  // Infinity Blade
