@@ -286,7 +286,7 @@ export function BisImportModal({
                       />
 
                       <Button
-                        variant="secondary"
+                        variant="outline"
                         size="sm"
                         onClick={handleImportGear}
                         loading={gearLoading}
@@ -305,7 +305,7 @@ export function BisImportModal({
 
       <ModalFooter>
         <Button
-          variant="secondary"
+          variant="outline"
           onClick={handleClose}
           disabled={isImportingBis}
         >

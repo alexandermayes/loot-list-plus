@@ -316,7 +316,7 @@ export default function OnboardingModal({ open, onClose }: OnboardingModalProps)
             {/* Navigation buttons */}
             <div className="flex gap-3 w-full">
               <Button
-                variant="secondary"
+                variant="outline"
                 onClick={prevStep}
                 disabled={step === 0}
                 className="flex-1"

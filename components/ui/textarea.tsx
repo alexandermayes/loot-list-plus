@@ -27,7 +27,7 @@ const textareaVariants = cva(
     variants: {
       variant: {
         pill: "rounded-3xl border-border-strong",
-        rounded: "rounded-xl border-border",
+        rounded: "rounded-xl border-border-strong",
       },
       size: {
         sm: "min-h-[80px] px-4 py-3 text-[16px] sm:text-[12px]",

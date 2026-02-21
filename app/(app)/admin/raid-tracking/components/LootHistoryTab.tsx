@@ -382,7 +382,7 @@ export default function LootHistoryTab() {
           {hasMore && (
             <div className="p-4 border-t border-border flex justify-center">
               <Button
-                variant="secondary"
+                variant="outline"
                 onClick={handleLoadMore}
                 loading={loadingMore}
               >

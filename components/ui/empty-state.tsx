@@ -29,7 +29,7 @@ interface EmptyStateProps {
   action?: {
     label: string
     onClick: () => void
-    variant?: 'primary' | 'secondary' | 'outline' | 'accent'
+    variant?: 'primary' | 'outline' | 'accent'
   }
   /** Size variant */
   size?: 'compact' | 'default' | 'lg'

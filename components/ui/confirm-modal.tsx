@@ -33,7 +33,7 @@ const variantConfig: Record<ConfirmVariant, {
   icon: typeof Alert02Icon
   iconColor: string
   iconBg: string
-  buttonVariant: "destructive" | "primary" | "secondary"
+  buttonVariant: "destructive" | "primary" | "outline"
 }> = {
   danger: {
     icon: Delete02Icon,
@@ -98,7 +98,7 @@ export function ConfirmModal({
         </div>
       </ModalHeader>
       <ModalFooter>
-        <Button variant="secondary" onClick={onClose} disabled={actualLoading}>
+        <Button variant="outline" onClick={onClose} disabled={actualLoading}>
           {cancelLabel}
         </Button>
         <Button

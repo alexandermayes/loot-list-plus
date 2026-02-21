@@ -447,7 +447,7 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
               <Button
                 onClick={() => {
                   onClose()
-                  router.push('/profile/settings')
+                  router.push('/profile')
                 }}
               >
                 Verify Discord
@@ -617,7 +617,7 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
                               </div>
                               <div className="flex gap-2">
                                 <Button
-                                  variant="secondary"
+                                  variant="outline"
                                   onClick={() => window.open('https://discord.com/oauth2/authorize?client_id=1458757176171560980', '_blank')}
                                   className="flex-1 bg-discord hover:bg-discord/80 text-discord-foreground"
                                 >
@@ -626,7 +626,7 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
                                   </svg>
                                   Add Bot
                                 </Button>
-                                <Button variant="secondary" size="sm" onClick={checkBotInstallation}>
+                                <Button variant="outline" size="sm" onClick={checkBotInstallation}>
                                   Recheck
                                 </Button>
                               </div>
@@ -820,7 +820,7 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
         {discordVerified && !loading && (
           <ModalFooter className="justify-between">
             <Button
-              variant="secondary"
+              variant="outline"
               onClick={() => {
                 if (currentStep === 'details') setCurrentStep('discord')
                 else if (currentStep === 'settings') setCurrentStep('details')

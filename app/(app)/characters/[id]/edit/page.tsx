@@ -351,7 +351,7 @@ export default function EditCharacterPage() {
               <div className="flex gap-3">
                 <Button
                   type="button"
-                  variant={isMain ? 'accent-subtle' : 'secondary'}
+                  variant={isMain ? 'accent-subtle' : 'outline'}
                   onClick={() => setIsMain(true)}
                   className="flex-1"
                 >
@@ -359,7 +359,7 @@ export default function EditCharacterPage() {
                 </Button>
                 <Button
                   type="button"
-                  variant={!isMain ? 'accent-subtle' : 'secondary'}
+                  variant={!isMain ? 'accent-subtle' : 'outline'}
                   onClick={() => setIsMain(false)}
                   className="flex-1"
                 >
@@ -395,7 +395,7 @@ export default function EditCharacterPage() {
 
             <Button
               type="button"
-              variant="secondary"
+              variant="outline"
               size="lg"
               onClick={() => router.push('/characters/manage')}
             >
@@ -446,7 +446,7 @@ export default function EditCharacterPage() {
                   Delete forever
                 </Button>
                 <Button
-                  variant="secondary"
+                  variant="outline"
                   onClick={handleCancelDelete}
                   disabled={deleting}
                 >

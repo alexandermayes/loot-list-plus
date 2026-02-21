@@ -26,6 +26,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { refreshWowheadTooltips } from '@/lib/wowhead'
 import PriorityListTab from './components/PriorityListTab'
 import { SegmentedControl } from '@/components/ui/segmented-control'
+import { Checkbox } from '@/components/ui/checkbox'
 
 interface LootItem {
   id: string
@@ -1361,7 +1362,7 @@ export default function AdminLootItems() {
 
             {/* Settings Button */}
             <Button
-              variant="secondary"
+              variant="outline"
               onClick={() => setShowSettingsModal(true)}
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1529,21 +1530,21 @@ export default function AdminLootItems() {
                 {paginatedItems.map((item) => (
                   <tr key={item.id} className="hover:bg-muted/50">
                     <td className="px-4 py-2.5">
-                      <input
-                        type="checkbox"
+                      <Checkbox
+                        size="sm"
                         checked={item.is_available}
-                        onChange={() => toggleAvailability(item.id, item.is_available)}
-                        className="w-4 h-4 rounded border-border-strong bg-background-elevated accent-success cursor-pointer focus:ring-2 focus:ring-success/30 focus:ring-offset-0"
+                        onCheckedChange={() => toggleAvailability(item.id, item.is_available)}
+                        aria-label={`Toggle availability for ${item.name}`}
                       />
                     </td>
                     <td className="px-2 py-2.5 text-center">
-                      <input
-                        type="checkbox"
+                      <Checkbox
+                        size="sm"
+                        variant="accent"
                         checked={item.is_loot_council ?? false}
-                        onChange={() => toggleLootCouncil(item.id, item.is_loot_council ?? false)}
+                        onCheckedChange={() => toggleLootCouncil(item.id, item.is_loot_council ?? false)}
                         disabled={!item.is_available}
                         aria-label={`Toggle Loot Council for ${item.name}`}
-                        className="w-4 h-4 rounded border-border-strong bg-background-elevated accent-accent cursor-pointer focus:ring-2 focus:ring-accent/30 focus:ring-offset-0 disabled:opacity-40 disabled:cursor-not-allowed"
                       />
                     </td>
                     <td className="px-4 py-2.5 text-[13px] text-foreground">
@@ -2608,7 +2609,7 @@ export default function AdminLootItems() {
               </div>
         </ModalBody>
         <ModalFooter>
-          <Button variant="secondary" onClick={() => setShowSettingsModal(false)} disabled={savingSettings}>
+          <Button variant="outline" onClick={() => setShowSettingsModal(false)} disabled={savingSettings}>
             Cancel
           </Button>
           <Button onClick={saveSettings} loading={savingSettings} disabled={!hasSettingsChanges}>
@@ -2642,7 +2643,7 @@ export default function AdminLootItems() {
           />
         </ModalBody>
         <ModalFooter>
-          <Button variant="secondary" onClick={() => setNotesModalItem(null)} disabled={savingNotes}>
+          <Button variant="outline" onClick={() => setNotesModalItem(null)} disabled={savingNotes}>
             Cancel
           </Button>
           <Button

@@ -361,7 +361,7 @@ export function CreateCharacterModal({ isOpen, onClose, onSuccess, suggestedName
         <ModalFooter>
           <Button
             type="button"
-            variant="secondary"
+            variant="outline"
             onClick={onClose}
             disabled={loading}
           >

@@ -252,7 +252,7 @@ export default function RoleManager({ onRolesChanged }: RoleManagerProps) {
                           <HugeiconsIcon icon={Tick01Icon} size={16} />
                           Save
                         </Button>
-                        <Button variant="secondary" size="sm" onClick={handleCancelEdit} className="flex-1">
+                        <Button variant="outline" size="sm" onClick={handleCancelEdit} className="flex-1">
                           <HugeiconsIcon icon={Cancel01Icon} size={16} />
                           Cancel
                         </Button>
@@ -280,7 +280,7 @@ export default function RoleManager({ onRolesChanged }: RoleManagerProps) {
                         {role.position !== 100 && role.position !== 50 && (
                           <div className="flex gap-1">
                             <Button
-                              variant="secondary"
+                              variant="outline"
                               size="icon"
                               onClick={() => handleMoveRole(role, 'up')}
                               disabled={roles.filter(r => r.position !== 100 && r.position !== 50).findIndex(r => r.id === role.id) === 0}
@@ -288,7 +288,7 @@ export default function RoleManager({ onRolesChanged }: RoleManagerProps) {
                               <HugeiconsIcon icon={ArrowUp01Icon} size={16} />
                             </Button>
                             <Button
-                              variant="secondary"
+                              variant="outline"
                               size="icon"
                               onClick={() => handleMoveRole(role, 'down')}
                               disabled={roles.filter(r => r.position !== 100 && r.position !== 50).findIndex(r => r.id === role.id) === roles.filter(r => r.position !== 100 && r.position !== 50).length - 1}
@@ -298,7 +298,7 @@ export default function RoleManager({ onRolesChanged }: RoleManagerProps) {
                           </div>
                         )}
                         <Button
-                          variant="secondary"
+                          variant="outline"
                           size="icon"
                           onClick={() => handleStartEditRole(role)}
                         >
@@ -322,7 +322,7 @@ export default function RoleManager({ onRolesChanged }: RoleManagerProps) {
           </div>
 
           {!isAddingRole && roles.length < 10 && (
-            <Button variant="secondary" onClick={() => setIsAddingRole(true)} className="w-full">
+            <Button variant="outline" onClick={() => setIsAddingRole(true)} className="w-full">
               <HugeiconsIcon icon={Add01Icon} size={16} />
               Add Custom Role
             </Button>
@@ -348,7 +348,7 @@ export default function RoleManager({ onRolesChanged }: RoleManagerProps) {
                   Create Role
                 </Button>
                 <Button
-                  variant="secondary"
+                  variant="outline"
                   size="sm"
                   onClick={() => {
                     setIsAddingRole(false)

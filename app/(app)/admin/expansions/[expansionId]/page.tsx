@@ -162,7 +162,7 @@ function PhaseCard({
                 className="flex-1"
               />
               <Button
-                variant="secondary"
+                variant="outline"
                 size="sm"
                 onClick={onUpdateDeadline}
                 disabled={isUpdatingDeadline}
@@ -502,7 +502,7 @@ export default function ExpansionDetailPage({ params }: { params: Promise<{ expa
     <div className="p-4 sm:p-6 lg:p-8 space-y-6">
       {/* Back Button */}
       <Button
-        variant="secondary"
+        variant="outline"
         onClick={() => router.push('/admin/guild-settings')}
       >
         <HugeiconsIcon icon={ArrowLeft01Icon} size={16} />
@@ -582,7 +582,7 @@ export default function ExpansionDetailPage({ params }: { params: Promise<{ expa
               return (
                 <Button
                   key={phase}
-                  variant={isCurrent ? 'primary' : isUnlocked ? 'secondary' : 'ghost'}
+                  variant={isCurrent ? 'primary' : isUnlocked ? 'outline' : 'ghost'}
                   size="sm"
                   onClick={() => !isCurrent && handleSetCurrentPhase(phase)}
                   disabled={isUpdating}

@@ -530,7 +530,7 @@ export default function PriorityListTab() {
                   return (
                     <Button
                       key={phase}
-                      variant={selectedPhase === phase ? 'accent-subtle' : 'secondary'}
+                      variant={selectedPhase === phase ? 'accent-subtle' : 'outline'}
                       size="sm"
                       onClick={() => setSelectedPhase(phase)}
                       className="rounded-[40px] whitespace-nowrap"
@@ -635,7 +635,7 @@ export default function PriorityListTab() {
                 {bossNames.map((boss) => (
                   <Button
                     key={boss}
-                    variant="secondary"
+                    variant="outline"
                     size="sm"
                     onClick={() => {
                       const element = document.getElementById(`prio-boss-${boss.replace(/\s+/g, '-')}`)
@@ -654,10 +654,10 @@ export default function PriorityListTab() {
           {/* Expand/Collapse container */}
           <div className="flex-shrink-0 bg-background-elevated border border-border rounded-xl p-3">
             <div className="flex gap-2 h-full items-center">
-              <Button variant="secondary" size="sm" onClick={expandAll}>
+              <Button variant="outline" size="sm" onClick={expandAll}>
                 Expand All
               </Button>
-              <Button variant="secondary" size="sm" onClick={collapseAll}>
+              <Button variant="outline" size="sm" onClick={collapseAll}>
                 Collapse All
               </Button>
             </div>
@@ -804,7 +804,7 @@ export default function PriorityListTab() {
                                               </td>
                                               <td className="px-3 py-2.5 text-center">
                                                 <div className="flex items-center justify-center gap-2">
-                                                  <Button variant="secondary" size="sm" onClick={() => handleEditItem(item)}>
+                                                  <Button variant="outline" size="sm" onClick={() => handleEditItem(item)}>
                                                     {hasPriority ? 'Edit' : 'Set Priority'}
                                                   </Button>
                                                   {hasPriority && (

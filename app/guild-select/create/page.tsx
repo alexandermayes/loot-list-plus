@@ -429,7 +429,7 @@ export default function CreateGuildPage() {
                   You need to verify your Discord account before creating a guild.
                 </p>
                 <Button
-                  onClick={() => router.push('/profile/settings')}
+                  onClick={() => router.push('/profile')}
                   variant="outline"
                   className="mt-3 border-warning text-warning hover:bg-warning/10"
                 >

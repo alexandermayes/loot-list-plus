@@ -1408,7 +1408,7 @@ function MasterSheetContent() {
             </div>
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
               <Button
-                variant="secondary"
+                variant="outline"
                 onClick={() => { setShowScoreBreakdown(true); trackClientEvent('score_breakdown_viewed') }}
               >
                 <HugeiconsIcon icon={InformationCircleIcon} size={18} />
@@ -1570,14 +1570,14 @@ function MasterSheetContent() {
                 ))}
               </Select>
               <Button
-                variant="secondary"
+                variant="outline"
                 size="sm"
                 onClick={expandAll}
               >
                 Expand
               </Button>
               <Button
-                variant="secondary"
+                variant="outline"
                 size="sm"
                 onClick={collapseAll}
               >
@@ -1592,7 +1592,7 @@ function MasterSheetContent() {
                   {bossNames.map((boss) => (
                     <Button
                       key={boss}
-                      variant="secondary"
+                      variant="outline"
                       size="sm"
                       onClick={() => scrollToBoss(boss)}
                     >
@@ -1611,14 +1611,14 @@ function MasterSheetContent() {
               {/* Expand/Collapse buttons */}
               <div className="flex-shrink-0 flex gap-2">
                 <Button
-                  variant="secondary"
+                  variant="outline"
                   size="sm"
                   onClick={expandAll}
                 >
                   Expand all
                 </Button>
                 <Button
-                  variant="secondary"
+                  variant="outline"
                   size="sm"
                   onClick={collapseAll}
                 >

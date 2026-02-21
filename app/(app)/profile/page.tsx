@@ -277,7 +277,7 @@ export default function ProfilePage() {
               </div>
             </div>
           </div>
-          <Button variant="secondary" onClick={handleLogout} loading={loggingOut} className="w-full sm:w-auto">
+          <Button variant="outline" onClick={handleLogout} loading={loggingOut} className="w-full sm:w-auto">
             <HugeiconsIcon icon={Logout01Icon} size={16} />
             Log Out
           </Button>
@@ -289,7 +289,7 @@ export default function ProfilePage() {
         {tabs.map((tab) => (
           <Button
             key={tab.id}
-            variant={activeTab === tab.id ? 'accent-subtle' : 'secondary'}
+            variant={activeTab === tab.id ? 'accent-subtle' : 'outline'}
             onClick={() => setActiveTab(tab.id)}
             className="px-5 py-2.5 rounded-[40px] whitespace-nowrap text-[13px] font-medium"
           >
@@ -589,7 +589,7 @@ export default function ProfilePage() {
                   </div>
                   <h3 className="text-lg font-semibold text-foreground mb-1">No guilds yet</h3>
                   <p className="text-sm text-muted-foreground max-w-sm mb-4">Join a guild to start tracking loot with your team.</p>
-                  <Button variant="secondary" onClick={() => router.push('/guild-select')}>
+                  <Button variant="outline" onClick={() => router.push('/guild-select')}>
                     Find a guild
                   </Button>
                 </div>
@@ -617,7 +617,7 @@ export default function ProfilePage() {
         </ModalBody>
         <ModalFooter>
           <Button
-            variant="secondary"
+            variant="outline"
             onClick={() => setLeaveGuildId(null)}
             disabled={leaving}
           >
@@ -662,7 +662,7 @@ export default function ProfilePage() {
         </ModalBody>
         <ModalFooter>
           <Button
-            variant="secondary"
+            variant="outline"
             onClick={() => { setShowDeleteModal(false); setDeleteConfirmInput(''); }}
           >
             Cancel

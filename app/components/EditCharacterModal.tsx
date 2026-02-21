@@ -393,7 +393,7 @@ export function EditCharacterModal({ isOpen, onClose, character, onSuccess }: Ed
                   </Button>
                   <Button
                     type="button"
-                    variant="secondary"
+                    variant="outline"
                     size="sm"
                     onClick={handleCancelDelete}
                     disabled={deleting}
@@ -409,7 +409,7 @@ export function EditCharacterModal({ isOpen, onClose, character, onSuccess }: Ed
         <ModalFooter>
           <Button
             type="button"
-            variant="secondary"
+            variant="outline"
             onClick={onClose}
             disabled={saving}
           >

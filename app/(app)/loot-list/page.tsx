@@ -679,7 +679,7 @@ export default function LootList() {
                 </Select>
               )}
               {/* How to Rank Button */}
-              <Button variant="secondary" onClick={() => setShowInstructionsModal(true)}>
+              <Button variant="outline" onClick={() => setShowInstructionsModal(true)}>
                 <HugeiconsIcon icon={InformationCircleIcon} size={18} />
                 <span className="hidden sm:inline">How to rank</span>
                 <span className="sm:hidden">Info</span>
@@ -751,7 +751,7 @@ export default function LootList() {
                     return (
                       <Button
                         key={phase}
-                        variant={selectedPhase === phase ? 'accent-subtle' : 'secondary'}
+                        variant={selectedPhase === phase ? 'accent-subtle' : 'outline'}
                         onClick={() => setSelectedPhase(phase)}
                         className="px-4 py-2.5 rounded-[40px] whitespace-nowrap text-[13px] font-medium"
                       >

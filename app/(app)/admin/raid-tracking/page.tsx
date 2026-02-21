@@ -1892,7 +1892,7 @@ export default function RaidTrackingPage() {
                 <div className="flex gap-2 flex-shrink-0">
                   {!raid.is_skipped && (
                     <Button
-                      variant={hasImportedData ? 'outline' : 'secondary'}
+                      variant={hasImportedData ? 'outline' : 'outline'}
                       size="sm"
                       onClick={async () => {
                         await loadLootItems() // Load items for loot matching
@@ -1924,7 +1924,7 @@ export default function RaidTrackingPage() {
                     </Button>
                   )}
                   <Button
-                    variant={raid.is_skipped ? 'destructive' : 'secondary'}
+                    variant={raid.is_skipped ? 'destructive' : 'outline'}
                     size="sm"
                     onClick={() => toggleSkipDay(raid.id, raid.is_skipped)}
                     className={raid.is_skipped ? 'bg-destructive/30 hover:bg-destructive/40' : ''}
@@ -2171,7 +2171,7 @@ export default function RaidTrackingPage() {
           />
         </ModalBody>
         <ModalFooter>
-          <Button variant="secondary" onClick={() => setShowSkipModal(null)}>
+          <Button variant="outline" onClick={() => setShowSkipModal(null)}>
             Cancel
           </Button>
           <Button variant="primary" onClick={confirmSkipDay}>
@@ -2314,7 +2314,7 @@ export default function RaidTrackingPage() {
           </div>
           <div className="flex gap-2">
             <Button
-              variant="secondary"
+              variant="outline"
               onClick={handleCloseImportModal}
             >
               Cancel
@@ -2387,7 +2387,7 @@ export default function RaidTrackingPage() {
           </div>
         </ModalBody>
         <ModalFooter>
-          <Button variant="secondary" onClick={skipLootItemSelection}>
+          <Button variant="outline" onClick={skipLootItemSelection}>
             Skip this item
           </Button>
         </ModalFooter>
@@ -2440,7 +2440,7 @@ export default function RaidTrackingPage() {
           </div>
         </ModalBody>
         <ModalFooter>
-          <Button variant="secondary" onClick={() => setReassignModal(null)}>
+          <Button variant="outline" onClick={() => setReassignModal(null)}>
             Cancel
           </Button>
         </ModalFooter>

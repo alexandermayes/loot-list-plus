@@ -83,7 +83,7 @@ export default function LandingHero() {
                 <a href={APP_URL}>Start for free</a>
               </Button>
               <Button
-                variant="secondary"
+                variant="outline"
                 size="lg"
                 onClick={() => scrollToSection('features')}
                 className="font-poppins font-medium bg-background-elevated/80 hover:bg-background-elevated backdrop-blur-sm"

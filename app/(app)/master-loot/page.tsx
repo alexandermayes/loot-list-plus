@@ -321,7 +321,7 @@ export default function MasterLootPage() {
             {(['all', 'pending', 'approved', 'rejected'] as const).map((status) => (
               <Button
                 key={status}
-                variant={filter === status ? 'accent-subtle' : 'secondary'}
+                variant={filter === status ? 'accent-subtle' : 'outline'}
                 size="sm"
                 onClick={() => setFilter(status)}
                 className="rounded-full whitespace-nowrap"
@@ -368,7 +368,7 @@ export default function MasterLootPage() {
                     </span>
                   </div>
                   <Button
-                    variant="secondary"
+                    variant="outline"
                     size="sm"
                     onClick={() => viewSubmissionDetails(submission.id)}
                     className="w-full sm:w-auto"
@@ -436,7 +436,7 @@ export default function MasterLootPage() {
               </>
             )}
           </div>
-          <Button variant="secondary" onClick={() => setViewingSubmission(null)}>
+          <Button variant="outline" onClick={() => setViewingSubmission(null)}>
             Close
           </Button>
         </ModalFooter>

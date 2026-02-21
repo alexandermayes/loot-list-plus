@@ -605,56 +605,6 @@ export function CharacterFormSkeleton() {
 }
 
 /**
- * Profile settings skeleton
- */
-export function ProfileSettingsSkeleton() {
-  return (
-    <div className="min-h-screen bg-background">
-      {/* Page Header */}
-      <div className="border-b border-border bg-background-elevated">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4">
-          <div className="flex items-center gap-3">
-            <Skeleton className="h-8 w-8 rounded" />
-            <Skeleton className="h-7 w-40" />
-          </div>
-        </div>
-      </div>
-
-      <main className="max-w-4xl mx-auto p-4 sm:p-6 space-y-6">
-        {/* Settings Cards */}
-        {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="bg-background-elevated border border-border rounded-xl overflow-hidden">
-            <div className="p-6 border-b border-border">
-              <div className="flex items-center gap-2">
-                <Skeleton className="h-5 w-5 rounded" />
-                <Skeleton className="h-6 w-40" />
-              </div>
-              <Skeleton className="h-4 w-64 mt-2" />
-            </div>
-            <div className="p-6 space-y-4">
-              {Array.from({ length: 3 }).map((_, j) => (
-                <div key={j} className="flex items-center justify-between">
-                  <div className="space-y-1">
-                    <Skeleton className="h-4 w-36" />
-                    <Skeleton className="h-3 w-48" />
-                  </div>
-                  <Skeleton className="h-9 w-10 rounded-[40px]" />
-                </div>
-              ))}
-            </div>
-          </div>
-        ))}
-
-        {/* Save Button */}
-        <div className="flex justify-end">
-          <Skeleton className="h-12 w-40 rounded-[52px]" />
-        </div>
-      </main>
-    </div>
-  )
-}
-
-/**
  * Loot Items admin page skeleton
  */
 export function LootItemsPageSkeleton() {

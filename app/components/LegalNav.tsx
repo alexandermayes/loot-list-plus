@@ -12,7 +12,7 @@ export default function LegalNav() {
       <div className="w-full px-6 md:px-12 lg:px-20">
         <nav className="flex items-center justify-between h-16 md:h-20">
           {/* Back Button */}
-          <Button variant="secondary" size="sm" asChild>
+          <Button variant="outline" size="sm" asChild>
             <Link href="/">
               <HugeiconsIcon icon={ArrowLeft01Icon} size={18} />
               <span>Back</span>

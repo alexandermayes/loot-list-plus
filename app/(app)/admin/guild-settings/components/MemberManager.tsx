@@ -499,7 +499,7 @@ export default function MemberManager() {
                     )}
                     {canModify && (
                       <Button
-                        variant="secondary"
+                        variant="outline"
                         size="sm"
                         onClick={() => handleToggleTrialStatus(member.user_id, displayName, member.membership_status)}
                         className={`h-9 w-9 p-0 ${member.membership_status === 'trial' ? 'text-success hover:text-success' : 'text-warning hover:text-warning'}`}
@@ -510,7 +510,7 @@ export default function MemberManager() {
                     )}
                     {canModify ? (
                       <Button
-                        variant="secondary"
+                        variant="outline"
                         size="sm"
                         onClick={() => handleRemoveMember(member.user_id, displayName)}
                         className="text-destructive hover:text-destructive h-9 w-9 p-0"
@@ -520,7 +520,7 @@ export default function MemberManager() {
                       </Button>
                     ) : (
                       <Button
-                        variant="secondary"
+                        variant="outline"
                         size="sm"
                         disabled
                         className="h-9 w-9 p-0 opacity-30 cursor-not-allowed"

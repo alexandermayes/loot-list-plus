@@ -11,14 +11,13 @@ import { Spinner } from "@/components/ui/loading-spinner"
  * Variants:
  * - primary: Main CTA - dark in light mode, white in dark mode
  * - primary-outline: Bordered primary for secondary emphasis
- * - secondary: Subtle elevated button with border
+ * - outline: Elevated surface with border (general-purpose secondary button)
  * - destructive: Red for dangerous/delete actions (solid background)
  * - destructive-outline: Subtle red border for secondary delete actions
  * - destructive-ghost: Red text only for tertiary delete actions
  * - success: Green for approve/confirm actions (solid background)
  * - success-outline: Subtle green border for secondary confirm actions
  * - success-ghost: Green text only for tertiary confirm actions
- * - outline: Bordered with transparent background
  * - ghost: No background, subtle hover state
  * - link: Text-only with underline on hover
  * - accent: Orange accent button for special actions (solid)
@@ -31,7 +30,7 @@ import { Spinner } from "@/components/ui/loading-spinner"
  * - icon: Square icon button (40px)
  */
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
   {
     variants: {
       variant: {
@@ -42,10 +41,6 @@ const buttonVariants = cva(
         // Primary Outline: Bordered primary for secondary emphasis
         "primary-outline":
           "border border-primary/50 text-primary bg-transparent hover:bg-primary/10 hover:border-primary disabled:opacity-50",
-
-        // Secondary: Elevated surface with border
-        secondary:
-          "bg-background-elevated text-foreground border border-border hover:bg-muted hover:border-border-strong disabled:opacity-50",
 
         // Destructive: Red for dangerous actions
         destructive:
@@ -71,9 +66,9 @@ const buttonVariants = cva(
         "success-ghost":
           "text-success bg-transparent hover:bg-success/10 disabled:opacity-50",
 
-        // Outline: Bordered, transparent background
+        // Outline: Elevated surface with border
         outline:
-          "border border-border bg-transparent text-foreground hover:bg-background-elevated hover:border-border-strong disabled:opacity-50",
+          "bg-background-elevated text-foreground border border-border-strong hover:bg-muted disabled:opacity-50",
 
         // Ghost: No border, subtle hover
         ghost:

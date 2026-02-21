@@ -65,7 +65,7 @@ export default function Error({
               Try again
             </Button>
             <Link href="/overview">
-              <Button variant="secondary" size="lg">
+              <Button variant="outline" size="lg">
                 <img
                   src="/images/hearthstone-icon.png"
                   alt=""

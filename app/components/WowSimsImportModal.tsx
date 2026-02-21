@@ -180,7 +180,7 @@ export function WowSimsImportModal({
       <ModalFooter>
         <Button
           type="button"
-          variant="secondary"
+          variant="outline"
           onClick={handleClose}
           disabled={loading}
         >

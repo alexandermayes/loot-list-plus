@@ -180,7 +180,7 @@ export default function InviteCodeManager() {
               <Button onClick={handleGenerateCode} loading={generating}>
                 Generate
               </Button>
-              <Button variant="secondary" onClick={() => setShowGenerateForm(false)}>
+              <Button variant="outline" onClick={() => setShowGenerateForm(false)}>
                 Cancel
               </Button>
             </div>
@@ -250,7 +250,7 @@ export default function InviteCodeManager() {
                           className="flex-1 font-mono"
                         />
                         <Button
-                          variant="secondary"
+                          variant="outline"
                           size="icon"
                           onClick={() => copyToClipboard(code.share_url)}
                         >

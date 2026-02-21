@@ -30,7 +30,7 @@ const selectVariants = cva(
     variants: {
       variant: {
         pill: "rounded-[52px] border-border-strong pr-10",
-        rounded: "rounded-xl border-border pr-9",
+        rounded: "rounded-xl border-border-strong pr-9",
       },
       size: {
         sm: "h-9 pl-3 text-[12px]",

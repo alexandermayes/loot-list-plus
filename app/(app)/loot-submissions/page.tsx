@@ -441,7 +441,7 @@ export default function MasterLootPage() {
             <div className="flex gap-2">
               {/* All Phases Button */}
               <Button
-                variant={activePhase === 'all' ? 'accent-subtle' : 'secondary'}
+                variant={activePhase === 'all' ? 'accent-subtle' : 'outline'}
                 size="sm"
                 onClick={() => setActivePhase('all')}
                 className="rounded-[40px] whitespace-nowrap"
@@ -451,7 +451,7 @@ export default function MasterLootPage() {
               {phases.map((phase) => (
                 <Button
                   key={phase.phase}
-                  variant={activePhase !== 'all' && activePhase?.phase === phase.phase ? 'accent-subtle' : 'secondary'}
+                  variant={activePhase !== 'all' && activePhase?.phase === phase.phase ? 'accent-subtle' : 'outline'}
                   size="sm"
                   onClick={() => setActivePhase(phase)}
                   className="rounded-[40px] whitespace-nowrap"
@@ -479,7 +479,7 @@ export default function MasterLootPage() {
               {(['all', 'pending', 'approved', 'rejected'] as const).map((status) => (
                 <Button
                   key={status}
-                  variant={filter === status ? 'accent-subtle' : 'secondary'}
+                  variant={filter === status ? 'accent-subtle' : 'outline'}
                   size="sm"
                   onClick={() => setFilter(status)}
                   className="rounded-[40px] whitespace-nowrap"
@@ -577,7 +577,7 @@ export default function MasterLootPage() {
                       </>
                     )}
                     <Button
-                      variant="secondary"
+                      variant="outline"
                       size="sm"
                       onClick={(e) => {
                         e.stopPropagation()
@@ -801,7 +801,7 @@ export default function MasterLootPage() {
         </ModalBody>
         <ModalFooter>
           <Button
-            variant="secondary"
+            variant="outline"
             onClick={() => {
               setShowDeleteConfirm(false)
               setDeleteTarget(null)

@@ -49,7 +49,7 @@ export default function NotFound() {
           {/* Action Button */}
           <div className="mt-8">
             <Link href="/">
-              <Button variant="secondary" size="lg">
+              <Button variant="outline" size="lg">
                 <img
                   src="/images/hearthstone-icon.png"
                   alt=""

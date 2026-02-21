@@ -428,7 +428,7 @@ export function PrioListItemModal({
       </ModalBody>
 
       <ModalFooter>
-        <Button variant="secondary" onClick={onClose}>
+        <Button variant="outline" onClick={onClose}>
           Cancel
         </Button>
         <Button variant="primary" onClick={handleSave} loading={saving} disabled={!hasChanges}>

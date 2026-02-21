@@ -19,6 +19,7 @@ import { normalizeBossName } from '@/utils/bossOrder'
 import { refreshWowheadTooltips } from '@/lib/wowhead'
 import { getRaidIcon } from '@/utils/raidIcons'
 import { getBossImage } from '@/utils/bossImages'
+import { Checkbox } from '@/components/ui/checkbox'
 
 interface LootItem {
   id: string
@@ -512,22 +513,21 @@ export default function AdminLootItems() {
                 {filteredItems.map((item) => (
                   <tr key={item.id} className="hover:bg-muted transition-colors">
                     <td className="px-4 py-3">
-                      <input
-                        type="checkbox"
+                      <Checkbox
+                        size="sm"
                         checked={item.is_available}
-                        onChange={() => toggleAvailability(item.id, item.is_available)}
+                        onCheckedChange={() => toggleAvailability(item.id, item.is_available)}
                         aria-label={`Toggle availability for ${item.name}`}
-                        className="w-4 h-4 rounded border-border-strong bg-background-elevated accent-success cursor-pointer focus:ring-2 focus:ring-success/30 focus:ring-offset-0"
                       />
                     </td>
                     <td className="px-4 py-3">
-                      <input
-                        type="checkbox"
+                      <Checkbox
+                        size="sm"
+                        variant="accent"
                         checked={item.is_loot_council}
-                        onChange={() => toggleLootCouncil(item.id, item.is_loot_council)}
+                        onCheckedChange={() => toggleLootCouncil(item.id, item.is_loot_council)}
                         disabled={!item.is_available}
                         aria-label={`Toggle Loot Council for ${item.name}`}
-                        className="w-4 h-4 rounded border-border-strong bg-background-elevated accent-accent cursor-pointer focus:ring-2 focus:ring-accent/30 focus:ring-offset-0 disabled:opacity-40 disabled:cursor-not-allowed"
                       />
                     </td>
                     <td className="px-4 py-3 text-foreground">

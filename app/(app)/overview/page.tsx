@@ -1603,7 +1603,7 @@ function DashboardContent() {
                   title="No loot received yet"
                   description="Your awarded items will appear here"
                   size="compact"
-                  action={{ label: "View master sheet", onClick: () => router.push('/master-sheet'), variant: "secondary" }}
+                  action={{ label: "View master sheet", onClick: () => router.push('/master-sheet'), variant: "outline" }}
                 />
               ) : (
                 <div className="space-y-3">

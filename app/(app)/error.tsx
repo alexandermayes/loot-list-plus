@@ -43,7 +43,7 @@ export default function AppError({
             Try again
           </Button>
           <Link href="/overview">
-            <Button variant="secondary" size="lg">
+            <Button variant="outline" size="lg">
               <img
                 src="/images/hearthstone-icon.png"
                 alt=""

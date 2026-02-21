@@ -11,7 +11,7 @@ interface PageHeaderProps {
   action?: {
     label: string
     onClick: () => void
-    variant?: 'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link'
+    variant?: 'default' | 'destructive' | 'outline' | 'ghost' | 'link'
   }
 }
 

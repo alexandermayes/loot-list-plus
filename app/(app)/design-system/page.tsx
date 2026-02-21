@@ -17,6 +17,8 @@ import { Heading, Text, LabelText } from "@/components/ui/typography";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import { DatePicker } from "@/components/ui/date-picker";
+import { Checkbox } from "@/components/ui/checkbox";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useNotification } from "@/app/contexts/NotificationContext";
 import {
   Modal,
@@ -88,6 +90,7 @@ const navSections = [
     items: [
       { id: "buttons", label: "Buttons" },
       { id: "form-inputs", label: "Form Inputs" },
+      { id: "form-controls", label: "Form Controls" },
       { id: "segmented-control", label: "Segmented Control" },
       { id: "date-picker", label: "Date Picker" },
       { id: "cards", label: "Cards" },
@@ -696,7 +699,6 @@ export default function DesignSystemPage() {
                       <div className="flex flex-wrap gap-3 items-center">
                         <Button variant="primary">Primary</Button>
                         <Button variant="primary-outline">Primary Outline</Button>
-                        <Button variant="secondary">Secondary</Button>
                         <Button variant="outline">Outline</Button>
                         <Button variant="ghost">Ghost</Button>
                         <Button variant="accent">Accent</Button>
@@ -743,7 +745,7 @@ export default function DesignSystemPage() {
                 <PreviewCard>
                   <div className="flex flex-wrap gap-4 items-center">
                     <Button variant="primary"><HugeiconsIcon icon={Add01Icon} size={16} /> Create</Button>
-                    <Button variant="secondary"><HugeiconsIcon icon={Settings01Icon} size={16} /> Settings</Button>
+                    <Button variant="outline"><HugeiconsIcon icon={Settings01Icon} size={16} /> Settings</Button>
                     <Button variant="destructive"><HugeiconsIcon icon={Delete01Icon} size={16} /> Delete</Button>
                   </div>
                 </PreviewCard>
@@ -874,6 +876,203 @@ export default function DesignSystemPage() {
                 </PreviewCard>
               </div>
 
+            </div>
+          </Section>
+
+          {/* Form Controls */}
+          <Section id="form-controls">
+            <SectionHeader
+              title="Form Controls"
+              description="Toggle, checkbox and radio controls with primary (default) or accent variants"
+            />
+
+            <div className="space-y-8">
+              {/* Switch */}
+              <div>
+                <SubsectionHeader title="Switch" />
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  <PreviewCard>
+                    <div className="space-y-6">
+                      <div className="space-y-2">
+                        <Text size="xs" color="muted">Primary (Default)</Text>
+                        <div className="flex items-center gap-3">
+                          <Switch defaultChecked />
+                          <Label>Enabled</Label>
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <Text size="xs" color="muted">Accent</Text>
+                        <div className="flex items-center gap-3">
+                          <Switch defaultChecked variant="accent" />
+                          <Label>Accent toggle</Label>
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <Text size="xs" color="muted">Unchecked</Text>
+                        <div className="flex items-center gap-3">
+                          <Switch />
+                          <Label>Off</Label>
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <Text size="xs" color="muted">Disabled</Text>
+                        <div className="flex items-center gap-3">
+                          <Switch defaultChecked disabled />
+                          <Label className="text-muted-foreground">Locked on</Label>
+                        </div>
+                      </div>
+                    </div>
+                  </PreviewCard>
+                  <PreviewCard>
+                    <div className="space-y-6">
+                      <div className="space-y-2">
+                        <Text size="xs" color="muted">Small</Text>
+                        <div className="flex items-center gap-3">
+                          <Switch size="sm" defaultChecked />
+                          <Label size="sm">Compact toggle</Label>
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <Text size="xs" color="muted">Default size</Text>
+                        <div className="flex items-center gap-3">
+                          <Switch defaultChecked />
+                          <Label>Standard toggle</Label>
+                        </div>
+                      </div>
+                    </div>
+                  </PreviewCard>
+                </div>
+                <CodeBlock>{`<Switch checked={value} onCheckedChange={setValue} variant="primary" size="default" />`}</CodeBlock>
+              </div>
+
+              {/* Checkbox */}
+              <div>
+                <SubsectionHeader title="Checkbox" />
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  <PreviewCard>
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <Text size="xs" color="muted">Primary (Default)</Text>
+                        <div className="flex items-center gap-3">
+                          <Checkbox id="cb-demo-1" defaultChecked />
+                          <Label htmlFor="cb-demo-1">Checked</Label>
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <Text size="xs" color="muted">Accent</Text>
+                        <div className="flex items-center gap-3">
+                          <Checkbox id="cb-demo-accent" defaultChecked variant="accent" />
+                          <Label htmlFor="cb-demo-accent">Accent checked</Label>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <Checkbox id="cb-demo-2" />
+                        <Label htmlFor="cb-demo-2">Unchecked</Label>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <Checkbox id="cb-demo-3" defaultChecked disabled />
+                        <Label htmlFor="cb-demo-3" className="text-muted-foreground">Disabled</Label>
+                      </div>
+                    </div>
+                  </PreviewCard>
+                  <PreviewCard>
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <Text size="xs" color="muted">Small</Text>
+                        <div className="flex items-center gap-3">
+                          <Checkbox id="cb-sm" size="sm" defaultChecked />
+                          <Label htmlFor="cb-sm" size="sm">Small checkbox</Label>
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <Text size="xs" color="muted">Default size</Text>
+                        <div className="flex items-center gap-3">
+                          <Checkbox id="cb-df" defaultChecked />
+                          <Label htmlFor="cb-df">Default checkbox</Label>
+                        </div>
+                      </div>
+                    </div>
+                  </PreviewCard>
+                </div>
+                <CodeBlock>{`<Checkbox checked={value} onCheckedChange={setValue} variant="primary" size="default" />`}</CodeBlock>
+              </div>
+
+              {/* Radio Group */}
+              <div>
+                <SubsectionHeader title="Radio Group" />
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  <PreviewCard>
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <Text size="xs" color="muted">Primary (Default)</Text>
+                        <RadioGroup defaultValue="option-1">
+                          <div className="flex items-center gap-3">
+                            <RadioGroupItem value="option-1" id="rg-1" />
+                            <Label htmlFor="rg-1">Option one</Label>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <RadioGroupItem value="option-2" id="rg-2" />
+                            <Label htmlFor="rg-2">Option two</Label>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <RadioGroupItem value="option-3" id="rg-3" />
+                            <Label htmlFor="rg-3">Option three</Label>
+                          </div>
+                        </RadioGroup>
+                      </div>
+                      <div className="space-y-2">
+                        <Text size="xs" color="muted">Accent</Text>
+                        <RadioGroup defaultValue="accent-1">
+                          <div className="flex items-center gap-3">
+                            <RadioGroupItem value="accent-1" id="rg-a-1" variant="accent" />
+                            <Label htmlFor="rg-a-1">Accent option</Label>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <RadioGroupItem value="accent-2" id="rg-a-2" variant="accent" />
+                            <Label htmlFor="rg-a-2">Another option</Label>
+                          </div>
+                        </RadioGroup>
+                      </div>
+                    </div>
+                  </PreviewCard>
+                  <PreviewCard>
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <Text size="xs" color="muted">Small</Text>
+                        <RadioGroup defaultValue="sm-1">
+                          <div className="flex items-center gap-3">
+                            <RadioGroupItem value="sm-1" id="rg-sm-1" size="sm" />
+                            <Label htmlFor="rg-sm-1" size="sm">Small option</Label>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <RadioGroupItem value="sm-2" id="rg-sm-2" size="sm" />
+                            <Label htmlFor="rg-sm-2" size="sm">Another option</Label>
+                          </div>
+                        </RadioGroup>
+                      </div>
+                      <div className="space-y-2">
+                        <Text size="xs" color="muted">Disabled</Text>
+                        <RadioGroup defaultValue="dis-1" disabled>
+                          <div className="flex items-center gap-3">
+                            <RadioGroupItem value="dis-1" id="rg-dis-1" />
+                            <Label htmlFor="rg-dis-1" className="text-muted-foreground">Locked option</Label>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <RadioGroupItem value="dis-2" id="rg-dis-2" />
+                            <Label htmlFor="rg-dis-2" className="text-muted-foreground">Other option</Label>
+                          </div>
+                        </RadioGroup>
+                      </div>
+                    </div>
+                  </PreviewCard>
+                </div>
+                <CodeBlock>{`<RadioGroup value={value} onValueChange={setValue}>
+  <div className="flex items-center gap-3">
+    <RadioGroupItem value="option-1" id="r1" variant="primary" />
+    <Label htmlFor="r1">Option one</Label>
+  </div>
+</RadioGroup>`}</CodeBlock>
+              </div>
             </div>
           </Section>
 
@@ -1052,7 +1251,7 @@ export default function DesignSystemPage() {
                   <p className="text-foreground-secondary">Some descriptive content here.</p>
                 </CardContent>
                 <CardFooter className="gap-2">
-                  <Button variant="secondary" size="sm">Cancel</Button>
+                  <Button variant="outline" size="sm">Cancel</Button>
                   <Button variant="primary" size="sm">Save</Button>
                 </CardFooter>
               </Card>
@@ -1085,7 +1284,7 @@ export default function DesignSystemPage() {
                     {(['sm', 'default', 'lg', 'xl', 'full'] as const).map((size) => (
                       <Button
                         key={size}
-                        variant={modalSize === size ? 'primary' : 'secondary'}
+                        variant={modalSize === size ? 'primary' : 'outline'}
                         size="sm"
                         onClick={() => {
                           setModalSize(size);
@@ -1135,7 +1334,7 @@ export default function DesignSystemPage() {
                 </div>
               </ModalBody>
               <ModalFooter>
-                <Button variant="secondary" onClick={() => setDemoModalOpen(false)}>Cancel</Button>
+                <Button variant="outline" onClick={() => setDemoModalOpen(false)}>Cancel</Button>
                 <Button variant="primary" onClick={() => setDemoModalOpen(false)}>Confirm</Button>
               </ModalFooter>
             </Modal>
@@ -1271,7 +1470,7 @@ export default function DesignSystemPage() {
                 <PreviewCard>
                   <div className="flex flex-wrap gap-4 items-center">
                     <Button variant="primary" loading>Saving</Button>
-                    <Button variant="secondary" loading>Processing</Button>
+                    <Button variant="outline" loading>Processing</Button>
                     <Button variant="destructive" loading>Deleting</Button>
                   </div>
                 </PreviewCard>
@@ -1388,7 +1587,7 @@ export default function DesignSystemPage() {
                     <Button variant="destructive" size="sm" onClick={() => showNotification('error', 'Couldn\'t save changes. Try again.')}>
                       Error
                     </Button>
-                    <Button variant="secondary" size="sm" onClick={() => showNotification('warning', 'Session expiring soon')}>
+                    <Button variant="outline" size="sm" onClick={() => showNotification('warning', 'Session expiring soon')}>
                       Warning
                     </Button>
                     <Button variant="accent" size="sm" onClick={() => showNotification('info', 'New features available')}>

@@ -242,7 +242,7 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
             <ModalFooter>
               <Button
                 type="button"
-                variant="secondary"
+                variant="outline"
                 onClick={onClose}
                 disabled={submitting}
               >

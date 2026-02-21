@@ -272,7 +272,7 @@ export default function GuildSettingsPage() {
           action={{
             label: 'Back to overview',
             onClick: () => router.push('/overview'),
-            variant: 'secondary'
+            variant: 'outline'
           }}
         />
       </div>
@@ -333,7 +333,7 @@ export default function GuildSettingsPage() {
                 <div className="grid grid-cols-2 gap-2">
                   <Button
                     type="button"
-                    variant="secondary"
+                    variant="outline"
                     onClick={() => isGuildCreator && setFaction('Alliance')}
                     disabled={!isGuildCreator || saving}
                     className={`alliance-btn group relative px-3 py-2.5 rounded-lg border transition-all duration-300 flex items-center justify-center gap-2 overflow-hidden ${
@@ -353,7 +353,7 @@ export default function GuildSettingsPage() {
                   </Button>
                   <Button
                     type="button"
-                    variant="secondary"
+                    variant="outline"
                     onClick={() => isGuildCreator && setFaction('Horde')}
                     disabled={!isGuildCreator || saving}
                     className={`horde-btn group relative px-3 py-2.5 rounded-lg border transition-all duration-300 flex items-center justify-center gap-2 overflow-hidden ${
@@ -409,7 +409,7 @@ export default function GuildSettingsPage() {
                   <h2 className="text-[24px] font-semibold text-foreground">Current members</h2>
                   <p className="text-muted-foreground text-[13px] mt-1">Manage guild members and roles</p>
                 </div>
-                <Button variant="secondary" size="sm" onClick={() => setShowRolesModal(true)}>
+                <Button variant="outline" size="sm" onClick={() => setShowRolesModal(true)}>
                   Manage roles
                 </Button>
               </div>
@@ -446,7 +446,7 @@ export default function GuildSettingsPage() {
                     </p>
                   </div>
                   <Button
-                    variant="secondary"
+                    variant="outline"
                     onClick={() => setShowTransferModal(true)}
                     className="shrink-0 border-warning/50 text-warning hover:bg-warning/10 w-full sm:w-auto"
                   >
@@ -511,7 +511,7 @@ export default function GuildSettingsPage() {
               </ModalBody>
               <ModalFooter>
                 <Button
-                  variant="secondary"
+                  variant="outline"
                   onClick={() => { setShowDeleteModal(false); setDeleteConfirmInput(''); }}
                 >
                   Cancel
@@ -572,7 +572,7 @@ export default function GuildSettingsPage() {
               </ModalBody>
               <ModalFooter>
                 <Button
-                  variant="secondary"
+                  variant="outline"
                   onClick={() => { setShowTransferModal(false); setSelectedNewOwner(''); }}
                 >
                   Cancel
