@@ -33,6 +33,7 @@ export type AnalyticsEvent =
   | 'guild_settings_updated'
   | 'member_role_changed'
   | 'attendance_recorded'
+  | 'character_imported'
   | 'api_error'
 
 interface TrackEventParams {
