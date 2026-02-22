@@ -1131,17 +1131,21 @@ function MasterSheetContent() {
     trackClientEvent('score_comparison_viewed')
   }, [])
 
-  // Generate Gargul CSV export from rankings data (memoized callback)
-  // CSV format: itemId,player[score],player[score] — shows as "Item Prio List" in Gargul tooltips.
-  // Actual loot scores in brackets. Gargul sorts ascending, so highest score appears last.
+  // Generate Gargul DFT export from rankings data (memoized callback)
+  // DFT format: each item is "itemId^DFTFC Header:\ncoloredPlayerLines;" wrapped in quotes.
+  // Gargul strips the first 11 chars of each player line (10-char color code + 1 space),
+  // then splits on "|" to get player name and score. DFT sorts descending (highest first).
   const formatRankingsForGargul = useCallback((rankings: ItemRankings[]): string => {
     const dp = guildSettings?.decimal_places ?? 2
     return rankings
       .filter(ir => ir.rankings.length > 0)
       .map(ir => {
         const itemId = ir.item.wowhead_id
-        const players = ir.rankings.map(r => `${r.player_name}[${r.loot_score.toFixed(dp)}]`)
-        return `${itemId},${players.join(',')}`
+        const playerLines = ir.rankings.map(r => {
+          const colorHex = r.class_color.replace('#', '')
+          return `|cff${colorHex} ${r.player_name}|r: |${r.loot_score.toFixed(dp)}`
+        }).join('\n')
+        return `"${itemId}^DFTFC LootList+ Score:\n${playerLines};"`
       })
       .join('\n')
   }, [guildSettings?.decimal_places])
@@ -1408,7 +1412,7 @@ function MasterSheetContent() {
         document.execCommand('copy')
         document.body.removeChild(textarea)
       }
-      const itemCount = exportData.split('\n').length
+      const itemCount = exportData.split(';').filter(s => s.includes('^')).length
       trackClientEvent('gargul_export_completed', { item_count: itemCount, tier_count: raidTiers.length })
       showNotification('success', `Copied ${itemCount} items from ${raidTiers.length} raid tiers to clipboard`)
     } catch (err) {
