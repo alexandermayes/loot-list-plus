@@ -1131,40 +1131,28 @@ function MasterSheetContent() {
     trackClientEvent('score_comparison_viewed')
   }, [])
 
-  // Generate Gargul TMB JSON export from rankings data (memoized callback)
-  // Uses TMB JSON format: {"wishlists": {itemId: ["player||prio||1||1"]}, "notes": {itemId: "score details"}}
-  // Position-based prio (lower = higher priority) for correct ordering, with tied scores sharing the same prio.
-  // Per-item notes show actual loot scores in the Gargul tooltip.
+  // Generate Gargul CSV export from rankings data (memoized callback)
+  // CSV format: itemId,player[prio],player[prio] — shows as "Item Prio List" in Gargul tooltips.
+  // Position-based prio (lower = higher priority) with dense ranking for ties.
   const formatRankingsForGargul = useCallback((rankings: ItemRankings[]): string => {
-    const wishlists: Record<string, string[]> = {}
-    const notes: Record<string, string> = {}
+    return rankings
+      .filter(ir => ir.rankings.length > 0)
+      .map(ir => {
+        const itemId = ir.item.wowhead_id
 
-    for (const ir of rankings) {
-      if (ir.rankings.length === 0) continue
-      const itemId = String(ir.item.wowhead_id)
-      const decimals = guildSettings?.decimal_places ?? 2
+        // Assign priorities with dense ranking (tied scores share the same priority)
+        let currentPrio = 1
+        const players = ir.rankings.map((r, i) => {
+          if (i > 0 && r.loot_score !== ir.rankings[i - 1].loot_score) {
+            currentPrio++
+          }
+          return `${r.player_name}[${currentPrio}]`
+        })
 
-      // Assign priorities with dense ranking (tied scores share the same priority)
-      const entries: string[] = []
-      let currentPrio = 1
-      for (let i = 0; i < ir.rankings.length; i++) {
-        const r = ir.rankings[i]
-        if (i > 0 && r.loot_score !== ir.rankings[i - 1].loot_score) {
-          currentPrio++
-        }
-        entries.push(`${r.player_name.toLowerCase()}|${currentPrio}|1|1`)
-      }
-      wishlists[itemId] = entries
-
-      // Per-item note with actual loot scores
-      notes[itemId] = ir.rankings
-        .map(r => `${r.player_name} ${r.loot_score.toFixed(decimals)}`)
-        .join(' · ')
-    }
-
-    if (Object.keys(wishlists).length === 0) return ''
-    return JSON.stringify({ wishlists, notes })
-  }, [guildSettings?.decimal_places])
+        return `${itemId},${players.join(',')}`
+      })
+      .join('\n')
+  }, [])
 
   // Fetch rankings for a single tier
   const fetchTierRankings = async (tierId: string): Promise<ItemRankings[]> => {
@@ -1428,8 +1416,7 @@ function MasterSheetContent() {
         document.execCommand('copy')
         document.body.removeChild(textarea)
       }
-      const parsed = JSON.parse(exportData)
-      const itemCount = Object.keys(parsed.wishlists).length
+      const itemCount = exportData.split('\n').length
       trackClientEvent('gargul_export_completed', { item_count: itemCount, tier_count: raidTiers.length })
       showNotification('success', `Copied ${itemCount} items from ${raidTiers.length} raid tiers to clipboard`)
     } catch (err) {
