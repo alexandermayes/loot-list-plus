@@ -98,7 +98,7 @@ const itemData = [
   { name: 'Dragonspine Trophy', classification: 'Reserved', primary: expandSpecs(['Physical']), secondary: [] },
   { name: 'Eye of Gruul', classification: 'Reserved', primary: expandSpecs(['Healer']), secondary: [] },
   { name: 'Teeth of Gruul', classification: 'Limited', primary: expandSpecs(['Healer']), secondary: [] },
-  { name: 'Shuriken of Negation', classification: 'Unlimited', primary: expandSpecs(['Physical']), secondary: [] },
+  { name: 'Shuriken of Negation', classification: 'Unlimited', primary: ['Rogue', 'Fury', 'ProtW', 'Hunter'], secondary: [] },
 
   // ============================================================================
   // MAGTHERIDON'S LAIR
@@ -121,7 +121,7 @@ const itemData = [
   // SERPENTSHRINE CAVERN
   // ============================================================================
   { name: 'Wildfury Greatstaff', classification: 'Reserved', primary: ['Frl'], secondary: [] },
-  { name: 'Serpentshrine Shuriken', classification: 'Unlimited', primary: expandSpecs(['Physical']), secondary: [] },
+  { name: 'Serpentshrine Shuriken', classification: 'Unlimited', primary: ['Rogue', 'Fury', 'ProtW', 'Hunter'], secondary: [] },
   { name: 'Boots of Courage Unending', classification: 'Unlimited', primary: expandSpecs(['Healer']), secondary: [] },
   { name: 'Pendant of the Perilous', classification: 'Limited', primary: expandSpecs(['Physical']), secondary: [] },
   { name: 'Spyglass of the Hidden Fleet', classification: 'Limited', primary: expandSpecs(['Tank']), secondary: ['Fury'] },

@@ -48,6 +48,7 @@ interface BossSectionProps {
     minimum_raid_days?: number
   }
   onCompare?: (itemName: string, userRanking: PlayerRanking, winnerRanking: PlayerRanking) => void
+  maxRankingsCount?: number
 }
 
 /**
@@ -62,10 +63,13 @@ export const BossSection = memo(function BossSection({
   activeCharacterId,
   guildSettings,
   onCompare,
+  maxRankingsCount = 5,
 }: BossSectionProps) {
   const bossImage = getBossImage(boss)
   const decimalPlaces = guildSettings?.decimal_places ?? 2
   const minimumRaidDays = guildSettings?.minimum_raid_days || 2
+  const columnCount = Math.max(maxRankingsCount, 5)
+  const columnIndices = Array.from({ length: columnCount }, (_, i) => i)
 
   return (
     <div
@@ -124,7 +128,7 @@ export const BossSection = memo(function BossSection({
                   <span className="text-[11px] font-medium px-2 py-0.5 rounded bg-accent/20 text-accent">Loot Council</span>
                 ) : ir.rankings.length > 0 ? (
                   <div className="flex flex-wrap gap-x-3 gap-y-1">
-                    {ir.rankings.slice(0, 5).map((ranking, index) => {
+                    {ir.rankings.map((ranking, index) => {
                       const isCurrentUser = activeCharacterId === ranking.character_id
                       const canCompare = isCurrentUser && index > 0 && ir.rankings[0]
                       return (
@@ -157,16 +161,14 @@ export const BossSection = memo(function BossSection({
 
           {/* Desktop Table */}
           <div className="hidden sm:block border-t border-border overflow-x-auto max-h-[70vh] overflow-y-auto">
-            <table className="w-full min-w-[800px]">
+            <table className="w-full" style={{ minWidth: `${380 + columnCount * 120}px` }}>
               <thead className="sticky top-0 z-10">
                 <tr className="bg-background-subtle">
                   <th className="px-5 py-2.5 text-left text-[12px] font-medium text-foreground-muted w-[280px] bg-background-subtle">Item</th>
                   <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted w-[100px] bg-background-subtle">Slot</th>
-                  <th className="px-3 py-2.5 text-center text-[12px] font-medium text-foreground-muted w-[120px] bg-background-subtle">#1</th>
-                  <th className="px-3 py-2.5 text-center text-[12px] font-medium text-foreground-muted w-[120px] bg-background-subtle">#2</th>
-                  <th className="px-3 py-2.5 text-center text-[12px] font-medium text-foreground-muted w-[120px] bg-background-subtle">#3</th>
-                  <th className="px-3 py-2.5 text-center text-[12px] font-medium text-foreground-muted w-[120px] bg-background-subtle">#4</th>
-                  <th className="px-3 py-2.5 text-center text-[12px] font-medium text-foreground-muted w-[120px] bg-background-subtle">#5</th>
+                  {columnIndices.map((i) => (
+                    <th key={i} className="px-3 py-2.5 text-center text-[12px] font-medium text-foreground-muted w-[120px] bg-background-subtle">#{i + 1}</th>
+                  ))}
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
@@ -178,6 +180,7 @@ export const BossSection = memo(function BossSection({
                     decimalPlaces={decimalPlaces}
                     minimumRaidDays={minimumRaidDays}
                     onCompare={onCompare}
+                    columnCount={columnCount}
                   />
                 ))}
               </tbody>
@@ -195,6 +198,7 @@ interface ItemRowProps {
   decimalPlaces: number
   minimumRaidDays: number
   onCompare?: (itemName: string, userRanking: PlayerRanking, winnerRanking: PlayerRanking) => void
+  columnCount: number
 }
 
 /**
@@ -206,7 +210,9 @@ const ItemRow = memo(function ItemRow({
   decimalPlaces,
   minimumRaidDays,
   onCompare,
+  columnCount,
 }: ItemRowProps) {
+  const columnIndices = Array.from({ length: columnCount }, (_, i) => i)
   return (
     <tr
       id={`item-${ir.item.id}`}
@@ -223,11 +229,14 @@ const ItemRow = memo(function ItemRow({
         {ir.item.item_slot}
       </td>
       {ir.item.is_loot_council ? (
-        <td colSpan={5} className="px-3 py-2.5 text-center">
-          <span className="text-[12px] font-medium px-2.5 py-0.5 rounded bg-accent/20 text-accent">Loot Council</span>
-        </td>
+        <>
+          <td className="px-3 py-2.5">
+            <span className="text-[12px] font-medium px-2.5 py-0.5 rounded bg-accent/20 text-accent">Loot Council</span>
+          </td>
+          {columnCount > 1 && <td colSpan={columnCount - 1} />}
+        </>
       ) : (
-        [0, 1, 2, 3, 4].map((index) => {
+        columnIndices.map((index) => {
           const ranking = ir.rankings[index]
           const isCurrentUser = ranking && activeCharacterId === ranking.character_id
           const canCompare = isCurrentUser && index > 0 && ir.rankings[0]

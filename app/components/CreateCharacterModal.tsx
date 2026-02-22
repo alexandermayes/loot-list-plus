@@ -16,6 +16,11 @@ import { Input } from '@/components/ui/input'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Select } from '@/components/ui/select'
 import { Label } from '@/components/ui/label'
+import { SegmentedControl } from '@/components/ui/segmented-control'
+import { HugeiconsIcon } from '@hugeicons/react'
+import { Download04Icon, Link01Icon } from '@hugeicons/core-free-icons'
+import { BattlenetCharacterPickerModal } from '@/app/components/BattlenetCharacterPickerModal'
+import Image from 'next/image'
 
 interface WowClass {
   id: string
@@ -37,7 +42,7 @@ interface CreateCharacterModalProps {
 }
 
 export function CreateCharacterModal({ isOpen, onClose, onSuccess, suggestedName }: CreateCharacterModalProps) {
-  const { activeGuild, refreshCharacters, switchCharacter } = useGuildContext()
+  const { activeGuild, userCharacters, refreshCharacters, switchCharacter } = useGuildContext()
   const { showNotification } = useNotification()
   const supabase = createClient()
 
@@ -51,10 +56,14 @@ export function CreateCharacterModal({ isOpen, onClose, onSuccess, suggestedName
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
+  const [hasBattlenet, setHasBattlenet] = useState(false)
+  const [showBattlenetPicker, setShowBattlenetPicker] = useState(false)
+
   useEffect(() => {
     if (isOpen) {
       loadClasses()
       loadClassSpecs()
+      checkBattlenetAccount()
       // Reset form when opening
       setName('')
       setClassId('')
@@ -63,6 +72,19 @@ export function CreateCharacterModal({ isOpen, onClose, onSuccess, suggestedName
       setError('')
     }
   }, [isOpen])
+
+  const checkBattlenetAccount = async () => {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+
+    const { data } = await supabase
+      .from('battlenet_accounts')
+      .select('id')
+      .eq('user_id', user.id)
+      .single()
+
+    setHasBattlenet(!!data)
+  }
 
   const loadClasses = async () => {
     const { data, error } = await supabase
@@ -251,8 +273,13 @@ export function CreateCharacterModal({ isOpen, onClose, onSuccess, suggestedName
 
   const selectedClass = classes.find(c => c.id === classId)
 
+  const existingBattleNetIds = userCharacters
+    .map((c: { battle_net_id?: number | null }) => c.battle_net_id)
+    .filter((id): id is number => id != null)
+
   return (
-    <Modal open={isOpen} onClose={onClose} size="default">
+    <>
+    <Modal open={isOpen && !showBattlenetPicker} onClose={onClose} size="default">
       <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
         <ModalHeader onClose={onClose}>
           <ModalTitle>Create character</ModalTitle>
@@ -265,6 +292,45 @@ export function CreateCharacterModal({ isOpen, onClose, onSuccess, suggestedName
               <AlertDescription>{error}</AlertDescription>
             </Alert>
           )}
+
+          {/* Battle.net Import Option */}
+          <div className="flex items-center justify-between gap-3 p-3 bg-background-elevated border border-border rounded-lg">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-9 h-9 bg-[#0074E0]/10 border border-[#0074E0]/30 rounded-lg flex items-center justify-center shrink-0">
+                <Image src="/icons/battlenet.svg" alt="Battle.net" width={20} height={20} className="w-5 h-5" style={{ filter: 'brightness(0) saturate(100%) invert(30%) sepia(93%) saturate(1352%) hue-rotate(196deg) brightness(97%) contrast(101%)' }} />
+              </div>
+              <div className="min-w-0">
+                <p className="text-[13px] font-medium text-foreground">Import from Battle.net</p>
+                <p className="text-[12px] text-muted-foreground">
+                  {hasBattlenet ? 'Auto-import with class, spec and gear' : 'Connect your account in profile settings'}
+                </p>
+              </div>
+            </div>
+            {hasBattlenet ? (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setShowBattlenetPicker(true)}
+              >
+                <HugeiconsIcon icon={Download04Icon} size={14} />
+                Import
+              </Button>
+            ) : (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  onClose()
+                  window.location.href = '/profile'
+                }}
+              >
+                <HugeiconsIcon icon={Link01Icon} size={14} />
+                Connect
+              </Button>
+            )}
+          </div>
 
           {/* Character Name */}
           <div>
@@ -325,36 +391,18 @@ export function CreateCharacterModal({ isOpen, onClose, onSuccess, suggestedName
           )}
 
           {/* Main/Alt Toggle */}
-          <div>
-            <Label className="mb-3">Character type</Label>
-            <div className="relative flex bg-background-subtle border border-border-strong rounded-[52px] p-1">
-              {/* Sliding indicator */}
-              <div
-                className={`absolute top-1 bottom-1 w-[calc(50%-4px)] bg-muted border border-border-strong rounded-[44px] transition-all duration-200 ease-out ${
-                  isMain ? 'left-1' : 'left-[calc(50%+2px)]'
-                }`}
-              />
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={() => setIsMain(true)}
-                className={`relative z-10 flex-1 px-6 py-2 h-auto rounded-[44px] text-[13px] font-medium transition-colors duration-200 ${
-                  isMain ? 'text-foreground' : 'text-foreground-muted'
-                }`}
-              >
-                Main
-              </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={() => setIsMain(false)}
-                className={`relative z-10 flex-1 px-6 py-2 h-auto rounded-[44px] text-[13px] font-medium transition-colors duration-200 ${
-                  !isMain ? 'text-foreground' : 'text-foreground-muted'
-                }`}
-              >
-                Alt
-              </Button>
-            </div>
+          <div className="flex items-center justify-between">
+            <Label>Character type</Label>
+            <SegmentedControl
+              size="sm"
+              variant="primary"
+              options={[
+                { value: 'main', label: 'Main' },
+                { value: 'alt', label: 'Alt' },
+              ]}
+              value={isMain ? 'main' : 'alt'}
+              onChange={(value) => setIsMain(value === 'main')}
+            />
           </div>
         </ModalBody>
 
@@ -377,5 +425,13 @@ export function CreateCharacterModal({ isOpen, onClose, onSuccess, suggestedName
         </ModalFooter>
       </form>
     </Modal>
+
+    <BattlenetCharacterPickerModal
+      open={showBattlenetPicker}
+      onClose={() => setShowBattlenetPicker(false)}
+      existingBattleNetIds={existingBattleNetIds}
+      onImportComplete={onClose}
+    />
+    </>
   )
 }

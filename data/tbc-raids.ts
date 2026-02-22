@@ -378,7 +378,7 @@ export const serpentshrinecavern: Raid = {
         { name: 'Band of Vile Aggression', slot: 'Finger', wowhead_id: 33055 },
         { name: 'Pendant of the Perilous', slot: 'Neck', wowhead_id: 30022 },
         { name: 'Totem of the Maelstrom', slot: 'Relic', wowhead_id: 30023 },
-        { name: 'Serpentshrine Shuriken', slot: 'Thrown', wowhead_id: 30029 },
+        { name: 'Serpentshrine Shuriken', slot: 'Thrown', wowhead_id: 30025 },
       ],
     },
     {

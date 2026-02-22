@@ -21,6 +21,7 @@ import {
   type EquippedItem
 } from '@/app/hooks/use-api'
 import { refreshWowheadTooltips } from '@/lib/wowhead'
+import { buildSlotCoverageMap, computeUpgradeTier } from '@/lib/slot-normalization'
 import { preloadItemIcons } from '@/data/item-icons'
 import {
   createBracketStates,
@@ -461,12 +462,16 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
         if (item.is_loot_council) lcItemIds.add(item.id)
       }
 
-      // Sort BIS items by priority (BIS first, then alt)
+      // Build slot coverage from equipped gear for upgrade-tier sorting
+      const slotCoverage = buildSlotCoverageMap(gearData?.items || [])
+
+      // Sort BIS items by upgrade tier (biggest upgrades first)
       const sortedBisItems = [...data.items].sort((a: any, b: any) => {
-        if (a.priority !== b.priority) {
-          return a.priority === 'bis' ? -1 : 1
-        }
-        return 0
+        const tierA = computeUpgradeTier(a.slot, a.priority, slotCoverage)
+        const tierB = computeUpgradeTier(b.slot, b.priority, slotCoverage)
+        if (tierA !== tierB) return tierA - tierB
+        if (a.priority !== b.priority) return a.priority === 'bis' ? -1 : 1
+        return (a.slot as string).localeCompare(b.slot as string)
       })
 
       // Initialize bracket states for smart placement
@@ -531,7 +536,7 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setIsImportingBis(false)
     }
-  }, [activeCharacter, selectedPhase, targetExpansionId, activeGuild?.id, itemsData?.items, equippedWowheadIds, enforceSlotRestrictions])
+  }, [activeCharacter, selectedPhase, targetExpansionId, activeGuild?.id, itemsData?.items, equippedWowheadIds, enforceSlotRestrictions, gearData?.items])
 
   // Check for changes
   const hasChanges = useMemo(() => {

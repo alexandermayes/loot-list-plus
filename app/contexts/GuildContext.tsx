@@ -54,6 +54,7 @@ export interface Character {
   is_main: boolean
   battle_net_id: number | null
   region: string | null
+  game_version: string | null
   created_at: string
   updated_at: string
   class?: {

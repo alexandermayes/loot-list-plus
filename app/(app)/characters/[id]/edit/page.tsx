@@ -5,7 +5,8 @@ import { useRouter, useParams } from 'next/navigation'
 import { useGuildContext, Character } from '@/app/contexts/GuildContext'
 import { createClient } from '@/utils/supabase/client'
 import { HugeiconsIcon } from '@hugeicons/react'
-import { ArrowLeft01Icon, Delete01Icon } from '@hugeicons/core-free-icons'
+import { ArrowLeft01Icon, Delete01Icon, Download04Icon, Link01Icon } from '@hugeicons/core-free-icons'
+import { useNotification } from '@/app/contexts/NotificationContext'
 import { Heading } from '@/components/ui/typography'
 import { Input } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
@@ -13,6 +14,9 @@ import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { CharacterFormSkeleton } from '@/components/ui/skeletons'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { SegmentedControl } from '@/components/ui/segmented-control'
+import { BattlenetCharacterPickerModal } from '@/app/components/BattlenetCharacterPickerModal'
+import Image from 'next/image'
 
 interface WowClass {
   id: string
@@ -31,6 +35,7 @@ export default function EditCharacterPage() {
   const params = useParams()
   const characterId = params.id as string
   const { userCharacters, characterMemberships, refreshCharacters } = useGuildContext()
+  const { showNotification } = useNotification()
   const supabase = createClient()
 
   const [character, setCharacter] = useState<Character | null>(null)
@@ -61,13 +66,17 @@ export default function EditCharacterPage() {
   const [deleting, setDeleting] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deleteConfirmName, setDeleteConfirmName] = useState('')
+  const [syncingGear, setSyncingGear] = useState(false)
   const [error, setError] = useState('')
+  const [hasBattlenet, setHasBattlenet] = useState(false)
+  const [showLinkPicker, setShowLinkPicker] = useState(false)
 
   useEffect(() => {
     document.title = 'LootList+ • Edit Character'
     loadClasses()
     loadClassSpecs()
     loadCharacter()
+    checkBattlenetAccount()
   }, [characterId, userCharacters])
 
   const loadClasses = async () => {
@@ -94,6 +103,19 @@ export default function EditCharacterPage() {
     } else {
       setClassSpecs(data || [])
     }
+  }
+
+  const checkBattlenetAccount = async () => {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+
+    const { data } = await supabase
+      .from('battlenet_accounts')
+      .select('id')
+      .eq('user_id', user.id)
+      .single()
+
+    setHasBattlenet(!!data)
   }
 
   // Get available specs for the selected class
@@ -233,9 +255,43 @@ export default function EditCharacterPage() {
     setDeleteConfirmName('')
   }
 
+  const handleSyncGear = async () => {
+    if (!character?.battle_net_id) return
+
+    setSyncingGear(true)
+
+    try {
+      const response = await fetch('/api/battlenet/characters/sync-gear', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          characterId: character.id,
+          version: character.game_version || 'cata-classic',
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        showNotification('error', data.error || 'Couldn\'t sync gear from Battle.net')
+        return
+      }
+
+      showNotification('success', `Gear synced. ${data.gear_synced} items updated.`)
+    } catch {
+      showNotification('error', 'Couldn\'t sync gear. Check your connection.')
+    } finally {
+      setSyncingGear(false)
+    }
+  }
+
   const guildCount = characterMemberships.filter(
     m => m.character_id === characterId
   ).length
+
+  const existingBattleNetIds = userCharacters
+    .map((c: { battle_net_id?: number | null }) => c.battle_net_id)
+    .filter((id): id is number => id != null)
 
   if (loading) {
     return <CharacterFormSkeleton />
@@ -345,28 +401,20 @@ export default function EditCharacterPage() {
 
             {/* Main/Alt Toggle */}
             <div>
-              <Label size="lg" className="block mb-3">
-                Character type
-              </Label>
-              <div className="flex gap-3">
-                <Button
-                  type="button"
-                  variant={isMain ? 'accent-subtle' : 'outline'}
-                  onClick={() => setIsMain(true)}
-                  className="flex-1"
-                >
-                  Main
-                </Button>
-                <Button
-                  type="button"
-                  variant={!isMain ? 'accent-subtle' : 'outline'}
-                  onClick={() => setIsMain(false)}
-                  className="flex-1"
-                >
-                  Alt
-                </Button>
+              <div className="flex items-center justify-between mb-2">
+                <Label size="lg">Character type</Label>
+                <SegmentedControl
+                  size="sm"
+                  variant="primary"
+                  options={[
+                    { value: 'main', label: 'Main' },
+                    { value: 'alt', label: 'Alt' },
+                  ]}
+                  value={isMain ? 'main' : 'alt'}
+                  onChange={(value) => setIsMain(value === 'main')}
+                />
               </div>
-              <p className="text-[12px] text-muted-foreground mt-2">
+              <p className="text-[12px] text-muted-foreground">
                 You can only have one main character. Setting this as main will change your current main to an alt.
               </p>
             </div>
@@ -403,6 +451,53 @@ export default function EditCharacterPage() {
             </Button>
           </div>
         </form>
+
+        {/* Gear Sync / Link Section */}
+        {character.battle_net_id ? (
+          <div className="bg-background-elevated border border-border rounded-xl p-6 mb-6">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h2 className="text-[15px] font-semibold text-foreground">Battle.net gear sync</h2>
+                <p className="text-[13px] text-muted-foreground mt-1">
+                  Replace equipped gear with the latest data from Battle.net
+                </p>
+              </div>
+              <Button
+                variant="outline"
+                onClick={handleSyncGear}
+                loading={syncingGear}
+                loadingText="Syncing..."
+              >
+                <HugeiconsIcon icon={Download04Icon} size={16} />
+                Sync gear
+              </Button>
+            </div>
+          </div>
+        ) : hasBattlenet ? (
+          <div className="bg-background-elevated border border-border rounded-xl p-6 mb-6">
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-[#0074E0]/10 border border-[#0074E0]/30 rounded-lg flex items-center justify-center shrink-0">
+                  <Image src="/icons/battlenet.svg" alt="Battle.net" width={20} height={20} className="w-5 h-5" style={{ filter: 'brightness(0) saturate(100%) invert(30%) sepia(93%) saturate(1352%) hue-rotate(196deg) brightness(97%) contrast(101%)' }} />
+                </div>
+                <div>
+                  <h2 className="text-[15px] font-semibold text-foreground">Link to Battle.net</h2>
+                  <p className="text-[13px] text-muted-foreground mt-1">
+                    Connect this character to your Battle.net account to enable gear sync
+                  </p>
+                </div>
+              </div>
+              <Button
+                variant="outline"
+                onClick={() => setShowLinkPicker(true)}
+                className="shrink-0"
+              >
+                <HugeiconsIcon icon={Link01Icon} size={16} />
+                Link character
+              </Button>
+            </div>
+          </div>
+        ) : null}
 
         {/* Delete Character Section */}
         <div className="bg-background-elevated border border-destructive/30 rounded-xl p-6">
@@ -457,6 +552,19 @@ export default function EditCharacterPage() {
           )}
         </div>
       </div>
+
+      <BattlenetCharacterPickerModal
+        open={showLinkPicker}
+        onClose={() => setShowLinkPicker(false)}
+        existingBattleNetIds={existingBattleNetIds}
+        mode="link"
+        linkCharacterId={character.id}
+        linkCharacterName={character.name}
+        onLinkComplete={() => {
+          refreshCharacters()
+          router.refresh()
+        }}
+      />
     </div>
   )
 }

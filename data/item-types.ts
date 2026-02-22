@@ -419,7 +419,9 @@ export const ITEM_TYPES: Record<number, ItemTypeInfo> = {
   32256: { armor_type: 'Cloth' },             // Waistwrap of Infinity
   32248: { weapon_type: 'Polearm' },          // Halberd of Desolation
   32269: { weapon_type: 'Dagger' }, // Messenger of Fate
-  32326: { weapon_type: 'Thrown' },   // Twisted Blades of Zarak
+  28826: { weapon_type: 'Thrown' },            // Shuriken of Negation
+  30025: { weapon_type: 'Thrown' },            // Serpentshrine Shuriken
+  32326: { weapon_type: 'Thrown' },            // Twisted Blades of Zarak
   32254: { weapon_type: 'One-Handed Axe' },   // The Brutalizer
   32330: { armor_type: 'Leather' },           // Totem of Ancestral Guidance
   32345: { armor_type: 'Plate' },             // Dreadboots of the Legion
@@ -911,9 +913,14 @@ export function inferWeaponType(slot: string, name: string): WeaponType | undefi
   }
 
   // Check if it's a weapon slot
-  const weaponSlots = ['One-Hand', 'Two-Hand', 'Main Hand', 'Ranged', 'Weapon']
+  const weaponSlots = ['One-Hand', 'Two-Hand', 'Main Hand', 'Ranged', 'Thrown', 'Weapon']
   if (!weaponSlots.includes(slot)) {
     return undefined  // Not a weapon
+  }
+
+  // Thrown weapons (item_slot = 'Thrown')
+  if (slot === 'Thrown') {
+    return 'Thrown'
   }
 
   // Ranged weapons

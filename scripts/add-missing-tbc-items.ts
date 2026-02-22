@@ -45,7 +45,7 @@ const missingItems = [
   },
   {
     name: 'Serpentshrine Shuriken',
-    wowhead_id: 30029,
+    wowhead_id: 30025,
     raid_tier_id: RAID_TIERS.SSC,
     item_slot: 'Thrown',
     boss_name: 'Hydross the Unstable'
@@ -190,9 +190,9 @@ async function main() {
     }
 
     const itemClassifications = [
-      { name: 'Shuriken of Negation', classification: 'Unlimited', primary: ['Rogue', 'Fury', 'Hunter'], secondary: [] },
+      { name: 'Shuriken of Negation', classification: 'Unlimited', primary: ['Rogue', 'Fury', 'ProtW', 'Hunter'], secondary: [] },
       { name: 'Wildfury Greatstaff', classification: 'Reserved', primary: ['Frl'], secondary: [] },
-      { name: 'Serpentshrine Shuriken', classification: 'Unlimited', primary: ['Rogue', 'Fury', 'Hunter'], secondary: [] },
+      { name: 'Serpentshrine Shuriken', classification: 'Unlimited', primary: ['Rogue', 'Fury', 'ProtW', 'Hunter'], secondary: [] },
       { name: 'Boots of Courage Unending', classification: 'Unlimited', primary: ['HPri', 'RD', 'HPal', 'RS'], secondary: [] },
       { name: 'Pendant of the Perilous', classification: 'Limited', primary: ['Rogue', 'Fury', 'Hunter', 'Frl', 'Ret', 'Enh'], secondary: [] },
       { name: 'Spyglass of the Hidden Fleet', classification: 'Limited', primary: ['ProtW', 'PPal', 'Frl'], secondary: ['Fury'] },

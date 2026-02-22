@@ -29,7 +29,7 @@ const cspDirectives = [
   // API connections: only domains the browser actually connects to
   // Server-side-only domains (api.anthropic.com, api.linear.app, discord.com) are excluded
   // since CSP only governs browser-initiated requests
-  "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://wow.zamimg.com https://nether.wowhead.com https://us.i.posthog.com https://us-assets.i.posthog.com",
+  "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://wow.zamimg.com https://nether.wowhead.com https://us.i.posthog.com https://us-assets.i.posthog.com https://*.battle.net https://us.api.blizzard.com https://eu.api.blizzard.com",
 
   // Prevent embedding in iframes (clickjacking protection)
   "frame-ancestors 'none'",

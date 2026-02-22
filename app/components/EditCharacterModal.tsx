@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useGuildContext, Character } from '@/app/contexts/GuildContext'
 import { createClient } from '@/utils/supabase/client'
 import { HugeiconsIcon } from '@hugeicons/react'
-import { Delete01Icon } from '@hugeicons/core-free-icons'
+import { Delete01Icon, Link01Icon } from '@hugeicons/core-free-icons'
 import {
   Modal,
   ModalHeader,
@@ -17,6 +17,10 @@ import { Input } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
 import { Label } from '@/components/ui/label'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { SegmentedControl } from '@/components/ui/segmented-control'
+import { useNotification } from '@/app/contexts/NotificationContext'
+import { BattlenetCharacterPickerModal } from '@/app/components/BattlenetCharacterPickerModal'
+import Image from 'next/image'
 
 interface WowClass {
   id: string
@@ -38,7 +42,8 @@ interface EditCharacterModalProps {
 }
 
 export function EditCharacterModal({ isOpen, onClose, character, onSuccess }: EditCharacterModalProps) {
-  const { refreshCharacters, characterMemberships } = useGuildContext()
+  const { refreshCharacters, characterMemberships, userCharacters } = useGuildContext()
+  const { showNotification } = useNotification()
   const supabase = createClient()
 
   const [name, setName] = useState('')
@@ -68,11 +73,14 @@ export function EditCharacterModal({ isOpen, onClose, character, onSuccess }: Ed
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deleteConfirmName, setDeleteConfirmName] = useState('')
   const [error, setError] = useState('')
+  const [hasBattlenet, setHasBattlenet] = useState(false)
+  const [showLinkPicker, setShowLinkPicker] = useState(false)
 
   useEffect(() => {
     if (isOpen && character) {
       loadClasses()
       loadClassSpecs()
+      checkBattlenetAccount()
       // Set form values from character
       setName(character.name)
       setClassId(character.class_id || '')
@@ -111,6 +119,19 @@ export function EditCharacterModal({ isOpen, onClose, character, onSuccess }: Ed
     if (!error) {
       setClassSpecs(data || [])
     }
+  }
+
+  const checkBattlenetAccount = async () => {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+
+    const { data } = await supabase
+      .from('battlenet_accounts')
+      .select('id')
+      .eq('user_id', user.id)
+      .single()
+
+    setHasBattlenet(!!data)
   }
 
   const getAvailableSpecs = () => {
@@ -231,9 +252,13 @@ export function EditCharacterModal({ isOpen, onClose, character, onSuccess }: Ed
 
   const selectedClass = classes.find(c => c.id === classId)
   const guildCount = characterMemberships.filter(m => m.character_id === character.id).length
+  const existingBattleNetIds = userCharacters
+    .map((c: { battle_net_id?: number | null }) => c.battle_net_id)
+    .filter((id): id is number => id != null)
 
   return (
-    <Modal open={isOpen} onClose={onClose} size="default">
+    <>
+    <Modal open={isOpen && !showLinkPicker} onClose={onClose} size="default">
       <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
         <ModalHeader onClose={onClose}>
           <ModalTitle>Edit character</ModalTitle>
@@ -305,36 +330,18 @@ export function EditCharacterModal({ isOpen, onClose, character, onSuccess }: Ed
           )}
 
           {/* Main/Alt Toggle */}
-          <div>
-            <Label className="mb-3">Character type</Label>
-            <div className="relative flex bg-background-subtle border border-border-strong rounded-[52px] p-1">
-              {/* Sliding indicator */}
-              <div
-                className={`absolute top-1 bottom-1 w-[calc(50%-4px)] bg-muted border border-border-strong rounded-[44px] transition-all duration-200 ease-out ${
-                  isMain ? 'left-1' : 'left-[calc(50%+2px)]'
-                }`}
-              />
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={() => setIsMain(true)}
-                className={`relative z-10 flex-1 px-6 py-2 h-auto rounded-[44px] text-[13px] font-medium transition-colors duration-200 ${
-                  isMain ? 'text-foreground' : 'text-foreground-muted'
-                }`}
-              >
-                Main
-              </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={() => setIsMain(false)}
-                className={`relative z-10 flex-1 px-6 py-2 h-auto rounded-[44px] text-[13px] font-medium transition-colors duration-200 ${
-                  !isMain ? 'text-foreground' : 'text-foreground-muted'
-                }`}
-              >
-                Alt
-              </Button>
-            </div>
+          <div className="flex items-center justify-between">
+            <Label>Character type</Label>
+            <SegmentedControl
+              size="sm"
+              variant="primary"
+              options={[
+                { value: 'main', label: 'Main' },
+                { value: 'alt', label: 'Alt' },
+              ]}
+              value={isMain ? 'main' : 'alt'}
+              onChange={(value) => setIsMain(value === 'main')}
+            />
           </div>
 
           {/* Guild Info */}
@@ -342,6 +349,30 @@ export function EditCharacterModal({ isOpen, onClose, character, onSuccess }: Ed
             <div className="text-[13px] text-muted-foreground bg-background-elevated border border-border-strong rounded-xl p-4">
               <p className="font-medium text-foreground mb-1">Guild memberships</p>
               <p>This character is a member of {guildCount} guild{guildCount !== 1 ? 's' : ''}</p>
+            </div>
+          )}
+
+          {/* Link to Battle.net */}
+          {!character.battle_net_id && hasBattlenet && (
+            <div className="flex items-center justify-between gap-3 p-3 bg-background-elevated border border-border rounded-lg">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-9 h-9 bg-[#0074E0]/10 border border-[#0074E0]/30 rounded-lg flex items-center justify-center shrink-0">
+                  <Image src="/icons/battlenet.svg" alt="Battle.net" width={20} height={20} className="w-5 h-5" style={{ filter: 'brightness(0) saturate(100%) invert(30%) sepia(93%) saturate(1352%) hue-rotate(196deg) brightness(97%) contrast(101%)' }} />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-[13px] font-medium text-foreground">Link to Battle.net</p>
+                  <p className="text-[12px] text-muted-foreground">Enable gear sync by linking to your account</p>
+                </div>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setShowLinkPicker(true)}
+              >
+                <HugeiconsIcon icon={Link01Icon} size={14} />
+                Link
+              </Button>
             </div>
           )}
 
@@ -426,5 +457,19 @@ export function EditCharacterModal({ isOpen, onClose, character, onSuccess }: Ed
         </ModalFooter>
       </form>
     </Modal>
+
+    <BattlenetCharacterPickerModal
+      open={showLinkPicker}
+      onClose={() => setShowLinkPicker(false)}
+      existingBattleNetIds={existingBattleNetIds}
+      mode="link"
+      linkCharacterId={character.id}
+      linkCharacterName={character.name}
+      onLinkComplete={() => {
+        refreshCharacters()
+        onSuccess?.()
+      }}
+    />
+    </>
   )
 }

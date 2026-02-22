@@ -1061,6 +1061,17 @@ function MasterSheetContent() {
     [groupedByRaidTier]
   )
 
+  // Compute max rankings count across all items for consistent column widths
+  const maxRankingsCount = useMemo(() => {
+    let max = 0
+    for (const { items } of sortedRaidTiers) {
+      for (const ir of items) {
+        if (ir.rankings.length > max) max = ir.rankings.length
+      }
+    }
+    return max
+  }, [sortedRaidTiers])
+
   // Check if any tier in the selected phase is disabled (for officer warning)
   const hasDisabledTiers = useMemo(() => phaseTiers.some(t => t.is_guild_active === false), [phaseTiers])
   // Get active tiers for display in header
@@ -1120,23 +1131,39 @@ function MasterSheetContent() {
     trackClientEvent('score_comparison_viewed')
   }, [])
 
-  // Generate Gargul DFT export format from rankings data (memoized callback)
+  // Generate Gargul TMB JSON export from rankings data (memoized callback)
+  // Uses TMB JSON format: {"wishlists": {itemId: ["player||prio||1||1"]}, "notes": {itemId: "score details"}}
+  // Position-based prio (lower = higher priority) for correct ordering, with tied scores sharing the same prio.
+  // Per-item notes show actual loot scores in the Gargul tooltip.
   const formatRankingsForGargul = useCallback((rankings: ItemRankings[]): string => {
-    return rankings.map(ir => {
-      const itemId = ir.item.wowhead_id
+    const wishlists: Record<string, string[]> = {}
+    const notes: Record<string, string> = {}
 
-      if (ir.rankings.length === 0) {
-        return `"${itemId}^DFTFC Priority:\nFree Roll;"`
+    for (const ir of rankings) {
+      if (ir.rankings.length === 0) continue
+      const itemId = String(ir.item.wowhead_id)
+      const decimals = guildSettings?.decimal_places ?? 2
+
+      // Assign priorities with dense ranking (tied scores share the same priority)
+      const entries: string[] = []
+      let currentPrio = 1
+      for (let i = 0; i < ir.rankings.length; i++) {
+        const r = ir.rankings[i]
+        if (i > 0 && r.loot_score !== ir.rankings[i - 1].loot_score) {
+          currentPrio++
+        }
+        entries.push(`${r.player_name.toLowerCase()}|${currentPrio}|1|1`)
       }
+      wishlists[itemId] = entries
 
-      const playerLines = ir.rankings.map(r => {
-        // Convert #RRGGBB to RRGGBB (strip #)
-        const colorHex = r.class_color.replace('#', '')
-        return `|cff${colorHex}${r.player_name}|r: ${r.loot_score.toFixed(guildSettings?.decimal_places ?? 2)}`
-      }).join('\n')
+      // Per-item note with actual loot scores
+      notes[itemId] = ir.rankings
+        .map(r => `${r.player_name} ${r.loot_score.toFixed(decimals)}`)
+        .join(' · ')
+    }
 
-      return `"${itemId}^DFTFC Priority:\n${playerLines};"`
-    }).join('\n')
+    if (Object.keys(wishlists).length === 0) return ''
+    return JSON.stringify({ wishlists, notes })
   }, [guildSettings?.decimal_places])
 
   // Fetch rankings for a single tier
@@ -1251,10 +1278,9 @@ function MasterSheetContent() {
         spec_id,
         class:wow_classes(name, color_hex),
         spec:class_specs(id, name),
-        character_guild_memberships!inner(role, membership_status)
+        character_guild_memberships(role, membership_status, is_active, guild_id)
       `)
       .in('id', characterIds)
-      .eq('character_guild_memberships.guild_id', activeGuild.id)
 
     if (!charactersData) {
       return itemsData.map((item: TierLootItem) => ({ item, rankings: [] }))
@@ -1297,7 +1323,10 @@ function MasterSheetContent() {
         const attendanceData = attendanceCache[character.id] || { score: 0, raidsAttended: 0 }
         const attendance = attendanceData.score
         const raidsAttended = attendanceData.raidsAttended
-        const characterRole = character.character_guild_memberships?.[0]?.role || 'Member'
+        const guildMembership = character.character_guild_memberships?.find(
+          (m: CharacterGuildMembership) => m.guild_id === activeGuild.id
+        )
+        const characterRole = guildMembership?.role || 'Member'
         const roleModifier = getRankModifier(characterRole, guildSettings)
 
         // Calculate priority bonus
@@ -1328,7 +1357,7 @@ function MasterSheetContent() {
         const badLuckBonus = calculateBadLuckBonus(tierTimesPassed, guildSettings)
 
         // Calculate trial penalty
-        const membershipStatus = character.character_guild_memberships?.[0]?.membership_status || 'full'
+        const membershipStatus = guildMembership?.membership_status || 'full'
         const trialPenalty = getTrialPenalty(membershipStatus, guildSettings)
         const isTrial = membershipStatus === 'trial'
 
@@ -1379,9 +1408,30 @@ function MasterSheetContent() {
       const allTiersRankings = tierResults.flat()
 
       const exportData = formatRankingsForGargul(allTiersRankings)
-      await navigator.clipboard.writeText(exportData)
-      trackClientEvent('gargul_export_completed', { item_count: allTiersRankings.length, tier_count: raidTiers.length })
-      showNotification('success', `Exported ${allTiersRankings.length} items from ${raidTiers.length} raid tiers to clipboard`)
+
+      if (!exportData) {
+        showNotification('warning', 'No ranked items found to export. Make sure submissions are approved.')
+        return
+      }
+
+      try {
+        await navigator.clipboard.writeText(exportData)
+      } catch {
+        // Clipboard API can fail if page loses focus during the async fetch.
+        // Fall back to the legacy execCommand approach.
+        const textarea = document.createElement('textarea')
+        textarea.value = exportData
+        textarea.style.position = 'fixed'
+        textarea.style.opacity = '0'
+        document.body.appendChild(textarea)
+        textarea.select()
+        document.execCommand('copy')
+        document.body.removeChild(textarea)
+      }
+      const parsed = JSON.parse(exportData)
+      const itemCount = Object.keys(parsed.wishlists).length
+      trackClientEvent('gargul_export_completed', { item_count: itemCount, tier_count: raidTiers.length })
+      showNotification('success', `Copied ${itemCount} items from ${raidTiers.length} raid tiers to clipboard`)
     } catch (err) {
       console.error('Export error:', err)
       showNotification('error', 'Couldn\'t export data. Try again.')
@@ -1403,7 +1453,7 @@ function MasterSheetContent() {
               <p className="text-muted-foreground mt-1 text-base">
                 {viewMode === 'aggregate' && isOfficer
                   ? 'Most wanted items across the guild'
-                  : 'Top 5 players for each item'}
+                  : 'All ranked players for each item'}
               </p>
             </div>
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
@@ -1711,6 +1761,7 @@ function MasterSheetContent() {
                 activeCharacterId={activeCharacter?.id}
                 guildSettings={guildSettings ?? undefined}
                 onCompare={handleCompare}
+                maxRankingsCount={maxRankingsCount}
               />
             )}
             </>

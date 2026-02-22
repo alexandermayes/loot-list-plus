@@ -3,7 +3,7 @@
 import { createClient } from '@/utils/supabase/client'
 import { useState, useEffect } from 'react'
 import { trackClientEvent } from '@/utils/analytics/client'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { ProfileContentSkeleton } from '@/components/ui/skeletons'
 import { useGuildContext } from '@/app/contexts/GuildContext'
@@ -18,6 +18,10 @@ import {
 } from '@/components/ui/modal'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Select } from '@/components/ui/select'
+import { Label } from '@/components/ui/label'
+import { Switch } from '@/components/ui/switch'
+import { Badge } from '@/components/ui/badge'
 import { useConfirm } from '@/components/ui/confirm-modal'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { HugeiconsIcon } from '@hugeicons/react'
@@ -30,12 +34,14 @@ import {
   Sun03Icon,
   ComputerIcon,
   PaintBoardIcon,
-  Notification01Icon,
   LinkSquare02Icon,
   Delete02Icon,
   Calendar01Icon,
-  CheckmarkCircle01Icon
+  CheckmarkCircle01Icon,
+  Cancel01Icon,
+  RefreshIcon,
 } from '@hugeicons/core-free-icons'
+import Image from 'next/image'
 import { useTheme } from 'next-themes'
 import { useAccentColor, ACCENT_COLORS, DEFAULT_ACCENT_COLOR } from '@/app/contexts/AccentColorContext'
 
@@ -48,12 +54,22 @@ export default function ProfilePage() {
   const [leaveGuildId, setLeaveGuildId] = useState<string | null>(null)
   const [leaving, setLeaving] = useState(false)
   const [disconnecting, setDisconnecting] = useState(false)
+  const [disconnectingBattlenet, setDisconnectingBattlenet] = useState(false)
+  const [battlenetAccount, setBattlenetAccount] = useState<{
+    battletag: string | null
+    region: string
+    updated_at: string
+  } | null>(null)
+  const [battlenetRegion, setBattlenetRegion] = useState('us')
   const [deleting, setDeleting] = useState(false)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [deleteConfirmInput, setDeleteConfirmInput] = useState('')
   const [loggingOut, setLoggingOut] = useState(false)
   const [mounted, setMounted] = useState(false)
   const [selectedTheme, setSelectedTheme] = useState<string | null>(null)
+
+  // Notification preferences
+  const [notifySubmissionStatus, setNotifySubmissionStatus] = useState(true)
 
   const { theme, setTheme } = useTheme()
   const { accentColor, setAccentColor, saveAccentColor } = useAccentColor()
@@ -70,10 +86,103 @@ export default function ProfilePage() {
   const { confirm, ConfirmDialog } = useConfirm()
   const supabase = createClient()
   const router = useRouter()
+  const searchParams = useSearchParams()
 
   useEffect(() => {
     document.title = 'LootList+ • Profile'
+
+    // Handle Battle.net OAuth callback status
+    const battlenetStatus = searchParams.get('battlenet')
+    if (battlenetStatus === 'connected') {
+      showNotification('success', 'Battle.net account connected')
+      // Clean up URL params
+      router.replace('/profile', { scroll: false })
+    } else if (battlenetStatus === 'denied') {
+      showNotification('warning', 'Battle.net connection was cancelled')
+      router.replace('/profile', { scroll: false })
+    } else if (battlenetStatus === 'error') {
+      const reason = searchParams.get('reason')
+      const messages: Record<string, string> = {
+        missing_params: 'Missing OAuth parameters. Try connecting again.',
+        invalid_state: 'Session expired. Try connecting again.',
+        save_failed: 'Couldn\'t save Battle.net account. Try again.',
+        unexpected: 'Something went wrong. Try connecting again.',
+      }
+      showNotification('error', messages[reason || ''] || 'Couldn\'t connect Battle.net. Try again.')
+      router.replace('/profile', { scroll: false })
+    }
   }, [])
+
+  const loadBattlenetAccount = async () => {
+    if (!user) return
+
+    const { data } = await supabase
+      .from('battlenet_accounts')
+      .select('battletag, region, updated_at')
+      .eq('user_id', user.id)
+      .single()
+
+    if (data) {
+      setBattlenetAccount(data)
+    }
+  }
+
+  const loadNotificationPrefs = async () => {
+    if (!user) return
+
+    const { data } = await supabase
+      .from('user_preferences')
+      .select('notify_submission_status')
+      .eq('user_id', user.id)
+      .single()
+
+    if (data) {
+      setNotifySubmissionStatus(data.notify_submission_status ?? true)
+    }
+  }
+
+  const toggleSubmissionStatus = async () => {
+    if (!user) return
+    const newValue = !notifySubmissionStatus
+    setNotifySubmissionStatus(newValue)
+
+    const { error } = await supabase
+      .from('user_preferences')
+      .upsert(
+        {
+          user_id: user.id,
+          notify_submission_status: newValue,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: 'user_id' }
+      )
+
+    if (error) {
+      setNotifySubmissionStatus(!newValue)
+      showNotification('error', 'Couldn\'t update preference. Try again.')
+    } else {
+      showNotification('success', newValue ? 'Review notifications enabled.' : 'Review notifications disabled.')
+    }
+  }
+
+  const disconnectBattlenet = async () => {
+    setDisconnectingBattlenet(true)
+
+    try {
+      const response = await fetch('/api/battlenet/disconnect', { method: 'POST' })
+
+      if (!response.ok) {
+        showNotification('error', 'Couldn\'t disconnect Battle.net. Try again.')
+      } else {
+        setBattlenetAccount(null)
+        showNotification('success', 'Battle.net account disconnected')
+      }
+    } catch {
+      showNotification('error', 'Couldn\'t disconnect Battle.net. Check your connection.')
+    } finally {
+      setDisconnectingBattlenet(false)
+    }
+  }
 
   const handleLogout = () => {
     setLoggingOut(true)
@@ -221,6 +330,8 @@ export default function ProfilePage() {
     }
 
     loadProfile()
+    loadBattlenetAccount()
+    loadNotificationPrefs()
   }, [])
 
   if (loading) {
@@ -302,27 +413,120 @@ export default function ProfilePage() {
       {/* Tab Content */}
       {activeTab === 'account' && (
         <div className="space-y-6">
-          {/* Notifications - Coming Soon */}
-          <div className="bg-background-elevated border border-border rounded-xl overflow-hidden opacity-60">
+          {/* Notifications */}
+          <div className="bg-background-elevated border border-border rounded-xl overflow-hidden">
+            <div className="px-6 py-4 border-b border-border">
+              <h2 className="text-[18px] font-semibold text-foreground">Discord notifications</h2>
+              <p className="text-muted-foreground text-[13px] mt-1">Control what Discord DMs you receive from the LootList+ bot</p>
+            </div>
+            <div className="p-4 sm:p-6 space-y-4">
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <p className="text-[14px] font-medium text-foreground">Loot list review updates</p>
+                  <p className="text-[13px] text-muted-foreground">Get a DM when your loot list is approved, rejected or needs revision</p>
+                </div>
+                <Switch
+                  checked={notifySubmissionStatus}
+                  onCheckedChange={toggleSubmissionStatus}
+                />
+              </div>
+
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <p className="text-[14px] font-medium text-foreground">New submission alerts</p>
+                  <p className="text-[13px] text-muted-foreground">Officers and guild masters get a DM when a raider submits their loot list</p>
+                </div>
+                <span className="text-[12px] text-muted-foreground whitespace-nowrap">Always on</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Battle.net Connection */}
+          <div className="bg-background-elevated border border-border rounded-xl overflow-hidden">
             <div className="px-6 py-4 border-b border-border">
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="text-[18px] font-semibold text-foreground">Notifications</h2>
-                  <p className="text-muted-foreground text-[13px] mt-1">Control what notifications you receive</p>
+                  <h2 className="text-[18px] font-semibold text-foreground">Battle.net account</h2>
+                  <p className="text-muted-foreground text-[13px] mt-1">Link your Battle.net to import characters and sync gear</p>
                 </div>
-                <span className="px-3 py-1 bg-muted border border-border rounded-full text-muted-foreground text-[12px]">
-                  Coming soon
-                </span>
               </div>
             </div>
-            <div className="p-6">
-              <div className="flex flex-col items-center justify-center py-8 text-center">
-                <div className="mb-4 rounded-full bg-muted p-3">
-                  <HugeiconsIcon icon={Notification01Icon} size={24} className="text-muted-foreground" />
+            <div className="p-4 sm:p-6">
+              {battlenetAccount ? (
+                <div className="space-y-4">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-[#0074E0]/10 border border-[#0074E0]/30 rounded-lg flex items-center justify-center">
+                        <Image src="/icons/battlenet.svg" alt="Battle.net" width={22} height={22} className="w-[22px] h-[22px]" style={{ filter: 'brightness(0) saturate(100%) invert(30%) sepia(93%) saturate(1352%) hue-rotate(196deg) brightness(97%) contrast(101%)' }} />
+                      </div>
+                      <div>
+                        <p className="font-medium text-foreground">{battlenetAccount.battletag || 'Connected'}</p>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          <Badge variant="outline" className="text-[11px]">{battlenetAccount.region.toUpperCase()}</Badge>
+                          <span className="text-[12px] text-muted-foreground">
+                            Connected {new Date(battlenetAccount.updated_at).toLocaleDateString()}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 w-full sm:w-auto">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          window.location.href = `/api/auth/battlenet?region=${battlenetAccount.region}`
+                        }}
+                        className="flex-1 sm:flex-none"
+                      >
+                        <HugeiconsIcon icon={RefreshIcon} size={14} />
+                        Reconnect
+                      </Button>
+                      <Button
+                        variant="destructive-outline"
+                        size="sm"
+                        onClick={disconnectBattlenet}
+                        loading={disconnectingBattlenet}
+                        className="flex-1 sm:flex-none"
+                      >
+                        <HugeiconsIcon icon={Cancel01Icon} size={14} />
+                        Disconnect
+                      </Button>
+                    </div>
+                  </div>
                 </div>
-                <h3 className="text-lg font-semibold text-foreground mb-1">Notification preferences coming soon</h3>
-                <p className="text-sm text-muted-foreground max-w-sm">You'll be able to customize notifications for loot deadlines, submission reviews and more.</p>
-              </div>
+              ) : (
+                <div className="space-y-4">
+                  <p className="text-[13px] text-muted-foreground">
+                    Connect your Battle.net account to import characters directly with their equipped gear.
+                  </p>
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                    <div className="flex items-center gap-2">
+                      <Label htmlFor="bnet-region" className="text-[13px] shrink-0">Region</Label>
+                      <Select
+                        id="bnet-region"
+                        variant="rounded"
+                        size="sm"
+                        value={battlenetRegion}
+                        onChange={(e) => setBattlenetRegion(e.target.value)}
+                        className="w-24"
+                      >
+                        <option value="us">US</option>
+                        <option value="eu">EU</option>
+                      </Select>
+                    </div>
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      onClick={() => {
+                        window.location.href = `/api/auth/battlenet?region=${battlenetRegion}`
+                      }}
+                    >
+                      <Image src="/icons/battlenet.svg" alt="" width={16} height={16} className="w-4 h-4 brightness-0 dark:invert" />
+                      Connect Battle.net
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 

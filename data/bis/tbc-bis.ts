@@ -1058,7 +1058,6 @@ export const TBC_BIS: BisExpansionData = {
         { wowhead_id: 30629, priority: 'alt' }   // Scarab of Displacement
       ],
       'Main Hand': [{ wowhead_id: 30058, priority: 'bis' }],  // Mallet of the Tides
-      'Off Hand': [{ wowhead_id: 30073, priority: 'bis' }],  // Serpentshrine Shuriken
       'Ranged': [{ wowhead_id: 30105, priority: 'bis' }]  // Serpent Spine Longbow
     },
     'Tempest Keep': {

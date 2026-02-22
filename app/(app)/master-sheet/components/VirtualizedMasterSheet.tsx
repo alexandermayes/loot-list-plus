@@ -35,6 +35,7 @@ interface VirtualizedMasterSheetProps {
     minimum_raid_days?: number
   }
   onCompare?: (itemName: string, userRanking: PlayerRanking, winnerRanking: PlayerRanking) => void
+  maxRankingsCount?: number
 }
 
 /**
@@ -50,6 +51,7 @@ export function VirtualizedMasterSheet({
   activeCharacterId,
   guildSettings,
   onCompare,
+  maxRankingsCount,
 }: VirtualizedMasterSheetProps) {
   const listRef = useRef<HTMLDivElement>(null)
 
@@ -150,6 +152,7 @@ export function VirtualizedMasterSheet({
               activeCharacterId={activeCharacterId}
               guildSettings={guildSettings}
               onCompare={onCompare}
+              maxRankingsCount={maxRankingsCount}
             />
           )
         )}
