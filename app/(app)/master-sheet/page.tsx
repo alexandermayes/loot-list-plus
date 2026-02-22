@@ -1132,27 +1132,19 @@ function MasterSheetContent() {
   }, [])
 
   // Generate Gargul CSV export from rankings data (memoized callback)
-  // CSV format: itemId,player[prio],player[prio] — shows as "Item Prio List" in Gargul tooltips.
-  // Position-based prio (lower = higher priority) with dense ranking for ties.
+  // CSV format: itemId,player[score],player[score] — shows as "Item Prio List" in Gargul tooltips.
+  // Actual loot scores in brackets. Gargul sorts ascending, so highest score appears last.
   const formatRankingsForGargul = useCallback((rankings: ItemRankings[]): string => {
+    const dp = guildSettings?.decimal_places ?? 2
     return rankings
       .filter(ir => ir.rankings.length > 0)
       .map(ir => {
         const itemId = ir.item.wowhead_id
-
-        // Assign priorities with dense ranking (tied scores share the same priority)
-        let currentPrio = 1
-        const players = ir.rankings.map((r, i) => {
-          if (i > 0 && r.loot_score !== ir.rankings[i - 1].loot_score) {
-            currentPrio++
-          }
-          return `${r.player_name}[${currentPrio}]`
-        })
-
+        const players = ir.rankings.map(r => `${r.player_name}[${r.loot_score.toFixed(dp)}]`)
         return `${itemId},${players.join(',')}`
       })
       .join('\n')
-  }, [])
+  }, [guildSettings?.decimal_places])
 
   // Fetch rankings for a single tier
   const fetchTierRankings = async (tierId: string): Promise<ItemRankings[]> => {
