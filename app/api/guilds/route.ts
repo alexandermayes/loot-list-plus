@@ -144,10 +144,6 @@ export async function POST(request: NextRequest) {
         rolling_attendance_weeks: 8,
         use_signups: false,
         signup_weight: 0,
-        see_item_bonus: false,
-        see_item_bonus_value: 0,
-        pass_item_bonus: false,
-        pass_item_bonus_value: 0
       })
 
     if (settingsError) {

@@ -15,10 +15,6 @@ interface GuildSettings {
   minimum_raid_days: number
   late_early_penalty_enabled: boolean
   late_early_penalty_value: number
-  see_item_bonus: boolean
-  see_item_bonus_value: number
-  pass_item_bonus: boolean
-  pass_item_bonus_value: number
   // Trial system settings
   trial_penalty_enabled: boolean
   trial_penalty_value: number
@@ -60,10 +56,6 @@ const DEFAULT_SETTINGS: Partial<GuildSettings> = {
   minimum_raid_days: 2,
   late_early_penalty_enabled: true,
   late_early_penalty_value: 0.25,
-  see_item_bonus: true,
-  see_item_bonus_value: 1,
-  pass_item_bonus: false,
-  pass_item_bonus_value: 0,
   // Trial system defaults
   trial_penalty_enabled: false,
   trial_penalty_value: -2,

@@ -44,12 +44,6 @@ const ALLOWED_SETTINGS_FIELDS = [
   'late_early_penalty_enabled',
   'late_early_penalty_value',
 
-  // Bad Luck Prevention
-  'see_item_bonus',
-  'see_item_bonus_value',
-  'pass_item_bonus',
-  'pass_item_bonus_value',
-
   // Rank, Role, Class Bonuses
   'guild_rank_bonuses_enabled',
   'number_of_ranks',
@@ -180,12 +174,6 @@ export async function GET(request: Request) {
             // Late/Early Penalty
             late_early_penalty_enabled: true,
             late_early_penalty_value: 0.25,
-
-            // Bad Luck Prevention
-            see_item_bonus: true,
-            see_item_bonus_value: 1.0,
-            pass_item_bonus: false,
-            pass_item_bonus_value: 0.0,
 
             // Rank, Role, Class Bonuses
             guild_rank_bonuses_enabled: true,

@@ -180,12 +180,6 @@ export default function AdminLootItems() {
     late_early_penalty_enabled: true,
     late_early_penalty_value: 0.25,
 
-    // Bad Luck Prevention
-    see_item_bonus: true,
-    see_item_bonus_value: 1.0,
-    pass_item_bonus: false,
-    pass_item_bonus_value: 0.0,
-
     // Rank, Role, Class Bonuses - all OFF by default for simpler out-of-box experience
     guild_rank_bonuses_enabled: false,
     number_of_ranks: 5,
@@ -402,12 +396,6 @@ export default function AdminLootItems() {
         // Late/Early Penalty
         late_early_penalty_enabled: settings.late_early_penalty_enabled,
         late_early_penalty_value: settings.late_early_penalty_value,
-
-        // Bad Luck Prevention
-        see_item_bonus: settings.see_item_bonus,
-        see_item_bonus_value: settings.see_item_bonus_value,
-        pass_item_bonus: settings.pass_item_bonus,
-        pass_item_bonus_value: settings.pass_item_bonus_value,
 
         // Rank Bonuses
         guild_rank_bonuses_enabled: settings.guild_rank_bonuses_enabled,
@@ -2284,122 +2272,60 @@ export default function AdminLootItems() {
                       </CardContent>
                     </Card>
 
-                    {/* Bad Luck Prevention */}
+                    {/* Bad Luck Prevention (BLP) */}
                     <Card variant="unified">
                       <CardHeader>
                         <CardTitle className="text-[15px] font-semibold flex items-center gap-2">
                           <HugeiconsIcon icon={DiceIcon} size={18} className="text-muted-foreground" />
                           Bad luck prevention
                         </CardTitle>
-                        <CardDescription>Provide bonus points to raiders who experience bad RNG luck. Rewards players who see their desired items drop but lose the roll, or who generously pass on items to help others progress.</CardDescription>
+                        <CardDescription>Compensate raiders who lose rolls or get passed over for items they want. When a raider is &quot;in running&quot; (has the item ranked and attended the raid) but doesn&apos;t receive it, their BLP bonus increases. Resets to 0 when they finally win the item.</CardDescription>
                       </CardHeader>
-                      <CardContent className="space-y-4">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
-                          <Label className="block mb-2">Bonus for seeing item but not receiving</Label>
-                          <Select
-                            variant="pill"
-                            value={settings.see_item_bonus ? 'yes' : 'no'}
-                            onChange={(e) => setSettings({ ...settings, see_item_bonus: e.target.value === 'yes' })}
-                            className="bg-background-elevated"
-                          >
-                            <option value="yes">Yes</option>
-                            <option value="no">No</option>
-                          </Select>
-                        </div>
+                      <CardContent>
+                        <div className="grid grid-cols-3 gap-4">
+                          <div>
+                            <Label className="block mb-2">Enable BLP tracking</Label>
+                            <Select
+                              variant="pill"
+                              value={settings.blp_enabled ? 'yes' : 'no'}
+                              onChange={(e) => setSettings({ ...settings, blp_enabled: e.target.value === 'yes' })}
+                              className="bg-background-elevated"
+                            >
+                              <option value="no">No</option>
+                              <option value="yes">Yes</option>
+                            </Select>
+                          </div>
 
-                        <div>
-                          <Label className="block mb-2">Bonus value</Label>
-                          <Input
-                            variant="pill"
-                            type="number"
-                            inputMode="numeric"
-                            value={settings.see_item_bonus_value}
-                            onChange={(e) => setSettings({ ...settings, see_item_bonus_value: Number(e.target.value) })}
-                            disabled={!settings.see_item_bonus}
-                            className="bg-background-elevated"
-                          />
-                        </div>
-                      </div>
+                          <div>
+                            <Label className="block mb-2">Bonus per loss</Label>
+                            <Input
+                              variant="pill"
+                              type="number"
+                              inputMode="numeric"
+                              step="0.01"
+                              min="0.01"
+                              max="10"
+                              value={settings.blp_increment}
+                              onChange={(e) => setSettings({ ...settings, blp_increment: Number(e.target.value) })}
+                              disabled={!settings.blp_enabled}
+                              className="bg-background-elevated"
+                            />
+                          </div>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
-                          <Label className="block mb-2">Bonus for passing an item</Label>
-                          <Select
-                            variant="pill"
-                            value={settings.pass_item_bonus ? 'yes' : 'no'}
-                            onChange={(e) => setSettings({ ...settings, pass_item_bonus: e.target.value === 'yes' })}
-                            className="bg-background-elevated"
-                          >
-                            <option value="yes">Yes</option>
-                            <option value="no">No</option>
-                          </Select>
-                        </div>
-
-                        <div>
-                          <Label className="block mb-2">Bonus value</Label>
-                          <Input
-                            variant="pill"
-                            type="number"
-                            inputMode="numeric"
-                            value={settings.pass_item_bonus_value}
-                            onChange={(e) => setSettings({ ...settings, pass_item_bonus_value: Number(e.target.value) })}
-                            disabled={!settings.pass_item_bonus}
-                            className="bg-background-elevated"
-                          />
-                        </div>
-                        </div>
-
-                        {/* BLP (Bad Luck Protection) - Automatic tracking */}
-                        <div className="border-t border-border pt-4 mt-2">
-                          <p className="text-[13px] font-medium text-foreground mb-1">Automatic bad luck tracking (BLP)</p>
-                          <p className="text-[12px] text-muted-foreground mb-4">Compensate raiders who lose rolls or get passed over for items they want. When a raider is "in running" (has the item ranked and attended the raid) but doesn't receive it, their BLP bonus increases. Resets to 0 when they finally win the item.</p>
-
-                          <div className="grid grid-cols-3 gap-4">
-                            <div>
-                              <Label className="block mb-2">Enable BLP tracking</Label>
-                              <Select
-                                variant="pill"
-                                value={settings.blp_enabled ? 'yes' : 'no'}
-                                onChange={(e) => setSettings({ ...settings, blp_enabled: e.target.value === 'yes' })}
-                                className="bg-background-elevated"
-                              >
-                                <option value="no">No</option>
-                                <option value="yes">Yes</option>
-                              </Select>
-                            </div>
-
-                            <div>
-                              <Label className="block mb-2">Bonus per loss</Label>
-                              <Input
-                                variant="pill"
-                                type="number"
-                                inputMode="numeric"
-                                step="0.01"
-                                min="0.01"
-                                max="10"
-                                value={settings.blp_increment}
-                                onChange={(e) => setSettings({ ...settings, blp_increment: Number(e.target.value) })}
-                                disabled={!settings.blp_enabled}
-                                className="bg-background-elevated"
-                              />
-                            </div>
-
-                            <div>
-                              <Label className="block mb-2">Maximum bonus</Label>
-                              <Input
-                                variant="pill"
-                                type="number"
-                                inputMode="numeric"
-                                step="0.1"
-                                min="0.1"
-                                max="50"
-                                value={settings.blp_maximum}
-                                onChange={(e) => setSettings({ ...settings, blp_maximum: Number(e.target.value) })}
-                                disabled={!settings.blp_enabled}
-                                className="bg-background-elevated"
-                              />
-                            </div>
+                          <div>
+                            <Label className="block mb-2">Maximum bonus</Label>
+                            <Input
+                              variant="pill"
+                              type="number"
+                              inputMode="numeric"
+                              step="0.1"
+                              min="0.1"
+                              max="50"
+                              value={settings.blp_maximum}
+                              onChange={(e) => setSettings({ ...settings, blp_maximum: Number(e.target.value) })}
+                              disabled={!settings.blp_enabled}
+                              className="bg-background-elevated"
+                            />
                           </div>
                         </div>
                       </CardContent>
