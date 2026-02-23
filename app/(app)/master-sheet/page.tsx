@@ -582,14 +582,16 @@ function MasterSheetContent() {
           supabase
             .from('loot_submission_items')
             .select('rank, slot, submission_id, loot_item_id')
-            .in('loot_item_id', itemIds),
+            .in('loot_item_id', itemIds)
+            .limit(10000),
 
           // Query 2: Load loot history to filter out characters who already received items
           supabase
             .from('loot_history')
             .select('character_id, loot_item_id')
             .eq('guild_id', guildId)
-            .in('loot_item_id', itemIds),
+            .in('loot_item_id', itemIds)
+            .limit(10000),
 
           // Query 3: Fetch BLP data (if enabled)
           guildSettings.blp_enabled
@@ -853,6 +855,7 @@ function MasterSheetContent() {
           .from('loot_submission_items')
           .select('loot_item_id, rank, slot, submission_id')
           .in('loot_item_id', itemIds)
+          .limit(10000)
 
         if (!submissionItemsData || submissionItemsData.length === 0) {
           setAggregateItems([])
@@ -1182,7 +1185,8 @@ function MasterSheetContent() {
       supabase
         .from('loot_submission_items')
         .select('rank, slot, submission_id, loot_item_id')
-        .in('loot_item_id', itemIds),
+        .in('loot_item_id', itemIds)
+        .limit(10000),
 
       // Load item priorities for this tier
       (async (): Promise<Record<string, ItemPriority>> => {
@@ -1210,7 +1214,8 @@ function MasterSheetContent() {
         .from('loot_history')
         .select('character_id, loot_item_id')
         .eq('guild_id', guildId)
-        .in('loot_item_id', itemIds),
+        .in('loot_item_id', itemIds)
+        .limit(10000),
 
       // Fetch BLP data for all items in this tier
       (async (): Promise<Record<string, number>> => {
