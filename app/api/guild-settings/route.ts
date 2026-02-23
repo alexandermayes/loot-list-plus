@@ -65,6 +65,11 @@ const ALLOWED_SETTINGS_FIELDS = [
   'trial_auto_promote_enabled',
   'trial_auto_promote_weeks',
   'new_members_start_as_trial',
+
+  // Bad Luck Protection
+  'blp_enabled',
+  'blp_increment',
+  'blp_maximum',
 ] as const
 
 /**
