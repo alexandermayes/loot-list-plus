@@ -190,6 +190,7 @@ function DashboardContent() {
     roleName: string
     trialPenalty: number
     blpRange: { min: number; max: number } | null
+    blpEnabled: boolean
   } | null>(null)
 
   const [attendanceData, setAttendanceData] = useState<{
@@ -992,6 +993,7 @@ function DashboardContent() {
         roleModifier,
         roleName: characterRole,
         trialPenalty: trialPenaltyValue,
+        blpEnabled: !!savedGuildSettings?.blp_enabled,
         blpRange: savedGuildSettings?.blp_enabled && blpValues.length > 0
           ? { min: Math.min(...blpValues), max: Math.max(...blpValues) }
           : null
@@ -1382,7 +1384,9 @@ function DashboardContent() {
                       <span className="text-[13px] font-medium text-muted-foreground">
                         {scoreBreakdown.blpRange
                           ? `+${scoreBreakdown.blpRange.min.toFixed(decimalPlaces)} to +${scoreBreakdown.blpRange.max.toFixed(decimalPlaces)}`
-                          : 'Not enabled'}
+                          : scoreBreakdown.blpEnabled
+                            ? '+0.00'
+                            : 'Not enabled'}
                       </span>
                     </div>
                     <div className="border-t border-border pt-2 mt-2">
