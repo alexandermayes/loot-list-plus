@@ -700,19 +700,47 @@ function DashboardContent() {
         return
       }
 
-      // Filter out items from raid tiers where master_sheet_visible is false
+      // Filter items to tiers that are visible OR whose phase deadline has passed
       let filteredItems = items
       const raidTierIds = [...new Set(items.map((i: { raid_tier_id: string }) => i.raid_tier_id).filter(Boolean))]
       if (raidTierIds.length > 0) {
-        const { data: visibleTiers } = await supabase
+        // Fetch tier details including phase and visibility
+        const { data: tierDetails } = await supabase
           .from('raid_tiers')
-          .select('id')
+          .select('id, phase, master_sheet_visible')
           .in('id', raidTierIds)
-          .eq('master_sheet_visible', true)
 
-        if (visibleTiers) {
-          const visibleTierIds = new Set(visibleTiers.map((t: { id: string }) => t.id))
-          filteredItems = items.filter((i: { raid_tier_id: string }) => visibleTierIds.has(i.raid_tier_id))
+        if (tierDetails) {
+          // Fetch phase deadlines from the expansion
+          let phaseDeadlines: Record<string, string | null> = {}
+          const expansionId = currentExpansion?.expansion_id || activeGuild.active_expansion_id
+          if (expansionId) {
+            const { data: expData } = await supabase
+              .from('expansions')
+              .select('phase_deadlines')
+              .eq('id', expansionId)
+              .single()
+            if (expData?.phase_deadlines) {
+              phaseDeadlines = expData.phase_deadlines as Record<string, string | null>
+            }
+          }
+
+          const now = new Date().toISOString()
+          const accessibleTierIds = new Set(
+            tierDetails
+              .filter((t: { id: string; phase: number | null; master_sheet_visible: boolean | null }) => {
+                // Tier is accessible if rankings are visible
+                if (t.master_sheet_visible) return true
+                // Or if the tier's phase deadline has passed
+                if (t.phase != null) {
+                  const deadline = phaseDeadlines[t.phase.toString()]
+                  if (deadline && deadline < now) return true
+                }
+                return false
+              })
+              .map((t: { id: string }) => t.id)
+          )
+          filteredItems = items.filter((i: { raid_tier_id: string }) => accessibleTierIds.has(i.raid_tier_id))
         }
       }
 
@@ -1488,7 +1516,7 @@ function DashboardContent() {
                 <EmptyState
                   icon={ScrollIcon}
                   title="No priority items yet"
-                  description={`Submit your loot list and once it's approved and the tier is visible, your priorities will show up here.${lootListDeadline ? ` Deadline: ${new Date(lootListDeadline).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}.` : ''}`}
+                  description={`Submit your loot list and once it's approved, your priorities will show up here after the deadline.${lootListDeadline ? ` Deadline: ${new Date(lootListDeadline).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}.` : ''}`}
                   size="compact"
                   action={{ label: "Create a list", onClick: () => router.push('/loot-list'), variant: "primary" }}
                 />
