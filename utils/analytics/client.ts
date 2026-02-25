@@ -29,6 +29,25 @@ type ClientEvent =
   // Growth & conversion
   | 'sign_in_clicked'
   | 'invite_code_created'
+  // Page views
+  | 'overview_page_viewed'
+  | 'loot_list_page_viewed'
+  | 'attendance_page_viewed'
+  | 'master_loot_page_viewed'
+  | 'characters_manage_page_viewed'
+  | 'admin_pending_submissions_viewed'
+  | 'admin_raid_tracking_viewed'
+  | 'settings_page_viewed'
+  // Officer actions
+  | 'submission_reviewed'
+  | 'pending_submission_approved'
+  | 'pending_submission_rejected'
+  | 'loot_item_imported'
+  | 'master_loot_awarded'
+  // Member actions
+  | 'attendance_tab_changed'
+  | 'character_created'
+  | 'character_deleted'
 
 export function trackClientEvent(event: ClientEvent, properties?: Record<string, any>): void {
   try {

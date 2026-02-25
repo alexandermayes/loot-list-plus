@@ -21,7 +21,7 @@ interface Item {
   wowhead_id: number
   boss_name: string
   classification?: string
-  consensus_count?: number  // Number of other guildmates who ranked this item
+
   dps_gain?: number  // Expected DPS/HPS gain from this item
   is_loot_council?: boolean  // Item decided by loot council, not rankable
   loot_item_classes?: {
@@ -355,11 +355,7 @@ export default function SearchableItemSelect({
                                     Owned
                                   </span>
                                 )}
-                                {item.consensus_count && item.consensus_count > 0 && (
-                                  <span className="text-xs text-muted-foreground flex-shrink-0">
-                                    {item.consensus_count} ranked
-                                  </span>
-                                )}
+
                                 {item.classification && item.classification !== 'Unlimited' && (
                                   <span className="text-xs text-muted-foreground flex-shrink-0">
                                     [{item.classification}]

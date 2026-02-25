@@ -248,62 +248,8 @@ export async function GET(request: NextRequest) {
       }
     })
 
-    // If guildId provided, fetch consensus counts (how many OTHER guildmates ranked each item)
-    let consensusCounts: Record<string, number> = {}
-
-    if (guildId && filteredItemsWithSpecType.length > 0) {
-      const itemIds = filteredItemsWithSpecType.map(item => item.id)
-
-      // Query approved submissions from other characters in the guild
-      // For phase-based queries, use expansion_id + phase; for tier queries use raid_tier_id
-      let query = supabase
-        .from('loot_submission_items')
-        .select(`
-          loot_item_id,
-          loot_submissions!inner(character_id, status, guild_id, expansion_id, phase, raid_tier_id)
-        `)
-        .in('loot_item_id', itemIds)
-        .eq('loot_submissions.guild_id', guildId)
-        .eq('loot_submissions.status', 'approved')
-        .neq('loot_submissions.character_id', characterId)
-
-      // Filter by phase or tier depending on query type
-      if (phase && expansionId) {
-        query = query
-          .eq('loot_submissions.expansion_id', expansionId)
-          .eq('loot_submissions.phase', parseInt(phase))
-      } else if (tierId) {
-        query = query.eq('loot_submissions.raid_tier_id', tierId)
-      }
-
-      const { data: submissionItems } = await query
-
-      // Count unique characters per item
-      if (submissionItems) {
-        const charactersByItem: Record<string, Set<string>> = {}
-        interface SubmissionItemRow {
-          loot_item_id: string
-          loot_submissions: { character_id: string } | null
-        }
-        ;(submissionItems as unknown as SubmissionItemRow[]).forEach((si) => {
-          const itemId = si.loot_item_id
-          const charId = si.loot_submissions?.character_id
-          if (itemId && charId) {
-            if (!charactersByItem[itemId]) {
-              charactersByItem[itemId] = new Set()
-            }
-            charactersByItem[itemId].add(charId)
-          }
-        })
-        // Convert sets to counts
-        Object.entries(charactersByItem).forEach(([itemId, chars]) => {
-          consensusCounts[itemId] = chars.size
-        })
-      }
-    }
-
-    // Merge consensus counts, raid tier name, and enriched class data into response
-    const itemsWithConsensus = filteredItemsWithSpecType.map(item => {
+    // Merge raid tier name and enriched class data into response
+    const enrichedItems = filteredItemsWithSpecType.map(item => {
       const raidTier = item.raid_tiers as { name: string } | { name: string }[] | null
       const raidTierName = Array.isArray(raidTier) ? raidTier[0]?.name : raidTier?.name
       const classes = item.loot_item_classes as LootItemClassRestriction[]
@@ -315,13 +261,12 @@ export async function GET(request: NextRequest) {
           class_color: classMap.get(lic.class_id)?.color_hex || null,
           spec_name: lic.spec_id ? specMap.get(lic.spec_id)?.name || null : null,
         })),
-        raid_tier_name: raidTierName || null,
-        consensus_count: consensusCounts[item.id] || 0
+        raid_tier_name: raidTierName || null
       }
     })
 
     return NextResponse.json(
-      { items: itemsWithConsensus },
+      { items: enrichedItems },
       {
         headers: {
           'Cache-Control': 'private, max-age=60, stale-while-revalidate=120'

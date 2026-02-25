@@ -165,7 +165,7 @@ export interface LootItem {
     class_color?: string | null
     spec_name?: string | null
   }[]
-  consensus_count?: number  // Number of OTHER guildmates who ranked this item
+
   character_spec_type?: 'primary' | 'secondary' | null  // The spec_type for the current character (for bracket filtering)
   is_loot_council?: boolean  // Item is decided by loot council, not rankable
   is_allocated?: boolean  // Does item have ANY prio assignments? (false = can go anywhere)
@@ -194,7 +194,7 @@ export interface RaidTier {
  * Fetch loot items for a specific raid tier
  * @param tierId - The raid tier ID
  * @param characterId - The character ID (for spec filtering on server)
- * @param guildId - The guild ID (for consensus counts from other guildmates)
+ * @param guildId - The guild ID (for active tier filtering)
  */
 export function useLootItems(
   tierId: string | null,
@@ -313,7 +313,7 @@ export interface PhaseLootItem extends LootItem {
  * @param expansionId - The expansion ID
  * @param phase - The phase number
  * @param characterId - The character ID (for spec filtering)
- * @param guildId - The guild ID (for consensus counts + active tier filtering)
+ * @param guildId - The guild ID (for active tier filtering)
  */
 export function usePhaseLootItems(
   expansionId: string | null,

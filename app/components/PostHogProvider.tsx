@@ -17,6 +17,9 @@ if (typeof window !== 'undefined' && process.env.NEXT_PUBLIC_POSTHOG_KEY) {
     capture_pageview: false, // We manually capture pageviews
     capture_pageleave: true,
     persistence: 'localStorage+cookie',
+    bootstrap: {
+      featureFlags: {},
+    },
   })
 }
 

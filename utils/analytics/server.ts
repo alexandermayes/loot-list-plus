@@ -34,6 +34,7 @@ export type AnalyticsEvent =
   | 'member_role_changed'
   | 'attendance_recorded'
   | 'character_imported'
+  | 'loot_item_imported'
   | 'api_error'
 
 interface TrackEventParams {
