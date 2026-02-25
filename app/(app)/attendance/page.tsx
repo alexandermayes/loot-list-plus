@@ -3,6 +3,7 @@
 export const dynamic = 'force-dynamic'
 
 import { createClient } from '@/utils/supabase/client'
+import { trackClientEvent } from '@/utils/analytics/client'
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { Calendar01Icon, ArrowDown01Icon, ArrowUp01Icon } from '@hugeicons/core-free-icons'
@@ -13,12 +14,14 @@ import { Heading } from '@/components/ui/typography'
 import { calculateAttendanceScore, getRankModifier } from '@/utils/calculations'
 import { useNotification } from '@/app/contexts/NotificationContext'
 import { useGuildContext } from '@/app/contexts/GuildContext'
+import { getWclReportUrl } from '@/lib/warcraftlogs'
 
 interface RaidEvent {
   id: string
   raid_date: string
   is_skipped: boolean
   notes: string | null
+  wcl_report_code: string | null
 }
 
 interface AttendanceRecord {
@@ -95,6 +98,11 @@ export default function AttendancePage() {
   useEffect(() => {
     document.title = 'LootList+ • Attendance'
   }, [])
+
+  // Track page view
+  useEffect(() => {
+    if (guildId) trackClientEvent('attendance_page_viewed', { guild_id: guildId })
+  }, [guildId])
 
   // Get the start of a week based on first raid day
   const getWeekStart = (dateString: string, firstRaidDay: number) => {
@@ -308,7 +316,7 @@ export default function AttendancePage() {
         // Get raid events in the rolling window (current week + previous X weeks)
         const { data: raidEventsData } = await supabase
           .from('raid_events')
-          .select('id, raid_date, is_skipped, notes')
+          .select('id, raid_date, is_skipped, notes, wcl_report_code')
           .eq('guild_id', activeCharData.active_guild_id)
           .gte('raid_date', lowerBound.toISOString().split('T')[0])
           .lte('raid_date', periodEnd.toISOString().split('T')[0])
@@ -586,6 +594,7 @@ export default function AttendancePage() {
       setSortBy(column)
       setSortDirection(column === 'score' ? 'desc' : 'asc')
     }
+    trackClientEvent('attendance_tab_changed', { tab_name: column })
   }
 
   return (
@@ -738,7 +747,19 @@ export default function AttendancePage() {
                           week.isMostRecent ? 'bg-success/5 text-success/70' : 'bg-accent/5 text-accent/50'
                         }`}
                       >
-                        {formatShortDate(raid.raid_date)}
+                        {raid.wcl_report_code ? (
+                          <a
+                            href={getWclReportUrl(raid.wcl_report_code, guildSettings?.wcl_guild_url)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="hover:underline text-[#e35e15]"
+                            title="View WCL report"
+                          >
+                            {formatShortDate(raid.raid_date)}
+                          </a>
+                        ) : (
+                          formatShortDate(raid.raid_date)
+                        )}
                       </th>
                     ))
                   )}

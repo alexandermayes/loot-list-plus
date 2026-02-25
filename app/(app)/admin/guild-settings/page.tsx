@@ -27,7 +27,8 @@ import { useGuildMembers } from '@/app/hooks/use-api'
 import { Select } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { SecurityLockIcon } from '@hugeicons/core-free-icons'
+import { SecurityLockIcon, DiscordIcon, RotateClockwiseIcon } from '@hugeicons/core-free-icons'
+import { HugeiconsIcon } from '@hugeicons/react'
 
 export default function GuildSettingsPage() {
   const [loading, setLoading] = useState(true)
@@ -40,6 +41,17 @@ export default function GuildSettingsPage() {
   const [faction, setFaction] = useState<'Alliance' | 'Horde'>('Alliance')
   const [discordServerId, setDiscordServerId] = useState('')
   const [guildIconUrl, setGuildIconUrl] = useState<string | null>(null)
+
+  // Discord integration state
+  const [discordChannels, setDiscordChannels] = useState<Array<{ id: string; name: string; type: number; position: number }>>([])
+  const [discordChannelsLoading, setDiscordChannelsLoading] = useState(false)
+  const [discordChannelsError, setDiscordChannelsError] = useState<string | null>(null)
+  const [raidSummaryChannelId, setRaidSummaryChannelId] = useState<string | null>(null)
+  const [savingChannel, setSavingChannel] = useState(false)
+
+  // Warcraft Logs integration state
+  const [wclGuildUrl, setWclGuildUrl] = useState<string>('')
+  const [savingWcl, setSavingWcl] = useState(false)
 
   // Initial values for change detection
   const [initialValues, setInitialValues] = useState({
@@ -261,6 +273,107 @@ export default function GuildSettingsPage() {
     }
   }
 
+  // Load Discord channels when the page mounts with a guild that has a Discord server
+  const loadDiscordChannels = async () => {
+    if (!activeGuild?.discord_server_id) return
+    setDiscordChannelsLoading(true)
+    setDiscordChannelsError(null)
+    try {
+      const res = await fetch(`/api/discord/channels?guild_id=${activeGuild.id}`)
+      const data = await res.json()
+      if (data.error && !data.channels) {
+        setDiscordChannelsError(data.error)
+      } else {
+        setDiscordChannels(data.channels || [])
+        if (data.error) setDiscordChannelsError(data.error)
+      }
+    } catch {
+      setDiscordChannelsError('Couldn\'t load channels. Try again.')
+    } finally {
+      setDiscordChannelsLoading(false)
+    }
+  }
+
+  // Load guild settings (for raid_summary_channel_id)
+  useEffect(() => {
+    if (!activeGuild?.id || guildLoading) return
+    const loadGuildSettings = async () => {
+      try {
+        const res = await fetch(`/api/guild-settings?guild_id=${activeGuild.id}`)
+        if (res.ok) {
+          const data = await res.json()
+          setRaidSummaryChannelId(data.settings?.raid_summary_channel_id || null)
+          setWclGuildUrl(data.settings?.wcl_guild_url || '')
+        }
+      } catch {
+        // Non-critical, ignore
+      }
+    }
+    loadGuildSettings()
+  }, [activeGuild?.id, guildLoading])
+
+  // Load Discord channels when guild has a Discord server
+  useEffect(() => {
+    if (!activeGuild?.discord_server_id || guildLoading || loading) return
+    if (!isOfficer) return
+    loadDiscordChannels()
+  }, [activeGuild?.discord_server_id, guildLoading, loading, isOfficer])
+
+  const handleSaveRaidSummaryChannel = async (channelId: string | null) => {
+    if (!activeGuild) return
+    setSavingChannel(true)
+    try {
+      const res = await fetch('/api/guild-settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          guild_id: activeGuild.id,
+          settings: { raid_summary_channel_id: channelId || null },
+        }),
+      })
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data.error || 'Couldn\'t save channel. Try again.')
+      }
+      setRaidSummaryChannelId(channelId)
+      showNotification('success', channelId ? 'Raid summary channel saved' : 'Raid summary channel removed')
+    } catch (error: any) {
+      showNotification('error', error.message || 'Couldn\'t save channel. Try again.')
+    } finally {
+      setSavingChannel(false)
+    }
+  }
+
+  const handleSaveWclUrl = async (url: string) => {
+    if (!activeGuild) return
+    const trimmed = url.trim()
+    if (trimmed && !trimmed.match(/^https:\/\/(classic\.|www\.)?warcraftlogs\.com\/guild\//)) {
+      showNotification('error', 'URL must be a Warcraft Logs guild page (e.g. https://classic.warcraftlogs.com/guild/us/faerlina/guild-name)')
+      return
+    }
+    setSavingWcl(true)
+    try {
+      const res = await fetch('/api/guild-settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          guild_id: activeGuild.id,
+          settings: { wcl_guild_url: trimmed || null },
+        }),
+      })
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data.error || 'Couldn\'t save WCL URL. Try again.')
+      }
+      showNotification('success', trimmed ? 'Warcraft Logs URL saved' : 'Warcraft Logs URL removed')
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Couldn\'t save WCL URL. Try again.'
+      showNotification('error', message)
+    } finally {
+      setSavingWcl(false)
+    }
+  }
+
   // Show unauthorized message if not officer (after loading completes)
   if (!loading && !guildLoading && (!activeGuild || !isOfficer)) {
     return (
@@ -425,6 +538,98 @@ export default function GuildSettingsPage() {
 
         {/* Invite Codes */}
         <InviteCodeManager />
+
+        {/* Discord Integration */}
+        <div className="bg-background-elevated border border-border rounded-xl overflow-hidden">
+          <div className="p-6 border-b border-border">
+            <div className="flex items-center gap-3">
+              <HugeiconsIcon icon={DiscordIcon} size={24} className="text-[#5865F2]" />
+              <div>
+                <h2 className="text-[24px] font-semibold text-foreground">Discord integration</h2>
+                <p className="text-muted-foreground text-[13px] mt-1">Post raid summaries to a Discord channel when you finish logging a raid</p>
+              </div>
+            </div>
+          </div>
+          <div className="p-6 space-y-4">
+            {!activeGuild?.discord_server_id ? (
+              <p className="text-muted-foreground text-[13px]">
+                Link a Discord server in guild information above to enable Discord features.
+              </p>
+            ) : discordChannelsError && discordChannels.length === 0 ? (
+              <div className="space-y-3">
+                <p className="text-muted-foreground text-[13px]">{discordChannelsError}</p>
+                <Button variant="outline" size="sm" onClick={loadDiscordChannels} loading={discordChannelsLoading}>
+                  Retry
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <div className="space-y-2">
+                  <Label htmlFor="raidSummaryChannel">Raid summary channel</Label>
+                  <div className="flex items-center gap-2">
+                    <Select
+                      id="raidSummaryChannel"
+                      value={raidSummaryChannelId || ''}
+                      onChange={(e) => handleSaveRaidSummaryChannel(e.target.value || null)}
+                      disabled={discordChannelsLoading || savingChannel}
+                      className="flex-1"
+                    >
+                      <option value="">None (disabled)</option>
+                      {discordChannels.map(ch => (
+                        <option key={ch.id} value={ch.id}>
+                          #{ch.name}
+                        </option>
+                      ))}
+                    </Select>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={loadDiscordChannels}
+                      disabled={discordChannelsLoading}
+                      className="shrink-0 px-2"
+                      title="Refresh channels"
+                    >
+                      <HugeiconsIcon icon={RotateClockwiseIcon} size={16} className={discordChannelsLoading ? 'animate-spin' : ''} />
+                    </Button>
+                  </div>
+                  <p className="text-muted-foreground text-[11px]">
+                    The LootList+ Bot will post raid attendance and loot to this channel. Make sure the bot has permission to send messages there.
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Warcraft Logs Integration */}
+        <div className="bg-background-elevated border border-border rounded-xl overflow-hidden">
+          <div className="p-6 border-b border-border">
+            <div className="flex items-center gap-3">
+              <img src="/wcl-icon.svg" alt="" className="w-6 h-6" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} />
+              <div>
+                <h2 className="text-[24px] font-semibold text-foreground">Warcraft Logs</h2>
+                <p className="text-muted-foreground text-[13px] mt-1">Auto-link WCL reports to raids when posting summaries to Discord</p>
+              </div>
+            </div>
+          </div>
+          <div className="p-6 space-y-3">
+            <div className="space-y-2">
+              <Label htmlFor="wclGuildUrl">Guild page URL</Label>
+              <Input
+                id="wclGuildUrl"
+                type="url"
+                placeholder="https://classic.warcraftlogs.com/guild/us/faerlina/guild-name"
+                value={wclGuildUrl}
+                onChange={(e) => setWclGuildUrl(e.target.value)}
+                onBlur={(e) => handleSaveWclUrl(e.target.value)}
+                disabled={savingWcl}
+              />
+              <p className="text-muted-foreground text-[11px]">
+                Paste your guild&apos;s Warcraft Logs URL. Reports matching raid dates will be auto-linked to summaries.
+              </p>
+            </div>
+          </div>
+        </div>
 
         {/* Danger Zone - Only visible to guild creator */}
         {isGuildCreator && (

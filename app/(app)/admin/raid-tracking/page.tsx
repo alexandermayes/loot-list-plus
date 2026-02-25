@@ -6,7 +6,7 @@ import { createClient } from '@/utils/supabase/client'
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { HugeiconsIcon } from '@hugeicons/react'
-import { ArrowDown01Icon, ArrowUp01Icon, Upload01Icon, Cancel01Icon, MoreVerticalIcon } from '@hugeicons/core-free-icons'
+import { ArrowDown01Icon, ArrowUp01Icon, Upload01Icon, Cancel01Icon, MoreVerticalIcon, DiscordIcon } from '@hugeicons/core-free-icons'
 import LootHistoryTab from './components/LootHistoryTab'
 import { RaidTrackingPageSkeleton } from '@/components/ui/skeletons'
 import { Heading } from '@/components/ui/typography'
@@ -38,6 +38,7 @@ import {
 import { Select } from '@/components/ui/select'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Search01Icon } from '@hugeicons/core-free-icons'
+import { trackClientEvent } from '@/utils/analytics/client'
 
 interface Member {
   character_id: string
@@ -68,6 +69,7 @@ interface RaidEvent {
   notes: string | null
   is_skipped: boolean
   skip_reason: string | null
+  wcl_report_code: string | null
 }
 
 interface AttendanceStatus {
@@ -104,6 +106,8 @@ export default function RaidTrackingPage() {
   const [showLootSelectionModal, setShowLootSelectionModal] = useState<{ index: number, itemId: number, characterName: string } | null>(null)
   const [lootSearchQuery, setLootSearchQuery] = useState('')
   const [importing, setImporting] = useState(false)
+  const [postingDiscord, setPostingDiscord] = useState<string | null>(null)
+  const [linkingWcl, setLinkingWcl] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<'tracking' | 'history'>('tracking')
 
   // Reassign loot modal state
@@ -279,19 +283,34 @@ export default function RaidTrackingPage() {
     const existingDates = new Set(existingEvents?.map((e: { raid_date: string }) => e.raid_date) || [])
     const newDates = dates.filter(d => !existingDates.has(d))
 
-    // Get active expansion tier
+    // Get active expansion tier (use current phase)
     const { data: guildData } = await supabase
       .from('guilds')
       .select('active_expansion_id')
       .eq('id', guildId)
       .single()
 
-    const { data: tierData } = await supabase
-      .from('raid_tiers')
-      .select('id')
-      .eq('expansion_id', guildData?.active_expansion_id)
-      .limit(1)
-      .single()
+    let tierData: { id: string } | null = null
+    if (guildData?.active_expansion_id) {
+      const { data: expData } = await supabase
+        .from('expansions')
+        .select('current_phase')
+        .eq('id', guildData.active_expansion_id)
+        .single()
+
+      const currentPhase = expData?.current_phase || 1
+
+      const { data: phraseTier } = await supabase
+        .from('raid_tiers')
+        .select('id')
+        .eq('expansion_id', guildData.active_expansion_id)
+        .eq('phase', currentPhase)
+        .or('is_guild_active.eq.true,is_guild_active.is.null')
+        .limit(1)
+        .single()
+
+      tierData = phraseTier
+    }
 
     // Create new raid events
     if (newDates.length > 0 && tierData) {
@@ -746,6 +765,58 @@ export default function RaidTrackingPage() {
 
     setShowSkipModal(null)
     setSkipReason('')
+  }
+
+  const handlePostToDiscord = async (raidId: string) => {
+    if (!activeGuild || postingDiscord) return
+    setPostingDiscord(raidId)
+    try {
+      const response = await fetch('/api/discord/post-raid-summary', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ guild_id: activeGuild.id, raid_event_id: raidId }),
+      })
+      const data = await response.json()
+      if (!response.ok) {
+        showNotification('error', data.error || 'Couldn\'t post to Discord. Try again.')
+        return
+      }
+      showNotification('success', 'Raid summary posted to Discord.')
+    } catch {
+      showNotification('error', 'Couldn\'t post to Discord. Check your connection.')
+    } finally {
+      setPostingDiscord(null)
+    }
+  }
+
+  const handleLinkWcl = async (raidId: string) => {
+    if (!activeGuild || linkingWcl) return
+    setLinkingWcl(raidId)
+    try {
+      const response = await fetch('/api/wcl/link-report', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ guild_id: activeGuild.id, raid_event_id: raidId }),
+      })
+      const data = await response.json()
+      if (!response.ok) {
+        showNotification('error', data.error || 'Couldn\'t link WCL report. Try again.')
+        return
+      }
+      if (!data.linked) {
+        showNotification('info', data.message || 'No matching report found for this date.')
+        return
+      }
+      // Update local state with the report code
+      setRaidDates(prev => prev.map(r =>
+        r.id === raidId ? { ...r, wcl_report_code: data.report_code } : r
+      ))
+      showNotification('success', 'Warcraft Logs report linked.')
+    } catch {
+      showNotification('error', 'Couldn\'t link WCL report. Check your connection.')
+    } finally {
+      setLinkingWcl(null)
+    }
   }
 
   const deleteLootEntry = (lootId: string, raidId: string) => {
@@ -1885,6 +1956,15 @@ export default function RaidTrackingPage() {
                       <p className="text-foreground-muted text-[13px] mt-1">
                         {attendedCount} attended • {signupCount} signed up
                         {lootCount > 0 && <span className="text-[#a335ee]"> • {lootCount} loot</span>}
+                        {raid.wcl_report_code && (
+                          <span> • <a
+                            href={`https://classic.warcraftlogs.com/reports/${raid.wcl_report_code}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-[#e35e15] hover:underline"
+                            onClick={(e) => e.stopPropagation()}
+                          >WCL Report</a></span>
+                        )}
                       </p>
                     )}
                   </div>
@@ -1921,6 +2001,31 @@ export default function RaidTrackingPage() {
                       <HugeiconsIcon icon={Upload01Icon} size={16} />
                       <span className="hidden sm:inline">{hasImportedData ? 'Edit import' : 'Import data'}</span>
                       <span className="sm:hidden">{hasImportedData ? 'Edit' : 'Import'}</span>
+                    </Button>
+                  )}
+                  {!raid.is_skipped && hasImportedData && guildSettings?.raid_summary_channel_id && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handlePostToDiscord(raid.id)}
+                      loading={postingDiscord === raid.id}
+                      className="border-[#5865F2]/50 text-[#5865F2] hover:bg-[#5865F2]/10"
+                    >
+                      <HugeiconsIcon icon={DiscordIcon} size={16} />
+                      <span className="hidden sm:inline">Post to Discord</span>
+                      <span className="sm:hidden">Discord</span>
+                    </Button>
+                  )}
+                  {!raid.is_skipped && hasImportedData && guildSettings?.wcl_guild_url && !raid.wcl_report_code && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleLinkWcl(raid.id)}
+                      loading={linkingWcl === raid.id}
+                      className="border-[#e35e15]/50 text-[#e35e15] hover:bg-[#e35e15]/10"
+                    >
+                      <span className="hidden sm:inline">Link WCL</span>
+                      <span className="sm:hidden">WCL</span>
                     </Button>
                   )}
                   <Button

@@ -164,6 +164,7 @@ function MasterSheetContent() {
   const [phases, setPhases] = useState<number[]>([])
   const [selectedPhase, setSelectedPhase] = useState<number | null>(null)
   const [masterSheetVisible, setMasterSheetVisible] = useState<boolean>(false)
+  const [hasApprovedSubmission, setHasApprovedSubmission] = useState<boolean>(false)
   const [itemPriorities, setItemPriorities] = useState<Record<string, ItemPriority>>({})
   const [collapsedBosses, setCollapsedBosses] = useState<Set<string>>(new Set())
   const [collapsedRaidTiers, setCollapsedRaidTiers] = useState<Set<string>>(new Set())
@@ -445,6 +446,7 @@ function MasterSheetContent() {
 
         // Load raid tiers for active expansion (single join query)
         // Officers can see all tiers (including disabled ones), members only see active tiers
+        let loadedTierIds: string[] = []
         if (activeGuild?.active_expansion_id) {
           let tiersQuery = supabase
             .from('raid_tiers')
@@ -483,6 +485,7 @@ function MasterSheetContent() {
             })
 
             setRaidTiers(sortedTiers)
+            loadedTierIds = sortedTiers.map(t => t.id)
 
             // Extract unique phases from tiers
             const uniquePhases = [...new Set<number>(sortedTiers.map((t: RaidTier) => t.phase).filter((p: number | null): p is number => p !== null))]
@@ -502,6 +505,22 @@ function MasterSheetContent() {
               }
             }
           }
+        }
+
+        // Check if current character has an approved submission for any active tier in this expansion
+        // Officers bypass this check
+        if (!isOfficer && activeCharacter?.id && loadedTierIds.length > 0) {
+          const { data: approvedSubs } = await supabase
+            .from('loot_submissions')
+            .select('id')
+            .eq('character_id', activeCharacter.id)
+            .eq('status', 'approved')
+            .in('raid_tier_id', loadedTierIds)
+            .limit(1)
+
+          setHasApprovedSubmission(!!(approvedSubs && approvedSubs.length > 0))
+        } else if (isOfficer) {
+          setHasApprovedSubmission(true)
         }
       } catch (error) {
         console.error('Error loading master sheet data:', error)
@@ -544,7 +563,8 @@ function MasterSheetContent() {
       }
 
       // Only load rankings if master sheet is visible OR user is an officer
-      if (!masterSheetVisible && !isOfficer) {
+      // Also require an approved submission for non-officers (prevents gaming)
+      if ((!masterSheetVisible || !hasApprovedSubmission) && !isOfficer) {
         setAllItemRankings([])
         setContentLoading(false)
         return
@@ -808,7 +828,7 @@ function MasterSheetContent() {
     }
 
     loadAllRankings()
-  }, [selectedPhase, phaseTiers, guildId, guildSettings, masterSheetVisible, isOfficer])
+  }, [selectedPhase, phaseTiers, guildId, guildSettings, masterSheetVisible, hasApprovedSubmission, isOfficer])
 
   // Refresh Wowhead tooltips after items are loaded
   // Uses centralized debounced refresh to prevent excessive API calls
@@ -1677,8 +1697,20 @@ function MasterSheetContent() {
           <MasterSheetContentSkeleton />
         ) : (
         <>
-        {/* Master Sheet Hidden Warning */}
-        {!masterSheetVisible && !isOfficer ? (
+        {/* Master Sheet Access Gates */}
+        {!isOfficer && !hasApprovedSubmission ? (
+          <div className="bg-background-elevated border border-border rounded-xl p-12 text-center">
+            <div className="max-w-md mx-auto">
+              <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-3xl">🔒</span>
+              </div>
+              <h3 className="text-xl font-semibold text-foreground mb-2">Submit your loot list first</h3>
+              <p className="text-muted-foreground">
+                You need an approved loot list before you can view the master sheet. Submit your list and wait for officer approval.
+              </p>
+            </div>
+          </div>
+        ) : !masterSheetVisible && !isOfficer ? (
           <div className="bg-background-elevated border border-border rounded-xl p-12 text-center">
             <div className="max-w-md mx-auto">
               <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">

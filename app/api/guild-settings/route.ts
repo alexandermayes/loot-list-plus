@@ -70,6 +70,12 @@ const ALLOWED_SETTINGS_FIELDS = [
   'blp_enabled',
   'blp_increment',
   'blp_maximum',
+
+  // Discord Integration
+  'raid_summary_channel_id',
+
+  // Warcraft Logs Integration
+  'wcl_guild_url',
 ] as const
 
 /**
@@ -204,7 +210,13 @@ export async function GET(request: Request) {
             trial_penalty_value: -2.0,
             trial_auto_promote_enabled: false,
             trial_auto_promote_weeks: 4,
-            new_members_start_as_trial: false
+            new_members_start_as_trial: false,
+
+            // Discord Integration
+            raid_summary_channel_id: null,
+
+            // Warcraft Logs Integration
+            wcl_guild_url: null
           }
         },
         {
