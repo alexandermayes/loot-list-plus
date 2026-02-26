@@ -131,18 +131,80 @@ export default function LandingAppPreview() {
           </motion.p>
         </motion.div>
 
-        {/* Dashboard Preview */}
-        <motion.div
-          initial="hidden"
-          animate={isInView ? 'visible' : 'hidden'}
-          variants={scaleUp}
-        >
-          <div className="relative">
-            {/* Glow ring */}
-            <div className="absolute -inset-1 bg-gradient-to-r from-accent/20 via-accent/10 to-accent/20 rounded-3xl blur-xl" />
-            <DashboardPreview />
-          </div>
-        </motion.div>
+        {/* Dashboard + Mobile Preview */}
+        <div className="relative">
+          <motion.div
+            initial="hidden"
+            animate={isInView ? 'visible' : 'hidden'}
+            variants={scaleUp}
+          >
+            <div className="relative">
+              {/* Glow ring */}
+              <div className="absolute -inset-1 bg-gradient-to-r from-accent/20 via-accent/10 to-accent/20 rounded-3xl blur-xl" />
+              <DashboardPreview />
+            </div>
+          </motion.div>
+
+          {/* Mobile phone mockup */}
+          <motion.div
+            className="absolute -bottom-8 -right-4 md:-bottom-12 md:-right-8 w-[120px] md:w-[200px] lg:w-[240px] z-20"
+            initial={{ opacity: 0, y: 40 }}
+            animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 40 }}
+            transition={{ delay: 0.8, duration: 0.6 }}
+          >
+            {/* Phone frame */}
+            <div className="relative bg-[#1a1a1a] rounded-[20px] md:rounded-[28px] border-2 border-border shadow-2xl shadow-black/50 overflow-hidden">
+              {/* Dynamic Island */}
+              <div className="relative h-8 md:h-12 bg-[#1a1a1a] flex items-end justify-center pb-1 md:pb-1.5">
+                <div className="w-[60px] md:w-[90px] h-[14px] md:h-[22px] bg-black rounded-full" />
+              </div>
+
+              {/* iOS status bar */}
+              <div className="flex items-center justify-between px-4 md:px-6 py-0.5 md:py-1 bg-[#1a1a1a]">
+                {/* Time */}
+                <span className="text-[8px] md:text-[11px] font-semibold text-white">9:41</span>
+                {/* Right icons: signal, wifi, battery */}
+                <div className="flex items-center gap-0.5 md:gap-1">
+                  {/* Signal bars */}
+                  <svg className="w-2.5 h-2 md:w-4 md:h-3" viewBox="0 0 17 11" fill="white">
+                    <rect x="0" y="7" width="3" height="4" rx="0.5" />
+                    <rect x="4.5" y="4.5" width="3" height="6.5" rx="0.5" />
+                    <rect x="9" y="2" width="3" height="9" rx="0.5" />
+                    <rect x="13.5" y="0" width="3" height="11" rx="0.5" />
+                  </svg>
+                  {/* WiFi */}
+                  <svg className="w-2.5 h-2 md:w-4 md:h-3" viewBox="0 0 16 12" fill="white">
+                    <path d="M8 11.5a1.25 1.25 0 100-2.5 1.25 1.25 0 000 2.5z" />
+                    <path d="M4.7 8.3a4.5 4.5 0 016.6 0" stroke="white" strokeWidth="1.2" fill="none" strokeLinecap="round" />
+                    <path d="M2.2 5.8a8 8 0 0111.6 0" stroke="white" strokeWidth="1.2" fill="none" strokeLinecap="round" />
+                  </svg>
+                  {/* Battery */}
+                  <svg className="w-4 h-2 md:w-6 md:h-3" viewBox="0 0 27 13" fill="none">
+                    <rect x="0.5" y="0.5" width="23" height="12" rx="2.5" stroke="white" strokeOpacity="0.35" />
+                    <rect x="2" y="2" width="20" height="9" rx="1.5" fill="white" />
+                    <path d="M25 4.5v4a2 2 0 000-4z" fill="white" fillOpacity="0.4" />
+                  </svg>
+                </div>
+              </div>
+
+              {/* Screenshot (clipped to hide original status bar) */}
+              <div className="overflow-hidden">
+                <Image
+                  src="/images/landing/mobile-preview.jpg"
+                  alt="LootList+ mobile view showing character overview and score breakdown"
+                  width={390}
+                  height={844}
+                  className="w-full h-auto -mt-[8%]"
+                />
+              </div>
+
+              {/* Home indicator */}
+              <div className="h-4 md:h-5 bg-[#1a1a1a] flex items-center justify-center">
+                <div className="w-8 md:w-10 h-1 bg-white/20 rounded-full" />
+              </div>
+            </div>
+          </motion.div>
+        </div>
       </div>
     </section>
   )
