@@ -42,7 +42,7 @@ const features = [
   {
     title: 'Discord integration',
     description: 'One-click authentication. Your guild members sign in with their existing Discord accounts.',
-    customIcon: '/discord-white.svg',
+    customIcon: '/icons/discord-white.svg',
     color: 'text-[#5865F2]'
   },
   {

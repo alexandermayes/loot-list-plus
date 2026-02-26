@@ -17,7 +17,7 @@ function DashboardPreview() {
         </div>
         <div className="flex-1 flex justify-center">
           <div className="px-4 py-1 bg-background rounded-lg text-xs text-foreground-muted">
-            lootlist.gg/overview
+            lootlistplus.com
           </div>
         </div>
       </div>

@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef } from 'react'
+import { useRef, useState, useEffect } from 'react'
 import { motion, useInView } from 'framer-motion'
 import { fadeInUp, staggerContainer } from '@/lib/animations'
 import Image from 'next/image'
@@ -29,12 +29,24 @@ const testimonials = [
   }
 ]
 
-const stats = [
-  { value: '500+', label: 'Active guilds' },
-  { value: '25K+', label: 'Raiders' },
-  { value: '100K+', label: 'Items distributed' },
-  { value: '99.9%', label: 'Uptime' }
-]
+function formatStat(n: number): string {
+  if (n >= 1000000) return `${Math.floor(n / 1000000)}M+`
+  if (n >= 1000) return `${Math.floor(n / 1000)}K+`
+  return `${n}+`
+}
+
+function useLandingStats() {
+  const [stats, setStats] = useState<{ guilds: number; raiders: number; items_distributed: number } | null>(null)
+
+  useEffect(() => {
+    fetch('/api/landing-stats')
+      .then(res => res.ok ? res.json() : null)
+      .then(data => { if (data) setStats(data) })
+      .catch(() => {})
+  }, [])
+
+  return stats
+}
 
 function TestimonialCard({ testimonial, index }: { testimonial: typeof testimonials[0], index: number }) {
   return (
@@ -73,6 +85,21 @@ function TestimonialCard({ testimonial, index }: { testimonial: typeof testimoni
 export default function LandingTestimonials() {
   const ref = useRef(null)
   const isInView = useInView(ref, { once: true, margin: '-100px' })
+  const liveStats = useLandingStats()
+
+  const stats = liveStats
+    ? [
+        { value: formatStat(liveStats.guilds), label: 'Active guilds' },
+        { value: formatStat(liveStats.raiders), label: 'Raiders' },
+        { value: formatStat(liveStats.items_distributed), label: 'Items distributed' },
+        { value: '99.9%', label: 'Uptime' },
+      ]
+    : [
+        { value: '—', label: 'Active guilds' },
+        { value: '—', label: 'Raiders' },
+        { value: '—', label: 'Items distributed' },
+        { value: '99.9%', label: 'Uptime' },
+      ]
 
   return (
     <section id="testimonials" className="relative py-32 md:py-40 bg-background-subtle overflow-hidden">
