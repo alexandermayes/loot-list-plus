@@ -67,8 +67,8 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Not a member of this guild' }, { status: 403 })
     }
 
-    // Build query - character_name is denormalized in loot_history
-    // We'll look up character class color separately if needed
+    // Build query - join characters table for linked characters,
+    // fall back to denormalized character_name for unlinked ones
     let query = supabase
       .from('loot_history')
       .select(`
@@ -79,6 +79,12 @@ export async function GET(request: NextRequest) {
         awarded_by,
         character_id,
         character_name,
+        characters (
+          name,
+          wow_classes (
+            color_hex
+          )
+        ),
         loot_items!inner (
           name,
           wowhead_id,
@@ -122,7 +128,10 @@ export async function GET(request: NextRequest) {
     if (characterFilter) {
       const lowerFilter = characterFilter.toLowerCase()
       filteredData = filteredData.filter((entry: Record<string, unknown>) => {
-        const charName = (entry.character_name as string) || ''
+        // Check joined character name first, then denormalized character_name
+        const characters = entry.characters as { name?: string } | { name?: string }[] | null
+        const linkedName = Array.isArray(characters) ? characters[0]?.name : characters?.name
+        const charName = linkedName || (entry.character_name as string) || ''
         return charName.toLowerCase().includes(lowerFilter)
       })
     }
@@ -173,43 +182,20 @@ export async function GET(request: NextRequest) {
       boss_name?: string
       raid_tiers?: RaidTierData | RaidTierData[]
     }
+    interface CharacterData {
+      name?: string
+      wow_classes?: { color_hex?: string } | { color_hex?: string }[]
+    }
     interface HistoryEntry {
       id: string
       awarded_date: string
       character_id?: string
       character_name?: string
+      characters?: CharacterData | CharacterData[]
       awarded_by?: string
       notes?: string
       created_at: string
       loot_items?: LootItemData | LootItemData[]
-    }
-
-    // Collect character IDs to look up class colors
-    const characterIds = new Set<string>()
-    for (const entry of filteredData) {
-      const typedEntry = entry as unknown as HistoryEntry
-      if (typedEntry.character_id) {
-        characterIds.add(typedEntry.character_id)
-      }
-    }
-
-    // Look up character class colors
-    const characterColors: Record<string, string> = {}
-    if (characterIds.size > 0) {
-      const { data: charactersData } = await supabase
-        .from('characters')
-        .select('id, wow_classes(color_hex)')
-        .in('id', Array.from(characterIds))
-
-      if (charactersData) {
-        for (const char of charactersData) {
-          const wowClass = char.wow_classes as { color_hex?: string } | { color_hex?: string }[] | null
-          const colorHex = Array.isArray(wowClass) ? wowClass[0]?.color_hex : wowClass?.color_hex
-          if (colorHex) {
-            characterColors[char.id] = colorHex
-          }
-        }
-      }
     }
 
     // Transform data
@@ -219,12 +205,18 @@ export async function GET(request: NextRequest) {
       const lootItem = Array.isArray(typedEntry.loot_items) ? typedEntry.loot_items[0] : typedEntry.loot_items
       const raidTier = lootItem?.raid_tiers
       const tierData = Array.isArray(raidTier) ? raidTier[0] : raidTier
-      const classColor = typedEntry.character_id ? characterColors[typedEntry.character_id] : null
+
+      // Get character name and class color from joined characters table,
+      // falling back to denormalized character_name for unlinked characters
+      const character = Array.isArray(typedEntry.characters) ? typedEntry.characters[0] : typedEntry.characters
+      const charName = character?.name || typedEntry.character_name || 'Unknown'
+      const wowClass = character?.wow_classes
+      const classColor = Array.isArray(wowClass) ? wowClass[0]?.color_hex : wowClass?.color_hex
 
       return {
         id: typedEntry.id,
         awarded_date: typedEntry.awarded_date,
-        character_name: typedEntry.character_name || 'Unknown',
+        character_name: charName,
         character_class_color: classColor || null,
         item_name: lootItem?.name || 'Unknown Item',
         wowhead_id: lootItem?.wowhead_id || 0,

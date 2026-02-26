@@ -24,6 +24,7 @@ import { InformationCircleIcon } from '@hugeicons/core-free-icons'
 import { useLootList, type LootItem } from '@/app/contexts/LootListContext'
 import { isTokenSlot } from '@/data/token-class-mapping'
 import { useNotification } from '@/app/contexts/NotificationContext'
+import { trackClientEvent } from '@/utils/analytics/client'
 import { ClassificationBadge } from '@/components/ui/classification-badge'
 import { BisImportModal } from '@/app/components/BisImportModal'
 import { HorizontalScroll } from '@/components/ui/horizontal-scroll'
@@ -168,6 +169,7 @@ const RankRow = memo(function RankRow({
 
 export default function LootList() {
   const {
+    activeGuild,
     activeCharacter,
     guildExpansions,
     viewingExpansionId,
@@ -216,6 +218,11 @@ export default function LootList() {
   useEffect(() => {
     document.title = 'LootList+ • Loot List'
   }, [])
+
+  // Track page view
+  useEffect(() => {
+    if (activeGuild?.id) trackClientEvent('loot_list_page_viewed', { guild_id: activeGuild.id })
+  }, [activeGuild?.id])
 
   // Close More menu when clicking outside
   useEffect(() => {

@@ -296,11 +296,14 @@ function MasterSheetContent() {
     }
 
     // Query 3: Fetch ALL raid events ONCE
+    const todayStr = new Date().toISOString().split('T')[0]
     const { data: recentRaids } = await supabase
       .from('raid_events')
       .select('id, raid_date')
       .eq('guild_id', guildId)
+      .eq('is_skipped', false)
       .gte('raid_date', periodStartStr)
+      .lte('raid_date', todayStr)
 
     if (!recentRaids || recentRaids.length === 0) {
       return Object.fromEntries(characterIds.map(id => [id, { score: 0, raidsAttended: 0 }]))

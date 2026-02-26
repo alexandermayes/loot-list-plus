@@ -131,6 +131,10 @@ export default function RaidTrackingPage() {
     document.title = activeTab === 'tracking' ? 'LootList+ • Raid Tracking' : 'LootList+ • Loot History'
   }, [activeTab])
 
+  useEffect(() => {
+    if (activeGuild?.id) trackClientEvent('admin_raid_tracking_viewed', { guild_id: activeGuild.id })
+  }, [activeGuild?.id])
+
   // Populate form when opening edit modal - only pre-fill loot (not attendance/signups)
   // Attendance and signups are managed via the main UI, import is just for Gargul data
   useEffect(() => {
@@ -1653,6 +1657,13 @@ export default function RaidTrackingPage() {
     setImportData('')
     setImportType('attendance')
 
+    if (successCount > 0) {
+      trackClientEvent('loot_item_imported', {
+        guild_id: activeGuild.id,
+        item_count: successCount,
+      })
+    }
+
     // Show results
     showNotification(
       errorCount > 0 ? 'warning' : 'success',
@@ -1779,6 +1790,41 @@ export default function RaidTrackingPage() {
     return { raidsByWeek: grouped, weekKeys: keys }
   }, [raidDates, firstRaidDay])
 
+  // Compute upcoming raid dates (next week only) for the preview section
+  const upcomingRaidDates = useMemo(() => {
+    const raidScheduleSource = currentExpansion?.raid_days_per_week != null ? currentExpansion : guildSettings
+    if (!raidScheduleSource) return []
+
+    const { raid_days_per_week, first_raid_day, second_raid_day, third_raid_day, fourth_raid_day, fifth_raid_day } = raidScheduleSource
+    const configuredRaidDays = [first_raid_day, second_raid_day, third_raid_day, fourth_raid_day, fifth_raid_day]
+      .filter(day => day !== null && day !== undefined)
+      .slice(0, raid_days_per_week)
+
+    if (configuredRaidDays.length === 0) return []
+
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const tomorrow = new Date(today)
+    tomorrow.setDate(tomorrow.getDate() + 1)
+
+    // Find next 7 days of raid dates starting from tomorrow
+    const upcoming: string[] = []
+    const cursor = new Date(tomorrow)
+    const limit = new Date(tomorrow)
+    limit.setDate(limit.getDate() + 7)
+
+    while (cursor < limit) {
+      if (configuredRaidDays.includes(cursor.getDay())) {
+        upcoming.push(cursor.toISOString().split('T')[0])
+      }
+      cursor.setDate(cursor.getDate() + 1)
+    }
+
+    // Filter out any dates that already exist in raidDates (already tracked)
+    const existingDates = new Set(raidDates.map(r => r.raid_date))
+    return upcoming.filter(d => !existingDates.has(d))
+  }, [currentExpansion, guildSettings, raidDates])
+
   if (loading) {
     return <RaidTrackingPageSkeleton />
   }
@@ -1880,6 +1926,39 @@ export default function RaidTrackingPage() {
       {/* Raid Days Grouped by Week */}
       {!raidStartDateInFuture && (
         <div className="space-y-6">
+
+        {/* Upcoming Week Preview */}
+        {upcomingRaidDates.length > 0 && (
+          <div className="space-y-3">
+            <div className="flex items-center gap-3">
+              <svg className="w-6 h-6 text-muted-foreground flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              <h2 className="text-[24px] font-bold text-muted-foreground">Coming up</h2>
+              <div className="flex-1 h-[1px] bg-foreground/10"></div>
+            </div>
+
+            <div className="space-y-2">
+              {upcomingRaidDates.map(dateStr => {
+                const date = new Date(dateStr + 'T00:00:00')
+                const formatted = date.toLocaleDateString('en-US', {
+                  weekday: 'long',
+                  month: 'long',
+                  day: 'numeric',
+                })
+                return (
+                  <div key={dateStr} className="bg-background-elevated/50 border border-dashed border-border rounded-xl px-5 py-4">
+                    <p className="text-[14px] text-muted-foreground">
+                      <span className="font-medium text-foreground">{formatted}</span>
+                      {' '}— available for tracking on the day
+                    </p>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
+
         {weekKeys.map((weekStart) => {
           const raids = raidsByWeek[weekStart]
           const isWeekExpanded = expandedWeeks.has(weekStart)

@@ -21,6 +21,7 @@ import { HugeiconsIcon } from '@hugeicons/react'
 import { Download04Icon, Link01Icon } from '@hugeicons/core-free-icons'
 import { BattlenetCharacterPickerModal } from '@/app/components/BattlenetCharacterPickerModal'
 import Image from 'next/image'
+import { trackClientEvent } from '@/utils/analytics/client'
 
 interface WowClass {
   id: string
@@ -263,6 +264,7 @@ export function CreateCharacterModal({ isOpen, onClose, onSuccess, suggestedName
       }
 
       // Force a full page reload to ensure all state is refreshed
+      trackClientEvent('character_created')
       window.location.reload()
     } catch (err) {
       console.error('Error creating character:', err)

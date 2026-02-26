@@ -27,6 +27,7 @@ import { refreshWowheadTooltips } from '@/lib/wowhead'
 import PriorityListTab from './components/PriorityListTab'
 import { SegmentedControl } from '@/components/ui/segmented-control'
 import { Checkbox } from '@/components/ui/checkbox'
+import { trackClientEvent } from '@/utils/analytics/client'
 
 interface LootItem {
   id: string
@@ -229,6 +230,11 @@ export default function AdminLootItems() {
   useEffect(() => {
     document.title = viewMode === 'items' ? 'LootList+ • Loot Management' : 'LootList+ • Priority List'
   }, [viewMode])
+
+  // Track page view
+  useEffect(() => {
+    if (activeGuild?.id) trackClientEvent('settings_page_viewed', { guild_id: activeGuild.id })
+  }, [activeGuild?.id])
 
   // Lock body scroll when settings modal is open and capture initial values
   useEffect(() => {

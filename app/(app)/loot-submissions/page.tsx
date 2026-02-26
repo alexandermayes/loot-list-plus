@@ -26,6 +26,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Heading } from '@/components/ui/typography'
 import ItemLink from '@/app/components/ItemLink'
 import { refreshWowheadTooltips } from '@/lib/wowhead'
+import { trackClientEvent } from '@/utils/analytics/client'
 
 interface Submission {
   id: string
@@ -315,6 +316,13 @@ export default function MasterLootPage() {
           phase: phaseNumber
         })
       }).catch(err => console.error('Failed to send Discord notification:', err))
+
+      trackClientEvent('submission_reviewed', {
+        guild_id: guildId,
+        submission_id: submissionId,
+        new_status: status,
+        character_name: submission?.member?.character_name,
+      })
 
       showNotification('success', `Submission ${status}`)
       setReviewNotes('')

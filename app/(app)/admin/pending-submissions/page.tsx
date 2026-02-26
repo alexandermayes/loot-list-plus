@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button'
 import { useConfirm } from '@/components/ui/confirm-modal'
 import { Heading } from '@/components/ui/typography'
 import { PendingSubmissionsListSkeleton } from '@/components/ui/skeletons'
+import { trackClientEvent } from '@/utils/analytics/client'
 
 interface PendingSubmission {
   id: string
@@ -49,6 +50,10 @@ export default function PendingSubmissionsPage() {
   useEffect(() => {
     document.title = 'LootList+ • Pending Submissions'
   }, [])
+
+  useEffect(() => {
+    if (activeGuild?.id) trackClientEvent('admin_pending_submissions_viewed', { guild_id: activeGuild.id })
+  }, [activeGuild?.id])
 
   useEffect(() => {
     if (!guildLoading) {
@@ -192,6 +197,13 @@ export default function PendingSubmissionsPage() {
         throw new Error('Update failed - check officer permissions')
       }
 
+      const submission = submissions.find(s => s.id === submissionId)
+      trackClientEvent('pending_submission_approved', {
+        guild_id: activeGuild?.id,
+        submission_id: submissionId,
+        character_name: submission?.character?.name,
+      })
+
       showNotification('success', 'Submission approved')
       await loadPendingSubmissions()
     } catch (error: any) {
@@ -227,6 +239,13 @@ export default function PendingSubmissionsPage() {
             console.error('[handleReject] No rows updated - possible RLS policy issue')
             throw new Error('Update failed - check officer permissions')
           }
+
+          const submission = submissions.find(s => s.id === submissionId)
+          trackClientEvent('pending_submission_rejected', {
+            guild_id: activeGuild?.id,
+            submission_id: submissionId,
+            character_name: submission?.character?.name,
+          })
 
           showNotification('success', 'Submission rejected')
           await loadPendingSubmissions()

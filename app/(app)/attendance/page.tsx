@@ -59,6 +59,7 @@ interface WeekGroup {
   weekStart: string
   label: string
   isMostRecent: boolean
+  isUpcoming: boolean
   raids: RaidEvent[]
 }
 
@@ -126,10 +127,17 @@ export default function AttendancePage() {
     return currentWeekStartDate.toISOString().split('T')[0]
   }, [expansionRaidSchedule, guildSettings])
 
+  // Get configured raid day numbers
+  const configuredRaidDays = useMemo(() => {
+    const src = expansionRaidSchedule || guildSettings
+    if (!src) return []
+    return [src.first_raid_day, src.second_raid_day, src.third_raid_day, src.fourth_raid_day, src.fifth_raid_day]
+      .filter((d: number | null | undefined) => d !== null && d !== undefined)
+      .slice(0, src.raid_days_per_week || 2)
+  }, [expansionRaidSchedule, guildSettings])
+
   // Group raid events by week
   const raidsByWeek = useMemo((): WeekGroup[] => {
-    if (guildRaidEvents.length === 0) return []
-
     // Use expansion's first raid day, fallback to guild settings
     const firstRaidDay = expansionRaidSchedule?.first_raid_day ?? guildSettings?.first_raid_day ?? 0
     const grouped: Record<string, RaidEvent[]> = {}
@@ -146,16 +154,85 @@ export default function AttendancePage() {
       }
     })
 
+    // Generate 1 upcoming week of placeholder raid dates
+    if (configuredRaidDays.length > 0) {
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+      const tomorrow = new Date(today)
+      tomorrow.setDate(tomorrow.getDate() + 1)
+
+      // Scan up to 14 days ahead to find 1 full week of raid days
+      const cursor = new Date(tomorrow)
+      const limit = new Date(tomorrow)
+      limit.setDate(limit.getDate() + 14)
+
+      const existingDates = new Set(guildRaidEvents.map(r => r.raid_date))
+      const upcomingByWeek: Record<string, RaidEvent[]> = {}
+      let weeksFound = 0
+
+      while (cursor < limit && weeksFound < 1) {
+        if (configuredRaidDays.includes(cursor.getDay())) {
+          const dateStr = cursor.toISOString().split('T')[0]
+          if (!existingDates.has(dateStr)) {
+            const weekStart = getWeekStart(dateStr, firstRaidDay)
+            if (!upcomingByWeek[weekStart]) {
+              upcomingByWeek[weekStart] = []
+              weeksFound++
+            }
+            upcomingByWeek[weekStart].push({
+              id: `upcoming-${dateStr}`,
+              raid_date: dateStr,
+              is_skipped: false,
+              notes: null,
+              wcl_report_code: null,
+            })
+          }
+        }
+        cursor.setDate(cursor.getDate() + 1)
+      }
+
+      // Fill remaining raid days for the week we found
+      const weekKey = Object.keys(upcomingByWeek)[0]
+      if (weekKey) {
+        const weekStartDate = new Date(weekKey + 'T00:00:00')
+        for (let d = 0; d < 7; d++) {
+          const checkDate = new Date(weekStartDate)
+          checkDate.setDate(checkDate.getDate() + d)
+          const checkStr = checkDate.toISOString().split('T')[0]
+          if (
+            configuredRaidDays.includes(checkDate.getDay()) &&
+            !existingDates.has(checkStr) &&
+            checkStr > today.toISOString().split('T')[0] &&
+            !upcomingByWeek[weekKey].some(r => r.raid_date === checkStr)
+          ) {
+            upcomingByWeek[weekKey].push({
+              id: `upcoming-${checkStr}`,
+              raid_date: checkStr,
+              is_skipped: false,
+              notes: null,
+              wcl_report_code: null,
+            })
+          }
+        }
+        upcomingByWeek[weekKey].sort((a, b) => a.raid_date.localeCompare(b.raid_date))
+        Object.assign(grouped, upcomingByWeek)
+      }
+    }
+
+    if (Object.keys(grouped).length === 0) return []
+
     // Sort weeks descending (most recent first) and raids within each week ascending
+    const todayStr = new Date().toISOString().split('T')[0]
     return Object.entries(grouped)
       .sort(([a], [b]) => b.localeCompare(a))
       .map(([weekStart, raids]) => ({
         weekStart,
         label: new Date(weekStart + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
         isMostRecent: weekStart === mostRecentTrackedWeek,
+        isUpcoming: raids.every(r => r.raid_date > todayStr),
         raids: raids.sort((a, b) => a.raid_date.localeCompare(b.raid_date))
       }))
-  }, [guildRaidEvents, expansionRaidSchedule, guildSettings, mostRecentTrackedWeek])
+  }, [guildRaidEvents, expansionRaidSchedule, guildSettings, mostRecentTrackedWeek, configuredRaidDays])
 
   // Sort raiders
   const sortedRaiders = useMemo(() => {
@@ -712,13 +789,13 @@ export default function AttendancePage() {
               {/* Header row with week groupings */}
               <thead className="sticky top-14 sm:top-0 z-20">
                 <tr className="bg-background-subtle">
-                  <th className="sticky left-0 z-20 bg-background-subtle px-2 sm:px-4 py-2 text-left text-[11px] font-medium text-foreground-muted min-w-[100px] sm:min-w-[160px]">
+                  <th className="sticky left-0 z-20 bg-background-subtle px-2 sm:px-3 py-2 text-left text-[11px] font-medium text-foreground-muted min-w-[80px] sm:min-w-[120px]">
                     Character
                   </th>
-                  <th className="sticky left-[100px] sm:left-[160px] z-20 bg-background-subtle px-2 sm:px-3 py-2 text-center text-[11px] font-medium text-foreground-muted min-w-[56px] sm:min-w-[70px] hidden sm:table-cell">
+                  <th className="sticky left-[80px] sm:left-[120px] z-20 bg-background-subtle px-2 py-2 text-left text-[11px] font-medium text-foreground-muted min-w-[56px] sm:min-w-[80px] hidden sm:table-cell">
                     Role
                   </th>
-                  <th className="sticky left-[100px] sm:left-[260px] z-20 bg-background-subtle px-2 sm:px-3 py-2 text-center text-[11px] font-medium text-foreground-muted min-w-[56px] sm:min-w-[70px]">
+                  <th className="sticky left-[80px] sm:left-[200px] z-20 bg-background-subtle px-2 py-2 text-center text-[11px] font-medium text-foreground-muted min-w-[48px] sm:min-w-[56px]">
                     Credit
                   </th>
                   {/* Week grouping headers */}
@@ -727,7 +804,11 @@ export default function AttendancePage() {
                       key={week.weekStart}
                       colSpan={week.raids.length}
                       className={`px-2 py-2 text-center text-[11px] font-medium border-l border-border ${
-                        week.isMostRecent ? 'bg-success/10 text-success' : 'bg-accent/10 text-accent'
+                        week.isUpcoming
+                          ? 'bg-muted text-muted-foreground'
+                          : week.isMostRecent
+                            ? 'bg-success/10 text-success'
+                            : 'bg-accent/10 text-accent'
                       }`}
                     >
                       Week of {week.label}
@@ -736,15 +817,19 @@ export default function AttendancePage() {
                 </tr>
                 {/* Sub-header for individual dates */}
                 <tr className="bg-background-subtle/80">
-                  <th className="sticky left-0 z-20 bg-background-subtle/80 px-2 sm:px-4 py-1.5" />
-                  <th className="sticky left-[100px] sm:left-[160px] z-20 bg-background-subtle/80 px-2 sm:px-3 py-1.5 hidden sm:table-cell" />
-                  <th className="sticky left-[100px] sm:left-[260px] z-20 bg-background-subtle/80 px-2 sm:px-3 py-1.5" />
+                  <th className="sticky left-0 z-20 bg-background-subtle/80 px-2 sm:px-3 py-1.5" />
+                  <th className="sticky left-[80px] sm:left-[120px] z-20 bg-background-subtle/80 px-2 py-1.5 hidden sm:table-cell" />
+                  <th className="sticky left-[80px] sm:left-[200px] z-20 bg-background-subtle/80 px-2 py-1.5" />
                   {raidsByWeek.flatMap(week =>
                     week.raids.map(raid => (
                       <th
                         key={raid.id}
                         className={`px-2 py-1.5 text-center text-[10px] font-normal min-w-[50px] border-l border-border ${
-                          week.isMostRecent ? 'bg-success/5 text-success/70' : 'bg-accent/5 text-accent/50'
+                          week.isUpcoming
+                            ? 'bg-muted/50 text-muted-foreground/50'
+                            : week.isMostRecent
+                              ? 'bg-success/5 text-success/70'
+                              : 'bg-accent/5 text-accent/50'
                         }`}
                       >
                         {raid.wcl_report_code ? (
@@ -768,15 +853,15 @@ export default function AttendancePage() {
               <tbody className="divide-y divide-border">
                 {sortedRaiders.map(raider => (
                   <tr key={raider.id} className="hover:bg-muted transition-colors">
-                    <td className="sticky left-0 z-10 bg-background-elevated group-hover:bg-muted px-2 sm:px-4 py-2.5">
+                    <td className="sticky left-0 z-10 bg-background-elevated px-2 sm:px-3 py-2.5">
                       <span className="font-medium text-[12px] sm:text-[13px]" style={{ color: raider.classColor }}>
                         {raider.name}
                       </span>
                     </td>
-                    <td className="sticky left-[100px] sm:left-[160px] z-10 bg-background-elevated group-hover:bg-muted px-2 sm:px-3 py-2.5 text-[12px] text-muted-foreground hidden sm:table-cell">
+                    <td className="sticky left-[80px] sm:left-[120px] z-10 bg-background-elevated px-2 py-2.5 text-[11px] sm:text-[12px] text-muted-foreground hidden sm:table-cell">
                       {raider.role}
                     </td>
-                    <td className="sticky left-[100px] sm:left-[260px] z-10 bg-background-elevated group-hover:bg-muted px-2 sm:px-3 py-2.5 text-center">
+                    <td className="sticky left-[80px] sm:left-[200px] z-10 bg-background-elevated px-2 py-2.5 text-center">
                       <span className={`font-semibold text-[13px] ${
                         raider.attendanceScore >= (guildSettings?.max_attendance_bonus || 8) * 0.75 ? 'text-success' :
                         raider.attendanceScore >= (guildSettings?.max_attendance_bonus || 8) * 0.5 ? 'text-warning' :
@@ -787,6 +872,18 @@ export default function AttendancePage() {
                     </td>
                     {raidsByWeek.flatMap(week =>
                       week.raids.map(raid => {
+                        if (week.isUpcoming) {
+                          return (
+                            <td
+                              key={raid.id}
+                              className="px-2 py-2.5 text-center border-l border-border bg-muted/30"
+                            >
+                              <span className="inline-flex items-center justify-center w-6 h-6 rounded text-[11px] font-medium text-muted-foreground/40">
+                                -
+                              </span>
+                            </td>
+                          )
+                        }
                         const status = raider.attendance.get(raid.id)
                         const state = getAttendanceState(status)
                         return (
@@ -844,14 +941,18 @@ export default function AttendancePage() {
           </div>
 
           {/* Color coding explanation */}
-          <div className="flex items-center gap-4 text-[12px] text-foreground-muted">
+          <div className="flex flex-wrap items-center gap-4 text-[12px] text-foreground-muted">
             <div className="flex items-center gap-2">
               <div className="w-4 h-4 rounded bg-success/10 border border-success/30" />
-              <span>Most recent tracked week</span>
+              <span>Current week</span>
             </div>
             <div className="flex items-center gap-2">
               <div className="w-4 h-4 rounded bg-accent/10 border border-accent/20" />
               <span>Previous tracked weeks</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 rounded bg-muted border border-border" />
+              <span>Upcoming</span>
             </div>
           </div>
         </>

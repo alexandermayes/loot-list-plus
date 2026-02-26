@@ -21,6 +21,7 @@ import { SegmentedControl } from '@/components/ui/segmented-control'
 import { useNotification } from '@/app/contexts/NotificationContext'
 import { BattlenetCharacterPickerModal } from '@/app/components/BattlenetCharacterPickerModal'
 import Image from 'next/image'
+import { trackClientEvent } from '@/utils/analytics/client'
 
 interface WowClass {
   id: string
@@ -235,6 +236,7 @@ export function EditCharacterModal({ isOpen, onClose, character, onSuccess }: Ed
       }
 
       // Redirect to dashboard to refresh all state
+      trackClientEvent('character_deleted')
       window.location.href = '/overview'
     } catch (err) {
       console.error('Error deleting character:', err)

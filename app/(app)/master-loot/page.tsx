@@ -1,6 +1,7 @@
 'use client'
 
 import { createClient } from '@/utils/supabase/client'
+import { trackClientEvent } from '@/utils/analytics/client'
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { useGuildContext } from '@/app/contexts/GuildContext'
@@ -105,6 +106,11 @@ export default function MasterLootPage() {
   useEffect(() => {
     document.title = 'LootList+ • Master Loot'
   }, [])
+
+  // Track page view
+  useEffect(() => {
+    if (guildId) trackClientEvent('master_loot_page_viewed', { guild_id: guildId })
+  }, [guildId])
 
   useEffect(() => {
     const loadData = async () => {
@@ -245,6 +251,13 @@ export default function MasterLootPage() {
         .select()
 
       if (error) throw error
+
+      const submission = submissions.find(s => s.id === submissionId)
+      trackClientEvent('master_loot_awarded', {
+        guild_id: guildId,
+        item_name: status,
+        character_name: submission?.member?.character_name || 'Unknown'
+      })
 
       showNotification('success', `Submission ${status}`)
       setReviewNotes('')

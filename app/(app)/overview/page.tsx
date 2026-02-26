@@ -27,6 +27,7 @@ import ItemLink from '@/app/components/ItemLink'
 import { calculateAttendanceScore, getRankModifier, calculateLootScore, getTrialPenalty, calculateBadLuckBonus } from '@/utils/calculations'
 import { refreshWowheadTooltips } from '@/lib/wowhead'
 import { useNotification } from '@/app/contexts/NotificationContext'
+import { trackClientEvent } from '@/utils/analytics/client'
 
 // Get next N raid dates from configured raid days
 function getNextRaidDates(raidDays: number[], timezone: string, count = 2): Date[] {
@@ -235,6 +236,11 @@ function DashboardContent() {
   useEffect(() => {
     document.title = 'LootList+ • Overview'
   }, [])
+
+  // Track page view
+  useEffect(() => {
+    if (activeGuild?.id) trackClientEvent('overview_page_viewed', { guild_id: activeGuild.id })
+  }, [activeGuild?.id])
 
   // Check for create_character query param (from guild join flow)
   useEffect(() => {
@@ -591,11 +597,14 @@ function DashboardContent() {
           savedRaidDays = raidDays
 
           // First get raid events for the period
+          const todayStr = new Date().toISOString().split('T')[0]
           const { data: raidEventsData, error: raidError } = await supabase
             .from('raid_events')
             .select('id, raid_date')
             .eq('guild_id', activeGuild.id)
+            .eq('is_skipped', false)
             .gte('raid_date', startDateStr)
+            .lte('raid_date', todayStr)
 
           // Filter to only raids on configured raid days
           const filteredRaidEvents = raidDays.length > 0 && raidEventsData

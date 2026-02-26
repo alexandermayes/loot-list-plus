@@ -34,7 +34,7 @@ interface AttendanceRecord {
 }
 
 const DEFAULT_SETTINGS: Partial<GuildSettings> = {
-  attendance_type: 'linear',
+  attendance_type: 'points-per-raid',
   rolling_attendance_weeks: 4,
   use_signups: true,
   signup_weight: 0.25,

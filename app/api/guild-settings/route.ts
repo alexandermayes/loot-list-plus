@@ -165,7 +165,7 @@ export async function GET(request: Request) {
             decimal_places: 2,
 
             // Attendance Settings
-            attendance_type: 'linear',
+            attendance_type: 'points-per-raid',
             rolling_attendance_weeks: 4,
             use_signups: true,
             signup_weight: 0.25,

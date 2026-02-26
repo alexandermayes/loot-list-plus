@@ -9,6 +9,7 @@ import { Add01Icon } from '@hugeicons/core-free-icons'
 import { Heading } from '@/components/ui/typography'
 import { Button } from '@/components/ui/button'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
+import { trackClientEvent } from '@/utils/analytics/client'
 
 // Lazy load modals to reduce initial bundle size
 const CreateCharacterModal = dynamic(() => import('@/app/components/CreateCharacterModal').then(mod => ({ default: mod.CreateCharacterModal })), {
@@ -25,6 +26,7 @@ export default function ManageCharactersPage() {
 
   useEffect(() => {
     document.title = 'LootList+ • Manage Characters'
+    trackClientEvent('characters_manage_page_viewed')
   }, [])
 
   const getGuildCount = (characterId: string) => {
