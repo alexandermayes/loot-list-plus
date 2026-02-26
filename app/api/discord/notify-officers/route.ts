@@ -133,15 +133,19 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // For officers without a discord_id in preferences, fall back to auth metadata
+    // For officers without a discord_id in preferences, fall back to auth metadata (parallel)
     const missingIds = filteredUserIds.filter(id => !discordIdMap.has(id))
     if (missingIds.length > 0) {
       try {
-        for (const userId of missingIds) {
-          const { data: { user: authUser } } = await supabase.auth.admin.getUserById(userId)
-          const providerId = authUser?.user_metadata?.provider_id
-          if (providerId) {
-            discordIdMap.set(userId, providerId)
+        const results = await Promise.all(
+          missingIds.map(id => supabase.auth.admin.getUserById(id))
+        )
+        for (const result of results) {
+          if (result.data?.user) {
+            const providerId = result.data.user.user_metadata?.provider_id
+            if (providerId) {
+              discordIdMap.set(result.data.user.id, providerId)
+            }
           }
         }
       } catch (err) {

@@ -129,55 +129,42 @@ export async function POST(request: Request) {
       )
     }
 
-    // Check if user is guild creator (always has officer permissions)
+    // Check permissions: guild creator OR officer (2 queries instead of 4)
     const { data: guild } = await supabase
       .from('guilds')
       .select('created_by')
       .eq('id', guild_id)
       .single()
 
-    const isGuildCreator = guild?.created_by === user.id
-
-    // If not guild creator, verify user is an officer via character membership
-    if (!isGuildCreator) {
-      const { data: userCharacters } = await supabase
-        .from('characters')
-        .select('id')
-        .eq('user_id', user.id)
-
-      if (!userCharacters || userCharacters.length === 0) {
-        return NextResponse.json({ error: 'No characters found' }, { status: 403 })
-      }
-
-      const characterIds = userCharacters.map(c => c.id)
-
-      const { data: membership } = await supabase
+    if (guild?.created_by !== user.id) {
+      // Single JOIN query for characters + memberships (replaces 2 separate queries)
+      const { data: memberships } = await supabase
         .from('character_guild_memberships')
-        .select('role')
+        .select('role, character:characters!inner(user_id)')
         .eq('guild_id', guild_id)
-        .in('character_id', characterIds)
-        .limit(1)
-        .single()
+        .eq('character.user_id', user.id)
+        .eq('is_active', true)
 
-      if (!membership) {
+      if (!memberships || memberships.length === 0) {
         return NextResponse.json({ error: 'Not a member of this guild' }, { status: 403 })
       }
 
-      // Check if user is an officer (position >= 50) using guild_roles
-      const { data: roleData } = await supabase
+      // Get the highest role and check position
+      const roles = memberships.map((m: any) => m.role as string)
+      const { data: guildRoles } = await supabase
         .from('guild_roles')
-        .select('position')
+        .select('name, position')
         .eq('guild_id', guild_id)
-        .eq('name', membership.role)
-        .single()
+        .in('name', roles)
 
-      // Fallback: if no guild_roles entry, check against default positions
-      const position = roleData?.position ?? (
-        membership.role === 'Guild Master' ? 100 :
-        membership.role === 'Officer' ? 50 : 0
+      const rolePositionMap = new Map(guildRoles?.map(r => [r.name, r.position]) || [])
+      const highestPosition = Math.max(
+        ...roles.map(r => rolePositionMap.get(r) ?? (
+          r === 'Guild Master' ? 100 : r === 'Officer' ? 50 : 0
+        ))
       )
 
-      if (position < 50) {
+      if (highestPosition < 50) {
         return NextResponse.json(
           { error: 'Only officers can update item priorities' },
           { status: 403 }
@@ -266,55 +253,42 @@ export async function DELETE(request: Request) {
       )
     }
 
-    // Check if user is guild creator (always has officer permissions)
+    // Check permissions: guild creator OR officer (2 queries instead of 4)
     const { data: guild } = await supabase
       .from('guilds')
       .select('created_by')
       .eq('id', guildId)
       .single()
 
-    const isGuildCreator = guild?.created_by === user.id
-
-    // If not guild creator, verify user is an officer via character membership
-    if (!isGuildCreator) {
-      const { data: userCharacters } = await supabase
-        .from('characters')
-        .select('id')
-        .eq('user_id', user.id)
-
-      if (!userCharacters || userCharacters.length === 0) {
-        return NextResponse.json({ error: 'No characters found' }, { status: 403 })
-      }
-
-      const characterIds = userCharacters.map(c => c.id)
-
-      const { data: membership } = await supabase
+    if (guild?.created_by !== user.id) {
+      // Single JOIN query for characters + memberships (replaces 2 separate queries)
+      const { data: memberships } = await supabase
         .from('character_guild_memberships')
-        .select('role')
+        .select('role, character:characters!inner(user_id)')
         .eq('guild_id', guildId)
-        .in('character_id', characterIds)
-        .limit(1)
-        .single()
+        .eq('character.user_id', user.id)
+        .eq('is_active', true)
 
-      if (!membership) {
+      if (!memberships || memberships.length === 0) {
         return NextResponse.json({ error: 'Not a member of this guild' }, { status: 403 })
       }
 
-      // Check if user is an officer (position >= 50) using guild_roles
-      const { data: roleData } = await supabase
+      // Get the highest role and check position
+      const roles = memberships.map((m: any) => m.role as string)
+      const { data: guildRoles } = await supabase
         .from('guild_roles')
-        .select('position')
+        .select('name, position')
         .eq('guild_id', guildId)
-        .eq('name', membership.role)
-        .single()
+        .in('name', roles)
 
-      // Fallback: if no guild_roles entry, check against default positions
-      const position = roleData?.position ?? (
-        membership.role === 'Guild Master' ? 100 :
-        membership.role === 'Officer' ? 50 : 0
+      const rolePositionMap = new Map(guildRoles?.map(r => [r.name, r.position]) || [])
+      const highestPosition = Math.max(
+        ...roles.map(r => rolePositionMap.get(r) ?? (
+          r === 'Guild Master' ? 100 : r === 'Officer' ? 50 : 0
+        ))
       )
 
-      if (position < 50) {
+      if (highestPosition < 50) {
         return NextResponse.json(
           { error: 'Only officers can delete item priorities' },
           { status: 403 }

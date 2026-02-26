@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { trackApiError } from '@/utils/analytics/server'
+import { batchGetDisplayNames } from '@/utils/batch-display-names'
 
 export interface LootHistoryEntry {
   id: string
@@ -112,6 +113,15 @@ export async function GET(request: NextRequest) {
       query = query.lte('awarded_date', toDate)
     }
 
+    // SQL-level name filtering (replaces previous client-side filtering)
+    if (characterFilter) {
+      query = query.ilike('character_name', `%${characterFilter}%`)
+    }
+
+    if (itemFilter) {
+      query = query.ilike('loot_items.name', `%${itemFilter}%`)
+    }
+
     // Apply pagination
     query = query.range(offset, offset + limit - 1)
 
@@ -122,54 +132,16 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to fetch loot history' }, { status: 500 })
     }
 
-    // Client-side filtering for character and item names (ilike not working well with joins)
-    let filteredData = historyData || []
+    const filteredData = historyData || []
 
-    if (characterFilter) {
-      const lowerFilter = characterFilter.toLowerCase()
-      filteredData = filteredData.filter((entry: Record<string, unknown>) => {
-        // Check joined character name first, then denormalized character_name
-        const characters = entry.characters as { name?: string } | { name?: string }[] | null
-        const linkedName = Array.isArray(characters) ? characters[0]?.name : characters?.name
-        const charName = linkedName || (entry.character_name as string) || ''
-        return charName.toLowerCase().includes(lowerFilter)
-      })
-    }
-
-    if (itemFilter) {
-      const lowerFilter = itemFilter.toLowerCase()
-      filteredData = filteredData.filter((entry: Record<string, unknown>) => {
-        const lootItems = entry.loot_items as { name?: string } | undefined
-        const itemName = lootItems?.name || ''
-        return itemName.toLowerCase().includes(lowerFilter)
-      })
-    }
-
-    // Collect unique awarded_by user IDs for display name lookup
-    const awardedByIds = new Set<string>()
+    // Batch fetch display names for officers who awarded items
+    const awardedByIds: string[] = []
     for (const entry of filteredData) {
       if (entry.awarded_by) {
-        awardedByIds.add(entry.awarded_by)
+        awardedByIds.push(entry.awarded_by as string)
       }
     }
-
-    // Lookup display names for officers who awarded items
-    const displayNames: Record<string, string> = {}
-    if (awardedByIds.size > 0) {
-      const userResults = await Promise.all(
-        Array.from(awardedByIds).map(id => supabase.auth.admin.getUserById(id))
-      )
-
-      for (const result of userResults) {
-        if (result.data?.user) {
-          const u = result.data.user
-          displayNames[u.id] = u.user_metadata?.custom_claims?.global_name ||
-                              u.user_metadata?.full_name ||
-                              u.user_metadata?.name ||
-                              'Unknown'
-        }
-      }
-    }
+    const displayNames = await batchGetDisplayNames(supabase, awardedByIds)
 
     // Define types for Supabase response
     interface RaidTierData {
@@ -222,7 +194,7 @@ export async function GET(request: NextRequest) {
         wowhead_id: lootItem?.wowhead_id || 0,
         boss_name: lootItem?.boss_name || 'Unknown',
         raid_tier_name: tierData?.name || 'Unknown',
-        awarded_by_name: typedEntry.awarded_by ? (displayNames[typedEntry.awarded_by] || 'Unknown') : null,
+        awarded_by_name: typedEntry.awarded_by ? (displayNames.get(typedEntry.awarded_by) || 'Unknown') : null,
         notes: typedEntry.notes || null,
         created_at: typedEntry.created_at
       }

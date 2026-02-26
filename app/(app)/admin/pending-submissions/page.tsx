@@ -124,21 +124,29 @@ export default function PendingSubmissionsPage() {
         }
       })
 
-      // Get item counts for each submission
-      const submissionsWithCounts = await Promise.all(
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        transformedData.map(async (sub: any) => {
-          const { count } = await supabase
-            .from('loot_submission_items')
-            .select('*', { count: 'exact', head: true })
-            .eq('submission_id', sub.id)
+      // Get item counts in a single query instead of N individual COUNTs
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const submissionIds = transformedData.map((sub: any) => sub.id)
+      const itemCountMap: Record<string, number> = {}
 
-          return {
-            ...sub,
-            item_count: count || 0
+      if (submissionIds.length > 0) {
+        const { data: submissionItems } = await supabase
+          .from('loot_submission_items')
+          .select('submission_id')
+          .in('submission_id', submissionIds)
+
+        if (submissionItems) {
+          for (const item of submissionItems) {
+            itemCountMap[item.submission_id] = (itemCountMap[item.submission_id] || 0) + 1
           }
-        })
-      )
+        }
+      }
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const submissionsWithCounts = transformedData.map((sub: any) => ({
+        ...sub,
+        item_count: itemCountMap[sub.id] || 0
+      }))
 
       setSubmissions(submissionsWithCounts as PendingSubmission[])
     } catch (error) {

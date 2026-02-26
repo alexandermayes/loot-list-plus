@@ -911,6 +911,24 @@ export default function LootList() {
         )}
         </div>
 
+        {/* Deadline Warning - outside flex container so it matches status banner width */}
+        {!isLoading && !isContentLoading && phaseDeadline && isPastDeadline() && (
+          <div className="px-4 sm:px-6 lg:px-8">
+            <div className="bg-yellow-900/50 border border-yellow-500 rounded-xl p-4 text-yellow-200">
+              <div className="flex items-start gap-3">
+                <span className="text-xl">⏰</span>
+                <div>
+                  <p className="font-semibold mb-1">Submission deadline passed</p>
+                  <p className="text-sm">
+                    The deadline for Phase {selectedPhase} was {new Date(phaseDeadline).toLocaleString()}.
+                    You can still submit changes, but they will require officer approval before being visible on the master sheet.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Main Content - Flex container for loot list and sidebar */}
         <div className="flex gap-6 px-4 sm:px-6 lg:px-8 pt-1.5 pb-6">
         {/* Loot List Content */}
@@ -920,21 +938,6 @@ export default function LootList() {
           <LootListContentSkeleton />
         ) : (
         <>
-        {/* Deadline Warning */}
-        {phaseDeadline && isPastDeadline() && (
-          <div className="bg-yellow-900/50 border border-yellow-500 rounded-xl p-4 text-yellow-200">
-            <div className="flex items-start gap-3">
-              <span className="text-xl">⏰</span>
-              <div>
-                <p className="font-semibold mb-1">Submission deadline passed</p>
-                <p className="text-sm">
-                  The deadline for Phase {selectedPhase} was {new Date(phaseDeadline).toLocaleString()}.
-                  You can still submit changes, but they will require officer approval before being visible on the master sheet.
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* Duplicate Warning */}
         {duplicateItems.length > 0 && (

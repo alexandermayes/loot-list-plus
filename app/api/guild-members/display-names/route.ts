@@ -1,6 +1,7 @@
 import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { NextRequest, NextResponse } from 'next/server'
+import { batchGetDisplayNamesRecord } from '@/utils/batch-display-names'
 
 // UUID v4 format regex
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
@@ -96,23 +97,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ displayNames: {} })
     }
 
-    // Fetch display names only for validated guild members
-    const userResults = await Promise.all(
-      validUserIds.map((id: string) => supabaseAdmin.auth.admin.getUserById(id))
-    )
-
-    // Create map of user IDs to display names
-    const displayNames: Record<string, string> = {}
-
-    userResults.forEach(result => {
-      if (result.data?.user) {
-        const u = result.data.user
-        displayNames[u.id] = u.user_metadata?.custom_claims?.global_name ||
-                            u.user_metadata?.full_name ||
-                            u.user_metadata?.name ||
-                            'Unknown User'
-      }
-    })
+    // Batch fetch display names (centralized utility)
+    const displayNames = await batchGetDisplayNamesRecord(supabaseAdmin, validUserIds)
 
     return NextResponse.json({ displayNames })
   } catch (error) {

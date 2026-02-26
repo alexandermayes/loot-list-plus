@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
     // Verify caller is an officer
     const { data: guild } = await supabase
       .from('guilds')
-      .select('created_by, name, discord_server_id')
+      .select('created_by, name, discord_server_id, active_expansion_id')
       .eq('id', guild_id)
       .single()
 
@@ -108,44 +108,40 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Load guild settings for the channel ID and WCL URL
-    const { data: settings } = await supabase
-      .from('guild_settings')
-      .select('raid_summary_channel_id, wcl_guild_url')
-      .eq('guild_id', guild_id)
-      .single()
+    // Parallelize independent queries: settings and raid event
+    const [settingsResult, raidEventResult] = await Promise.all([
+      supabase
+        .from('guild_settings')
+        .select('raid_summary_channel_id, wcl_guild_url')
+        .eq('guild_id', guild_id)
+        .single(),
+      supabase
+        .from('raid_events')
+        .select('id, raid_date, notes, wcl_report_code')
+        .eq('id', raid_event_id)
+        .eq('guild_id', guild_id)
+        .single(),
+    ])
 
+    const settings = settingsResult.data
     const channelId = settings?.raid_summary_channel_id
     if (!channelId) {
       return NextResponse.json({ error: 'No raid summary channel configured. Set one in guild settings.' }, { status: 400 })
     }
 
-    // Load raid event
-    const { data: raidEvent } = await supabase
-      .from('raid_events')
-      .select('id, raid_date, notes, wcl_report_code')
-      .eq('id', raid_event_id)
-      .eq('guild_id', guild_id)
-      .single()
-
+    const raidEvent = raidEventResult.data
     if (!raidEvent) {
       return NextResponse.json({ error: 'Raid event not found' }, { status: 404 })
     }
 
     // Get raid title from current phase tiers
-    const { data: guildExpansion } = await supabase
-      .from('guilds')
-      .select('active_expansion_id')
-      .eq('id', guild_id)
-      .single()
-
     let raidTitle = 'Raid'
     let raidTierNames: string[] | undefined
-    if (guildExpansion?.active_expansion_id) {
+    if (guild.active_expansion_id) {
       const { data: expansion } = await supabase
         .from('expansions')
         .select('current_phase')
-        .eq('id', guildExpansion.active_expansion_id)
+        .eq('id', guild.active_expansion_id)
         .single()
 
       const currentPhase = expansion?.current_phase || 1
@@ -153,7 +149,7 @@ export async function POST(request: NextRequest) {
       const { data: phaseTiers } = await supabase
         .from('raid_tiers')
         .select('name')
-        .eq('expansion_id', guildExpansion.active_expansion_id)
+        .eq('expansion_id', guild.active_expansion_id)
         .eq('phase', currentPhase)
         .or('is_guild_active.eq.true,is_guild_active.is.null')
         .order('id')
@@ -164,24 +160,27 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Load attendance records
-    const { data: attendance } = await supabase
-      .from('attendance_records')
-      .select('character_name, character_id, signed_up, attended, no_call_no_show, was_late, was_benched')
-      .eq('raid_event_id', raid_event_id)
+    // Parallelize attendance and loot queries
+    const [attendanceResult, lootResult] = await Promise.all([
+      supabase
+        .from('attendance_records')
+        .select('character_name, character_id, signed_up, attended, no_call_no_show, was_late, was_benched')
+        .eq('raid_event_id', raid_event_id),
+      supabase
+        .from('loot_history')
+        .select(`
+          character_name,
+          character_id,
+          loot_items!inner (
+            name,
+            wowhead_id
+          )
+        `)
+        .eq('raid_event_id', raid_event_id),
+    ])
 
-    // Load loot history with item details
-    const { data: loot } = await supabase
-      .from('loot_history')
-      .select(`
-        character_name,
-        character_id,
-        loot_items!inner (
-          name,
-          wowhead_id
-        )
-      `)
-      .eq('raid_event_id', raid_event_id)
+    const attendance = attendanceResult.data
+    const loot = lootResult.data
 
     // Build a character ID → name map for linked records
     const charIds = new Set<string>()

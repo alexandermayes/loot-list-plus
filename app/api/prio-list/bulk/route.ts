@@ -52,73 +52,40 @@ export async function POST(request: Request) {
     }
 
     const defaultBonuses = priority_bonuses || { role: 5, class: 3, character: 2 }
-    const results: Record<string, unknown>[] = []
+
+    // Build upsert rows for batch operation (single query instead of 2N sequential queries)
+    const upsertRows = (priorities as BulkPriorityUpdate[]).map(priority => ({
+      guild_id,
+      item_id: priority.item_id,
+      raid_tier_id,
+      role_priorities: priority.role_priorities || {},
+      class_priorities: priority.class_priorities || {},
+      character_priorities: priority.character_priorities || {},
+      priority_bonuses: defaultBonuses,
+      notes: priority.notes || null
+    }))
+
+    const { data: results, error: upsertError } = await supabase
+      .from('guild_item_priorities')
+      .upsert(upsertRows, {
+        onConflict: 'guild_id,item_id,raid_tier_id'
+      })
+      .select()
+
     const errors: { item_id: number; error: string }[] = []
-
-    // Process each priority update
-    for (const priority of priorities as BulkPriorityUpdate[]) {
-      try {
-        // Check if priority exists for this item
-        const { data: existingPriority } = await supabase
-          .from('guild_item_priorities')
-          .select('id')
-          .eq('guild_id', guild_id)
-          .eq('item_id', priority.item_id)
-          .eq('raid_tier_id', raid_tier_id)
-          .single()
-
-        const priorityData = {
-          guild_id,
-          item_id: priority.item_id,
-          raid_tier_id,
-          role_priorities: priority.role_priorities || {},
-          class_priorities: priority.class_priorities || {},
-          character_priorities: priority.character_priorities || {},
-          priority_bonuses: defaultBonuses,
-          notes: priority.notes || null
-        }
-
-        if (existingPriority) {
-          // Update existing priority
-          const { data, error } = await supabase
-            .from('guild_item_priorities')
-            .update(priorityData)
-            .eq('id', existingPriority.id)
-            .select()
-            .single()
-
-          if (error) {
-            console.error(`Error updating priority for item ${priority.item_id}:`, error)
-            errors.push({ item_id: priority.item_id, error: 'Failed to update priority' })
-          } else {
-            results.push(data)
-          }
-        } else {
-          // Insert new priority
-          const { data, error } = await supabase
-            .from('guild_item_priorities')
-            .insert(priorityData)
-            .select()
-            .single()
-
-          if (error) {
-            console.error(`Error inserting priority for item ${priority.item_id}:`, error)
-            errors.push({ item_id: priority.item_id, error: 'Failed to save priority' })
-          } else {
-            results.push(data)
-          }
-        }
-      } catch (err: unknown) {
-        console.error(`Unexpected error processing priority for item ${priority.item_id}:`, err)
-        errors.push({ item_id: priority.item_id, error: 'Failed to process priority' })
+    if (upsertError) {
+      console.error('Error in bulk upsert:', upsertError)
+      // If the whole upsert fails, report all items as failed
+      for (const priority of priorities as BulkPriorityUpdate[]) {
+        errors.push({ item_id: priority.item_id, error: 'Failed to save priority' })
       }
     }
 
     return NextResponse.json({
       success: errors.length === 0,
-      updated: results.length,
+      updated: results?.length || 0,
       failed: errors.length,
-      results,
+      results: results || [],
       errors: errors.length > 0 ? errors : undefined
     })
   } catch (error) {

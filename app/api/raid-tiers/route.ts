@@ -59,7 +59,14 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to fetch raid tiers' }, { status: 500 })
     }
 
-    return NextResponse.json({ tiers: tiers || [], current_phase: currentPhase })
+    return NextResponse.json(
+      { tiers: tiers || [], current_phase: currentPhase },
+      {
+        headers: {
+          'Cache-Control': 'private, max-age=300, stale-while-revalidate=600'
+        }
+      }
+    )
   } catch (error) {
     console.error('Error in GET /api/raid-tiers:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

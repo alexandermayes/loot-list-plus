@@ -4,6 +4,7 @@ import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { verifyOfficerPermissions, verifyRoleChangePermissions, verifyMemberRemovalPermissions } from '@/utils/server-roles'
 import { ROLE_POSITIONS } from '@/utils/roles'
 import { trackApiError } from '@/utils/analytics/server'
+import { batchGetDisplayNames } from '@/utils/batch-display-names'
 
 // GET - List all members of a guild (uses service role to bypass RLS)
 export async function GET(request: NextRequest) {
@@ -158,28 +159,8 @@ export async function GET(request: NextRequest) {
     // Get user IDs for display names
     const userIds = Array.from(userCharacterMap.keys())
 
-    // Get display names from auth.users via service role
-    let displayNameMap = new Map<string, string>()
-
-    if (userIds.length > 0) {
-      // Fetch user metadata only for the specific users we need (instead of listing ALL users)
-      // This is O(guild_members) instead of O(all_users) - major performance improvement
-      const userPromises = userIds.map(userId =>
-        serviceSupabase.auth.admin.getUserById(userId)
-      )
-      const userResults = await Promise.all(userPromises)
-
-      for (const result of userResults) {
-        if (result.data?.user) {
-          const authUser = result.data.user
-          const displayName = authUser.user_metadata?.custom_claims?.global_name
-            || authUser.user_metadata?.full_name
-            || authUser.user_metadata?.name
-            || 'Unknown User'
-          displayNameMap.set(authUser.id, displayName)
-        }
-      }
-    }
+    // Batch fetch display names (centralized utility)
+    const displayNameMap = await batchGetDisplayNames(serviceSupabase, userIds)
 
     // Build members array
     const members = Array.from(userCharacterMap.entries()).map(([userId, data]) => {
