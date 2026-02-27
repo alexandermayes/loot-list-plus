@@ -35,8 +35,8 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Generate a random invite code using the database function
-    const { data: codeData, error: codeError } = await supabase
+    // Generate a random invite code using the database function (use service role to bypass RLS)
+    const { data: codeData, error: codeError } = await serviceSupabase
       .rpc('generate_invite_code')
 
     if (codeError || !codeData) {
@@ -49,8 +49,8 @@ export async function POST(request: NextRequest) {
 
     const code = codeData as string
 
-    // Create the invite code record
-    const { data: inviteCode, error: insertError } = await supabase
+    // Create the invite code record (use service role to bypass RLS)
+    const { data: inviteCode, error: insertError } = await serviceSupabase
       .from('guild_invite_codes')
       .insert({
         guild_id,
@@ -129,8 +129,8 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Get all invite codes for this guild
-    const { data: inviteCodes, error: codesError } = await supabase
+    // Get all invite codes for this guild (use service role to bypass RLS)
+    const { data: inviteCodes, error: codesError } = await serviceSupabase
       .from('guild_invite_codes')
       .select('*')
       .eq('guild_id', guild_id)

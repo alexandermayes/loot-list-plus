@@ -8,8 +8,11 @@ import { Button } from '@/components/ui/button'
 import { useConfirm } from '@/components/ui/confirm-modal'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Modal, ModalHeader, ModalTitle, ModalDescription, ModalBody, ModalFooter } from '@/components/ui/modal'
+import { LoadingSpinner } from '@/components/ui/loading-spinner'
+import { EmptyState } from '@/components/ui/empty-state'
 import { HugeiconsIcon } from '@hugeicons/react'
-import { Copy01Icon, Cancel01Icon, Add01Icon } from '@hugeicons/core-free-icons'
+import { Copy01Icon, Cancel01Icon, Add01Icon, SentIcon } from '@hugeicons/core-free-icons'
 import { trackClientEvent } from '@/utils/analytics/client'
 
 interface InviteCode {
@@ -145,25 +148,25 @@ export default function InviteCodeManager() {
         </div>
       </div>
       <div className="p-6 space-y-4">
-        {/* Generate Form */}
-        {showGenerateForm && (
-          <div className="p-4 bg-background-subtle border border-border rounded-lg space-y-4">
-            <h3 className="font-medium text-foreground text-[14px]">Generate new invite code</h3>
-
+        {/* Generate Modal */}
+        <Modal open={showGenerateForm} onClose={() => setShowGenerateForm(false)} size="sm">
+          <ModalHeader onClose={() => setShowGenerateForm(false)}>
+            <ModalTitle>Generate invite code</ModalTitle>
+            <ModalDescription>Create a shareable link for new members to join your guild</ModalDescription>
+          </ModalHeader>
+          <ModalBody className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="expiresAt">Expires At (Optional)</Label>
+              <Label htmlFor="expiresAt">Expires at (optional)</Label>
               <Input
                 id="expiresAt"
                 type="datetime-local"
                 value={expiresAt}
                 onChange={(e) => setExpiresAt(e.target.value)}
-                variant="rounded"
-                size="sm"
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="maxUses">Max Uses (Optional)</Label>
+              <Label htmlFor="maxUses">Max uses (optional)</Label>
               <Input
                 id="maxUses"
                 type="number"
@@ -171,27 +174,29 @@ export default function InviteCodeManager() {
                 value={maxUses}
                 onChange={(e) => setMaxUses(e.target.value)}
                 placeholder="Unlimited if empty"
-                variant="rounded"
-                size="sm"
               />
             </div>
-
-            <div className="flex gap-2">
-              <Button onClick={handleGenerateCode} loading={generating}>
-                Generate
-              </Button>
-              <Button variant="outline" onClick={() => setShowGenerateForm(false)}>
-                Cancel
-              </Button>
-            </div>
-          </div>
-        )}
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="outline" onClick={() => setShowGenerateForm(false)}>
+              Cancel
+            </Button>
+            <Button variant="primary" onClick={handleGenerateCode} loading={generating}>
+              Generate code
+            </Button>
+          </ModalFooter>
+        </Modal>
 
         {/* Invite Codes List */}
         {loading ? (
-          <p className="text-muted-foreground text-center py-4">Loading...</p>
+          <div className="py-8 flex justify-center"><LoadingSpinner /></div>
         ) : inviteCodes.length === 0 ? (
-          <p className="text-muted-foreground text-center py-4">No invite codes yet</p>
+          <EmptyState
+            icon={SentIcon}
+            title="No invite codes"
+            description="Generate a code to invite members to your guild."
+            size="compact"
+          />
         ) : (
           <div className="space-y-3">
             {inviteCodes.map((code) => {
