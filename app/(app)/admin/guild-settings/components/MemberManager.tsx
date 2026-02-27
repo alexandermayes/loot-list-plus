@@ -202,7 +202,7 @@ export default function MemberManager() {
     return targetPosition < currentUserPosition
   }
 
-  const handleChangeRole = async (userId: string, newRole: string) => {
+  const executeRoleChange = async (userId: string, newRole: string) => {
     const member = members.find(m => m.user_id === userId)
     if (!member) {
       showNotification('error', 'Member not found')
@@ -212,12 +212,16 @@ export default function MemberManager() {
     const characterIds = member.characters.map(c => c.id)
 
     // Optimistic update - update UI immediately
-    const optimisticData = {
-      ...membersData,
-      members: membersData!.members.map((m: any) =>
-        m.user_id === userId ? { ...m, role: newRole } : m
+    // If promoting to Guild Master, also demote the current GM to Officer
+    let updatedMembers = membersData!.members.map((m: any) =>
+      m.user_id === userId ? { ...m, role: newRole } : m
+    )
+    if (newRole === 'Guild Master') {
+      updatedMembers = updatedMembers.map((m: any) =>
+        m.role === 'Guild Master' && m.user_id !== userId ? { ...m, role: 'Officer' } : m
       )
     }
+    const optimisticData = { ...membersData, members: updatedMembers }
 
     try {
       await refreshMembers(
@@ -250,6 +254,28 @@ export default function MemberManager() {
     } catch (error: any) {
       showNotification('error', error.message || 'Couldn\'t update role. Try again.')
     }
+  }
+
+  const handleChangeRole = (userId: string, newRole: string) => {
+    if (newRole === 'Guild Master') {
+      const currentGM = members.find(m => m.role === 'Guild Master' && m.user_id !== userId)
+      const targetMember = members.find(m => m.user_id === userId)
+      const targetName = targetMember?.characters[0]?.name || 'this member'
+      const currentGMName = currentGM?.characters[0]?.name || 'the current Guild Master'
+
+      confirm({
+        title: 'Promote to Guild Master',
+        description: currentGM
+          ? `Promote ${targetName} to Guild Master? ${currentGMName} will be demoted to Officer. Only one Guild Master can exist per guild.`
+          : `Promote ${targetName} to Guild Master?`,
+        confirmLabel: 'Promote',
+        variant: 'danger',
+        onConfirm: () => executeRoleChange(userId, newRole)
+      })
+      return
+    }
+
+    executeRoleChange(userId, newRole)
   }
 
   const handleRemoveMember = (userId: string, memberName: string) => {
