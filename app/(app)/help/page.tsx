@@ -14,6 +14,7 @@ import {
 } from '@hugeicons/core-free-icons'
 import { helpCategories, getAllArticles, glossaryTerms, type HelpCategory, type HelpArticle } from '@/lib/help-content'
 import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
 import { Heading, Text } from '@/components/ui/typography'
 
 // Map icon names to actual icons
@@ -39,9 +40,9 @@ function CategoryCard({ category }: { category: HelpCategory }) {
           <HugeiconsIcon icon={Icon} size={24} className="text-accent" />
         </div>
         <div className="flex-1 min-w-0">
-          <h3 className="text-lg font-semibold text-foreground group-hover:text-accent transition-colors">
+          <Heading level={3} className="text-lg group-hover:text-accent transition-colors">
             {category.title}
-          </h3>
+          </Heading>
           <p className="text-sm text-muted-foreground mt-1">{category.description}</p>
           <p className="text-xs text-muted-foreground mt-3">
             {category.articles.length} article{category.articles.length !== 1 ? 's' : ''}
@@ -74,7 +75,7 @@ function SearchResult({
       <div className="flex items-center gap-2 mb-1">
         <span className="text-xs text-accent font-medium">{categoryTitle}</span>
       </div>
-      <h4 className="text-base font-medium text-foreground">{article.title}</h4>
+      <Heading level={4} className="text-base">{article.title}</Heading>
       <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{article.description}</p>
     </div>
   )
@@ -207,16 +208,18 @@ export default function HelpPage() {
               >
                 <div className="flex items-start justify-between gap-4">
                   <div>
-                    <h4 className="text-base font-medium text-foreground">{entry.term}</h4>
+                    <Heading level={4} className="text-base">{entry.term}</Heading>
                     <p className="text-sm text-muted-foreground mt-1">{entry.definition}</p>
                   </div>
                   {entry.articleSlug && (
-                    <button
+                    <Button
+                      variant="link"
+                      size="sm"
                       onClick={() => router.push(`/help/${entry.articleSlug}`)}
-                      className="text-xs text-accent hover:underline flex-shrink-0 mt-0.5"
+                      className="flex-shrink-0 mt-0.5 text-xs h-auto p-0"
                     >
                       Learn more
-                    </button>
+                    </Button>
                   )}
                 </div>
               </div>

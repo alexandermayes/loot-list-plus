@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button'
 import { Heading } from '@/components/ui/typography'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { Settings01Icon } from '@hugeicons/core-free-icons'
+import { StatusBadge, type SubmissionStatus } from '@/components/ui/status-badge'
 import Link from 'next/link'
 import ItemLink from '@/app/components/ItemLink'
 
@@ -368,14 +369,7 @@ export default function MasterLootPage() {
                         {submission.member.class.name}
                       </span>
                     )}
-                    <span className={`px-2 sm:px-3 py-1 rounded-full text-[11px] sm:text-[12px] font-medium ${
-                      submission.status === 'approved' ? 'bg-success/30 text-success' :
-                      submission.status === 'rejected' ? 'bg-destructive/30 text-destructive' :
-                      submission.status === 'draft' ? 'bg-warning/30 text-warning' :
-                      'bg-info/30 text-info'
-                    }`}>
-                      {submission.status}
-                    </span>
+                    <StatusBadge status={submission.status as SubmissionStatus} />
                     <span className="text-muted-foreground text-[12px] sm:text-[14px]">
                       {submission.item_count} items • {submission.submitted_at ? new Date(submission.submitted_at).toLocaleDateString('en-US', { month: 'numeric', day: 'numeric', year: 'numeric' }) : 'N/A'}
                     </span>
