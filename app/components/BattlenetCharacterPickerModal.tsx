@@ -48,6 +48,8 @@ interface BattlenetCharacterPickerModalProps {
   linkCharacterId?: string
   linkCharacterName?: string
   onLinkComplete?: () => void
+  /** Whether imported characters should be created as main (default: true) */
+  isMain?: boolean
 }
 
 export function BattlenetCharacterPickerModal({
@@ -59,6 +61,7 @@ export function BattlenetCharacterPickerModal({
   linkCharacterId,
   linkCharacterName,
   onLinkComplete,
+  isMain = true,
 }: BattlenetCharacterPickerModalProps) {
   const router = useRouter()
   const { activeGuild, refreshCharacters } = useGuildContext()
@@ -111,7 +114,7 @@ export function BattlenetCharacterPickerModal({
           realmSlug: char.realm_slug,
           version,
           guildId: activeGuild?.id,
-          isMain: false,
+          isMain,
           importGear: true,
         }),
       })

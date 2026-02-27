@@ -169,6 +169,7 @@ function MasterSheetContent() {
   const [itemPriorities, setItemPriorities] = useState<Record<string, ItemPriority>>({})
   const [collapsedBosses, setCollapsedBosses] = useState<Set<string>>(new Set())
   const [collapsedRaidTiers, setCollapsedRaidTiers] = useState<Set<string>>(new Set())
+  const [selectedBossFilter, setSelectedBossFilter] = useState<string | null>(null)
   const [isExporting, setIsExporting] = useState(false)
   const [showScoreBreakdown, setShowScoreBreakdown] = useState(false)
   const [showScoreComparison, setShowScoreComparison] = useState(false)
@@ -1544,7 +1545,7 @@ function MasterSheetContent() {
                       <Button
                         key={phase}
                         variant="ghost"
-                        onClick={() => setSelectedPhase(phase)}
+                        onClick={() => { setSelectedPhase(phase); setSelectedBossFilter(null) }}
                         className={`px-5 py-2.5 rounded-[40px] whitespace-nowrap text-[13px] font-medium transition-all border ${
                           isSelected
                             ? allDisabled
@@ -1622,13 +1623,12 @@ function MasterSheetContent() {
                 variant="rounded"
                 size="sm"
                 onChange={(e) => {
-                  if (e.target.value) scrollToBoss(e.target.value)
-                  e.target.value = '' // Reset to placeholder
+                  setSelectedBossFilter(e.target.value || null)
                 }}
-                defaultValue=""
+                value={selectedBossFilter || ''}
                 className="flex-1 bg-background-elevated font-medium"
               >
-                <option value="" disabled>Jump to boss...</option>
+                <option value="">All bosses</option>
                 {bossNames.map((boss) => (
                   <option key={boss} value={boss}>{boss}</option>
                 ))}
@@ -1656,9 +1656,9 @@ function MasterSheetContent() {
                   {bossNames.map((boss) => (
                     <Button
                       key={boss}
-                      variant="outline"
+                      variant={selectedBossFilter === boss ? 'accent-subtle' : 'outline'}
                       size="sm"
-                      onClick={() => scrollToBoss(boss)}
+                      onClick={() => setSelectedBossFilter(selectedBossFilter === boss ? null : boss)}
                     >
                       {getBossImage(boss) && (
                         <img
@@ -1779,7 +1779,10 @@ function MasterSheetContent() {
               />
             ) : (
               <VirtualizedMasterSheet
-                sortedRaidTiers={sortedRaidTiers}
+                sortedRaidTiers={selectedBossFilter ? sortedRaidTiers.map(srt => ({
+                  ...srt,
+                  items: srt.items.filter(ir => normalizeBossName(ir.item.boss_name) === selectedBossFilter)
+                })).filter(srt => srt.items.length > 0) : sortedRaidTiers}
                 collapsedRaidTiers={collapsedRaidTiers}
                 collapsedBosses={collapsedBosses}
                 onToggleRaidTierCollapse={toggleRaidTierCollapse}

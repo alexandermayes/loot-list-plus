@@ -264,12 +264,15 @@ export default function RaidTrackingPage() {
     const today = new Date()
     today.setHours(0, 0, 0, 0) // Normalize to start of day
 
-    // Use expansion raid_start_date or default to 4 weeks ago if not set
+    // Use expansion raid_start_date, fall back to guild creation date
     const startDate = expansion?.raid_start_date
       ? new Date(expansion.raid_start_date + 'T00:00:00')
-      : new Date(today.getTime() - (4 * 7 * 24 * 60 * 60 * 1000))
+      : activeGuild?.created_at
+        ? new Date(activeGuild.created_at)
+        : new Date(today.getTime() - (7 * 24 * 60 * 60 * 1000))
 
     let currentDate = new Date(startDate)
+    currentDate.setHours(0, 0, 0, 0) // Normalize to start of day
     while (currentDate <= today) {
       if (raidDays.includes(currentDate.getDay())) {
         dates.push(currentDate.toISOString().split('T')[0])

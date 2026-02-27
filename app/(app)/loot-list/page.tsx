@@ -898,7 +898,7 @@ export default function LootList() {
                     }
                     loading={isSaving}
                   >
-                    Submit for review
+                    {hasChanges && (originalStatus === 'approved' || originalStatus === 'pending') ? 'Resubmit for review' : 'Submit for review'}
                   </Button>
                 </div>
               </div>
