@@ -672,6 +672,7 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
 
       // Update local state to match saved state (without triggering SWR refetch)
       setInitialRankings({ ...currentRankings })
+      setOriginalStatus(targetStatus)
     } catch (error) {
       console.error('Auto-save failed:', error)
       showNotification('error', error instanceof Error ? error.message : 'Auto-save failed')
