@@ -2,21 +2,13 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient, getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 
-// GET - Validate invite code and get guild info
+// GET - Validate invite code and get guild info (works without auth for invite preview)
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ code: string }> }
 ) {
   try {
     const { code } = await params
-
-    // Fast auth check using getSession (no network call)
-    const { user, error: authError } = await getAuthenticatedUser()
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const supabase = await createClient()
 
     if (!code) {
       return NextResponse.json(
@@ -25,8 +17,11 @@ export async function GET(
       )
     }
 
+    // Use service role to allow unauthenticated invite preview
+    const serviceSupabase = createServiceRoleClient()
+
     // Get invite code details
-    const { data: inviteCode, error: codeError } = await supabase
+    const { data: inviteCode, error: codeError } = await serviceSupabase
       .from('guild_invite_codes')
       .select(`
         id,
