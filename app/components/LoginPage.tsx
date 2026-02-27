@@ -4,7 +4,6 @@ import { createClient } from '@/utils/supabase/client'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useState, useEffect } from 'react'
-import { useSearchParams } from 'next/navigation'
 import { trackClientEvent } from '@/utils/analytics/client'
 import { Button } from '@/components/ui/button'
 import { Modal, ModalHeader, ModalTitle, ModalDescription, ModalBody, ModalFooter } from '@/components/ui/modal'
@@ -13,15 +12,18 @@ import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { Key01Icon, Tick01Icon } from '@hugeicons/core-free-icons'
 
-export default function LoginPage() {
+interface LoginPageProps {
+  nextParam?: string | null
+  isAuthenticated?: boolean
+}
+
+export default function LoginPage({ nextParam = null, isAuthenticated = false }: LoginPageProps) {
   const supabase = createClient()
-  const searchParams = useSearchParams()
-  const nextParam = searchParams.get('next')
 
   // Extract invite code from next param
   const inviteCode = nextParam?.match(/code=([A-Z0-9]+)/i)?.[1] || null
 
-  const [user, setUser] = useState<any>(null)
+  const [user, setUser] = useState<any>(isAuthenticated ? {} : null)
   const [guildInfo, setGuildInfo] = useState<{ guild: { name: string; realm: string | null; faction: string } } | null>(null)
   const [showInviteModal, setShowInviteModal] = useState(false)
   const [joining, setJoining] = useState(false)
@@ -31,11 +33,8 @@ export default function LoginPage() {
   useEffect(() => {
     if (!inviteCode) return
 
-    // Check auth and fetch guild info
+    // Fetch guild info for invite code preview
     const init = async () => {
-      const { data: { user: currentUser } } = await supabase.auth.getUser()
-      setUser(currentUser)
-
       try {
         const res = await fetch(`/api/guild-invites/${inviteCode}`)
         if (res.ok) {
