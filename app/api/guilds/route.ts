@@ -165,70 +165,49 @@ export async function POST(request: NextRequest) {
       // Continue anyway - roles can be created later via trigger or manually
     }
 
-    // Get or create a character for the guild creator
-    // First, check if user has any characters (use service role to bypass RLS)
-    const { data: existingCharacters, error: checkError } = await serviceSupabase
+    // Check if user has a properly configured character (with class set)
+    const { data: existingCharacters } = await serviceSupabase
       .from('characters')
-      .select('id')
+      .select('id, class_id')
       .eq('user_id', user.id)
+      .not('class_id', 'is', null)
+      .order('is_main', { ascending: false })
       .limit(1)
 
-    let characterId: string
+    let characterId: string | null = null
+    let needsCharacterCreation = false
 
     if (existingCharacters && existingCharacters.length > 0) {
-      // Use existing character
+      // Use existing properly configured character
       characterId = existingCharacters[0].id
-    } else {
-      // Create a default character for the user (use service role to bypass RLS)
-      const characterName = user.user_metadata?.full_name || user.user_metadata?.name || 'Guild Master'
 
-      const { data: newCharacter, error: charError } = await serviceSupabase
-        .from('characters')
+      // Create character guild membership for creator as Guild Master
+      const { error: memberError } = await serviceSupabase
+        .from('character_guild_memberships')
         .insert({
-          user_id: user.id,
-          name: characterName,
-          realm: realm || null,
-          is_main: true
+          character_id: characterId,
+          guild_id: guild.id,
+          role: 'Guild Master',
+          is_active: true,
+          joined_at: new Date().toISOString(),
+          joined_via: 'manual'
         })
-        .select('id')
-        .single()
 
-      if (charError || !newCharacter) {
-        console.error('[GUILD CREATE] Error creating character:', charError)
-        // Clean up guild if character creation fails
+      if (memberError) {
+        console.error('[GUILD CREATE] Error creating character guild membership:', memberError)
         await serviceSupabase.from('guilds').delete().eq('id', guild.id)
         return NextResponse.json(
-          { error: 'Couldn\'t create your character. Try again.' },
+          { error: 'Couldn\'t create guild membership. Try again.' },
           { status: 500 }
         )
       }
-
-      characterId = newCharacter.id
+    } else {
+      // No valid character - user will be prompted to create one
+      // Guild Master role will be assigned when character is created (CreateCharacterModal checks created_by)
+      needsCharacterCreation = true
     }
 
-    // Create character guild membership for creator as Guild Master (use service role)
-    const { error: memberError } = await serviceSupabase
-      .from('character_guild_memberships')
-      .insert({
-        character_id: characterId,
-        guild_id: guild.id,
-        role: 'Guild Master',
-        is_active: true,
-        joined_at: new Date().toISOString(),
-        joined_via: 'manual'
-      })
-
-    if (memberError) {
-      console.error('[GUILD CREATE] Error creating character guild membership:', memberError)
-      // Clean up guild if membership creation fails
-      await serviceSupabase.from('guilds').delete().eq('id', guild.id)
-      return NextResponse.json(
-        { error: 'Couldn\'t create guild membership. Try again.' },
-        { status: 500 }
-      )
-    }
-
-    // Set as active character and guild for user (use service role)
+    // Set as active character and guild for user
     await serviceSupabase
       .from('user_active_characters')
       .upsert({
@@ -245,6 +224,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
+      needs_character_creation: needsCharacterCreation,
       guild: {
         id: guild.id,
         name: guild.name,

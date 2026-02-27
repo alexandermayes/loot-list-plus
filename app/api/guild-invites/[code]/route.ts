@@ -165,43 +165,35 @@ export async function POST(
       .eq('id', guildId)
       .single()
 
-    // Get or create a character for the user
+    // Check if user has a properly configured character (with class set)
     const { data: existingCharacters } = await serviceSupabase
       .from('characters')
-      .select('id')
+      .select('id, class_id')
       .eq('user_id', user.id)
+      .not('class_id', 'is', null)
+      .order('is_main', { ascending: false })
       .limit(1)
 
-    let characterId: string
-
-    if (existingCharacters && existingCharacters.length > 0) {
-      // Use existing character
-      characterId = existingCharacters[0].id
-    } else {
-      // Create a default character for the user
-      const characterName = user.user_metadata?.full_name || user.user_metadata?.name || 'Guild Member'
-
-      const { data: newCharacter, error: charError } = await serviceSupabase
-        .from('characters')
-        .insert({
+    if (!existingCharacters || existingCharacters.length === 0) {
+      // No valid character - set guild as active and prompt character creation
+      await serviceSupabase
+        .from('user_active_characters')
+        .upsert({
           user_id: user.id,
-          name: characterName,
-          realm: guildData?.realm || null,
-          is_main: true
+          active_character_id: null,
+          active_guild_id: guildId,
+          updated_at: new Date().toISOString()
         })
-        .select('id')
-        .single()
 
-      if (charError || !newCharacter) {
-        console.error('[INVITE JOIN] Error creating character:', charError)
-        return NextResponse.json(
-          { error: 'Couldn\'t create your character. Try again.' },
-          { status: 500 }
-        )
-      }
-
-      characterId = newCharacter.id
+      return NextResponse.json({
+        success: true,
+        guild_id: guildId,
+        needs_character_creation: true,
+        message: 'Joined guild - please create a character'
+      })
     }
+
+    const characterId = existingCharacters[0].id
 
     // Check if character is already an ACTIVE member of this guild
     const { data: existingMembership } = await serviceSupabase
