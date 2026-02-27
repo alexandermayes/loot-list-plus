@@ -113,12 +113,14 @@ export default function InviteCodeManager() {
       variant: 'danger',
       onConfirm: async () => {
         try {
-          const { error } = await supabase
-            .from('guild_invite_codes')
-            .delete()
-            .eq('id', codeId)
+          const response = await fetch(`/api/guild-invites?id=${codeId}&guild_id=${activeGuild!.id}`, {
+            method: 'DELETE'
+          })
 
-          if (error) throw error
+          if (!response.ok) {
+            const data = await response.json()
+            throw new Error(data.error || 'Couldn\'t remove code')
+          }
 
           showNotification('success', 'Invite code removed')
           await loadInviteCodes()

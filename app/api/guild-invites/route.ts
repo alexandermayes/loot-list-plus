@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient, getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { verifyOfficerPermissions } from '@/utils/server-roles'
+import { trackApiError } from '@/utils/analytics/server'
 
 // POST - Generate a new invite code
 export async function POST(request: NextRequest) {
@@ -164,5 +165,48 @@ export async function GET(request: NextRequest) {
       { error: 'Internal server error' },
       { status: 500 }
     )
+  }
+}
+
+// DELETE - Remove an invite code
+export async function DELETE(request: NextRequest) {
+  try {
+    const { user, error: authError } = await getAuthenticatedUser()
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const serviceSupabase = createServiceRoleClient()
+
+    const { searchParams } = new URL(request.url)
+    const codeId = searchParams.get('id')
+    const guildId = searchParams.get('guild_id')
+
+    if (!codeId || !guildId) {
+      return NextResponse.json({ error: 'Missing id or guild_id' }, { status: 400 })
+    }
+
+    // Verify officer permissions
+    const verification = await verifyOfficerPermissions(serviceSupabase, user.id, guildId)
+    if (!verification.hasPermission) {
+      return NextResponse.json({ error: 'Only officers can remove invite codes' }, { status: 403 })
+    }
+
+    const { error: deleteError } = await serviceSupabase
+      .from('guild_invite_codes')
+      .delete()
+      .eq('id', codeId)
+      .eq('guild_id', guildId)
+
+    if (deleteError) {
+      console.error('Error deleting invite code:', deleteError)
+      return NextResponse.json({ error: 'Couldn\'t remove invite code' }, { status: 500 })
+    }
+
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    console.error('Error in DELETE /api/guild-invites:', error)
+    trackApiError('unknown', 'DELETE /api/guild-invites', error instanceof Error ? error : new Error(String(error)))
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
