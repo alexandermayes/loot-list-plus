@@ -450,8 +450,18 @@ function MasterSheetContent() {
 
         // Load raid tiers for active expansion (single join query)
         // Officers can see all tiers (including disabled ones), members only see active tiers
+        // Filter by current_phase to only show unlocked phases
         let loadedTierIds: string[] = []
         if (activeGuild?.active_expansion_id) {
+          // Get current_phase from expansion to filter tiers
+          const { data: expansionData } = await supabase
+            .from('expansions')
+            .select('current_phase')
+            .eq('id', activeGuild.active_expansion_id)
+            .single()
+
+          const currentPhase = expansionData?.current_phase ?? 1
+
           let tiersQuery = supabase
             .from('raid_tiers')
             .select(`
@@ -467,11 +477,8 @@ function MasterSheetContent() {
               )
             `)
             .eq('expansion.id', activeGuild.active_expansion_id)
-
-          // Only filter to active tiers for non-officers
-          if (!isOfficer) {
-            tiersQuery = tiersQuery.eq('is_guild_active', true)
-          }
+            .lte('phase', currentPhase)
+            .or('is_guild_active.eq.true,is_guild_active.is.null')
 
           const { data: tiersData } = await tiersQuery
 

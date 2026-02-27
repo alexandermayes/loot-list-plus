@@ -142,9 +142,10 @@ export async function PATCH(
     }
 
     // Step 3: Activate tiers in the selected phase (marks them as "current")
+    // Also enable is_guild_active and master_sheet_visible for newly unlocked tiers
     const { error: activateError } = await serviceSupabase
       .from('raid_tiers')
-      .update({ is_active: true })
+      .update({ is_active: true, is_guild_active: true, master_sheet_visible: true })
       .in('id', phaseTierIds)
 
     if (activateError) {

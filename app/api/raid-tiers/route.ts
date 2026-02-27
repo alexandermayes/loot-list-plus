@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
     const supabase = createServiceRoleClient()
 
     // Get expansion's current_phase for filtering
-    let currentPhase = 99 // Default to showing all phases if not set
+    let currentPhase = 1 // Default to phase 1 if not set
     if (!includeAllPhases) {
       const { data: expansion } = await supabase
         .from('expansions')
@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
         .eq('id', expansionId)
         .single()
 
-      if (expansion?.current_phase) {
+      if (expansion?.current_phase != null) {
         currentPhase = expansion.current_phase
       }
     }
@@ -63,7 +63,7 @@ export async function GET(request: NextRequest) {
       { tiers: tiers || [], current_phase: currentPhase },
       {
         headers: {
-          'Cache-Control': 'private, max-age=300, stale-while-revalidate=600'
+          'Cache-Control': 'private, no-cache'
         }
       }
     )

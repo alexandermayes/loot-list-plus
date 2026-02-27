@@ -240,7 +240,7 @@ export function useRaidTiers(
     {
       ...swrConfig,
       revalidateOnFocus: false,
-      dedupingInterval: 30000, // Tiers change rarely
+      dedupingInterval: 5000, // Keep in sync with guild settings changes
       ...options,
     }
   )

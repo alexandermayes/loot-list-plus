@@ -3,6 +3,7 @@
 import { createClient } from '@/utils/supabase/client'
 import { useState, useEffect, use } from 'react'
 import { useRouter } from 'next/navigation'
+import { useSWRConfig } from 'swr'
 import { useGuildContext } from '@/app/contexts/GuildContext'
 import { useNotification } from '@/app/contexts/NotificationContext'
 import { HugeiconsIcon } from '@hugeicons/react'
@@ -207,6 +208,7 @@ export default function ExpansionDetailPage({ params }: { params: Promise<{ expa
 
   const supabase = createClient()
   const router = useRouter()
+  const { mutate } = useSWRConfig()
   const { activeGuild, loading: guildLoading, isOfficer } = useGuildContext()
   const { showNotification } = useNotification()
 
@@ -370,6 +372,8 @@ export default function ExpansionDetailPage({ params }: { params: Promise<{ expa
       }
 
       showNotification('success', !currentValue ? 'Raid added to loot lists' : 'Raid removed from loot lists')
+      // Invalidate SWR caches so other pages pick up the change
+      mutate((key: string) => typeof key === 'string' && (key.startsWith('/api/raid-tiers') || key.startsWith('/api/loot-items')), undefined, { revalidate: true })
       await loadData()
     } catch (error: any) {
       console.error('Toggle error:', error)
@@ -397,6 +401,7 @@ export default function ExpansionDetailPage({ params }: { params: Promise<{ expa
       }
 
       showNotification('success', !currentValue ? 'Rankings now visible to players' : 'Rankings hidden from players')
+      mutate((key: string) => typeof key === 'string' && (key.startsWith('/api/raid-tiers') || key.startsWith('/api/loot-items')), undefined, { revalidate: true })
       await loadData()
     } catch (error: any) {
       console.error('Toggle visibility error:', error)
@@ -460,6 +465,7 @@ export default function ExpansionDetailPage({ params }: { params: Promise<{ expa
       }
 
       showNotification('success', `Phase ${phase} is now current`)
+      mutate((key: string) => typeof key === 'string' && (key.startsWith('/api/raid-tiers') || key.startsWith('/api/loot-items')), undefined, { revalidate: true })
       await loadData()
     } catch (error: any) {
       showNotification('error', error.message || 'Couldn\'t set current phase. Try again.')

@@ -211,7 +211,8 @@ export async function seedExpansionForGuild(
         .from('expansions')
         .insert({
           guild_id: guildId,
-          name: expansionData.displayName
+          name: expansionData.displayName,
+          current_phase: 1
         })
         .select()
         .single()
@@ -260,13 +261,17 @@ export async function seedExpansionForGuild(
       // Create the raid tier
       // Note: is_active is kept for backward compatibility, but master_sheet_visible controls visibility
       // All raid tiers start with master_sheet_visible = true (officers can hide if needed)
+      // Only enable tiers in Phase 1 by default (guild starts at Phase 1)
+      const isInInitialPhase = raid.phase !== null && raid.phase <= 1
+
       const { data: tier, error: tierError } = await supabase
         .from('raid_tiers')
         .insert({
           expansion_id: expansion.id,
           name: raid.name,
           is_active: raid.isActive, // Keep for backward compatibility
-          master_sheet_visible: true, // All tiers visible by default
+          is_guild_active: isInInitialPhase, // Only current phase tiers enabled
+          master_sheet_visible: isInInitialPhase, // Only current phase tiers visible
           phase: raid.phase // Phase number for grouping raids by content phase
         })
         .select()

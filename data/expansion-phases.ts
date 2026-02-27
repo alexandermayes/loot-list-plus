@@ -27,7 +27,7 @@ export const EXPANSION_PHASES: Record<string, PhaseDefinition[]> = {
   ],
   tbc: [
     { phase: 1, name: 'Phase 1', raids: ['Karazhan', "Gruul's Lair", "Magtheridon's Lair"] },
-    { phase: 2, name: 'Phase 2', raids: ['Serpentshrine Cavern', 'Tempest Keep'] },
+    { phase: 2, name: 'Phase 2', raids: ['Serpentshrine Cavern', 'Tempest Keep: The Eye'] },
     { phase: 3, name: 'Phase 3', raids: ['Hyjal Summit', 'Black Temple'] },
     { phase: 4, name: 'Phase 4', raids: ["Zul'Aman"] },
     { phase: 5, name: 'Phase 5', raids: ['Sunwell Plateau'] },
