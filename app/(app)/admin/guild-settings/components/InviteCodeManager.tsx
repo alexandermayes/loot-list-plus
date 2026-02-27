@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/label'
 import { Modal, ModalHeader, ModalTitle, ModalDescription, ModalBody, ModalFooter } from '@/components/ui/modal'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { EmptyState } from '@/components/ui/empty-state'
+import { StatusBadge } from '@/components/ui/status-badge'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { Copy01Icon, Cancel01Icon, Add01Icon, SentIcon } from '@hugeicons/core-free-icons'
 import { trackClientEvent } from '@/utils/analytics/client'
@@ -104,25 +105,25 @@ export default function InviteCodeManager() {
     }
   }
 
-  const handleDeactivateCode = (codeId: string) => {
+  const handleRemoveCode = (codeId: string, code: string) => {
     confirm({
-      title: 'Deactivate invite code',
-      description: 'Are you sure you want to deactivate this invite code? It will no longer be usable.',
-      confirmLabel: 'Deactivate',
-      variant: 'warning',
+      title: 'Remove invite code',
+      description: `Remove invite code ${code}? Anyone with this link will no longer be able to join.`,
+      confirmLabel: 'Remove',
+      variant: 'danger',
       onConfirm: async () => {
         try {
           const { error } = await supabase
             .from('guild_invite_codes')
-            .update({ is_active: false })
+            .delete()
             .eq('id', codeId)
 
           if (error) throw error
 
-          showNotification('success', 'Invite code deactivated')
+          showNotification('success', 'Invite code removed')
           await loadInviteCodes()
         } catch (error: any) {
-          showNotification('error', error.message || 'Couldn\'t deactivate code. Try again.')
+          showNotification('error', error.message || 'Couldn\'t remove code. Try again.')
         }
       }
     })
@@ -190,7 +191,7 @@ export default function InviteCodeManager() {
         {/* Invite Codes List */}
         {loading ? (
           <div className="py-8 flex justify-center"><LoadingSpinner /></div>
-        ) : inviteCodes.length === 0 ? (
+        ) : inviteCodes.filter(c => c.is_active).length === 0 ? (
           <EmptyState
             icon={SentIcon}
             title="No invite codes"
@@ -199,7 +200,7 @@ export default function InviteCodeManager() {
           />
         ) : (
           <div className="space-y-3">
-            {inviteCodes.map((code) => {
+            {inviteCodes.filter(c => c.is_active).map((code) => {
               const isExpired = code.expires_at && new Date(code.expires_at) < new Date()
               const isMaxedOut = code.max_uses && code.current_uses >= code.max_uses
 
@@ -207,8 +208,8 @@ export default function InviteCodeManager() {
                 <div
                   key={code.id}
                   className={`p-4 bg-background-subtle rounded-lg border ${
-                    !code.is_active || isExpired || isMaxedOut
-                      ? 'border-destructive/50 opacity-60'
+                    isExpired || isMaxedOut
+                      ? 'border-warning/50 opacity-60'
                       : 'border-border'
                   }`}
                 >
@@ -218,20 +219,11 @@ export default function InviteCodeManager() {
                         <code className="px-2 py-1 bg-background-elevated rounded font-mono text-foreground text-[13px]">
                           {code.code}
                         </code>
-                        {!code.is_active && (
-                          <span className="px-2 py-1 bg-destructive/20 text-destructive text-xs rounded">
-                            Deactivated
-                          </span>
-                        )}
                         {isExpired && (
-                          <span className="px-2 py-1 bg-destructive/20 text-destructive text-xs rounded">
-                            Expired
-                          </span>
+                          <StatusBadge status="no_show" label="Expired" />
                         )}
-                        {isMaxedOut && (
-                          <span className="px-2 py-1 bg-destructive/20 text-destructive text-xs rounded">
-                            Max Uses Reached
-                          </span>
+                        {isMaxedOut && !isExpired && (
+                          <StatusBadge status="benched" label="Max uses reached" />
                         )}
                       </div>
 
@@ -264,16 +256,14 @@ export default function InviteCodeManager() {
                       </div>
                     </div>
 
-                    {code.is_active && !isExpired && !isMaxedOut && (
-                      <Button
-                        variant="destructive-outline"
-                        size="icon"
-                        onClick={() => handleDeactivateCode(code.id)}
-                        className="ml-4"
-                      >
-                        <HugeiconsIcon icon={Cancel01Icon} size={16} />
-                      </Button>
-                    )}
+                    <Button
+                      variant="destructive-outline"
+                      size="icon"
+                      onClick={() => handleRemoveCode(code.id, code.code)}
+                      className="ml-4"
+                    >
+                      <HugeiconsIcon icon={Cancel01Icon} size={16} />
+                    </Button>
                   </div>
                 </div>
               )
