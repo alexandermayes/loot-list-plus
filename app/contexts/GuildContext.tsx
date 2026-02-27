@@ -184,6 +184,7 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
         setUserGuilds([])
         setGuildsLoading(false)
         setCharactersLoading(false)
+        window.location.href = '/'
         return
       }
       setUser(currentUser)
@@ -866,6 +867,7 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
         setCurrentExpansion(null)
         setViewingExpansionId(null)
         setUser(null)
+        window.location.href = '/'
       }
     })
 

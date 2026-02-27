@@ -199,13 +199,7 @@ export function CreateCharacterModal({ isOpen, onClose, onSuccess, suggestedName
       // If user has a guild to join, add character to it
       if (targetGuildId && data.character) {
         try {
-          // Check if user is the guild creator - they should be Guild Master
-          // For pending guild joins, default to Member role
-          let role = 'Member'
-          if (activeGuild && user && activeGuild.created_by === user.id) {
-            role = 'Guild Master'
-          }
-
+          // Role is determined server-side (Guild Master for creator, Member for everyone else)
           const guildResponse = await fetch(`/api/characters/${data.character.id}/guilds`, {
             method: 'POST',
             headers: {
@@ -213,7 +207,6 @@ export function CreateCharacterModal({ isOpen, onClose, onSuccess, suggestedName
             },
             body: JSON.stringify({
               guild_id: targetGuildId,
-              role,
               joined_via: pendingGuildJoin ? 'discord_verify' : 'manual'
             })
           })

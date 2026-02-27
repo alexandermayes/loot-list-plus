@@ -17,8 +17,9 @@ export async function GET() {
         .from('guilds')
         .select('*', { count: 'exact', head: true }),
       supabase
-        .from('guild_members')
-        .select('*', { count: 'exact', head: true }),
+        .from('character_guild_memberships')
+        .select('*', { count: 'exact', head: true })
+        .eq('is_active', true),
       supabase
         .from('loot_history')
         .select('*', { count: 'exact', head: true }),

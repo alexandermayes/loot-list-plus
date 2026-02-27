@@ -39,7 +39,7 @@ export default function Navigation({
 
   const handleLogout = async () => {
     await supabase.auth.signOut()
-    router.push('/')
+    window.location.href = '/'
   }
 
   const handleSwitchGuild = async (guildId: string) => {

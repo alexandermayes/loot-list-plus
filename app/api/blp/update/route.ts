@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
+import { verifyOfficerPermissions } from '@/utils/server-roles'
 import { trackApiError } from '@/utils/analytics/server'
 
 interface UpdateBLPRequest {
@@ -36,37 +37,10 @@ export async function POST(request: NextRequest) {
 
     const supabase = createServiceRoleClient()
 
-    // Verify user is an officer in the guild
-    const { data: membership } = await supabase
-      .from('guild_members')
-      .select('role')
-      .eq('guild_id', guild_id)
-      .eq('user_id', user.id)
-      .single()
-
-    if (!membership) {
-      return NextResponse.json({ error: 'Not a member of this guild' }, { status: 403 })
-    }
-
-    // Check if user is officer (position >= 50) or guild creator
-    const { data: roleData } = await supabase
-      .from('guild_roles')
-      .select('position')
-      .eq('guild_id', guild_id)
-      .eq('name', membership.role)
-      .single()
-
-    const { data: guildData } = await supabase
-      .from('guilds')
-      .select('created_by')
-      .eq('id', guild_id)
-      .single()
-
-    const isOfficer = (roleData?.position ?? 0) >= 50
-    const isCreator = guildData?.created_by === user.id
-
-    if (!isOfficer && !isCreator) {
-      return NextResponse.json({ error: 'Officer permissions required' }, { status: 403 })
+    // Verify user has officer permissions (uses character_guild_memberships)
+    const verification = await verifyOfficerPermissions(supabase, user.id, guild_id)
+    if (!verification.hasPermission) {
+      return NextResponse.json({ error: verification.error || 'Officer permissions required' }, { status: 403 })
     }
 
     // Check if BLP is enabled for this guild

@@ -184,11 +184,9 @@ export default function ProfilePage() {
     }
   }
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     setLoggingOut(true)
-    // Don't await - redirect immediately to prevent React re-renders
-    // from auth state change hiding the overlay before navigation completes
-    supabase.auth.signOut()
+    await supabase.auth.signOut()
     window.location.href = '/'
   }
 

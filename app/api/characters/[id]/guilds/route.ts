@@ -111,8 +111,6 @@ export async function POST(
     // Parse request body
     const body = await request.json()
     const { guild_id, joined_via = 'manual' } = body
-    // Force role to 'Member' — never trust client-supplied role to prevent privilege escalation
-    const role = 'Member'
 
     if (!guild_id) {
       return NextResponse.json(
@@ -120,6 +118,16 @@ export async function POST(
         { status: 400 }
       )
     }
+
+    // Determine role server-side: guild creator gets Guild Master, everyone else gets Member
+    const serviceSupabaseForRole = createServiceRoleClient()
+    const { data: guildData } = await serviceSupabaseForRole
+      .from('guilds')
+      .select('created_by')
+      .eq('id', guild_id)
+      .single()
+
+    const role = guildData?.created_by === user.id ? 'Guild Master' : 'Member'
 
     // Check if membership already exists
     const { data: existingMembership } = await supabase
