@@ -122,8 +122,12 @@ function JoinGuildContent() {
       // Success!
       setSuccess(true)
       setTimeout(() => {
-        // Force a full page reload to refresh guild context
-        window.location.href = '/overview'
+        // Check if user needs to create a character first
+        if (data.needs_character_creation) {
+          window.location.href = '/overview?create_character=true'
+        } else {
+          window.location.href = '/overview'
+        }
       }, 1500)
     } catch (err) {
       console.error('Error joining guild:', err)

@@ -252,6 +252,23 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: roleChangeCheck.error }, { status: 403 })
     }
 
+    // If promoting to Guild Master, demote any existing Guild Masters to Officer first
+    if (new_role === 'Guild Master') {
+      await serviceSupabase
+        .from('character_guild_memberships')
+        .update({ role: 'Officer' })
+        .eq('guild_id', guild_id)
+        .eq('role', 'Guild Master')
+        .neq('character_id', character_ids[0])
+
+      await serviceSupabase
+        .from('guild_members')
+        .update({ role: 'Officer' })
+        .eq('guild_id', guild_id)
+        .eq('role', 'Guild Master')
+        .neq('user_id', target_user_id)
+    }
+
     // Update character_guild_memberships
     const { error: updateError } = await serviceSupabase
       .from('character_guild_memberships')
