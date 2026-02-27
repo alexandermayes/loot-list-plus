@@ -1,6 +1,7 @@
 import { headers } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/utils/supabase/server'
+import { Suspense } from 'react'
 import type { Metadata } from 'next'
 
 // Landing sections (all 'use client' — SSR renders initial state, then hydrates)
@@ -106,5 +107,5 @@ export default async function Home() {
   }
 
   // Show login page for unauthenticated users on app domain
-  return <LoginPage />
+  return <Suspense><LoginPage /></Suspense>
 }

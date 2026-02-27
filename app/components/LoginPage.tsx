@@ -3,18 +3,24 @@
 import { createClient } from '@/utils/supabase/client'
 import Image from 'next/image'
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 import { trackClientEvent } from '@/utils/analytics/client'
 import { Button } from '@/components/ui/button'
 
 export default function LoginPage() {
   const supabase = createClient()
+  const searchParams = useSearchParams()
+  const nextParam = searchParams.get('next')
 
   const handleDiscordLogin = async () => {
     trackClientEvent('sign_in_clicked')
+    const callbackUrl = nextParam
+      ? `${window.location.origin}/auth/callback?next=${encodeURIComponent(nextParam)}`
+      : `${window.location.origin}/auth/callback`
     await supabase.auth.signInWithOAuth({
       provider: 'discord',
       options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
+        redirectTo: callbackUrl,
         scopes: 'identify guilds'
       }
     })
