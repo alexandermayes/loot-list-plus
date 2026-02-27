@@ -77,9 +77,10 @@ export async function generateMetadata(): Promise<Metadata> {
   }
 }
 
-export default async function Home() {
+export default async function Home({ searchParams }: { searchParams: Promise<{ next?: string }> }) {
   const headersList = await headers()
   const host = headersList.get('host') || ''
+  const { next } = await searchParams
 
   // Show marketing landing page on getlootlist.com
   if (isLandingHost(host)) {
@@ -102,7 +103,10 @@ export default async function Home() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
-  if (user) {
+  // If user is logged in and there's an invite code, show the login page with modal
+  // Otherwise redirect to overview as normal
+  const hasInviteCode = next?.includes('code=')
+  if (user && !hasInviteCode) {
     redirect('/overview')
   }
 
