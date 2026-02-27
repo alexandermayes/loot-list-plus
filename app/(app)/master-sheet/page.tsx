@@ -28,6 +28,7 @@ import ScoreComparisonModal from '@/app/components/ScoreComparisonModal'
 import LootListSummaryView, { LootListAggregateItem } from '@/app/components/LootListSummaryView'
 import { refreshWowheadTooltips } from '@/lib/wowhead'
 import { trackClientEvent } from '@/utils/analytics/client'
+import { InfoTooltip } from '@/components/ui/info-tooltip'
 import { VirtualizedMasterSheet } from './components/VirtualizedMasterSheet'
 import type { PlayerRanking } from './components/BossSection'
 
@@ -1801,7 +1802,7 @@ function MasterSheetContent() {
         <div className="bg-background-elevated border border-border rounded-xl p-4">
           <div className="flex items-center justify-between">
             <p className="text-foreground-muted text-[12px]">
-              Scores = item rank + attendance + role modifiers + priority bonuses + trial penalty. Ties go to roll. <span className="text-yellow-400">(T)</span> = Trial member.{guildSettings?.new_member_mode === 'minimum_gate' && <> <span className="text-red-400">⊘</span> = Ineligible (needs {guildSettings?.minimum_raid_days || 2}+ raids).</>}
+              Scores = item rank + attendance + role modifiers + priority bonuses + trial penalty. Ties go to roll. <span className="inline-flex items-center gap-1"><span className="text-yellow-400">(T)</span> = Trial member <InfoTooltip content="Trial members receive a score penalty configured by officers. The penalty is removed when promoted to full member." iconSize={12} /></span>{guildSettings?.new_member_mode === 'minimum_gate' && <> <span className="inline-flex items-center gap-1"><span className="text-red-400">⊘</span> = Ineligible <InfoTooltip content={`Must attend ${guildSettings?.minimum_raid_days || 2}+ raids before becoming eligible for loot. Score still tracks in the background.`} iconSize={12} /></span></>}
             </p>
             {Object.keys(itemPriorities).length > 0 && (
               <p className="text-foreground-muted text-[12px]">

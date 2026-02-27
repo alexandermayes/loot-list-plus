@@ -27,7 +27,7 @@ import { useGuildMembers } from '@/app/hooks/use-api'
 import { Select } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { SecurityLockIcon, DiscordIcon, RotateClockwiseIcon } from '@hugeicons/core-free-icons'
+import { SecurityLockIcon, RotateClockwiseIcon } from '@hugeicons/core-free-icons'
 import { HugeiconsIcon } from '@hugeicons/react'
 
 export default function GuildSettingsPage() {
@@ -539,94 +539,97 @@ export default function GuildSettingsPage() {
         {/* Invite Codes */}
         <InviteCodeManager />
 
-        {/* Discord Integration */}
-        <div className="bg-background-elevated border border-border rounded-xl overflow-hidden">
-          <div className="p-6 border-b border-border">
-            <div className="flex items-center gap-3">
-              <HugeiconsIcon icon={DiscordIcon} size={24} className="text-[#5865F2]" />
-              <div>
-                <h2 className="text-[24px] font-semibold text-foreground">Discord integration</h2>
-                <p className="text-muted-foreground text-[13px] mt-1">Post raid summaries to a Discord channel when you finish logging a raid</p>
-              </div>
-            </div>
-          </div>
-          <div className="p-6 space-y-4">
-            {!activeGuild?.discord_server_id ? (
-              <p className="text-muted-foreground text-[13px]">
-                Link a Discord server in guild information above to enable Discord features.
-              </p>
-            ) : discordChannelsError && discordChannels.length === 0 ? (
-              <div className="space-y-3">
-                <p className="text-muted-foreground text-[13px]">{discordChannelsError}</p>
-                <Button variant="outline" size="sm" onClick={loadDiscordChannels} loading={discordChannelsLoading}>
-                  Retry
-                </Button>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                <div className="space-y-2">
-                  <Label htmlFor="raidSummaryChannel">Raid summary channel</Label>
-                  <div className="flex items-center gap-2">
-                    <Select
-                      id="raidSummaryChannel"
-                      value={raidSummaryChannelId || ''}
-                      onChange={(e) => handleSaveRaidSummaryChannel(e.target.value || null)}
-                      disabled={discordChannelsLoading || savingChannel}
-                      className="flex-1"
-                    >
-                      <option value="">None (disabled)</option>
-                      {discordChannels.map(ch => (
-                        <option key={ch.id} value={ch.id}>
-                          #{ch.name}
-                        </option>
-                      ))}
-                    </Select>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={loadDiscordChannels}
-                      disabled={discordChannelsLoading}
-                      className="shrink-0 px-2"
-                      title="Refresh channels"
-                    >
-                      <HugeiconsIcon icon={RotateClockwiseIcon} size={16} className={discordChannelsLoading ? 'animate-spin' : ''} />
-                    </Button>
-                  </div>
-                  <p className="text-muted-foreground text-[11px]">
-                    The LootList+ Bot will post raid attendance and loot to this channel. Make sure the bot has permission to send messages there.
-                  </p>
+        {/* Discord & Warcraft Logs Integrations */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Discord Integration */}
+          <div className="bg-background-elevated border border-border rounded-xl overflow-hidden">
+            <div className="p-6 border-b border-border">
+              <div className="flex items-center gap-3">
+                <img src="/discord-icon.svg" alt="" className="w-6 h-6" />
+                <div>
+                  <h2 className="text-[24px] font-semibold text-foreground">Discord integration</h2>
+                  <p className="text-muted-foreground text-[13px] mt-1">Post raid summaries to a Discord channel when you finish logging a raid</p>
                 </div>
               </div>
-            )}
-          </div>
-        </div>
-
-        {/* Warcraft Logs Integration */}
-        <div className="bg-background-elevated border border-border rounded-xl overflow-hidden">
-          <div className="p-6 border-b border-border">
-            <div className="flex items-center gap-3">
-              <img src="/wcl-icon.svg" alt="" className="w-6 h-6" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} />
-              <div>
-                <h2 className="text-[24px] font-semibold text-foreground">Warcraft Logs</h2>
-                <p className="text-muted-foreground text-[13px] mt-1">Auto-link WCL reports to raids when posting summaries to Discord</p>
-              </div>
+            </div>
+            <div className="p-6 space-y-4">
+              {!activeGuild?.discord_server_id ? (
+                <p className="text-muted-foreground text-[13px]">
+                  Link a Discord server in guild information above to enable Discord features.
+                </p>
+              ) : discordChannelsError && discordChannels.length === 0 ? (
+                <div className="space-y-3">
+                  <p className="text-muted-foreground text-[13px]">{discordChannelsError}</p>
+                  <Button variant="outline" size="sm" onClick={loadDiscordChannels} loading={discordChannelsLoading}>
+                    Retry
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <div className="space-y-2">
+                    <Label htmlFor="raidSummaryChannel">Raid summary channel</Label>
+                    <div className="flex items-center gap-2">
+                      <Select
+                        id="raidSummaryChannel"
+                        value={raidSummaryChannelId || ''}
+                        onChange={(e) => handleSaveRaidSummaryChannel(e.target.value || null)}
+                        disabled={discordChannelsLoading || savingChannel}
+                        className="flex-1"
+                      >
+                        <option value="">None (disabled)</option>
+                        {discordChannels.map(ch => (
+                          <option key={ch.id} value={ch.id}>
+                            #{ch.name}
+                          </option>
+                        ))}
+                      </Select>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={loadDiscordChannels}
+                        disabled={discordChannelsLoading}
+                        className="shrink-0 px-2"
+                        title="Refresh channels"
+                      >
+                        <HugeiconsIcon icon={RotateClockwiseIcon} size={16} className={discordChannelsLoading ? 'animate-spin' : ''} />
+                      </Button>
+                    </div>
+                    <p className="text-muted-foreground text-[11px]">
+                      The LootList+ Bot will post raid attendance and loot to this channel. Make sure the bot has permission to send messages there.
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
-          <div className="p-6 space-y-3">
-            <div className="space-y-2">
-              <Label htmlFor="wclGuildUrl">Guild page URL</Label>
-              <Input
-                id="wclGuildUrl"
-                type="url"
-                placeholder="https://classic.warcraftlogs.com/guild/us/faerlina/guild-name"
-                value={wclGuildUrl}
-                onChange={(e) => setWclGuildUrl(e.target.value)}
-                onBlur={(e) => handleSaveWclUrl(e.target.value)}
-                disabled={savingWcl}
-              />
-              <p className="text-muted-foreground text-[11px]">
-                Paste your guild&apos;s Warcraft Logs URL. Reports matching raid dates will be auto-linked to summaries.
-              </p>
+
+          {/* Warcraft Logs Integration */}
+          <div className="bg-background-elevated border border-border rounded-xl overflow-hidden">
+            <div className="p-6 border-b border-border">
+              <div className="flex items-center gap-3">
+                <img src="/wcl-icon.png" alt="" className="w-6 h-6" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} />
+                <div>
+                  <h2 className="text-[24px] font-semibold text-foreground">Warcraft Logs</h2>
+                  <p className="text-muted-foreground text-[13px] mt-1">Auto-link WCL reports to raids when posting summaries to Discord</p>
+                </div>
+              </div>
+            </div>
+            <div className="p-6 space-y-3">
+              <div className="space-y-2">
+                <Label htmlFor="wclGuildUrl">Guild page URL</Label>
+                <Input
+                  id="wclGuildUrl"
+                  type="url"
+                  placeholder="https://classic.warcraftlogs.com/guild/us/faerlina/guild-name"
+                  value={wclGuildUrl}
+                  onChange={(e) => setWclGuildUrl(e.target.value)}
+                  onBlur={(e) => handleSaveWclUrl(e.target.value)}
+                  disabled={savingWcl}
+                />
+                <p className="text-muted-foreground text-[11px]">
+                  Paste your guild&apos;s Warcraft Logs URL. Reports matching raid dates will be auto-linked to summaries.
+                </p>
+              </div>
             </div>
           </div>
         </div>

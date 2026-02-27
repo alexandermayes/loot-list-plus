@@ -26,6 +26,7 @@ import { isTokenSlot } from '@/data/token-class-mapping'
 import { useNotification } from '@/app/contexts/NotificationContext'
 import { trackClientEvent } from '@/utils/analytics/client'
 import { ClassificationBadge } from '@/components/ui/classification-badge'
+import { InfoTooltip } from '@/components/ui/info-tooltip'
 import { BisImportModal } from '@/app/components/BisImportModal'
 import { HorizontalScroll } from '@/components/ui/horizontal-scroll'
 import ItemLink from '@/app/components/ItemLink'
@@ -951,12 +952,12 @@ export default function LootList() {
           <div className="bg-red-500/10 border-l-4 border-l-red-800/60 px-4 py-2">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <h2 className="text-[15px] font-semibold text-foreground">Bracket 1 (50-48)</h2>
+                <h2 className="text-[15px] font-semibold text-foreground inline-flex items-center gap-1.5">Bracket 1 (50-48) <InfoTooltip content="Highest priority tier. Reserved and Limited items here cost allocation points. Max 3 points per bracket." /></h2>
                 {(() => {
                   const validation = getBracketValidation('Bracket 1 (50-48)')
                   return validation ? (
                     <p className={`text-[12px] font-medium mt-1 ${validation.violations.length > 0 ? 'text-red-200' : 'text-red-200'}`}>
-                      Allocation Points: {validation.allocationPoints}/{validation.maxPoints}
+                      Allocation Points: {validation.allocationPoints}/{validation.maxPoints} <InfoTooltip content="Reserved and Limited items cost 1 point each. Unlimited items cost 0. You can spend up to 3 points per bracket." iconSize={12} />
                     </p>
                   ) : (
                     <p className="text-red-200 text-[12px] mt-1">Max 3 allocation points per bracket</p>
@@ -1043,12 +1044,12 @@ export default function LootList() {
           <div className="bg-orange-500/10 border-l-4 border-l-orange-800/60 px-4 py-2">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <h2 className="text-[15px] font-semibold text-foreground">Bracket 2 (47-45)</h2>
+                <h2 className="text-[15px] font-semibold text-foreground inline-flex items-center gap-1.5">Bracket 2 (47-45) <InfoTooltip content="Second priority tier. Same allocation point rules as Bracket 1." /></h2>
                 {(() => {
                   const validation = getBracketValidation('Bracket 2 (47-45)')
                   return validation ? (
                     <p className={`text-[12px] font-medium mt-1 ${validation.violations.length > 0 ? 'text-orange-200' : 'text-orange-200'}`}>
-                      Allocation Points: {validation.allocationPoints}/{validation.maxPoints}
+                      Allocation Points: {validation.allocationPoints}/{validation.maxPoints} <InfoTooltip content="Reserved and Limited items cost 1 point each. Unlimited items cost 0. You can spend up to 3 points per bracket." iconSize={12} />
                     </p>
                   ) : (
                     <p className="text-orange-200 text-[12px] mt-1">Max 3 allocation points per bracket</p>
@@ -1135,12 +1136,12 @@ export default function LootList() {
           <div className="bg-yellow-500/10 border-l-4 border-l-yellow-800/60 px-4 py-2">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <h2 className="text-[15px] font-semibold text-foreground">Bracket 3 (44-42)</h2>
+                <h2 className="text-[15px] font-semibold text-foreground inline-flex items-center gap-1.5">Bracket 3 (44-42) <InfoTooltip content="Third priority tier. Same allocation point rules as Brackets 1-2." /></h2>
                 {(() => {
                   const validation = getBracketValidation('Bracket 3 (44-42)')
                   return validation ? (
                     <p className={`text-[12px] font-medium mt-1 ${validation.violations.length > 0 ? 'text-yellow-200' : 'text-yellow-200'}`}>
-                      Allocation Points: {validation.allocationPoints}/{validation.maxPoints}
+                      Allocation Points: {validation.allocationPoints}/{validation.maxPoints} <InfoTooltip content="Reserved and Limited items cost 1 point each. Unlimited items cost 0. You can spend up to 3 points per bracket." iconSize={12} />
                     </p>
                   ) : (
                     <p className="text-yellow-200 text-[12px] mt-1">Max 3 allocation points per bracket</p>
@@ -1227,12 +1228,12 @@ export default function LootList() {
           <div className="bg-amber-500/10 border-l-4 border-l-amber-800/60 px-4 py-2">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <h2 className="text-[15px] font-semibold text-foreground">Bracket 4 (41-39)</h2>
+                <h2 className="text-[15px] font-semibold text-foreground inline-flex items-center gap-1.5">Bracket 4 (41-39) <InfoTooltip content="Fourth priority tier. Same allocation point rules as Brackets 1-3." /></h2>
                 {(() => {
                   const validation = getBracketValidation('Bracket 4 (41-39)')
                   return validation ? (
                     <p className={`text-[12px] font-medium mt-1 ${validation.violations.length > 0 ? 'text-amber-200' : 'text-amber-200'}`}>
-                      Allocation Points: {validation.allocationPoints}/{validation.maxPoints}
+                      Allocation Points: {validation.allocationPoints}/{validation.maxPoints} <InfoTooltip content="Reserved and Limited items cost 1 point each. Unlimited items cost 0. You can spend up to 3 points per bracket." iconSize={12} />
                     </p>
                   ) : (
                     <p className="text-amber-200 text-[12px] mt-1">Max 3 allocation points per bracket</p>
@@ -1317,7 +1318,7 @@ export default function LootList() {
         {/* No Bracket (38-25) - Main-spec */}
         <div className="bg-card border border-border rounded-xl overflow-hidden">
           <div className="bg-green-500/10 border-l-4 border-l-green-800/60 px-4 py-2">
-            <h2 className="text-[15px] font-semibold text-foreground">No bracket (38-25) - Main-spec</h2>
+            <h2 className="text-[15px] font-semibold text-foreground inline-flex items-center gap-1.5">No bracket (38-25) - Main-spec <InfoTooltip content="Standard priority list with no allocation point limits. Items here are still main-spec priority." /></h2>
             <p className="text-green-200 text-[12px]">Still considered main-spec priority</p>
           </div>
           <div className="overflow-x-auto max-h-[60vh] sm:max-h-[70vh] overflow-y-auto">
@@ -1360,7 +1361,7 @@ export default function LootList() {
         {/* Off-spec (24-1) */}
         <div className="bg-card border border-border rounded-xl overflow-hidden">
           <div className="bg-blue-500/10 border-l-4 border-l-blue-800/60 px-4 py-2">
-            <h2 className="text-[15px] font-semibold text-foreground">Off-spec (24-1)</h2>
+            <h2 className="text-[15px] font-semibold text-foreground inline-flex items-center gap-1.5">Off-spec (24-1) <InfoTooltip content="Items for your secondary spec or role. Lower priority than main-spec but helps with guild flexibility." /></h2>
             <p className="text-blue-200 text-[12px]">Off-spec items to support guild flexibility</p>
           </div>
           <div className="overflow-x-auto max-h-[60vh] sm:max-h-[70vh] overflow-y-auto">

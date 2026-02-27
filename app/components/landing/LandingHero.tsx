@@ -6,6 +6,7 @@ import { heroFadeIn, staggerContainer, scrollToSection } from '@/lib/animations'
 import { ArrowDown01Icon } from '@hugeicons/core-free-icons'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { Button } from '@/components/ui/button'
+import { trackClientEvent } from '@/utils/analytics/client'
 
 const APP_URL = 'https://www.lootlistplus.com'
 
@@ -80,12 +81,15 @@ export default function LandingHero() {
                 asChild
                 className="font-poppins font-semibold shadow-lg hover:shadow-xl"
               >
-                <a href={APP_URL}>Start for free</a>
+                <a href={APP_URL} onClick={() => trackClientEvent('landing_cta_clicked', { cta: 'hero_start_free' })}>Start for free</a>
               </Button>
               <Button
                 variant="outline"
                 size="lg"
-                onClick={() => scrollToSection('features')}
+                onClick={() => {
+                  trackClientEvent('landing_nav_clicked', { target: 'features', source: 'hero' })
+                  scrollToSection('features')
+                }}
                 className="font-poppins font-medium bg-background-elevated/80 hover:bg-background-elevated backdrop-blur-sm"
               >
                 See features
@@ -113,7 +117,10 @@ export default function LandingHero() {
         >
           <Button
             variant="ghost"
-            onClick={() => scrollToSection('features')}
+            onClick={() => {
+              trackClientEvent('landing_nav_clicked', { target: 'features', source: 'hero_scroll' })
+              scrollToSection('features')
+            }}
             className="flex flex-col items-center gap-2 h-auto p-2 text-foreground-muted hover:text-foreground hover:bg-transparent"
           >
             <span className="text-xs font-medium uppercase tracking-wider">Scroll</span>

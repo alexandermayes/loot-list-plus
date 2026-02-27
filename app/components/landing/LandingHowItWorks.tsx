@@ -1,8 +1,9 @@
 'use client'
 
-import { useRef } from 'react'
+import { useRef, useEffect } from 'react'
 import { motion, useInView } from 'framer-motion'
 import { fadeInUp, staggerContainerSlow } from '@/lib/animations'
+import { trackClientEvent } from '@/utils/analytics/client'
 import { HugeiconsIcon } from '@hugeicons/react'
 import {
   LinkSquare02Icon,
@@ -76,6 +77,10 @@ function StepCard({ step, index, isLast }: { step: typeof steps[0], index: numbe
 export default function LandingHowItWorks() {
   const ref = useRef(null)
   const isInView = useInView(ref, { once: true, margin: '-100px' })
+
+  useEffect(() => {
+    if (isInView) trackClientEvent('landing_section_viewed', { section: 'how_it_works' })
+  }, [isInView])
 
   return (
     <section id="how-it-works" className="relative py-32 md:py-40 bg-background-subtle">

@@ -5,6 +5,9 @@ import LegalNav from '@/app/components/LegalNav'
 export const metadata: Metadata = {
   title: 'Privacy Policy',
   description: 'Privacy Policy for LootList+. Learn how we collect, use, and protect your data.',
+  alternates: {
+    canonical: 'https://www.getlootlist.com/privacy',
+  },
 }
 
 export default function PrivacyPolicyPage() {

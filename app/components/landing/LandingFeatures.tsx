@@ -1,8 +1,9 @@
 'use client'
 
-import { useRef } from 'react'
+import { useRef, useEffect } from 'react'
 import { motion, useInView } from 'framer-motion'
 import { fadeInUp, staggerContainer } from '@/lib/animations'
+import { trackClientEvent } from '@/utils/analytics/client'
 import { HugeiconsIcon } from '@hugeicons/react'
 import {
   CheckListIcon,
@@ -89,6 +90,10 @@ function FeatureCard({ feature, index }: { feature: typeof features[0], index: n
 export default function LandingFeatures() {
   const ref = useRef(null)
   const isInView = useInView(ref, { once: true, margin: '-100px' })
+
+  useEffect(() => {
+    if (isInView) trackClientEvent('landing_section_viewed', { section: 'features' })
+  }, [isInView])
 
   return (
     <section id="features" className="relative py-32 md:py-40 bg-background">

@@ -1,16 +1,21 @@
 'use client'
 
-import { useRef } from 'react'
+import { useRef, useEffect } from 'react'
 import { motion, useInView } from 'framer-motion'
 import { fadeInUp, staggerContainer } from '@/lib/animations'
 import Image from 'next/image'
 import { Button } from '@/components/ui/button'
+import { trackClientEvent } from '@/utils/analytics/client'
 
 const APP_URL = 'https://www.lootlistplus.com'
 
 export default function LandingCTA() {
   const ref = useRef(null)
   const isInView = useInView(ref, { once: true, margin: '-100px' })
+
+  useEffect(() => {
+    if (isInView) trackClientEvent('landing_section_viewed', { section: 'cta' })
+  }, [isInView])
 
   return (
     <section id="cta" className="relative py-32 md:py-40 overflow-hidden">
@@ -79,7 +84,7 @@ export default function LandingCTA() {
               asChild
               className="gap-3 font-poppins font-semibold shadow-lg hover:shadow-xl"
             >
-              <a href={APP_URL}>
+              <a href={APP_URL} onClick={() => trackClientEvent('landing_cta_clicked', { cta: 'bottom_get_started' })}>
                 <Image
                   src="/discord-icon.svg"
                   alt="Discord"
@@ -95,7 +100,7 @@ export default function LandingCTA() {
           {/* Secondary link */}
           <motion.p variants={fadeInUp} className="mt-6 text-sm text-foreground-muted">
             Already have an account?{' '}
-            <a href={APP_URL} className="text-foreground hover:text-accent transition-colors">
+            <a href={APP_URL} onClick={() => trackClientEvent('landing_cta_clicked', { cta: 'bottom_login' })} className="text-foreground hover:text-accent transition-colors">
               Log in
             </a>
           </motion.p>

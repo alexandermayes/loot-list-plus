@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import LandingNav from '@/app/components/landing/LandingNav'
 import LandingHero from '@/app/components/landing/LandingHero'
 import LandingFeatures from '@/app/components/landing/LandingFeatures'
@@ -7,6 +8,14 @@ import LandingTestimonials from '@/app/components/landing/LandingTestimonials'
 import LandingValueProps from '@/app/components/landing/LandingValueProps'
 import LandingCTA from '@/app/components/landing/LandingCTA'
 import LandingFooter from '@/app/components/landing/LandingFooter'
+
+export const metadata: Metadata = {
+  title: 'About LootList+',
+  description: 'Learn about LootList+, the loot management system built for WoW Classic guilds. Fair loot distribution, attendance tracking, and Discord integration.',
+  alternates: {
+    canonical: 'https://www.getlootlist.com/about',
+  },
+}
 
 export default function AboutPage() {
   return (

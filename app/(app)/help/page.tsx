@@ -12,7 +12,7 @@ import {
   Search01Icon,
   ArrowRight01Icon,
 } from '@hugeicons/core-free-icons'
-import { helpCategories, getAllArticles, type HelpCategory, type HelpArticle } from '@/lib/help-content'
+import { helpCategories, getAllArticles, glossaryTerms, type HelpCategory, type HelpArticle } from '@/lib/help-content'
 import { Input } from '@/components/ui/input'
 import { Heading, Text } from '@/components/ui/typography'
 
@@ -81,6 +81,7 @@ function SearchResult({
 }
 
 export default function HelpPage() {
+  const router = useRouter()
   const [searchQuery, setSearchQuery] = useState('')
   const [searchResults, setSearchResults] = useState<
     Array<HelpArticle & { categoryId: string; categoryTitle: string }>
@@ -187,6 +188,41 @@ export default function HelpPage() {
             </div>
           </div>
         </>
+      )}
+
+      {/* Glossary */}
+      {!searchQuery.trim() && (
+        <div className="mt-10">
+          <Heading level={3} className="mb-2">
+            Glossary
+          </Heading>
+          <Text color="secondary" size="sm" className="mb-6">
+            Quick definitions for common terms
+          </Text>
+          <div className="grid gap-3">
+            {glossaryTerms.map((entry) => (
+              <div
+                key={entry.term}
+                className="bg-background-elevated border border-border rounded-lg p-4"
+              >
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <h4 className="text-base font-medium text-foreground">{entry.term}</h4>
+                    <p className="text-sm text-muted-foreground mt-1">{entry.definition}</p>
+                  </div>
+                  {entry.articleSlug && (
+                    <button
+                      onClick={() => router.push(`/help/${entry.articleSlug}`)}
+                      className="text-xs text-accent hover:underline flex-shrink-0 mt-0.5"
+                    >
+                      Learn more
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       )}
 
       {/* Contact Support */}

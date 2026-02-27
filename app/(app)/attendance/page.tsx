@@ -15,6 +15,7 @@ import { calculateAttendanceScore, getRankModifier } from '@/utils/calculations'
 import { useNotification } from '@/app/contexts/NotificationContext'
 import { useGuildContext } from '@/app/contexts/GuildContext'
 import { getWclReportUrl } from '@/lib/warcraftlogs'
+import { InfoTooltip } from '@/components/ui/info-tooltip'
 
 interface RaidEvent {
   id: string
@@ -708,9 +709,10 @@ export default function AttendancePage() {
           </div>
           <div className="grid grid-cols-3 gap-3 sm:gap-6">
             <div className="bg-background-elevated border border-border rounded-xl p-3 sm:p-6">
-              <p className="text-muted-foreground text-xs sm:text-sm mb-1">
+              <p className="text-muted-foreground text-xs sm:text-sm mb-1 inline-flex items-center gap-1">
                 <span className="hidden sm:inline">Attendance credit (previous {guildSettings?.rolling_attendance_weeks || 4} weeks)</span>
                 <span className="sm:hidden">Credit</span>
+                <InfoTooltip content="Points earned from attending raids within the rolling window. Contributes directly to your Loot Score." iconSize={12} />
               </p>
               <p className={`text-[28px] sm:text-[42px] font-bold leading-none ${
                 attendanceScore >= (guildSettings?.max_attendance_bonus || 8) * 0.75 ? 'text-success' :
@@ -722,7 +724,7 @@ export default function AttendancePage() {
             </div>
 
             <div className="bg-background-elevated border border-border rounded-xl p-3 sm:p-6">
-              <p className="text-muted-foreground text-xs sm:text-sm mb-1">Role modifier</p>
+              <p className="text-muted-foreground text-xs sm:text-sm mb-1 inline-flex items-center gap-1">Role modifier <InfoTooltip content="Guild-configured modifier based on your role. Most members have 0." iconSize={12} /></p>
               <p className={`text-[28px] sm:text-[42px] font-bold leading-none ${roleModifier < 0 ? 'text-destructive' : roleModifier > 0 ? 'text-success' : 'text-foreground'}`}>
                 {roleModifier >= 0 ? '+' : ''}{roleModifier}
               </p>
@@ -730,7 +732,7 @@ export default function AttendancePage() {
             </div>
 
             <div className="bg-background-elevated border border-border rounded-xl p-3 sm:p-6">
-              <p className="text-muted-foreground text-xs sm:text-sm mb-1">Tracked raids</p>
+              <p className="text-muted-foreground text-xs sm:text-sm mb-1 inline-flex items-center gap-1">Tracked raids <InfoTooltip content="Total raids logged within the rolling attendance window. Your attendance rate is based on how many of these you attended." iconSize={12} /></p>
               <p className="text-[28px] sm:text-[42px] font-bold text-foreground leading-none">
                 {guildRaidEvents.length}
               </p>

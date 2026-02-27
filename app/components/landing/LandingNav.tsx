@@ -5,6 +5,7 @@ import { motion } from 'framer-motion'
 import Image from 'next/image'
 import { scrollToSection } from '@/lib/animations'
 import { Button } from '@/components/ui/button'
+import { trackClientEvent } from '@/utils/analytics/client'
 
 const APP_URL = 'https://www.lootlistplus.com'
 
@@ -51,21 +52,30 @@ export default function LandingNav() {
           <div className="hidden md:flex items-center gap-10">
             <Button
               variant="ghost"
-              onClick={() => scrollToSection('features')}
+              onClick={() => {
+                trackClientEvent('landing_nav_clicked', { target: 'features', source: 'nav' })
+                scrollToSection('features')
+              }}
               className="p-0 h-auto text-base font-medium text-foreground hover:text-accent hover:bg-transparent"
             >
               Features
             </Button>
             <Button
               variant="ghost"
-              onClick={() => scrollToSection('how-it-works')}
+              onClick={() => {
+                trackClientEvent('landing_nav_clicked', { target: 'how-it-works', source: 'nav' })
+                scrollToSection('how-it-works')
+              }}
               className="p-0 h-auto text-base font-medium text-foreground hover:text-accent hover:bg-transparent"
             >
               How it works
             </Button>
             <Button
               variant="ghost"
-              onClick={() => scrollToSection('testimonials')}
+              onClick={() => {
+                trackClientEvent('landing_nav_clicked', { target: 'testimonials', source: 'nav' })
+                scrollToSection('testimonials')
+              }}
               className="p-0 h-auto text-base font-medium text-foreground hover:text-accent hover:bg-transparent"
             >
               Testimonials
@@ -79,7 +89,7 @@ export default function LandingNav() {
             asChild
             className="bg-white hover:bg-white/90 text-background font-poppins font-semibold shadow-md"
           >
-            <a href={APP_URL}>
+            <a href={APP_URL} onClick={() => trackClientEvent('landing_cta_clicked', { cta: 'nav_login' })}>
               <Image
                 src="/discord-icon.svg"
                 alt=""

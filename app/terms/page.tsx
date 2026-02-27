@@ -5,6 +5,9 @@ import LegalNav from '@/app/components/LegalNav'
 export const metadata: Metadata = {
   title: 'Terms of Service',
   description: 'Terms of Service for LootList+, the loot management system for World of Warcraft Classic guilds.',
+  alternates: {
+    canonical: 'https://www.getlootlist.com/terms',
+  },
 }
 
 export default function TermsOfServicePage() {

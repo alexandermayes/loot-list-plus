@@ -28,6 +28,7 @@ import PriorityListTab from './components/PriorityListTab'
 import { SegmentedControl } from '@/components/ui/segmented-control'
 import { Checkbox } from '@/components/ui/checkbox'
 import { trackClientEvent } from '@/utils/analytics/client'
+import { InfoTooltip } from '@/components/ui/info-tooltip'
 
 interface LootItem {
   id: string
@@ -1509,12 +1510,12 @@ export default function AdminLootItems() {
               <thead className="sticky top-14 sm:top-0 z-10">
                 <tr className="bg-background-subtle border-b border-border">
                   <th className="px-4 py-2.5 text-left text-[12px] font-medium text-foreground-muted bg-background-subtle">On</th>
-                  <th className="px-2 py-2.5 text-center text-[12px] font-medium text-foreground-muted bg-background-subtle">LC</th>
+                  <th className="px-2 py-2.5 text-center text-[12px] font-medium text-foreground-muted bg-background-subtle"><span className="inline-flex items-center gap-1">LC <InfoTooltip content="Loot Council. When enabled, officers decide the winner instead of using Loot Score. Use for progression-critical items." iconSize={11} /></span></th>
                   <th className="px-4 py-2.5 text-left text-[12px] font-medium text-foreground-muted bg-background-subtle">Item name</th>
                   <th className="px-4 py-2.5 text-left text-[12px] font-medium text-foreground-muted bg-background-subtle">Boss</th>
                   <th className="px-4 py-2.5 text-left text-[12px] font-medium text-foreground-muted bg-background-subtle">Slot</th>
                   <th className="px-4 py-2.5 text-left text-[12px] font-medium text-foreground-muted bg-background-subtle">Raid</th>
-                  <th className="px-4 py-2.5 text-left text-[12px] font-medium text-foreground-muted bg-background-subtle">Classification</th>
+                  <th className="px-4 py-2.5 text-left text-[12px] font-medium text-foreground-muted bg-background-subtle"><span className="inline-flex items-center gap-1">Classification <InfoTooltip content="Item demand tier. Reserved and Limited cost 1 allocation point each. Unlimited costs 0 points." iconSize={11} /></span></th>
                   <th className="px-4 py-2.5 text-left text-[12px] font-medium text-foreground-muted bg-background-subtle">Primary</th>
                   <th className="px-4 py-2.5 text-left text-[12px] font-medium text-foreground-muted bg-background-subtle">Secondary</th>
                   <th className="px-2 py-2.5 text-center text-[12px] font-medium text-foreground-muted w-12 sticky right-0 bg-background-subtle/80">Notes</th>
@@ -1854,7 +1855,7 @@ export default function AdminLootItems() {
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <Label className="block mb-2">Type of attendance bonus</Label>
+                      <Label className="block mb-2 inline-flex items-center gap-1">Type of attendance bonus <InfoTooltip content="How attendance points are calculated. Points-per-raid gives flat points, linear scales with %, breakpoint gives fixed bonuses at thresholds." iconSize={12} /></Label>
                       <Select
                         variant="pill"
                         value={settings.attendance_type}
@@ -1875,7 +1876,7 @@ export default function AdminLootItems() {
                     </div>
 
                     <div>
-                      <Label className="block mb-2">Rolling attendance period (weeks)</Label>
+                      <Label className="block mb-2 inline-flex items-center gap-1">Rolling attendance period (weeks) <InfoTooltip content="How far back to look when calculating attendance. Only raids within this window count toward a raider's score." iconSize={12} /></Label>
                       <Input
                         variant="pill"
                         type="number"
@@ -2180,7 +2181,7 @@ export default function AdminLootItems() {
 
                           {settings.new_member_mode === 'minimum_gate' && (
                             <div className="ml-7 mt-2">
-                              <Label className="block mb-2">Minimum raids before eligible</Label>
+                              <Label className="block mb-2 inline-flex items-center gap-1">Minimum raids before eligible <InfoTooltip content="New members must attend this many raids before they can receive loot. Their score still tracks in the background." iconSize={12} /></Label>
                               <Input
                                 variant="pill"
                                 type="number"
@@ -2203,7 +2204,7 @@ export default function AdminLootItems() {
 
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
-                              <Label className="block mb-2">Enable trial penalty</Label>
+                              <Label className="block mb-2 inline-flex items-center gap-1">Enable trial penalty <InfoTooltip content="Applies a score penalty to trial members, giving established raiders priority. Removed when promoted to full member." iconSize={12} /></Label>
                               <Select
                                 variant="pill"
                                 value={settings.trial_penalty_enabled ? 'yes' : 'no'}
@@ -2303,7 +2304,7 @@ export default function AdminLootItems() {
                           </div>
 
                           <div>
-                            <Label className="block mb-2">Bonus per loss</Label>
+                            <Label className="block mb-2 inline-flex items-center gap-1">Bonus per loss <InfoTooltip content="How many points a raider gains each time they're in running for an item but don't receive it." iconSize={12} /></Label>
                             <Input
                               variant="pill"
                               type="number"
@@ -2319,7 +2320,7 @@ export default function AdminLootItems() {
                           </div>
 
                           <div>
-                            <Label className="block mb-2">Maximum bonus</Label>
+                            <Label className="block mb-2 inline-flex items-center gap-1">Maximum bonus <InfoTooltip content="Cap on how high bad luck protection can stack. Prevents runaway scores from long absence periods." iconSize={12} /></Label>
                             <Input
                               variant="pill"
                               type="number"
@@ -2404,7 +2405,7 @@ export default function AdminLootItems() {
 
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                          <Label className="block mb-2">Role bonus priority on single item</Label>
+                          <Label className="block mb-2 inline-flex items-center gap-1">Role bonus priority on single item <InfoTooltip content="When enabled, raiders whose role matches an item's role tag (e.g. Tank) get a score boost for that item." iconSize={12} /></Label>
                           <Select
                             variant="pill"
                             value={settings.role_bonus_priority_single_item ? 'yes' : 'no'}
@@ -2518,7 +2519,7 @@ export default function AdminLootItems() {
                           </div>
 
                           <div>
-                            <Label className="block mb-2">Donation bonus type</Label>
+                            <Label className="block mb-2 inline-flex items-center gap-1">Donation bonus type <InfoTooltip content="How donation points persist. Permanent stays forever, rolling decays over time, hard reset clears on a schedule." iconSize={12} /></Label>
                             <Select
                               variant="pill"
                               value={settings.donation_bonus_type}

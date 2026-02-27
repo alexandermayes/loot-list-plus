@@ -29,6 +29,10 @@ type ClientEvent =
   // Growth & conversion
   | 'sign_in_clicked'
   | 'invite_code_created'
+  // Landing page
+  | 'landing_cta_clicked'
+  | 'landing_nav_clicked'
+  | 'landing_section_viewed'
   // Page views
   | 'overview_page_viewed'
   | 'loot_list_page_viewed'

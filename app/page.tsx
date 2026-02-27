@@ -1,11 +1,9 @@
-'use client'
+import { headers } from 'next/headers'
+import { redirect } from 'next/navigation'
+import { createClient } from '@/utils/supabase/server'
+import type { Metadata } from 'next'
 
-import { createClient } from '@/utils/supabase/client'
-import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
-import { LoadingSpinner } from '@/components/ui/loading-spinner'
-
-// Landing sections (for getlootlist.com)
+// Landing sections (all 'use client' — SSR renders initial state, then hydrates)
 import LandingNav from '@/app/components/landing/LandingNav'
 import LandingHero from '@/app/components/landing/LandingHero'
 import LandingFeatures from '@/app/components/landing/LandingFeatures'
@@ -16,7 +14,7 @@ import LandingValueProps from '@/app/components/landing/LandingValueProps'
 import LandingCTA from '@/app/components/landing/LandingCTA'
 import LandingFooter from '@/app/components/landing/LandingFooter'
 
-// Login page (for lootlistplus.com)
+// Login page (client component for Supabase OAuth)
 import LoginPage from '@/app/components/LoginPage'
 
 // Hostnames that should show the marketing landing page
@@ -25,35 +23,65 @@ const LANDING_PAGE_HOSTS = [
   'www.getlootlist.com',
 ]
 
-export default function Home() {
-  const [loading, setLoading] = useState(true)
-  const [showLandingPage, setShowLandingPage] = useState(false)
-  const supabase = createClient()
-  const router = useRouter()
+function isLandingHost(host: string): boolean {
+  const hostname = host.split(':')[0] // strip port for localhost
+  return LANDING_PAGE_HOSTS.includes(hostname)
+}
 
-  useEffect(() => {
-    // Determine which page to show based on hostname
-    const hostname = window.location.hostname
-    const isLandingHost = LANDING_PAGE_HOSTS.includes(hostname)
-    setShowLandingPage(isLandingHost)
+export async function generateMetadata(): Promise<Metadata> {
+  const headersList = await headers()
+  const host = headersList.get('host') || ''
 
-    const checkUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (user) {
-        router.push('/overview')
-      } else {
-        setLoading(false)
-      }
+  if (isLandingHost(host)) {
+    return {
+      title: 'LootList+ - Loot Management for WoW Classic Guilds',
+      description: 'The ultimate loot management system for World of Warcraft Classic guilds. Track attendance, manage loot priority lists, and streamline raid loot distribution with Discord integration.',
+      alternates: {
+        canonical: 'https://www.getlootlist.com',
+      },
+      openGraph: {
+        title: 'LootList+ - Loot Management for WoW Classic Guilds',
+        description: 'The ultimate loot management system for World of Warcraft Classic guilds. Track attendance, manage priority lists, and streamline loot distribution.',
+        url: 'https://www.getlootlist.com',
+        siteName: 'LootList+',
+        locale: 'en_US',
+        type: 'website',
+        images: [{
+          url: 'https://www.getlootlist.com/og-image.png',
+          width: 1200,
+          height: 630,
+          alt: 'LootList+ - Loot Management for WoW Classic Guilds',
+        }],
+      },
+      twitter: {
+        card: 'summary_large_image',
+        title: 'LootList+ - Loot Management for WoW Classic Guilds',
+        description: 'The ultimate loot management system for World of Warcraft Classic guilds.',
+        images: ['https://www.getlootlist.com/og-image.png'],
+      },
     }
-    checkUser()
-  }, [])
-
-  if (loading) {
-    return <LoadingSpinner fullScreen />
   }
 
+  // App domain: login page should not be indexed
+  return {
+    title: 'Sign in',
+    description: 'Sign in to LootList+ with Discord to manage your guild\'s loot.',
+    alternates: {
+      canonical: 'https://lootlistplus.com',
+    },
+    robots: {
+      index: false,
+      follow: true,
+    },
+  }
+}
+
+export default async function Home() {
+  const headersList = await headers()
+  const host = headersList.get('host') || ''
+
   // Show marketing landing page on getlootlist.com
-  if (showLandingPage) {
+  if (isLandingHost(host)) {
     return (
       <main className="bg-background overflow-x-hidden">
         <LandingNav />
@@ -69,6 +97,14 @@ export default function Home() {
     )
   }
 
-  // Show login page on lootlistplus.com (and localhost/other domains)
+  // For app domain: check auth server-side and redirect if logged in
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  if (user) {
+    redirect('/overview')
+  }
+
+  // Show login page for unauthenticated users on app domain
   return <LoginPage />
 }

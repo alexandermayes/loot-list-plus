@@ -1,8 +1,9 @@
 'use client'
 
-import { useRef } from 'react'
+import { useRef, useEffect } from 'react'
 import { motion, useInView } from 'framer-motion'
 import { fadeInUp, slideInLeft, slideInRight, staggerContainer } from '@/lib/animations'
+import { trackClientEvent } from '@/utils/analytics/client'
 import { HugeiconsIcon } from '@hugeicons/react'
 import {
   EyeIcon,
@@ -78,6 +79,10 @@ function ValuePropCard({ prop, index }: { prop: typeof valueProps[0], index: num
 export default function LandingValueProps() {
   const ref = useRef(null)
   const isInView = useInView(ref, { once: true, margin: '-100px' })
+
+  useEffect(() => {
+    if (isInView) trackClientEvent('landing_section_viewed', { section: 'value_props' })
+  }, [isInView])
 
   return (
     <section id="value-props" className="relative py-32 md:py-40 bg-background-subtle">

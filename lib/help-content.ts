@@ -784,6 +784,94 @@ If an item drops and nobody ranked it, it goes to free roll. /roll determines th
   },
 ]
 
+// Glossary terms for the help page and dashboard tooltips
+export interface GlossaryTerm {
+  term: string
+  definition: string
+  articleSlug?: string
+}
+
+export const glossaryTerms: GlossaryTerm[] = [
+  {
+    term: 'Allocation points',
+    definition:
+      'Points spent when ranking Reserved or Limited items in a bracket. Each costs 1 point, Unlimited costs 0. You can spend up to 3 points per bracket.',
+    articleSlug: 'submitting-loot-list',
+  },
+  {
+    term: 'Attendance score',
+    definition:
+      'Points earned from attending raids within the rolling window. Contributes directly to your Loot Score.',
+    articleSlug: 'attendance-tracking',
+  },
+  {
+    term: 'Attendance tiers',
+    definition:
+      'Milestone thresholds (High, Mid, Low) that unlock bonus attendance points. Configured by officers.',
+    articleSlug: 'attendance-tracking',
+  },
+  {
+    term: 'Bad luck protection',
+    definition:
+      'Bonus points that grow the longer you go without receiving loot. Resets on your next item. Must be enabled by officers.',
+    articleSlug: 'understanding-priority',
+  },
+  {
+    term: 'Brackets',
+    definition:
+      'Priority tiers on your Loot List. Bracket 1 (50-48) is the highest priority, down to Bracket 4 (41-39). Items in higher brackets get bigger score bonuses.',
+    articleSlug: 'submitting-loot-list',
+  },
+  {
+    term: 'Classification',
+    definition:
+      'Item demand tier set by officers. Reserved and Limited items cost 1 allocation point each. Unlimited items cost 0 points.',
+    articleSlug: 'loot-management',
+  },
+  {
+    term: 'Loot Council',
+    definition:
+      'When enabled on an item, officers decide the winner instead of using Loot Score. Used for progression-critical items.',
+    articleSlug: 'loot-council-role',
+  },
+  {
+    term: 'Loot List',
+    definition:
+      'Your ranked list of up to 50 items, submitted for officer review. Higher rank = higher priority when that item drops.',
+    articleSlug: 'submitting-loot-list',
+  },
+  {
+    term: 'Loot Score',
+    definition:
+      'Your combined priority number: Rank + Attendance + Role bonus - Trial penalty + Bad luck protection. Determines who gets loot.',
+    articleSlug: 'understanding-priority',
+  },
+  {
+    term: 'Master Sheet',
+    definition:
+      'The compiled view of all approved Loot Lists. Shows who has priority on each item during raids.',
+    articleSlug: 'master-sheet',
+  },
+  {
+    term: 'Rank',
+    definition:
+      'Position of an item on your Loot List (50 = highest, 1 = lowest). The single biggest factor in your Loot Score.',
+    articleSlug: 'submitting-loot-list',
+  },
+  {
+    term: 'Role bonus',
+    definition:
+      'A guild-configured score modifier based on your role (Guild Master, Officer, Member, etc.). Most members have 0.',
+    articleSlug: 'understanding-priority',
+  },
+  {
+    term: 'Trial penalty',
+    definition:
+      'Score penalty applied to trial members, giving established raiders priority. Removed when promoted to full member.',
+    articleSlug: 'understanding-priority',
+  },
+]
+
 // Helper function to find an article by slug
 export function findArticle(slug: string): { article: HelpArticle; category: HelpCategory } | null {
   for (const category of helpCategories) {

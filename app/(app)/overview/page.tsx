@@ -22,6 +22,7 @@ import { DashboardContentSkeleton } from '@/components/ui/skeletons'
 import { ScrollIcon, StarIcon } from '@hugeicons/core-free-icons'
 import { StatusBadge, type SubmissionStatus } from '@/components/ui/status-badge'
 import { Heading } from '@/components/ui/typography'
+import { InfoTooltip } from '@/components/ui/info-tooltip'
 import { useGuildContext } from '@/app/contexts/GuildContext'
 import ItemLink from '@/app/components/ItemLink'
 import { calculateAttendanceScore, getRankModifier, calculateLootScore, getTrialPenalty, calculateBadLuckBonus } from '@/utils/calculations'
@@ -1373,23 +1374,23 @@ function DashboardContent() {
                   </div>
                   <div className="space-y-2.5">
                     <div className="flex items-center justify-between">
-                      <span className="text-[13px] text-foreground-secondary">Attendance</span>
+                      <span className="text-[13px] text-foreground-secondary inline-flex items-center gap-1.5">Attendance <InfoTooltip content="Points earned from showing up to raids. Based on a rolling window configured by your officers." /></span>
                       <span className="text-[13px] font-medium text-foreground">+{scoreBreakdown.attendanceScore.toFixed(decimalPlaces)}</span>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-[13px] text-foreground-secondary">Role bonus <span className="text-muted-foreground">({scoreBreakdown.roleName})</span></span>
+                      <span className="text-[13px] text-foreground-secondary inline-flex items-center gap-1.5">Role bonus <span className="text-muted-foreground">({scoreBreakdown.roleName})</span> <InfoTooltip content="Guild-configured modifier based on your role. Most members have 0." /></span>
                       <span className={`text-[13px] font-medium ${scoreBreakdown.roleModifier >= 0 ? 'text-foreground' : 'text-destructive'}`}>
                         {scoreBreakdown.roleModifier >= 0 ? '+' : ''}{scoreBreakdown.roleModifier.toFixed(decimalPlaces)}
                       </span>
                     </div>
                     {scoreBreakdown.trialPenalty !== 0 && (
                       <div className="flex items-center justify-between">
-                        <span className="text-[13px] text-foreground-secondary">Trial penalty</span>
+                        <span className="text-[13px] text-foreground-secondary inline-flex items-center gap-1.5">Trial penalty <InfoTooltip content="Score penalty for trial members, giving established raiders priority. Resets when promoted to full member." /></span>
                         <span className="text-[13px] font-medium text-destructive">{scoreBreakdown.trialPenalty.toFixed(decimalPlaces)}</span>
                       </div>
                     )}
                     <div className="flex items-center justify-between">
-                      <span className="text-[13px] text-foreground-secondary">Bad luck protection</span>
+                      <span className="text-[13px] text-foreground-secondary inline-flex items-center gap-1.5">Bad luck protection <InfoTooltip content="Bonus points that grow the longer you go without receiving loot. Resets on your next item." /></span>
                       <span className="text-[13px] font-medium text-muted-foreground">
                         {scoreBreakdown.blpRange
                           ? `+${scoreBreakdown.blpRange.min.toFixed(decimalPlaces)} to +${scoreBreakdown.blpRange.max.toFixed(decimalPlaces)}`

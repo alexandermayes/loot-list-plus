@@ -3,6 +3,7 @@
 import { useRef, useState, useEffect } from 'react'
 import { motion, useInView } from 'framer-motion'
 import { fadeInUp, staggerContainer } from '@/lib/animations'
+import { trackClientEvent } from '@/utils/analytics/client'
 import Image from 'next/image'
 
 const testimonials = [
@@ -86,6 +87,10 @@ export default function LandingTestimonials() {
   const ref = useRef(null)
   const isInView = useInView(ref, { once: true, margin: '-100px' })
   const liveStats = useLandingStats()
+
+  useEffect(() => {
+    if (isInView) trackClientEvent('landing_section_viewed', { section: 'testimonials' })
+  }, [isInView])
 
   const stats = liveStats
     ? [
