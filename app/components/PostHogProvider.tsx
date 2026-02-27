@@ -8,19 +8,33 @@ import { createClient } from '@/utils/supabase/client'
 
 // Initialize PostHog once
 if (typeof window !== 'undefined' && process.env.NEXT_PUBLIC_POSTHOG_KEY) {
-  posthog.init(process.env.NEXT_PUBLIC_POSTHOG_KEY, {
-    // Use reverse proxy to bypass ad blockers
-    // /a/ path looks like a normal API endpoint
-    api_host: '/a',
-    ui_host: 'https://us.i.posthog.com',
-    person_profiles: 'identified_only',
-    capture_pageview: false, // We manually capture pageviews
-    capture_pageleave: true,
-    persistence: 'localStorage+cookie',
-    bootstrap: {
-      featureFlags: {},
-    },
-  })
+  try {
+    posthog.init(process.env.NEXT_PUBLIC_POSTHOG_KEY, {
+      // Use reverse proxy to bypass ad blockers
+      api_host: '/a',
+      ui_host: 'https://us.i.posthog.com',
+      person_profiles: 'identified_only',
+      capture_pageview: false, // We manually capture pageviews
+      capture_pageleave: true,
+      persistence: 'localStorage+cookie',
+      bootstrap: {
+        featureFlags: {},
+      },
+      // Start with recording disabled to prevent adblocker-induced flicker.
+      // Enable after confirming the recorder script can load.
+      disable_session_recording: true,
+      loaded: (ph) => {
+        // Test if the recorder script is accessible (not blocked by adblocker)
+        fetch('/a/static/recorder.js?v=check', { method: 'HEAD' })
+          .then((res) => {
+            if (res.ok) (ph as any).set_config({ disable_session_recording: false })
+          })
+          .catch(() => {})
+      },
+    })
+  } catch {
+    // PostHog init failed (likely adblocker) - app continues without analytics
+  }
 }
 
 // Pageview tracker component - needs to be wrapped in Suspense due to useSearchParams
