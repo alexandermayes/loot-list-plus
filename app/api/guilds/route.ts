@@ -113,19 +113,21 @@ export async function POST(request: NextRequest) {
       // Continue anyway - the expansion was created, just not set as active
     }
 
-    // Auto-fetch Discord icon if server ID is provided
-    if (discord_server_id) {
+    // Auto-fetch Discord icon directly from Discord API
+    if (discord_server_id && process.env.DISCORD_BOT_TOKEN) {
       try {
-        // LOW-04: URL encode the server ID to prevent injection
-        const iconResponse = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/api/discord/guild-icon?serverId=${encodeURIComponent(discord_server_id)}`)
+        const discordResponse = await fetch(`https://discord.com/api/v10/guilds/${encodeURIComponent(discord_server_id)}`, {
+          headers: { 'Authorization': `Bot ${process.env.DISCORD_BOT_TOKEN}` }
+        })
 
-        if (iconResponse.ok) {
-          const iconData = await iconResponse.json()
-          if (iconData.iconUrl) {
-            // Update guild with icon URL using service role
+        if (discordResponse.ok) {
+          const guildData = await discordResponse.json()
+          if (guildData.icon) {
+            const extension = guildData.icon.startsWith('a_') ? 'gif' : 'png'
+            const iconUrl = `https://cdn.discordapp.com/icons/${discord_server_id}/${guildData.icon}.${extension}?size=256`
             await serviceSupabase
               .from('guilds')
-              .update({ icon_url: iconData.iconUrl })
+              .update({ icon_url: iconUrl })
               .eq('id', guild.id)
           }
         }
@@ -276,6 +278,7 @@ export async function GET(request: NextRequest) {
               realm,
               faction,
               discord_server_id,
+              icon_url,
               created_by,
               is_active
             )
@@ -299,6 +302,7 @@ export async function GET(request: NextRequest) {
             realm: string | null
             faction: string
             discord_server_id: string | null
+            icon_url: string | null
             created_by: string
             is_active: boolean
           } | null
