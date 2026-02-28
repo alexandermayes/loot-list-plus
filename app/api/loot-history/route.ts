@@ -56,15 +56,28 @@ export async function GET(request: NextRequest) {
 
     const supabase = createServiceRoleClient()
 
-    // Verify user is in the guild
-    const { data: membership } = await supabase
-      .from('guild_members')
-      .select('role')
-      .eq('guild_id', guildId)
+    // Verify user is in the guild via character_guild_memberships
+    const { data: userCharacters } = await supabase
+      .from('characters')
+      .select('id')
       .eq('user_id', user.id)
-      .single()
 
-    if (!membership) {
+    const characterIds = userCharacters?.map(c => c.id) || []
+    let isMember = false
+
+    if (characterIds.length > 0) {
+      const { data: membership } = await supabase
+        .from('character_guild_memberships')
+        .select('id')
+        .eq('guild_id', guildId)
+        .in('character_id', characterIds)
+        .eq('is_active', true)
+        .limit(1)
+
+      isMember = (membership?.length ?? 0) > 0
+    }
+
+    if (!isMember) {
       return NextResponse.json({ error: 'Not a member of this guild' }, { status: 403 })
     }
 

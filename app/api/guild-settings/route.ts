@@ -1,4 +1,5 @@
 import { createClient, getAuthenticatedUser } from '@/utils/supabase/server'
+import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { NextResponse } from 'next/server'
 import { logAudit } from '@/utils/audit/log'
 import { trackEvent, trackApiError } from '@/utils/analytics/server'
@@ -319,8 +320,11 @@ export async function PUT(request: Request) {
       }
     }
 
+    // Use service role for writes to bypass RLS (permission already verified above)
+    const serviceSupabase = createServiceRoleClient()
+
     // Check if settings exist and get current values for audit logging
-    const { data: existingSettings } = await supabase
+    const { data: existingSettings } = await serviceSupabase
       .from('guild_settings')
       .select('*')
       .eq('guild_id', guild_id)
@@ -336,7 +340,7 @@ export async function PUT(request: Request) {
     let result
     if (existingSettings) {
       // Update existing settings
-      const { data, error } = await supabase
+      const { data, error } = await serviceSupabase
         .from('guild_settings')
         .update({
           ...sanitizedSettings,
@@ -353,7 +357,7 @@ export async function PUT(request: Request) {
       result = data
     } else {
       // Insert new settings
-      const { data, error } = await supabase
+      const { data, error } = await serviceSupabase
         .from('guild_settings')
         .insert({
           guild_id,
