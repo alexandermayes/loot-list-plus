@@ -184,7 +184,8 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
         setUserGuilds([])
         setGuildsLoading(false)
         setCharactersLoading(false)
-        window.location.href = '/'
+        // Don't hard redirect here - auth session may still be initializing.
+        // The SIGNED_OUT event handler will redirect if truly signed out.
         return
       }
       setUser(currentUser)
