@@ -1010,6 +1010,7 @@ export const ITEM_ICONS: Record<number, string> = {
   30880: 'inv_boots_chain_09',
   30881: 'inv_sword_85',
   30882: 'inv_shield_38',
+  30021: 'inv_staff_50',
   30883: 'inv_staff_60',
   30884: 'inv_shoulder_68',
   30885: 'inv_boots_cloth_14',

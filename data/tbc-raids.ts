@@ -414,7 +414,7 @@ export const serpentshrinecavern: Raid = {
         { name: 'Gloves of the Vanquished Hero', slot: 'Token', wowhead_id: 30241 },
         { name: 'Gloves of the Vanquished Champion', slot: 'Token', wowhead_id: 30239 },
         { name: 'Gloves of the Vanquished Defender', slot: 'Token', wowhead_id: 30240 },
-        { name: 'Wildfury Greatstaff', slot: 'Two-Hand', wowhead_id: 30883 },
+        { name: 'Wildfury Greatstaff', slot: 'Two-Hand', wowhead_id: 30021 },
       ],
     },
     {
