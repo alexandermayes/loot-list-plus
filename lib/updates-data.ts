@@ -14,6 +14,36 @@ export interface UpdateEntry {
 
 export const updates: UpdateEntry[] = [
   {
+    date: 'February 28, 2026',
+    items: [
+      {
+        category: 'feature',
+        title: 'First character prompt',
+        description: 'New guild members without a character now see a creation modal automatically on first login.',
+      },
+      {
+        category: 'fix',
+        title: 'TBC loot data overhaul',
+        description: 'Fixed 10 incorrect item tooltips across SSC and TK, removed encounter-phase weapons that aren\'t real drops, and verified all P3-P5 items.',
+      },
+      {
+        category: 'fix',
+        title: 'Loot history access',
+        description: 'Fixed an issue where new guild members couldn\'t view loot history.',
+      },
+      {
+        category: 'fix',
+        title: 'Guild settings reliability',
+        description: 'Officer changes to guild settings now save consistently.',
+      },
+      {
+        category: 'fix',
+        title: 'Item classification permissions',
+        description: 'Guild creators can now manage item classifications without needing an explicit officer role.',
+      },
+    ],
+  },
+  {
     date: 'February 27, 2026',
     items: [
       {
