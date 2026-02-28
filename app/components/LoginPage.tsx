@@ -106,20 +106,13 @@ export default function LoginPage({ nextParam = null, isAuthenticated = false }:
 
   return (
     <div className="min-h-screen bg-[#151515] flex">
-      {/* Left side - Background image */}
-      <div className="hidden lg:block lg:w-1/2 relative">
+      {/* Left side - Background image (uses CSS background to avoid hydration flicker) */}
+      <div
+        className="hidden lg:block lg:w-1/2 relative bg-cover bg-center"
+        style={{ backgroundImage: 'url(/images/landing/landing-background-1920w.webp)' }}
+      >
         <div className="absolute top-[60px] left-[60px] z-10">
           <Image src="/logo.svg" alt="LootList+" width={179} height={28} className="h-7 w-auto" />
-        </div>
-        <div className="absolute inset-0">
-          <picture>
-            <source
-              type="image/webp"
-              srcSet="/images/landing/landing-background-640w.webp 640w, /images/landing/landing-background-1024w.webp 1024w, /images/landing/landing-background-1920w.webp 1920w, /images/landing/landing-background-2560w.webp 2560w"
-              sizes="50vw"
-            />
-            <Image src="/images/landing/landing-background-2560w.webp" alt="" fill className="object-cover object-center" priority quality={82} />
-          </picture>
         </div>
       </div>
 
