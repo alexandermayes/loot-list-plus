@@ -14,6 +14,66 @@ export interface UpdateEntry {
 
 export const updates: UpdateEntry[] = [
   {
+    date: 'February 27, 2026',
+    items: [
+      {
+        category: 'feature',
+        title: 'Invite code join flow',
+        description: 'Invite links now show a guild preview on the login page. Sign in with Discord and you\'re in.',
+      },
+      {
+        category: 'feature',
+        title: 'Info tooltips',
+        description: 'Hover over score components, brackets and stats for quick explanations of how they work.',
+      },
+      {
+        category: 'feature',
+        title: 'Help center glossary',
+        description: 'Quick definitions for common terms like Loot Score, BLP and allocation points.',
+      },
+      {
+        category: 'feature',
+        title: 'Warcraft Logs integration',
+        description: 'Link your guild\'s WCL page to auto-attach reports to raid summaries.',
+      },
+      {
+        category: 'improvement',
+        title: 'Guild Master promotion safety',
+        description: 'Promoting to Guild Master now shows a confirmation and automatically demotes the current GM to Officer.',
+      },
+      {
+        category: 'improvement',
+        title: 'Smarter raid tracking dates',
+        description: 'New guilds no longer see phantom weeks from before the guild was created.',
+      },
+      {
+        category: 'improvement',
+        title: 'Invite code management',
+        description: 'Generate codes in a modal, remove codes with one click, and see status badges for expired or maxed-out codes.',
+      },
+      {
+        category: 'fix',
+        title: 'Loot list resubmission',
+        description: 'The submit button no longer gets stuck after auto-save. Changes are properly detected for resubmission.',
+      },
+      {
+        category: 'fix',
+        title: 'Battle.net character import',
+        description: 'Characters imported from Battle.net are now correctly created as mains instead of alts.',
+      },
+      {
+        category: 'fix',
+        title: 'Login page stability',
+        description: 'Fixed a page flickering issue that affected users across all browsers.',
+      },
+      {
+        category: 'fix',
+        title: 'Guild icon display',
+        description: 'Discord server icons now load correctly for new guilds.',
+      },
+    ],
+  },
+  {
     date: 'February 17, 2026',
     items: [
       {
