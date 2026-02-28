@@ -541,7 +541,7 @@ export const tempestkeep: Raid = {
     {
       name: 'Kael\'thas Sunstrider',
       items: [
-        // Actual loot drops (not legendary phase weapons)
+        { name: 'Ashes of Al\'ar', slot: 'Mount', wowhead_id: 32458 },
         { name: 'Crown of the Sun', slot: 'Head', wowhead_id: 29990 },
         { name: 'Gauntlets of the Sun King', slot: 'Hands', wowhead_id: 29987 },
         { name: 'Royal Cloak of the Sunstriders', slot: 'Back', wowhead_id: 29992 },
