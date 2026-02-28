@@ -64,7 +64,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
   // App domain: login page should not be indexed
   return {
-    title: 'Sign in',
+    title: 'LootList+ \u2219 Sign up',
     description: 'Sign in to LootList+ with Discord to manage your guild\'s loot.',
     alternates: {
       canonical: 'https://lootlistplus.com',
