@@ -252,6 +252,16 @@ function DashboardContent() {
     }
   }, [searchParams, router])
 
+  // Auto-open character creation modal for users who joined a guild but have no character
+  useEffect(() => {
+    if (activeGuild && !activeCharacter && !guildLoading) {
+      const dismissed = sessionStorage.getItem('character_creation_dismissed')
+      if (!dismissed) {
+        setShowCreateCharacterModal(true)
+      }
+    }
+  }, [activeGuild, activeCharacter, guildLoading])
+
   // Refresh Wowhead tooltips when loot priority or received items load
   // Uses centralized debounced refresh to prevent excessive API calls
   useEffect(() => {
@@ -1744,7 +1754,12 @@ function DashboardContent() {
       {/* Create Character Modal */}
       <CreateCharacterModal
         isOpen={showCreateCharacterModal}
-        onClose={() => setShowCreateCharacterModal(false)}
+        onClose={() => {
+          setShowCreateCharacterModal(false)
+          if (!activeCharacter) {
+            sessionStorage.setItem('character_creation_dismissed', 'true')
+          }
+        }}
         suggestedName={activeCharacter?.name}
       />
 
