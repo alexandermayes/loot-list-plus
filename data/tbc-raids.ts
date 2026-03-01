@@ -398,7 +398,7 @@ export const serpentshrinecavern: Raid = {
         { name: 'Earring of Soulful Meditation', slot: 'Trinket', wowhead_id: 30665 },
         { name: 'The Seal of Danzalar', slot: 'Finger', wowhead_id: 33054 },
         { name: 'Boots of Courage Unending', slot: 'Feet', wowhead_id: 30027 },
-        { name: 'Spyglass of the Hidden Fleet', slot: 'Trinket', wowhead_id: 30001 },
+        { name: 'Spyglass of the Hidden Fleet', slot: 'Trinket', wowhead_id: 30620 },
       ],
     },
     {
@@ -470,7 +470,7 @@ export const serpentshrinecavern: Raid = {
         { name: 'Helm of the Vanquished Champion', slot: 'Token', wowhead_id: 30242 },
         { name: 'Helm of the Vanquished Defender', slot: 'Token', wowhead_id: 30243 },
         // Quest Item
-        { name: 'Vashj\'s Vial Remnant', slot: 'Quest', wowhead_id: 31544 },
+        { name: 'Vashj\'s Vial Remnant', slot: 'Quest', wowhead_id: 29906 },
       ],
     }
   ],
@@ -534,8 +534,8 @@ export const tempestkeep: Raid = {
         { name: 'Solarian\'s Sapphire', slot: 'Trinket', wowhead_id: 30446 },
         { name: 'Void Star Talisman', slot: 'Trinket', wowhead_id: 30449 },
         { name: 'Boots of the Resilient', slot: 'Feet', wowhead_id: 32267 },
-        { name: 'Sunhawk Leggings', slot: 'Legs', wowhead_id: 30134 },
-        { name: 'Thalassian Wildercloak', slot: 'Back', wowhead_id: 30135 },
+        { name: 'Sunhawk Leggings', slot: 'Legs', wowhead_id: 29991 },
+        { name: 'Thalassian Wildercloak', slot: 'Back', wowhead_id: 29994 },
       ],
     },
     {
