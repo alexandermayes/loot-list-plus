@@ -30,6 +30,7 @@ import {
   placeInBracket,
   type BracketItem
 } from '@/lib/bracket-validation'
+import { resolvePhaseGroups, type PhaseGroup } from '@/utils/phase-groups'
 
 // Define raid tier progression order (Classic + TBC + WotLK)
 const RAID_TIER_ORDER: Record<string, number> = {
@@ -82,10 +83,11 @@ interface LootListDataContextType {
   submission: LootSubmission | null
   rankings: Record<string, string>
   raidTiers: RaidTier[]
-  phaseTiers: RaidTier[] // Tiers within the current phase (for grouping items by raid)
-  phases: number[] // Available phases for the expansion
+  phaseTiers: RaidTier[] // Tiers within the current phase group (for grouping items by raid)
+  phases: number[] // Available phases for the expansion (raw, for backward compat)
+  resolvedGroups: PhaseGroup[] // Phase groups (merged or individual)
   phaseSubmissionStatuses: Record<number, { status: string; submitted_at: string | null }>
-  selectedPhase: number | null
+  selectedPhase: number | null // Canonical phase of the selected group
   phaseDeadline: string | null
   enforceSlotRestrictions: boolean
   equippedItems: EquippedItem[]
@@ -207,11 +209,24 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
     return Array.from(phaseSet).sort((a, b) => a - b)
   }, [sortedTiers])
 
-  // Get tiers within the selected phase (for grouping items by raid)
+  // Resolve phase groups (merged or individual)
+  const resolvedGroups = useMemo(() => {
+    return resolvePhaseGroups(tiersData?.phase_groups || null, phases)
+  }, [tiersData?.phase_groups, phases])
+
+  // Get all phases in the selected group (for multi-phase item loading)
+  const selectedPhases = useMemo(() => {
+    if (selectedPhase === null) return null
+    const group = resolvedGroups.find(g => g.canonicalPhase === selectedPhase)
+    return group ? group.phases : [selectedPhase]
+  }, [selectedPhase, resolvedGroups])
+
+  // Get tiers within the selected phase group (for grouping items by raid)
   const phaseTiers = useMemo(() => {
-    if (selectedPhase === null) return []
-    return sortedTiers.filter(t => t.phase === selectedPhase)
-  }, [sortedTiers, selectedPhase])
+    if (!selectedPhases) return []
+    const phaseSet = new Set(selectedPhases)
+    return sortedTiers.filter(t => t.phase !== undefined && t.phase !== null && phaseSet.has(t.phase))
+  }, [sortedTiers, selectedPhases])
 
   // Fetch phase submission statuses
   const { data: statusesData } = usePhaseSubmissionStatuses(
@@ -220,10 +235,10 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
     targetExpansionId || null
   )
 
-  // Fetch loot items for the selected phase
+  // Fetch loot items for the selected phase group (may span multiple phases)
   const { data: itemsData, isLoading: itemsLoading } = usePhaseLootItems(
     targetExpansionId || null,
-    selectedPhase,
+    selectedPhases,
     activeCharacter?.id || null,
     activeGuild?.id || null
   )
@@ -264,26 +279,27 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
     submissionDataRef.current = submissionData || null
   }, [submissionData])
 
-  // Set initial phase from URL or first available
+  // Set initial phase from URL or first available (uses canonical phases from groups)
   useEffect(() => {
-    if (guildLoading || phases.length === 0) return
+    if (guildLoading || resolvedGroups.length === 0) return
 
+    const canonicalPhases = resolvedGroups.map(g => g.canonicalPhase)
     const phaseFromUrl = searchParams.get('phase')
     const parsedPhase = phaseFromUrl ? parseInt(phaseFromUrl) : null
 
-    if (parsedPhase !== null && phases.includes(parsedPhase)) {
+    if (parsedPhase !== null && canonicalPhases.includes(parsedPhase)) {
       if (selectedPhase !== parsedPhase) {
         setSelectedPhaseState(parsedPhase)
       }
-    } else if (selectedPhase === null || !phases.includes(selectedPhase)) {
-      // Default to first available phase
-      const defaultPhase = phases[0]
+    } else if (selectedPhase === null || !canonicalPhases.includes(selectedPhase)) {
+      // Default to first available group's canonical phase
+      const defaultPhase = canonicalPhases[0]
       setSelectedPhaseState(defaultPhase)
       const params = new URLSearchParams(searchParams.toString())
       params.set('phase', defaultPhase.toString())
       router.replace(`?${params.toString()}`, { scroll: false })
     }
-  }, [guildLoading, phases, searchParams, selectedPhase, router])
+  }, [guildLoading, resolvedGroups, searchParams, selectedPhase, router])
 
   // Load guild settings for slot restrictions
   useEffect(() => {
@@ -912,6 +928,7 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
     raidTiers: sortedTiers,
     phaseTiers,
     phases,
+    resolvedGroups,
     phaseSubmissionStatuses: statusesData?.phaseStatuses || {},
     selectedPhase,
     phaseDeadline,

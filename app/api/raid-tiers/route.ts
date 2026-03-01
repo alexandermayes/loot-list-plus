@@ -23,18 +23,21 @@ export async function GET(request: NextRequest) {
 
     const supabase = createServiceRoleClient()
 
-    // Get expansion's current_phase for filtering
+    // Get expansion's current_phase and phase_groups for filtering
     let currentPhase = 1 // Default to phase 1 if not set
-    if (!includeAllPhases) {
-      const { data: expansion } = await supabase
-        .from('expansions')
-        .select('current_phase')
-        .eq('id', expansionId)
-        .single()
+    let phaseGroups: number[][] | null = null
 
-      if (expansion?.current_phase != null) {
-        currentPhase = expansion.current_phase
-      }
+    const { data: expansion } = await supabase
+      .from('expansions')
+      .select('current_phase, phase_groups')
+      .eq('id', expansionId)
+      .single()
+
+    if (expansion?.current_phase != null) {
+      currentPhase = expansion.current_phase
+    }
+    if (expansion?.phase_groups) {
+      phaseGroups = expansion.phase_groups as number[][] | null
     }
 
     // Build query for raid tiers
@@ -60,7 +63,7 @@ export async function GET(request: NextRequest) {
     }
 
     return NextResponse.json(
-      { tiers: tiers || [], current_phase: currentPhase },
+      { tiers: tiers || [], current_phase: currentPhase, phase_groups: phaseGroups },
       {
         headers: {
           'Cache-Control': 'private, no-cache'

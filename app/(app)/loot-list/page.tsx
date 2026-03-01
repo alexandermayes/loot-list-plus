@@ -22,6 +22,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { InformationCircleIcon } from '@hugeicons/core-free-icons'
 import { useLootList, type LootItem } from '@/app/contexts/LootListContext'
+import { getPhaseGroupShortLabel } from '@/utils/phase-groups'
 import { isTokenSlot } from '@/data/token-class-mapping'
 import { useNotification } from '@/app/contexts/NotificationContext'
 import { trackClientEvent } from '@/utils/analytics/client'
@@ -185,6 +186,7 @@ export default function LootList() {
     raidTiers,
     phaseTiers,
     phases,
+    resolvedGroups,
     phaseSubmissionStatuses,
     selectedPhase,
     phaseDeadline,
@@ -663,7 +665,11 @@ export default function LootList() {
                 )}
               </Heading>
               <p className="text-muted-foreground mt-1 text-base">
-                {isLoading ? 'Loading phases...' : `Rank your preferred items for Phase ${selectedPhase}${phaseTiers.length > 0 ? ` (${phaseTiers.map(t => t.name).join(', ')})` : ''}`}
+                {isLoading ? 'Loading phases...' : (() => {
+                  const group = resolvedGroups.find(g => g.canonicalPhase === selectedPhase)
+                  const label = group ? getPhaseGroupShortLabel(group).replace(/^P/, 'Phase ').replace(/\+P/g, '+') : `Phase ${selectedPhase}`
+                  return `Rank your preferred items for ${label}${phaseTiers.length > 0 ? ` (${phaseTiers.map(t => t.name).join(', ')})` : ''}`
+                })()}
                 {viewingExpansionId && (
                   <span className="ml-2 px-3 py-1 bg-blue-950/50 border border-blue-600/50 text-blue-300 text-xs font-medium rounded-full">
                     Viewing Past: {guildExpansions.find(e => e.expansion_id === viewingExpansionId)?.expansion_name}
@@ -715,19 +721,20 @@ export default function LootList() {
                 value={selectedPhase ?? ''}
                 onChange={(e) => setSelectedPhase(parseInt(e.target.value))}
               >
-                {phases.map((phase) => {
-                  const status = phaseSubmissionStatuses[phase]
+                {resolvedGroups.map((group) => {
+                  const status = phaseSubmissionStatuses[group.canonicalPhase]
                   const statusEmoji = status?.status === 'approved' ? ' ✓' :
                                       status?.status === 'pending' ? ' ⏳' :
                                       status?.status === 'needs_revision' ? ' ⚠' :
                                       status?.status === 'rejected' ? ' ✗' : ''
-                  const tiersInPhase = raidTiers.filter(t => t.phase === phase)
-                  const activeTiersInPhase = tiersInPhase.filter(t => t.is_guild_active !== false)
-                  const hasActiveTier = tiersInPhase.some(t => t.is_guild_active)
-                  const raidNames = activeTiersInPhase.map(t => getRaidShorthand(t.name)).join(', ')
+                  const phaseSet = new Set(group.phases)
+                  const tiersInGroup = raidTiers.filter(t => t.phase != null && phaseSet.has(t.phase))
+                  const activeTiersInGroup = tiersInGroup.filter(t => t.is_guild_active !== false)
+                  const hasActiveTier = tiersInGroup.some(t => t.is_guild_active)
+                  const raidNames = activeTiersInGroup.map(t => getRaidShorthand(t.name)).join(', ')
                   return (
-                    <option key={phase} value={phase}>
-                      P{phase} {raidNames}{hasActiveTier ? ' ★' : ''}{statusEmoji}
+                    <option key={group.canonicalPhase} value={group.canonicalPhase}>
+                      {getPhaseGroupShortLabel(group)} {raidNames}{hasActiveTier ? ' ★' : ''}{statusEmoji}
                     </option>
                   )
                 })}
@@ -737,8 +744,8 @@ export default function LootList() {
             <div className="hidden sm:block">
               <HorizontalScroll>
                 <div className="flex gap-2">
-                  {phases.map((phase) => {
-                    const status = phaseSubmissionStatuses[phase]
+                  {resolvedGroups.map((group) => {
+                    const status = phaseSubmissionStatuses[group.canonicalPhase]
                     const hasSubmission = !!status
                     const statusColor = hasSubmission
                       ? status.status === 'approved'
@@ -751,27 +758,28 @@ export default function LootList() {
                         ? 'text-destructive'
                         : 'text-muted-foreground'
                       : ''
-                    const tiersInPhase = raidTiers.filter(t => t.phase === phase)
-                    const activeTiersInPhase = tiersInPhase.filter(t => t.is_guild_active !== false)
-                    const hasActiveTier = tiersInPhase.some(t => t.is_guild_active)
-                    const raidNames = activeTiersInPhase.map(t => getRaidShorthand(t.name)).join(', ')
+                    const phaseSet = new Set(group.phases)
+                    const tiersInGroup = raidTiers.filter(t => t.phase != null && phaseSet.has(t.phase))
+                    const activeTiersInGroup = tiersInGroup.filter(t => t.is_guild_active !== false)
+                    const hasActiveTier = tiersInGroup.some(t => t.is_guild_active)
+                    const raidNames = activeTiersInGroup.map(t => getRaidShorthand(t.name)).join(', ')
 
                     // Get the first active tier for the icon, or first tier if none active
-                    const iconTier = activeTiersInPhase[0] || tiersInPhase[0]
+                    const iconTier = activeTiersInGroup[0] || tiersInGroup[0]
 
                     return (
                       <Button
-                        key={phase}
-                        variant={selectedPhase === phase ? 'accent-subtle' : 'outline'}
-                        onClick={() => setSelectedPhase(phase)}
+                        key={group.canonicalPhase}
+                        variant={selectedPhase === group.canonicalPhase ? 'accent-subtle' : 'outline'}
+                        onClick={() => setSelectedPhase(group.canonicalPhase)}
                         className="px-4 py-2.5 rounded-[40px] whitespace-nowrap text-[13px] font-medium"
                       >
                         <div className="flex items-center gap-2">
                           <span className={`px-1.5 py-0.5 rounded text-[11px] font-bold ${
-                            selectedPhase === phase
+                            selectedPhase === group.canonicalPhase
                               ? 'bg-accent/30 text-accent'
                               : 'bg-foreground/10 text-foreground-secondary'
-                          }`}>P{phase}</span>
+                          }`}>{getPhaseGroupShortLabel(group)}</span>
                           {iconTier && (
                             <img
                               src={getRaidIcon(iconTier.name)}
@@ -816,7 +824,10 @@ export default function LootList() {
                   )}
                   <div>
                     <h2 className="font-semibold text-lg text-foreground">
-                      Phase {selectedPhase}
+                      {(() => {
+                        const group = resolvedGroups.find(g => g.canonicalPhase === selectedPhase)
+                        return group ? getPhaseGroupShortLabel(group).replace(/^P/, 'Phase ').replace(/\+P/g, '+') : `Phase ${selectedPhase}`
+                      })()}
                       {phaseTiers.length > 0 && (
                         <span className="font-normal text-muted-foreground text-sm ml-2">
                           ({phaseTiers.filter(t => t.is_guild_active).map(t => t.name).join(', ') || 'No active raids'})

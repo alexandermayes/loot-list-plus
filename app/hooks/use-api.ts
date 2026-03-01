@@ -234,7 +234,7 @@ export function useRaidTiers(
     ? `/api/raid-tiers?expansion_id=${expansionId}&guild_id=${guildId}${includeAllPhases ? '&includeAllPhases=true' : ''}`
     : null
 
-  return useSWR<{ tiers: RaidTier[]; current_phase?: number }>(
+  return useSWR<{ tiers: RaidTier[]; current_phase?: number; phase_groups?: number[][] | null }>(
     url,
     fetcher,
     {
@@ -309,21 +309,24 @@ export interface PhaseLootItem extends LootItem {
 }
 
 /**
- * Fetch loot items for all active tiers in a phase
+ * Fetch loot items for all active tiers in one or more phases
  * @param expansionId - The expansion ID
- * @param phase - The phase number
+ * @param phases - Phase number(s) to load items for (supports merged phase groups)
  * @param characterId - The character ID (for spec filtering)
  * @param guildId - The guild ID (for active tier filtering)
  */
 export function usePhaseLootItems(
   expansionId: string | null,
-  phase: number | null,
+  phases: number[] | null,
   characterId: string | null,
   guildId: string | null,
   options?: SWRConfiguration
 ) {
-  const url = expansionId && phase !== null && characterId && guildId
-    ? `/api/loot-items?expansion_id=${expansionId}&phase=${phase}&character_id=${characterId}&guild_id=${guildId}`
+  // Build URL: single phase uses phase=N, multiple uses phases=1,2
+  const phasesKey = phases && phases.length > 0 ? phases.sort((a, b) => a - b).join(',') : null
+  const phaseParam = phases?.length === 1 ? `phase=${phases[0]}` : phasesKey ? `phases=${phasesKey}` : null
+  const url = expansionId && phaseParam && characterId && guildId
+    ? `/api/loot-items?expansion_id=${expansionId}&${phaseParam}&character_id=${characterId}&guild_id=${guildId}`
     : null
 
   return useSWR<{ items: PhaseLootItem[] }>(

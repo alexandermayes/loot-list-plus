@@ -36,16 +36,20 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams
     const tierId = searchParams.get('tier_id')
     const phase = searchParams.get('phase')
+    const phasesParam = searchParams.get('phases') // comma-separated for merged groups
     const expansionId = searchParams.get('expansion_id')
     const characterId = searchParams.get('character_id')
     const guildId = searchParams.get('guild_id')
 
-    // Support both tier_id (legacy) and phase+expansion_id (new)
+    // Support tier_id (legacy), phase+expansion_id, or phases+expansion_id (merged groups)
     if (!characterId) {
       return NextResponse.json({ error: 'character_id is required' }, { status: 400 })
     }
-    if (!tierId && (!phase || !expansionId)) {
-      return NextResponse.json({ error: 'tier_id or (phase and expansion_id) are required' }, { status: 400 })
+    if (!tierId && !phase && !phasesParam) {
+      return NextResponse.json({ error: 'tier_id, phase, or phases parameter is required' }, { status: 400 })
+    }
+    if ((phase || phasesParam) && !expansionId) {
+      return NextResponse.json({ error: 'expansion_id is required with phase/phases' }, { status: 400 })
     }
 
     const supabase = createServiceRoleClient()
@@ -72,20 +76,35 @@ export async function GET(request: NextRequest) {
     if (tierId) {
       // Legacy single-tier query
       tierIds = [tierId]
-    } else if (phase && expansionId && guildId) {
-      // Validate phase parameter (MED-02: Input validation bounds)
-      const parsedPhase = parseInt(phase, 10)
-      if (isNaN(parsedPhase) || parsedPhase < 1 || parsedPhase > 10) {
-        return NextResponse.json({ error: 'Invalid phase value (must be 1-10)' }, { status: 400 })
+    } else if ((phase || phasesParam) && expansionId) {
+      // Parse phase values (single or comma-separated)
+      let phaseValues: number[] = []
+
+      if (phasesParam) {
+        // Multi-phase: phases=1,2
+        phaseValues = phasesParam.split(',')
+          .map(p => parseInt(p.trim(), 10))
+          .filter(p => !isNaN(p) && p >= 1 && p <= 10)
+      } else if (phase) {
+        // Single phase: phase=1
+        const parsedPhase = parseInt(phase, 10)
+        if (isNaN(parsedPhase) || parsedPhase < 1 || parsedPhase > 10) {
+          return NextResponse.json({ error: 'Invalid phase value (must be 1-10)' }, { status: 400 })
+        }
+        phaseValues = [parsedPhase]
       }
 
-      // Phase-based query - get all active tiers in this phase
+      if (phaseValues.length === 0) {
+        return NextResponse.json({ error: 'Invalid phases parameter' }, { status: 400 })
+      }
+
+      // Get all active tiers matching the phase(s)
       // Note: is_guild_active can be null (treated as true/enabled by default) or explicitly true/false
       const { data: phaseTiers, error: phaseTiersError } = await supabase
         .from('raid_tiers')
         .select('id')
         .eq('expansion_id', expansionId)
-        .eq('phase', parsedPhase)
+        .in('phase', phaseValues)
         .or('is_guild_active.eq.true,is_guild_active.is.null')
 
       if (phaseTiersError) {

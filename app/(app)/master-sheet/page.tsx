@@ -9,6 +9,7 @@ import { getSpecRoles } from '@/utils/spec-role-mapping'
 import { getBossOrder, normalizeBossName } from '@/utils/bossOrder'
 import { getBossImage } from '@/utils/bossImages'
 import { getRaidIcon, getRaidShorthand } from '@/utils/raidIcons'
+import { resolvePhaseGroups, getPhaseGroupShortLabel, type PhaseGroup } from '@/utils/phase-groups'
 import { StarFilledIcon } from '@/components/ui/icons'
 import { useGuildContext } from '@/app/contexts/GuildContext'
 import { useNotification } from '@/app/contexts/NotificationContext'
@@ -164,6 +165,7 @@ function MasterSheetContent() {
   const [guildSettings, setGuildSettings] = useState<GuildSettings | null>(null)
   const [raidTiers, setRaidTiers] = useState<RaidTier[]>([])
   const [phases, setPhases] = useState<number[]>([])
+  const [resolvedGroups, setResolvedGroups] = useState<PhaseGroup[]>([])
   const [selectedPhase, setSelectedPhase] = useState<number | null>(null)
   const [masterSheetVisible, setMasterSheetVisible] = useState<boolean>(false)
   const [hasApprovedSubmission, setHasApprovedSubmission] = useState<boolean>(false)
@@ -464,14 +466,15 @@ function MasterSheetContent() {
         // Filter by current_phase to only show unlocked phases
         let loadedTierIds: string[] = []
         if (activeGuild?.active_expansion_id) {
-          // Get current_phase from expansion to filter tiers
+          // Get current_phase and phase_groups from expansion
           const { data: expansionData } = await supabase
             .from('expansions')
-            .select('current_phase')
+            .select('current_phase, phase_groups')
             .eq('id', activeGuild.active_expansion_id)
             .single()
 
           const currentPhase = expansionData?.current_phase ?? 1
+          const phaseGroupsConfig = (expansionData?.phase_groups as number[][] | null) || null
 
           let tiersQuery = supabase
             .from('raid_tiers')
@@ -509,21 +512,29 @@ function MasterSheetContent() {
             setRaidTiers(sortedTiers)
             loadedTierIds = sortedTiers.map(t => t.id)
 
-            // Extract unique phases from tiers
+            // Extract unique phases from tiers and resolve groups
             const uniquePhases = [...new Set<number>(sortedTiers.map((t: RaidTier) => t.phase).filter((p: number | null): p is number => p !== null))]
             uniquePhases.sort((a, b) => a - b)
             setPhases(uniquePhases)
 
+            // Resolve phase groups for this expansion
+            const groups = resolvePhaseGroups(phaseGroupsConfig, uniquePhases)
+            setResolvedGroups(groups)
+            const canonicalPhases = groups.map(g => g.canonicalPhase)
+
             // Only set default phase if we don't have one selected yet
-            if (selectedPhase === null && uniquePhases.length > 0) {
+            if (selectedPhase === null && canonicalPhases.length > 0) {
               // Check if there's a phase in the query params first
               const phaseFromUrl = searchParams.get('phase')
-              if (phaseFromUrl && uniquePhases.includes(parseInt(phaseFromUrl))) {
+              if (phaseFromUrl && canonicalPhases.includes(parseInt(phaseFromUrl))) {
                 setSelectedPhase(parseInt(phaseFromUrl))
               } else {
-                // Otherwise use phase with an active tier or first phase
+                // Otherwise use phase with an active tier or first canonical phase
                 const activeTierPhase = sortedTiers.find((t: RaidTier) => t.is_active)?.phase
-                setSelectedPhase(activeTierPhase ?? uniquePhases[0])
+                const activeTierCanonical = activeTierPhase != null
+                  ? groups.find(g => g.phases.includes(activeTierPhase))?.canonicalPhase
+                  : undefined
+                setSelectedPhase(activeTierCanonical ?? canonicalPhases[0])
               }
             }
           }
@@ -554,10 +565,13 @@ function MasterSheetContent() {
     loadData().catch(console.error)
   }, [guildLoading, activeGuild, activeCharacter, isOfficer])
 
-  // Get tiers for the currently selected phase (memoized to prevent infinite loops)
+  // Get tiers for the currently selected phase group (memoized to prevent infinite loops)
   const phaseTiers = useMemo(() => {
-    return raidTiers.filter(t => t.phase === selectedPhase)
-  }, [raidTiers, selectedPhase])
+    const group = resolvedGroups.find(g => g.canonicalPhase === selectedPhase)
+    if (!group) return raidTiers.filter(t => t.phase === selectedPhase)
+    const phaseSet = new Set(group.phases)
+    return raidTiers.filter(t => t.phase != null && phaseSet.has(t.phase))
+  }, [raidTiers, selectedPhase, resolvedGroups])
 
   // Update master sheet visibility when selected phase changes
   // Master sheet is visible if ANY tier in the phase has it visible
@@ -1532,15 +1546,16 @@ function MasterSheetContent() {
                   onChange={(e) => setSelectedPhase(parseInt(e.target.value))}
                   className="w-full bg-background-elevated font-medium"
                 >
-                  {phases.map((phase) => {
-                    const tiersInPhase = raidTiers.filter(t => t.phase === phase)
-                    const activeTiersInPhase = tiersInPhase.filter(t => t.is_guild_active !== false)
-                    const hasActiveTier = tiersInPhase.some(t => t.is_active)
-                    const allDisabled = tiersInPhase.every(t => t.is_guild_active === false)
-                    const raidNames = activeTiersInPhase.map(t => getRaidShorthand(t.name)).join(', ')
+                  {resolvedGroups.map((group) => {
+                    const phaseSet = new Set(group.phases)
+                    const tiersInGroup = raidTiers.filter(t => t.phase != null && phaseSet.has(t.phase))
+                    const activeTiersInGroup = tiersInGroup.filter(t => t.is_guild_active !== false)
+                    const hasActiveTier = tiersInGroup.some(t => t.is_active)
+                    const allDisabled = tiersInGroup.every(t => t.is_guild_active === false)
+                    const raidNames = activeTiersInGroup.map(t => getRaidShorthand(t.name)).join(', ')
                     return (
-                      <option key={phase} value={phase}>
-                        P{phase} {raidNames}{hasActiveTier ? ' ★' : ''}{allDisabled ? ' (Off)' : ''}
+                      <option key={group.canonicalPhase} value={group.canonicalPhase}>
+                        {getPhaseGroupShortLabel(group)} {raidNames}{hasActiveTier ? ' ★' : ''}{allDisabled ? ' (Off)' : ''}
                       </option>
                     )
                   })}
@@ -1549,20 +1564,21 @@ function MasterSheetContent() {
               {/* Desktop: Horizontal tabs */}
               <HorizontalScroll containerClassName="hidden sm:flex flex-1 min-w-0">
                 <div className="flex gap-2 pr-3">
-                  {phases.map((phase) => {
-                    const tiersInPhase = raidTiers.filter(t => t.phase === phase)
-                    const activeTiersInPhase = tiersInPhase.filter(t => t.is_guild_active !== false)
-                    const hasActiveTier = tiersInPhase.some(t => t.is_active)
-                    const allDisabled = tiersInPhase.every(t => t.is_guild_active === false)
-                    const isSelected = selectedPhase === phase
-                    const raidNames = activeTiersInPhase.map(t => getRaidShorthand(t.name)).join(', ')
+                  {resolvedGroups.map((group) => {
+                    const phaseSet = new Set(group.phases)
+                    const tiersInGroup = raidTiers.filter(t => t.phase != null && phaseSet.has(t.phase))
+                    const activeTiersInGroup = tiersInGroup.filter(t => t.is_guild_active !== false)
+                    const hasActiveTier = tiersInGroup.some(t => t.is_active)
+                    const allDisabled = tiersInGroup.every(t => t.is_guild_active === false)
+                    const isSelected = selectedPhase === group.canonicalPhase
+                    const raidNames = activeTiersInGroup.map(t => getRaidShorthand(t.name)).join(', ')
                     // Get the first active tier for the icon, or first tier if none active
-                    const iconTier = activeTiersInPhase[0] || tiersInPhase[0]
+                    const iconTier = activeTiersInGroup[0] || tiersInGroup[0]
                     return (
                       <Button
-                        key={phase}
+                        key={group.canonicalPhase}
                         variant="ghost"
-                        onClick={() => setSelectedPhase(phase)}
+                        onClick={() => setSelectedPhase(group.canonicalPhase)}
                         className={`px-5 py-2.5 rounded-[40px] whitespace-nowrap text-[13px] font-medium transition-all border ${
                           isSelected
                             ? allDisabled
@@ -1582,7 +1598,7 @@ function MasterSheetContent() {
                               : allDisabled
                                 ? 'bg-foreground/5 text-muted-foreground'
                                 : 'bg-foreground/10 text-foreground-secondary'
-                          }`}>P{phase}</span>
+                          }`}>{getPhaseGroupShortLabel(group)}</span>
                           {iconTier && (
                             <img
                               src={getRaidIcon(iconTier.name)}

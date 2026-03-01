@@ -10,6 +10,7 @@ import { HugeiconsIcon } from '@hugeicons/react'
 import { ArrowLeft01Icon } from '@hugeicons/core-free-icons'
 import { getExpansionVisuals } from '@/utils/expansionVisuals'
 import { getRaidIcon, getRaidShorthand } from '@/utils/raidIcons'
+import { resolvePhaseGroups, getPhaseGroupShortLabel, type PhaseGroup } from '@/utils/phase-groups'
 import { Button } from '@/components/ui/button'
 import { DateTimePicker } from '@/components/ui/date-time-picker'
 import { Switch } from '@/components/ui/switch'
@@ -205,6 +206,8 @@ export default function ExpansionDetailPage({ params }: { params: Promise<{ expa
   const [phaseDeadlines, setPhaseDeadlines] = useState<Record<number, string | null>>({})
   const [phaseDeadlineInputs, setPhaseDeadlineInputs] = useState<Record<number, string>>({})
   const [currentPhase, setCurrentPhase] = useState<number | null>(null)
+  const [phaseGroupsConfig, setPhaseGroupsConfig] = useState<number[][] | null>(null)
+  const [mergeError, setMergeError] = useState<{ message: string; characters?: string[] } | null>(null)
 
   const supabase = createClient()
   const router = useRouter()
@@ -314,12 +317,13 @@ export default function ExpansionDetailPage({ params }: { params: Promise<{ expa
       // Load phase deadlines and current_phase from expansion
       const { data: expansionData, error: expansionError } = await supabase
         .from('expansions')
-        .select('phase_deadlines, current_phase')
+        .select('phase_deadlines, current_phase, phase_groups')
         .eq('id', expansionId)
         .single()
 
       if (!expansionError && expansionData) {
         setCurrentPhase(expansionData.current_phase || 1)
+        setPhaseGroupsConfig(expansionData.phase_groups as number[][] | null)
 
         if (expansionData.phase_deadlines) {
           const deadlinesFromDb = expansionData.phase_deadlines as Record<string, string | null>
@@ -474,6 +478,80 @@ export default function ExpansionDetailPage({ params }: { params: Promise<{ expa
     }
   }
 
+  // Compute available phases from tiers and resolved groups
+  const availablePhases = [...new Set(raidTiers.map(t => t.phase).filter((p): p is number => p != null))].sort((a, b) => a - b)
+  const currentResolvedGroups = resolvePhaseGroups(phaseGroupsConfig, availablePhases)
+
+  const handleTogglePhaseMerge = async (phaseA: number, phaseB: number) => {
+    if (!activeGuild) return
+    setUpdating('merge')
+    setMergeError(null)
+
+    try {
+      // Build new groups config
+      let newGroups: number[][] = currentResolvedGroups.map(g => [...g.phases])
+
+      // Find which groups contain phaseA and phaseB
+      const groupAIdx = newGroups.findIndex(g => g.includes(phaseA))
+      const groupBIdx = newGroups.findIndex(g => g.includes(phaseB))
+
+      if (groupAIdx === groupBIdx && groupAIdx !== -1) {
+        // Already in the same group — split them
+        const group = newGroups[groupAIdx]
+        if (group.length <= 2) {
+          // Split into individual phases
+          newGroups.splice(groupAIdx, 1, ...group.map(p => [p]))
+        } else {
+          // Remove phaseB from the group
+          newGroups[groupAIdx] = group.filter(p => p !== phaseB)
+          newGroups.push([phaseB])
+        }
+      } else {
+        // Merge the two groups
+        const mergedPhases = [...(newGroups[groupAIdx] || [phaseA]), ...(newGroups[groupBIdx] || [phaseB])]
+        mergedPhases.sort((a, b) => a - b)
+        // Remove old groups and add merged
+        newGroups = newGroups.filter((_, i) => i !== groupAIdx && i !== groupBIdx)
+        newGroups.push(mergedPhases)
+      }
+
+      // Sort groups by first phase
+      newGroups.sort((a, b) => a[0] - b[0])
+
+      // Check if all groups are single phases (no merging) — set to null
+      const allSingle = newGroups.every(g => g.length === 1)
+      const configToSave = allSingle ? null : newGroups
+
+      const response = await fetch(`/api/guilds/${activeGuild.id}/expansions/${expansionId}/phase-groups`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phase_groups: configToSave })
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        if (response.status === 409 && data.conflicting_characters) {
+          setMergeError({
+            message: data.error,
+            characters: data.conflicting_characters
+          })
+        } else {
+          showNotification('error', data.error || 'Couldn\'t update phase groups. Try again.')
+        }
+        return
+      }
+
+      setPhaseGroupsConfig(data.phase_groups)
+      showNotification('success', configToSave ? 'Phases merged' : 'Phases split')
+      mutate((key: string) => typeof key === 'string' && (key.startsWith('/api/raid-tiers') || key.startsWith('/api/loot-items')), undefined, { revalidate: true })
+    } catch (error: any) {
+      showNotification('error', error.message || 'Couldn\'t update phase groups. Try again.')
+    } finally {
+      setUpdating(null)
+    }
+  }
+
   if (loading || guildLoading) {
     return (
       <div className="p-8 flex items-center justify-center min-h-[40vh]">
@@ -602,6 +680,76 @@ export default function ExpansionDetailPage({ params }: { params: Promise<{ expa
               )
             })}
           </div>
+        </div>
+      )}
+
+      {/* Phase Merging */}
+      {uniquePhases.length > 1 && (
+        <div className="bg-background-elevated border border-border rounded-xl p-5">
+          <h2 className="text-[18px] font-semibold text-foreground mb-2">Phase merging</h2>
+          <p className="text-muted-foreground text-sm mb-4">
+            Combine phases into a single loot list. Raiders will rank items from all raids in the group.
+          </p>
+
+          {mergeError && (
+            <div className="mb-4 p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-sm">
+              <p className="text-destructive font-medium">{mergeError.message}</p>
+              {mergeError.characters && mergeError.characters.length > 0 && (
+                <p className="text-muted-foreground mt-1">
+                  Affected raiders: {mergeError.characters.join(', ')}
+                </p>
+              )}
+            </div>
+          )}
+
+          <div className="space-y-2">
+            {availablePhases.filter(p => currentPhase !== null && p <= currentPhase).map((phase, index, arr) => {
+              const nextPhase = arr[index + 1]
+              if (!nextPhase) return null
+
+              const group = currentResolvedGroups.find(g => g.phases.includes(phase))
+              const nextGroup = currentResolvedGroups.find(g => g.phases.includes(nextPhase))
+              const areMerged = group === nextGroup && group !== undefined && group.phases.length > 1
+
+              const phaseTiersA = raidTiers.filter(t => t.phase === phase)
+              const phaseTiersB = raidTiers.filter(t => t.phase === nextPhase)
+              const namesA = phaseTiersA.map(t => getRaidShorthand(t.name)).join(', ')
+              const namesB = phaseTiersB.map(t => getRaidShorthand(t.name)).join(', ')
+
+              return (
+                <div key={`merge-${phase}-${nextPhase}`} className="flex items-center gap-3">
+                  <div className="flex-1 text-right">
+                    <span className="text-sm font-medium text-foreground">P{phase}</span>
+                    <span className="text-xs text-muted-foreground ml-1.5">{namesA}</span>
+                  </div>
+
+                  <Button
+                    variant={areMerged ? 'primary' : 'outline'}
+                    size="sm"
+                    onClick={() => handleTogglePhaseMerge(phase, nextPhase)}
+                    disabled={updating === 'merge'}
+                    loading={updating === 'merge'}
+                    className="shrink-0 px-3 text-xs"
+                  >
+                    {areMerged ? 'Split' : 'Merge'}
+                  </Button>
+
+                  <div className="flex-1">
+                    <span className="text-sm font-medium text-foreground">P{nextPhase}</span>
+                    <span className="text-xs text-muted-foreground ml-1.5">{namesB}</span>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+
+          {currentResolvedGroups.some(g => g.phases.length > 1) && (
+            <div className="mt-3 pt-3 border-t border-border">
+              <p className="text-xs text-muted-foreground">
+                Current groups: {currentResolvedGroups.map(g => getPhaseGroupShortLabel(g)).join(' | ')}
+              </p>
+            </div>
+          )}
         </div>
       )}
 
