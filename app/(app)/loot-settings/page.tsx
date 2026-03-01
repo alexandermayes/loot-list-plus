@@ -19,7 +19,7 @@ import StyledSelect from '@/app/components/StyledSelect'
 import MultiSelectDropdown from '@/app/components/MultiSelectDropdown'
 import { specMapping } from '@/utils/spec-role-mapping'
 import { HugeiconsIcon } from '@hugeicons/react'
-import { ArrowDown01Icon, ArrowUp01Icon, Settings01Icon, Calendar03Icon, Settings02Icon, UserAdd01Icon, DiceIcon, Medal01Icon, Clock01Icon, GiftIcon, StickyNote01Icon, Search01Icon } from '@hugeicons/core-free-icons'
+import { ArrowDown01Icon, ArrowUp01Icon, Settings01Icon, Calendar03Icon, Settings02Icon, UserAdd01Icon, DiceIcon, Medal01Icon, Clock01Icon, GiftIcon, StickyNote01Icon, Search01Icon, Layers01Icon } from '@hugeicons/core-free-icons'
 import { EmptyState } from '@/components/ui/empty-state'
 import { ErrorState } from '@/components/ui/error-state'
 import { Textarea } from '@/components/ui/textarea'
@@ -207,7 +207,10 @@ export default function AdminLootItems() {
     // BLP (Bad Luck Protection) Settings
     blp_enabled: false,
     blp_increment: 1.0,
-    blp_maximum: 5.0
+    blp_maximum: 5.0,
+
+    // Loot List Rules
+    enforce_slot_restrictions: false
   })
 
   const [guildRoles, setGuildRoles] = useState<{ name: string; position: number }[]>([
@@ -431,7 +434,10 @@ export default function AdminLootItems() {
         // BLP (Bad Luck Protection) Settings
         blp_enabled: settings.blp_enabled,
         blp_increment: settings.blp_increment,
-        blp_maximum: settings.blp_maximum
+        blp_maximum: settings.blp_maximum,
+
+        // Loot List Rules
+        enforce_slot_restrictions: settings.enforce_slot_restrictions
       }
 
       const response = await fetch('/api/guild-settings', {
@@ -2334,6 +2340,32 @@ export default function AdminLootItems() {
                               className="bg-background-elevated"
                             />
                           </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    {/* Loot List Rules */}
+                    <Card variant="unified">
+                      <CardHeader>
+                        <CardTitle className="text-[15px] font-semibold flex items-center gap-2">
+                          <HugeiconsIcon icon={Layers01Icon} size={18} className="text-muted-foreground" />
+                          Loot list rules
+                        </CardTitle>
+                        <CardDescription>Control how raiders can arrange items in their priority brackets.</CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <div>
+                          <Label className="block mb-2">Unique slots per bracket</Label>
+                          <p className="text-xs text-muted-foreground mb-2">Prevent multiple items with the same equipment slot in a single bracket. When enabled, each bracket can only have one token, one ring, etc.</p>
+                          <Select
+                            variant="pill"
+                            value={settings.enforce_slot_restrictions ? 'yes' : 'no'}
+                            onChange={(e) => setSettings({ ...settings, enforce_slot_restrictions: e.target.value === 'yes' })}
+                            className="bg-background-elevated w-32"
+                          >
+                            <option value="no">No</option>
+                            <option value="yes">Yes</option>
+                          </Select>
                         </div>
                       </CardContent>
                     </Card>

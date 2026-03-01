@@ -72,6 +72,9 @@ const ALLOWED_SETTINGS_FIELDS = [
   'blp_increment',
   'blp_maximum',
 
+  // Loot List Rules
+  'enforce_slot_restrictions',
+
   // Discord Integration
   'raid_summary_channel_id',
 
