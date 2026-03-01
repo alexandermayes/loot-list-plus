@@ -274,12 +274,12 @@ export const ITEM_TYPES: Record<number, ItemTypeInfo> = {
   29985: { armor_type: 'Mail' },              // Void Reaver Greaves
   29986: { armor_type: 'Cloth' },           // Cowl of the Grand Engineer
   29987: { armor_type: 'Cloth' },             // Gauntlets of the Sun King
-  29988: { weapon_type: 'Staff' },  // The Nexus Key
-  29989: { weapon_type: 'Fist Weapon' },      // Sunshower Light Cloak
-  29990: { armor_type: 'Cloth' }, // Crown of the Sun
-  29991: { armor_type: 'Mail' }, // Sunhawk Leggings
-  29992: { weapon_type: 'Bow' },              // Royal Cloak of the Sunstriders
-  29993: { weapon_type: 'Staff' },            // Twinblade of the Phoenix
+  29988: { weapon_type: 'Staff' },             // The Nexus Key
+  // 29989: Sunshower Light Cloak (Back slot, class-agnostic — no type needed)
+  29990: { armor_type: 'Cloth' },              // Crown of the Sun
+  29991: { armor_type: 'Mail' },               // Sunhawk Leggings
+  // 29992: Royal Cloak of the Sunstriders (Back slot, class-agnostic — no type needed)
+  29993: { weapon_type: 'One-Handed Sword' },  // Twinblade of the Phoenix
 
   // High Astromancer Solarian
   29962: { weapon_type: 'Dagger' },           // Heartrazor

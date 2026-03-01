@@ -134,11 +134,24 @@ export async function GET(request: NextRequest) {
     const className = (Array.isArray(wowClass) ? wowClass[0]?.name : wowClass?.name) as WowClassName | undefined
 
     // Filter items based on class proficiencies (armor/weapon types)
-    // NOTE: We do NOT filter based on loot_item_classes entries - those determine
-    // bracket placement (primary/secondary/off-spec), not item visibility.
-    // A character should see ALL equippable items, even if not prio'd on them.
+    // Officer spec assignments (loot_item_classes) override proficiency checks:
+    // if an officer explicitly assigned a class/spec to an item, trust that decision.
     const filteredItems = (items || []).filter(item => {
       const classes = item.loot_item_classes as LootItemClassRestriction[]
+
+      // If officers explicitly assigned this character's class or spec to the item,
+      // bypass all proficiency checks. The officer's assignment is authoritative.
+      if (classes && classes.length > 0 && character.class_id) {
+        const hasClassAssignment = classes.some(c =>
+          c.class_id === character.class_id && (
+            c.spec_id === null || // Class-level assignment
+            c.spec_id === character.spec_id // Spec-specific assignment
+          )
+        )
+        if (hasClassAssignment) {
+          return true
+        }
+      }
 
       // Check if this is a token - apply token class restrictions
       if (isTokenSlot(item.item_slot)) {
@@ -150,7 +163,7 @@ export async function GET(request: NextRequest) {
         return true
       }
 
-      // Third, check class proficiencies (armor/weapon types the class can equip)
+      // Check class proficiencies (armor/weapon types the class can equip)
       if (className && CLASS_PROFICIENCIES[className]) {
         // Get item's armor/weapon type from DB or lookup table or inference
         let armorType = item.armor_type as ArmorType | null
