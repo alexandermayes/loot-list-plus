@@ -386,40 +386,32 @@ export default function LootList() {
   // Items CASCADE down: Brackets 1-4 ⊆ No Bracket ⊆ Off-spec
   //
   // Bracket filtering rules:
-  // - Brackets 1-4: PRIMARY + SECONDARY + UNALLOCATED
-  // - No Bracket: Brackets 1-4 + primary-only items (no secondary filled = open)
+  // - Brackets 1-4: PRIMARY + UNALLOCATED
+  // - No Bracket: PRIMARY + SECONDARY + UNALLOCATED
   // - Off-spec: ALL equippable items
   const { bracket14Items, noBracketItems, offSpecItems } = useMemo(() => {
-    // Helper to check if character is not prio'd on an item
-    // (spec_type is null/undefined AND item is allocated)
-    const isNotPriod = (item: LootItem) =>
-      !item.character_spec_type && item.is_allocated === true
-
     // LC items are included in every pool so they appear in dropdowns (as non-selectable),
     // but excluded from rankable filtering logic
     const lcItems = lootItems.filter(item => item.is_loot_council)
 
-    // Brackets 1-4: PRIMARY + SECONDARY + UNALLOCATED
+    // Brackets 1-4: PRIMARY + UNALLOCATED
     const bracket14Items = [
       ...lootItems.filter(item =>
         !item.is_loot_council && (
           item.character_spec_type === 'primary' ||
-          item.character_spec_type === 'secondary' ||
           !item.is_allocated  // false or undefined = unallocated
         )
       ),
       ...lcItems,
     ]
 
-    // No Bracket: Brackets 1-4 + primary-only items (no secondary filled = open to all)
-    // If officers haven't filled in secondary prio, the item is open here.
+    // No Bracket: PRIMARY + SECONDARY + UNALLOCATED
     const noBracketItems = [
       ...lootItems.filter(item =>
         !item.is_loot_council && (
           item.character_spec_type === 'primary' ||
           item.character_spec_type === 'secondary' ||
-          !item.is_allocated ||
-          (isNotPriod(item) && item.has_primary_only === true)
+          !item.is_allocated
         )
       ),
       ...lcItems,
