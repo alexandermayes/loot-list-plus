@@ -388,7 +388,7 @@ export default function LootList() {
   // Bracket filtering rules:
   // - Brackets 1-4: PRIMARY + UNALLOCATED
   // - No Bracket: PRIMARY + SECONDARY + UNALLOCATED + PRIMARY-ONLY (no secondary = open)
-  // - Off-spec: ALL equippable items
+  // - Off-spec: same as No Bracket
   const { bracket14Items, noBracketItems, offSpecItems } = useMemo(() => {
     // LC items are included in every pool so they appear in dropdowns (as non-selectable),
     // but excluded from rankable filtering logic
@@ -420,8 +420,8 @@ export default function LootList() {
       ...lcItems,
     ]
 
-    // Off-spec: ALL equippable items (superset of everything)
-    const offSpecItems = lootItems
+    // Off-spec: same rules as No Bracket
+    const offSpecItems = noBracketItems
 
     return { bracket14Items, noBracketItems, offSpecItems }
   }, [lootItems])
