@@ -387,7 +387,7 @@ export default function LootList() {
   //
   // Bracket filtering rules:
   // - Brackets 1-4: PRIMARY + UNALLOCATED
-  // - No Bracket: PRIMARY + SECONDARY + UNALLOCATED
+  // - No Bracket: PRIMARY + SECONDARY + UNALLOCATED + PRIMARY-ONLY (no secondary = open)
   // - Off-spec: ALL equippable items
   const { bracket14Items, noBracketItems, offSpecItems } = useMemo(() => {
     // LC items are included in every pool so they appear in dropdowns (as non-selectable),
@@ -405,13 +405,16 @@ export default function LootList() {
       ...lcItems,
     ]
 
-    // No Bracket: PRIMARY + SECONDARY + UNALLOCATED
+    // No Bracket: PRIMARY + SECONDARY + UNALLOCATED + PRIMARY-ONLY
+    // If an item has primary assignments but no secondary filled in,
+    // it's open here for all characters who can equip it.
     const noBracketItems = [
       ...lootItems.filter(item =>
         !item.is_loot_council && (
           item.character_spec_type === 'primary' ||
           item.character_spec_type === 'secondary' ||
-          !item.is_allocated
+          !item.is_allocated ||
+          item.has_primary_only === true  // no secondary filled = open
         )
       ),
       ...lcItems,
