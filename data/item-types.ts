@@ -91,7 +91,7 @@ export const ITEM_TYPES: Record<number, ItemTypeInfo> = {
   28585: { armor_type: 'Cloth' },             // Ruby Slippers
   28586: { armor_type: 'Cloth' },             // Wicked Witch's Hat
   28588: { weapon_type: 'Wand' },             // Blue Diamond Witchwand
-  28587: { weapon_type: 'Staff' },            // Legacy
+  28587: { weapon_type: 'Two-Handed Axe' },            // Legacy
 
   // The Curator
   28612: { armor_type: 'Cloth' },             // Pauldrons of the Solace-Giver
@@ -227,7 +227,7 @@ export const ITEM_TYPES: Record<number, ItemTypeInfo> = {
   30096: { armor_type: 'Plate' },             // Girdle of the Invulnerable
   30091: { armor_type: 'Mail' },              // True-Aim Stalker Bands
   30092: { armor_type: 'Leather' },           // Orca-Hide Boots
-  30095: { weapon_type: 'Dagger' },           // Fang of the Leviathan
+  30095: { weapon_type: 'One-Handed Sword' },           // Fang of the Leviathan
   30097: { armor_type: 'Mail' },           // Coral-Barbed Shoulderpads
 
   // Fathom-Lord Karathress
@@ -241,7 +241,7 @@ export const ITEM_TYPES: Record<number, ItemTypeInfo> = {
   30075: { armor_type: 'Leather' },           // Gnarled Chestpiece of the Ancients
   30080: { weapon_type: 'Wand' },             // Luminescent Rod of the Naaru
   30081: { armor_type: 'Plate' },             // Warboots of Obliteration
-  30082: { weapon_type: 'Dagger' },           // Talon of Azshara
+  30082: { weapon_type: 'One-Handed Sword' },           // Talon of Azshara
   30084: { armor_type: 'Plate' },             // Pauldrons of the Argent Sentinel
   30085: { armor_type: 'Mail' },              // Mantle of the Tireless Tracker
 
@@ -279,7 +279,7 @@ export const ITEM_TYPES: Record<number, ItemTypeInfo> = {
   29990: { armor_type: 'Cloth' },              // Crown of the Sun
   29991: { armor_type: 'Mail' },               // Sunhawk Leggings
   // 29992: Royal Cloak of the Sunstriders (Back slot, class-agnostic — no type needed)
-  29993: { weapon_type: 'One-Handed Sword' },  // Twinblade of the Phoenix
+  29993: { weapon_type: 'Two-Handed Sword' },  // Twinblade of the Phoenix
 
   // High Astromancer Solarian
   29962: { weapon_type: 'Dagger' },           // Heartrazor
@@ -309,7 +309,7 @@ export const ITEM_TYPES: Record<number, ItemTypeInfo> = {
   30023: { armor_type: 'Plate' },             // Totem of the Maelstrom
   30024: { armor_type: 'Cloth' },             // Mantle of the Elven Kings
   30027: { armor_type: 'Plate' },             // Boots of Courage Unending
-  30028: { weapon_type: 'Staff' },            // Seventh Ring of the Tirisfalen
+  // 30028: Seventh Ring of the Tirisfalen — removed (class-agnostic slot, no type needed)
   30029: { armor_type: 'Leather' },           // Bark-Gloves of Ancient Wisdom
   30030: { armor_type: 'Mail' },              // Girdle of Fallen Stars
   30031: { armor_type: 'Plate' },             // Red Havoc Boots
@@ -369,8 +369,8 @@ export const ITEM_TYPES: Record<number, ItemTypeInfo> = {
   30907: { armor_type: 'Mail' },             // Mail of Fevered Pursuit
   30908: { weapon_type: 'Staff' },            // Apostle of Argus
   30909: { weapon_type: 'Shield' },              // Antonidas' Aegis of Rapt Concentration
-  30910: { weapon_type: 'Fist Weapon' },      // Tempest of Chaos
-  30911: { weapon_type: 'Two-Handed Sword' }, // Scepter of Purification
+  30910: { weapon_type: 'One-Handed Sword' },      // Tempest of Chaos
+  // 30911: Scepter of Purification — removed (class-agnostic slot, no type needed)
   30912: { armor_type: 'Cloth' },           // Leggings of Eternity (duplicate)
   30913: { armor_type: 'Cloth' },             // Robes of Rhonin
   30914: { armor_type: 'Leather' },             // Belt of the Crescent Moon
@@ -386,7 +386,7 @@ export const ITEM_TYPES: Record<number, ItemTypeInfo> = {
   32241: { armor_type: 'Mail' },              // Helm of Soothing Currents
   32239: { armor_type: 'Cloth' },             // Slippers of the Seacaller
   32232: { armor_type: 'Plate' },             // Eternium Shell Bracers
-  32236: { weapon_type: 'One-Handed Mace' },  // Rising Tide
+  32236: { weapon_type: 'One-Handed Axe' },  // Rising Tide
   32242: { armor_type: 'Mail' },              // Boots of Oceanic Fury
   32265: { armor_type: 'Leather' },           // Shadow-walker's Cord
   32338: { armor_type: 'Cloth' },             // Blood-cursed Shoulderpads
@@ -415,7 +415,7 @@ export const ITEM_TYPES: Record<number, ItemTypeInfo> = {
   32258: { armor_type: 'Mail' },           // Naturalist's Preserving Cinch
   32251: { armor_type: 'Mail' },           // Wraps of Precise Flight
   32513: { armor_type: 'Cloth' },             // Wristbands of Divine Influence
-  32262: { weapon_type: 'One-Handed Sword' }, // Syphon of the Nathrezim
+  32262: { weapon_type: 'One-Handed Mace' }, // Syphon of the Nathrezim
   32256: { armor_type: 'Cloth' },             // Waistwrap of Infinity
   32248: { weapon_type: 'Polearm' },          // Halberd of Desolation
   32269: { weapon_type: 'Dagger' }, // Messenger of Fate
@@ -467,7 +467,7 @@ export const ITEM_TYPES: Record<number, ItemTypeInfo> = {
   34210: { armor_type: 'Cloth' },             // Amice of the Convoker
   34176: { weapon_type: 'One-Handed Mace' },  // Reign of Misery
   34188: { armor_type: 'Leather' },           // Leggings of the Immortal Night
-  34199: { weapon_type: 'One-Handed Sword' }, // Archon's Gavel
+  34199: { weapon_type: 'One-Handed Mace' }, // Archon's Gavel
   34341: { armor_type: 'Plate' },           // Borderland Paingrips
   34344: { armor_type: 'Cloth' },             // Handguards of Defiled Worlds
   34340: { armor_type: 'Cloth' },             // Dark Conjuror's Collar
@@ -674,8 +674,8 @@ export const ITEM_TYPES: Record<number, ItemTypeInfo> = {
   // ============================================================================
 
   17066: { weapon_type: 'Shield' },           // Drillborer Disk
-  17067: { weapon_type: 'Shield' },           // Ancient Cornerstone Grimoire (Off-Hand)
-  17068: { weapon_type: 'Two-Handed Sword' }, // Deathbringer
+  // 17067: Ancient Cornerstone Grimoire — removed (class-agnostic slot, no type needed)
+  17068: { weapon_type: 'One-Handed Axe' }, // Deathbringer
   17069: { weapon_type: 'Bow' },              // Striker's Mark
   17071: { weapon_type: 'Dagger' },           // Gutgore Ripper
   17072: { weapon_type: 'Gun' },              // Blastershot Launcher
@@ -814,10 +814,10 @@ export const ITEM_TYPES: Record<number, ItemTypeInfo> = {
   19859: { weapon_type: 'Dagger' },           // Fang of the Faceless
   19861: { weapon_type: 'Wand' },             // Touch of Chaos
   19862: { weapon_type: 'Shield' },           // Aegis of the Blood God
-  19864: { weapon_type: 'Dagger' },           // Bloodcaller
+  19864: { weapon_type: 'One-Handed Sword' },           // Bloodcaller
   19865: { weapon_type: 'One-Handed Sword' }, // Warblade of the Hakkari (Main Hand)
   19866: { weapon_type: 'One-Handed Sword' }, // Warblade of the Hakkari
-  19867: { weapon_type: 'Shield' },           // Bloodlord's Defender
+  19867: { weapon_type: 'One-Handed Sword' },           // Bloodlord's Defender
   19869: { armor_type: 'Leather' },           // Blooddrenched Grips
   19874: { weapon_type: 'Polearm' },          // Halberd of Smiting
   19877: { armor_type: 'Leather' },           // Animist's Leggings
@@ -836,9 +836,9 @@ export const ITEM_TYPES: Record<number, ItemTypeInfo> = {
   19889: { armor_type: 'Leather' },           // Blooddrenched Leggings
   19890: { weapon_type: 'One-Handed Mace' },  // Jin'do's Hexxer
   19929: { armor_type: 'Cloth' },           // Bloodtinged Gloves
-  19964: { weapon_type: 'Wand' },             // Renataki's Soul Conduit
+  19964: { weapon_type: 'One-Handed Sword' },             // Renataki's Soul Conduit
   19965: { weapon_type: 'Dagger' },           // Wushoolay's Poker
-  19968: { weapon_type: 'One-Handed Mace' },  // Fiery Retributer
+  19968: { weapon_type: 'One-Handed Sword' },  // Fiery Retributer
   20038: { weapon_type: 'Bow' },              // Mandokir's Sting
 }
 
