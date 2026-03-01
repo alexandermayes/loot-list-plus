@@ -207,6 +207,7 @@ export default function ExpansionDetailPage({ params }: { params: Promise<{ expa
   const [phaseDeadlineInputs, setPhaseDeadlineInputs] = useState<Record<number, string>>({})
   const [currentPhase, setCurrentPhase] = useState<number | null>(null)
   const [phaseGroupsConfig, setPhaseGroupsConfig] = useState<number[][] | null>(null)
+  const [mergeSelection, setMergeSelection] = useState<Set<number>>(new Set())
   const [mergeError, setMergeError] = useState<{ message: string; characters?: string[] } | null>(null)
 
   const supabase = createClient()
@@ -482,43 +483,40 @@ export default function ExpansionDetailPage({ params }: { params: Promise<{ expa
   const availablePhases = [...new Set(raidTiers.map(t => t.phase).filter((p): p is number => p != null))].sort((a, b) => a - b)
   const currentResolvedGroups = resolvePhaseGroups(phaseGroupsConfig, availablePhases)
 
-  const handleTogglePhaseMerge = async (phaseA: number, phaseB: number) => {
+  const handleToggleMergeCheckbox = (phase: number) => {
+    setMergeError(null)
+    setMergeSelection(prev => {
+      const next = new Set(prev)
+      if (next.has(phase)) {
+        next.delete(phase)
+      } else {
+        next.add(phase)
+      }
+      return next
+    })
+  }
+
+  const handleSaveMergeGroups = async () => {
     if (!activeGuild) return
     setUpdating('merge')
     setMergeError(null)
 
     try {
-      // Build new groups config
-      let newGroups: number[][] = currentResolvedGroups.map(g => [...g.phases])
+      // Build new groups: checked phases become one group, unchecked stay individual
+      const checkedPhases = [...mergeSelection].sort((a, b) => a - b)
+      const uncheckedPhases = availablePhases.filter(p => !mergeSelection.has(p))
 
-      // Find which groups contain phaseA and phaseB
-      const groupAIdx = newGroups.findIndex(g => g.includes(phaseA))
-      const groupBIdx = newGroups.findIndex(g => g.includes(phaseB))
-
-      if (groupAIdx === groupBIdx && groupAIdx !== -1) {
-        // Already in the same group — split them
-        const group = newGroups[groupAIdx]
-        if (group.length <= 2) {
-          // Split into individual phases
-          newGroups.splice(groupAIdx, 1, ...group.map(p => [p]))
-        } else {
-          // Remove phaseB from the group
-          newGroups[groupAIdx] = group.filter(p => p !== phaseB)
-          newGroups.push([phaseB])
-        }
+      let newGroups: number[][] = []
+      if (checkedPhases.length > 1) {
+        newGroups.push(checkedPhases)
       } else {
-        // Merge the two groups
-        const mergedPhases = [...(newGroups[groupAIdx] || [phaseA]), ...(newGroups[groupBIdx] || [phaseB])]
-        mergedPhases.sort((a, b) => a - b)
-        // Remove old groups and add merged
-        newGroups = newGroups.filter((_, i) => i !== groupAIdx && i !== groupBIdx)
-        newGroups.push(mergedPhases)
+        // If 0 or 1 checked, treat each as individual
+        newGroups.push(...checkedPhases.map(p => [p]))
       }
-
-      // Sort groups by first phase
+      newGroups.push(...uncheckedPhases.map(p => [p]))
       newGroups.sort((a, b) => a[0] - b[0])
 
-      // Check if all groups are single phases (no merging) — set to null
+      // If all groups are single phases, clear the config
       const allSingle = newGroups.every(g => g.length === 1)
       const configToSave = allSingle ? null : newGroups
 
@@ -543,7 +541,8 @@ export default function ExpansionDetailPage({ params }: { params: Promise<{ expa
       }
 
       setPhaseGroupsConfig(data.phase_groups)
-      showNotification('success', configToSave ? 'Phases merged' : 'Phases split')
+      setMergeSelection(new Set())
+      showNotification('success', configToSave ? 'Phases merged into one loot list' : 'Phases split into separate lists')
       mutate((key: string) => typeof key === 'string' && (key.startsWith('/api/raid-tiers') || key.startsWith('/api/loot-items')), undefined, { revalidate: true })
     } catch (error: any) {
       showNotification('error', error.message || 'Couldn\'t update phase groups. Try again.')
@@ -688,7 +687,7 @@ export default function ExpansionDetailPage({ params }: { params: Promise<{ expa
         <div className="bg-background-elevated border border-border rounded-xl p-5">
           <h2 className="text-[18px] font-semibold text-foreground mb-2">Phase merging</h2>
           <p className="text-muted-foreground text-sm mb-4">
-            Combine phases into a single loot list. Raiders will rank items from all raids in the group.
+            Select phases to combine into a single loot list. Raiders will rank items from all checked phases together.
           </p>
 
           {mergeError && (
@@ -702,54 +701,93 @@ export default function ExpansionDetailPage({ params }: { params: Promise<{ expa
             </div>
           )}
 
-          <div className="space-y-2">
-            {availablePhases.filter(p => currentPhase !== null && p <= currentPhase).map((phase, index, arr) => {
-              const nextPhase = arr[index + 1]
-              if (!nextPhase) return null
-
-              const group = currentResolvedGroups.find(g => g.phases.includes(phase))
-              const nextGroup = currentResolvedGroups.find(g => g.phases.includes(nextPhase))
-              const areMerged = group === nextGroup && group !== undefined && group.phases.length > 1
-
-              const phaseTiersA = raidTiers.filter(t => t.phase === phase)
-              const phaseTiersB = raidTiers.filter(t => t.phase === nextPhase)
-              const namesA = phaseTiersA.map(t => getRaidShorthand(t.name)).join(', ')
-              const namesB = phaseTiersB.map(t => getRaidShorthand(t.name)).join(', ')
+          <div className="space-y-1.5">
+            {availablePhases.filter(p => currentPhase !== null && p <= currentPhase).map((phase) => {
+              const tiersInPhase = raidTiers.filter(t => t.phase === phase)
+              const raidNames = tiersInPhase.map(t => getRaidShorthand(t.name)).join(', ')
+              const isChecked = mergeSelection.has(phase)
+              const isMergedAlready = currentResolvedGroups.some(g => g.phases.length > 1 && g.phases.includes(phase))
 
               return (
-                <div key={`merge-${phase}-${nextPhase}`} className="flex items-center gap-3">
-                  <div className="flex-1 text-right">
-                    <span className="text-sm font-medium text-foreground">P{phase}</span>
-                    <span className="text-xs text-muted-foreground ml-1.5">{namesA}</span>
+                <label
+                  key={phase}
+                  className={`flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer transition-colors ${
+                    isChecked
+                      ? 'bg-accent/10 border border-accent/20'
+                      : 'bg-background-subtle border border-transparent hover:bg-muted'
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={isChecked}
+                    onChange={() => handleToggleMergeCheckbox(phase)}
+                    className="w-4 h-4 rounded border-border accent-accent"
+                  />
+                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                    <span className="text-sm font-semibold text-foreground">Phase {phase}</span>
+                    <span className="text-xs text-muted-foreground truncate">{raidNames}</span>
                   </div>
-
-                  <Button
-                    variant={areMerged ? 'primary' : 'outline'}
-                    size="sm"
-                    onClick={() => handleTogglePhaseMerge(phase, nextPhase)}
-                    disabled={updating === 'merge'}
-                    loading={updating === 'merge'}
-                    className="shrink-0 px-3 text-xs"
-                  >
-                    {areMerged ? 'Split' : 'Merge'}
-                  </Button>
-
-                  <div className="flex-1">
-                    <span className="text-sm font-medium text-foreground">P{nextPhase}</span>
-                    <span className="text-xs text-muted-foreground ml-1.5">{namesB}</span>
-                  </div>
-                </div>
+                  {isMergedAlready && (
+                    <span className="text-[10px] font-medium text-accent uppercase tracking-wide">Merged</span>
+                  )}
+                </label>
               )
             })}
           </div>
 
-          {currentResolvedGroups.some(g => g.phases.length > 1) && (
-            <div className="mt-3 pt-3 border-t border-border">
-              <p className="text-xs text-muted-foreground">
-                Current groups: {currentResolvedGroups.map(g => getPhaseGroupShortLabel(g)).join(' | ')}
-              </p>
+          <div className="mt-4 flex items-center justify-between gap-3">
+            <div className="text-xs text-muted-foreground">
+              {mergeSelection.size >= 2
+                ? `Merge ${mergeSelection.size} phases into one loot list`
+                : mergeSelection.size === 1
+                  ? 'Select at least 2 phases to merge'
+                  : currentResolvedGroups.some(g => g.phases.length > 1)
+                    ? `Current: ${currentResolvedGroups.filter(g => g.phases.length > 1).map(g => getPhaseGroupShortLabel(g) + ' merged').join(', ')}`
+                    : 'No phases merged'
+              }
             </div>
-          )}
+            <div className="flex gap-2">
+              {currentResolvedGroups.some(g => g.phases.length > 1) && mergeSelection.size === 0 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    // Select all currently merged phases for easy unmerge
+                    const merged = currentResolvedGroups.find(g => g.phases.length > 1)
+                    if (merged) setMergeSelection(new Set(merged.phases))
+                  }}
+                >
+                  Edit merge
+                </Button>
+              )}
+              {mergeSelection.size >= 2 && (
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={handleSaveMergeGroups}
+                  disabled={updating === 'merge'}
+                  loading={updating === 'merge'}
+                >
+                  Save groups
+                </Button>
+              )}
+              {mergeSelection.size > 0 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setMergeSelection(new Set())
+                    // If clearing while merged, also unmerge
+                    if (currentResolvedGroups.some(g => g.phases.length > 1) && mergeSelection.size >= 2) {
+                      handleSaveMergeGroups() // saves with empty selection = unmerge
+                    }
+                  }}
+                >
+                  {currentResolvedGroups.some(g => g.phases.length > 1) ? 'Unmerge all' : 'Clear'}
+                </Button>
+              )}
+            </div>
+          </div>
         </div>
       )}
 
