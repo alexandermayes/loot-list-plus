@@ -2355,8 +2355,8 @@ export default function AdminLootItems() {
                       </CardHeader>
                       <CardContent>
                         <div>
-                          <Label className="block mb-2">Unique slots per bracket</Label>
-                          <p className="text-xs text-muted-foreground mb-2">Prevent multiple items with the same equipment slot in a single bracket. When enabled, each bracket can only have one token, one ring, etc.</p>
+                          <Label className="block mb-2">One token per bracket</Label>
+                          <p className="text-xs text-muted-foreground mb-2">Restrict each bracket to a single tier token. Other equipment slots are always limited to one per bracket.</p>
                           <Select
                             variant="pill"
                             value={settings.enforce_slot_restrictions ? 'yes' : 'no'}

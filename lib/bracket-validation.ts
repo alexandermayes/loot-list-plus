@@ -98,8 +98,9 @@ export function canPlaceInBracket(
     return false
   }
 
-  // Rule 3: Check duplicate item_slot (if enforcement enabled)
-  if (enforceSlotRestrictions && item.item_slot && bracket.itemSlotsUsed.has(item.item_slot)) {
+  // Rule 3: Restrict duplicate tokens per bracket (if enforcement enabled)
+  // Only applies to token items — non-token slots are already restricted by Rule 2
+  if (enforceSlotRestrictions && item.item_slot === 'Token' && bracket.itemSlotsUsed.has('Token')) {
     return false
   }
 
