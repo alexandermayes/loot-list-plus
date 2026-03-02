@@ -217,6 +217,8 @@ export const CLASS_AGNOSTIC_SLOTS = [
   'Token',             // Tier tokens (class-restricted via token-class-mapping.ts)
   'Quest',             // Quest items
   'Bag',               // Bags
+  'Enchant',           // Enchantments (not equippable gear)
+  'Crafting',          // Crafting materials
 ]
 
 /**
