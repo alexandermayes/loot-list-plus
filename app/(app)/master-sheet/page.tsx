@@ -540,15 +540,16 @@ function MasterSheetContent() {
           }
         }
 
-        // Check if current character has an approved submission for any active tier in this expansion
+        // Check if current character has an approved submission for any phase in this expansion
         // Officers bypass this check
-        if (!isOfficer && activeCharacter?.id && loadedTierIds.length > 0) {
+        if (!isOfficer && activeCharacter?.id && activeGuild.active_expansion_id) {
           const { data: approvedSubs } = await supabase
             .from('loot_submissions')
             .select('id')
             .eq('character_id', activeCharacter.id)
+            .eq('guild_id', activeGuild.id)
+            .eq('expansion_id', activeGuild.active_expansion_id)
             .eq('status', 'approved')
-            .in('raid_tier_id', loadedTierIds)
             .limit(1)
 
           setHasApprovedSubmission(!!(approvedSubs && approvedSubs.length > 0))
