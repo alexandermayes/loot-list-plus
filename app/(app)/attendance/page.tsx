@@ -427,10 +427,9 @@ export default function AttendancePage() {
         ].filter(day => day !== null && day !== undefined)
           .slice(0, raidDaysSource?.raid_days_per_week || 2)
 
-        const filteredRaidEvents = (raidEventsData || []).filter((event: RaidEvent) => {
-          const eventDate = parseDate(event.raid_date)
-          return raidDays.includes(eventDate.getDay())
-        })
+        // Show ALL tracked raid events — don't filter by configured schedule.
+        // If an officer tracked a raid on an off-schedule day, it should still appear.
+        const filteredRaidEvents = raidEventsData || []
 
         // IMPORTANT: Deduplicate by raid_date to handle duplicate entries in database
         // First, find which raid IDs have attendance records, so we prefer those
