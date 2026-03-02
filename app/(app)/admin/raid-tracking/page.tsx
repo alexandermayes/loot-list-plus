@@ -1174,8 +1174,9 @@ export default function RaidTrackingPage() {
       signups: { success: 0, failed: 0 }
     }
 
-    // Import Attendance
-    if (attendanceData.trim() || showImportModal.isEdit) {
+    // Import Attendance — only if attendance data was actually provided
+    // Don't mark anyone as No Show when only importing loot
+    if (attendanceData.trim()) {
       const names = parseMRTNames(attendanceData)
       const namesLower = names.map(n => n.toLowerCase())
 
@@ -1215,7 +1216,8 @@ export default function RaidTrackingPage() {
         }
       })
 
-      // Mark members with loot lists NOT in the import as No Show
+      // Only mark non-imported members as No Show when attendance data is provided
+      // This ensures loot-only imports don't wipe attendance status
       const importedCharacterIds = new Set(linkedCharacterIds)
       const noShowUpdates: any[] = []
 
@@ -1592,6 +1594,20 @@ export default function RaidTrackingPage() {
       .select('raid_tier_id')
       .eq('id', showImportModal.raidId)
       .single()
+
+    // Clear existing loot for this raid event before re-importing
+    // This prevents duplicates when re-importing updated loot data
+    if (showImportModal.isEdit) {
+      const { error: clearError } = await supabase
+        .from('loot_history')
+        .delete()
+        .eq('raid_event_id', showImportModal.raidId)
+        .eq('guild_id', activeGuild.id)
+
+      if (clearError) {
+        console.error('Error clearing existing loot:', clearError)
+      }
+    }
 
     let successCount = 0
     let errorCount = 0
