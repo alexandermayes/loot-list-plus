@@ -134,36 +134,20 @@ export async function GET(request: NextRequest) {
     const className = (Array.isArray(wowClass) ? wowClass[0]?.name : wowClass?.name) as WowClassName | undefined
 
     // Filter items based on class proficiencies (armor/weapon types)
-    // Officer spec assignments (loot_item_classes) override proficiency checks:
-    // if an officer explicitly assigned a class/spec to an item, trust that decision.
+    // Armor/weapon proficiency is ALWAYS enforced — a Druid can never equip plate
+    // regardless of officer assignments. Officer assignments only control bracket
+    // visibility (which specs see the item), not physical equippability.
     const filteredItems = (items || []).filter(item => {
-      const classes = item.loot_item_classes as LootItemClassRestriction[]
-
-      // If officers explicitly assigned this character's class or spec to the item,
-      // bypass all proficiency checks. The officer's assignment is authoritative.
-      if (classes && classes.length > 0 && character.class_id) {
-        const hasClassAssignment = classes.some(c =>
-          c.class_id === character.class_id && (
-            c.spec_id === null || // Class-level assignment
-            c.spec_id === character.spec_id // Spec-specific assignment
-          )
-        )
-        if (hasClassAssignment) {
-          return true
-        }
-      }
-
       // Check if this is a token - apply token class restrictions
       if (isTokenSlot(item.item_slot)) {
-        // Tokens are rankable, but only by classes that can use them
         if (className && !canClassUseToken(item.name, className)) {
           return false
         }
-        // Skip armor/weapon proficiency checks for tokens
         return true
       }
 
       // Check class proficiencies (armor/weapon types the class can equip)
+      // This is never bypassed — it represents physical equippability
       if (className && CLASS_PROFICIENCIES[className]) {
         // Get item's armor/weapon type from DB or lookup table or inference
         let armorType = item.armor_type as ArmorType | null
@@ -184,8 +168,7 @@ export async function GET(request: NextRequest) {
           weaponType = inferWeaponType(item.item_slot, item.name) || null
         }
 
-        // Check weapon proficiency FIRST (before class-agnostic bypass)
-        // This ensures shields in Off Hand slots are still filtered by class
+        // Check weapon proficiency
         if (weaponType) {
           if (!canUseWeaponType(className, weaponType)) {
             return false
@@ -193,7 +176,6 @@ export async function GET(request: NextRequest) {
         }
 
         // Skip armor proficiency checks for class-agnostic slots (Neck, Back, Trinket, etc.)
-        // Note: weapon_type check above already handles shields in Off Hand slots
         if (isClassAgnosticSlot(item.item_slot)) {
           return true
         }
@@ -206,6 +188,8 @@ export async function GET(request: NextRequest) {
         }
       }
 
+      // Officer spec assignments are checked later for bracket filtering,
+      // not here — they don't override physical equippability
       return true
     })
 
