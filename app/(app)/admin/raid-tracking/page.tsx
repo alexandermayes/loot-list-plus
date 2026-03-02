@@ -135,19 +135,36 @@ export default function RaidTrackingPage() {
     if (activeGuild?.id) trackClientEvent('admin_raid_tracking_viewed', { guild_id: activeGuild.id })
   }, [activeGuild?.id])
 
-  // Populate form when opening edit modal - only pre-fill loot (not attendance/signups)
-  // Attendance and signups are managed via the main UI, import is just for Gargul data
+  // Populate form when opening edit modal - pre-fill attendance and loot from saved data
   useEffect(() => {
     if (showImportModal?.isEdit) {
       const raidId = showImportModal.raidId
       const raidDate = showImportModal.date
 
-      // DON'T pre-fill attendance - import is for fresh Gargul data
-      setAttendanceData('')
-      // DON'T pre-fill signups - import is for fresh data
+      // Pre-fill attendance from saved attendance records
+      const raidAttendance = attendance[raidId]
+      if (raidAttendance) {
+        const attendedNames: string[] = []
+        Object.entries(raidAttendance).forEach(([characterId, status]) => {
+          if (status.attended) {
+            const member = members.find(m => m.character_id === characterId)
+            if (member) attendedNames.push(member.character_name)
+          }
+        })
+        // Also include unlinked attendees
+        const unlinked = unlinkedAttendees[raidId] || []
+        unlinked.forEach(u => {
+          if (u.status?.attended && u.character_name) attendedNames.push(u.character_name)
+        })
+        setAttendanceData(attendedNames.join('\n'))
+      } else {
+        setAttendanceData('')
+      }
+
+      // Don't pre-fill signups - managed separately
       setSignupsData('')
 
-      // DO pre-fill loot so users can see existing + add more
+      // Pre-fill loot so users can see existing data
       const lootEntries = raidLoot[raidId] || []
       const formattedDate = raidDate.replace(/-/g, '/').split('/').reverse().join('/')
       const lootLines = lootEntries.map(entry =>
@@ -155,7 +172,7 @@ export default function RaidTrackingPage() {
       )
       setLootData(lootLines.join('\n'))
     }
-  }, [showImportModal, raidLoot])
+  }, [showImportModal, raidLoot, attendance, unlinkedAttendees, members])
 
   useEffect(() => {
     if (guildLoading) return
