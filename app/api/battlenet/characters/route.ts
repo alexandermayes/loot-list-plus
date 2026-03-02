@@ -71,11 +71,21 @@ export async function GET(request: NextRequest) {
 
     const namespace = getWowProfileNamespace(version, account.region)
 
-    const response = await battlenetFetch(
-      account,
-      '/profile/user/wow',
-      namespace
-    )
+    let response: Response
+    try {
+      response = await battlenetFetch(
+        account,
+        '/profile/user/wow',
+        namespace
+      )
+    } catch (tokenError: any) {
+      console.error('Battle.net token/fetch error:', tokenError.message)
+      const needsReauth = tokenError.message?.includes('re-authenticate') || tokenError.message?.includes('refresh')
+      return NextResponse.json(
+        { error: needsReauth ? 'Battle.net session expired. Please reconnect your account in profile settings.' : 'Could not connect to Battle.net. Try again.' },
+        { status: needsReauth ? 401 : 502 }
+      )
+    }
 
     if (!response.ok) {
       const text = await response.text()

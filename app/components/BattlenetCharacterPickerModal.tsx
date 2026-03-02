@@ -73,6 +73,7 @@ export function BattlenetCharacterPickerModal({
   const [importing, setImporting] = useState<number | null>(null)
   const [linking, setLinking] = useState<number | null>(null)
   const [error, setError] = useState('')
+  const [needsReauth, setNeedsReauth] = useState(false)
 
   useEffect(() => {
     if (open) {
@@ -83,6 +84,7 @@ export function BattlenetCharacterPickerModal({
   const fetchCharacters = async () => {
     setLoading(true)
     setError('')
+    setNeedsReauth(false)
 
     try {
       const response = await fetch(`/api/battlenet/characters?version=${version}`)
@@ -90,6 +92,7 @@ export function BattlenetCharacterPickerModal({
 
       if (!response.ok) {
         setError(data.error || 'Couldn\'t load characters from Battle.net')
+        setNeedsReauth(response.status === 401)
         setCharacters([])
       } else {
         setCharacters(data.characters || [])
@@ -232,9 +235,23 @@ export function BattlenetCharacterPickerModal({
           ) : error ? (
             <div className="py-8 text-center">
               <p className="text-sm text-destructive">{error}</p>
-              <Button variant="outline" size="sm" className="mt-3" onClick={fetchCharacters}>
-                Try again
-              </Button>
+              <div className="flex items-center justify-center gap-2 mt-3">
+                {needsReauth ? (
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={() => {
+                      window.location.href = '/api/auth/battlenet'
+                    }}
+                  >
+                    Reconnect Battle.net
+                  </Button>
+                ) : (
+                  <Button variant="outline" size="sm" onClick={fetchCharacters}>
+                    Try again
+                  </Button>
+                )}
+              </div>
             </div>
           ) : characters.length === 0 ? (
             <EmptyState
