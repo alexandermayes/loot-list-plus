@@ -105,7 +105,7 @@ export default function RaidTrackingPage() {
   const [initialLootData, setInitialLootData] = useState('')
   const [initialSignupsData, setInitialSignupsData] = useState('')
 
-  const [lootItems, setLootItems] = useState<{ id: string, name: string, wowhead_id: number, boss_name: string }[]>([])
+  const [lootItems, setLootItems] = useState<{ id: string, name: string, wowhead_id: number, boss_name: string, raid_tier_id: string }[]>([])
   const [pendingLootImports, setPendingLootImports] = useState<{ date: string, itemId: number, characterName: string, matchedItem?: any, matchedCharacter?: any, needsItemSelection?: boolean }[]>([])
   const [showLootSelectionModal, setShowLootSelectionModal] = useState<{ index: number, itemId: number, characterName: string } | null>(null)
   const [lootSearchQuery, setLootSearchQuery] = useState('')
@@ -1000,7 +1000,7 @@ export default function RaidTrackingPage() {
     // Get all loot items for these tiers
     const { data: items } = await supabase
       .from('loot_items')
-      .select('id, name, wowhead_id, boss_name')
+      .select('id, name, wowhead_id, boss_name, raid_tier_id')
       .in('raid_tier_id', tierIds)
       .order('name')
 
@@ -1395,12 +1395,6 @@ export default function RaidTrackingPage() {
         return
       }
 
-      const { data: eventData } = await supabase
-        .from('raid_events')
-        .select('raid_tier_id')
-        .eq('id', showImportModal.raidId)
-        .single()
-
       // Clear existing loot for this raid event before re-importing to prevent duplicates
       if (showImportModal.isEdit) {
         await supabase
@@ -1462,7 +1456,7 @@ export default function RaidTrackingPage() {
         const insertData: any = {
           loot_item_id: matchedItem.id,
           guild_id: activeGuild.id,
-          raid_tier_id: eventData?.raid_tier_id,
+          raid_tier_id: matchedItem.raid_tier_id,
           raid_event_id: showImportModal.raidId,
           awarded_date: showImportModal.date,
           awarded_by: user?.id,
@@ -1617,16 +1611,6 @@ export default function RaidTrackingPage() {
 
     setImporting(true)
 
-    // Get the raid event to find the raid_tier_id
-    const raidEvent = raidDates.find(r => r.id === showImportModal.raidId)
-
-    // Get the raid tier ID from the event
-    const { data: eventData } = await supabase
-      .from('raid_events')
-      .select('raid_tier_id')
-      .eq('id', showImportModal.raidId)
-      .single()
-
     // Clear existing loot for this raid event before re-importing
     // This prevents duplicates when re-importing updated loot data
     if (showImportModal.isEdit) {
@@ -1670,7 +1654,7 @@ export default function RaidTrackingPage() {
           character_id: characterId,
           loot_item_id: entry.matchedItem.id,
           guild_id: activeGuild.id,
-          raid_tier_id: eventData?.raid_tier_id,
+          raid_tier_id: entry.matchedItem.raid_tier_id,
           raid_event_id: showImportModal.raidId,
           awarded_date: showImportModal.date,
           awarded_by: user?.id,
