@@ -20,11 +20,13 @@ export interface WclGuildInfo {
   serverSlug: string
   guildName: string
   isClassic: boolean
+  subdomain: string
 }
 
 export interface WclGuildById {
   guildId: number
   isClassic: boolean
+  subdomain: string
 }
 
 export type WclGuildRef = WclGuildInfo | WclGuildById
@@ -100,7 +102,9 @@ export function parseWclGuildUrl(url: string): WclGuildRef | null {
 
     if (!hostname.endsWith('warcraftlogs.com')) return null
 
-    const isClassic = hostname.startsWith('classic.')
+    const isClassic = hostname.startsWith('classic.') || hostname.startsWith('fresh.')
+    // Preserve the original subdomain (e.g. "classic", "fresh", "www")
+    const subdomain = hostname.replace('.warcraftlogs.com', '') || 'www'
 
     // Path segments: /guild/...
     const segments = parsed.pathname.split('/').filter(Boolean)
@@ -111,6 +115,7 @@ export function parseWclGuildUrl(url: string): WclGuildRef | null {
       return {
         guildId: parseInt(segments[2], 10),
         isClassic,
+        subdomain,
       }
     }
 
@@ -122,6 +127,7 @@ export function parseWclGuildUrl(url: string): WclGuildRef | null {
       serverSlug: segments[2].toLowerCase(),
       guildName: decodeURIComponent(segments[3]).replace(/-/g, ' '),
       isClassic,
+      subdomain,
     }
   } catch {
     return null
@@ -319,9 +325,6 @@ export function isWclConfigured(): boolean {
  */
 export function getWclReportUrl(reportCode: string, guildUrl?: string | null): string {
   const guildRef = guildUrl ? parseWclGuildUrl(guildUrl) : null
-  const isClassic = guildRef ? guildRef.isClassic : true
-  const host = isClassic
-    ? 'https://classic.warcraftlogs.com'
-    : 'https://www.warcraftlogs.com'
-  return `${host}/reports/${reportCode}`
+  const subdomain = guildRef?.subdomain ?? 'classic'
+  return `https://${subdomain}.warcraftlogs.com/reports/${reportCode}`
 }

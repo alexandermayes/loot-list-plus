@@ -347,7 +347,7 @@ export default function GuildSettingsPage() {
   const handleSaveWclUrl = async (url: string) => {
     if (!activeGuild) return
     const trimmed = url.trim()
-    if (trimmed && !trimmed.match(/^https:\/\/(classic\.|www\.)?warcraftlogs\.com\/guild\//)) {
+    if (trimmed && !trimmed.match(/^https:\/\/(\w+\.)?warcraftlogs\.com\/guild\//)) {
       showNotification('error', 'URL must be a Warcraft Logs guild page (e.g. https://classic.warcraftlogs.com/guild/us/faerlina/guild-name)')
       return
     }
