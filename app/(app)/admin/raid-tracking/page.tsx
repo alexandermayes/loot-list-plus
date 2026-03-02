@@ -1216,29 +1216,8 @@ export default function RaidTrackingPage() {
         }
       })
 
-      // Only mark non-imported members as No Show when attendance data is provided
-      // This ensures loot-only imports don't wipe attendance status
-      const importedCharacterIds = new Set(linkedCharacterIds)
-      const noShowUpdates: any[] = []
-
-      members.forEach(member => {
-        if (!importedCharacterIds.has(member.character_id)) {
-          noShowUpdates.push({
-            raid_event_id: showImportModal.raidId,
-            character_id: member.character_id,
-            user_id: member.user_id,
-            signed_up: false,
-            attended: false,
-            no_call_no_show: true,
-            was_late: false,
-            was_benched: false
-          })
-        }
-      })
-
-      if (noShowUpdates.length > 0) {
-        linkedUpdates.push(...noShowUpdates)
-      }
+      // Members not in the import get no attendance record.
+      // Officers can manually mark No Show via the UI if needed.
 
       // When editing, first remove attendance for members not in the new list
       if (showImportModal.isEdit) {
