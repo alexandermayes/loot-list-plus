@@ -161,8 +161,23 @@ export default function RaidTrackingPage() {
         setAttendanceData('')
       }
 
-      // Don't pre-fill signups - managed separately
-      setSignupsData('')
+      // Pre-fill signups from saved attendance records (signed_up flag)
+      if (raidAttendance) {
+        const signedUpNames: string[] = []
+        Object.entries(raidAttendance).forEach(([characterId, status]) => {
+          if (status.signed_up) {
+            const member = members.find(m => m.character_id === characterId)
+            if (member) signedUpNames.push(member.character_name)
+          }
+        })
+        const unlinked = unlinkedAttendees[raidId] || []
+        unlinked.forEach(u => {
+          if (u.status?.signed_up && u.character_name) signedUpNames.push(u.character_name)
+        })
+        setSignupsData(signedUpNames.join('\n'))
+      } else {
+        setSignupsData('')
+      }
 
       // Pre-fill loot so users can see existing data
       const lootEntries = raidLoot[raidId] || []
