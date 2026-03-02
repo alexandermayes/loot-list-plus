@@ -2443,6 +2443,13 @@ export default function RaidTrackingPage() {
                 </Label>
                 <p className="text-muted-foreground text-sm">Who attended this raid day</p>
               </div>
+              <Textarea
+                variant="rounded"
+                value={attendanceData}
+                onChange={e => setAttendanceData(e.target.value)}
+                placeholder={"Paste character names (comma-separated or one per line)\n\nZev\nDeny\nCheck"}
+                className="h-44 font-mono resize-none"
+              />
               {attendanceData.trim() && (() => {
                 const preview = parseAttendancePreview(attendanceData)
                 return (
@@ -2454,13 +2461,6 @@ export default function RaidTrackingPage() {
                   </div>
                 )
               })()}
-              <Textarea
-                variant="rounded"
-                value={attendanceData}
-                onChange={e => setAttendanceData(e.target.value)}
-                placeholder="Paste character names (comma-separated or one per line)&#10;&#10;Example:&#10;Headjaws&#10;Calonise&#10;Leroyspankin"
-                className="h-44 font-mono resize-none"
-              />
             </div>
 
             {/* Loot Section */}
@@ -2471,6 +2471,13 @@ export default function RaidTrackingPage() {
                 </Label>
                 <p className="text-muted-foreground text-sm">Gargul export format</p>
               </div>
+              <Textarea
+                variant="rounded"
+                value={lootData}
+                onChange={e => setLootData(e.target.value)}
+                placeholder={"DATE;[ITEM_ID];CHARACTER\n\n12/15/2024;[16859];Zev\n12/15/2024;[18203];Deny\n12/15/2024;[17113];Check"}
+                className="h-44 font-mono resize-none"
+              />
               {lootData.trim() && (() => {
                 const preview = parseLootPreview(lootData)
                 return (
@@ -2487,13 +2494,6 @@ export default function RaidTrackingPage() {
                   </div>
                 )
               })()}
-              <Textarea
-                variant="rounded"
-                value={lootData}
-                onChange={e => setLootData(e.target.value)}
-                placeholder="DATE;[ITEM_ID];CHARACTER&#10;&#10;Example:&#10;12/15/2024;[16859];Lukasdnmd&#10;12/15/2024;[18203];Headjaws"
-                className="h-44 font-mono resize-none"
-              />
             </div>
           </div>
 
@@ -2507,25 +2507,25 @@ export default function RaidTrackingPage() {
                   </Label>
                   <p className="text-muted-foreground text-sm">Who signed up for this raid</p>
                 </div>
-                {signupsData.trim() && (() => {
-                  const preview = parseSignupsPreview(signupsData)
-                  return (
-                    <div className="flex items-center gap-2 text-sm">
-                      <span className="text-success">{preview.matched} matched</span>
-                      {preview.unmatched > 0 && (
-                        <span className="text-warning">{preview.unmatched} unmatched</span>
-                      )}
-                    </div>
-                  )
-                })()}
               </div>
               <Textarea
                 variant="rounded"
                 value={signupsData}
                 onChange={e => setSignupsData(e.target.value)}
-                placeholder="Paste character names (comma-separated or one per line)&#10;&#10;Example: Headjaws, Calonise, Leroyspankin, Nardziz"
+                placeholder={"Paste character names (comma-separated or one per line)\n\nZev\nDeny\nCheck"}
                 className="h-24 font-mono resize-none"
               />
+              {signupsData.trim() && (() => {
+                const preview = parseSignupsPreview(signupsData)
+                return (
+                  <div className="flex items-center gap-2 text-sm">
+                    <span className="text-success">{preview.matched} matched</span>
+                    {preview.unmatched > 0 && (
+                      <span className="text-warning">{preview.unmatched} unmatched</span>
+                    )}
+                  </div>
+                )
+              })()}
             </div>
           )}
         </ModalBody>
