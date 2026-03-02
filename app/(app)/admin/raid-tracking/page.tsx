@@ -1357,6 +1357,15 @@ export default function RaidTrackingPage() {
         .eq('id', showImportModal.raidId)
         .single()
 
+      // Clear existing loot for this raid event before re-importing to prevent duplicates
+      if (showImportModal.isEdit) {
+        await supabase
+          .from('loot_history')
+          .delete()
+          .eq('raid_event_id', showImportModal.raidId)
+          .eq('guild_id', activeGuild.id)
+      }
+
       const lines = lootData
         .trim()
         .split('\n')
