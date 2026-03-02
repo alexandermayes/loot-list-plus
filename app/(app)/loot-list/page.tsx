@@ -945,14 +945,14 @@ export default function LootList() {
         )}
 
         {/* Main Content - Flex container for loot list and sidebar */}
-        <div className="flex gap-6 px-4 sm:px-6 lg:px-8 pt-1.5 pb-6">
+        <div className={`flex px-4 sm:px-6 lg:px-8 pt-1.5 pb-6 ${showUnrankedPanel ? 'gap-6' : ''}`}>
         {/* Loot List Content */}
         <div className={`flex-1 min-w-0 space-y-6 transition-all duration-300 ${showUnrankedPanel ? 'pr-0' : ''}`}>
         {/* Content Loading State */}
         {(isLoading || isContentLoading) ? (
           <LootListContentSkeleton />
         ) : (
-        <div className={`transition-opacity duration-200 ${contentReady ? 'opacity-100' : 'opacity-0'}`}>
+        <div className={`space-y-4 transition-opacity duration-200 ${contentReady ? 'opacity-100' : 'opacity-0'}`}>
 
         {/* Duplicate Warning */}
         {duplicateItems.length > 0 && (

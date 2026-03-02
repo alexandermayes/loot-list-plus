@@ -1409,14 +1409,27 @@ export default function AdminLootItems() {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
                 <div>
                   <Label size="sm" className="block text-foreground-muted mb-2">Search items</Label>
-                  <Input
-                    variant="pill"
-                    size="sm"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    placeholder="Search by name or boss..."
-                    className="bg-background-elevated"
-                  />
+                  <div className="relative">
+                    <Input
+                      variant="pill"
+                      size="sm"
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      placeholder="Search by name or boss..."
+                      className="bg-background-elevated pr-8"
+                    />
+                    {searchTerm && (
+                      <button
+                        onClick={() => setSearchTerm('')}
+                        className="absolute right-2.5 top-1/2 -translate-y-1/2 p-0.5 text-muted-foreground hover:text-foreground transition-colors"
+                        aria-label="Clear search"
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M18 6L6 18M6 6l12 12" />
+                        </svg>
+                      </button>
+                    )}
+                  </div>
                 </div>
                 <div>
                   <Label size="sm" className="block text-foreground-muted mb-2">Raid</Label>
