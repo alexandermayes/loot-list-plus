@@ -74,6 +74,12 @@ export function BattlenetCharacterPickerModal({
   const [linking, setLinking] = useState<number | null>(null)
   const [error, setError] = useState('')
   const [needsReauth, setNeedsReauth] = useState(false)
+  const [specPicker, setSpecPicker] = useState<{
+    char: BattlenetCharacter
+    specs: Array<{ id: string; name: string }>
+    className: string
+  } | null>(null)
+  const [selectedSpecId, setSelectedSpecId] = useState<string>('')
 
   useEffect(() => {
     if (open) {
@@ -105,7 +111,7 @@ export function BattlenetCharacterPickerModal({
     }
   }
 
-  const handleImport = async (char: BattlenetCharacter) => {
+  const handleImport = async (char: BattlenetCharacter, specId?: string) => {
     setImporting(char.battlenet_id)
 
     try {
@@ -119,6 +125,7 @@ export function BattlenetCharacterPickerModal({
           guildId: activeGuild?.id,
           isMain,
           importGear: true,
+          ...(specId && { specId }),
         }),
       })
 
@@ -129,11 +136,24 @@ export function BattlenetCharacterPickerModal({
         return
       }
 
+      // API needs us to pick a spec
+      if (data.needs_spec) {
+        setSpecPicker({
+          char,
+          specs: data.available_specs,
+          className: data.class_name,
+        })
+        setSelectedSpecId('')
+        setImporting(null)
+        return
+      }
+
       const gearMsg = data.gear_imported > 0
         ? ` with ${data.gear_imported} gear items`
         : ''
 
       showNotification('success', `${char.name} imported${gearMsg}`)
+      setSpecPicker(null)
       await refreshCharacters()
       onImportComplete?.()
       onClose()
@@ -199,6 +219,51 @@ export function BattlenetCharacterPickerModal({
 
       <ModalBody>
         <div className="space-y-4">
+          {/* Spec picker (shown when Battle.net couldn't detect spec) */}
+          {specPicker ? (
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Couldn't detect the spec for <span className="font-semibold text-foreground">{specPicker.char.name}</span>. Select their specialization to continue.
+              </p>
+              <div>
+                <Label htmlFor="spec-select" size="sm" className="block text-foreground-muted mb-2">Specialization</Label>
+                <Select
+                  id="spec-select"
+                  variant="pill"
+                  size="sm"
+                  value={selectedSpecId}
+                  onChange={(e) => setSelectedSpecId(e.target.value)}
+                >
+                  <option value="">Select spec...</option>
+                  {specPicker.specs.map(spec => (
+                    <option key={spec.id} value={spec.id}>{spec.name}</option>
+                  ))}
+                </Select>
+              </div>
+              <div className="flex items-center gap-2 justify-end">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setSpecPicker(null)
+                    setSelectedSpecId('')
+                  }}
+                >
+                  Back
+                </Button>
+                <Button
+                  variant="primary"
+                  size="sm"
+                  disabled={!selectedSpecId || importing !== null}
+                  loading={importing !== null}
+                  onClick={() => handleImport(specPicker.char, selectedSpecId)}
+                >
+                  Import {specPicker.char.name}
+                </Button>
+              </div>
+            </div>
+          ) : (
+          <>
           {/* Version selector */}
           <div className="flex items-center gap-3">
             <Label htmlFor="game-version">Game version</Label>
@@ -363,6 +428,8 @@ export function BattlenetCharacterPickerModal({
                 })
               })()}
             </div>
+          )}
+          </>
           )}
         </div>
       </ModalBody>

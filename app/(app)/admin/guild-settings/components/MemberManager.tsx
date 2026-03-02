@@ -480,7 +480,9 @@ export default function MemberManager() {
                         )}
                         {mainChar?.spec && mainChar?.class && (
                           <span className="text-muted-foreground text-[12px]">
-                            {mainChar.spec.name} {mainChar.class.name}
+                            {mainChar.spec.name !== mainChar.class.name
+                              ? `${mainChar.spec.name} ${mainChar.class.name}`
+                              : mainChar.class.name}
                           </span>
                         )}
                         {!hasCharacters && (

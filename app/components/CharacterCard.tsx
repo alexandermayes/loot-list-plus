@@ -74,9 +74,9 @@ export function CharacterCard({
 
           <div className="flex items-center gap-2 mt-1 text-[13px] text-muted-foreground">
             <span>
-              {character.spec?.name
-                ? `${character.spec.name} ${character.class?.name || 'Unknown'}`
-                : character.class?.name || 'Unknown'}
+              {character.spec?.name && character.class?.name && character.spec.name !== character.class.name
+                ? `${character.spec.name} ${character.class.name}`
+                : character.class?.name || character.spec?.name || 'Unknown'}
             </span>
           </div>
 

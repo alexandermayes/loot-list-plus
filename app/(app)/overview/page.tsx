@@ -1307,9 +1307,9 @@ function DashboardContent() {
                     <div className="flex items-center gap-3 mt-1 flex-wrap">
                       {(activeCharacter.spec || activeCharacter.class) && (
                         <span className="text-sm text-muted-foreground">
-                          {activeCharacter.spec?.name && activeCharacter.class?.name
+                          {activeCharacter.spec?.name && activeCharacter.class?.name && activeCharacter.spec.name !== activeCharacter.class.name
                             ? `${activeCharacter.spec.name} ${activeCharacter.class.name}`
-                            : activeCharacter.spec?.name || activeCharacter.class?.name}
+                            : activeCharacter.class?.name || activeCharacter.spec?.name}
                         </span>
                       )}
                       {activeCharacter.level && (

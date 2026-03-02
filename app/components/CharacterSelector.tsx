@@ -237,9 +237,9 @@ export function CharacterSelector() {
           </p>
           {(activeCharacter.spec?.name || activeCharacter.class?.name) && (
             <p className="font-poppins font-normal text-[10px] text-muted-foreground truncate text-left">
-              {activeCharacter.spec?.name && activeCharacter.class?.name
+              {activeCharacter.spec?.name && activeCharacter.class?.name && activeCharacter.spec.name !== activeCharacter.class.name
                 ? `${activeCharacter.spec.name} ${activeCharacter.class.name}`
-                : activeCharacter.spec?.name || activeCharacter.class?.name}
+                : activeCharacter.class?.name || activeCharacter.spec?.name}
             </p>
           )}
         </div>
@@ -308,9 +308,9 @@ export function CharacterSelector() {
                         </p>
                         {(char.spec?.name || char.class?.name) && (
                           <p className="font-poppins font-normal text-[10px] text-muted-foreground truncate">
-                            {char.spec?.name && char.class?.name
+                            {char.spec?.name && char.class?.name && char.spec.name !== char.class.name
                               ? `${char.spec.name} ${char.class.name}`
-                              : char.spec?.name || char.class?.name}
+                              : char.class?.name || char.spec?.name}
                           </p>
                         )}
                       </div>
@@ -377,9 +377,9 @@ export function CharacterSelector() {
                           <p className="font-poppins font-normal text-[10px] text-muted-foreground truncate">
                             {char.is_main && <span className="text-foreground">Main</span>}
                             {char.is_main && (char.spec?.name || char.class?.name) && ' • '}
-                            {char.spec?.name && char.class?.name
+                            {char.spec?.name && char.class?.name && char.spec.name !== char.class.name
                               ? `${char.spec.name} ${char.class.name}`
-                              : char.spec?.name || char.class?.name}
+                              : char.class?.name || char.spec?.name}
                           </p>
                         </div>
 

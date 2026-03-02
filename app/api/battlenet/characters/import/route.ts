@@ -117,6 +117,7 @@ export async function POST(request: NextRequest) {
       guildId,
       isMain = false,
       importGear = true,
+      specId: clientSpecId,
     } = body
 
     if (!name || !realmSlug) {
@@ -196,13 +197,13 @@ export async function POST(request: NextRequest) {
 
     // Try to match active spec to a local class_spec
     let specId: string | null = null
-    if (profile.active_spec) {
-      const { data: specs } = await supabase
-        .from('class_specs')
-        .select('id, name')
-        .eq('class_id', wowClass.id)
+    const { data: specs } = await supabase
+      .from('class_specs')
+      .select('id, name')
+      .eq('class_id', wowClass.id)
 
-      if (specs && specs.length > 0) {
+    if (specs && specs.length > 0) {
+      if (profile.active_spec) {
         // Try exact match first, then check if the spec name is contained in a combined spec (e.g., "Holy" matches "Holy/Disc")
         const specName = resolveLocalized(profile.active_spec!.name).toLowerCase()
         const exactMatch = specs.find(
@@ -222,6 +223,26 @@ export async function POST(request: NextRequest) {
           }
         }
       }
+
+      // If no spec matched but class only has one spec, auto-assign it
+      if (!specId && specs.length === 1) {
+        specId = specs[0].id
+      }
+    }
+
+    // If client provided a specId (from the spec picker), use it
+    if (clientSpecId) {
+      specId = clientSpecId
+    }
+
+    // If spec still unknown and class has multiple specs, ask the client to pick
+    if (!specId && specs && specs.length > 1) {
+      return NextResponse.json({
+        needs_spec: true,
+        available_specs: specs.map(s => ({ id: s.id, name: s.name })),
+        character_name: profile.name,
+        class_name: wowClass.name,
+      }, { status: 200 })
     }
 
     // Check if character already exists (by battle_net_id or name+realm)
