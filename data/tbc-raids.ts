@@ -534,14 +534,14 @@ export const tempestkeep: Raid = {
         { name: 'Solarian\'s Sapphire', slot: 'Trinket', wowhead_id: 30446 },
         { name: 'Void Star Talisman', slot: 'Trinket', wowhead_id: 30449 },
         { name: 'Boots of the Resilient', slot: 'Feet', wowhead_id: 32267 },
-        { name: 'Sunhawk Leggings', slot: 'Legs', wowhead_id: 29991 },
-        { name: 'Thalassian Wildercloak', slot: 'Back', wowhead_id: 29994 },
       ],
     },
     {
       name: 'Kael\'thas Sunstrider',
       items: [
         { name: 'Ashes of Al\'ar', slot: 'Mount', wowhead_id: 32458 },
+        { name: 'Sunhawk Leggings', slot: 'Legs', wowhead_id: 29991 },
+        { name: 'Thalassian Wildercloak', slot: 'Back', wowhead_id: 29994 },
         { name: 'Crown of the Sun', slot: 'Head', wowhead_id: 29990 },
         { name: 'Gauntlets of the Sun King', slot: 'Hands', wowhead_id: 29987 },
         { name: 'Royal Cloak of the Sunstriders', slot: 'Back', wowhead_id: 29992 },
@@ -786,10 +786,6 @@ export const blacktemple: Raid = {
         { name: 'Wand of Prismatic Focus', slot: 'Ranged', wowhead_id: 32343 },
         { name: 'Staff of Immaculate Recovery', slot: 'Two-Hand', wowhead_id: 32344 },
         { name: 'Shadowmoon Insignia', slot: 'Trinket', wowhead_id: 32501 },
-        // Tier 6 Chest Tokens
-        { name: 'Chestguard of the Forgotten Conqueror', slot: 'Token', wowhead_id: 31089 },
-        { name: 'Chestguard of the Forgotten Protector', slot: 'Token', wowhead_id: 31091 },
-        { name: 'Chestguard of the Forgotten Vanquisher', slot: 'Token', wowhead_id: 31090 },
       ],
     },
     {
@@ -819,10 +815,10 @@ export const blacktemple: Raid = {
         { name: 'Blade of Savagery', slot: 'One-Hand', wowhead_id: 32369 },
         { name: 'Shadowmaster\'s Boots', slot: 'Feet', wowhead_id: 32366 },
         { name: 'Nadina\'s Pendant of Purity', slot: 'Neck', wowhead_id: 32370 },
-        // Tier 6 Leg Tokens
-        { name: 'Leggings of the Forgotten Conqueror', slot: 'Token', wowhead_id: 31098 },
-        { name: 'Leggings of the Forgotten Protector', slot: 'Token', wowhead_id: 31100 },
-        { name: 'Leggings of the Forgotten Vanquisher', slot: 'Token', wowhead_id: 31099 },
+        // Tier 6 Shoulder Tokens
+        { name: 'Pauldrons of the Forgotten Conqueror', slot: 'Token', wowhead_id: 31101 },
+        { name: 'Pauldrons of the Forgotten Protector', slot: 'Token', wowhead_id: 31103 },
+        { name: 'Pauldrons of the Forgotten Vanquisher', slot: 'Token', wowhead_id: 31102 },
       ],
     },
     {
@@ -836,10 +832,10 @@ export const blacktemple: Raid = {
         { name: 'Veil of Turning Leaves', slot: 'Shoulder', wowhead_id: 32518 },
         { name: 'Choker of Serrated Blades', slot: 'Neck', wowhead_id: 32591 },
         { name: 'Boots of the Divine Light', slot: 'Feet', wowhead_id: 32609 },
-        // Tier 6 Shoulder Tokens
-        { name: 'Pauldrons of the Forgotten Conqueror', slot: 'Token', wowhead_id: 31101 },
-        { name: 'Pauldrons of the Forgotten Protector', slot: 'Token', wowhead_id: 31103 },
-        { name: 'Pauldrons of the Forgotten Vanquisher', slot: 'Token', wowhead_id: 31102 },
+        // Tier 6 Leg Tokens
+        { name: 'Leggings of the Forgotten Conqueror', slot: 'Token', wowhead_id: 31098 },
+        { name: 'Leggings of the Forgotten Protector', slot: 'Token', wowhead_id: 31100 },
+        { name: 'Leggings of the Forgotten Vanquisher', slot: 'Token', wowhead_id: 31099 },
       ],
     },
     {
@@ -857,6 +853,10 @@ export const blacktemple: Raid = {
         { name: 'Faceplate of the Impenetrable', slot: 'Head', wowhead_id: 32521 },
         { name: 'Shroud of the Highborne', slot: 'Back', wowhead_id: 32524 },
         { name: 'Cowl of the Illidari High Lord', slot: 'Head', wowhead_id: 32525 },
+        // Tier 6 Chest Tokens
+        { name: 'Chestguard of the Forgotten Conqueror', slot: 'Token', wowhead_id: 31089 },
+        { name: 'Chestguard of the Forgotten Protector', slot: 'Token', wowhead_id: 31091 },
+        { name: 'Chestguard of the Forgotten Vanquisher', slot: 'Token', wowhead_id: 31090 },
         // Warglaives of Azzinoth (Legendary)
         { name: 'Warglaive of Azzinoth (Main Hand)', slot: 'Legendary', wowhead_id: 32837 },
         { name: 'Warglaive of Azzinoth (Off Hand)', slot: 'Legendary', wowhead_id: 32838 },
@@ -966,7 +966,6 @@ export const zulaman: Raid = {
         { name: 'Amani War Bear', slot: 'Mount', wowhead_id: 33809 },
         { name: 'Mana Attuned Band', slot: 'Finger', wowhead_id: 33497 },
         { name: 'Signet of Primal Wrath', slot: 'Finger', wowhead_id: 33496 },
-        { name: 'Ring of Flowing Light', slot: 'Finger', wowhead_id: 30736 },
       ],
     }
   ],
@@ -990,7 +989,6 @@ export const sunwellplateau: Raid = {
         { name: 'Fang of Kalecgos', slot: 'One-Hand', wowhead_id: 34165 },
         { name: 'Dragonscale-Encrusted Longblade', slot: 'One-Hand', wowhead_id: 34164 },
         { name: 'Pantaloons of Calming Strife', slot: 'Legs', wowhead_id: 34170 },
-        { name: 'Shoulderpads of Vehemence', slot: 'Shoulder', wowhead_id: 34195 },
         { name: 'Skyshatter Bracers', slot: 'Wrist', wowhead_id: 34438 },
       ],
     },
@@ -1032,11 +1030,11 @@ export const sunwellplateau: Raid = {
         { name: 'Sin\'dorei Pendant of Triumph', slot: 'Neck', wowhead_id: 35292 },
         { name: 'Grip of Mannoroth', slot: 'Hands', wowhead_id: 34203 },
         { name: 'Shroud of Redeemed Souls', slot: 'Back', wowhead_id: 34205 },
-        { name: 'Sunflare', slot: 'Main Hand', wowhead_id: 34336 },
         { name: 'Book of Highborne Hymns', slot: 'Held In Off-hand', wowhead_id: 34206 },
         { name: 'Equilibrium Epaulets', slot: 'Shoulder', wowhead_id: 34208 },
         { name: 'Spaulders of Reclamation', slot: 'Shoulder', wowhead_id: 34209 },
         { name: 'Golden Bow of Quel\'Thalas', slot: 'Ranged', wowhead_id: 34196 },
+        { name: 'Shoulderpads of Vehemence', slot: 'Shoulder', wowhead_id: 34195 },
       ],
     },
     {
@@ -1051,10 +1049,6 @@ export const sunwellplateau: Raid = {
         { name: 'Shadowed Gauntlets of Paroxysm', slot: 'Hands', wowhead_id: 34234 },
         { name: 'Harness of Carnal Instinct', slot: 'Chest', wowhead_id: 34211 },
         { name: 'Slayer\'s Boots', slot: 'Feet', wowhead_id: 34575 },
-        // Naaru Sliver Trinkets
-        { name: 'Commendation of Kael\'thas', slot: 'Trinket', wowhead_id: 34473 },
-        { name: 'Shard of Contempt', slot: 'Trinket', wowhead_id: 34472 },
-        { name: 'Vial of the Sunwell', slot: 'Trinket', wowhead_id: 34471 },
         { name: 'Shifting Naaru Sliver', slot: 'Trinket', wowhead_id: 34429 },
       ],
     },
