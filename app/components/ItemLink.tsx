@@ -5,10 +5,33 @@
  * - Pre-loaded icons (no layout shift)
  * - Epic purple coloring
  * - Tooltips on hover via Wowhead power.js
+ * - Correct wowhead domain based on active expansion
  */
 
-import { memo } from 'react'
+import { memo, useContext } from 'react'
 import { getItemIconUrl } from '@/data/item-icons'
+import { GuildDataContext } from '@/app/contexts/GuildContext'
+
+/** Map expansion display names to wowhead URL/tooltip domains */
+const EXPANSION_TO_WOWHEAD_DOMAIN: Record<string, string> = {
+  'Classic': 'classic',
+  'Classic WoW': 'classic',
+  'The Burning Crusade': 'tbc',
+  'Wrath of the Lich King': 'wotlk',
+  'Cataclysm': 'cata',
+  'Mists of Pandaria': 'mop-classic',
+  'Warlords of Draenor': 'wow',
+  'Legion': 'wow',
+  'Battle for Azeroth': 'wow',
+  'Shadowlands': 'wow',
+  'Dragonflight': 'wow',
+  'The War Within': 'wow',
+}
+
+export function getWowheadDomain(expansionName: string | undefined | null): string | null {
+  if (!expansionName) return null
+  return EXPANSION_TO_WOWHEAD_DOMAIN[expansionName] ?? null
+}
 
 interface ItemLinkProps {
   name: string
@@ -16,23 +39,28 @@ interface ItemLinkProps {
   className?: string
   clickable?: boolean
   showIcon?: boolean
+  /** Override wowhead domain (e.g. 'tbc', 'wotlk'). Auto-detected from guild context if omitted. */
+  domain?: string
 }
 
-const ItemLink = memo(function ItemLink({ name, wowheadId, className = '', clickable = true, showIcon = true }: ItemLinkProps) {
+const ItemLink = memo(function ItemLink({ name, wowheadId, className = '', clickable = true, showIcon = true, domain: domainProp }: ItemLinkProps) {
+  // Read expansion from guild context (safe - returns undefined outside provider)
+  const guildData = useContext(GuildDataContext)
+  const expansionDomain = domainProp ?? getWowheadDomain(guildData?.currentExpansion?.expansion_name)
+
+  // Fallback: guess from item ID ranges if no context available
+  const domain = expansionDomain ?? (
+    wowheadId >= 35000 && wowheadId < 51000 ? 'wotlk' :
+    wowheadId >= 22000 && wowheadId < 35000 ? 'tbc' :
+    'classic'
+  )
+
   const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
     if (!clickable) {
       e.preventDefault()
     }
   }
 
-  // Detect expansion based on item ID ranges
-  // Classic: 1-22000 (roughly)
-  // TBC: 22000-35000 (some TBC items like enchanting recipes start at 22xxx)
-  // WotLK: 35000-51000
-  const isTBC = wowheadId >= 22000 && wowheadId < 35000
-  const isWotLK = wowheadId >= 35000 && wowheadId < 51000
-
-  const domain = isTBC ? 'tbc' : isWotLK ? 'wrath' : 'classic'
   const iconUrl = showIcon ? getItemIconUrl(wowheadId, 'small') : null
 
   return (

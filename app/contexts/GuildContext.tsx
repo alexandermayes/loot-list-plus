@@ -136,7 +136,7 @@ export interface GuildContextType extends GuildDataContextType, GuildActionsCont
 
 // Create separate contexts for data and actions
 // This prevents components that only use actions from re-rendering when data changes
-const GuildDataContext = createContext<GuildDataContextType | undefined>(undefined)
+export const GuildDataContext = createContext<GuildDataContextType | undefined>(undefined)
 const GuildActionsContext = createContext<GuildActionsContextType | undefined>(undefined)
 
 // Provider component
