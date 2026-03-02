@@ -158,6 +158,7 @@ function MasterSheetContent() {
   const [allItemRankings, setAllItemRankings] = useState<ItemRankings[]>([])
   const [initialLoading, setInitialLoading] = useState(true)
   const [contentLoading, setContentLoading] = useState(false)
+  const [contentReady, setContentReady] = useState(false)
   const [guildId, setGuildId] = useState<string | null>(null)
   const [member, setMember] = useState<MemberInfo | null>(null)
   const [guildSettings, setGuildSettings] = useState<GuildSettings | null>(null)
@@ -192,6 +193,16 @@ function MasterSheetContent() {
     document.title = 'LootList+ • Loot Rankings'
     trackClientEvent('master_sheet_viewed')
   }, [])
+
+  // Fade in content after loading to avoid wowhead tooltip flash
+  useEffect(() => {
+    if (!initialLoading && !contentLoading) {
+      const timer = setTimeout(() => setContentReady(true), 150)
+      return () => clearTimeout(timer)
+    } else {
+      setContentReady(false)
+    }
+  }, [initialLoading, contentLoading])
 
   // Define raid tier progression order (Classic + TBC + WotLK)
   const getRaidTierOrder = (tierName: string): number => {
@@ -1707,7 +1718,7 @@ function MasterSheetContent() {
         {(initialLoading || contentLoading) ? (
           <MasterSheetContentSkeleton />
         ) : (
-        <>
+        <div className={`transition-opacity duration-200 ${contentReady ? 'opacity-100' : 'opacity-0'}`}>
         {/* Master Sheet Access Gates */}
         {!isOfficer && !hasApprovedSubmission ? (
           <div className="bg-background-elevated border border-border rounded-xl p-12 text-center">
@@ -1801,7 +1812,7 @@ function MasterSheetContent() {
             )}
           </>
         )}
-        </>
+        </div>
         )}
 
         {/* Legend (rankings view only) */}

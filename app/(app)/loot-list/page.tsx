@@ -210,6 +210,7 @@ export default function LootList() {
   const [expandedErrors, setExpandedErrors] = useState<Set<string>>(new Set())
   const [showUnrankedPanel, setShowUnrankedPanel] = useState(false)
   const [showMoreMenu, setShowMoreMenu] = useState(false)
+  const [contentReady, setContentReady] = useState(false)
   const moreMenuRef = React.useRef<HTMLDivElement>(null)
 
   const { confirm, ConfirmDialog } = useConfirm()
@@ -219,6 +220,16 @@ export default function LootList() {
   useEffect(() => {
     document.title = 'LootList+ • Loot List'
   }, [])
+
+  // Fade in content after loading to avoid wowhead tooltip flash
+  useEffect(() => {
+    if (!isLoading && !isContentLoading) {
+      const timer = setTimeout(() => setContentReady(true), 150)
+      return () => clearTimeout(timer)
+    } else {
+      setContentReady(false)
+    }
+  }, [isLoading, isContentLoading])
 
   // Track page view
   useEffect(() => {
@@ -930,7 +941,7 @@ export default function LootList() {
         {(isLoading || isContentLoading) ? (
           <LootListContentSkeleton />
         ) : (
-        <>
+        <div className={`transition-opacity duration-200 ${contentReady ? 'opacity-100' : 'opacity-0'}`}>
 
         {/* Duplicate Warning */}
         {duplicateItems.length > 0 && (
@@ -1514,7 +1525,7 @@ export default function LootList() {
             isImportingBis={isImportingBis}
           />
         )}
-        </>
+        </div>
         )}
         </div>
 
