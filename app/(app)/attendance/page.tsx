@@ -17,6 +17,20 @@ import { useGuildContext } from '@/app/contexts/GuildContext'
 import { getWclReportUrl } from '@/lib/warcraftlogs'
 import { InfoTooltip } from '@/components/ui/info-tooltip'
 
+/** Parse a YYYY-MM-DD string into a local Date (avoids UTC timezone shift) */
+function parseDate(dateString: string): Date {
+  const [y, m, d] = dateString.split('-').map(Number)
+  return new Date(y, m - 1, d)
+}
+
+/** Format a Date as YYYY-MM-DD in local time (avoids toISOString UTC shift) */
+function toDateString(date: Date): string {
+  const y = date.getFullYear()
+  const m = String(date.getMonth() + 1).padStart(2, '0')
+  const d = String(date.getDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
+}
+
 interface RaidEvent {
   id: string
   raid_date: string
@@ -108,12 +122,12 @@ export default function AttendancePage() {
 
   // Get the start of a week based on first raid day
   const getWeekStart = (dateString: string, firstRaidDay: number) => {
-    const date = new Date(dateString + 'T00:00:00')
+    const date = parseDate(dateString)
     const currentDay = date.getDay()
     let daysToSubtract = (currentDay - firstRaidDay + 7) % 7
     const weekStart = new Date(date)
     weekStart.setDate(weekStart.getDate() - daysToSubtract)
-    return weekStart.toISOString().split('T')[0]
+    return toDateString(weekStart)
   }
 
   // Calculate the most recent tracked week (the current week)
@@ -125,7 +139,7 @@ export default function AttendancePage() {
     const daysToSubtract = (currentDay - firstRaidDay + 7) % 7
     const currentWeekStartDate = new Date(today)
     currentWeekStartDate.setDate(currentWeekStartDate.getDate() - daysToSubtract)
-    return currentWeekStartDate.toISOString().split('T')[0]
+    return toDateString(currentWeekStartDate)
   }, [expansionRaidSchedule, guildSettings])
 
   // Get configured raid day numbers
@@ -173,7 +187,7 @@ export default function AttendancePage() {
 
       while (cursor < limit && weeksFound < 1) {
         if (configuredRaidDays.includes(cursor.getDay())) {
-          const dateStr = cursor.toISOString().split('T')[0]
+          const dateStr = toDateString(cursor)
           if (!existingDates.has(dateStr)) {
             const weekStart = getWeekStart(dateStr, firstRaidDay)
             if (!upcomingByWeek[weekStart]) {
@@ -195,15 +209,15 @@ export default function AttendancePage() {
       // Fill remaining raid days for the week we found
       const weekKey = Object.keys(upcomingByWeek)[0]
       if (weekKey) {
-        const weekStartDate = new Date(weekKey + 'T00:00:00')
+        const weekStartDate = parseDate(weekKey)
         for (let d = 0; d < 7; d++) {
           const checkDate = new Date(weekStartDate)
           checkDate.setDate(checkDate.getDate() + d)
-          const checkStr = checkDate.toISOString().split('T')[0]
+          const checkStr = toDateString(checkDate)
           if (
             configuredRaidDays.includes(checkDate.getDay()) &&
             !existingDates.has(checkStr) &&
-            checkStr > today.toISOString().split('T')[0] &&
+            checkStr > toDateString(today) &&
             !upcomingByWeek[weekKey].some(r => r.raid_date === checkStr)
           ) {
             upcomingByWeek[weekKey].push({
@@ -223,12 +237,12 @@ export default function AttendancePage() {
     if (Object.keys(grouped).length === 0) return []
 
     // Sort weeks descending (most recent first) and raids within each week ascending
-    const todayStr = new Date().toISOString().split('T')[0]
+    const todayStr = toDateString(new Date())
     return Object.entries(grouped)
       .sort(([a], [b]) => b.localeCompare(a))
       .map(([weekStart, raids]) => ({
         weekStart,
-        label: new Date(weekStart + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        label: parseDate(weekStart).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
         isMostRecent: weekStart === mostRecentTrackedWeek,
         isUpcoming: raids.every(r => r.raid_date > todayStr),
         raids: raids.sort((a, b) => a.raid_date.localeCompare(b.raid_date))
@@ -396,8 +410,8 @@ export default function AttendancePage() {
           .from('raid_events')
           .select('id, raid_date, is_skipped, notes, wcl_report_code')
           .eq('guild_id', activeCharData.active_guild_id)
-          .gte('raid_date', lowerBound.toISOString().split('T')[0])
-          .lte('raid_date', periodEnd.toISOString().split('T')[0])
+          .gte('raid_date', toDateString(lowerBound))
+          .lte('raid_date', toDateString(periodEnd))
           .eq('is_skipped', false)
           .order('raid_date', { ascending: true })
 
@@ -414,7 +428,7 @@ export default function AttendancePage() {
           .slice(0, raidDaysSource?.raid_days_per_week || 2)
 
         const filteredRaidEvents = (raidEventsData || []).filter((event: RaidEvent) => {
-          const eventDate = new Date(event.raid_date + 'T00:00:00')
+          const eventDate = parseDate(event.raid_date)
           return raidDays.includes(eventDate.getDay())
         })
 
@@ -461,8 +475,8 @@ export default function AttendancePage() {
           `)
           .eq('character_id', characterData.id)
           .eq('raid_event.guild_id', activeCharData.active_guild_id)
-          .gte('raid_event.raid_date', lowerBound.toISOString().split('T')[0])
-          .lte('raid_event.raid_date', periodEnd.toISOString().split('T')[0])
+          .gte('raid_event.raid_date', toDateString(lowerBound))
+          .lte('raid_event.raid_date', toDateString(periodEnd))
           .order('raid_event.raid_date', { ascending: false })
 
         if (recordsData) {
@@ -593,7 +607,7 @@ export default function AttendancePage() {
 
         // For 'fair' and 'minimum_gate' modes, filter raids to only those after member's join date
         const eligibleRaidEvents = (newMemberMode === 'fair' || newMemberMode === 'minimum_gate') && memberJoinDate
-          ? raidEvents.filter(r => new Date(r.raid_date + 'T00:00:00') >= memberJoinDate)
+          ? raidEvents.filter(r => parseDate(r.raid_date) >= memberJoinDate)
           : raidEvents
 
         const eligibleRaidIds = new Set(eligibleRaidEvents.map(r => r.id))
@@ -660,7 +674,7 @@ export default function AttendancePage() {
   }
 
   const formatShortDate = (dateString: string): string => {
-    const date = new Date(dateString + 'T00:00:00')
+    const date = parseDate(dateString)
     const dayLetter = ['Su', 'M', 'T', 'W', 'Th', 'F', 'Sa'][date.getDay()]
     return `${dayLetter} ${date.getMonth() + 1}/${date.getDate()}`
   }

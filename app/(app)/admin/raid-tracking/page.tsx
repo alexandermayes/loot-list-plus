@@ -40,6 +40,20 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { Search01Icon } from '@hugeicons/core-free-icons'
 import { trackClientEvent } from '@/utils/analytics/client'
 
+/** Parse a YYYY-MM-DD string into a local Date (avoids UTC timezone shift) */
+function parseDate(dateString: string): Date {
+  const [y, m, d] = dateString.split('-').map(Number)
+  return new Date(y, m - 1, d)
+}
+
+/** Format a Date as YYYY-MM-DD in local time (avoids toISOString UTC shift) */
+function toDateString(date: Date): string {
+  const y = date.getFullYear()
+  const m = String(date.getMonth() + 1).padStart(2, '0')
+  const d = String(date.getDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
+}
+
 interface Member {
   character_id: string
   user_id: string
@@ -310,7 +324,7 @@ export default function RaidTrackingPage() {
 
     // Use expansion raid_start_date, fall back to guild creation date
     const startDate = expansion?.raid_start_date
-      ? new Date(expansion.raid_start_date + 'T00:00:00')
+      ? parseDate(expansion.raid_start_date)
       : activeGuild?.created_at
         ? new Date(activeGuild.created_at)
         : new Date(today.getTime() - (7 * 24 * 60 * 60 * 1000))
@@ -319,7 +333,7 @@ export default function RaidTrackingPage() {
     currentDate.setHours(0, 0, 0, 0) // Normalize to start of day
     while (currentDate <= today) {
       if (raidDays.includes(currentDate.getDay())) {
-        dates.push(currentDate.toISOString().split('T')[0])
+        dates.push(toDateString(currentDate))
       }
       currentDate.setDate(currentDate.getDate() + 1)
     }
@@ -391,7 +405,7 @@ export default function RaidTrackingPage() {
 
     // Filter events to only show ones that match the current raid schedule
     const filteredEvents = allEvents?.filter((event: RaidEvent) => {
-      const eventDate = new Date(event.raid_date + 'T00:00:00')
+      const eventDate = parseDate(event.raid_date)
       const eventDayOfWeek = eventDate.getDay()
       return raidDays.includes(eventDayOfWeek)
     }) || []
@@ -448,7 +462,7 @@ export default function RaidTrackingPage() {
   }
 
   const getWeekStart = (dateString: string, firstRaidDay: number) => {
-    const date = new Date(dateString + 'T00:00:00')
+    const date = parseDate(dateString)
     const currentDay = date.getDay()
 
     // Calculate how many days to subtract to get to the first raid day of this week
@@ -456,7 +470,7 @@ export default function RaidTrackingPage() {
 
     const weekStart = new Date(date)
     weekStart.setDate(weekStart.getDate() - daysToSubtract)
-    return weekStart.toISOString().split('T')[0]
+    return toDateString(weekStart)
   }
 
   const loadRaidAttendance = async (raidId: string) => {
@@ -1792,7 +1806,7 @@ export default function RaidTrackingPage() {
   }, [])
 
   const getWeekLabel = useCallback((weekStartDate: string) => {
-    const date = new Date(weekStartDate + 'T00:00:00')
+    const date = parseDate(weekStartDate)
     return `Week of ${date.toLocaleDateString('en-US', {
       weekday: 'long',
       month: 'long',
@@ -1850,7 +1864,7 @@ export default function RaidTrackingPage() {
 
     while (cursor < limit) {
       if (configuredRaidDays.includes(cursor.getDay())) {
-        upcoming.push(cursor.toISOString().split('T')[0])
+        upcoming.push(toDateString(cursor))
       }
       cursor.setDate(cursor.getDate() + 1)
     }
@@ -1864,7 +1878,7 @@ export default function RaidTrackingPage() {
     return <RaidTrackingPageSkeleton />
   }
 
-  const today = new Date().toISOString().split('T')[0]
+  const today = toDateString(new Date())
 
   // Check if raid start date is in the future
   const raidStartDateInFuture = currentExpansion?.raid_start_date && currentExpansion.raid_start_date > today
@@ -1943,7 +1957,7 @@ export default function RaidTrackingPage() {
             <p className="text-muted-foreground text-[14px]">
               Your first raid week for <span className="text-accent">{currentExpansion.expansion_name}</span> is scheduled to begin on{' '}
               <span className="text-foreground font-medium">
-                {new Date(currentExpansion.raid_start_date + 'T00:00:00').toLocaleDateString('en-US', {
+                {parseDate(currentExpansion.raid_start_date || '2026-01-01').toLocaleDateString('en-US', {
                   weekday: 'long',
                   month: 'long',
                   day: 'numeric',
@@ -1975,7 +1989,7 @@ export default function RaidTrackingPage() {
 
             <div className="space-y-2">
               {upcomingRaidDates.map(dateStr => {
-                const date = new Date(dateStr + 'T00:00:00')
+                const date = parseDate(dateStr)
                 const formatted = date.toLocaleDateString('en-US', {
                   weekday: 'long',
                   month: 'long',
@@ -2043,7 +2057,7 @@ export default function RaidTrackingPage() {
                   <div>
                     <div className="flex items-center gap-3">
                       <h3 className={`text-[18px] font-bold ${raid.is_skipped ? 'line-through opacity-50' : 'text-foreground'}`}>
-                        {new Date(raid.raid_date + 'T00:00:00').toLocaleDateString('en-US', {
+                        {parseDate(raid.raid_date).toLocaleDateString('en-US', {
                           weekday: 'long',
                           month: 'long',
                           day: 'numeric',
@@ -2378,7 +2392,7 @@ export default function RaidTrackingPage() {
           <ModalTitle>Skip raid day</ModalTitle>
           {showSkipModal && (
             <ModalDescription>
-              {new Date(showSkipModal.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
+              {parseDate(showSkipModal.date).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
             </ModalDescription>
           )}
         </ModalHeader>
@@ -2412,7 +2426,7 @@ export default function RaidTrackingPage() {
           <ModalTitle>{showImportModal?.isEdit ? 'Edit raid data' : 'Import raid data'}</ModalTitle>
           {showImportModal && (
             <ModalDescription>
-              {new Date(showImportModal.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
+              {parseDate(showImportModal.date).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
             </ModalDescription>
           )}
         </ModalHeader>
