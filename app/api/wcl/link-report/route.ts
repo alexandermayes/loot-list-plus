@@ -113,37 +113,10 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Look up current phase raid tier names to filter WCL reports by zone
-    let raidTierNames: string[] | undefined
-    const { data: guildExpansion } = await supabase
-      .from('guilds')
-      .select('active_expansion_id')
-      .eq('id', guild_id)
-      .single()
-
-    if (guildExpansion?.active_expansion_id) {
-      const { data: expansion } = await supabase
-        .from('expansions')
-        .select('current_phase')
-        .eq('id', guildExpansion.active_expansion_id)
-        .single()
-
-      const currentPhase = expansion?.current_phase || 1
-
-      const { data: phaseTiers } = await supabase
-        .from('raid_tiers')
-        .select('name')
-        .eq('expansion_id', guildExpansion.active_expansion_id)
-        .eq('phase', currentPhase)
-        .or('is_guild_active.eq.true,is_guild_active.is.null')
-
-      if (phaseTiers && phaseTiers.length > 0) {
-        raidTierNames = phaseTiers.map(t => t.name)
-      }
-    }
-
-    // Fetch WCL report
-    const report = await fetchWclReportForDate(wclGuildUrl, raidEvent.raid_date, raidTierNames)
+    // Fetch WCL report — match by date only, no tier filtering.
+    // Guilds run multiple raids per day across different tiers, so filtering
+    // by tier name would miss valid reports.
+    const report = await fetchWclReportForDate(wclGuildUrl, raidEvent.raid_date)
 
     if (!report) {
       return NextResponse.json({ linked: false, message: 'No matching report found for this date' })
