@@ -100,6 +100,10 @@ export default function RaidTrackingPage() {
   const [attendanceData, setAttendanceData] = useState('')
   const [lootData, setLootData] = useState('')
   const [signupsData, setSignupsData] = useState('')
+  // Track initial values to detect changes
+  const [initialAttendanceData, setInitialAttendanceData] = useState('')
+  const [initialLootData, setInitialLootData] = useState('')
+  const [initialSignupsData, setInitialSignupsData] = useState('')
 
   const [lootItems, setLootItems] = useState<{ id: string, name: string, wowhead_id: number, boss_name: string }[]>([])
   const [pendingLootImports, setPendingLootImports] = useState<{ date: string, itemId: number, characterName: string, matchedItem?: any, matchedCharacter?: any, needsItemSelection?: boolean }[]>([])
@@ -156,9 +160,12 @@ export default function RaidTrackingPage() {
         unlinked.forEach(u => {
           if (u.status?.attended && u.character_name) attendedNames.push(u.character_name)
         })
-        setAttendanceData(attendedNames.join('\n'))
+        const attendanceStr = attendedNames.join('\n')
+        setAttendanceData(attendanceStr)
+        setInitialAttendanceData(attendanceStr)
       } else {
         setAttendanceData('')
+        setInitialAttendanceData('')
       }
 
       // Pre-fill signups from saved attendance records (signed_up flag)
@@ -174,9 +181,12 @@ export default function RaidTrackingPage() {
         unlinked.forEach(u => {
           if (u.status?.signed_up && u.character_name) signedUpNames.push(u.character_name)
         })
-        setSignupsData(signedUpNames.join('\n'))
+        const signupsStr = signedUpNames.join('\n')
+        setSignupsData(signupsStr)
+        setInitialSignupsData(signupsStr)
       } else {
         setSignupsData('')
+        setInitialSignupsData('')
       }
 
       // Pre-fill loot so users can see existing data
@@ -185,7 +195,9 @@ export default function RaidTrackingPage() {
       const lootLines = lootEntries.map(entry =>
         `${formattedDate};[${entry.item_wowhead_id}];${entry.character_name}`
       )
-      setLootData(lootLines.join('\n'))
+      const lootStr = lootLines.join('\n')
+      setLootData(lootStr)
+      setInitialLootData(lootStr)
     }
   }, [showImportModal, raidLoot, attendance, unlinkedAttendees, members])
 
@@ -2111,6 +2123,9 @@ export default function RaidTrackingPage() {
                           setAttendanceData('')
                           setLootData('')
                           setSignupsData('')
+                          setInitialAttendanceData('')
+                          setInitialLootData('')
+                          setInitialSignupsData('')
                           setShowImportModal({ raidId: raid.id, date: raid.raid_date, isEdit: false })
                         }
                       }}
@@ -2545,7 +2560,7 @@ export default function RaidTrackingPage() {
             <Button
               variant="primary"
               onClick={importAllRaidData}
-              disabled={importing || (!attendanceData.trim() && !lootData.trim())}
+              disabled={importing || (!attendanceData.trim() && !lootData.trim()) || (showImportModal?.isEdit && attendanceData === initialAttendanceData && lootData === initialLootData && signupsData === initialSignupsData)}
               loading={importing}
             >
               {showImportModal?.isEdit ? 'Save changes' : 'Import all'}
