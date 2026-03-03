@@ -13,6 +13,8 @@ import { useConfirm } from '@/components/ui/confirm-modal'
 import { Heading } from '@/components/ui/typography'
 import { PendingSubmissionsListSkeleton } from '@/components/ui/skeletons'
 import { trackClientEvent } from '@/utils/analytics/client'
+import { resolvePhaseGroups, getPhaseGroupLabel, getCanonicalPhase, type PhaseGroup } from '@/utils/phase-groups'
+import { getRaidIcon, getRaidShorthand } from '@/utils/raidIcons'
 
 interface PendingSubmission {
   id: string
@@ -40,6 +42,8 @@ export default function PendingSubmissionsPage() {
   const [submissions, setSubmissions] = useState<PendingSubmission[]>([])
   const [loading, setLoading] = useState(true)
   const [processing, setProcessing] = useState<string | null>(null)
+  const [resolvedGroups, setResolvedGroups] = useState<PhaseGroup[]>([])
+  const [raidTiers, setRaidTiers] = useState<Array<{ name: string; phase: number | null }>>([])
 
   const supabase = createClient()
   const router = useRouter()
@@ -149,6 +153,28 @@ export default function PendingSubmissionsPage() {
       }))
 
       setSubmissions(submissionsWithCounts as PendingSubmission[])
+
+      // Load phase groups and raid tiers for the active expansion
+      if (activeGuild.active_expansion_id) {
+        const [{ data: expansionData }, { data: tiersData }] = await Promise.all([
+          supabase
+            .from('expansions')
+            .select('phase_groups')
+            .eq('id', activeGuild.active_expansion_id)
+            .single(),
+          supabase
+            .from('raid_tiers')
+            .select('name, phase')
+            .eq('expansion_id', activeGuild.active_expansion_id)
+        ])
+
+        const phaseGroupsConfig = (expansionData?.phase_groups as number[][] | null) || null
+        const tiers = (tiersData || []) as Array<{ name: string; phase: number | null }>
+        setRaidTiers(tiers)
+
+        const availablePhases = [...new Set(tiers.map(t => t.phase).filter((p): p is number => p != null))].sort((a, b) => a - b)
+        setResolvedGroups(resolvePhaseGroups(phaseGroupsConfig, availablePhases))
+      }
     } catch (error) {
       console.error('Error loading pending submissions:', error)
       showNotification('error', 'Couldn\'t load submissions. Check your connection and try again.')
@@ -293,86 +319,106 @@ export default function PendingSubmissionsPage() {
             variant="card"
           />
         ) : (
-          <div className="space-y-4">
-            {submissions.map((submission) => (
-              <div
-                key={submission.id}
-                className="p-4 sm:p-6 bg-background-elevated border border-border rounded-xl"
-              >
-                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
-                  {/* Submission Info */}
-                  <div className="flex-1">
+          <div className="space-y-6">
+            {(() => {
+              // Group submissions by canonical phase
+              const groupedByPhase = new Map<number, PendingSubmission[]>()
+              for (const sub of submissions) {
+                const canonical = resolvedGroups.length > 0
+                  ? getCanonicalPhase(sub.phase, resolvedGroups)
+                  : sub.phase
+                if (!groupedByPhase.has(canonical)) groupedByPhase.set(canonical, [])
+                groupedByPhase.get(canonical)!.push(sub)
+              }
+
+              // Sort groups by canonical phase
+              const sortedGroups = [...groupedByPhase.entries()].sort((a, b) => a[0] - b[0])
+
+              return sortedGroups.map(([canonicalPhase, groupSubmissions]) => {
+                const group = resolvedGroups.find(g => g.canonicalPhase === canonicalPhase)
+                const groupLabel = group ? getPhaseGroupLabel(group) : `Phase ${canonicalPhase}`
+                const phasesInGroup = group ? group.phases : [canonicalPhase]
+                const tiersInGroup = raidTiers.filter(t => t.phase !== null && phasesInGroup.includes(t.phase))
+
+                return (
+                  <div key={canonicalPhase}>
+                    {/* Phase group header */}
                     <div className="flex items-center gap-3 mb-3">
-                      <HugeiconsIcon icon={UserIcon} size={20} className="text-muted-foreground" />
+                      <div className="flex items-center gap-2">
+                        {tiersInGroup.slice(0, 4).map((tier) => (
+                          <img
+                            key={tier.name}
+                            src={getRaidIcon(tier.name)}
+                            alt={tier.name}
+                            className="w-6 h-6 rounded border border-border/50"
+                            title={tier.name}
+                          />
+                        ))}
+                      </div>
                       <div>
-                        <p
-                          className="text-[16px] font-semibold"
-                          style={{ color: submission.character.class?.color_hex || '#fff' }}
-                        >
-                          {submission.character.name}
+                        <h2 className="text-[15px] font-semibold text-foreground">{groupLabel}</h2>
+                        <p className="text-[12px] text-muted-foreground">
+                          {tiersInGroup.map(t => getRaidShorthand(t.name)).join(', ')}
+                          {' '}&middot; {groupSubmissions.length} pending
                         </p>
-                        {submission.character.class && (
-                          <p className="text-[13px] text-muted-foreground">
-                            {submission.character.class.name}
-                          </p>
-                        )}
                       </div>
                     </div>
 
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        <span className="text-[13px] text-muted-foreground">Expansion:</span>
-                        <span className="text-[13px] text-foreground font-medium">
-                          {submission.expansion.name} - Phase {submission.phase}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-[13px] text-muted-foreground">Items:</span>
-                        <span className="text-[13px] text-foreground font-medium">
-                          {submission.item_count} items
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-[13px] text-muted-foreground">Submitted:</span>
-                        <span className="text-[13px] text-foreground">
-                          {new Date(submission.created_at).toLocaleString()}
-                        </span>
-                      </div>
-                      {submission.updated_at !== submission.created_at && (
-                        <div className="flex items-center gap-2">
-                          <span className="text-[13px] text-muted-foreground">Last updated:</span>
-                          <span className="text-[13px] text-foreground">
-                            {new Date(submission.updated_at).toLocaleString()}
-                          </span>
+                    {/* Submission cards */}
+                    <div className="space-y-3">
+                      {groupSubmissions.map((submission) => (
+                        <div
+                          key={submission.id}
+                          className="p-4 sm:p-5 bg-background-elevated border border-border rounded-xl"
+                        >
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                            {/* Submission Info */}
+                            <div className="flex items-center gap-3 flex-1 min-w-0">
+                              <HugeiconsIcon icon={UserIcon} size={20} className="text-muted-foreground shrink-0" />
+                              <div className="min-w-0">
+                                <p
+                                  className="text-[15px] font-semibold truncate"
+                                  style={{ color: submission.character.class?.color_hex || '#fff' }}
+                                >
+                                  {submission.character.name}
+                                </p>
+                                <p className="text-[12px] text-muted-foreground">
+                                  {submission.character.class?.name}
+                                  {' '}&middot; {submission.item_count} items
+                                  {' '}&middot; {new Date(submission.created_at).toLocaleDateString()}
+                                </p>
+                              </div>
+                            </div>
+
+                            {/* Action Buttons */}
+                            <div className="flex items-center gap-2 shrink-0">
+                              <Button
+                                variant="success"
+                                size="sm"
+                                onClick={() => handleApprove(submission.id)}
+                                loading={processing === submission.id}
+                              >
+                                <HugeiconsIcon icon={Tick01Icon} size={14} />
+                                Approve
+                              </Button>
+                              <Button
+                                variant="destructive"
+                                size="sm"
+                                onClick={() => handleReject(submission.id)}
+                                disabled={processing === submission.id}
+                              >
+                                <HugeiconsIcon icon={Cancel01Icon} size={14} />
+                                Reject
+                              </Button>
+                            </div>
+                          </div>
                         </div>
-                      )}
+                      ))}
                     </div>
                   </div>
-
-                  {/* Action Buttons */}
-                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
-                    <Button
-                      variant="success"
-                      onClick={() => handleApprove(submission.id)}
-                      loading={processing === submission.id}
-                      className="justify-center"
-                    >
-                      <HugeiconsIcon icon={Tick01Icon} size={16} />
-                      Approve
-                    </Button>
-                    <Button
-                      variant="destructive"
-                      onClick={() => handleReject(submission.id)}
-                      disabled={processing === submission.id}
-                      className="justify-center"
-                    >
-                      <HugeiconsIcon icon={Cancel01Icon} size={16} />
-                      Reject
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            ))}
+                )
+              })
+            })()}
           </div>
         )}
 
