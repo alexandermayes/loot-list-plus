@@ -27,6 +27,8 @@ import { Heading } from '@/components/ui/typography'
 import ItemLink from '@/app/components/ItemLink'
 import { refreshWowheadTooltips } from '@/lib/wowhead'
 import { trackClientEvent } from '@/utils/analytics/client'
+import { resolvePhaseGroups, getPhaseGroupLabel, getPhaseGroupShortLabel, getCanonicalPhase, type PhaseGroup } from '@/utils/phase-groups'
+import { getRaidIcon, getRaidShorthand } from '@/utils/raidIcons'
 
 interface Submission {
   id: string
@@ -58,6 +60,11 @@ interface Phase {
   phase: number
   expansion_id: string
   expansion_name: string
+}
+
+interface RaidTierInfo {
+  name: string
+  phase: number | null
 }
 
 interface SubmissionDetailItem {
@@ -104,6 +111,8 @@ export default function MasterLootPage() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState<{ type: 'single' | 'pending' | 'all', id?: string } | null>(null)
   const [deleting, setDeleting] = useState(false)
+  const [resolvedGroups, setResolvedGroups] = useState<PhaseGroup[]>([])
+  const [raidTierInfos, setRaidTierInfos] = useState<RaidTierInfo[]>([])
 
   // PERFORMANCE: Track current request to prevent race conditions when rapidly clicking submissions
   const currentDetailRequestRef = useRef<string | null>(null)
@@ -145,24 +154,35 @@ export default function MasterLootPage() {
       try {
         setGuildId(activeGuild.id)
 
-        // Get expansion info and create phase options
+        // Get expansion info, raid tiers, and phase groups
         if (activeGuild.active_expansion_id) {
-          const { data: expansion } = await supabase
-            .from('expansions')
-            .select('id, name')
-            .eq('id', activeGuild.active_expansion_id)
-            .single()
+          const [{ data: expansion }, { data: tiersData }] = await Promise.all([
+            supabase
+              .from('expansions')
+              .select('id, name, phase_groups')
+              .eq('id', activeGuild.active_expansion_id)
+              .single(),
+            supabase
+              .from('raid_tiers')
+              .select('name, phase')
+              .eq('expansion_id', activeGuild.active_expansion_id)
+          ])
 
           if (expansion) {
-            // Create phase options (1-5 is typical for WoW expansions)
-            const phaseOptions: Phase[] = []
-            for (let i = 1; i <= 5; i++) {
-              phaseOptions.push({
-                phase: i,
-                expansion_id: expansion.id,
-                expansion_name: expansion.name
-              })
-            }
+            const tiers = (tiersData || []) as RaidTierInfo[]
+            setRaidTierInfos(tiers)
+
+            const availablePhases = [...new Set(tiers.map(t => t.phase).filter((p): p is number => p != null))].sort((a, b) => a - b)
+            const phaseGroupsConfig = (expansion.phase_groups as number[][] | null) || null
+            const groups = resolvePhaseGroups(phaseGroupsConfig, availablePhases)
+            setResolvedGroups(groups)
+
+            // Create phase options from resolved groups (canonical phases)
+            const phaseOptions: Phase[] = groups.map(g => ({
+              phase: g.canonicalPhase,
+              expansion_id: expansion.id,
+              expansion_name: expansion.name
+            }))
             setPhases(phaseOptions)
             setActivePhase('all')
           }
@@ -210,9 +230,14 @@ export default function MasterLootPage() {
       query = query.eq('expansion_id', expansionId)
     }
 
-    // Filter by phase if not 'all'
+    // Filter by phase group if not 'all'
     if (phase !== 'all') {
-      query = query.eq('phase', phase.phase)
+      const group = resolvedGroups.find(g => g.canonicalPhase === phase.phase)
+      if (group && group.phases.length > 1) {
+        query = query.in('phase', group.phases)
+      } else {
+        query = query.eq('phase', phase.phase)
+      }
     }
 
     query = query.order('submitted_at', { ascending: false })
@@ -254,7 +279,10 @@ export default function MasterLootPage() {
         submitted_at: sub.submitted_at,
         review_notes: sub.review_notes,
         character_id: sub.character_id,
-        tier_name: `Phase ${sub.phase}`,
+        tier_name: (() => {
+          const group = resolvedGroups.find(g => g.phases.includes(sub.phase))
+          return group ? getPhaseGroupLabel(group) : `Phase ${sub.phase}`
+        })(),
         tier_id: sub.expansion_id,
         member: {
           character_name: character?.name || 'Unknown Character',
@@ -456,17 +484,35 @@ export default function MasterLootPage() {
               >
                 All phases
               </Button>
-              {phases.map((phase) => (
-                <Button
-                  key={phase.phase}
-                  variant={activePhase !== 'all' && activePhase?.phase === phase.phase ? 'accent-subtle' : 'outline'}
-                  size="sm"
-                  onClick={() => setActivePhase(phase)}
-                  className="rounded-[40px] whitespace-nowrap"
-                >
-                  Phase {phase.phase}
-                </Button>
-              ))}
+              {phases.map((phase) => {
+                const group = resolvedGroups.find(g => g.canonicalPhase === phase.phase)
+                const phasesInGroup = group ? group.phases : [phase.phase]
+                const tiersInGroup = raidTierInfos.filter(t => t.phase !== null && phasesInGroup.includes(t.phase))
+                const raidNames = tiersInGroup.map(t => getRaidShorthand(t.name)).join(', ')
+
+                return (
+                  <Button
+                    key={phase.phase}
+                    variant={activePhase !== 'all' && activePhase?.phase === phase.phase ? 'accent-subtle' : 'outline'}
+                    size="sm"
+                    onClick={() => setActivePhase(phase)}
+                    className="rounded-[40px] whitespace-nowrap"
+                    title={raidNames}
+                  >
+                    <span className="flex items-center gap-1.5">
+                      {tiersInGroup.slice(0, 2).map((tier) => (
+                        <img
+                          key={tier.name}
+                          src={getRaidIcon(tier.name)}
+                          alt=""
+                          className="w-4 h-4 rounded border border-border/50"
+                        />
+                      ))}
+                      {group ? getPhaseGroupShortLabel(group) : `P${phase.phase}`}
+                    </span>
+                  </Button>
+                )
+              })}
             </div>
           </div>
         </div>
