@@ -1,10 +1,13 @@
 import { SupabaseClient } from '@supabase/supabase-js'
 import { classicRaids, Raid as ClassicRaid } from '@/data/classic-wow-raids'
 import { tbcRaids } from '@/data/tbc-raids'
+import { wrathRaids } from '@/data/wrath-raids'
 import { ITEM_CLASSIFICATIONS } from '@/data/classic-wow-item-classifications'
 import { TBC_ITEM_CLASSIFICATIONS } from '@/data/tbc-item-classifications'
+import { WOTLK_ITEM_CLASSIFICATIONS } from '@/data/wrath-item-classifications'
 import { CLASSIC_ITEM_ROLES } from '@/data/classic-item-roles'
 import { TBC_ITEM_ROLES } from '@/data/tbc-item-roles'
+import { WOTLK_ITEM_ROLES } from '@/data/wrath-item-roles'
 import { EXPANSION_PHASES, getExpansionSlug } from '@/data/expansion-phases'
 import { getTokenClasses, isTokenSlot } from '@/data/token-class-mapping'
 
@@ -95,6 +98,26 @@ function transformTBCRaids(): RaidDefinition[] {
   }))
 }
 
+/**
+ * Transform WotLK raid data into the format expected by the seeder
+ */
+function transformWrathRaids(): RaidDefinition[] {
+  return wrathRaids.map((raid, index) => ({
+    name: raid.name,
+    // Mark the first raid (Naxxramas) as active by default
+    isActive: index === 0,
+    phase: getRaidPhase('wrath', raid.name),
+    bosses: raid.bosses.map(boss => ({
+      name: boss.name,
+      lootItems: boss.items.map(item => ({
+        name: item.name,
+        slot: item.slot,
+        wowheadId: item.wowhead_id.toString()
+      }))
+    }))
+  }))
+}
+
 // Classic WoW expansion data
 const CLASSIC_WOW_DATA: ExpansionDefinition = {
   name: 'Classic',
@@ -109,14 +132,27 @@ const TBC_DATA: ExpansionDefinition = {
   raids: transformTBCRaids()
 }
 
+// WotLK expansion data
+const WOTLK_DATA: ExpansionDefinition = {
+  name: 'Wrath of the Lich King',
+  displayName: 'Wrath of the Lich King',
+  raids: transformWrathRaids()
+}
+
 // Map of all available expansions
-// Future expansions can be added here as data files are created
+// Expansions with null have no loot data yet (shown as "coming soon" in UI)
 const EXPANSION_DATA: Record<string, ExpansionDefinition | null> = {
   'Classic': CLASSIC_WOW_DATA,
   'The Burning Crusade': TBC_DATA,
-  'Wrath of the Lich King': null, // TODO: Create /data/wrath-raids.ts
-  'Cataclysm': null, // TODO: Create /data/cata-raids.ts
-  'Mists of Pandaria': null // TODO: Create /data/mop-raids.ts
+  'Wrath of the Lich King': WOTLK_DATA,
+  'Cataclysm': null,
+  'Mists of Pandaria': null,
+  'Warlords of Draenor': null,
+  'Legion': null,
+  'Battle for Azeroth': null,
+  'Shadowlands': null,
+  'Dragonflight': null,
+  'The War Within': null,
 }
 
 /**
@@ -188,7 +224,7 @@ export async function seedExpansionForGuild(
   if (!expansionData) {
     return {
       expansionId: '',
-      error: `No data available for ${expansionName} yet. Currently supported: Classic WoW and The Burning Crusade. Please select one of these or wait for other expansion data to be added.`
+      error: `No data available for ${expansionName} yet. Currently supported: Classic, The Burning Crusade, and Wrath of the Lich King. Please select one of these or wait for other expansion data to be added.`
     }
   }
 
@@ -286,18 +322,28 @@ export async function seedExpansionForGuild(
       const lootItems = raid.bosses.flatMap(boss =>
         boss.lootItems.map(item => {
           // Look up classification from the appropriate mapping based on expansion
-          const classificationMap = expansionData.displayName === 'The Burning Crusade'
-            ? TBC_ITEM_CLASSIFICATIONS
-            : ITEM_CLASSIFICATIONS
+          let classificationMap: Record<string, 'Reserved' | 'Limited' | 'Unlimited'>
+          if (expansionData.displayName === 'Wrath of the Lich King') {
+            classificationMap = WOTLK_ITEM_CLASSIFICATIONS
+          } else if (expansionData.displayName === 'The Burning Crusade') {
+            classificationMap = TBC_ITEM_CLASSIFICATIONS
+          } else {
+            classificationMap = ITEM_CLASSIFICATIONS
+          }
           const classification = classificationMap[item.name] || 'Unlimited'
           // Reserved and Limited items cost 1 allocation point, Unlimited costs 0
           const allocation_cost = (classification === 'Reserved' || classification === 'Limited') ? 1 : 0
 
           // Look up roles from the appropriate mapping based on expansion
           // Items without explicit mapping default to empty array (available to all specs)
-          const roleMap = expansionData.displayName === 'The Burning Crusade'
-            ? TBC_ITEM_ROLES
-            : CLASSIC_ITEM_ROLES
+          let roleMap: Record<string, ('tank' | 'healer' | 'physical' | 'caster')[]>
+          if (expansionData.displayName === 'Wrath of the Lich King') {
+            roleMap = WOTLK_ITEM_ROLES
+          } else if (expansionData.displayName === 'The Burning Crusade') {
+            roleMap = TBC_ITEM_ROLES
+          } else {
+            roleMap = CLASSIC_ITEM_ROLES
+          }
           const roles = roleMap[item.name] || []
 
           return {

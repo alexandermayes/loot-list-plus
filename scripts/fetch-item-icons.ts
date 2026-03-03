@@ -13,14 +13,15 @@ import * as path from 'path'
 // Import all raid data
 import { moltenCore, blackwingLair, onyxiasLair, zulGurub, ruinsOfAhnQiraj, templeOfAhnQiraj, naxxramas } from '../data/classic-wow-raids'
 import { karazhan, gruulslair, magtheridonslair, serpentshrinecavern, tempestkeep, mounthyjal, blacktemple, sunwellplateau, zulaman } from '../data/tbc-raids'
+import { wrathRaids } from '../data/wrath-raids'
 
 interface IconMapping {
   [wowheadId: number]: string
 }
 
 // Extract all unique wowhead_ids from raids
-function extractWowheadIds(): { id: number; name: string; expansion: 'classic' | 'tbc' }[] {
-  const items: { id: number; name: string; expansion: 'classic' | 'tbc' }[] = []
+function extractWowheadIds(): { id: number; name: string; expansion: 'classic' | 'tbc' | 'wrath' }[] {
+  const items: { id: number; name: string; expansion: 'classic' | 'tbc' | 'wrath' }[] = []
   const seenIds = new Set<number>()
 
   // Classic raids
@@ -49,12 +50,23 @@ function extractWowheadIds(): { id: number; name: string; expansion: 'classic' |
     }
   }
 
+  // WotLK raids
+  for (const raid of wrathRaids) {
+    for (const boss of raid.bosses) {
+      for (const item of boss.items) {
+        if (!seenIds.has(item.wowhead_id)) {
+          seenIds.add(item.wowhead_id)
+          items.push({ id: item.wowhead_id, name: item.name, expansion: 'wrath' })
+        }
+      }
+    }
+  }
+
   return items
 }
 
 // Fetch icon name from Wowhead tooltip API
-async function fetchIconName(wowheadId: number, expansion: 'classic' | 'tbc'): Promise<string | null> {
-  const domain = expansion === 'tbc' ? 'tbc' : 'classic'
+async function fetchIconName(wowheadId: number, expansion: 'classic' | 'tbc' | 'wrath'): Promise<string | null> {
   const url = `https://nether.wowhead.com/tooltip/item/${wowheadId}?dataEnv=1&locale=0`
 
   try {
@@ -79,7 +91,7 @@ async function fetchIconName(wowheadId: number, expansion: 'classic' | 'tbc'): P
 }
 
 // Rate-limited batch fetching
-async function fetchAllIcons(items: { id: number; name: string; expansion: 'classic' | 'tbc' }[]): Promise<IconMapping> {
+async function fetchAllIcons(items: { id: number; name: string; expansion: 'classic' | 'tbc' | 'wrath' }[]): Promise<IconMapping> {
   const mapping: IconMapping = {}
   const batchSize = 10
   const delayMs = 500 // 500ms between batches to be nice to Wowhead
@@ -145,6 +157,26 @@ export function getItemIconUrl(wowheadId: number, size: 'small' | 'medium' | 'la
   const iconName = ITEM_ICONS[wowheadId]
   if (!iconName) return null
   return \`https://wow.zamimg.com/images/wow/icons/\${size}/\${iconName}.jpg\`
+}
+
+// Track which icons have been preloaded to avoid duplicate work
+const preloadedIcons = new Set<string>()
+
+/**
+ * Preload icons for a list of items
+ * This ensures icons are cached before they're displayed
+ */
+export function preloadItemIcons(wowheadIds: number[], size: 'small' | 'medium' | 'large' = 'small'): void {
+  if (typeof window === 'undefined') return
+
+  for (const id of wowheadIds) {
+    const url = getItemIconUrl(id, size)
+    if (url && !preloadedIcons.has(url)) {
+      preloadedIcons.add(url)
+      const img = new Image()
+      img.src = url
+    }
+  }
 }
 `
 }

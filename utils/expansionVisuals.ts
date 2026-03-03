@@ -52,8 +52,8 @@ const expansionVisuals: Record<string, ExpansionVisuals> = {
     accentColor: '#70C8FF',
     textColor: '#C8E8FF',
     borderColor: '#2D5A8A',
-    logoUrl: 'https://wow.zamimg.com/images/wow/icons/large/achievement_dungeon_icecrown.jpg',
-    artworkUrl: 'https://bnetcmsus-a.akamaihd.net/cms/blog_header/h2/H2MWJHJ9LQVM1663875632779.jpg'
+    logoUrl: 'https://wow.zamimg.com/images/wow/icons/large/achievement_boss_lichking.jpg',
+    artworkUrl: ''
   },
   'Cataclysm': {
     name: 'Cataclysm',

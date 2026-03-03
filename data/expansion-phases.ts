@@ -10,6 +10,14 @@ const EXPANSION_NAME_TO_SLUG: Record<string, string> = {
   'Classic WoW': 'classic',
   'The Burning Crusade': 'tbc',
   'Wrath of the Lich King': 'wrath',
+  'Cataclysm': 'cata',
+  'Mists of Pandaria': 'mop',
+  'Warlords of Draenor': 'wod',
+  'Legion': 'legion',
+  'Battle for Azeroth': 'bfa',
+  'Shadowlands': 'sl',
+  'Dragonflight': 'df',
+  'The War Within': 'tww',
 }
 
 export function getExpansionSlug(expansionName: string): string | null {
@@ -35,9 +43,50 @@ export const EXPANSION_PHASES: Record<string, PhaseDefinition[]> = {
   wrath: [
     { phase: 1, name: 'Phase 1', raids: ['Naxxramas (Wrath)', 'Eye of Eternity', 'Obsidian Sanctum'] },
     { phase: 2, name: 'Phase 2', raids: ['Ulduar'] },
-    { phase: 3, name: 'Phase 3', raids: ['Trial of the Crusader'] },
+    { phase: 3, name: 'Phase 3', raids: ['Trial of the Crusader', "Onyxia's Lair (Wrath)"] },
     { phase: 4, name: 'Phase 4', raids: ['Icecrown Citadel'] },
     { phase: 5, name: 'Phase 5', raids: ['Ruby Sanctum'] },
+  ],
+  cata: [
+    { phase: 1, name: 'Phase 1', raids: ['Blackwing Descent', 'The Bastion of Twilight', 'Throne of the Four Winds'] },
+    { phase: 2, name: 'Phase 2', raids: ['Firelands'] },
+    { phase: 3, name: 'Phase 3', raids: ['Dragon Soul'] },
+  ],
+  mop: [
+    { phase: 1, name: 'Phase 1', raids: ["Mogu'shan Vaults", "Heart of Fear", 'Terrace of Endless Spring'] },
+    { phase: 2, name: 'Phase 2', raids: ['Throne of Thunder'] },
+    { phase: 3, name: 'Phase 3', raids: ['Siege of Orgrimmar'] },
+  ],
+  wod: [
+    { phase: 1, name: 'Phase 1', raids: ['Highmaul'] },
+    { phase: 2, name: 'Phase 2', raids: ['Blackrock Foundry'] },
+    { phase: 3, name: 'Phase 3', raids: ['Hellfire Citadel'] },
+  ],
+  legion: [
+    { phase: 1, name: 'Phase 1', raids: ['The Emerald Nightmare', 'Trial of Valor'] },
+    { phase: 2, name: 'Phase 2', raids: ['The Nighthold'] },
+    { phase: 3, name: 'Phase 3', raids: ['Tomb of Sargeras'] },
+    { phase: 4, name: 'Phase 4', raids: ['Antorus, the Burning Throne'] },
+  ],
+  bfa: [
+    { phase: 1, name: 'Phase 1', raids: ['Uldir'] },
+    { phase: 2, name: 'Phase 2', raids: ['Battle of Dazar\'alor', 'Crucible of Storms'] },
+    { phase: 3, name: 'Phase 3', raids: ['The Eternal Palace'] },
+    { phase: 4, name: 'Phase 4', raids: ["Ny'alotha, the Waking City"] },
+  ],
+  sl: [
+    { phase: 1, name: 'Phase 1', raids: ['Castle Nathria'] },
+    { phase: 2, name: 'Phase 2', raids: ['Sanctum of Domination'] },
+    { phase: 3, name: 'Phase 3', raids: ['Sepulcher of the First Ones'] },
+  ],
+  df: [
+    { phase: 1, name: 'Phase 1', raids: ['Vault of the Incarnates'] },
+    { phase: 2, name: 'Phase 2', raids: ['Aberrus, the Shadowed Crucible'] },
+    { phase: 3, name: 'Phase 3', raids: ["Amirdrassil, the Dream's Hope"] },
+  ],
+  tww: [
+    { phase: 1, name: 'Phase 1', raids: ["Nerub'ar Palace"] },
+    { phase: 2, name: 'Phase 2', raids: ['Liberation of Undermine'] },
   ],
 }
 
