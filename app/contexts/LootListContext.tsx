@@ -776,6 +776,39 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
       }
       submissionId = upsertedSub.id
 
+      // Snapshot previous items before overwriting (only on formal submit, not first time)
+      if (submit && submissionId) {
+        const { data: existingItems } = await supabase
+          .from('loot_submission_items')
+          .select('rank, slot, loot_item_id, loot_item:loot_items(name)')
+          .eq('submission_id', submissionId)
+
+        if (existingItems && existingItems.length > 0) {
+          const currentCount = upsertedSub.resubmission_count ?? 0
+          const snapshotItems = existingItems.map((item: any) => ({
+            rank: item.rank,
+            slot: item.slot,
+            loot_item_id: item.loot_item_id,
+            item_name: item.loot_item?.name || 'Unknown'
+          }))
+
+          // Save snapshot of previous items
+          await supabase
+            .from('loot_submission_snapshots')
+            .insert({
+              submission_id: submissionId,
+              version: currentCount,
+              items: snapshotItems
+            })
+
+          // Increment resubmission count
+          await supabase
+            .from('loot_submissions')
+            .update({ resubmission_count: currentCount + 1 })
+            .eq('id', submissionId)
+        }
+      }
+
       // Delete and re-insert rankings
       const { error: deleteError } = await supabase
         .from('loot_submission_items')

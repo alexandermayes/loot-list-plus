@@ -179,6 +179,7 @@ export interface LootSubmission {
   review_notes: string | null
   expansion_id?: string
   phase?: number
+  resubmission_count?: number
 }
 
 export interface RaidTier {

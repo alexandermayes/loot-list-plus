@@ -37,6 +37,7 @@ interface Submission {
   review_notes: string | null
   tier_name?: string
   tier_id?: string
+  resubmission_count: number
   user: {
     id: string
     user_metadata: {
@@ -54,6 +55,21 @@ interface Submission {
     }
   }
   item_count: number
+}
+
+interface SnapshotItem {
+  rank: number
+  slot: number
+  loot_item_id: string
+  item_name: string
+}
+
+interface DiffEntry {
+  type: 'added' | 'removed' | 'moved'
+  item_name: string
+  rank?: number
+  old_rank?: number
+  new_rank?: number
 }
 
 interface Phase {
@@ -92,6 +108,7 @@ interface RawSubmission {
   character_id: string
   expansion_id: string
   phase: number
+  resubmission_count: number
   character: RawSubmissionCharacter | RawSubmissionCharacter[]
 }
 
@@ -113,6 +130,8 @@ export default function MasterLootPage() {
   const [deleting, setDeleting] = useState(false)
   const [resolvedGroups, setResolvedGroups] = useState<PhaseGroup[]>([])
   const [raidTierInfos, setRaidTierInfos] = useState<RaidTierInfo[]>([])
+  const [submissionDiff, setSubmissionDiff] = useState<DiffEntry[]>([])
+  const [loadingDiff, setLoadingDiff] = useState(false)
 
   // PERFORMANCE: Track current request to prevent race conditions when rapidly clicking submissions
   const currentDetailRequestRef = useRef<string | null>(null)
@@ -214,6 +233,7 @@ export default function MasterLootPage() {
         character_id,
         expansion_id,
         phase,
+        resubmission_count,
         character:characters (
           name,
           class:wow_classes (
@@ -279,6 +299,7 @@ export default function MasterLootPage() {
         submitted_at: sub.submitted_at,
         review_notes: sub.review_notes,
         character_id: sub.character_id,
+        resubmission_count: sub.resubmission_count ?? 0,
         tier_name: (() => {
           const group = resolvedGroups.find(g => g.phases.includes(sub.phase))
           return group ? getPhaseGroupLabel(group) : `Phase ${sub.phase}`
@@ -365,6 +386,73 @@ export default function MasterLootPage() {
     }
   }
 
+  const computeDiff = (currentItems: SubmissionDetailItem[], snapshotItems: SnapshotItem[]): DiffEntry[] => {
+    const diff: DiffEntry[] = []
+
+    // Build maps: loot_item_id -> rank (use lowest rank if dupes)
+    const currentByItem = new Map<string, number>()
+    for (const item of currentItems) {
+      const id = item.loot_item?.id
+      if (id && (!currentByItem.has(id) || item.rank > currentByItem.get(id)!)) {
+        currentByItem.set(id, item.rank)
+      }
+    }
+
+    const snapshotByItem = new Map<string, { rank: number; name: string }>()
+    for (const item of snapshotItems) {
+      if (!snapshotByItem.has(item.loot_item_id) || item.rank > snapshotByItem.get(item.loot_item_id)!.rank) {
+        snapshotByItem.set(item.loot_item_id, { rank: item.rank, name: item.item_name })
+      }
+    }
+
+    // Find added items (in current but not in snapshot)
+    for (const item of currentItems) {
+      const id = item.loot_item?.id
+      if (id && !snapshotByItem.has(id)) {
+        diff.push({
+          type: 'added',
+          item_name: item.loot_item?.name || 'Unknown',
+          rank: item.rank
+        })
+      }
+    }
+
+    // Find removed items (in snapshot but not in current)
+    for (const [id, snap] of snapshotByItem) {
+      if (!currentByItem.has(id)) {
+        diff.push({
+          type: 'removed',
+          item_name: snap.name,
+          old_rank: snap.rank
+        })
+      }
+    }
+
+    // Find moved items (same item, different rank)
+    for (const [id, currentRank] of currentByItem) {
+      const snap = snapshotByItem.get(id)
+      if (snap && snap.rank !== currentRank) {
+        diff.push({
+          type: 'moved',
+          item_name: snap.name,
+          old_rank: snap.rank,
+          new_rank: currentRank
+        })
+      }
+    }
+
+    // Sort: added first, then removed, then moved. Within each group, by rank desc
+    diff.sort((a, b) => {
+      const typeOrder = { added: 0, removed: 1, moved: 2 }
+      if (typeOrder[a.type] !== typeOrder[b.type]) return typeOrder[a.type] - typeOrder[b.type]
+      const rankA = a.rank ?? a.new_rank ?? a.old_rank ?? 0
+      const rankB = b.rank ?? b.new_rank ?? b.old_rank ?? 0
+      return rankB - rankA
+    })
+
+    return diff
+  }
+
   const viewSubmissionDetails = async (submissionId: string) => {
     // Track this request to prevent race conditions
     currentDetailRequestRef.current = submissionId
@@ -372,23 +460,42 @@ export default function MasterLootPage() {
     setViewingSubmission(submissionId)
     setReviewNotes('') // Clear previous review notes
     setSubmissionDetails([]) // Clear previous data immediately
+    setSubmissionDiff([])
     setLoadingDetails(true)
+    setLoadingDiff(true)
 
-    const { data: itemsData } = await supabase
-      .from('loot_submission_items')
-      .select(`
-        rank,
-        loot_item:loot_items(id, name, boss_name, item_slot, wowhead_id, classification)
-      `)
-      .eq('submission_id', submissionId)
-      .order('rank', { ascending: false })
+    // Fetch current items and latest snapshot in parallel
+    const [{ data: itemsData }, { data: snapshotData }] = await Promise.all([
+      supabase
+        .from('loot_submission_items')
+        .select(`
+          rank,
+          loot_item:loot_items(id, name, boss_name, item_slot, wowhead_id, classification)
+        `)
+        .eq('submission_id', submissionId)
+        .order('rank', { ascending: false }),
+      supabase
+        .from('loot_submission_snapshots')
+        .select('items')
+        .eq('submission_id', submissionId)
+        .order('version', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+    ])
 
     // Only update state if this is still the current request (prevents race conditions)
     if (currentDetailRequestRef.current === submissionId) {
       if (itemsData) {
         setSubmissionDetails(itemsData as SubmissionDetailItem[])
+
+        // Compute diff if we have a snapshot
+        if (snapshotData?.items) {
+          const diff = computeDiff(itemsData as SubmissionDetailItem[], snapshotData.items as SnapshotItem[])
+          setSubmissionDiff(diff)
+        }
       }
       setLoadingDetails(false)
+      setLoadingDiff(false)
     }
   }
 
@@ -600,6 +707,9 @@ export default function MasterLootPage() {
                     <StatusBadge status={submission.status as SubmissionStatus} />
                     <span className="text-muted-foreground text-[13px]">
                       {submission.item_count} items • Submitted {submission.submitted_at ? new Date(submission.submitted_at).toLocaleDateString('en-US', { month: 'numeric', day: 'numeric', year: 'numeric' }) : 'N/A'}
+                      {submission.resubmission_count > 0 && (
+                        <> • Resubmitted {submission.resubmission_count}x</>
+                      )}
                     </span>
                   </div>
                   <div className="flex gap-2 flex-shrink-0 flex-wrap sm:flex-nowrap">
@@ -769,6 +879,55 @@ export default function MasterLootPage() {
             </table>
             </div>
           )}
+
+          {/* Diff section - show changes from previous submission */}
+          {(() => {
+            const submission = viewingSubmission ? submissions.find(s => s.id === viewingSubmission) : null
+            if (!submission || submission.resubmission_count === 0) return null
+
+            return (
+              <div className="border-t border-border px-4 py-3">
+                <h4 className="text-[13px] font-semibold text-foreground mb-2">
+                  Changes from previous submission
+                </h4>
+                {loadingDiff ? (
+                  <div className="flex items-center justify-center py-4">
+                    <LoadingSpinner size="sm" />
+                  </div>
+                ) : submissionDiff.length === 0 ? (
+                  <p className="text-[13px] text-muted-foreground">No changes detected</p>
+                ) : (
+                  <div className="space-y-1">
+                    {submissionDiff.map((entry, i) => (
+                      <div key={i} className="text-[13px] flex items-center gap-1.5">
+                        {entry.type === 'added' && (
+                          <>
+                            <span className="text-success font-medium">+</span>
+                            <span className="text-foreground">{entry.item_name}</span>
+                            <span className="text-muted-foreground">(rank {entry.rank})</span>
+                          </>
+                        )}
+                        {entry.type === 'removed' && (
+                          <>
+                            <span className="text-destructive font-medium">-</span>
+                            <span className="text-foreground">{entry.item_name}</span>
+                            <span className="text-muted-foreground">(was rank {entry.old_rank})</span>
+                          </>
+                        )}
+                        {entry.type === 'moved' && (
+                          <>
+                            <span className="text-accent font-medium">~</span>
+                            <span className="text-foreground">{entry.item_name}</span>
+                            <span className="text-muted-foreground">rank {entry.old_rank} → {entry.new_rank}</span>
+                          </>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )
+          })()}
         </ModalBody>
         {viewingSubmission && submissions.find(s => s.id === viewingSubmission)?.status === 'pending' && (
           <ModalFooter className="flex-col items-stretch gap-4">
