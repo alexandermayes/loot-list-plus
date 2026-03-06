@@ -85,6 +85,7 @@ interface RaidTierInfo {
 
 interface SubmissionDetailItem {
   rank: number
+  slot: number
   loot_item: {
     id: string
     name: string
@@ -470,6 +471,7 @@ export default function MasterLootPage() {
         .from('loot_submission_items')
         .select(`
           rank,
+          slot,
           loot_item:loot_items(id, name, boss_name, item_slot, wowhead_id, classification)
         `)
         .eq('submission_id', submissionId)
@@ -561,6 +563,10 @@ export default function MasterLootPage() {
       const rank = detail.rank
       if (!grouped[rank]) grouped[rank] = []
       grouped[rank].push(detail)
+    }
+    // Sort items within each rank by slot so Item #1 and #2 display correctly
+    for (const items of Object.values(grouped)) {
+      items.sort((a, b) => a.slot - b.slot)
     }
     return Object.entries(grouped).sort(([a], [b]) => Number(b) - Number(a))
   }, [submissionDetails])
