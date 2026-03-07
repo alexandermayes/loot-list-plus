@@ -1,25 +1,54 @@
 # LootList+
 
-A loot management system for World of Warcraft Classic guilds.
+A loot management platform for World of Warcraft Classic guilds.
 
-LootList+ helps guilds distribute raid loot fairly. Raiders submit ranked lists of the items they want, officers track attendance, and the system calculates priority scores to help decide who gets what. No spreadsheets, no drama.
+LootList+ helps guilds distribute raid loot fairly. Raiders submit ranked lists of the items they want, officers track attendance, and the system calculates priority scores to help decide who gets what. Comes with a full in-game addon for real-time loot distribution. No spreadsheets, no drama.
 
-## What it does
+## Features
 
-- **Loot lists** - Raiders rank up to 50 items across different priority brackets
-- **Attendance tracking** - Automatic scoring based on raid participation
-- **Master sheet** - Officers see everyone's priorities in one place
-- **Phase support** - Lists are organized by content phase (all raids in a phase share one list)
-- **BIS import** - Import gear from WowSims to track what you already have
+### For raiders
+- **Loot lists** - Rank up to 50 items across priority brackets with smart item search
+- **Score tracking** - See your Loot Score breakdown (ranking, attendance, modifiers)
+- **Master sheet** - View everyone's priorities, filter by item, boss, or class
+- **Attendance** - Track your raid participation and points
+- **Battle.net import** - Pull your characters and gear directly from Blizzard's API
+
+### For officers
+- **Submission review** - Approve, request revisions, or reject loot lists with notes
+- **Raid tracking** - Import attendance from WarcraftLogs reports or log manually
+- **Phase management** - Merge phases, configure raid schedules, manage expansions
+- **Loot history** - Full audit trail of every item awarded
+- **Discord webhooks** - Notify channels on submissions, approvals, and awards
+
+### In-game addon
+- **Roll-off system** - Start rolls from the loot window, MS > OS priority with score tiebreakers
+- **Auto-trade** - Awarded items auto-placed in trade window
+- **Loot announcements** - Epic+ drops announced to raid chat with priority info
+- **PackMule** - Auto-distribute sub-epic items to your designated enchanter
+- **Attendance tracking** - Late joiner and early leaver detection, per-boss roster snapshots
+- **Score tooltips** - See LootList+ scores on item tooltips in-game
+- **Data sync** - Import/export compressed strings between web and addon
+
+## Supported expansions
+
+| Expansion | Status | Raids | Items |
+|-----------|--------|-------|-------|
+| Classic | Full loot data | 6 phases (MC/Onyxia through Naxx) | 800+ |
+| The Burning Crusade | Full loot data | 5 phases (Kara through Sunwell) | 651 |
+| Wrath of the Lich King | Full loot data | 5 phases (Naxx/EoE through Ruby Sanctum) | 1,353 |
+| Cataclysm through The War Within | Phase definitions only | Coming soon | - |
 
 ## Tech stack
 
-- Next.js 16 (React)
+- Next.js 16 (App Router, React 19)
 - TypeScript
 - Tailwind CSS
-- Supabase (PostgreSQL database, auth)
-- Discord OAuth
+- Supabase (PostgreSQL, auth, RLS)
+- Discord and Battle.net OAuth
+- Upstash Redis (rate limiting)
+- PostHog (analytics)
 - Vercel (hosting)
+- Lua (WoW addon, Ace3 framework)
 
 ## Local development
 
@@ -28,7 +57,19 @@ npm install
 npm run dev
 ```
 
-Requires a `.env.local` file with Supabase and Discord OAuth credentials.
+Requires a `.env.local` with Supabase, Discord OAuth, and Battle.net OAuth credentials. See `.env.example` for the full list.
+
+## Project structure
+
+```
+app/(app)/           # Authenticated app routes
+app/api/             # API routes (guilds, loot, auth, addon, etc.)
+addon/LootListPlus/  # WoW addon (Lua, multi-TOC)
+components/ui/       # Design system components
+data/                # Raid definitions, item data, class mappings
+lib/                 # Shared utilities (scoring, brackets, validation)
+supabase/migrations/ # Database migrations
+```
 
 ## License
 
