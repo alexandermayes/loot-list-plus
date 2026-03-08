@@ -604,9 +604,24 @@ export default function AttendancePage() {
         const joinedAt = joinDateByCharacterId[s.character_id]
         const memberJoinDate = joinedAt ? new Date(joinedAt) : null
 
-        // For 'fair' and 'minimum_gate' modes, filter raids to only those after member's join date
-        const eligibleRaidEvents = (newMemberMode === 'fair' || newMemberMode === 'minimum_gate') && memberJoinDate
-          ? raidEvents.filter(r => parseDate(r.raid_date) >= memberJoinDate)
+        // If member has attendance records before their join date (retroactive import),
+        // use the earliest attended raid as their effective start date
+        let effectiveStartDate = memberJoinDate
+        if (effectiveStartDate && charAttendance.size > 0) {
+          const attendedRaidDates = raidEvents
+            .filter(r => charAttendance.has(r.id))
+            .map(r => parseDate(r.raid_date))
+          if (attendedRaidDates.length > 0) {
+            const earliestAttendance = new Date(Math.min(...attendedRaidDates.map(d => d.getTime())))
+            if (earliestAttendance < effectiveStartDate) {
+              effectiveStartDate = earliestAttendance
+            }
+          }
+        }
+
+        // For 'fair' and 'minimum_gate' modes, filter raids to only those after effective start date
+        const eligibleRaidEvents = (newMemberMode === 'fair' || newMemberMode === 'minimum_gate') && effectiveStartDate
+          ? raidEvents.filter(r => parseDate(r.raid_date) >= effectiveStartDate)
           : raidEvents
 
         const eligibleRaidIds = new Set(eligibleRaidEvents.map(r => r.id))

@@ -375,6 +375,21 @@ function MasterSheetContent() {
             effectiveStartDate = memberJoinDate
           }
         }
+
+        // If member has attendance records before their join date (retroactive import),
+        // use the earliest attended raid as their effective start date
+        const characterAttendance = attendanceByCharacter.get(character.id) || []
+        if (characterAttendance.length > 0) {
+          const attendedRaidDates = filteredRaids
+            .filter((r: RaidEventRecord) => characterAttendance.some(a => a.raid_event_id === r.id))
+            .map((r: RaidEventRecord) => new Date(r.raid_date + 'T00:00:00'))
+          if (attendedRaidDates.length > 0) {
+            const earliestAttendance = new Date(Math.min(...attendedRaidDates.map(d => d.getTime())))
+            if (earliestAttendance < effectiveStartDate) {
+              effectiveStartDate = earliestAttendance
+            }
+          }
+        }
       }
 
       // Filter raids to those after effective start date
