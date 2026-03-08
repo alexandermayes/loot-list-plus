@@ -103,7 +103,7 @@ export async function GET(request: NextRequest) {
           name,
           wowhead_id,
           boss_name,
-          raid_tiers!inner (
+          raid_tiers (
             id,
             name
           )

@@ -1477,12 +1477,11 @@ export default function RaidTrackingPage() {
           notes: `Imported from Gargul`
         }
 
+        // Always set character_name for display fallback
+        insertData.character_name = charName
         if (matchedCharacter) {
-          // Linked character - use character_id
+          // Linked character - also set character_id
           insertData.character_id = matchedCharacter.character_id
-        } else {
-          // Unlinked character - use character_name
-          insertData.character_name = charName
         }
 
         const { error } = await supabase

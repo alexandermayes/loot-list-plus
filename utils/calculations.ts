@@ -80,15 +80,13 @@ export function calculateAttendanceScore(
 
   if (records.length === 0 || totalRaids === 0) return 0
 
-  // Check for NCNS - if any, return 0
-  const hasNCNS = records.some(r => r.no_call_no_show)
-  if (hasNCNS) return 0
-
   // Calculate base attendance percentage
+  // NCNS raids count as not attended (no longer zeroes out entire score)
   let attendedCount = 0
   let signedUpCount = 0
 
   records.forEach(r => {
+    if (r.no_call_no_show) return // Skip NCNS raids entirely
     if (r.attended) attendedCount++
     if (r.signed_up) signedUpCount++
   })
@@ -106,6 +104,7 @@ export function calculateAttendanceScore(
 
     // Calculate points for each raid based on signup + attendance
     records.forEach(r => {
+      if (r.no_call_no_show) return // Skip NCNS raids
       let raidPoints = 0
       if (r.signed_up) {
         raidPoints += signupPointsPerRaid
