@@ -384,7 +384,7 @@ function MasterSheetContent() {
             .filter((r: RaidEventRecord) => characterAttendance.some(a => a.raid_event_id === r.id))
             .map((r: RaidEventRecord) => new Date(r.raid_date + 'T00:00:00'))
           if (attendedRaidDates.length > 0) {
-            const earliestAttendance = new Date(Math.min(...attendedRaidDates.map(d => d.getTime())))
+            const earliestAttendance = new Date(Math.min(...attendedRaidDates.map((d: Date) => d.getTime())))
             if (earliestAttendance < effectiveStartDate) {
               effectiveStartDate = earliestAttendance
             }
