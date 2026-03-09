@@ -102,6 +102,7 @@ export default function RaidTrackingPage() {
   const [attendance, setAttendance] = useState<Record<string, Record<string, AttendanceStatus>>>({})
   const [unlinkedAttendees, setUnlinkedAttendees] = useState<Record<string, UnlinkedAttendee[]>>({})
   const [raidLoot, setRaidLoot] = useState<Record<string, RaidLootEntry[]>>({})
+  const [raidSummaryCounts, setRaidSummaryCounts] = useState<Record<string, { attended: number; signedUp: number; loot: number }>>({})
   const [expandedRaids, setExpandedRaids] = useState<Set<string>>(new Set())
   const [expandedWeeks, setExpandedWeeks] = useState<Set<string>>(new Set())
   const [loading, setLoading] = useState(true)
@@ -442,6 +443,41 @@ export default function RaidTrackingPage() {
 
     if (deduplicatedEvents && deduplicatedEvents.length > 0) {
       setRaidDates(deduplicatedEvents)
+
+      // Batch-fetch summary counts for all raid headers (attended/signed-up/loot)
+      const allEventIds = deduplicatedEvents.map((e: RaidEvent) => e.id)
+      try {
+        const [{ data: summaryRecords }, { data: lootCounts }] = await Promise.all([
+          supabase
+            .from('attendance_records')
+            .select('raid_event_id, attended, signed_up')
+            .in('raid_event_id', allEventIds),
+          supabase
+            .from('loot_history')
+            .select('raid_event_id')
+            .in('raid_event_id', allEventIds)
+        ])
+
+        const counts: Record<string, { attended: number; signedUp: number; loot: number }> = {}
+        for (const id of allEventIds) {
+          counts[id] = { attended: 0, signedUp: 0, loot: 0 }
+        }
+        if (summaryRecords) {
+          for (const r of summaryRecords) {
+            if (!counts[r.raid_event_id]) counts[r.raid_event_id] = { attended: 0, signedUp: 0, loot: 0 }
+            if (r.attended) counts[r.raid_event_id].attended++
+            if (r.signed_up) counts[r.raid_event_id].signedUp++
+          }
+        }
+        if (lootCounts) {
+          for (const r of lootCounts) {
+            if (counts[r.raid_event_id]) counts[r.raid_event_id].loot++
+          }
+        }
+        setRaidSummaryCounts(counts)
+      } catch {
+        // Not critical - headers will show 0 until expanded
+      }
 
       // Auto-expand the most recent week
       const mostRecentRaid = deduplicatedEvents[0]
@@ -1772,22 +1808,28 @@ export default function RaidTrackingPage() {
   }
 
   const getAttendanceCount = useCallback((raidId: string) => {
-    const raidAttendance = attendance[raidId] || {}
-    const linkedCount = Object.values(raidAttendance).filter(a => a.attended).length
-    const unlinkedCount = (unlinkedAttendees[raidId] || []).filter(u => u.status.attended).length
-    return linkedCount + unlinkedCount
-  }, [attendance, unlinkedAttendees])
+    // Use full attendance data if loaded, otherwise fall back to summary counts
+    if (attendance[raidId]) {
+      const linkedCount = Object.values(attendance[raidId]).filter(a => a.attended).length
+      const unlinkedCount = (unlinkedAttendees[raidId] || []).filter(u => u.status.attended).length
+      return linkedCount + unlinkedCount
+    }
+    return raidSummaryCounts[raidId]?.attended || 0
+  }, [attendance, unlinkedAttendees, raidSummaryCounts])
 
   const getSignupCount = useCallback((raidId: string) => {
-    const raidAttendance = attendance[raidId] || {}
-    const linkedCount = Object.values(raidAttendance).filter(a => a.signed_up).length
-    const unlinkedCount = (unlinkedAttendees[raidId] || []).filter(u => u.status.signed_up).length
-    return linkedCount + unlinkedCount
-  }, [attendance, unlinkedAttendees])
+    if (attendance[raidId]) {
+      const linkedCount = Object.values(attendance[raidId]).filter(a => a.signed_up).length
+      const unlinkedCount = (unlinkedAttendees[raidId] || []).filter(u => u.status.signed_up).length
+      return linkedCount + unlinkedCount
+    }
+    return raidSummaryCounts[raidId]?.signedUp || 0
+  }, [attendance, unlinkedAttendees, raidSummaryCounts])
 
   const getLootCount = useCallback((raidId: string) => {
-    return raidLoot[raidId]?.length || 0
-  }, [raidLoot])
+    if (raidLoot[raidId]) return raidLoot[raidId].length
+    return raidSummaryCounts[raidId]?.loot || 0
+  }, [raidLoot, raidSummaryCounts])
 
   // Group raids by week (starting on the first raid day from settings)
   const firstRaidDay = guildSettings?.first_raid_day ?? 0 // Default to Sunday if not set
