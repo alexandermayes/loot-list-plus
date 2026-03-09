@@ -14,6 +14,41 @@ export interface UpdateEntry {
 
 export const updates: UpdateEntry[] = [
   {
+    date: 'March 8, 2026',
+    items: [
+      {
+        category: 'feature',
+        title: 'Wrath of the Lich King',
+        description: 'Full loot data for all 5 phases, from Naxxramas through Ruby Sanctum. 1,353 items across 8 raids.',
+      },
+      {
+        category: 'feature',
+        title: 'Submission diff tracking',
+        description: 'Officers can see exactly what changed when a raider resubmits their loot list. Added items, removed items and rank changes are highlighted.',
+      },
+      {
+        category: 'improvement',
+        title: 'Loot submissions grouped by phase',
+        description: 'Pending submissions are now organized by phase group with raid icons for easier review.',
+      },
+      {
+        category: 'fix',
+        title: 'Attendance scores for imported raids',
+        description: 'Members with retroactively imported attendance now get proper credit. Fair mode no longer ignores raids that happened before a member joined the app.',
+      },
+      {
+        category: 'fix',
+        title: 'Loot history loading',
+        description: 'Fixed an issue where the loot history tab showed zero results despite imported loot existing.',
+      },
+      {
+        category: 'fix',
+        title: 'Item slot swap on submissions',
+        description: 'Fixed items in the same rank appearing flip-flopped (Item #1 and #2 swapped) when officers reviewed a submission.',
+      },
+    ],
+  },
+  {
     date: 'February 28, 2026',
     items: [
       {
