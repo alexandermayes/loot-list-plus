@@ -132,6 +132,13 @@ export const karazhan: Raid = {
         { name: 'Wicked Witch\'s Hat', slot: 'Head', wowhead_id: 28586 },
         { name: 'Blue Diamond Witchwand', slot: 'Ranged', wowhead_id: 28588 },
         { name: 'Legacy', slot: 'Two-Hand', wowhead_id: 28587 },
+        // Shared drops (all Opera variants)
+        { name: 'Ribbon of Sacrifice', slot: 'Trinket', wowhead_id: 28590 },
+        { name: 'Trial-Fire Trousers', slot: 'Legs', wowhead_id: 28594 },
+        { name: 'Earthsoul Leggings', slot: 'Legs', wowhead_id: 28591 },
+        { name: 'Beastmaw Pauldrons', slot: 'Shoulder', wowhead_id: 28589 },
+        { name: 'Eternium Greathelm', slot: 'Head', wowhead_id: 28593 },
+        { name: 'Libram of Souls Redeemed', slot: 'Relic', wowhead_id: 28592 },
       ],
     },
     {
@@ -162,6 +169,7 @@ export const karazhan: Raid = {
         { name: 'Gilded Thorium Cloak', slot: 'Back', wowhead_id: 28660 },
         { name: 'Mender\'s Heart-Ring', slot: 'Finger', wowhead_id: 28661 },
         { name: 'Breastplate of the Lightbinder', slot: 'Chest', wowhead_id: 28662 },
+        { name: 'Xavian Stiletto', slot: 'One-Hand', wowhead_id: 28659 },
         { name: 'The Lightning Capacitor', slot: 'Trinket', wowhead_id: 28785 },
         // Recipe
         { name: 'Formula: Enchant Weapon - Soulfrost', slot: 'Recipe', wowhead_id: 22561 },
@@ -262,6 +270,24 @@ export const karazhan: Raid = {
         { name: 'Emberspur Talisman', slot: 'Neck', wowhead_id: 28609 },
         { name: 'Dragonheart Flameshield', slot: 'Off Hand', wowhead_id: 28611 },
         { name: 'Ferocious Swift-Kickers', slot: 'Feet', wowhead_id: 28610 },
+      ],
+    },
+    {
+      name: 'Trash',
+      items: [
+        { name: 'Ring of Unrelenting Storms', slot: 'Finger', wowhead_id: 30667 },
+        { name: 'Ritssyn\'s Lost Pendant', slot: 'Neck', wowhead_id: 30666 },
+        { name: 'Drape of the Righteous', slot: 'Back', wowhead_id: 30642 },
+        { name: 'Grasp of the Dead', slot: 'Hands', wowhead_id: 30668 },
+        { name: 'Inferno Waist Cord', slot: 'Waist', wowhead_id: 30673 },
+        { name: 'Grips of Deftness', slot: 'Hands', wowhead_id: 30644 },
+        { name: 'Zierhut\'s Lost Treads', slot: 'Feet', wowhead_id: 30674 },
+        { name: 'Belt of the Tracker', slot: 'Waist', wowhead_id: 30643 },
+        { name: 'Boots of Elusion', slot: 'Feet', wowhead_id: 30641 },
+        // Recipes
+        { name: 'Pattern: Soulcloth Shoulders', slot: 'Recipe', wowhead_id: 21903 },
+        { name: 'Pattern: Soulcloth Vest', slot: 'Recipe', wowhead_id: 21904 },
+        { name: 'Formula: Enchant Boots - Surefooted', slot: 'Recipe', wowhead_id: 22545 },
       ],
     }
   ],
