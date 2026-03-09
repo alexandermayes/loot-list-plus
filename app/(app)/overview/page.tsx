@@ -777,6 +777,7 @@ function DashboardContent() {
       let blpData: Record<string, number> = {}
       let competitionMap: Record<string, { totalWanting: number; userRank: number }> = {}
       let totalReceivedCount = 0
+      const receivedItemIds = new Set<string>()
 
       await Promise.all([
         // BLP: fetch times_passed for this character's items
@@ -847,15 +848,20 @@ function DashboardContent() {
             // Competition data not critical
           }
         })(),
-        // Loot efficiency: count total received items
+        // Loot efficiency: count total received items + track which items were received
         (async () => {
           try {
-            const { count } = await supabase
+            const { data, count } = await supabase
               .from('loot_history')
-              .select('id', { count: 'exact', head: true })
+              .select('loot_item_id', { count: 'exact' })
               .eq('character_id', characterId)
               .eq('guild_id', activeGuild.id)
             totalReceivedCount = count || 0
+            if (data) {
+              for (const h of data) {
+                receivedItemIds.add(h.loot_item_id)
+              }
+            }
           } catch {
             // Not critical
           }
@@ -951,6 +957,9 @@ function DashboardContent() {
       }
 
       for (const item of filteredItems) {
+        // Skip items already received
+        if (receivedItemIds.has(item.id)) continue
+
         // Find this character's ranking for this item
         const charRanking = submissionItems.find((si: SubmissionItemData) => si.loot_item_id === item.id)
 
