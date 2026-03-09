@@ -89,17 +89,17 @@ export default function OnboardingModal({ open, onClose }: OnboardingModalProps)
           <div className="relative overflow-hidden rounded-t-xl">
             {/* Animated gradient background - subtle color shift */}
             <motion.div
-              className="absolute inset-0 bg-gradient-to-br from-accent/20 via-purple-500/15 to-accent/20 bg-[length:200%_200%]"
+              className="absolute inset-0 pointer-events-none bg-gradient-to-br from-accent/20 via-purple-500/15 to-accent/20 bg-[length:200%_200%]"
               animate={{
                 backgroundPosition: ['0% 0%', '100% 100%', '0% 0%'],
               }}
               transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
             />
             {/* Fade to background at bottom */}
-            <div className="absolute inset-0 bg-gradient-to-t from-background-elevated to-transparent" />
+            <div className="absolute inset-0 pointer-events-none bg-gradient-to-t from-background-elevated to-transparent" />
 
             {/* Glow effect behind logo */}
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 bg-accent/30 rounded-full blur-3xl" />
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 bg-accent/30 rounded-full blur-3xl pointer-events-none" />
 
             {/* Close button */}
             <Button
