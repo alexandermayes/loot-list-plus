@@ -794,7 +794,10 @@ function MasterSheetContent() {
         const remainingSkips = new Map(receivedItemCounts)
 
         for (const item of itemsData) {
-          const itemRankingsData = allRankingsData.filter((r: RankingData) => r.loot_item_id === item.id)
+          // Sort by rank descending so highest-ranked entries are skipped first when awarded
+          const itemRankingsData = allRankingsData
+            .filter((r: RankingData) => r.loot_item_id === item.id)
+            .sort((a: RankingData, b: RankingData) => b.rank - a.rank)
           const rankings: PlayerRanking[] = []
 
           for (const r of itemRankingsData) {
@@ -1399,7 +1402,10 @@ function MasterSheetContent() {
     const remainingSkips = new Map(receivedItemCounts)
 
     for (const item of itemsData) {
-      const itemRankingsData = allRankingsData.filter((r: TierRankingData) => r.loot_item_id === item.id)
+      // Sort by rank descending so highest-ranked entries are skipped first when awarded
+      const itemRankingsData = allRankingsData
+        .filter((r: TierRankingData) => r.loot_item_id === item.id)
+        .sort((a: TierRankingData, b: TierRankingData) => b.rank - a.rank)
       const rankings: PlayerRanking[] = []
 
       for (const r of itemRankingsData) {
