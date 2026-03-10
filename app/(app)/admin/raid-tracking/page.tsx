@@ -693,27 +693,28 @@ export default function RaidTrackingPage() {
       }
     }))
 
-    // Save to database
+    // Save to database via API (bypasses RLS)
     const payload = {
       raid_event_id: raidId,
       character_id: characterId,
       user_id: userId,
       ...newStatus
     }
-    const { data, error } = await supabase
-      .from('attendance_records')
-      .upsert(payload, {
+    const res = await fetch('/api/attendance/bulk', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        guild_id: activeGuild?.id,
+        action: 'upsert',
+        records: [payload],
         onConflict: 'raid_event_id,character_id'
       })
-      .select()
+    })
 
-    if (error) {
-      console.error('Failed to save attendance:', JSON.stringify(error, null, 2))
-      showNotification('error', error.message || 'Couldn\'t save attendance. Try again.')
-      await loadRaidAttendance(raidId)
-    } else if (!data || data.length === 0) {
-      console.error('No rows returned from upsert - possible RLS issue')
-      showNotification('error', 'Couldn\'t save attendance. Check your permissions and try again.')
+    if (!res.ok) {
+      const errBody = await res.json().catch(() => ({}))
+      console.error('Failed to save attendance:', errBody)
+      showNotification('error', errBody.error || 'Couldn\'t save attendance. Try again.')
       await loadRaidAttendance(raidId)
     }
   }
@@ -755,26 +756,30 @@ export default function RaidTrackingPage() {
       }
     }))
 
-    // Save to database
-    const { error } = await supabase
-      .from('attendance_records')
-      .upsert({
-        raid_event_id: raidId,
-        character_id: characterId,
-        user_id: userId,
-        signed_up: newSignedUp,
-        attended: current?.attended || false,
-        no_call_no_show: current?.no_call_no_show || false,
-        was_late: current?.was_late || false,
-        was_benched: current?.was_benched || false
-      }, {
+    // Save to database via API (bypasses RLS)
+    const res = await fetch('/api/attendance/bulk', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        guild_id: activeGuild?.id,
+        action: 'upsert',
+        records: [{
+          raid_event_id: raidId,
+          character_id: characterId,
+          user_id: userId,
+          signed_up: newSignedUp,
+          attended: current?.attended || false,
+          no_call_no_show: current?.no_call_no_show || false,
+          was_late: current?.was_late || false,
+          was_benched: current?.was_benched || false
+        }],
         onConflict: 'raid_event_id,character_id'
       })
+    })
 
-    if (error) {
-      console.error('Failed to toggle signup:', error)
+    if (!res.ok) {
+      console.error('Failed to toggle signup')
       showNotification('error', 'Couldn\'t save signup status. Try again.')
-      // Revert local state on error
       await loadRaidAttendance(raidId)
     }
   }
@@ -786,14 +791,14 @@ export default function RaidTrackingPage() {
       confirmLabel: 'Remove',
       variant: 'danger',
       onConfirm: async () => {
-        const { error } = await supabase
-          .from('attendance_records')
-          .delete()
-          .eq('raid_event_id', raidId)
-          .eq('character_id', characterId)
+        const res = await fetch('/api/attendance/bulk', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ guild_id: activeGuild?.id, raid_event_id: raidId, character_id: characterId })
+        })
 
-        if (error) {
-          console.error('Failed to remove from raid:', error)
+        if (!res.ok) {
+          console.error('Failed to remove from raid')
           showNotification('error', 'Couldn\'t remove from raid. Try again.')
           return
         }
@@ -1008,25 +1013,42 @@ export default function RaidTrackingPage() {
 
     // Insert linked records (with character_id)
     if (linkedUpdates.length > 0) {
-      await supabase
-        .from('attendance_records')
-        .upsert(linkedUpdates, { onConflict: 'raid_event_id,character_id' })
+      await fetch('/api/attendance/bulk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          guild_id: activeGuild.id,
+          action: 'upsert',
+          records: linkedUpdates,
+          onConflict: 'raid_event_id,character_id'
+        })
+      })
     }
 
     // Insert unlinked records (without character_id, will need different conflict handling)
     if (unlinkedUpdates.length > 0) {
       // First, delete any existing unlinked records with the same character_name for this raid
-      await supabase
-        .from('attendance_records')
-        .delete()
-        .eq('raid_event_id', showImportModal.raidId)
-        .is('character_id', null)
-        .in('character_name', unlinkedUpdates.map(u => u.character_name))
+      await fetch('/api/attendance/bulk', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          guild_id: activeGuild.id,
+          raid_event_id: showImportModal.raidId,
+          character_id_is_null: true,
+          character_names: unlinkedUpdates.map((u: any) => u.character_name)
+        })
+      })
 
       // Then insert the new unlinked records
-      await supabase
-        .from('attendance_records')
-        .insert(unlinkedUpdates)
+      await fetch('/api/attendance/bulk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          guild_id: activeGuild.id,
+          action: 'insert',
+          records: unlinkedUpdates
+        })
+      })
     }
 
     await loadRaidAttendance(showImportModal.raidId)
@@ -1238,13 +1260,14 @@ export default function RaidTrackingPage() {
 
     try {
       // Delete all attendance records for this raid
-      const { error: attendanceError } = await supabase
-        .from('attendance_records')
-        .delete()
-        .eq('raid_event_id', showImportModal.raidId)
+      const attendanceRes = await fetch('/api/attendance/bulk', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ guild_id: activeGuild.id, raid_event_id: showImportModal.raidId })
+      })
 
-      if (attendanceError) {
-        console.error('❌ Clear attendance error:', attendanceError)
+      if (!attendanceRes.ok) {
+        console.error('❌ Clear attendance error')
         showNotification('error', 'Couldn\'t clear attendance data. Try again.')
       }
 
@@ -1409,46 +1432,49 @@ export default function RaidTrackingPage() {
           const idsToRemove = [...linkedToRemove, ...unlinkedToRemove]
 
           if (idsToRemove.length > 0) {
-            const { error: removeError } = await supabase
-              .from('attendance_records')
-              .delete()
-              .in('id', idsToRemove)
-
-            if (removeError) {
-              console.error('❌ Remove attendance error:', removeError)
-            }
+            await fetch('/api/attendance/bulk', {
+              method: 'DELETE',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ guild_id: activeGuild.id, ids: idsToRemove })
+            })
           }
         }
       }
 
       if (linkedUpdates.length > 0) {
-        const { error: upsertError } = await supabase
-          .from('attendance_records')
-          .upsert(linkedUpdates, { onConflict: 'raid_event_id,character_id' })
-        if (upsertError) {
-          console.error('Attendance upsert error:', upsertError)
-        }
+        await fetch('/api/attendance/bulk', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            guild_id: activeGuild.id,
+            action: 'upsert',
+            records: linkedUpdates,
+            onConflict: 'raid_event_id,character_id'
+          })
+        })
       }
 
       // For unlinked attendees, delete existing and re-insert
-      const { error: deleteUnlinkedError } = await supabase
-        .from('attendance_records')
-        .delete()
-        .eq('raid_event_id', showImportModal.raidId)
-        .is('character_id', null)
-
-      if (deleteUnlinkedError) {
-        console.error('❌ Delete unlinked error:', deleteUnlinkedError)
-      }
+      await fetch('/api/attendance/bulk', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          guild_id: activeGuild.id,
+          raid_event_id: showImportModal.raidId,
+          character_id_is_null: true
+        })
+      })
 
       if (unlinkedUpdates.length > 0) {
-        const { error: insertError } = await supabase
-          .from('attendance_records')
-          .insert(unlinkedUpdates)
-
-        if (insertError) {
-          console.error('Unlinked attendance insert error:', insertError.message, insertError.code, insertError.details, insertError.hint)
-        }
+        await fetch('/api/attendance/bulk', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            guild_id: activeGuild.id,
+            action: 'insert',
+            records: unlinkedUpdates
+          })
+        })
       }
     }
 
@@ -1482,35 +1508,46 @@ export default function RaidTrackingPage() {
           .limit(1)
 
         if (existing && existing.length > 0) {
-          await supabase
-            .from('attendance_records')
-            .update({ signed_up: true })
-            .eq('id', existing[0].id)
-        } else {
-          await supabase
-            .from('attendance_records')
-            .insert({
-              raid_event_id: showImportModal.raidId,
-              character_name: name,
-              signed_up: true,
-              attended: false,
-              no_call_no_show: false,
-              was_late: false,
-              was_benched: false
+          await fetch('/api/attendance/bulk', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              guild_id: activeGuild.id,
+              updates: { signed_up: true },
+              filters: { id: existing[0].id }
             })
+          })
+        } else {
+          await fetch('/api/attendance/bulk', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              guild_id: activeGuild.id,
+              action: 'insert',
+              records: [{
+                raid_event_id: showImportModal.raidId,
+                character_name: name,
+                signed_up: true,
+                attended: false,
+                no_call_no_show: false,
+                was_late: false,
+                was_benched: false
+              }]
+            })
+          })
         }
       }
 
       if (signupCharacterIds.length > 0) {
-        const { error } = await supabase
-          .from('attendance_records')
-          .update({ signed_up: true })
-          .eq('raid_event_id', showImportModal.raidId)
-          .in('character_id', signupCharacterIds)
-
-        if (error) {
-          console.error('Signup update error:', error)
-        }
+        await fetch('/api/attendance/bulk', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            guild_id: activeGuild.id,
+            updates: { signed_up: true },
+            filters: { raid_event_id: showImportModal.raidId, character_ids: signupCharacterIds }
+          })
+        })
       }
     }
 
