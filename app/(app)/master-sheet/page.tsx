@@ -696,10 +696,14 @@ function MasterSheetContent() {
         }
         setItemPriorities(prioritiesMap)
 
-        // Create a Set of "characterId-itemId" pairs for fast lookup
-        const receivedItemsSet = new Set<string>(
-          (lootHistoryData || []).map((h: { character_id: string; loot_item_id: string }) => `${h.character_id}-${h.loot_item_id}`)
-        )
+        // Count how many times each character received each item
+        // This handles duplicate items (e.g., same tier token for MS and OS)
+        // so we only remove the correct number of entries, not all of them
+        const receivedItemCounts = new Map<string, number>()
+        for (const h of (lootHistoryData || []) as { character_id: string; loot_item_id: string }[]) {
+          const key = `${h.character_id}-${h.loot_item_id}`
+          receivedItemCounts.set(key, (receivedItemCounts.get(key) || 0) + 1)
+        }
 
         if (rankingsError) {
           console.error('Error loading rankings:', rankingsError)
@@ -782,6 +786,9 @@ function MasterSheetContent() {
         const subsById = new Map<string, SubmissionData>(subsData.map((s: SubmissionData) => [s.id, s]))
         const characterById = new Map<string, CharacterWithRelations>(charactersData?.map((c: CharacterWithRelations) => [c.id, c]) || [])
 
+        // Track remaining awards to skip per character+item (mutable copy)
+        const remainingSkips = new Map(receivedItemCounts)
+
         for (const item of itemsData) {
           const itemRankingsData = allRankingsData.filter((r: RankingData) => r.loot_item_id === item.id)
           const rankings: PlayerRanking[] = []
@@ -794,7 +801,13 @@ function MasterSheetContent() {
             if (!character) continue
 
             // Skip if character has already received this item
-            if (receivedItemsSet.has(`${character.id}-${item.id}`)) continue
+            // Only skip as many entries as times awarded (handles duplicate tokens for MS/OS)
+            const skipKey = `${character.id}-${item.id}`
+            const skipsLeft = remainingSkips.get(skipKey) || 0
+            if (skipsLeft > 0) {
+              remainingSkips.set(skipKey, skipsLeft - 1)
+              continue
+            }
 
             const attendanceData = attendanceCache[character.id] || { score: 0, raidsAttended: 0 }
             const attendance = attendanceData.score
@@ -1350,9 +1363,11 @@ function MasterSheetContent() {
       return itemsData.map((item: TierLootItem) => ({ item, rankings: [] }))
     }
 
-    const receivedItemsSet = new Set<string>(
-      (lootHistoryData || []).map((h: { character_id: string; loot_item_id: string }) => `${h.character_id}-${h.loot_item_id}`)
-    )
+    const receivedItemCounts = new Map<string, number>()
+    for (const h of (lootHistoryData || []) as { character_id: string; loot_item_id: string }[]) {
+      const key = `${h.character_id}-${h.loot_item_id}`
+      receivedItemCounts.set(key, (receivedItemCounts.get(key) || 0) + 1)
+    }
 
     // Pre-calculate attendance for all characters in a single batched query
     const attendanceCache = await calculateAttendanceBatch(
@@ -1370,6 +1385,9 @@ function MasterSheetContent() {
     const tierSubsById = new Map<string, TierSubmissionData>(subsData.map((s: TierSubmissionData) => [s.id, s]))
     const tierCharacterById = new Map<string, CharacterWithRelations>(charactersData.map((c: CharacterWithRelations) => [c.id, c]))
 
+    // Track remaining awards to skip per character+item (mutable copy)
+    const remainingSkips = new Map(receivedItemCounts)
+
     for (const item of itemsData) {
       const itemRankingsData = allRankingsData.filter((r: TierRankingData) => r.loot_item_id === item.id)
       const rankings: PlayerRanking[] = []
@@ -1382,7 +1400,13 @@ function MasterSheetContent() {
         if (!character) continue
 
         // Skip if character has already received this item
-        if (receivedItemsSet.has(`${character.id}-${item.id}`)) continue
+        // Only skip as many entries as times awarded (handles duplicate tokens for MS/OS)
+        const skipKey = `${character.id}-${item.id}`
+        const skipsLeft = remainingSkips.get(skipKey) || 0
+        if (skipsLeft > 0) {
+          remainingSkips.set(skipKey, skipsLeft - 1)
+          continue
+        }
 
         const attendanceData = attendanceCache[character.id] || { score: 0, raidsAttended: 0 }
         const attendance = attendanceData.score
