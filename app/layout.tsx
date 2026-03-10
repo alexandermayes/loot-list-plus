@@ -6,6 +6,7 @@ import { NotificationProvider } from "./contexts/NotificationContext";
 import { ThemeProvider } from "./components/ThemeProvider";
 import { SWRProvider } from "./components/SWRProvider";
 import { PostHogProvider } from "./components/PostHogProvider";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import NotificationContainer from "./components/NotificationContainer";
 import "./globals.css";
 
@@ -161,6 +162,7 @@ export default function RootLayout({
                 <PostHogProvider>
                   <NotificationContainer />
                   {children}
+                  <SpeedInsights />
                 </PostHogProvider>
               </GuildContextProvider>
             </NotificationProvider>
