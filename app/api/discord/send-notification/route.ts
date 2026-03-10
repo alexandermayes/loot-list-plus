@@ -87,7 +87,7 @@ export async function POST(request: NextRequest) {
       .from('user_preferences')
       .select('discord_id, notify_submission_status')
       .eq('user_id', character.user_id)
-      .single()
+      .maybeSingle()
 
     // Check if user wants notifications
     if (preferences?.notify_submission_status === false) {

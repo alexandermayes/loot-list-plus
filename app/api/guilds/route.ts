@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
       .from('user_preferences')
       .select('discord_verified')
       .eq('user_id', user.id)
-      .single()
+      .maybeSingle()
 
     if (!prefs?.discord_verified) {
       return NextResponse.json(

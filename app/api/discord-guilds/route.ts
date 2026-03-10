@@ -51,7 +51,7 @@ export async function GET() {
       .from('user_preferences')
       .select('discord_verified, discord_id')
       .eq('user_id', user.id)
-      .single()
+      .maybeSingle()
 
     if (!preferences?.discord_verified || !preferences?.discord_id) {
       return NextResponse.json(
