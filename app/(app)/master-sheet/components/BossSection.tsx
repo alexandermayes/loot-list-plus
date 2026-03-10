@@ -68,7 +68,7 @@ export const BossSection = memo(function BossSection({
   const bossImage = getBossImage(boss)
   const decimalPlaces = guildSettings?.decimal_places ?? 2
   const minimumRaidDays = guildSettings?.minimum_raid_days || 2
-  const columnCount = Math.max(maxRankingsCount, 5)
+  const columnCount = maxRankingsCount || 5
   const columnIndices = Array.from({ length: columnCount }, (_, i) => i)
 
   return (

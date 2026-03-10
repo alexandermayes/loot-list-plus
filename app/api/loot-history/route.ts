@@ -99,7 +99,7 @@ export async function GET(request: NextRequest) {
             color_hex
           )
         ),
-        loot_items!inner (
+        loot_items (
           name,
           wowhead_id,
           boss_name,
