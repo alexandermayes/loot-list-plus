@@ -63,7 +63,7 @@ const expansionVisuals: Record<string, ExpansionVisuals> = {
     accentColor: '#FF6B35',
     textColor: '#FFD4C4',
     borderColor: '#8B3A1A',
-    logoUrl: 'https://wow.zamimg.com/images/wow/icons/large/achievement_boss_cthun.jpg',
+    logoUrl: 'https://wow.zamimg.com/images/wow/icons/large/achievment_boss_madnessofdeathwing.jpg',
     artworkUrl: 'https://bnetcmsus-a.akamaihd.net/cms/blog_header/CLVLP6DKAJ421535148036498.jpg'
   },
   'Mists of Pandaria': {

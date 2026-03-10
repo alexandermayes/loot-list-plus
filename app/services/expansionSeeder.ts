@@ -2,12 +2,18 @@ import { SupabaseClient } from '@supabase/supabase-js'
 import { classicRaids, Raid as ClassicRaid } from '@/data/classic-wow-raids'
 import { tbcRaids } from '@/data/tbc-raids'
 import { wrathRaids } from '@/data/wrath-raids'
+import { cataRaids } from '@/data/cata-raids'
+import { mopRaids } from '@/data/mop-raids'
 import { ITEM_CLASSIFICATIONS } from '@/data/classic-wow-item-classifications'
 import { TBC_ITEM_CLASSIFICATIONS } from '@/data/tbc-item-classifications'
 import { WOTLK_ITEM_CLASSIFICATIONS } from '@/data/wrath-item-classifications'
+import { CATA_ITEM_CLASSIFICATIONS } from '@/data/cata-item-classifications'
+import { MOP_ITEM_CLASSIFICATIONS } from '@/data/mop-item-classifications'
 import { CLASSIC_ITEM_ROLES } from '@/data/classic-item-roles'
 import { TBC_ITEM_ROLES } from '@/data/tbc-item-roles'
 import { WOTLK_ITEM_ROLES } from '@/data/wrath-item-roles'
+import { CATA_ITEM_ROLES } from '@/data/cata-item-roles'
+import { MOP_ITEM_ROLES } from '@/data/mop-item-roles'
 import { EXPANSION_PHASES, getExpansionSlug } from '@/data/expansion-phases'
 import { getTokenClasses, isTokenSlot } from '@/data/token-class-mapping'
 
@@ -118,6 +124,44 @@ function transformWrathRaids(): RaidDefinition[] {
   }))
 }
 
+/**
+ * Transform Cataclysm raid data into the format expected by the seeder
+ */
+function transformCataRaids(): RaidDefinition[] {
+  return cataRaids.map((raid, index) => ({
+    name: raid.name,
+    isActive: index === 0,
+    phase: getRaidPhase('cata', raid.name),
+    bosses: raid.bosses.map(boss => ({
+      name: boss.name,
+      lootItems: boss.items.map(item => ({
+        name: item.name,
+        slot: item.slot,
+        wowheadId: item.wowhead_id.toString()
+      }))
+    }))
+  }))
+}
+
+/**
+ * Transform MoP raid data into the format expected by the seeder
+ */
+function transformMoPRaids(): RaidDefinition[] {
+  return mopRaids.map((raid, index) => ({
+    name: raid.name,
+    isActive: index === 0,
+    phase: getRaidPhase('mop', raid.name),
+    bosses: raid.bosses.map(boss => ({
+      name: boss.name,
+      lootItems: boss.items.map(item => ({
+        name: item.name,
+        slot: item.slot,
+        wowheadId: item.wowhead_id.toString()
+      }))
+    }))
+  }))
+}
+
 // Classic WoW expansion data
 const CLASSIC_WOW_DATA: ExpansionDefinition = {
   name: 'Classic',
@@ -139,14 +183,28 @@ const WOTLK_DATA: ExpansionDefinition = {
   raids: transformWrathRaids()
 }
 
+// Cataclysm expansion data
+const CATA_DATA: ExpansionDefinition = {
+  name: 'Cataclysm',
+  displayName: 'Cataclysm',
+  raids: transformCataRaids()
+}
+
+// Mists of Pandaria expansion data
+const MOP_DATA: ExpansionDefinition = {
+  name: 'Mists of Pandaria',
+  displayName: 'Mists of Pandaria',
+  raids: transformMoPRaids()
+}
+
 // Map of all available expansions
 // Expansions with null have no loot data yet (shown as "coming soon" in UI)
 const EXPANSION_DATA: Record<string, ExpansionDefinition | null> = {
   'Classic': CLASSIC_WOW_DATA,
   'The Burning Crusade': TBC_DATA,
   'Wrath of the Lich King': WOTLK_DATA,
-  'Cataclysm': null,
-  'Mists of Pandaria': null,
+  'Cataclysm': CATA_DATA,
+  'Mists of Pandaria': MOP_DATA,
   'Warlords of Draenor': null,
   'Legion': null,
   'Battle for Azeroth': null,
@@ -224,7 +282,7 @@ export async function seedExpansionForGuild(
   if (!expansionData) {
     return {
       expansionId: '',
-      error: `No data available for ${expansionName} yet. Currently supported: Classic, The Burning Crusade, and Wrath of the Lich King. Please select one of these or wait for other expansion data to be added.`
+      error: `No data available for ${expansionName} yet. Currently supported: Classic, The Burning Crusade, Wrath of the Lich King, Cataclysm, and Mists of Pandaria. Please select one of these or wait for other expansion data to be added.`
     }
   }
 
@@ -323,7 +381,11 @@ export async function seedExpansionForGuild(
         boss.lootItems.map(item => {
           // Look up classification from the appropriate mapping based on expansion
           let classificationMap: Record<string, 'Reserved' | 'Limited' | 'Unlimited'>
-          if (expansionData.displayName === 'Wrath of the Lich King') {
+          if (expansionData.displayName === 'Mists of Pandaria') {
+            classificationMap = MOP_ITEM_CLASSIFICATIONS
+          } else if (expansionData.displayName === 'Cataclysm') {
+            classificationMap = CATA_ITEM_CLASSIFICATIONS
+          } else if (expansionData.displayName === 'Wrath of the Lich King') {
             classificationMap = WOTLK_ITEM_CLASSIFICATIONS
           } else if (expansionData.displayName === 'The Burning Crusade') {
             classificationMap = TBC_ITEM_CLASSIFICATIONS
@@ -337,7 +399,11 @@ export async function seedExpansionForGuild(
           // Look up roles from the appropriate mapping based on expansion
           // Items without explicit mapping default to empty array (available to all specs)
           let roleMap: Record<string, ('tank' | 'healer' | 'physical' | 'caster')[]>
-          if (expansionData.displayName === 'Wrath of the Lich King') {
+          if (expansionData.displayName === 'Mists of Pandaria') {
+            roleMap = MOP_ITEM_ROLES
+          } else if (expansionData.displayName === 'Cataclysm') {
+            roleMap = CATA_ITEM_ROLES
+          } else if (expansionData.displayName === 'Wrath of the Lich King') {
             roleMap = WOTLK_ITEM_ROLES
           } else if (expansionData.displayName === 'The Burning Crusade') {
             roleMap = TBC_ITEM_ROLES
