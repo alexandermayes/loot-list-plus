@@ -106,7 +106,7 @@ export async function GET(request: NextRequest) {
       .select(`
         id,
         awarded_date,
-        loot_items!inner (
+        loot_items (
           wowhead_id,
           name,
           item_slot

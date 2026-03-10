@@ -207,6 +207,7 @@ export function VirtualizedMasterSheet({
                   activeCharacterId={activeCharacterId}
                   guildSettings={guildSettings}
                   onCompare={onCompare}
+                  maxRankingsCount={maxRankingsCount}
                 />
               )}
             </div>

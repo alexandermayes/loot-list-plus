@@ -171,7 +171,7 @@ export async function POST(request: NextRequest) {
         .select(`
           character_name,
           character_id,
-          loot_items!inner (
+          loot_items (
             name,
             wowhead_id
           )
