@@ -7,7 +7,11 @@ import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { ArrowDown01Icon, ArrowUp01Icon, Upload01Icon, Cancel01Icon, MoreVerticalIcon, DiscordIcon } from '@hugeicons/core-free-icons'
-import LootHistoryTab from './components/LootHistoryTab'
+import nextDynamic from 'next/dynamic'
+
+const LootHistoryTab = nextDynamic(() => import('./components/LootHistoryTab'), {
+  loading: () => <div className="p-8 text-center text-muted-foreground">Loading loot history...</div>
+})
 import { RaidTrackingPageSkeleton } from '@/components/ui/skeletons'
 import { Heading } from '@/components/ui/typography'
 import { useGuildContext } from '@/app/contexts/GuildContext'
@@ -2171,6 +2175,44 @@ export default function RaidTrackingPage() {
     return upcoming.filter(d => !existingDates.has(d))
   }, [currentExpansion, guildSettings, raidDates])
 
+  // Memoize import preview computations (run on every keystroke in the import modal)
+  const attendancePreview = useMemo(() => {
+    return attendanceData.trim() ? parseAttendancePreview(attendanceData) : null
+  }, [attendanceData, members, characterAliases])
+
+  const lootPreview = useMemo(() => {
+    return lootData.trim() ? parseLootPreview(lootData) : null
+  }, [lootData, lootItems, members, characterAliases])
+
+  const signupsPreview = useMemo(() => {
+    return signupsData.trim() ? parseSignupsPreview(signupsData) : null
+  }, [signupsData, members, characterAliases])
+
+  // Memoize loot item filtering for the selection modal (avoids re-filtering 1000+ items on every keystroke)
+  const filteredLootItems = useMemo(() => {
+    if (lootSearchQuery.length === 0) return lootItems
+    const q = lootSearchQuery.toLowerCase()
+    return lootItems.filter(item =>
+      item.name.toLowerCase().includes(q) ||
+      item.boss_name.toLowerCase().includes(q)
+    )
+  }, [lootItems, lootSearchQuery])
+
+  // Memoize member filtering/sorting for the attendee resolution modal
+  const filteredResolutionMembers = useMemo(() => {
+    const searchTarget = showAttendeeResolutionModal?.name || ''
+    const filtered = attendeeSearchQuery.length === 0
+      ? members
+      : members.filter(m =>
+          m.character_name.toLowerCase().includes(attendeeSearchQuery.toLowerCase()) ||
+          m.class_name.toLowerCase().includes(attendeeSearchQuery.toLowerCase())
+        )
+    if (attendeeSearchQuery.length > 0) return filtered.slice(0, 40)
+    return [...filtered]
+      .sort((a, b) => nameSimilarity(b.character_name, searchTarget) - nameSimilarity(a.character_name, searchTarget))
+      .slice(0, 40)
+  }, [members, attendeeSearchQuery, showAttendeeResolutionModal?.name])
+
   if (loading) {
     return <RaidTrackingPageSkeleton />
   }
@@ -2745,20 +2787,17 @@ export default function RaidTrackingPage() {
                 placeholder={"Paste character names (comma-separated or one per line)\n\nZev\nDeny\nCheck"}
                 className="h-44 font-mono resize-none"
               />
-              {attendanceData.trim() && (() => {
-                const preview = parseAttendancePreview(attendanceData)
-                return (
+              {attendancePreview && (
                   <div className="flex items-center gap-2 text-sm">
-                    <span className="text-success">{preview.matched} matched</span>
-                    {preview.aliasMatched > 0 && (
-                      <span className="text-accent">{preview.aliasMatched} via alias</span>
+                    <span className="text-success">{attendancePreview.matched} matched</span>
+                    {attendancePreview.aliasMatched > 0 && (
+                      <span className="text-accent">{attendancePreview.aliasMatched} via alias</span>
                     )}
-                    {preview.unmatched > 0 && (
-                      <span className="text-warning">{preview.unmatched} unmatched</span>
+                    {attendancePreview.unmatched > 0 && (
+                      <span className="text-warning">{attendancePreview.unmatched} unmatched</span>
                     )}
                   </div>
-                )
-              })()}
+              )}
             </div>
 
             {/* Loot Section */}
@@ -2776,22 +2815,19 @@ export default function RaidTrackingPage() {
                 placeholder={"DATE;[ITEM_ID];CHARACTER\n\n12/15/2024;[16859];Zev\n12/15/2024;[18203];Deny\n12/15/2024;[17113];Check"}
                 className="h-44 font-mono resize-none"
               />
-              {lootData.trim() && (() => {
-                const preview = parseLootPreview(lootData)
-                return (
+              {lootPreview && (
                   <div className="flex items-center gap-2 text-sm">
-                    {preview.linked > 0 && (
-                      <span className="text-success">{preview.linked} linked</span>
+                    {lootPreview.linked > 0 && (
+                      <span className="text-success">{lootPreview.linked} linked</span>
                     )}
-                    {preview.unlinked > 0 && (
-                      <span className="text-warning">{preview.unlinked} unlinked</span>
+                    {lootPreview.unlinked > 0 && (
+                      <span className="text-warning">{lootPreview.unlinked} unlinked</span>
                     )}
-                    {preview.failed > 0 && (
-                      <span className="text-destructive">{preview.failed} failed</span>
+                    {lootPreview.failed > 0 && (
+                      <span className="text-destructive">{lootPreview.failed} failed</span>
                     )}
                   </div>
-                )
-              })()}
+              )}
             </div>
           </div>
 
@@ -2813,20 +2849,17 @@ export default function RaidTrackingPage() {
                 placeholder={"Paste character names (comma-separated or one per line)\n\nZev\nDeny\nCheck"}
                 className="h-24 font-mono resize-none"
               />
-              {signupsData.trim() && (() => {
-                const preview = parseSignupsPreview(signupsData)
-                return (
+              {signupsPreview && (
                   <div className="flex items-center gap-2 text-sm">
-                    <span className="text-success">{preview.matched} matched</span>
-                    {preview.aliasMatched > 0 && (
-                      <span className="text-accent">{preview.aliasMatched} via alias</span>
+                    <span className="text-success">{signupsPreview.matched} matched</span>
+                    {signupsPreview.aliasMatched > 0 && (
+                      <span className="text-accent">{signupsPreview.aliasMatched} via alias</span>
                     )}
-                    {preview.unmatched > 0 && (
-                      <span className="text-warning">{preview.unmatched} unmatched</span>
+                    {signupsPreview.unmatched > 0 && (
+                      <span className="text-warning">{signupsPreview.unmatched} unmatched</span>
                     )}
                   </div>
-                )
-              })()}
+              )}
             </div>
           )}
         </ModalBody>
@@ -2892,14 +2925,7 @@ export default function RaidTrackingPage() {
           />
 
           <div className="max-h-64 overflow-y-auto space-y-1">
-            {lootItems
-              .filter(item =>
-                lootSearchQuery.length === 0 ||
-                item.name.toLowerCase().includes(lootSearchQuery.toLowerCase()) ||
-                item.boss_name.toLowerCase().includes(lootSearchQuery.toLowerCase())
-              )
-              .slice(0, 20)
-              .map(item => (
+            {filteredLootItems.slice(0, 20).map(item => (
                 <Button
                   key={item.id}
                   variant="ghost"
@@ -2912,10 +2938,7 @@ export default function RaidTrackingPage() {
                   </div>
                 </Button>
               ))}
-            {lootItems.filter(item =>
-              lootSearchQuery.length === 0 ||
-              item.name.toLowerCase().includes(lootSearchQuery.toLowerCase())
-            ).length === 0 && (
+            {filteredLootItems.length === 0 && (
               <EmptyState
                 icon={Search01Icon}
                 title="No items found"
@@ -2954,19 +2977,7 @@ export default function RaidTrackingPage() {
           />
 
           <div className={`overflow-y-auto space-y-1 transition-[max-height] duration-200 ${attendeeSearchQuery.length > 0 ? 'max-h-[400px]' : 'max-h-64'}`}>
-            {(() => {
-              const searchTarget = showAttendeeResolutionModal?.name || ''
-              const filtered = members.filter(m =>
-                attendeeSearchQuery.length === 0 ||
-                m.character_name.toLowerCase().includes(attendeeSearchQuery.toLowerCase()) ||
-                m.class_name.toLowerCase().includes(attendeeSearchQuery.toLowerCase())
-              )
-              const sorted = attendeeSearchQuery.length > 0
-                ? filtered
-                : [...filtered].sort((a, b) =>
-                    nameSimilarity(b.character_name, searchTarget) - nameSimilarity(a.character_name, searchTarget)
-                  )
-              return sorted.length > 0 ? sorted.slice(0, 40).map(m => (
+            {filteredResolutionMembers.length > 0 ? filteredResolutionMembers.map(m => (
                 <button
                   key={m.character_id}
                   onClick={() => handleAttendeeResolution(m)}
@@ -2984,8 +2995,7 @@ export default function RaidTrackingPage() {
                   description="Try a different search term."
                   size="compact"
                 />
-              )
-            })()}
+              )}
           </div>
 
           <div className="flex items-center gap-2 pt-1">

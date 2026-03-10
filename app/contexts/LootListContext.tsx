@@ -22,7 +22,7 @@ import {
 } from '@/app/hooks/use-api'
 import { refreshWowheadTooltips } from '@/lib/wowhead'
 import { buildSlotCoverageMap, computeUpgradeTier } from '@/lib/slot-normalization'
-import { preloadItemIcons } from '@/data/item-icons'
+// preloadItemIcons is lazy-loaded (190KB module) - only imported when items are ready
 import {
   createBracketStates,
   findNextValidSlot,
@@ -387,9 +387,11 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
   // Preload icons and refresh Wowhead tooltips when items load
   useEffect(() => {
     if (!itemsLoading && itemsData?.items?.length) {
-      // Preload all item icons so they're cached before user interacts
+      // Lazy-load the icon module, then preload item icons
       const wowheadIds = itemsData.items.map(item => item.wowhead_id)
-      preloadItemIcons(wowheadIds)
+      import('@/data/item-icons').then(({ preloadItemIcons }) => {
+        preloadItemIcons(wowheadIds)
+      })
       refreshWowheadTooltips(true)
     }
   }, [itemsLoading, itemsData?.items])
