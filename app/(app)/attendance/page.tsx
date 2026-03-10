@@ -414,23 +414,24 @@ export default function AttendancePage() {
         ].filter(day => day !== null && day !== undefined)
           .slice(0, raidDaysSource?.raid_days_per_week || 2)
 
-        // Show ALL tracked raid events — don't filter by configured schedule.
-        // If an officer tracked a raid on an off-schedule day, it should still appear.
-        const filteredRaidEvents = raidEventsData || []
+        // Show ALL tracked raid events that have attendance data, regardless of schedule.
+        // Only filter empty events (no attendance) to match the current configured schedule.
+        // This handles: schedule changes leaving orphan events, while keeping off-schedule tracked raids.
+        const allRaidEvents = raidEventsData || []
 
         // IMPORTANT: Deduplicate by raid_date to handle duplicate entries in database
         // First, find which raid IDs have attendance records, so we prefer those
-        const filteredRaidIds = filteredRaidEvents.map((e: RaidEvent) => e.id)
+        const allRaidIds = allRaidEvents.map((e: RaidEvent) => e.id)
         const { data: existingAttendance } = await supabase
           .from('attendance_records')
           .select('raid_event_id')
-          .in('raid_event_id', filteredRaidIds)
+          .in('raid_event_id', allRaidIds)
 
         const raidIdsWithAttendance = new Set(existingAttendance?.map((r: { raid_event_id: string }) => r.raid_event_id) || [])
 
         // Deduplicate: prefer events that have attendance records
         const deduplicatedRaidEvents: RaidEvent[] = Array.from(
-          filteredRaidEvents.reduce((map: Map<string, RaidEvent>, event: RaidEvent) => {
+          allRaidEvents.reduce((map: Map<string, RaidEvent>, event: RaidEvent) => {
             const existing = map.get(event.raid_date)
             if (!existing) {
               // First event for this date - keep it
@@ -443,7 +444,17 @@ export default function AttendancePage() {
           }, new Map<string, RaidEvent>()).values()
         )
 
-        setGuildRaidEvents(deduplicatedRaidEvents)
+        // Filter out empty events that don't match the current raid schedule.
+        // Events WITH attendance always show (officer tracked an off-schedule day).
+        // Events WITHOUT attendance only show if they match a configured raid day.
+        const raidDaySet = new Set(raidDays as number[])
+        const filteredRaidEvents = deduplicatedRaidEvents.filter(event => {
+          if (raidIdsWithAttendance.has(event.id)) return true
+          const eventDay = parseDate(event.raid_date).getDay()
+          return raidDaySet.has(eventDay)
+        })
+
+        setGuildRaidEvents(filteredRaidEvents)
 
         // Get attendance records for personal view (use same tracked window)
         const { data: recordsData } = await supabase
