@@ -303,10 +303,25 @@ export async function POST(request: NextRequest) {
         return `${item?.name || 'Unknown Item'} → ${charName}`
       })
 
-      fields.push({
-        name: `Loot (${lootRows.length})`,
-        value: truncateField(lootLines, '\n', '\n... and {n} more'),
-        inline: false,
+      // Split loot into multiple fields if needed (Discord 1024 char limit per field)
+      const lootFields: string[][] = [[]]
+      let currentFieldLen = 0
+      for (const line of lootLines) {
+        const lineLen = line.length + 1 // +1 for newline separator
+        if (currentFieldLen + lineLen > EMBED_FIELD_LIMIT && lootFields[lootFields.length - 1].length > 0) {
+          lootFields.push([])
+          currentFieldLen = 0
+        }
+        lootFields[lootFields.length - 1].push(line)
+        currentFieldLen += lineLen
+      }
+
+      lootFields.forEach((chunk, i) => {
+        fields.push({
+          name: i === 0 ? `Loot (${lootRows.length})` : '\u200b', // invisible char for continuation fields
+          value: chunk.join('\n'),
+          inline: false,
+        })
       })
     }
 
