@@ -659,11 +659,11 @@ function MasterSheetContent() {
             .limit(10000),
 
           // Query 2: Load loot history to filter out characters who already received items
+          // Match by wowhead_id (not loot_item_id) so awards from other tiers with the same physical item are caught
           supabase
             .from('loot_history')
-            .select('character_id, loot_item_id')
+            .select('character_id, loot_item:loot_items(wowhead_id)')
             .eq('guild_id', guildId)
-            .in('loot_item_id', itemIds)
             .limit(10000),
 
           // Query 3: Fetch BLP data (if enabled)
@@ -696,12 +696,16 @@ function MasterSheetContent() {
         }
         setItemPriorities(prioritiesMap)
 
-        // Count how many times each character received each item
+        // Count how many times each character received each item (by wowhead_id)
+        // Using wowhead_id ensures awards from other tiers with the same physical item are matched
         // This handles duplicate items (e.g., same tier token for MS and OS)
         // so we only remove the correct number of entries, not all of them
+        const wowheadIdSet = new Set(itemsData.map((i: LootItem) => i.wowhead_id))
         const receivedItemCounts = new Map<string, number>()
-        for (const h of (lootHistoryData || []) as { character_id: string; loot_item_id: string }[]) {
-          const key = `${h.character_id}-${h.loot_item_id}`
+        for (const h of (lootHistoryData || []) as { character_id: string; loot_item: { wowhead_id: number } | null }[]) {
+          const wowheadId = h.loot_item?.wowhead_id
+          if (wowheadId == null || !wowheadIdSet.has(wowheadId)) continue
+          const key = `${h.character_id}-${wowheadId}`
           receivedItemCounts.set(key, (receivedItemCounts.get(key) || 0) + 1)
         }
 
@@ -800,9 +804,9 @@ function MasterSheetContent() {
             const character = sub.character_id ? characterById.get(sub.character_id) : undefined
             if (!character) continue
 
-            // Skip if character has already received this item
+            // Skip if character has already received this item (matched by wowhead_id)
             // Only skip as many entries as times awarded (handles duplicate tokens for MS/OS)
-            const skipKey = `${character.id}-${item.id}`
+            const skipKey = `${character.id}-${item.wowhead_id}`
             const skipsLeft = remainingSkips.get(skipKey) || 0
             if (skipsLeft > 0) {
               remainingSkips.set(skipKey, skipsLeft - 1)
@@ -974,17 +978,20 @@ function MasterSheetContent() {
           .select('id, name, class:wow_classes(name, color_hex)')
           .in('id', characterIds)
 
-        // Get loot history for awarded count
+        // Get loot history for awarded count (match by wowhead_id so cross-tier awards are counted)
+        const wowheadIdSet = new Set(itemsData.map((i: { wowhead_id: number }) => i.wowhead_id))
         const { data: lootHistoryData } = await supabase
           .from('loot_history')
-          .select('loot_item_id')
+          .select('loot_item:loot_items(wowhead_id)')
           .eq('guild_id', guildId)
-          .in('loot_item_id', itemIds)
+          .limit(10000)
 
-        // Count awards per item
-        const awardedCounts: Record<string, number> = {}
-        for (const h of lootHistoryData || []) {
-          awardedCounts[h.loot_item_id] = (awardedCounts[h.loot_item_id] || 0) + 1
+        // Count awards per wowhead_id
+        const awardedCounts: Record<number, number> = {}
+        for (const h of (lootHistoryData || []) as { loot_item: { wowhead_id: number } | null }[]) {
+          const wowheadId = h.loot_item?.wowhead_id
+          if (wowheadId == null || !wowheadIdSet.has(wowheadId)) continue
+          awardedCounts[wowheadId] = (awardedCounts[wowheadId] || 0) + 1
         }
 
         // Build aggregate data
@@ -999,7 +1006,7 @@ function MasterSheetContent() {
             wowhead_id: item.wowhead_id,
             classification: item.classification || 'common',
             total_lists: 0,
-            already_awarded: awardedCounts[item.id] || 0,
+            already_awarded: awardedCounts[item.wowhead_id] || 0,
             players: [],
             average_rank: 0,
           }
@@ -1296,11 +1303,11 @@ function MasterSheetContent() {
       })(),
 
       // Load loot history to filter out characters who already received items
+      // Match by wowhead_id (not loot_item_id) so awards from other tiers with the same physical item are caught
       supabase
         .from('loot_history')
-        .select('character_id, loot_item_id')
+        .select('character_id, loot_item:loot_items(wowhead_id)')
         .eq('guild_id', guildId)
-        .in('loot_item_id', itemIds)
         .limit(10000),
 
       // Fetch BLP data for all items in this tier
@@ -1363,9 +1370,12 @@ function MasterSheetContent() {
       return itemsData.map((item: TierLootItem) => ({ item, rankings: [] }))
     }
 
+    const tierWowheadIdSet = new Set(itemsData.map((i: TierLootItem) => i.wowhead_id))
     const receivedItemCounts = new Map<string, number>()
-    for (const h of (lootHistoryData || []) as { character_id: string; loot_item_id: string }[]) {
-      const key = `${h.character_id}-${h.loot_item_id}`
+    for (const h of (lootHistoryData || []) as { character_id: string; loot_item: { wowhead_id: number } | null }[]) {
+      const wowheadId = h.loot_item?.wowhead_id
+      if (wowheadId == null || !tierWowheadIdSet.has(wowheadId)) continue
+      const key = `${h.character_id}-${wowheadId}`
       receivedItemCounts.set(key, (receivedItemCounts.get(key) || 0) + 1)
     }
 
@@ -1399,9 +1409,9 @@ function MasterSheetContent() {
         const character = sub.character_id ? tierCharacterById.get(sub.character_id) : undefined
         if (!character) continue
 
-        // Skip if character has already received this item
+        // Skip if character has already received this item (matched by wowhead_id)
         // Only skip as many entries as times awarded (handles duplicate tokens for MS/OS)
-        const skipKey = `${character.id}-${item.id}`
+        const skipKey = `${character.id}-${item.wowhead_id}`
         const skipsLeft = remainingSkips.get(skipKey) || 0
         if (skipsLeft > 0) {
           remainingSkips.set(skipKey, skipsLeft - 1)
