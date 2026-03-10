@@ -39,20 +39,7 @@ import { Select } from '@/components/ui/select'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Search01Icon } from '@hugeicons/core-free-icons'
 import { trackClientEvent } from '@/utils/analytics/client'
-
-/** Parse a YYYY-MM-DD string into a local Date (avoids UTC timezone shift) */
-function parseDate(dateString: string): Date {
-  const [y, m, d] = dateString.split('-').map(Number)
-  return new Date(y, m - 1, d)
-}
-
-/** Format a Date as YYYY-MM-DD in local time (avoids toISOString UTC shift) */
-function toDateString(date: Date): string {
-  const y = date.getFullYear()
-  const m = String(date.getMonth() + 1).padStart(2, '0')
-  const d = String(date.getDate()).padStart(2, '0')
-  return `${y}-${m}-${d}`
-}
+import { parseDate, toDateString } from '@/utils/date'
 
 interface Member {
   character_id: string

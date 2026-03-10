@@ -15,6 +15,7 @@ const CreateCharacterModal = dynamic(() => import('@/app/components/CreateCharac
 const OnboardingModal = dynamic(() => import('@/app/components/OnboardingModal'), {
   loading: () => null
 })
+import { parseDate, toDateString } from '@/utils/date'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -567,7 +568,7 @@ function DashboardContent() {
             }
           }
 
-          const startDateStr = effectiveStartDate.toISOString().split('T')[0]
+          const startDateStr = toDateString(effectiveStartDate)
 
           // Get expansion's raid day configuration
           let raidDays: number[] = []
@@ -608,7 +609,7 @@ function DashboardContent() {
           savedRaidDays = raidDays
 
           // First get raid events for the period
-          const todayStr = new Date().toISOString().split('T')[0]
+          const todayStr = toDateString(new Date())
           const { data: raidEventsData, error: raidError } = await supabase
             .from('raid_events')
             .select('id, raid_date')
@@ -620,7 +621,7 @@ function DashboardContent() {
           // Filter to only raids on configured raid days
           const filteredRaidEvents = raidDays.length > 0 && raidEventsData
             ? raidEventsData.filter((event: { id: string; raid_date: string }) => {
-                const eventDate = new Date(event.raid_date + 'T00:00:00')
+                const eventDate = parseDate(event.raid_date)
                 return raidDays.includes(eventDate.getDay())
               })
             : raidEventsData
@@ -1100,7 +1101,7 @@ function DashboardContent() {
         )
         const weekMap = new Map<string, { total: number; attended: number }>()
         for (const event of savedDeduplicatedRaidEvents) {
-          const d = new Date(event.raid_date + 'T00:00:00')
+          const d = parseDate(event.raid_date)
           const weekKey = getISOWeekKey(d)
           const entry = weekMap.get(weekKey) || { total: 0, attended: 0 }
           entry.total++

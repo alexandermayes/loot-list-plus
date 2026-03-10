@@ -3,6 +3,7 @@ import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { NextResponse } from 'next/server'
 import { logAudit } from '@/utils/audit/log'
 import { trackEvent, trackApiError } from '@/utils/analytics/server'
+import { toDateString } from '@/utils/date'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -165,7 +166,7 @@ export async function GET(request: Request) {
             first_raid_day: 2, // Tuesday
             second_raid_day: 1, // Monday
             third_raid_day: null,
-            reset_date: defaultResetDate.toISOString().split('T')[0],
+            reset_date: toDateString(defaultResetDate),
             decimal_places: 2,
 
             // Attendance Settings

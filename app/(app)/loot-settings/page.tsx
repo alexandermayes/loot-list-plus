@@ -13,6 +13,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/com
 import { Button } from '@/components/ui/button'
 import { Heading } from '@/components/ui/typography'
 import { Select } from '@/components/ui/select'
+import { toDateString } from '@/utils/date'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import StyledSelect from '@/app/components/StyledSelect'
@@ -143,7 +144,7 @@ export default function AdminLootItems() {
   const getDefaultResetDate = () => {
     const today = new Date()
     today.setDate(today.getDate() - 28) // 4 weeks ago
-    return today.toISOString().split('T')[0]
+    return toDateString(today)
   }
 
   const [settings, setSettings] = useState({

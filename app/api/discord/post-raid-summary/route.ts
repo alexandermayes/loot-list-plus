@@ -4,6 +4,7 @@ import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { trackApiError } from '@/utils/analytics/server'
 import { discordFetch } from '@/lib/discord'
 import { fetchWclReportForDate, getWclReportUrl } from '@/lib/warcraftlogs'
+import { parseDate } from '@/utils/date'
 
 const EMBED_FIELD_LIMIT = 1024
 
@@ -238,7 +239,7 @@ export async function POST(request: NextRequest) {
     const totalRaiders = attended.length + late.length
 
     // Format raid date
-    const raidDate = new Date(raidEvent.raid_date + 'T00:00:00')
+    const raidDate = parseDate(raidEvent.raid_date)
     const formattedDate = raidDate.toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric',

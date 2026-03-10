@@ -10,6 +10,7 @@ import { getBossOrder, normalizeBossName } from '@/utils/bossOrder'
 import { getBossImage } from '@/utils/bossImages'
 import { getRaidIcon, getRaidShorthand } from '@/utils/raidIcons'
 import { resolvePhaseGroups, getPhaseGroupShortLabel, type PhaseGroup } from '@/utils/phase-groups'
+import { parseDate, toDateString } from '@/utils/date'
 import { StarFilledIcon } from '@/components/ui/icons'
 import { useGuildContext } from '@/app/contexts/GuildContext'
 import { useNotification } from '@/app/contexts/NotificationContext'
@@ -256,7 +257,7 @@ function MasterSheetContent() {
     const daysAgo = weeks * 7
     const periodStart = new Date()
     periodStart.setDate(periodStart.getDate() - daysAgo)
-    const periodStartStr = periodStart.toISOString().split('T')[0]
+    const periodStartStr = toDateString(periodStart)
 
     const newMemberMode = guildSettings.new_member_mode || 'raw'
 
@@ -310,7 +311,7 @@ function MasterSheetContent() {
     }
 
     // Query 3: Fetch ALL raid events ONCE
-    const todayStr = new Date().toISOString().split('T')[0]
+    const todayStr = toDateString(new Date())
     const { data: recentRaids } = await supabase
       .from('raid_events')
       .select('id, raid_date')
@@ -327,7 +328,7 @@ function MasterSheetContent() {
     type RaidEventRecord = { id: string; raid_date: string }
     const filteredRaids = raidDays.length > 0
       ? recentRaids.filter((event: RaidEventRecord) => {
-          const eventDate = new Date(event.raid_date + 'T00:00:00')
+          const eventDate = parseDate(event.raid_date)
           return raidDays.includes(eventDate.getDay())
         })
       : recentRaids
@@ -382,7 +383,7 @@ function MasterSheetContent() {
         if (characterAttendance.length > 0) {
           const attendedRaidDates = filteredRaids
             .filter((r: RaidEventRecord) => characterAttendance.some(a => a.raid_event_id === r.id))
-            .map((r: RaidEventRecord) => new Date(r.raid_date + 'T00:00:00'))
+            .map((r: RaidEventRecord) => parseDate(r.raid_date))
           if (attendedRaidDates.length > 0) {
             const earliestAttendance = new Date(Math.min(...attendedRaidDates.map((d: Date) => d.getTime())))
             if (earliestAttendance < effectiveStartDate) {
@@ -394,7 +395,7 @@ function MasterSheetContent() {
 
       // Filter raids to those after effective start date
       const effectiveRaids = filteredRaids.filter((r: RaidEventRecord) => {
-        const raidDate = new Date(r.raid_date + 'T00:00:00')
+        const raidDate = parseDate(r.raid_date)
         return raidDate >= effectiveStartDate
       })
 
