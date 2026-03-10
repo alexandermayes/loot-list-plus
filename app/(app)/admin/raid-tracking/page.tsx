@@ -817,18 +817,24 @@ export default function RaidTrackingPage() {
   const reassignLoot = async (lootId: string, newCharacterId: string, newCharacterName: string) => {
     if (!reassignModal) return
 
-    const { error } = await supabase
-      .from('loot_history')
-      .update({
-        character_id: newCharacterId,
-        character_name: null, // Clear unlinked name if switching to linked
-        notes: `Reassigned from ${reassignModal.currentMember.character_name}`
+    const res = await fetch('/api/loot-history/bulk', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        guild_id: activeGuild?.id,
+        id: lootId,
+        updates: {
+          character_id: newCharacterId,
+          character_name: null,
+          notes: `Reassigned from ${reassignModal.currentMember.character_name}`
+        }
       })
-      .eq('id', lootId)
+    })
 
-    if (error) {
-      console.error('Failed to reassign loot:', error)
-      showNotification('error', 'Couldn\'t reassign loot. Try again.')
+    if (!res.ok) {
+      const errBody = await res.json().catch(() => ({}))
+      console.error('Failed to reassign loot:', errBody)
+      showNotification('error', errBody.error || 'Couldn\'t reassign loot. Try again.')
       return
     }
 
@@ -931,13 +937,15 @@ export default function RaidTrackingPage() {
       confirmLabel: 'Remove',
       variant: 'danger',
       onConfirm: async () => {
-        const { error } = await supabase
-          .from('loot_history')
-          .delete()
-          .eq('id', lootId)
+        const res = await fetch('/api/loot-history/bulk', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ guild_id: activeGuild?.id, ids: [lootId] })
+        })
 
-        if (error) {
-          showNotification('error', error.message || 'Couldn\'t delete loot entry. Try again.')
+        if (!res.ok) {
+          const errBody = await res.json().catch(() => ({}))
+          showNotification('error', errBody.error || 'Couldn\'t delete loot entry. Try again.')
           return
         }
 
@@ -1219,7 +1227,7 @@ export default function RaidTrackingPage() {
 
   // Clear all saved attendance and loot data for a raid
   const clearRaidData = async () => {
-    if (!showImportModal) return
+    if (!showImportModal || !activeGuild) return
 
     const confirmed = window.confirm(
       'Are you sure you want to clear ALL attendance and loot data for this raid? This cannot be undone.'
@@ -1241,13 +1249,14 @@ export default function RaidTrackingPage() {
       }
 
       // Delete all loot history for this raid
-      const { error: lootError } = await supabase
-        .from('loot_history')
-        .delete()
-        .eq('raid_event_id', showImportModal.raidId)
+      const lootRes = await fetch('/api/loot-history/bulk', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ guild_id: activeGuild.id, raid_event_id: showImportModal.raidId })
+      })
 
-      if (lootError) {
-        console.error('❌ Clear loot error:', lootError)
+      if (!lootRes.ok) {
+        console.error('❌ Clear loot error')
         showNotification('error', 'Couldn\'t clear loot data. Try again.')
       }
 
@@ -1522,11 +1531,11 @@ export default function RaidTrackingPage() {
 
       // Clear existing loot for this raid event before re-importing to prevent duplicates
       if (showImportModal.isEdit) {
-        await supabase
-          .from('loot_history')
-          .delete()
-          .eq('raid_event_id', showImportModal.raidId)
-          .eq('guild_id', activeGuild.id)
+        await fetch('/api/loot-history/bulk', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ guild_id: activeGuild.id, raid_event_id: showImportModal.raidId })
+        })
       }
 
       const lines = lootData
@@ -1534,6 +1543,10 @@ export default function RaidTrackingPage() {
         .split('\n')
         .map(line => line.trim())
         .filter(line => line.length > 0)
+
+      // Parse all lines first, collecting valid items for bulk insert
+      const bulkItems: { loot_item_id: string; raid_tier_id: string; raid_event_id: string; awarded_date: string; character_id?: string; character_name?: string; notes?: string }[] = []
+      const itemNameMap: Map<number, string> = new Map() // index -> charName for error mapping
 
       for (const line of lines) {
         const parts = line.split(';')
@@ -1572,35 +1585,53 @@ export default function RaidTrackingPage() {
         }
 
         const charName = characterName.trim()
-
-        const insertData: any = {
+        const itemData: typeof bulkItems[number] = {
           loot_item_id: matchedItem.id,
-          guild_id: activeGuild.id,
           raid_tier_id: matchedItem.raid_tier_id,
           raid_event_id: showImportModal.raidId,
           awarded_date: showImportModal.date,
-          awarded_by: user?.id,
-          notes: `Imported from Gargul`
+          character_name: charName,
+          notes: 'Imported from Gargul',
         }
-
-        insertData.character_name = charName
         if (matchedCharacter) {
-          insertData.character_id = matchedCharacter.character_id
+          itemData.character_id = matchedCharacter.character_id
         }
+        itemNameMap.set(bulkItems.length, charName)
+        bulkItems.push(itemData)
+      }
 
-        const { error } = await supabase
-          .from('loot_history')
-          .insert(insertData)
+      // Bulk insert via API (bypasses RLS, verifies officer server-side)
+      if (bulkItems.length > 0) {
+        try {
+          const res = await fetch('/api/loot-history/bulk', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ guild_id: activeGuild.id, items: bulkItems })
+          })
 
-        if (error) {
-          if (error.code === '23505') {
-            results.loot.errors.push(`${charName} already has ${matchedItem.name}`)
+          if (!res.ok) {
+            const errBody = await res.json().catch(() => ({}))
+            results.loot.errors.push(errBody.error || 'Loot import failed. Check permissions.')
+            results.loot.failed += bulkItems.length
           } else {
-            results.loot.errors.push(`${charName}: ${error.message}`)
+            const { results: bulkResults } = await res.json()
+            for (const r of bulkResults) {
+              if (r.success) {
+                results.loot.success++
+              } else {
+                results.loot.failed++
+                const charName = itemNameMap.get(r.index) || 'Unknown'
+                if (r.error === 'duplicate') {
+                  results.loot.errors.push(`${charName} already has that item`)
+                } else {
+                  results.loot.errors.push(`${charName}: ${r.error}`)
+                }
+              }
+            }
           }
-          results.loot.failed++
-        } else {
-          results.loot.success++
+        } catch {
+          results.loot.errors.push('Network error during loot import')
+          results.loot.failed += bulkItems.length
         }
       }
     }
@@ -1764,20 +1795,20 @@ export default function RaidTrackingPage() {
     // Clear existing loot for this raid event before re-importing
     // This prevents duplicates when re-importing updated loot data
     if (showImportModal.isEdit) {
-      const { error: clearError } = await supabase
-        .from('loot_history')
-        .delete()
-        .eq('raid_event_id', showImportModal.raidId)
-        .eq('guild_id', activeGuild.id)
-
-      if (clearError) {
-        console.error('Error clearing existing loot:', clearError)
-      }
+      await fetch('/api/loot-history/bulk', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ guild_id: activeGuild.id, raid_event_id: showImportModal.raidId })
+      })
     }
 
     let successCount = 0
     let errorCount = 0
     const errors: string[] = []
+
+    // Collect valid items for bulk insert
+    const bulkItems: { loot_item_id: string; raid_tier_id: string; raid_event_id: string; awarded_date: string; character_id?: string; character_name?: string; notes?: string }[] = []
+    const entryMap: Map<number, typeof parsedData[number]> = new Map()
 
     for (const entry of parsedData) {
       if (!entry.matchedItem) {
@@ -1786,53 +1817,69 @@ export default function RaidTrackingPage() {
         continue
       }
 
-      // For characters not in the guild, we still track the loot
-      // but we won't have a character_id - we'll track by name
       const characterId = entry.matchedCharacter?.character_id
-
       if (!characterId) {
-        // Character not found - for now skip, but could track by name in notes
         errorCount++
         errors.push(`${entry.characterName}: Character not found in guild`)
         continue
       }
 
-      // Insert into loot_history
-      const { error } = await supabase
-        .from('loot_history')
-        .insert({
-          character_id: characterId,
-          loot_item_id: entry.matchedItem.id,
-          guild_id: activeGuild.id,
-          raid_tier_id: entry.matchedItem.raid_tier_id,
-          raid_event_id: showImportModal.raidId,
-          awarded_date: showImportModal.date,
-          awarded_by: user?.id,
-          notes: `Imported from Gargul - Item ID: ${entry.itemId}`
-        })
+      entryMap.set(bulkItems.length, entry)
+      bulkItems.push({
+        loot_item_id: entry.matchedItem.id,
+        raid_tier_id: entry.matchedItem.raid_tier_id,
+        raid_event_id: showImportModal.raidId,
+        awarded_date: showImportModal.date,
+        character_id: characterId,
+        notes: `Imported from Gargul - Item ID: ${entry.itemId}`,
+      })
+    }
 
-      if (error) {
-        // Check if it's a duplicate (item already awarded to this character)
-        if (error.code === '23505') {
-          errors.push(`${entry.characterName}: Already received ${entry.matchedItem.name}`)
-        } else {
-          errors.push(`${entry.characterName}: ${error.message}`)
-        }
-        errorCount++
-      } else {
-        successCount++
-
-        // Update BLP (Bad Luck Protection) - fire and forget
-        fetch('/api/blp/update', {
+    if (bulkItems.length > 0) {
+      try {
+        const res = await fetch('/api/loot-history/bulk', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            guild_id: activeGuild.id,
-            loot_item_id: entry.matchedItem.id,
-            winner_character_id: characterId,
-            raid_event_id: showImportModal.raidId
-          })
-        }).catch(err => console.error('BLP update failed:', err))
+          body: JSON.stringify({ guild_id: activeGuild.id, items: bulkItems })
+        })
+
+        if (!res.ok) {
+          const errBody = await res.json().catch(() => ({}))
+          errors.push(errBody.error || 'Loot import failed. Check permissions.')
+          errorCount += bulkItems.length
+        } else {
+          const { results: bulkResults } = await res.json()
+          for (const r of bulkResults) {
+            const entry = entryMap.get(r.index)
+            if (r.success) {
+              successCount++
+              // Update BLP (Bad Luck Protection) - fire and forget
+              if (entry?.matchedCharacter?.character_id && entry?.matchedItem) {
+                fetch('/api/blp/update', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    guild_id: activeGuild.id,
+                    loot_item_id: entry.matchedItem.id,
+                    winner_character_id: entry.matchedCharacter.character_id,
+                    raid_event_id: showImportModal.raidId
+                  })
+                }).catch(err => console.error('BLP update failed:', err))
+              }
+            } else {
+              errorCount++
+              const name = entry?.characterName || 'Unknown'
+              if (r.error === 'duplicate') {
+                errors.push(`${name}: Already received ${entry?.matchedItem?.name || 'that item'}`)
+              } else {
+                errors.push(`${name}: ${r.error}`)
+              }
+            }
+          }
+        }
+      } catch {
+        errors.push('Network error during loot import')
+        errorCount += bulkItems.length
       }
     }
 
