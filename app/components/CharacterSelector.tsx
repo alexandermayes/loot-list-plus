@@ -27,6 +27,7 @@ const CLASS_NAMES = [
   'warlock',
   'druid',
   'deathknight',
+  'monk',
 ]
 
 // Get WoWhead class icon URL

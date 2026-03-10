@@ -42,8 +42,38 @@ interface CreateCharacterModalProps {
   suggestedName?: string // Discord username to show as placeholder hint
 }
 
+// Classes gated by expansion - only show if guild's expansion is at or after the class's debut
+const EXPANSION_CLASS_GATES: Record<string, string> = {
+  'Death Knight': 'Wrath of the Lich King',
+  'Monk': 'Mists of Pandaria',
+}
+
+const EXPANSION_ORDER = [
+  'Classic', 'Classic WoW',
+  'The Burning Crusade',
+  'Wrath of the Lich King',
+  'Cataclysm',
+  'Mists of Pandaria',
+  'Warlords of Draenor',
+  'Legion',
+  'Battle for Azeroth',
+  'Shadowlands',
+  'Dragonflight',
+  'The War Within',
+]
+
+function isClassAvailableForExpansion(className: string, expansionName: string | undefined): boolean {
+  const gate = EXPANSION_CLASS_GATES[className]
+  if (!gate) return true // Most classes available everywhere
+  if (!expansionName) return true // No expansion set, show all
+  const gateIndex = EXPANSION_ORDER.indexOf(gate)
+  const currentIndex = EXPANSION_ORDER.indexOf(expansionName)
+  if (gateIndex === -1 || currentIndex === -1) return true
+  return currentIndex >= gateIndex
+}
+
 export function CreateCharacterModal({ isOpen, onClose, onSuccess, suggestedName }: CreateCharacterModalProps) {
-  const { activeGuild, userCharacters, refreshCharacters, switchCharacter } = useGuildContext()
+  const { activeGuild, userCharacters, refreshCharacters, switchCharacter, currentExpansion } = useGuildContext()
   const { showNotification } = useNotification()
   const supabase = createClient()
 
@@ -352,7 +382,9 @@ export function CreateCharacterModal({ isOpen, onClose, onSuccess, suggestedName
               style={selectedClass ? { color: selectedClass.color_hex } : undefined}
             >
               <option value="" className="text-foreground bg-background-elevated">Select a class</option>
-              {classes.map((cls) => (
+              {classes
+                .filter(cls => isClassAvailableForExpansion(cls.name, currentExpansion?.expansion_name))
+                .map((cls) => (
                 <option
                   key={cls.id}
                   value={cls.id}

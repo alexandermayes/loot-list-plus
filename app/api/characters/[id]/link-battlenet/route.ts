@@ -27,6 +27,7 @@ const BLIZZARD_CLASS_NAME_MAP: Record<string, string> = {
   Shaman: 'Shaman',
   Mage: 'Mage',
   Warlock: 'Warlock',
+  Monk: 'Monk',
   Druid: 'Druid',
 }
 

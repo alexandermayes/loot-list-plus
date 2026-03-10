@@ -41,7 +41,8 @@ const classSpecsMap: Record<string, string[]> = {
   'Mage': ['Mage'],
   'Warlock': ['Warlock'],
   'Rogue': ['Rogue'],
-  'Death Knight': ['Blood', 'Frost/Unholy']
+  'Death Knight': ['Blood', 'Frost/Unholy'],
+  'Monk': ['Brewmaster', 'Windwalker', 'Mistweaver']
 }
 
 async function seedClassSpecs() {
