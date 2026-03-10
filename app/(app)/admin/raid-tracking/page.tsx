@@ -111,6 +111,13 @@ export default function RaidTrackingPage() {
   const [pendingLootImports, setPendingLootImports] = useState<{ date: string, itemId: number, characterName: string, matchedItem?: any, matchedCharacter?: any, needsItemSelection?: boolean }[]>([])
   const [showLootSelectionModal, setShowLootSelectionModal] = useState<{ index: number, itemId: number, characterName: string } | null>(null)
   const [lootSearchQuery, setLootSearchQuery] = useState('')
+  const [characterAliases, setCharacterAliases] = useState<{ id: string; alias_name: string; character_id: string }[]>([])
+  const [showAttendeeResolutionModal, setShowAttendeeResolutionModal] = useState<{ index: number; name: string } | null>(null)
+  const [unmatchedAttendeeNames, setUnmatchedAttendeeNames] = useState<string[]>([])
+  const [attendeeSearchQuery, setAttendeeSearchQuery] = useState('')
+  const [rememberAlias, setRememberAlias] = useState(true)
+  const [resolvedAttendees, setResolvedAttendees] = useState<Map<string, { member: Member; remember: boolean }>>(new Map())
+  const [pendingImportData, setPendingImportData] = useState<{ attendanceNames: string[]; signupNames: string[] } | null>(null)
   const [importing, setImporting] = useState(false)
   const [postingDiscord, setPostingDiscord] = useState<string | null>(null)
   const [linkingWcl, setLinkingWcl] = useState<string | null>(null)
@@ -280,6 +287,16 @@ export default function RaidTrackingPage() {
             .sort((a: Member, b: Member) => a.character_name.localeCompare(b.character_name))
 
           setMembers(formattedMembers)
+        }
+
+        // Load character aliases for this guild
+        const { data: aliasData } = await supabase
+          .from('character_aliases')
+          .select('id, alias_name, character_id')
+          .eq('guild_id', activeGuild.id)
+
+        if (aliasData) {
+          setCharacterAliases(aliasData)
         }
 
         // Generate and load raid dates
@@ -1072,23 +1089,46 @@ export default function RaidTrackingPage() {
       .filter(name => name.length > 0 && name.length <= 50)
   }
 
+  // Resolve a character name to a member via direct match or alias
+  const resolveCharacterName = (name: string): Member | null => {
+    const nameLower = name.toLowerCase()
+    // Direct name match
+    const direct = members.find(m => m.character_name.toLowerCase() === nameLower)
+    if (direct) return direct
+    // Alias match
+    const alias = characterAliases.find(a => a.alias_name === nameLower)
+    if (alias) {
+      const aliasedMember = members.find(m => m.character_id === alias.character_id)
+      if (aliasedMember) return aliasedMember
+    }
+    return null
+  }
+
   const parseAttendancePreview = (data: string) => {
-    if (!data.trim()) return { total: 0, matched: 0, unmatched: 0 }
+    if (!data.trim()) return { total: 0, matched: 0, aliasMatched: 0, unmatched: 0 }
 
     const names = parseMRTNames(data)
 
     let matched = 0
+    let aliasMatched = 0
     let unmatched = 0
 
     names.forEach(name => {
-      const member = members.find(m =>
-        m.character_name.toLowerCase() === name.toLowerCase()
-      )
-      if (member) matched++
-      else unmatched++
+      const nameLower = name.toLowerCase()
+      const directMatch = members.find(m => m.character_name.toLowerCase() === nameLower)
+      if (directMatch) {
+        matched++
+      } else {
+        const alias = characterAliases.find(a => a.alias_name === nameLower)
+        if (alias && members.find(m => m.character_id === alias.character_id)) {
+          aliasMatched++
+        } else {
+          unmatched++
+        }
+      }
     })
 
-    return { total: names.length, matched, unmatched }
+    return { total: names.length, matched, aliasMatched, unmatched }
   }
 
   const parseLootPreview = (data: string) => {
@@ -1124,10 +1164,8 @@ export default function RaidTrackingPage() {
       const charName = characterName.trim()
 
       if (matchedItem) {
-        // Check if character is a guild member
-        const matchedCharacter = members.find(m =>
-          m.character_name.toLowerCase() === charName.toLowerCase()
-        )
+        // Check if character is a guild member (direct or alias)
+        const matchedCharacter = resolveCharacterName(charName)
 
         if (matchedCharacter) {
           linked++
@@ -1146,18 +1184,21 @@ export default function RaidTrackingPage() {
   }
 
   const parseSignupsPreview = (data: string) => {
-    return parseAttendancePreview(data) // Same logic
+    return parseAttendancePreview(data)
   }
 
   // Handle closing the import modal with confirmation if there's unsaved data
   const handleCloseImportModal = () => {
-    const hasUnsavedData = attendanceData.trim() || lootData.trim() || signupsData.trim()
+    const hasUnsavedData =
+      (attendanceData.trim() && attendanceData !== initialAttendanceData) ||
+      (lootData.trim() && lootData !== initialLootData) ||
+      (signupsData.trim() && signupsData !== initialSignupsData)
 
     if (hasUnsavedData) {
       confirm({
-        title: 'Discard changes?',
-        description: 'You have unsaved data in the form. Are you sure you want to close without importing?',
-        confirmLabel: 'Discard',
+        title: 'Discard import data?',
+        description: 'Closing now will lose everything you\'ve entered. Nothing has been saved yet.',
+        confirmLabel: 'Discard and close',
         cancelLabel: 'Keep editing',
         variant: 'warning',
         onConfirm: () => {
@@ -1241,11 +1282,55 @@ export default function RaidTrackingPage() {
     }
   }
 
-  // Unified import function - imports all data at once
+  // Resolve a name using direct match, alias, or manual resolution from the modal
+  // Resolve with an explicit map to avoid stale React state
+  const resolveNameForImport = (name: string, resolved?: Map<string, { member: Member; remember: boolean }>): Member | null => {
+    const map = resolved ?? resolvedAttendees
+    const entry = map.get(name.toLowerCase())
+    if (entry) return entry.member
+    return resolveCharacterName(name)
+  }
+
+  // Unified import function - detects unmatched names and shows resolution modal
   const importAllRaidData = async () => {
-    if (!showImportModal || !activeGuild) {
+    if (!showImportModal || !activeGuild) return
+
+    // Collect all names from attendance, signups, and loot
+    const attendanceNames = attendanceData.trim() ? parseMRTNames(attendanceData) : []
+    const signupNames = (guildSettings?.use_signups && signupsData.trim()) ? parseMRTNames(signupsData) : []
+
+    // Also collect character names from loot data
+    const lootCharNames: string[] = []
+    if (lootData.trim()) {
+      const lines = lootData.trim().split('\n').map(l => l.trim()).filter(l => l.length > 0)
+      for (const line of lines) {
+        const parts = line.split(';')
+        if (parts.length === 3) lootCharNames.push(parts[2].trim())
+      }
+    }
+
+    // Deduplicate all names and find truly unmatched ones
+    const allNames = [...new Set([...attendanceNames, ...signupNames, ...lootCharNames])]
+    const unmatched = allNames.filter(name => !resolveNameForImport(name))
+
+    if (unmatched.length > 0) {
+      // Store pending data and show resolution modal
+      setPendingImportData({ attendanceNames, signupNames })
+      setUnmatchedAttendeeNames(unmatched)
+      setShowAttendeeResolutionModal({ index: 0, name: unmatched[0] })
+      setAttendeeSearchQuery('')
+      setRememberAlias(true)
       return
     }
+
+    // No unmatched names, proceed directly
+    await executeImport()
+  }
+
+  // Execute the actual import after all names are resolved
+  // Accepts resolvedMap directly to avoid stale state from React batching
+  const executeImport = async (resolvedMap?: Map<string, { member: Member; remember: boolean }>) => {
+    if (!showImportModal || !activeGuild) return
 
     setImporting(true)
 
@@ -1266,9 +1351,7 @@ export default function RaidTrackingPage() {
       const linkedCharacterIds: string[] = []
 
       names.forEach(name => {
-        const member = members.find(m =>
-          m.character_name.toLowerCase() === name.toLowerCase()
-        )
+        const member = resolveNameForImport(name, resolvedMap)
 
         if (member) {
           linkedCharacterIds.push(member.character_id)
@@ -1276,7 +1359,7 @@ export default function RaidTrackingPage() {
             raid_event_id: showImportModal.raidId,
             character_id: member.character_id,
             user_id: member.user_id,
-            signed_up: guildSettings?.use_signups || false, // Auto-set signed_up if enabled
+            signed_up: guildSettings?.use_signups || false,
             attended: true,
             no_call_no_show: false,
             was_late: false,
@@ -1297,12 +1380,8 @@ export default function RaidTrackingPage() {
         }
       })
 
-      // Members not in the import get no attendance record.
-      // Officers can manually mark No Show via the UI if needed.
-
       // When editing, first remove attendance for members not in the new list
       if (showImportModal.isEdit) {
-        // Get all current attendance records for this raid
         const { data: currentRecords } = await supabase
           .from('attendance_records')
           .select('id, character_id, character_name')
@@ -1310,12 +1389,10 @@ export default function RaidTrackingPage() {
 
         if (currentRecords) {
           type AttendanceRecord = { id: string; character_id: string | null; character_name: string | null }
-          // Find linked records to remove (character_id not in new list)
           const linkedToRemove = currentRecords
             .filter((r: AttendanceRecord) => r.character_id && !linkedCharacterIds.includes(r.character_id))
             .map((r: AttendanceRecord) => r.id)
 
-          // Find unlinked records to remove (character_name not in new list)
           const unlinkedToRemove = currentRecords
             .filter((r: AttendanceRecord) => !r.character_id && r.character_name && !namesLower.includes(r.character_name.toLowerCase()))
             .map((r: AttendanceRecord) => r.id)
@@ -1345,7 +1422,6 @@ export default function RaidTrackingPage() {
       }
 
       // For unlinked attendees, delete existing and re-insert
-      // First delete all unlinked records for this raid
       const { error: deleteUnlinkedError } = await supabase
         .from('attendance_records')
         .delete()
@@ -1368,25 +1444,43 @@ export default function RaidTrackingPage() {
     }
 
     // Import Signups (if enabled and data provided)
-    // Note: This runs AFTER attendance import, so all members already have records created
-    // We only need to update the signed_up field, preserving all other attendance statuses
     if (guildSettings?.use_signups && signupsData.trim()) {
       const names = parseMRTNames(signupsData)
       const signupCharacterIds: string[] = []
+      const unlinkedSignupNames: string[] = []
 
       for (const name of names) {
-        const member = members.find(m =>
-          m.character_name.toLowerCase() === name.toLowerCase()
-        )
+        const member = resolveNameForImport(name, resolvedMap)
 
         if (member) {
           signupCharacterIds.push(member.character_id)
           results.signups.success++
         } else {
-          // Unlinked signup (character not in guild) - upsert with signup flag
+          unlinkedSignupNames.push(name)
+          results.signups.failed++
+        }
+      }
+
+      // For unlinked signup names, update existing unlinked records (from attendance)
+      // or insert new ones (signup-only names not in attendance data)
+      for (const name of unlinkedSignupNames) {
+        const { data: existing } = await supabase
+          .from('attendance_records')
+          .select('id')
+          .eq('raid_event_id', showImportModal.raidId)
+          .eq('character_name', name)
+          .is('character_id', null)
+          .limit(1)
+
+        if (existing && existing.length > 0) {
           await supabase
             .from('attendance_records')
-            .upsert({
+            .update({ signed_up: true })
+            .eq('id', existing[0].id)
+        } else {
+          await supabase
+            .from('attendance_records')
+            .insert({
               raid_event_id: showImportModal.raidId,
               character_name: name,
               signed_up: true,
@@ -1395,12 +1489,9 @@ export default function RaidTrackingPage() {
               was_late: false,
               was_benched: false
             })
-          results.signups.failed++ // Counts as "failed" match but successful import
         }
       }
 
-      // Batch update signed_up for all linked members in signup list
-      // This preserves their attendance status (attended, no_call_no_show, etc.)
       if (signupCharacterIds.length > 0) {
         const { error } = await supabase
           .from('attendance_records')
@@ -1416,8 +1507,6 @@ export default function RaidTrackingPage() {
 
     // Import Loot
     if (lootData.trim()) {
-      // Get the items to use for matching - reload if state is empty
-      // We use the returned value because React state updates are async
       let itemsToUse = lootItems
       if (itemsToUse.length === 0) {
         itemsToUse = await loadLootItems()
@@ -1426,7 +1515,6 @@ export default function RaidTrackingPage() {
       if (itemsToUse.length === 0) {
         results.loot.errors.push('Could not load loot items database. Please try again.')
         showNotification('error', 'Couldn\'t import loot. Items database not available.')
-        // Don't continue with loot import
         setImporting(false)
         setShowImportModal(null)
         return
@@ -1464,15 +1552,11 @@ export default function RaidTrackingPage() {
         }
 
         const itemId = parseInt(itemIdMatch[1])
-        // Use itemsToUse instead of lootItems state
         const matchedItem = itemsToUse.find(item => item.wowhead_id === itemId)
-        const matchedCharacter = members.find(m =>
-          m.character_name.toLowerCase() === characterName.trim().toLowerCase()
-        )
+        const matchedCharacter = resolveNameForImport(characterName.trim(), resolvedMap)
 
         if (!matchedItem) {
           results.loot.failed++
-          // Check if item exists by fetching from DB directly
           const { data: directLookup } = await supabase
             .from('loot_items')
             .select('id, name, raid_tier_id')
@@ -1489,7 +1573,6 @@ export default function RaidTrackingPage() {
 
         const charName = characterName.trim()
 
-        // Build insert object - supports both linked and unlinked characters
         const insertData: any = {
           loot_item_id: matchedItem.id,
           guild_id: activeGuild.id,
@@ -1500,10 +1583,8 @@ export default function RaidTrackingPage() {
           notes: `Imported from Gargul`
         }
 
-        // Always set character_name for display fallback
         insertData.character_name = charName
         if (matchedCharacter) {
-          // Linked character - also set character_id
           insertData.character_id = matchedCharacter.character_id
         }
 
@@ -1513,14 +1594,44 @@ export default function RaidTrackingPage() {
 
         if (error) {
           if (error.code === '23505') {
-            results.loot.errors.push(`${characterName.trim()} already has ${matchedItem.name}`)
+            results.loot.errors.push(`${charName} already has ${matchedItem.name}`)
           } else {
-            results.loot.errors.push(`${characterName.trim()}: ${error.message}`)
+            results.loot.errors.push(`${charName}: ${error.message}`)
           }
           results.loot.failed++
         } else {
           results.loot.success++
         }
+      }
+    }
+
+    // Save any aliases that were marked "remember"
+    const mapToSave = resolvedMap ?? resolvedAttendees
+    const aliasesToSave = Array.from(mapToSave.entries())
+      .filter(([, v]) => v.remember)
+      .map(([aliasName, v]) => ({ alias_name: aliasName, character_id: v.member.character_id }))
+
+    if (aliasesToSave.length > 0 && activeGuild) {
+      try {
+        const res = await fetch('/api/character-aliases', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ guild_id: activeGuild.id, aliases: aliasesToSave })
+        })
+        if (res.ok) {
+          const { aliases: savedAliases } = await res.json()
+          if (savedAliases) {
+            setCharacterAliases(prev => {
+              const existing = new Map(prev.map(a => [a.alias_name, a]))
+              for (const sa of savedAliases) {
+                existing.set(sa.alias_name, sa)
+              }
+              return Array.from(existing.values())
+            })
+          }
+        }
+      } catch (e) {
+        console.error('Failed to save aliases:', e)
       }
     }
 
@@ -1532,6 +1643,11 @@ export default function RaidTrackingPage() {
     setAttendanceData('')
     setLootData('')
     setSignupsData('')
+
+    // Clean up resolution state
+    setResolvedAttendees(new Map())
+    setPendingImportData(null)
+    setUnmatchedAttendeeNames([])
 
     // Show results
     const parts: string[] = []
@@ -1598,10 +1714,8 @@ export default function RaidTrackingPage() {
       // Try to match item by wowhead_id
       const matchedItem = lootItems.find(item => item.wowhead_id === itemId)
 
-      // Try to match character by name
-      const matchedCharacter = members.find(m =>
-        m.character_name.toLowerCase() === characterName.trim().toLowerCase()
-      )
+      // Try to match character by name (direct + alias + resolved)
+      const matchedCharacter = resolveNameForImport(characterName.trim())
 
       parsed.push({
         date: dateStr,
@@ -1792,6 +1906,77 @@ export default function RaidTrackingPage() {
       setLootSearchQuery('')
       setPendingLootImports([])
     }
+  }
+
+  // Attendee resolution modal handlers
+  const handleAttendeeResolution = (member: Member) => {
+    const currentName = showAttendeeResolutionModal?.name
+    if (!currentName) return
+
+    // Build new map synchronously so we can pass it to executeImport
+    const newResolved = new Map(resolvedAttendees)
+    newResolved.set(currentName.toLowerCase(), { member, remember: rememberAlias })
+    setResolvedAttendees(newResolved)
+
+    // Advance to next unmatched name
+    const currentIndex = showAttendeeResolutionModal.index
+    const nextIndex = currentIndex + 1
+    if (nextIndex < unmatchedAttendeeNames.length) {
+      setShowAttendeeResolutionModal({ index: nextIndex, name: unmatchedAttendeeNames[nextIndex] })
+      setAttendeeSearchQuery('')
+      setRememberAlias(true)
+    } else {
+      // All resolved - pass the map directly to avoid stale state
+      setShowAttendeeResolutionModal(null)
+      setAttendeeSearchQuery('')
+      executeImport(newResolved)
+    }
+  }
+
+  const skipAttendeeResolution = () => {
+    if (!showAttendeeResolutionModal) return
+
+    const currentIndex = showAttendeeResolutionModal.index
+    const nextIndex = currentIndex + 1
+    if (nextIndex < unmatchedAttendeeNames.length) {
+      setShowAttendeeResolutionModal({ index: nextIndex, name: unmatchedAttendeeNames[nextIndex] })
+      setAttendeeSearchQuery('')
+      setRememberAlias(true)
+    } else {
+      setShowAttendeeResolutionModal(null)
+      setAttendeeSearchQuery('')
+      executeImport(resolvedAttendees)
+    }
+  }
+
+  const skipAllAttendeeResolution = () => {
+    setShowAttendeeResolutionModal(null)
+    setAttendeeSearchQuery('')
+    executeImport(resolvedAttendees)
+  }
+
+  const cancelAttendeeResolution = () => {
+    setShowAttendeeResolutionModal(null)
+    setAttendeeSearchQuery('')
+    setResolvedAttendees(new Map())
+    setPendingImportData(null)
+    setUnmatchedAttendeeNames([])
+  }
+
+  // Simple string similarity: longest common substring ratio
+  const nameSimilarity = (a: string, b: string): number => {
+    const al = a.toLowerCase()
+    const bl = b.toLowerCase()
+    if (al === bl) return 1
+    let longest = 0
+    for (let i = 0; i < al.length; i++) {
+      for (let j = 0; j < bl.length; j++) {
+        let k = 0
+        while (i + k < al.length && j + k < bl.length && al[i + k] === bl[j + k]) k++
+        if (k > longest) longest = k
+      }
+    }
+    return longest / Math.max(al.length, bl.length)
   }
 
   const getAttendanceCount = useCallback((raidId: string) => {
@@ -2481,6 +2666,9 @@ export default function RaidTrackingPage() {
                 return (
                   <div className="flex items-center gap-2 text-sm">
                     <span className="text-success">{preview.matched} matched</span>
+                    {preview.aliasMatched > 0 && (
+                      <span className="text-accent">{preview.aliasMatched} via alias</span>
+                    )}
                     {preview.unmatched > 0 && (
                       <span className="text-warning">{preview.unmatched} unmatched</span>
                     )}
@@ -2546,6 +2734,9 @@ export default function RaidTrackingPage() {
                 return (
                   <div className="flex items-center gap-2 text-sm">
                     <span className="text-success">{preview.matched} matched</span>
+                    {preview.aliasMatched > 0 && (
+                      <span className="text-accent">{preview.aliasMatched} via alias</span>
+                    )}
                     {preview.unmatched > 0 && (
                       <span className="text-warning">{preview.unmatched} unmatched</span>
                     )}
@@ -2654,6 +2845,88 @@ export default function RaidTrackingPage() {
           <Button variant="outline" onClick={skipLootItemSelection}>
             Skip this item
           </Button>
+        </ModalFooter>
+      </Modal>
+
+      {/* Attendee Resolution Modal */}
+      <Modal open={!!showAttendeeResolutionModal} onClose={cancelAttendeeResolution} size="default" zIndex={60}>
+        <ModalHeader onClose={cancelAttendeeResolution}>
+          <ModalTitle>Unmatched attendee</ModalTitle>
+          {showAttendeeResolutionModal && (
+            <ModalDescription>
+              Assign <span className="text-accent font-medium">{showAttendeeResolutionModal.name}</span> to a guild member
+              <span className="text-muted-foreground"> ({showAttendeeResolutionModal.index + 1}/{unmatchedAttendeeNames.length})</span>
+            </ModalDescription>
+          )}
+        </ModalHeader>
+        <ModalBody className="space-y-4">
+          <Input
+            variant="rounded"
+            size="sm"
+            value={attendeeSearchQuery}
+            onChange={e => setAttendeeSearchQuery(e.target.value)}
+            placeholder="Search members..."
+            autoFocus
+          />
+
+          <div className={`overflow-y-auto space-y-1 transition-[max-height] duration-200 ${attendeeSearchQuery.length > 0 ? 'max-h-[400px]' : 'max-h-64'}`}>
+            {(() => {
+              const searchTarget = showAttendeeResolutionModal?.name || ''
+              const filtered = members.filter(m =>
+                attendeeSearchQuery.length === 0 ||
+                m.character_name.toLowerCase().includes(attendeeSearchQuery.toLowerCase()) ||
+                m.class_name.toLowerCase().includes(attendeeSearchQuery.toLowerCase())
+              )
+              const sorted = attendeeSearchQuery.length > 0
+                ? filtered
+                : [...filtered].sort((a, b) =>
+                    nameSimilarity(b.character_name, searchTarget) - nameSimilarity(a.character_name, searchTarget)
+                  )
+              return sorted.length > 0 ? sorted.slice(0, 40).map(m => (
+                <button
+                  key={m.character_id}
+                  onClick={() => handleAttendeeResolution(m)}
+                  className="w-full px-4 py-2.5 text-left rounded-lg hover:bg-muted transition-colors flex items-center justify-between"
+                >
+                  <span className="text-sm font-medium" style={{ color: m.class_color }}>
+                    {m.character_name}
+                  </span>
+                  <span className="text-xs text-muted-foreground">{m.class_name}</span>
+                </button>
+              )) : (
+                <EmptyState
+                  icon={Search01Icon}
+                  title="No members found"
+                  description="Try a different search term."
+                  size="compact"
+                />
+              )
+            })()}
+          </div>
+
+          <div className="flex items-center gap-2 pt-1">
+            <Checkbox
+              id="remember-alias"
+              checked={rememberAlias}
+              onCheckedChange={(checked) => setRememberAlias(checked === true)}
+            />
+            <Label htmlFor="remember-alias" className="text-sm text-muted-foreground cursor-pointer">
+              Remember this alias for future imports
+            </Label>
+          </div>
+        </ModalBody>
+        <ModalFooter className="flex justify-between">
+          <Button variant="ghost" onClick={cancelAttendeeResolution}>
+            Cancel import
+          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={skipAttendeeResolution}>
+              Skip this name
+            </Button>
+            <Button variant="outline" onClick={skipAllAttendeeResolution}>
+              Skip all remaining
+            </Button>
+          </div>
         </ModalFooter>
       </Modal>
 
