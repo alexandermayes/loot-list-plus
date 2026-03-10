@@ -25,7 +25,7 @@ function AppLayoutContent({
   children: React.ReactNode
 }) {
   const pathname = usePathname()
-  const { user, loading } = useGuildContext()
+  const { user, loading, activeGuild } = useGuildContext()
   const [showFeedbackModal, setShowFeedbackModal] = useState(false)
   const { sidebarWidth, isResizing, isMobile, isMobileMenuOpen, closeMobileMenu } = useSidebar()
 
@@ -158,7 +158,7 @@ function AppLayoutContent({
       >
         {/* Max-width container for content */}
         <div className={`w-full ${isMobile ? 'pt-14' : ''}`}>
-          <div className="max-w-7xl mx-auto">
+          <div className="max-w-7xl mx-auto" key={activeGuild?.id || 'no-guild'}>
             {children}
           </div>
         </div>
