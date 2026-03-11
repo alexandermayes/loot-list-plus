@@ -36,7 +36,7 @@ export default function GuardianConversionModal({
     // Set guardian_conversion_dismissed = true, keep Feral spec
     try {
       const res = await fetch(`/api/characters/${characterId}`, {
-        method: 'PATCH',
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ guardian_conversion_dismissed: true }),
       })
@@ -51,7 +51,7 @@ export default function GuardianConversionModal({
     setLoading(true)
     try {
       const res = await fetch(`/api/characters/${characterId}`, {
-        method: 'PATCH',
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ guardian_conversion_dismissed: true }),
       })
@@ -69,7 +69,7 @@ export default function GuardianConversionModal({
     setLoading(true)
     try {
       const res = await fetch(`/api/characters/${characterId}`, {
-        method: 'PATCH',
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           spec_id: guardianSpecId,
