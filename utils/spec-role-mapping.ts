@@ -17,7 +17,8 @@ export const specMapping: Record<string, SpecInfo> = {
   'Elemental Shaman': { class: 'Shaman', shorthand: 'Ele', roles: ['caster'] },
   'Enhancement Shaman': { class: 'Shaman', shorthand: 'Enh', roles: ['physical'] },
   'Restoration Druid': { class: 'Druid', shorthand: 'RD', roles: ['healer'] }, // Changed from 'Resto Druid' to match database
-  'Feral Druid': { class: 'Druid', shorthand: 'Frl', roles: ['physical', 'tank'] },
+  'Feral Druid': { class: 'Druid', shorthand: 'Frl', roles: ['physical'] },
+  'Guardian Druid': { class: 'Druid', shorthand: 'Gdn', roles: ['tank'] },
   'Balance Druid': { class: 'Druid', shorthand: 'Bal', roles: ['caster'] },
   'Protection Warrior': { class: 'Warrior', shorthand: 'ProtW', roles: ['tank'] },
   'Arms/Fury Warrior': { class: 'Warrior', shorthand: ['Arms', 'Fury'], roles: ['physical'] },

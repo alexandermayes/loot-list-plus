@@ -15,6 +15,12 @@ const CreateCharacterModal = dynamic(() => import('@/app/components/CreateCharac
 const OnboardingModal = dynamic(() => import('@/app/components/OnboardingModal'), {
   loading: () => null
 })
+const GuardianConversionModal = dynamic(() => import('@/app/components/GuardianConversionModal'), {
+  loading: () => null
+})
+const GuardianConversionBanner = dynamic(() => import('@/app/components/GuardianConversionBanner'), {
+  loading: () => null
+})
 import { parseDate, toDateString } from '@/utils/date'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { Button } from '@/components/ui/button'
@@ -26,7 +32,8 @@ import { Heading } from '@/components/ui/typography'
 import { InfoTooltip } from '@/components/ui/info-tooltip'
 import { useGuildContext } from '@/app/contexts/GuildContext'
 import ItemLink from '@/app/components/ItemLink'
-import { calculateAttendanceScore, getRankModifier, calculateLootScore, getTrialPenalty, calculateBadLuckBonus } from '@/utils/calculations'
+import { calculateAttendanceScore, getRankModifier, getRoleModifierWithLabel, calculateLootScore, getTrialPenalty, calculateBadLuckBonus } from '@/utils/calculations'
+import { getSpecRoles, getRoleDisplayName, type Role } from '@/utils/spec-role-mapping'
 import { refreshWowheadTooltips } from '@/lib/wowhead'
 import { useNotification } from '@/app/contexts/NotificationContext'
 import { trackClientEvent } from '@/utils/analytics/client'
@@ -156,7 +163,7 @@ export default function Dashboard() {
 }
 
 function DashboardContent() {
-  const { activeGuild, activeMember, activeCharacter, userGuilds, loading: guildLoading, isOfficer, currentExpansion, characterMemberships, user } = useGuildContext()
+  const { activeGuild, activeMember, activeCharacter, userGuilds, loading: guildLoading, isOfficer, currentExpansion, characterMemberships, user, refreshCharacters } = useGuildContext()
   const { showNotification } = useNotification()
   const [raidTiers, setRaidTiers] = useState<RaidTier[]>([])
   const [loading, setLoading] = useState(true)
@@ -172,6 +179,8 @@ function DashboardContent() {
   const [dismissedActions, setDismissedActions] = useState<Set<string>>(new Set())
   const [showCreateCharacterModal, setShowCreateCharacterModal] = useState(false)
   const [showOnboarding, setShowOnboarding] = useState(false)
+  const [showGuardianConversion, setShowGuardianConversion] = useState(false)
+  const [guardianSpecId, setGuardianSpecId] = useState<string | null>(null)
 
   // Stats state
   const [stats, setStats] = useState({
@@ -191,6 +200,8 @@ function DashboardContent() {
     attendanceScore: number
     roleModifier: number
     roleName: string
+    roleBonus: number
+    roleLabel: string | null
     trialPenalty: number
     blpRange: { min: number; max: number } | null
     blpEnabled: boolean
@@ -294,6 +305,31 @@ function DashboardContent() {
       }
     }
   }, [activeGuild, activeCharacter, loading])
+
+  // Check if active character is a Feral Druid that needs Guardian conversion
+  useEffect(() => {
+    if (!activeCharacter || !activeGuild || loading) return
+    const isFeral = activeCharacter.spec?.name === 'Feral' && activeCharacter.class?.name === 'Druid'
+    if (!isFeral) return
+    // Check if already dismissed (field may not exist on older records)
+    if (activeCharacter.guardian_conversion_dismissed) return
+
+    // Fetch Guardian spec ID for this class
+    async function loadGuardianSpec() {
+      const supabaseClient = createClient()
+      const { data } = await supabaseClient
+        .from('class_specs')
+        .select('id')
+        .eq('name', 'Guardian')
+        .eq('class_id', activeCharacter!.class!.id)
+        .single()
+      if (data) {
+        setGuardianSpecId(data.id)
+        setShowGuardianConversion(true)
+      }
+    }
+    loadGuardianSpec()
+  }, [activeCharacter, activeGuild, loading])
 
   const handleCloseOnboarding = () => {
     localStorage.setItem('lootlist_onboarding_seen', 'true')
@@ -511,6 +547,8 @@ function DashboardContent() {
       // Initialize default values for attendance and modifiers
       let attendanceScore = 0
       let roleModifier = 0
+      let roleBonus = 0
+      let specRole: string | null = null
       let trialPenaltyValue = 0
       let attendedRaidCount = 0
       let totalRaidCount = 0
@@ -678,6 +716,20 @@ function DashboardContent() {
           }
 
           roleModifier = getRankModifier(characterRole, guildSettings)
+
+          // Compute spec roles for role bonus
+          const specName = activeCharacter?.spec?.name || null
+          const className = activeCharacter?.class?.name || null
+          let specRoles: string[] = []
+          if (specName && className) {
+            const fullSpecName = className === specName ? className : `${specName} ${className}`
+            specRoles = getSpecRoles(fullSpecName)
+            specRole = specRoles.length > 0 ? specRoles[0] : null
+          }
+          const roleResult = getRoleModifierWithLabel(specRoles, guildSettings)
+          roleBonus = roleResult.bonus
+          specRole = roleResult.matchedRole
+
           trialPenaltyValue = getTrialPenalty(membershipStatus, guildSettings)
         }
       } catch (error) {
@@ -992,7 +1044,7 @@ function DashboardContent() {
 
           // Calculate loot score for this item
           const itemBlp = savedGuildSettings?.blp_enabled ? calculateBadLuckBonus(blpData[item.id] || 0, savedGuildSettings) : 0
-          const lootScore = calculateLootScore(charRanking.rank, attendanceScore, roleModifier, itemBlp, 0, trialPenaltyValue)
+          const lootScore = calculateLootScore(charRanking.rank, attendanceScore, roleModifier, itemBlp, 0, trialPenaltyValue, roleBonus)
 
           priorityItems.push({
             item_id: item.id,
@@ -1025,6 +1077,8 @@ function DashboardContent() {
         attendanceScore,
         roleModifier,
         roleName: characterRole,
+        roleBonus,
+        roleLabel: specRole,
         trialPenalty: trialPenaltyValue,
         blpEnabled: !!savedGuildSettings?.blp_enabled,
         blpRange: savedGuildSettings?.blp_enabled && blpValues.length > 0
@@ -1247,6 +1301,11 @@ function DashboardContent() {
         </p>
       </div>
 
+      {/* Officer banner: unconverted Feral Druids in guild */}
+      {!isLoading && isOfficer && activeGuild && (
+        <GuardianConversionBanner guildId={activeGuild.id} />
+      )}
+
       {/* Show skeleton while loading */}
       {isLoading ? (
         <DashboardContentSkeleton />
@@ -1401,11 +1460,19 @@ function DashboardContent() {
                       <span className="text-[13px] font-medium text-foreground">+{scoreBreakdown.attendanceScore.toFixed(decimalPlaces)}</span>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-[13px] text-foreground-secondary inline-flex items-center gap-1.5">Role bonus <span className="text-muted-foreground">({scoreBreakdown.roleName})</span> <InfoTooltip content="Guild-configured modifier based on your role. Most members have 0." /></span>
+                      <span className="text-[13px] text-foreground-secondary inline-flex items-center gap-1.5">Rank bonus <span className="text-muted-foreground">({scoreBreakdown.roleName})</span> <InfoTooltip content="Guild-configured modifier based on your guild rank. Most members have 0." /></span>
                       <span className={`text-[13px] font-medium ${scoreBreakdown.roleModifier >= 0 ? 'text-foreground' : 'text-destructive'}`}>
                         {scoreBreakdown.roleModifier >= 0 ? '+' : ''}{scoreBreakdown.roleModifier.toFixed(decimalPlaces)}
                       </span>
                     </div>
+                    {scoreBreakdown.roleBonus !== 0 && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-[13px] text-foreground-secondary inline-flex items-center gap-1.5">Role bonus {scoreBreakdown.roleLabel && <span className="text-muted-foreground">({getRoleDisplayName(scoreBreakdown.roleLabel as Role)})</span>} <InfoTooltip content="Guild-configured modifier based on your raid role (Tank, Healer, DPS)." /></span>
+                        <span className={`text-[13px] font-medium ${scoreBreakdown.roleBonus >= 0 ? 'text-foreground' : 'text-destructive'}`}>
+                          {scoreBreakdown.roleBonus >= 0 ? '+' : ''}{scoreBreakdown.roleBonus.toFixed(decimalPlaces)}
+                        </span>
+                      </div>
+                    )}
                     {scoreBreakdown.trialPenalty !== 0 && (
                       <div className="flex items-center justify-between">
                         <span className="text-[13px] text-foreground-secondary inline-flex items-center gap-1.5">Trial penalty <InfoTooltip content="Score penalty for trial members, giving established raiders priority. Resets when promoted to full member." /></span>
@@ -1781,6 +1848,18 @@ function DashboardContent() {
         open={showOnboarding}
         onClose={handleCloseOnboarding}
       />
+
+      {/* Guardian Druid conversion prompt for Feral Druid players */}
+      {showGuardianConversion && guardianSpecId && activeCharacter && (
+        <GuardianConversionModal
+          open={showGuardianConversion}
+          onClose={() => setShowGuardianConversion(false)}
+          characterId={activeCharacter.id}
+          characterName={activeCharacter.name}
+          guardianSpecId={guardianSpecId}
+          onSpecChanged={refreshCharacters}
+        />
+      )}
     </div>
   )
 }

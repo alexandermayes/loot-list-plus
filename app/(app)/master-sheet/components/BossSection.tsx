@@ -23,6 +23,7 @@ interface PlayerRanking {
   rank: number
   attendance_score: number
   role_modifier: number
+  role_bonus: number
   priority_bonus: number
   bad_luck_bonus: number
   trial_penalty: number

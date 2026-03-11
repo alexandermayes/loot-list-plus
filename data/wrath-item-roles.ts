@@ -5,9 +5,9 @@
  * Items not listed default to an empty array (available to all specs).
  *
  * Roles:
- * - tank: Protection Warriors, Protection Paladins, Feral Druids (bear), Blood/Frost DKs
+ * - tank: Protection Warriors, Protection Paladins, Guardian Druids, Blood/Frost DKs
  * - healer: Holy/Disc Priests, Restoration Druids, Restoration Shamans, Holy Paladins
- * - physical: Rogues, Hunters, Warriors (DPS), Enhancement Shamans, Feral Druids (cat), Ret Paladins, DPS DKs
+ * - physical: Rogues, Hunters, Warriors (DPS), Enhancement Shamans, Feral Druids, Ret Paladins, DPS DKs
  * - caster: Mages, Warlocks, Shadow Priests, Elemental Shamans, Balance Druids
  *
  * Note: WotLK adds Death Knights. DK tanks fall under 'tank', DK DPS under 'physical'.

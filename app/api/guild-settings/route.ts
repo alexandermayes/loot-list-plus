@@ -53,6 +53,7 @@ const ALLOWED_SETTINGS_FIELDS = [
   'role_bonus_priority_single_item',
   'class_bonus_priority_single_item',
   'raid_roles_overall_bonus_priority',
+  'role_modifiers',
   'single_raider_overall_bonus',
   'single_raider_bonus_single_item',
 

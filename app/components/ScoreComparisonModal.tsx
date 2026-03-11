@@ -18,6 +18,7 @@ import {
   Award01Icon,
   InformationCircleIcon,
   Time01Icon,
+  Shield01Icon,
 } from '@hugeicons/core-free-icons'
 
 interface PlayerRanking {
@@ -28,6 +29,7 @@ interface PlayerRanking {
   rank: number
   attendance_score: number
   role_modifier: number
+  role_bonus: number
   priority_bonus: number
   bad_luck_bonus: number
   trial_penalty: number
@@ -83,6 +85,7 @@ function getTip(userRanking: PlayerRanking, winnerRanking: PlayerRanking): strin
     { name: 'item rank', diff: winnerRanking.rank - userRanking.rank },
     { name: 'attendance', diff: winnerRanking.attendance_score - userRanking.attendance_score },
     { name: 'role modifier', diff: winnerRanking.role_modifier - userRanking.role_modifier },
+    { name: 'role bonus', diff: (winnerRanking.role_bonus || 0) - (userRanking.role_bonus || 0) },
     { name: 'priority bonus', diff: winnerRanking.priority_bonus - userRanking.priority_bonus },
     { name: 'trial penalty', diff: winnerRanking.trial_penalty - userRanking.trial_penalty },
   ]
@@ -112,6 +115,11 @@ function getTip(userRanking: PlayerRanking, winnerRanking: PlayerRanking): strin
   // Role modifier (guild rank)
   if (biggestGap.name === 'role modifier' && biggestGap.diff > 0) {
     return "Guild rank contributed to their score. This reflects their role and responsibilities in the guild."
+  }
+
+  // Role bonus (raid role)
+  if (biggestGap.name === 'role bonus' && biggestGap.diff > 0) {
+    return "Their raid role (Tank, Healer, DPS) has a higher bonus configured. This is set by officers in loot settings."
   }
 
   // Trial penalty
@@ -195,12 +203,21 @@ export default function ScoreComparisonModal({
               winnerValue={winnerRanking.attendance_score}
             />
             <ScoreRow
-              label="Role modifier"
+              label="Rank modifier"
               icon={UserIcon}
               iconColor="bg-purple-500/20 text-purple-500"
               userValue={userRanking.role_modifier}
               winnerValue={winnerRanking.role_modifier}
             />
+            {((userRanking.role_bonus || 0) !== 0 || (winnerRanking.role_bonus || 0) !== 0) && (
+              <ScoreRow
+                label="Role bonus"
+                icon={Shield01Icon}
+                iconColor="bg-cyan-500/20 text-cyan-500"
+                userValue={userRanking.role_bonus || 0}
+                winnerValue={winnerRanking.role_bonus || 0}
+              />
+            )}
             <ScoreRow
               label="Bad luck bonus"
               icon={SparklesIcon}

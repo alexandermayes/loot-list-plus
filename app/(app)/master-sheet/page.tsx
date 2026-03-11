@@ -4,7 +4,7 @@ import Image from 'next/image'
 import { createClient } from '@/utils/supabase/client'
 import { useState, useEffect, useRef, useCallback, useMemo, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { calculateAttendanceScore, getRankModifier, calculateLootScore, calculatePriorityBonus, getTrialPenalty, calculateBadLuckBonus, type ItemPriority } from '@/utils/calculations'
+import { calculateAttendanceScore, getRankModifier, getRoleModifier, calculateLootScore, calculatePriorityBonus, getTrialPenalty, calculateBadLuckBonus, type ItemPriority } from '@/utils/calculations'
 import { getSpecRoles } from '@/utils/spec-role-mapping'
 import { getBossOrder, normalizeBossName } from '@/utils/bossOrder'
 import { getBossImage } from '@/utils/bossImages'
@@ -836,10 +836,11 @@ function MasterSheetContent() {
 
             // Determine the character's role based on their spec
             let specRole: string | null = null
+            let specRoles: string[] = []
             if (specName && className) {
-              const fullSpecName = className === specName ? className : `${className} ${specName}`
-              const roles = getSpecRoles(fullSpecName)
-              specRole = roles.length > 0 ? roles[0] : null
+              const fullSpecName = className === specName ? className : `${specName} ${className}`
+              specRoles = getSpecRoles(fullSpecName)
+              specRole = specRoles.length > 0 ? specRoles[0] : null
             }
 
             const priorityBonus = calculatePriorityBonus(
@@ -859,7 +860,10 @@ function MasterSheetContent() {
             const trialPenalty = getTrialPenalty(membershipStatus, guildSettings)
             const isTrial = membershipStatus === 'trial'
 
-            const lootScore = calculateLootScore(r.rank, attendance, roleModifier, badLuckBonus, priorityBonus, trialPenalty)
+            // Calculate role bonus based on spec roles (best of all matching roles)
+            const roleBonus = getRoleModifier(specRoles, guildSettings)
+
+            const lootScore = calculateLootScore(r.rank, attendance, roleModifier, badLuckBonus, priorityBonus, trialPenalty, roleBonus)
 
             // Determine eligibility based on minimum_gate mode
             const isEligible = !isMinimumGateMode || raidsAttended >= minimumRaidDays
@@ -872,6 +876,7 @@ function MasterSheetContent() {
               rank: r.rank,
               attendance_score: attendance,
               role_modifier: roleModifier,
+              role_bonus: roleBonus,
               priority_bonus: priorityBonus,
               bad_luck_bonus: badLuckBonus,
               trial_penalty: trialPenalty,
@@ -1442,10 +1447,11 @@ function MasterSheetContent() {
         const className = charClass?.name || null
 
         let specRole: string | null = null
+        let specRoles: string[] = []
         if (specName && className) {
-          const fullSpecName = className === specName ? className : `${className} ${specName}`
-          const roles = getSpecRoles(fullSpecName)
-          specRole = roles.length > 0 ? roles[0] : null
+          const fullSpecName = className === specName ? className : `${specName} ${className}`
+          specRoles = getSpecRoles(fullSpecName)
+          specRole = specRoles.length > 0 ? specRoles[0] : null
         }
 
         const priorityBonus = calculatePriorityBonus(
@@ -1465,7 +1471,10 @@ function MasterSheetContent() {
         const trialPenalty = getTrialPenalty(membershipStatus, guildSettings)
         const isTrial = membershipStatus === 'trial'
 
-        const lootScore = calculateLootScore(r.rank, attendance, roleModifier, badLuckBonus, priorityBonus, trialPenalty)
+        // Calculate role bonus based on spec roles (best of all matching roles)
+        const roleBonus = getRoleModifier(specRoles, guildSettings)
+
+        const lootScore = calculateLootScore(r.rank, attendance, roleModifier, badLuckBonus, priorityBonus, trialPenalty, roleBonus)
 
         // Determine eligibility based on minimum_gate mode
         const isEligible = !isMinimumGateMode || raidsAttended >= minimumRaidDays
@@ -1478,6 +1487,7 @@ function MasterSheetContent() {
           rank: r.rank,
           attendance_score: attendance,
           role_modifier: roleModifier,
+          role_bonus: roleBonus,
           priority_bonus: priorityBonus,
           bad_luck_bonus: badLuckBonus,
           trial_penalty: trialPenalty,

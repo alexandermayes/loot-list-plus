@@ -66,6 +66,7 @@ export interface Character {
     id: string
     name: string
   }
+  guardian_conversion_dismissed?: boolean
 }
 
 export interface CharacterGuildMembership {
@@ -336,6 +337,7 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
             color_hex
           ),
           spec:class_specs (
+            id,
             name
           )
         `)

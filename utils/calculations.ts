@@ -11,6 +11,8 @@ interface GuildSettings {
   bottom_attendance_threshold: number
   guild_rank_bonuses_enabled: boolean
   rank_modifiers: Record<string, number>
+  raid_roles_overall_bonus_priority: boolean
+  role_modifiers: Record<string, number>
   minimum_raid_days_enabled: boolean
   minimum_raid_days: number
   late_early_penalty_enabled: boolean
@@ -44,6 +46,8 @@ const DEFAULT_SETTINGS: Partial<GuildSettings> = {
   middle_attendance_threshold: 0.5,
   bottom_attendance_bonus: 1,
   bottom_attendance_threshold: 0.25,
+  raid_roles_overall_bonus_priority: false,
+  role_modifiers: {},
   guild_rank_bonuses_enabled: true,
   rank_modifiers: {
     'Pro Yiker': 0,
@@ -157,6 +161,55 @@ export function getRankModifier(role: string, settings: Partial<GuildSettings> =
 }
 
 /**
+ * Get role modifier from settings.
+ * Accepts a single role or array of roles (for dual-role specs like Feral Druid).
+ * When multiple roles match, returns the highest bonus.
+ */
+export function getRoleModifier(roles: string | string[] | null, settings: Partial<GuildSettings> = {}): number {
+  const config = { ...DEFAULT_SETTINGS, ...settings } as GuildSettings
+
+  if (!config.raid_roles_overall_bonus_priority || !roles) {
+    return 0
+  }
+
+  const roleList = Array.isArray(roles) ? roles : [roles]
+  if (roleList.length === 0) return 0
+
+  let best = 0
+  for (const role of roleList) {
+    const val = config.role_modifiers[role] || 0
+    if (val > best || (best === 0 && val !== 0)) best = val
+  }
+  return best
+}
+
+/**
+ * Get role modifier with the matched role name.
+ * Returns { bonus, matchedRole } so callers can display which role provided the bonus.
+ */
+export function getRoleModifierWithLabel(roles: string | string[] | null, settings: Partial<GuildSettings> = {}): { bonus: number; matchedRole: string | null } {
+  const config = { ...DEFAULT_SETTINGS, ...settings } as GuildSettings
+
+  if (!config.raid_roles_overall_bonus_priority || !roles) {
+    return { bonus: 0, matchedRole: null }
+  }
+
+  const roleList = Array.isArray(roles) ? roles : [roles]
+  if (roleList.length === 0) return { bonus: 0, matchedRole: null }
+
+  let best = 0
+  let matchedRole: string | null = roleList[0] || null
+  for (const role of roleList) {
+    const val = config.role_modifiers[role] || 0
+    if (val > best || (best === 0 && val !== 0)) {
+      best = val
+      matchedRole = role
+    }
+  }
+  return { bonus: best, matchedRole }
+}
+
+/**
  * Calculate loot score
  */
 export function calculateLootScore(
@@ -165,9 +218,10 @@ export function calculateLootScore(
   rankModifier: number,
   badLuckBonus: number = 0,
   priorityBonus: number = 0,
-  trialPenalty: number = 0
+  trialPenalty: number = 0,
+  roleBonus: number = 0
 ): number {
-  return itemRank + attendanceScore + rankModifier + badLuckBonus + priorityBonus + trialPenalty
+  return itemRank + attendanceScore + rankModifier + badLuckBonus + priorityBonus + trialPenalty + roleBonus
 }
 
 /**

@@ -35,7 +35,7 @@ const classSpecsMap: Record<string, string[]> = {
   'Paladin': ['Holy', 'Retribution', 'Protection'],
   'Priest': ['Holy/Disc', 'Shadow'],
   'Shaman': ['Restoration', 'Elemental', 'Enhancement'],
-  'Druid': ['Restoration', 'Feral', 'Balance'],
+  'Druid': ['Restoration', 'Feral', 'Balance', 'Guardian'],
   'Warrior': ['Protection', 'Arms/Fury'],
   'Hunter': ['Hunter'],
   'Mage': ['Mage'],

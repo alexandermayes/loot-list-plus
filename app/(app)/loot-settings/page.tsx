@@ -18,7 +18,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import StyledSelect from '@/app/components/StyledSelect'
 import MultiSelectDropdown from '@/app/components/MultiSelectDropdown'
-import { specMapping } from '@/utils/spec-role-mapping'
+import { specMapping, allRoles, getRoleDisplayName } from '@/utils/spec-role-mapping'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { ArrowDown01Icon, ArrowUp01Icon, Settings01Icon, Calendar03Icon, Settings02Icon, UserAdd01Icon, DiceIcon, Medal01Icon, Clock01Icon, GiftIcon, StickyNote01Icon, Search01Icon, Layers01Icon } from '@hugeicons/core-free-icons'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -190,6 +190,7 @@ export default function AdminLootItems() {
     role_bonus_priority_single_item: false,
     class_bonus_priority_single_item: false,
     raid_roles_overall_bonus_priority: false,
+    role_modifiers: {} as Record<string, number>,
     single_raider_overall_bonus: false,
     single_raider_bonus_single_item: false,
 
@@ -416,6 +417,7 @@ export default function AdminLootItems() {
         role_bonus_priority_single_item: settings.role_bonus_priority_single_item,
         class_bonus_priority_single_item: settings.class_bonus_priority_single_item,
         raid_roles_overall_bonus_priority: settings.raid_roles_overall_bonus_priority,
+        role_modifiers: settings.role_modifiers,
         single_raider_overall_bonus: settings.single_raider_overall_bonus,
         single_raider_bonus_single_item: settings.single_raider_bonus_single_item,
 
@@ -2496,6 +2498,7 @@ export default function AdminLootItems() {
 
                         <div>
                           <Label className="block mb-2">Single raider overall bonus</Label>
+
                           <Select
                             variant="pill"
                             value={settings.single_raider_overall_bonus ? 'yes' : 'no'}
@@ -2508,6 +2511,47 @@ export default function AdminLootItems() {
                           <p className="text-muted-foreground text-[11px] mt-1">Allow individual raiders to have custom score modifiers</p>
                         </div>
                       </div>
+
+                      {settings.raid_roles_overall_bonus_priority && (
+                        <div className="bg-background-elevated border border-border-strong p-4 rounded-xl space-y-3">
+                          <div className="flex items-center justify-between mb-2">
+                            <p className="text-[13px] font-medium text-foreground">Role bonuses</p>
+                            <p className="text-[11px] text-muted-foreground">Can be positive or negative. For negative, use - before number (e.g., -1)</p>
+                          </div>
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                            {allRoles.map((role) => (
+                              <div key={role}>
+                                <Label size="sm" className="block text-foreground-muted mb-1">{getRoleDisplayName(role)}</Label>
+                                <Input
+                                  variant="pill"
+                                  size="sm"
+                                  type="number"
+                                  inputMode="numeric"
+                                  step="0.1"
+                                  value={settings.role_modifiers[role] === 0 || settings.role_modifiers[role] === undefined ? '' : settings.role_modifiers[role]}
+                                  onChange={(e) => {
+                                    const newModifiers = { ...settings.role_modifiers }
+                                    if (e.target.value === '') {
+                                      newModifiers[role] = 0
+                                    } else {
+                                      newModifiers[role] = Number(e.target.value)
+                                    }
+                                    setSettings({
+                                      ...settings,
+                                      role_modifiers: newModifiers
+                                    })
+                                  }}
+                                  placeholder="0"
+                                  className="bg-background-elevated"
+                                />
+                              </div>
+                            ))}
+                          </div>
+                          <p className="text-[11px] text-accent mt-2">
+                            Roles are determined by each raider's spec. Make sure specs are set correctly.
+                          </p>
+                        </div>
+                      )}
 
                       <div>
                         <Label className="block mb-2">Single raider bonus on single item</Label>
