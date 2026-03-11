@@ -177,3 +177,13 @@ export function getVersionsForRegion(region: RealmRegion): string[] {
   const versions = new Set(realms.map(r => r.version))
   return Array.from(versions).sort()
 }
+
+/** Look up which region a realm belongs to by name. Returns null if not found. */
+export function getRegionForRealm(realmName: string): RealmRegion | null {
+  for (const region of REALM_REGIONS) {
+    if (WOW_REALMS[region]?.some(r => r.name === realmName)) {
+      return region
+    }
+  }
+  return null
+}

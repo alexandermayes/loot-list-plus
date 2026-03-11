@@ -9,6 +9,7 @@ import MemberManager from './components/MemberManager'
 import RoleManager from './components/RoleManager'
 import ExpansionManager from './components/ExpansionManager'
 import RealmSelector from '@/app/components/RealmSelector'
+import { getRegionForRealm } from '@/data/wow-realms'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { GuildSettingsContentSkeleton } from '@/components/ui/skeletons'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -36,7 +37,7 @@ export default function GuildSettingsPage() {
 
   // Form state
   const [guildName, setGuildName] = useState('')
-  const [realmRegion, setRealmRegion] = useState('Americas & Oceania')
+  const [realmRegion, setRealmRegion] = useState('All')
   const [realm, setRealm] = useState('')
   const [faction, setFaction] = useState<'Alliance' | 'Horde'>('Alliance')
   const [discordServerId, setDiscordServerId] = useState('')
@@ -113,6 +114,9 @@ export default function GuildSettingsPage() {
         // Set form values from active guild
         setGuildName(activeGuild.name)
         setRealm(activeGuild.realm || '')
+        // Derive region from saved realm so the dropdown filters correctly
+        const derivedRegion = activeGuild.realm ? getRegionForRealm(activeGuild.realm) : null
+        setRealmRegion(derivedRegion || 'All')
         setFaction(activeGuild.faction as 'Alliance' | 'Horde')
         setDiscordServerId(activeGuild.discord_server_id || '')
         setGuildIconUrl((activeGuild as any).icon_url || null)
