@@ -778,7 +778,7 @@ function DashboardContent() {
       let blpData: Record<string, number> = {}
       let competitionMap: Record<string, { totalWanting: number; userRank: number }> = {}
       let totalReceivedCount = 0
-      const receivedItemIds = new Set<string>()
+      const receivedWowheadIds = new Set<number>()
 
       await Promise.all([
         // BLP: fetch times_passed for this character's items
@@ -850,17 +850,20 @@ function DashboardContent() {
           }
         })(),
         // Loot efficiency: count total received items + track which items were received
+        // Match by wowhead_id so cross-tier awards (same physical item, different UUID) are detected
         (async () => {
           try {
             const { data, count } = await supabase
               .from('loot_history')
-              .select('loot_item_id', { count: 'exact' })
+              .select('loot_item:loot_items(wowhead_id)', { count: 'exact' })
               .eq('character_id', characterId)
               .eq('guild_id', activeGuild.id)
             totalReceivedCount = count || 0
             if (data) {
-              for (const h of data) {
-                receivedItemIds.add(h.loot_item_id)
+              for (const h of data as { loot_item: { wowhead_id: number } | null }[]) {
+                if (h.loot_item?.wowhead_id != null) {
+                  receivedWowheadIds.add(h.loot_item.wowhead_id)
+                }
               }
             }
           } catch {
@@ -958,8 +961,8 @@ function DashboardContent() {
       }
 
       for (const item of filteredItems) {
-        // Skip items already received
-        if (receivedItemIds.has(item.id)) continue
+        // Skip items already received (matched by wowhead_id for cross-tier awards)
+        if (receivedWowheadIds.has(item.wowhead_id)) continue
 
         // Find this character's ranking for this item
         const charRanking = submissionItems.find((si: SubmissionItemData) => si.loot_item_id === item.id)
