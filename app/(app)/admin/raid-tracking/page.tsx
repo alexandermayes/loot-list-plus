@@ -397,42 +397,49 @@ export default function RaidTrackingPage() {
         skip_reason: null
       }))
 
-      await supabase.from('raid_events').insert(newEvents)
+      const { error: insertError } = await supabase.from('raid_events').insert(newEvents)
+      if (insertError) {
+        console.error('Failed to create raid events:', insertError)
+      }
     }
 
-    // Reload all events, sorted by date DESC (most recent first)
+    // Reload all events in the date range, sorted by date DESC (most recent first)
+    // Use date range instead of .in(dates) so off-schedule events (manual/imported) are included
     const { data: allEvents, error: eventsError } = await supabase
       .from('raid_events')
       .select('*')
       .eq('guild_id', guildId)
-      .in('raid_date', dates)
+      .gte('raid_date', dates.length > 0 ? dates[0] : toDateString(today))
+      .lte('raid_date', toDateString(today))
       .order('raid_date', { ascending: false })
 
     if (eventsError) {
       console.error('❌ Error loading raid events:', eventsError)
     }
 
-    // Filter events to only show ones that match the current raid schedule
-    const filteredEvents = allEvents?.filter((event: RaidEvent) => {
+    // Check which events have attendance records (needed for filtering + dedup)
+    const allEventIds = (allEvents || []).map((e: RaidEvent) => e.id)
+    let eventsWithAttendance = new Set<string>()
+    if (allEventIds.length > 0) {
+      const { data: attendanceCheck } = await supabase
+        .from('attendance_records')
+        .select('raid_event_id')
+        .in('raid_event_id', allEventIds)
+      eventsWithAttendance = new Set(attendanceCheck?.map((r: { raid_event_id: string }) => r.raid_event_id) || [])
+    }
+
+    // Filter events: show scheduled raid days + any off-schedule events that have attendance data
+    // This handles makeup raids, off-schedule tracked days, and imported data
+    const filteredEvents = (allEvents || []).filter((event: RaidEvent) => {
+      if (eventsWithAttendance.has(event.id)) return true
       const eventDate = parseDate(event.raid_date)
       const eventDayOfWeek = eventDate.getDay()
       return raidDays.includes(eventDayOfWeek)
-    }) || []
+    })
 
     // Deduplicate by date - prefer events that already have attendance records
     let deduplicatedEvents = filteredEvents
     if (filteredEvents.length > 0) {
-      // Get all raid event IDs
-      const eventIds = filteredEvents.map((e: RaidEvent) => e.id)
-
-      // Check which have attendance records
-      const { data: attendanceCheck } = await supabase
-        .from('attendance_records')
-        .select('raid_event_id')
-        .in('raid_event_id', eventIds)
-
-      const eventsWithAttendance = new Set(attendanceCheck?.map((r: { raid_event_id: string }) => r.raid_event_id) || [])
-      // Deduplicate by date, preferring events with attendance
       const dateMap = new Map<string, typeof filteredEvents[0]>()
       filteredEvents.forEach((event: RaidEvent) => {
         const existing = dateMap.get(event.raid_date)
@@ -453,21 +460,21 @@ export default function RaidTrackingPage() {
       setRaidDates(deduplicatedEvents)
 
       // Batch-fetch summary counts for all raid headers (attended/signed-up/loot)
-      const allEventIds = deduplicatedEvents.map((e: RaidEvent) => e.id)
+      const dedupEventIds = deduplicatedEvents.map((e: RaidEvent) => e.id)
       try {
         const [{ data: summaryRecords }, { data: lootCounts }] = await Promise.all([
           supabase
             .from('attendance_records')
             .select('raid_event_id, attended, signed_up')
-            .in('raid_event_id', allEventIds),
+            .in('raid_event_id', dedupEventIds),
           supabase
             .from('loot_history')
             .select('raid_event_id')
-            .in('raid_event_id', allEventIds)
+            .in('raid_event_id', dedupEventIds)
         ])
 
         const counts: Record<string, { attended: number; signedUp: number; loot: number }> = {}
-        for (const id of allEventIds) {
+        for (const id of dedupEventIds) {
           counts[id] = { attended: 0, signedUp: 0, loot: 0 }
         }
         if (summaryRecords) {
@@ -1707,8 +1714,29 @@ export default function RaidTrackingPage() {
       }
     }
 
-    // Reload attendance data
-    await loadRaidAttendance(showImportModal.raidId)
+    // Reload attendance data and update summary counts for this raid
+    const importedRaidId = showImportModal.raidId
+    await loadRaidAttendance(importedRaidId)
+
+    // Refresh summary count for this raid so collapsed headers show correct numbers
+    try {
+      const [{ data: summaryRecords }, { data: lootRecords }] = await Promise.all([
+        supabase
+          .from('attendance_records')
+          .select('raid_event_id, attended, signed_up')
+          .eq('raid_event_id', importedRaidId),
+        supabase
+          .from('loot_history')
+          .select('raid_event_id')
+          .eq('raid_event_id', importedRaidId)
+      ])
+      const attended = summaryRecords?.filter((r: { attended: boolean }) => r.attended).length || 0
+      const signedUp = summaryRecords?.filter((r: { signed_up: boolean }) => r.signed_up).length || 0
+      const loot = lootRecords?.length || 0
+      setRaidSummaryCounts(prev => ({ ...prev, [importedRaidId]: { attended, signedUp, loot } }))
+    } catch {
+      // Non-critical
+    }
 
     setImporting(false)
     setShowImportModal(null)
