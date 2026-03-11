@@ -386,7 +386,7 @@ export default function RaidTrackingPage() {
       tierData = phraseTier
     }
 
-    // Create new raid events
+    // Create new raid events via API (uses service role to bypass RLS)
     if (newDates.length > 0 && tierData) {
       const newEvents = newDates.map(date => ({
         guild_id: guildId,
@@ -397,9 +397,18 @@ export default function RaidTrackingPage() {
         skip_reason: null
       }))
 
-      const { error: insertError } = await supabase.from('raid_events').insert(newEvents)
-      if (insertError) {
-        console.error('Failed to create raid events:', insertError)
+      try {
+        const res = await fetch('/api/raid-events', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ guild_id: guildId, events: newEvents })
+        })
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}))
+          console.error('Failed to create raid events:', err)
+        }
+      } catch (e) {
+        console.error('Failed to create raid events:', e)
       }
     }
 
@@ -1453,7 +1462,7 @@ export default function RaidTrackingPage() {
       }
 
       if (linkedUpdates.length > 0) {
-        await fetch('/api/attendance/bulk', {
+        const attendanceRes = await fetch('/api/attendance/bulk', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -1463,6 +1472,11 @@ export default function RaidTrackingPage() {
             onConflict: 'raid_event_id,character_id'
           })
         })
+        if (!attendanceRes.ok) {
+          const err = await attendanceRes.json().catch(() => ({}))
+          console.error('Attendance save failed:', err)
+          showNotification('error', err.error || 'Failed to save attendance. Try again.')
+        }
       }
 
       // For unlinked attendees, delete existing and re-insert
