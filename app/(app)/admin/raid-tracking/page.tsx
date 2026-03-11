@@ -347,83 +347,31 @@ export default function RaidTrackingPage() {
       currentDate.setDate(currentDate.getDate() + 1)
     }
 
-    // Load or create raid events
-    const { data: existingEvents } = await supabase
-      .from('raid_events')
-      .select('*')
-      .eq('guild_id', guildId)
-      .in('raid_date', dates)
-
-    const existingDates = new Set(existingEvents?.map((e: { raid_date: string }) => e.raid_date) || [])
-    const newDates = dates.filter(d => !existingDates.has(d))
-
-    // Get active expansion tier (use current phase)
-    const { data: guildData } = await supabase
-      .from('guilds')
-      .select('active_expansion_id')
-      .eq('id', guildId)
-      .single()
-
-    let tierData: { id: string } | null = null
-    if (guildData?.active_expansion_id) {
-      const { data: expData } = await supabase
-        .from('expansions')
-        .select('current_phase')
-        .eq('id', guildData.active_expansion_id)
-        .single()
-
-      const currentPhase = expData?.current_phase || 1
-
-      const { data: phraseTier } = await supabase
-        .from('raid_tiers')
-        .select('id')
-        .eq('expansion_id', guildData.active_expansion_id)
-        .eq('phase', currentPhase)
-        .or('is_guild_active.eq.true,is_guild_active.is.null')
-        .limit(1)
-        .single()
-
-      tierData = phraseTier
-    }
-
-    // Create new raid events via API (uses service role to bypass RLS)
-    if (newDates.length > 0 && tierData) {
-      const newEvents = newDates.map(date => ({
-        guild_id: guildId,
-        raid_tier_id: tierData.id,
-        raid_date: date,
-        notes: null,
-        is_skipped: false,
-        skip_reason: null
-      }))
-
+    // Ensure raid events exist for all scheduled dates (server-side, bypasses RLS)
+    // This single API call checks existing events, looks up the tier, creates missing
+    // events, and returns all events in the date range.
+    let allEvents: any[] = []
+    if (dates.length > 0) {
       try {
-        const res = await fetch('/api/raid-events', {
+        const res = await fetch('/api/raid-events/ensure', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ guild_id: guildId, events: newEvents })
+          body: JSON.stringify({
+            guild_id: guildId,
+            dates,
+            expansion_id: expansion?.expansion_id,
+          })
         })
-        if (!res.ok) {
+        if (res.ok) {
+          const result = await res.json()
+          allEvents = result.events || []
+        } else {
           const err = await res.json().catch(() => ({}))
-          console.error('Failed to create raid events:', err)
+          console.error('Failed to ensure raid events:', err)
         }
       } catch (e) {
-        console.error('Failed to create raid events:', e)
+        console.error('Failed to ensure raid events:', e)
       }
-    }
-
-    // Reload all events in the date range, sorted by date DESC (most recent first)
-    // Use date range instead of .in(dates) so off-schedule events (manual/imported) are included
-    const { data: allEvents, error: eventsError } = await supabase
-      .from('raid_events')
-      .select('*')
-      .eq('guild_id', guildId)
-      .gte('raid_date', dates.length > 0 ? dates[0] : toDateString(today))
-      .lte('raid_date', toDateString(today))
-      .order('raid_date', { ascending: false })
-
-    if (eventsError) {
-      console.error('❌ Error loading raid events:', eventsError)
     }
 
     // Check which events have attendance records (needed for filtering + dedup)
