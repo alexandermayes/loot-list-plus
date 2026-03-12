@@ -14,6 +14,116 @@ export interface UpdateEntry {
 
 export const updates: UpdateEntry[] = [
   {
+    date: 'March 11, 2026',
+    items: [
+      {
+        category: 'fix',
+        title: 'Raid tracking reliability',
+        description: 'Fixed attendance entered on the raid tracking page not appearing on the attendance page. Resolved an issue where the first scheduled raid day of the week could disappear from both pages.',
+      },
+      {
+        category: 'improvement',
+        title: 'Guardian conversion banner',
+        description: 'The officer banner now lists unconverted Feral Druids by name with quick actions to convert or dismiss each one.',
+      },
+    ],
+  },
+  {
+    date: 'March 10, 2026',
+    items: [
+      {
+        category: 'feature',
+        title: 'Role-based score modifiers',
+        description: 'Officers can assign score bonuses or penalties by role (tank, healer, physical DPS, caster DPS). Useful for incentivizing underrepresented roles.',
+      },
+      {
+        category: 'feature',
+        title: 'Guardian Druid',
+        description: 'Guardian is now a separate spec from Feral. Existing Feral Druids are prompted to choose between DPS (Feral) and Tank (Guardian).',
+      },
+      {
+        category: 'feature',
+        title: 'Death Knight and Monk',
+        description: 'Full class and spec support for WotLK and MoP expansions.',
+      },
+      {
+        category: 'improvement',
+        title: 'Faster page loads',
+        description: 'Lazy-loaded item icon data and memoized expensive computations on the raid tracking page.',
+      },
+      {
+        category: 'improvement',
+        title: 'Full loot in Discord summaries',
+        description: 'Raid summaries posted to Discord now show all awarded items instead of truncating.',
+      },
+      {
+        category: 'fix',
+        title: 'Master Sheet accuracy',
+        description: 'Fixed awarded items not being removed from the sheet, and the wrong entry being removed when the same item appeared at multiple ranks.',
+      },
+      {
+        category: 'fix',
+        title: 'Guild settings region',
+        description: 'Fixed realm region reverting to US when saving other guild settings.',
+      },
+      {
+        category: 'fix',
+        title: 'Overview filtering',
+        description: 'Fixed awarded items still appearing in "Next in line" across tiers.',
+      },
+      {
+        category: 'fix',
+        title: 'Stale data on guild switch',
+        description: 'Switching between guilds no longer shows leftover data from the previous guild.',
+      },
+    ],
+  },
+  {
+    date: 'March 9, 2026',
+    items: [
+      {
+        category: 'feature',
+        title: 'Cataclysm and Mists of Pandaria',
+        description: 'Full loot data for both expansions. 978 items across 5 Cata raids and 1,705 items across 5 MoP raids.',
+      },
+      {
+        category: 'feature',
+        title: 'Character aliases',
+        description: 'Map alternate names (alts, name changes) so imported attendance and loot auto-resolves to the right member. Unmatched names trigger a step-through picker during import.',
+      },
+      {
+        category: 'improvement',
+        title: 'Boss and tier icons',
+        description: 'Added boss portraits and raid tier icons for WotLK, Cataclysm and Mists of Pandaria.',
+      },
+      {
+        category: 'improvement',
+        title: 'Karazhan loot data',
+        description: 'Added 19 missing items from Karazhan.',
+      },
+      {
+        category: 'fix',
+        title: 'Date handling overhaul',
+        description: 'Fixed 12 timezone bugs that caused dates to shift by a day in US timezones.',
+      },
+      {
+        category: 'fix',
+        title: 'Loot history reliability',
+        description: 'Fixed loot history and Master Sheet showing zero results for some guilds.',
+      },
+      {
+        category: 'fix',
+        title: 'Officer data writes',
+        description: 'Fixed attendance, signups and loot imports failing silently for officers.',
+      },
+      {
+        category: 'fix',
+        title: 'Onboarding modal in Firefox',
+        description: 'Fixed the close button being unclickable in Firefox.',
+      },
+    ],
+  },
+  {
     date: 'March 8, 2026',
     items: [
       {
