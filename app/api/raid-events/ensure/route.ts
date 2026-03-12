@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
-import { verifyOfficerPermissions } from '@/utils/server-roles'
 
 /**
  * POST /api/raid-events/ensure
  *
  * Ensures raid events exist for the given dates. Creates any missing ones.
+ * Accessible to any guild member (creating blank events is idempotent/harmless).
  * All DB operations use service role to bypass RLS.
  *
  * Body: { guild_id, dates: string[], expansion_id: string }
@@ -32,9 +32,27 @@ export async function POST(request: NextRequest) {
 
     const serviceSupabase = createServiceRoleClient()
 
-    const { hasPermission } = await verifyOfficerPermissions(serviceSupabase, user.id, guild_id)
-    if (!hasPermission) {
-      return NextResponse.json({ error: 'Officers only' }, { status: 403 })
+    // Verify user is a member of this guild (any role, not just officers)
+    const { data: userChars } = await serviceSupabase
+      .from('characters')
+      .select('id')
+      .eq('user_id', user.id)
+
+    if (!userChars || userChars.length === 0) {
+      return NextResponse.json({ error: 'No characters found' }, { status: 403 })
+    }
+
+    const { data: membership } = await serviceSupabase
+      .from('character_guild_memberships')
+      .select('id')
+      .eq('guild_id', guild_id)
+      .in('character_id', userChars.map(c => c.id))
+      .eq('is_active', true)
+      .limit(1)
+      .maybeSingle()
+
+    if (!membership) {
+      return NextResponse.json({ error: 'Not a member of this guild' }, { status: 403 })
     }
 
     // 1. Check which events already exist (service role — no RLS concern)
@@ -91,6 +109,17 @@ export async function POST(request: NextRequest) {
           .limit(1)
           .maybeSingle()
         tierId = anyTier?.id
+      }
+
+      // Third fallback: literally any tier for the expansion (ignore is_guild_active)
+      if (!tierId) {
+        const { data: lastResort } = await serviceSupabase
+          .from('raid_tiers')
+          .select('id')
+          .eq('expansion_id', expansion_id)
+          .limit(1)
+          .maybeSingle()
+        tierId = lastResort?.id
       }
 
       if (tierId) {

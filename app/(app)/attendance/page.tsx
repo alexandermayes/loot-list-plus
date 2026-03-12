@@ -392,6 +392,48 @@ export default function AttendancePage() {
           ? new Date(Math.max(new Date(raidStartDate).getTime(), periodStart.getTime()))
           : periodStart
 
+        // Auto-create missing raid events for scheduled dates in the window.
+        // This ensures events exist even if the officer hasn't visited Raid Tracking yet.
+        if (guildData?.active_expansion_id) {
+          const raidDaysForEnsure = [
+            expansionRaidDays?.first_raid_day ?? settingsData?.first_raid_day,
+            expansionRaidDays?.second_raid_day ?? settingsData?.second_raid_day,
+            expansionRaidDays?.third_raid_day ?? settingsData?.third_raid_day,
+            expansionRaidDays?.fourth_raid_day ?? settingsData?.fourth_raid_day,
+            expansionRaidDays?.fifth_raid_day ?? settingsData?.fifth_raid_day,
+          ].filter((d): d is number => d !== null && d !== undefined)
+            .slice(0, expansionRaidDays?.raid_days_per_week ?? settingsData?.raid_days_per_week ?? 2)
+
+          if (raidDaysForEnsure.length > 0) {
+            const scheduledDates: string[] = []
+            const cursor = new Date(lowerBound)
+            cursor.setHours(0, 0, 0, 0)
+            const endDate = new Date(today)
+            endDate.setHours(23, 59, 59, 999)
+            while (cursor <= endDate) {
+              if (raidDaysForEnsure.includes(cursor.getDay())) {
+                scheduledDates.push(toDateString(cursor))
+              }
+              cursor.setDate(cursor.getDate() + 1)
+            }
+            if (scheduledDates.length > 0) {
+              try {
+                await fetch('/api/raid-events/ensure', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    guild_id: activeCharData.active_guild_id,
+                    dates: scheduledDates,
+                    expansion_id: guildData.active_expansion_id,
+                  }),
+                })
+              } catch {
+                // Non-critical: events may already exist
+              }
+            }
+          }
+        }
+
         // Get raid events in the rolling window (current week + previous X weeks)
         const { data: raidEventsData } = await supabase
           .from('raid_events')
