@@ -217,7 +217,22 @@ export default function AttendancePage() {
           }
         }
         upcomingByWeek[weekKey].sort((a, b) => a.raid_date.localeCompare(b.raid_date))
-        Object.assign(grouped, upcomingByWeek)
+
+        // Merge upcoming placeholders into grouped, preserving existing events.
+        // Object.assign would OVERWRITE a week group if an upcoming date falls in
+        // the same week as an existing event (e.g., Tuesday event + Thursday placeholder
+        // when first_raid_day is Tuesday — both map to the same week key).
+        Object.entries(upcomingByWeek).forEach(([key, upcomingRaids]) => {
+          if (grouped[key]) {
+            upcomingRaids.forEach(upcoming => {
+              if (!grouped[key].some(existing => existing.raid_date === upcoming.raid_date)) {
+                grouped[key].push(upcoming)
+              }
+            })
+          } else {
+            grouped[key] = upcomingRaids
+          }
+        })
       }
     }
 

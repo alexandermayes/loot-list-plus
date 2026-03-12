@@ -453,12 +453,13 @@ export default function RaidTrackingPage() {
 
       // Auto-expand the most recent week
       const mostRecentRaid = deduplicatedEvents[0]
-      const mostRecentWeekStart = getWeekStart(mostRecentRaid.raid_date, settings.first_raid_day ?? 0)
+      const effectiveFirstRaidDay = raidScheduleSource.first_raid_day ?? 0
+      const mostRecentWeekStart = getWeekStart(mostRecentRaid.raid_date, effectiveFirstRaidDay)
       setExpandedWeeks(new Set([mostRecentWeekStart]))
 
       // Auto-expand the first raid day in the most recent week (earliest date in that week)
       const raidsInMostRecentWeek = deduplicatedEvents.filter((r: RaidEvent) =>
-        getWeekStart(r.raid_date, settings.first_raid_day ?? 0) === mostRecentWeekStart
+        getWeekStart(r.raid_date, effectiveFirstRaidDay) === mostRecentWeekStart
       )
       // Sort by date ascending to get the earliest raid in the week
       raidsInMostRecentWeek.sort((a: RaidEvent, b: RaidEvent) => a.raid_date.localeCompare(b.raid_date))
@@ -2081,8 +2082,8 @@ export default function RaidTrackingPage() {
     return raidSummaryCounts[raidId]?.loot || 0
   }, [raidLoot, raidSummaryCounts])
 
-  // Group raids by week (starting on the first raid day from settings)
-  const firstRaidDay = guildSettings?.first_raid_day ?? 0 // Default to Sunday if not set
+  // Group raids by week (prefer expansion schedule, fall back to guild settings)
+  const firstRaidDay = currentExpansion?.first_raid_day ?? guildSettings?.first_raid_day ?? 0
 
   const toggleWeekExpanded = useCallback((weekStart: string) => {
     setExpandedWeeks(prev => {
