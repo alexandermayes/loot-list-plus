@@ -280,15 +280,37 @@ export function ProfileContentSkeleton() {
         ))}
       </div>
 
-      {/* Content */}
-      <div className="bg-background-elevated border border-border rounded-xl overflow-hidden">
-        <div className="px-6 py-4 border-b border-border">
-          <Skeleton className="h-5 w-32" />
-          <Skeleton className="h-4 w-48 mt-1" />
+      {/* Content - matches Account tab (default) layout */}
+      <div className="space-y-6">
+        {/* Notifications section */}
+        <div className="bg-background-elevated border border-border rounded-xl overflow-hidden">
+          <div className="px-6 py-4 border-b border-border">
+            <Skeleton className="h-5 w-44" />
+            <Skeleton className="h-4 w-64 mt-1" />
+          </div>
+          <div className="p-6 space-y-4">
+            <div className="flex items-center justify-between gap-4">
+              <div className="space-y-1">
+                <Skeleton className="h-4 w-40" />
+                <Skeleton className="h-3.5 w-64" />
+              </div>
+              <Skeleton className="h-6 w-11 rounded-full" />
+            </div>
+          </div>
         </div>
-        <div className="p-6 space-y-3">
-          <GuildCardSkeleton />
-          <GuildCardSkeleton />
+        {/* Battle.net section */}
+        <div className="bg-background-elevated border border-border rounded-xl overflow-hidden">
+          <div className="px-6 py-4 border-b border-border">
+            <Skeleton className="h-5 w-36" />
+            <Skeleton className="h-4 w-56 mt-1" />
+          </div>
+          <div className="p-6">
+            <Skeleton className="h-4 w-72" />
+            <div className="flex items-center gap-3 mt-4">
+              <Skeleton className="h-9 w-24 rounded-[40px]" />
+              <Skeleton className="h-9 w-36 rounded-[40px]" />
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -457,22 +479,7 @@ export function LootListBracketSkeleton() {
 export function LootListContentSkeleton() {
   return (
     <div className="space-y-6">
-      {/* Status Banner */}
-      <div className="bg-background-elevated border border-border rounded-xl p-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Skeleton className="w-10 h-10 rounded-lg" />
-            <div className="space-y-1">
-              <Skeleton className="h-5 w-32" />
-              <Skeleton className="h-4 w-48" />
-            </div>
-          </div>
-          <div className="flex gap-2">
-            <Skeleton className="h-10 w-24 rounded-[40px]" />
-            <Skeleton className="h-10 w-32 rounded-[40px]" />
-          </div>
-        </div>
-      </div>
+      {/* Note: Status banner skeleton is rendered in the sticky header section of loot-list/page.tsx */}
       {/* Brackets */}
       <LootListBracketSkeleton />
       <LootListBracketSkeleton />
@@ -517,22 +524,7 @@ export function MasterSheetBossSkeleton() {
 export function MasterSheetContentSkeleton() {
   return (
     <div className="space-y-6">
-      {/* Boss Navigation */}
-      <div className="flex gap-3">
-        <div className="flex-1 bg-background-elevated border border-border rounded-xl p-3">
-          <div className="flex gap-2">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <Skeleton key={i} className="h-10 w-24 rounded-[40px] flex-shrink-0" />
-            ))}
-          </div>
-        </div>
-        <div className="bg-background-elevated border border-border rounded-xl p-3">
-          <div className="flex gap-2">
-            <Skeleton className="h-10 w-24 rounded-[40px]" />
-            <Skeleton className="h-10 w-28 rounded-[40px]" />
-          </div>
-        </div>
-      </div>
+      {/* Note: Boss navigation skeleton is rendered in the sticky header section of master-sheet/page.tsx */}
       {/* Boss Sections */}
       <MasterSheetBossSkeleton />
       <MasterSheetBossSkeleton />

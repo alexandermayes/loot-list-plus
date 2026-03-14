@@ -368,9 +368,12 @@ export default function ProfilePage() {
       {/* Header */}
       <div className="bg-background-elevated border border-border rounded-xl p-4 sm:p-6">
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6">
-          <img
+          <Image
             src={avatarUrl}
             alt="Avatar"
+            width={80}
+            height={80}
+            priority
             className="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-2 border-border/50 shadow-md"
           />
           <div className="flex-1 min-w-0">
@@ -728,9 +731,11 @@ export default function ProfilePage() {
                       >
                         <div className="flex items-center gap-4">
                           {membership.guild.icon_url ? (
-                            <img
+                            <Image
                               src={membership.guild.icon_url}
                               alt={membership.guild.name}
+                              width={48}
+                              height={48}
                               className="w-12 h-12 rounded-lg border border-border/50 shadow-sm"
                             />
                           ) : (

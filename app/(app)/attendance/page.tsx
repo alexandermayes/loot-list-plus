@@ -1,7 +1,5 @@
 'use client'
 
-export const dynamic = 'force-dynamic'
-
 import { createClient } from '@/utils/supabase/client'
 import { trackClientEvent } from '@/utils/analytics/client'
 import { useState, useEffect, useMemo, useCallback } from 'react'

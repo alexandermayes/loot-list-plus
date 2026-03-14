@@ -5,7 +5,7 @@ import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useGuildContext } from '@/app/contexts/GuildContext'
 import { useNotification } from '@/app/contexts/NotificationContext'
-import { TierTabsSkeleton, SubmissionsListSkeleton } from '@/components/ui/skeletons'
+import { TierTabsSkeleton, SubmissionsListSkeleton, Skeleton } from '@/components/ui/skeletons'
 import { StatusBadge, type SubmissionStatus } from '@/components/ui/status-badge'
 import { ClassificationBadge } from '@/components/ui/classification-badge'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -581,7 +581,7 @@ export default function MasterLootPage() {
 
       {/* Phase Selector - Sticky */}
       {initialLoading ? (
-        <div className="px-4 sm:px-6 lg:px-8 py-1.5 bg-background">
+        <div className="sticky top-14 sm:top-0 z-20 px-4 sm:px-6 lg:px-8 py-1.5 bg-background">
           <TierTabsSkeleton />
         </div>
       ) : phases.length > 0 && (
@@ -634,7 +634,22 @@ export default function MasterLootPage() {
       {/* Main Content */}
       <div className="px-4 sm:px-6 lg:px-8 pt-1.5 pb-6 space-y-6">
       {initialLoading ? (
-        <SubmissionsListSkeleton count={5} />
+        <div className="space-y-4">
+          {/* Filter bar skeleton */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex gap-2">
+              <Skeleton className="h-8 w-16 rounded-[40px]" />
+              <Skeleton className="h-8 w-20 rounded-[40px]" />
+              <Skeleton className="h-8 w-22 rounded-[40px]" />
+              <Skeleton className="h-8 w-20 rounded-[40px]" />
+            </div>
+            <div className="flex gap-2">
+              <Skeleton className="h-8 w-28 rounded-[40px]" />
+              <Skeleton className="h-8 w-24 rounded-[40px]" />
+            </div>
+          </div>
+          <SubmissionsListSkeleton count={5} />
+        </div>
       ) : (
         <>
       {/* Submissions */}

@@ -4,7 +4,7 @@ import React, { useState, useMemo, useCallback, useEffect, memo } from 'react'
 import SearchableItemSelect from '@/app/components/SearchableItemSelect'
 import { useGuildContext } from '@/app/contexts/GuildContext'
 import { ExpansionGuard } from '@/app/components/ExpansionGuard'
-import { TierTabsSkeleton, LootListContentSkeleton } from '@/components/ui/skeletons'
+import { TierTabsSkeleton, LootListContentSkeleton, Skeleton } from '@/components/ui/skeletons'
 import {
   Modal,
   ModalHeader,
@@ -808,6 +808,26 @@ export default function LootList() {
           </div>
         )}
 
+        {/* Status Banner skeleton - reserves space during loading to prevent CLS */}
+        {(isLoading || isContentLoading) && (
+          <div className="px-4 sm:px-6 lg:px-8 pb-2">
+            <div className="rounded-xl p-4 sm:p-6 border border-border bg-background-elevated">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <Skeleton className="w-10 h-10 rounded-lg" />
+                  <div className="space-y-1">
+                    <Skeleton className="h-5 w-32" />
+                    <Skeleton className="h-4 w-48" />
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <Skeleton className="h-10 w-24 rounded-[40px]" />
+                  <Skeleton className="h-10 w-32 rounded-[40px]" />
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
         {/* Status Banner - inside sticky header */}
         {!isLoading && !isContentLoading && selectedPhase !== null && (
           <div className="px-4 sm:px-6 lg:px-8 pb-2">

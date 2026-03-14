@@ -275,10 +275,14 @@ function DashboardContent() {
   }, [activeGuild, activeCharacter, guildLoading])
 
   // Refresh Wowhead tooltips when loot priority or received items load
-  // Uses centralized debounced refresh to prevent excessive API calls
+  // Deferred to idle callback to avoid blocking LCP paint
   useEffect(() => {
     if (lootPriority.length > 0 || receivedItems.length > 0) {
-      refreshWowheadTooltips()
+      if ('requestIdleCallback' in window) {
+        requestIdleCallback(() => refreshWowheadTooltips())
+      } else {
+        setTimeout(() => refreshWowheadTooltips(), 200)
+      }
     }
   }, [lootPriority, receivedItems])
 
@@ -400,12 +404,20 @@ function DashboardContent() {
       }
 
       try {
-        const { data: tiersData, error: tiersError } = await supabase
-          .from('raid_tiers')
-          .select('id, name, is_active, phase')
-          .eq('expansion_id', expansionId)
-          .eq('is_guild_active', true)
+        const [tiersResult, deadlineResult] = await Promise.all([
+          supabase
+            .from('raid_tiers')
+            .select('id, name, is_active, phase')
+            .eq('expansion_id', expansionId)
+            .eq('is_guild_active', true),
+          supabase
+            .from('expansions')
+            .select('phase_deadlines')
+            .eq('id', expansionId)
+            .single()
+        ])
 
+        const { data: tiersData, error: tiersError } = tiersResult
         if (tiersError) {
           console.error('Error loading raid tiers:', tiersError)
           setRaidTiers([])
@@ -413,13 +425,7 @@ function DashboardContent() {
           setRaidTiers(tiersData || [])
         }
 
-        // Fetch loot list deadline from expansion phase_deadlines
-        const { data: expansionDeadlineData } = await supabase
-          .from('expansions')
-          .select('phase_deadlines')
-          .eq('id', expansionId)
-          .single()
-
+        const { data: expansionDeadlineData } = deadlineResult
         if (expansionDeadlineData?.phase_deadlines) {
           // Find the nearest future deadline across all phases
           const deadlines = Object.values(expansionDeadlineData.phase_deadlines as Record<string, string | null>)
@@ -561,6 +567,24 @@ function DashboardContent() {
       let savedDeduplicatedRaidEvents: Array<{ id: string; raid_date: string }> = []
       let savedAttendanceRecords: Array<{ raid_event_id: string; attended: boolean }> = []
 
+      // Start submission items fetch early - runs in parallel with guild settings cascade
+      const submissionItemsPromise = supabase
+        .from('loot_submission_items')
+        .select(`
+          loot_item_id,
+          rank,
+          slot,
+          submission:loot_submissions!inner (
+            id,
+            character_id,
+            guild_id,
+            status
+          )
+        `)
+        .eq('submission.character_id', characterId)
+        .eq('submission.guild_id', activeGuild.id)
+        .eq('submission.status', 'approved')
+
       // Try to get guild settings and attendance (may not be set up yet)
       try {
         const { data: guildSettings, error: settingsError } = await supabase
@@ -582,26 +606,36 @@ function DashboardContent() {
           const newMemberMode = guildSettings.new_member_mode || 'raw'
           let effectiveStartDate = startDate
 
-          // Always fetch membership for trial/role data
-          if (characterId) {
-            const { data: membership } = await supabase
-              .from('character_guild_memberships')
-              .select('joined_at, membership_status, trial_started_at, role')
-              .eq('character_id', characterId)
-              .eq('guild_id', activeGuild.id)
-              .single()
+          // Fetch membership and expansion data in parallel (both independent)
+          const [membershipResult, expansionDataResult] = await Promise.all([
+            characterId
+              ? supabase
+                  .from('character_guild_memberships')
+                  .select('joined_at, membership_status, trial_started_at, role')
+                  .eq('character_id', characterId)
+                  .eq('guild_id', activeGuild.id)
+                  .single()
+              : Promise.resolve({ data: null }),
+            activeGuild?.active_expansion_id
+              ? supabase
+                  .from('expansions')
+                  .select('raid_days_per_week, first_raid_day, second_raid_day, third_raid_day, fourth_raid_day, fifth_raid_day, timezone')
+                  .eq('id', activeGuild.active_expansion_id)
+                  .single()
+              : Promise.resolve({ data: null })
+          ])
 
-            if (membership) {
-              membershipStatus = membership.membership_status || 'full'
-              trialStartedAt = membership.trial_started_at || null
-              characterRole = membership.role || 'Member'
+          const membership = membershipResult.data
+          if (membership) {
+            membershipStatus = membership.membership_status || 'full'
+            trialStartedAt = membership.trial_started_at || null
+            characterRole = membership.role || 'Member'
 
-              // For 'fair' and 'minimum_gate' modes, use join date filtering
-              if ((newMemberMode === 'fair' || newMemberMode === 'minimum_gate') && membership.joined_at) {
-                const joinedAt = new Date(membership.joined_at)
-                if (joinedAt > startDate) {
-                  effectiveStartDate = joinedAt
-                }
+            // For 'fair' and 'minimum_gate' modes, use join date filtering
+            if ((newMemberMode === 'fair' || newMemberMode === 'minimum_gate') && membership.joined_at) {
+              const joinedAt = new Date(membership.joined_at)
+              if (joinedAt > startDate) {
+                effectiveStartDate = joinedAt
               }
             }
           }
@@ -610,24 +644,17 @@ function DashboardContent() {
 
           // Get expansion's raid day configuration
           let raidDays: number[] = []
-          if (activeGuild?.active_expansion_id) {
-            const { data: expansionData } = await supabase
-              .from('expansions')
-              .select('raid_days_per_week, first_raid_day, second_raid_day, third_raid_day, fourth_raid_day, fifth_raid_day, timezone')
-              .eq('id', activeGuild.active_expansion_id)
-              .single()
-
-            if (expansionData) {
-              raidDays = [
-                expansionData.first_raid_day,
-                expansionData.second_raid_day,
-                expansionData.third_raid_day,
-                expansionData.fourth_raid_day,
-                expansionData.fifth_raid_day
-              ].filter((day): day is number => day !== null && day !== undefined)
-                .slice(0, expansionData.raid_days_per_week || 2)
-              savedTimezone = (expansionData as any).timezone || 'UTC'
-            }
+          const expansionData = expansionDataResult.data
+          if (expansionData) {
+            raidDays = [
+              expansionData.first_raid_day,
+              expansionData.second_raid_day,
+              expansionData.third_raid_day,
+              expansionData.fourth_raid_day,
+              expansionData.fifth_raid_day
+            ].filter((day): day is number => day !== null && day !== undefined)
+              .slice(0, expansionData.raid_days_per_week || 2)
+            savedTimezone = (expansionData as any).timezone || 'UTC'
           }
 
           // Fall back to guild settings if no expansion raid days
@@ -736,23 +763,8 @@ function DashboardContent() {
         // Attendance system not set up yet, use rank only
       }
 
-      // Get all loot submission items for this character in the active guild
-      const { data: submissionItems } = await supabase
-        .from('loot_submission_items')
-        .select(`
-          loot_item_id,
-          rank,
-          slot,
-          submission:loot_submissions!inner (
-            id,
-            character_id,
-            guild_id,
-            status
-          )
-        `)
-        .eq('submission.character_id', characterId)
-        .eq('submission.guild_id', activeGuild.id)
-        .eq('submission.status', 'approved')
+      // Await the submission items that started fetching in parallel with guild settings
+      const { data: submissionItems } = await submissionItemsPromise
 
       if (!submissionItems || submissionItems.length === 0) {
         setLootPriority([])
@@ -778,25 +790,27 @@ function DashboardContent() {
       let filteredItems = items
       const raidTierIds = [...new Set(items.map((i: { raid_tier_id: string }) => i.raid_tier_id).filter(Boolean))]
       if (raidTierIds.length > 0) {
-        // Fetch tier details including phase and visibility
-        const { data: tierDetails } = await supabase
-          .from('raid_tiers')
-          .select('id, phase, master_sheet_visible')
-          .in('id', raidTierIds)
+        // Fetch tier details and phase deadlines in parallel
+        const expansionId = currentExpansion?.expansion_id || activeGuild.active_expansion_id
+        const [tierDetailsResult, phaseDeadlinesResult] = await Promise.all([
+          supabase
+            .from('raid_tiers')
+            .select('id, phase, master_sheet_visible')
+            .in('id', raidTierIds),
+          expansionId
+            ? supabase
+                .from('expansions')
+                .select('phase_deadlines')
+                .eq('id', expansionId)
+                .single()
+            : Promise.resolve({ data: null })
+        ])
 
+        const { data: tierDetails } = tierDetailsResult
         if (tierDetails) {
-          // Fetch phase deadlines from the expansion
           let phaseDeadlines: Record<string, string | null> = {}
-          const expansionId = currentExpansion?.expansion_id || activeGuild.active_expansion_id
-          if (expansionId) {
-            const { data: expData } = await supabase
-              .from('expansions')
-              .select('phase_deadlines')
-              .eq('id', expansionId)
-              .single()
-            if (expData?.phase_deadlines) {
-              phaseDeadlines = expData.phase_deadlines as Record<string, string | null>
-            }
+          if (phaseDeadlinesResult.data?.phase_deadlines) {
+            phaseDeadlines = phaseDeadlinesResult.data.phase_deadlines as Record<string, string | null>
           }
 
           const now = new Date().toISOString()

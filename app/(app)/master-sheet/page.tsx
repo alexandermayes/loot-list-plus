@@ -16,7 +16,7 @@ import { useGuildContext } from '@/app/contexts/GuildContext'
 import { useNotification } from '@/app/contexts/NotificationContext'
 import { ExpansionGuard } from '@/app/components/ExpansionGuard'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
-import { TierTabsSkeleton, MasterSheetContentSkeleton } from '@/components/ui/skeletons'
+import { TierTabsSkeleton, MasterSheetContentSkeleton, Skeleton } from '@/components/ui/skeletons'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Button } from '@/components/ui/button'
 import { Select } from '@/components/ui/select'
@@ -1598,7 +1598,7 @@ function MasterSheetContent() {
 
         {/* Phase Tabs - Sticky */}
         {initialLoading ? (
-          <div className="sticky top-0 z-20 px-4 sm:px-6 lg:px-8 py-2.5 bg-background">
+          <div className="sticky top-14 sm:top-0 z-20 px-4 sm:px-6 lg:px-8 py-2.5 bg-background">
             <TierTabsSkeleton />
           </div>
         ) : phases.length > 0 && (
@@ -1715,6 +1715,21 @@ function MasterSheetContent() {
         )}
 
         {/* Boss Quick Navigation - Sticky below tier tabs (rankings view only) */}
+        {/* Skeleton placeholder during loading to prevent CLS */}
+        {(initialLoading || contentLoading) && viewMode === 'rankings' && (
+          <div className="sticky top-[116px] sm:top-[60px] z-10 px-4 sm:px-6 lg:px-8 py-2.5 bg-background">
+            <div className="hidden sm:flex gap-2">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <Skeleton key={i} className="h-9 w-28 rounded-[40px] flex-shrink-0" />
+              ))}
+            </div>
+            <div className="sm:hidden flex gap-2">
+              <Skeleton className="h-9 flex-1 rounded-lg" />
+              <Skeleton className="h-9 w-20 rounded-[40px]" />
+              <Skeleton className="h-9 w-22 rounded-[40px]" />
+            </div>
+          </div>
+        )}
         {!initialLoading && !contentLoading && bossNames.length > 0 && viewMode === 'rankings' && (
           <div className="sticky top-[116px] sm:top-[60px] z-10 px-4 sm:px-6 lg:px-8 py-2.5 bg-background">
             {/* Mobile: Dropdown + Expand/Collapse */}
