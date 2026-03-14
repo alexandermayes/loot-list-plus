@@ -194,7 +194,7 @@ export default function LootListSummaryView({
                             {player.character_name}
                           </span>
                           <span className="text-[10px] text-muted-foreground">
-                            #{player.primary_rank}-{player.item_rank}
+                            #{player.item_rank}
                           </span>
                         </div>
                       ))}
@@ -231,7 +231,7 @@ export default function LootListSummaryView({
       {/* Legend */}
       <div className="bg-background-elevated border border-border rounded-xl p-4">
         <p className="text-foreground-muted text-[12px]">
-          Player format: <span className="text-foreground">#Slot-Rank</span> (e.g., #1-3 = Priority slot 1, rank 3). Lower numbers = higher priority.
+          <span className="text-foreground">#N</span> = loot list rank (50 is highest priority, 1 is lowest). Sorted by priority within each item.
         </p>
       </div>
     </div>
