@@ -104,6 +104,7 @@ interface LootListDataContextType {
   hasChanges: boolean
   initialRankings: Record<string, string>
   originalStatus: string | null
+  removedItems: Array<{ loot_item_id: string; rank: number; slot: number }>
 }
 
 // Separate interface for actions (stable functions, rarely trigger re-renders)
@@ -115,6 +116,8 @@ interface LootListActionsContextType {
   refreshData: () => void
   importBisItems: () => Promise<BisImportResult>
   refreshGear: () => void
+  removeApprovedItem: (lootItemId: string, itemName: string) => Promise<boolean>
+  restoreRemovedItem: (lootItemId: string) => Promise<boolean>
 }
 
 // Combined type for backward compatibility
@@ -638,11 +641,12 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
       }
       submissionId = upsertedSub.id
 
-      // Delete existing rankings
+      // Delete existing active rankings (preserve soft-deleted/removed items)
       const { error: deleteError } = await supabase
         .from('loot_submission_items')
         .delete()
         .eq('submission_id', submissionId)
+        .is('removed_at', null)
 
       if (deleteError) {
         console.error('[doAutoSave] Failed to delete items:', deleteError)
@@ -784,6 +788,7 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
           .from('loot_submission_items')
           .select('rank, slot, loot_item_id, loot_item:loot_items(name)')
           .eq('submission_id', submissionId)
+          .is('removed_at', null)
 
         if (existingItems && existingItems.length > 0) {
           const currentCount = upsertedSub.resubmission_count ?? 0
@@ -811,11 +816,12 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
         }
       }
 
-      // Delete and re-insert rankings
+      // Delete and re-insert active rankings (preserve soft-deleted/removed items)
       const { error: deleteError } = await supabase
         .from('loot_submission_items')
         .delete()
         .eq('submission_id', submissionId)
+        .is('removed_at', null)
 
       if (deleteError) {
         console.error('[saveSubmission] Failed to delete items:', deleteError)
@@ -907,6 +913,88 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
     mutateSubmission()
   }, [mutateSubmission])
 
+  // Remove a single item from an approved submission without changing its status
+  const removeApprovedItem = useCallback(async (lootItemId: string, itemName: string): Promise<boolean> => {
+    const submissionId = submissionDataRef.current?.submission?.id
+    if (!submissionId || !activeGuild?.id) {
+      console.error('[removeApprovedItem] Missing submissionId or guildId', { submissionId, guildId: activeGuild?.id })
+      return false
+    }
+
+    try {
+      const response = await fetch('/api/loot-submissions/remove-item', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          guild_id: activeGuild.id,
+          submission_id: submissionId,
+          loot_item_id: lootItemId,
+        }),
+      })
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}))
+        console.error('[removeApprovedItem] API error:', response.status, data)
+        return false
+      }
+
+      // Remove from local rankings state
+      setRankings(prev => {
+        const newRankings = { ...prev }
+        for (const [key, value] of Object.entries(newRankings)) {
+          if (value === lootItemId) {
+            delete newRankings[key]
+          }
+        }
+        return newRankings
+      })
+
+      // Refresh from server to get clean state
+      localChangesRef.current = false
+      lastSavedRankingsRef.current = null
+      mutateSubmission()
+      return true
+    } catch {
+      return false
+    }
+  }, [activeGuild?.id, mutateSubmission])
+
+  // Restore a previously removed item on an approved submission
+  const restoreRemovedItem = useCallback(async (lootItemId: string): Promise<boolean> => {
+    const submissionId = submissionDataRef.current?.submission?.id
+    if (!submissionId || !activeGuild?.id) {
+      console.error('[restoreRemovedItem] Missing submissionId or guildId', { submissionId, guildId: activeGuild?.id })
+      return false
+    }
+
+    try {
+      const response = await fetch('/api/loot-submissions/remove-item', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          guild_id: activeGuild.id,
+          submission_id: submissionId,
+          loot_item_id: lootItemId,
+          restore: true,
+        }),
+      })
+
+      if (!response.ok) {
+        const text = await response.text()
+        console.error('[restoreRemovedItem] API error:', response.status, text)
+        return false
+      }
+
+      localChangesRef.current = false
+      lastSavedRankingsRef.current = null
+      mutateSubmission()
+      return true
+    } catch (err) {
+      console.error('[restoreRemovedItem] Network error:', err)
+      return false
+    }
+  }, [activeGuild?.id, mutateSubmission])
+
   // Refresh character gear data
   const refreshGear = useCallback(() => {
     if (activeCharacter?.id) {
@@ -977,7 +1065,8 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
     isGearLoading: gearLoading,
     hasChanges,
     initialRankings,
-    originalStatus
+    originalStatus,
+    removedItems: submissionData?.removedItems || []
   }), [
     filteredLootItems,
     submissionData?.submission,
@@ -998,7 +1087,8 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
     gearLoading,
     hasChanges,
     initialRankings,
-    originalStatus
+    originalStatus,
+    submissionData?.removedItems
   ])
 
   // Memoize actions value - these are stable functions that rarely change
@@ -1010,7 +1100,9 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
     saveSubmission,
     refreshData,
     importBisItems,
-    refreshGear
+    refreshGear,
+    removeApprovedItem,
+    restoreRemovedItem
   }), [
     setSelectedPhase,
     handleItemSelect,
@@ -1018,7 +1110,9 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
     saveSubmission,
     refreshData,
     importBisItems,
-    refreshGear
+    refreshGear,
+    removeApprovedItem,
+    restoreRemovedItem
   ])
 
   return (

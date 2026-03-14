@@ -128,6 +128,7 @@ async function getEligibleCharacters(
     .eq('loot_item_id', lootItemId)
     .eq('loot_submissions.guild_id', guildId)
     .eq('loot_submissions.status', 'approved')
+    .is('removed_at', null)
 
   if (!submissionItems || submissionItems.length === 0) {
     return []

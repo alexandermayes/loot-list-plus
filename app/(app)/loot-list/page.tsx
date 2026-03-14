@@ -66,6 +66,16 @@ interface RankRowProps {
   slot2Errors?: ItemError[]
   /** Set of wowhead_ids that the user already owns (imported from WowSims) */
   ownedWowheadIds?: Set<number>
+  /** When true, shows remove buttons instead of edit controls */
+  isApproved?: boolean
+  /** Called when user removes an item from an approved list */
+  onRemoveItem?: (lootItemId: string, itemName: string) => void
+  /** Item ID currently being removed */
+  removingItemId?: string | null
+  /** Items that were removed from this rank (keyed by rank-slot) */
+  removedRankings?: Record<string, string>
+  /** Called when user restores a removed item */
+  onRestoreItem?: (lootItemId: string, itemName: string) => void
 }
 
 const RankRow = memo(function RankRow({
@@ -78,10 +88,19 @@ const RankRow = memo(function RankRow({
   onItemSelect,
   slot1Errors = [],
   slot2Errors = [],
-  ownedWowheadIds = new Set()
+  ownedWowheadIds = new Set(),
+  isApproved = false,
+  onRemoveItem,
+  removingItemId,
+  removedRankings = {},
+  onRestoreItem
 }: RankRowProps) {
   const selectedItem1 = selectedItemId1 ? lootItems.find(i => i.id === selectedItemId1) : null
   const selectedItem2 = selectedItemId2 ? lootItems.find(i => i.id === selectedItemId2) : null
+  const removedItemId1 = removedRankings[`${rank}-1`]
+  const removedItemId2 = removedRankings[`${rank}-2`]
+  const removedItem1 = removedItemId1 ? lootItems.find(i => i.id === removedItemId1) : null
+  const removedItem2 = removedItemId2 ? lootItems.find(i => i.id === removedItemId2) : null
   const isDuplicate1 = selectedItemId1 && duplicateItems.includes(selectedItemId1)
   const isDuplicate2 = selectedItemId2 && duplicateItems.includes(selectedItemId2)
 
@@ -104,23 +123,45 @@ const RankRow = memo(function RankRow({
         {rank}
       </td>
       <td className="px-3 py-2.5">
-        <div className="space-y-1">
-          <SearchableItemSelect
-            items={lootItems}
-            value={selectedItemId1 || ''}
-            onChange={(value) => onItemSelect(rank, 1, value)}
-            disabled={selectedItems}
-            currentValue={selectedItemId1}
-            isSlotDisabled={isSlot1DisabledByReserved}
-            hasError={hasSlot1Error}
-            ownedWowheadIds={ownedWowheadIds}
-          />
-          {hasSlot1Error && (
-            <p className="text-destructive text-[11px] pl-3">
-              {slot1ErrorMessages.join(' · ')}
-            </p>
-          )}
-        </div>
+        {!selectedItemId1 && removedItem1 ? (
+          <div className="px-3 py-2 bg-background-elevated border border-border rounded-[52px] opacity-50 overflow-hidden group hover:opacity-75 transition-opacity">
+            <span className="flex items-center gap-2 min-w-0">
+              <span className="truncate min-w-0"><ItemLink name={removedItem1.name} wowheadId={removedItem1.wowhead_id} clickable={false} className="line-through" /></span>
+              <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-success/20 text-success shrink-0 group-hover:hidden">Removed</span>
+              {onRestoreItem && (
+                <button
+                  onClick={() => onRestoreItem(removedItem1.id, removedItem1.name)}
+                  className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-accent/20 text-accent shrink-0 hidden group-hover:inline-block hover:bg-accent/30"
+                >
+                  Undo
+                </button>
+              )}
+            </span>
+          </div>
+        ) : (
+          <div className="space-y-1">
+            <SearchableItemSelect
+              items={lootItems}
+              value={selectedItemId1 || ''}
+              onChange={(value) => onItemSelect(rank, 1, value)}
+              disabled={selectedItems}
+              currentValue={selectedItemId1}
+              isSlotDisabled={isSlot1DisabledByReserved}
+              hasError={hasSlot1Error}
+              ownedWowheadIds={ownedWowheadIds}
+              readOnly={isApproved}
+              onRemove={isApproved && onRemoveItem && selectedItemId1 ? () => {
+                const item = lootItems.find(i => i.id === selectedItemId1)
+                if (item) onRemoveItem(item.id, item.name)
+              } : undefined}
+            />
+            {hasSlot1Error && (
+              <p className="text-destructive text-[11px] pl-3">
+                {slot1ErrorMessages.join(' · ')}
+              </p>
+            )}
+          </div>
+        )}
       </td>
       <td className="px-3 py-2.5">
         {selectedItem1 ? (
@@ -130,28 +171,52 @@ const RankRow = memo(function RankRow({
               <ClassificationBadge classification={selectedItem1.classification as 'Reserved' | 'Limited' | 'Unlimited'} />
             )}
           </div>
+        ) : removedItem1 ? (
+          <span className="text-muted-foreground text-[12px]">{normalizeBossName(removedItem1.boss_name)}</span>
         ) : isSlot1DisabledByReserved ? (
           <span className="text-muted-foreground text-[12px] italic">Reserved item in slot 2</span>
         ) : <span className="text-foreground-muted text-[12px]">-</span>}
       </td>
       <td className="px-3 py-2.5">
-        <div className="space-y-1">
-          <SearchableItemSelect
-            items={lootItems}
-            value={selectedItemId2 || ''}
-            onChange={(value) => onItemSelect(rank, 2, value)}
-            disabled={selectedItems}
-            currentValue={selectedItemId2}
-            isSlotDisabled={isSlot2DisabledByReserved}
-            hasError={hasSlot2Error}
-            ownedWowheadIds={ownedWowheadIds}
-          />
-          {hasSlot2Error && (
-            <p className="text-destructive text-[11px] pl-3">
-              {slot2ErrorMessages.join(' · ')}
-            </p>
-          )}
-        </div>
+        {!selectedItemId2 && removedItem2 ? (
+          <div className="px-3 py-2 bg-background-elevated border border-border rounded-[52px] opacity-50 overflow-hidden group hover:opacity-75 transition-opacity">
+            <span className="flex items-center gap-2 min-w-0">
+              <span className="truncate min-w-0"><ItemLink name={removedItem2.name} wowheadId={removedItem2.wowhead_id} clickable={false} className="line-through" /></span>
+              <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-success/20 text-success shrink-0 group-hover:hidden">Removed</span>
+              {onRestoreItem && (
+                <button
+                  onClick={() => onRestoreItem(removedItem2.id, removedItem2.name)}
+                  className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-accent/20 text-accent shrink-0 hidden group-hover:inline-block hover:bg-accent/30"
+                >
+                  Undo
+                </button>
+              )}
+            </span>
+          </div>
+        ) : (
+          <div className="space-y-1">
+            <SearchableItemSelect
+              items={lootItems}
+              value={selectedItemId2 || ''}
+              onChange={(value) => onItemSelect(rank, 2, value)}
+              disabled={selectedItems}
+              currentValue={selectedItemId2}
+              isSlotDisabled={isSlot2DisabledByReserved}
+              hasError={hasSlot2Error}
+              ownedWowheadIds={ownedWowheadIds}
+              readOnly={isApproved}
+              onRemove={isApproved && onRemoveItem && selectedItemId2 ? () => {
+                const item = lootItems.find(i => i.id === selectedItemId2)
+                if (item) onRemoveItem(item.id, item.name)
+              } : undefined}
+            />
+            {hasSlot2Error && (
+              <p className="text-destructive text-[11px] pl-3">
+                {slot2ErrorMessages.join(' · ')}
+              </p>
+            )}
+          </div>
+        )}
       </td>
       <td className="px-3 py-2.5">
         {selectedItem2 ? (
@@ -161,6 +226,8 @@ const RankRow = memo(function RankRow({
               <ClassificationBadge classification={selectedItem2.classification as 'Reserved' | 'Limited' | 'Unlimited'} />
             )}
           </div>
+        ) : removedItem2 ? (
+          <span className="text-muted-foreground text-[12px]">{normalizeBossName(removedItem2.boss_name)}</span>
         ) : isSlot2DisabledByReserved ? (
           <span className="text-muted-foreground text-[12px] italic">Reserved item in slot 1</span>
         ) : <span className="text-foreground-muted text-[12px]">-</span>}
@@ -198,13 +265,56 @@ export default function LootList() {
     isImportingBis,
     hasChanges,
     originalStatus,
+    removedItems,
     setSelectedPhase,
     handleItemSelect,
     clearAllRankings,
     saveSubmission,
     importBisItems,
-    refreshGear
+    refreshGear,
+    removeApprovedItem,
+    restoreRemovedItem
   } = useLootList()
+
+  const [removingItemId, setRemovingItemId] = useState<string | null>(null)
+  const [isEditing, setIsEditing] = useState(false)
+
+  // Build a set of removed item IDs keyed by rank-slot for display
+  const removedRankings = useMemo(() => {
+    const map: Record<string, string> = {}
+    for (const item of removedItems) {
+      map[`${item.rank}-${item.slot}`] = item.loot_item_id
+    }
+    return map
+  }, [removedItems])
+
+  const handleRemoveApprovedItem = (lootItemId: string, itemName: string) => {
+    confirm({
+      title: `Remove ${itemName}?`,
+      description: 'This removes the item from your approved list. Your list stays approved.',
+      confirmLabel: 'Remove item',
+      variant: 'warning',
+      onConfirm: async () => {
+        setRemovingItemId(lootItemId)
+        const success = await removeApprovedItem(lootItemId, itemName)
+        if (success) {
+          showNotification('success', `${itemName} removed from your list.`)
+        } else {
+          showNotification('error', 'Couldn\'t remove item. Try again.')
+        }
+        setRemovingItemId(null)
+      },
+    })
+  }
+
+  const handleRestoreItem = async (lootItemId: string, itemName: string) => {
+    const success = await restoreRemovedItem(lootItemId)
+    if (success) {
+      showNotification('success', `${itemName} restored to your list.`)
+    } else {
+      showNotification('error', 'Couldn\'t restore item. Try again.')
+    }
+  }
 
   // Local UI state
   const [showInstructionsModal, setShowInstructionsModal] = useState(false)
@@ -230,6 +340,7 @@ export default function LootList() {
       return () => clearTimeout(timer)
     } else {
       setContentReady(false)
+      setIsEditing(false)
     }
   }, [isLoading, isContentLoading])
 
@@ -262,7 +373,11 @@ export default function LootList() {
       description: 'Are you sure you want to clear all ranked items? This cannot be undone.',
       confirmLabel: 'Clear all',
       variant: 'danger',
-      onConfirm: () => clearAllRankings()
+      onConfirm: () => {
+        clearAllRankings()
+        // Brief delay to let auto-save trigger, then refresh
+        setTimeout(() => window.location.reload(), 500)
+      }
     })
   }, [confirm, clearAllRankings])
 
@@ -914,26 +1029,43 @@ export default function LootList() {
                       </div>
                     )}
                   </div>
-                  {/* Import BIS Button */}
-                  <Button
-                    variant="outline"
-                    onClick={() => setShowBisImportModal(true)}
-                  >
-                    Import BIS
-                  </Button>
-                  {/* Submit for Review Button */}
-                  <Button
-                    onClick={() => saveSubmission(true)}
-                    disabled={
-                      rankedCount === 0 ||
-                      duplicateItems.length > 0 ||
-                      hasValidationErrors ||
-                      (!hasChanges && (originalStatus === 'approved' || originalStatus === 'pending'))
-                    }
-                    loading={isSaving}
-                  >
-                    {hasChanges && (originalStatus === 'approved' || originalStatus === 'pending') ? 'Resubmit for review' : 'Submit for review'}
-                  </Button>
+                  {/* Approved + not editing: show Edit list button */}
+                  {originalStatus === 'approved' && !hasChanges && !isEditing ? (
+                    <Button variant="outline" onClick={() => setIsEditing(true)}>
+                      Edit list
+                    </Button>
+                  ) : (
+                    <>
+                      {/* Import BIS Button - hidden when list is approved */}
+                      {originalStatus !== 'approved' && (
+                        <Button
+                          variant="outline"
+                          onClick={() => setShowBisImportModal(true)}
+                        >
+                          Import BIS
+                        </Button>
+                      )}
+                      {/* Submit for Review / Done editing Button */}
+                      {isEditing && !hasChanges ? (
+                        <Button onClick={() => setIsEditing(false)}>
+                          Done editing
+                        </Button>
+                      ) : (
+                        <Button
+                          onClick={() => saveSubmission(true)}
+                          disabled={
+                            rankedCount === 0 ||
+                            duplicateItems.length > 0 ||
+                            hasValidationErrors ||
+                            (!hasChanges && (originalStatus === 'approved' || originalStatus === 'pending'))
+                          }
+                          loading={isSaving}
+                        >
+                          {hasChanges && (originalStatus === 'approved' || originalStatus === 'pending') ? 'Resubmit for review' : 'Submit for review'}
+                        </Button>
+                      )}
+                    </>
+                  )}
                 </div>
               </div>
               {submission?.review_notes && (
@@ -1066,6 +1198,11 @@ export default function LootList() {
                     slot1Errors={getSlotErrors(rank, 1)}
                     slot2Errors={getSlotErrors(rank, 2)}
                     ownedWowheadIds={equippedWowheadIds}
+                    isApproved={originalStatus === 'approved' && !hasChanges && !isEditing}
+                    onRemoveItem={handleRemoveApprovedItem}
+                    removingItemId={removingItemId}
+                    removedRankings={removedRankings}
+                    onRestoreItem={handleRestoreItem}
                   />
                 ))}
               </tbody>
@@ -1158,6 +1295,11 @@ export default function LootList() {
                     slot1Errors={getSlotErrors(rank, 1)}
                     slot2Errors={getSlotErrors(rank, 2)}
                     ownedWowheadIds={equippedWowheadIds}
+                    isApproved={originalStatus === 'approved' && !hasChanges && !isEditing}
+                    onRemoveItem={handleRemoveApprovedItem}
+                    removingItemId={removingItemId}
+                    removedRankings={removedRankings}
+                    onRestoreItem={handleRestoreItem}
                   />
                 ))}
               </tbody>
@@ -1250,6 +1392,11 @@ export default function LootList() {
                     slot1Errors={getSlotErrors(rank, 1)}
                     slot2Errors={getSlotErrors(rank, 2)}
                     ownedWowheadIds={equippedWowheadIds}
+                    isApproved={originalStatus === 'approved' && !hasChanges && !isEditing}
+                    onRemoveItem={handleRemoveApprovedItem}
+                    removingItemId={removingItemId}
+                    removedRankings={removedRankings}
+                    onRestoreItem={handleRestoreItem}
                   />
                 ))}
               </tbody>
@@ -1342,6 +1489,11 @@ export default function LootList() {
                     slot1Errors={getSlotErrors(rank, 1)}
                     slot2Errors={getSlotErrors(rank, 2)}
                     ownedWowheadIds={equippedWowheadIds}
+                    isApproved={originalStatus === 'approved' && !hasChanges && !isEditing}
+                    onRemoveItem={handleRemoveApprovedItem}
+                    removingItemId={removingItemId}
+                    removedRankings={removedRankings}
+                    onRestoreItem={handleRestoreItem}
                   />
                 ))}
               </tbody>
@@ -1385,6 +1537,11 @@ export default function LootList() {
                     duplicateItems={duplicateItems}
                     onItemSelect={handleItemSelect}
                     ownedWowheadIds={equippedWowheadIds}
+                    isApproved={originalStatus === 'approved' && !hasChanges && !isEditing}
+                    onRemoveItem={handleRemoveApprovedItem}
+                    removingItemId={removingItemId}
+                    removedRankings={removedRankings}
+                    onRestoreItem={handleRestoreItem}
                   />
                 ))}
               </tbody>
@@ -1428,6 +1585,11 @@ export default function LootList() {
                     duplicateItems={duplicateItems}
                     onItemSelect={handleItemSelect}
                     ownedWowheadIds={equippedWowheadIds}
+                    isApproved={originalStatus === 'approved' && !hasChanges && !isEditing}
+                    onRemoveItem={handleRemoveApprovedItem}
+                    removingItemId={removingItemId}
+                    removedRankings={removedRankings}
+                    onRestoreItem={handleRestoreItem}
                   />
                 ))}
               </tbody>

@@ -356,7 +356,7 @@ export function usePhaseSubmission(
   guildId: string | null,
   options?: SWRConfiguration
 ) {
-  return useSWR<{ submission: LootSubmission | null; rankings: Record<string, string> }>(
+  return useSWR<{ submission: LootSubmission | null; rankings: Record<string, string>; removedItems?: Array<{ loot_item_id: string; rank: number; slot: number }> }>(
     characterId && expansionId && phase !== null && guildId
       ? `/api/loot-submissions?character_id=${characterId}&expansion_id=${expansionId}&phase=${phase}&guild_id=${guildId}`
       : null,

@@ -9,7 +9,7 @@ import { TierTabsSkeleton, SubmissionsListSkeleton, Skeleton } from '@/component
 import { StatusBadge, type SubmissionStatus } from '@/components/ui/status-badge'
 import { ClassificationBadge } from '@/components/ui/classification-badge'
 import { EmptyState } from '@/components/ui/empty-state'
-import { ScrollIcon, AlertCircleIcon, Delete01Icon } from '@hugeicons/core-free-icons'
+import { ScrollIcon, AlertCircleIcon, Delete01Icon, Cancel01Icon, Search01Icon } from '@hugeicons/core-free-icons'
 import { HugeiconsIcon } from '@hugeicons/react'
 import {
   Modal,
@@ -19,6 +19,8 @@ import {
   ModalFooter,
 } from '@/components/ui/modal'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { useConfirm } from '@/components/ui/confirm-modal'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
@@ -86,6 +88,7 @@ interface RaidTierInfo {
 interface SubmissionDetailItem {
   rank: number
   slot: number
+  removed_at?: string | null
   loot_item: {
     id: string
     name: string
@@ -133,6 +136,8 @@ export default function MasterLootPage() {
   const [raidTierInfos, setRaidTierInfos] = useState<RaidTierInfo[]>([])
   const [submissionDiff, setSubmissionDiff] = useState<DiffEntry[]>([])
   const [loadingDiff, setLoadingDiff] = useState(false)
+  const [removingItemId, setRemovingItemId] = useState<string | null>(null)
+  const [searchQuery, setSearchQuery] = useState('')
 
   // PERFORMANCE: Track current request to prevent race conditions when rapidly clicking submissions
   const currentDetailRequestRef = useRef<string | null>(null)
@@ -141,6 +146,7 @@ export default function MasterLootPage() {
   const router = useRouter()
   const { activeGuild, loading: guildLoading, isOfficer } = useGuildContext()
   const { showNotification } = useNotification()
+  const { confirm, ConfirmDialog } = useConfirm()
 
   useEffect(() => {
     document.title = 'LootList+ • Loot Submissions'
@@ -283,6 +289,7 @@ export default function MasterLootPage() {
       .from('loot_submission_items')
       .select('submission_id')
       .in('submission_id', submissionIds)
+      .is('removed_at', null)
 
     const countMap: Record<string, number> = {}
     itemCounts?.forEach((item: { submission_id: string }) => {
@@ -472,6 +479,7 @@ export default function MasterLootPage() {
         .select(`
           rank,
           slot,
+          removed_at,
           loot_item:loot_items(id, name, boss_name, item_slot, wowhead_id, classification)
         `)
         .eq('submission_id', submissionId)
@@ -551,9 +559,82 @@ export default function MasterLootPage() {
     }
   }
 
+  const handleRemoveItem = (submissionId: string, lootItemId: string, itemName: string) => {
+    if (!guildId) return
+
+    confirm({
+      title: `Remove ${itemName}?`,
+      description: 'This removes the item from the approved list without changing the list\'s approval status.',
+      confirmLabel: 'Remove item',
+      variant: 'warning',
+      onConfirm: async () => {
+        setRemovingItemId(lootItemId)
+        try {
+          const response = await fetch('/api/loot-submissions/remove-item', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              guild_id: guildId,
+              submission_id: submissionId,
+              loot_item_id: lootItemId,
+            }),
+          })
+
+          const data = await response.json()
+          if (!response.ok) {
+            showNotification('error', data.error || 'Couldn\'t remove item. Try again.')
+            return
+          }
+
+          showNotification('success', `${itemName} removed from list.`)
+          setSubmissionDetails(prev => prev.filter(d => d.loot_item?.id !== lootItemId))
+        } catch {
+          showNotification('error', 'Couldn\'t remove item. Check your connection.')
+        } finally {
+          setRemovingItemId(null)
+        }
+      },
+    })
+  }
+
+  const handleRestoreItem = async (submissionId: string, lootItemId: string, itemName: string) => {
+    if (!guildId) return
+
+    try {
+      const response = await fetch('/api/loot-submissions/remove-item', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          guild_id: guildId,
+          submission_id: submissionId,
+          loot_item_id: lootItemId,
+          restore: true,
+        }),
+      })
+
+      const data = await response.json()
+      if (!response.ok) {
+        showNotification('error', data.error || 'Couldn\'t restore item. Try again.')
+        return
+      }
+
+      showNotification('success', `${itemName} restored.`)
+      // Update local state to reflect restoration
+      setSubmissionDetails(prev => prev.map(d =>
+        d.loot_item?.id === lootItemId ? { ...d, removed_at: null } : d
+      ))
+    } catch {
+      showNotification('error', 'Couldn\'t restore item. Check your connection.')
+    }
+  }
+
   const filteredSubmissions = submissions.filter(sub => {
-    if (filter === 'all') return true
-    return sub.status === filter
+    if (filter !== 'all' && sub.status !== filter) return false
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase()
+      return sub.member?.character_name?.toLowerCase().includes(q)
+    }
+    return true
   })
 
   // Memoize grouped submission details to avoid recalculating on every render
@@ -657,7 +738,7 @@ export default function MasterLootPage() {
           {/* Filters and Delete Actions */}
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div className="flex items-center gap-3 w-full sm:w-auto">
-              <div className="flex gap-2 overflow-x-auto pb-1 sm:pb-0 w-full sm:w-auto">
+              <div className="flex gap-2 overflow-x-auto pb-1 sm:pb-0">
               {(['all', 'pending', 'approved', 'rejected'] as const).map((status) => (
                 <Button
                   key={status}
@@ -669,6 +750,25 @@ export default function MasterLootPage() {
                   {status.charAt(0).toUpperCase() + status.slice(1)}
                 </Button>
               ))}
+              </div>
+              <div className="relative">
+                <HugeiconsIcon icon={Search01Icon} size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+                <Input
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search character..."
+                  size="sm"
+                  variant="pill"
+                  className={`pl-8 w-44 ${searchQuery ? 'pr-8' : ''}`}
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  >
+                    <HugeiconsIcon icon={Cancel01Icon} size={14} />
+                  </button>
+                )}
               </div>
             </div>
             <div className="flex gap-2 flex-shrink-0">
@@ -860,39 +960,58 @@ export default function MasterLootPage() {
                       return 'from-blue-900 to-blue-700'
                     }
                     const itemsArr = items as SubmissionDetailItem[]
+                    const viewedSub = viewingSubmission ? submissions.find(s => s.id === viewingSubmission) : null
+                    const canRemove = viewedSub?.status === 'approved'
+
+                    const renderItemCell = (item: SubmissionDetailItem | undefined) => {
+                      if (!item) return <span className="text-muted-foreground text-sm">-</span>
+                      const isRemoved = !!item.removed_at
+                      return (
+                        <div className={`flex items-center gap-2 group ${isRemoved ? 'opacity-50' : ''}`}>
+                          <ItemLink
+                            name={item.loot_item?.name || 'Unknown'}
+                            wowheadId={item.loot_item?.wowhead_id}
+                            className={`font-medium text-sm ${isRemoved ? 'line-through' : ''}`}
+                          />
+                          {item.loot_item?.classification && (
+                            <ClassificationBadge classification={item.loot_item.classification as 'Reserved' | 'Limited' | 'Unlimited'} />
+                          )}
+                          {isRemoved && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleRestoreItem(viewingSubmission!, item.loot_item.id, item.loot_item.name)
+                              }}
+                              className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-success/20 text-success flex-shrink-0 hover:bg-accent/20 hover:text-accent transition-colors"
+                              title="Restore item"
+                            >
+                              Undo
+                            </button>
+                          )}
+                          {canRemove && !isRemoved && item.loot_item?.id && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleRemoveItem(viewingSubmission!, item.loot_item.id, item.loot_item.name)
+                              }}
+                              disabled={removingItemId === item.loot_item.id}
+                              className="opacity-0 group-hover:opacity-100 ml-auto p-1 text-muted-foreground hover:text-destructive transition-opacity shrink-0"
+                              title="Remove from list"
+                            >
+                              <HugeiconsIcon icon={Cancel01Icon} size={14} />
+                            </button>
+                          )}
+                        </div>
+                      )
+                    }
+
                     return (
                       <tr key={rank} className="border-b border-border">
                         <td className={`px-3 py-2 font-semibold text-sm text-foreground bg-gradient-to-r ${getRankColor(rankNum)}`}>
                           {rank}
                         </td>
-                        <td className="px-3 py-2">
-                          {itemsArr[0] ? (
-                            <div className="flex items-center gap-2">
-                              <ItemLink
-                                name={itemsArr[0].loot_item?.name || 'Unknown'}
-                                wowheadId={itemsArr[0].loot_item?.wowhead_id}
-                                className="font-medium text-sm"
-                              />
-                              {itemsArr[0].loot_item?.classification && (
-                                <ClassificationBadge classification={itemsArr[0].loot_item.classification as 'Reserved' | 'Limited' | 'Unlimited'} />
-                              )}
-                            </div>
-                          ) : <span className="text-muted-foreground text-sm">-</span>}
-                        </td>
-                        <td className="px-3 py-2">
-                          {itemsArr[1] ? (
-                            <div className="flex items-center gap-2">
-                              <ItemLink
-                                name={itemsArr[1].loot_item?.name || 'Unknown'}
-                                wowheadId={itemsArr[1].loot_item?.wowhead_id}
-                                className="font-medium text-sm"
-                              />
-                              {itemsArr[1].loot_item?.classification && (
-                                <ClassificationBadge classification={itemsArr[1].loot_item.classification as 'Reserved' | 'Limited' | 'Unlimited'} />
-                              )}
-                            </div>
-                          ) : <span className="text-muted-foreground text-sm">-</span>}
-                        </td>
+                        <td className="px-3 py-2">{renderItemCell(itemsArr[0])}</td>
+                        <td className="px-3 py-2">{renderItemCell(itemsArr[1])}</td>
                       </tr>
                     )
                   })}
@@ -1054,6 +1173,7 @@ export default function MasterLootPage() {
       </Modal>
         </>
       )}
+      {ConfirmDialog}
       </div>
     </div>
   )

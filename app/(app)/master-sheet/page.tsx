@@ -656,6 +656,7 @@ function MasterSheetContent() {
             .from('loot_submission_items')
             .select('rank, slot, submission_id, loot_item_id')
             .in('loot_item_id', itemIds)
+            .is('removed_at', null)
             .limit(10000),
 
           // Query 2: Load loot history to filter out characters who already received items
@@ -953,6 +954,7 @@ function MasterSheetContent() {
           .from('loot_submission_items')
           .select('loot_item_id, rank, slot, submission_id')
           .in('loot_item_id', itemIds)
+          .is('removed_at', null)
           .limit(10000)
 
         if (!submissionItemsData || submissionItemsData.length === 0) {
@@ -1287,6 +1289,7 @@ function MasterSheetContent() {
         .from('loot_submission_items')
         .select('rank, slot, submission_id, loot_item_id')
         .in('loot_item_id', itemIds)
+        .is('removed_at', null)
         .limit(10000),
 
       // Load item priorities for this tier

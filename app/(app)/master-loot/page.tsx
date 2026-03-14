@@ -211,6 +211,7 @@ export default function MasterLootPage() {
           .from('loot_submission_items')
           .select('*', { count: 'exact', head: true })
           .eq('submission_id', sub.id)
+          .is('removed_at', null)
 
         return {
           ...sub,
@@ -284,6 +285,7 @@ export default function MasterLootPage() {
         loot_item:loot_items(id, name, boss_name, item_slot, wowhead_id)
       `)
       .eq('submission_id', submissionId)
+      .is('removed_at', null)
       .order('rank', { ascending: false })
 
     if (itemsData) {

@@ -584,6 +584,7 @@ function DashboardContent() {
         .eq('submission.character_id', characterId)
         .eq('submission.guild_id', activeGuild.id)
         .eq('submission.status', 'approved')
+        .is('removed_at', null)
 
       // Try to get guild settings and attendance (may not be set up yet)
       try {
@@ -883,6 +884,7 @@ function DashboardContent() {
               .in('loot_item_id', filteredItemIds)
               .eq('submission.guild_id', activeGuild.id)
               .eq('submission.status', 'approved')
+              .is('removed_at', null)
 
             if (allSubmissionsForItems) {
               // Group by item, count unique characters, find user's rank position
@@ -1014,6 +1016,7 @@ function DashboardContent() {
           .or(orConditions)
           .eq('submission.guild_id', activeGuild.id)
           .eq('submission.status', 'approved')
+          .is('removed_at', null)
 
         allSameRankSubmissions = (batchedSubmissions || []) as typeof allSameRankSubmissions
       }

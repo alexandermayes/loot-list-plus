@@ -46,6 +46,10 @@ interface SearchableItemSelectProps {
   hasError?: boolean
   /** Set of wowhead_ids that the user already owns (imported from WowSims) */
   ownedWowheadIds?: Set<number>
+  /** When true, dropdown is locked but X button still works (calls onRemove instead of onChange) */
+  readOnly?: boolean
+  /** Called when X is clicked in read-only mode. If not set, falls back to onChange('') */
+  onRemove?: () => void
 }
 
 export default function SearchableItemSelect({
@@ -57,7 +61,9 @@ export default function SearchableItemSelect({
   currentValue,
   isSlotDisabled = false,
   hasError = false,
-  ownedWowheadIds = new Set()
+  ownedWowheadIds = new Set(),
+  readOnly = false,
+  onRemove
 }: SearchableItemSelectProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [search, setSearch] = useState('')
@@ -160,7 +166,7 @@ export default function SearchableItemSelect({
 
   // Handle opening the dropdown with position calculation
   const handleOpen = () => {
-    if (isSlotDisabled) return
+    if (isSlotDisabled || readOnly) return
     if (buttonRef.current) {
       const rect = buttonRef.current.getBoundingClientRect()
       setDropdownPosition({
@@ -205,14 +211,14 @@ export default function SearchableItemSelect({
         role="combobox"
         aria-expanded={isOpen}
         aria-haspopup="listbox"
-        aria-disabled={isSlotDisabled}
-        tabIndex={isSlotDisabled ? -1 : 0}
+        aria-disabled={isSlotDisabled || readOnly}
+        tabIndex={isSlotDisabled || readOnly ? -1 : 0}
         onClick={() => {
-          if (isSlotDisabled) return
+          if (isSlotDisabled || readOnly) return
           isOpen ? setIsOpen(false) : handleOpen()
         }}
         onKeyDown={(e) => {
-          if (isSlotDisabled) return
+          if (isSlotDisabled || readOnly) return
           if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault()
             isOpen ? setIsOpen(false) : handleOpen()
@@ -221,9 +227,11 @@ export default function SearchableItemSelect({
         className={`w-full px-3 py-2 bg-background-elevated border rounded-[52px] text-left focus:outline-none flex items-center justify-between gap-2 ${
           isSlotDisabled
             ? 'opacity-50 cursor-not-allowed text-muted-foreground border-border-strong'
-            : hasError
-              ? 'text-foreground cursor-pointer border-destructive border-2 focus:border-destructive'
-              : 'text-foreground focus:border-accent cursor-pointer border-border-strong'
+            : readOnly
+              ? 'text-foreground border-border-strong'
+              : hasError
+                ? 'text-foreground cursor-pointer border-destructive border-2 focus:border-destructive'
+                : 'text-foreground focus:border-accent cursor-pointer border-border-strong'
         }`}
       >
         <span className="truncate flex items-center gap-2 min-w-0">
@@ -244,32 +252,39 @@ export default function SearchableItemSelect({
         </span>
         <div className="flex items-center gap-1 flex-shrink-0">
           {/* Clear button (X) - only show when item is selected */}
-          {selectedItem && (
+          {selectedItem && !isSlotDisabled && (
             <Button
               type="button"
               variant="ghost"
               size="icon"
               onClick={(e) => {
                 e.stopPropagation()
-                handleClear()
+                if (readOnly && onRemove) {
+                  onRemove()
+                } else {
+                  handleClear()
+                }
               }}
               className="w-6 h-6 min-h-0 rounded-full"
-              aria-label="Clear selection"
+              aria-label={readOnly ? 'Remove from list' : 'Clear selection'}
+              title={readOnly ? 'Remove from list' : undefined}
             >
-              <svg className="w-3.5 h-3.5 text-muted-foreground hover:text-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className={`w-3.5 h-3.5 ${readOnly ? 'text-muted-foreground hover:text-destructive' : 'text-muted-foreground hover:text-foreground'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </Button>
           )}
-          <svg
-            className="w-4 h-4 transition-transform"
-            style={{ transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-          </svg>
+          {!readOnly && (
+            <svg
+              className="w-4 h-4 transition-transform"
+              style={{ transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          )}
         </div>
       </div>
 
