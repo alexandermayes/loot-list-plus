@@ -1608,12 +1608,13 @@ function DashboardContent() {
           {/* Loot Priority and Received Items Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Next in Line - Top Items */}
-            <div className="bg-background-elevated border border-border rounded-xl p-6">
-              <div className="flex items-center gap-4 mb-6">
-                <HugeiconsIcon icon={Award01Icon} size={32} className="text-accent flex-shrink-0" />
+            <div className="bg-background-elevated border border-border rounded-xl p-4 sm:p-6">
+              <div className="flex items-center gap-3 sm:gap-4 mb-4 sm:mb-6">
+                <HugeiconsIcon icon={Award01Icon} size={28} className="text-accent flex-shrink-0 sm:hidden" />
+                <HugeiconsIcon icon={Award01Icon} size={32} className="text-accent flex-shrink-0 hidden sm:block" />
                 <div>
-                  <h2 className="text-[24px] font-bold text-foreground">Next in line</h2>
-                  <p className="text-sm text-muted-foreground mt-1">Your highest priority items</p>
+                  <h2 className="text-[20px] sm:text-[24px] font-bold text-foreground">Next in line</h2>
+                  <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 sm:mt-1">Your highest priority items</p>
                 </div>
               </div>
               {lootPriority.length === 0 ? (
@@ -1625,33 +1626,35 @@ function DashboardContent() {
                   action={{ label: "Create a list", onClick: () => router.push('/loot-list'), variant: "primary" }}
                 />
               ) : (
-                <div className="space-y-3">
+                <div className="space-y-2 sm:space-y-3">
                   {lootPriority.map((item, index) => (
                     <div
                       key={item.item_id}
                       onClick={() => router.push(`/master-sheet?tier=${item.raid_tier_id}&item=${item.item_id}`)}
-                      className="bg-background-inset border border-border rounded-xl p-4 hover:border-accent/50 transition cursor-pointer"
+                      className="bg-background-inset border border-border rounded-xl p-3 sm:p-4 hover:border-accent/50 transition cursor-pointer"
                     >
-                      <div className="flex items-center gap-4">
-                        <div className="flex-shrink-0 w-10 h-10 bg-accent/20 rounded-full flex items-center justify-center">
-                          <span className="text-accent font-bold text-lg">#{index + 1}</span>
+                      <div className="flex items-start sm:items-center gap-3 sm:gap-4">
+                        <div className="flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 bg-accent/20 rounded-full flex items-center justify-center mt-0.5 sm:mt-0">
+                          <span className="text-accent font-bold text-sm sm:text-lg">#{index + 1}</span>
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1 min-w-0">
+                          <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 mb-1 min-w-0">
                             <div className="min-w-0 flex-1">
                               <ItemLink name={item.item_name} wowheadId={item.wowhead_id} clickable={true} showIcon={true} />
                             </div>
-                            {item.is_loot_council && (
-                              <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-accent/20 text-accent flex-shrink-0">Loot Council</span>
-                            )}
-                            {item.classification && item.classification !== 'Unlimited' && (
-                              <span className="text-xs px-2 py-0.5 bg-accent/20 text-accent rounded-full border border-accent/30 flex-shrink-0 whitespace-nowrap">
-                                {item.classification}
-                              </span>
-                            )}
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              {item.is_loot_council && (
+                                <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-accent/20 text-accent flex-shrink-0">Loot Council</span>
+                              )}
+                              {item.classification && item.classification !== 'Unlimited' && (
+                                <span className="text-xs px-2 py-0.5 bg-accent/20 text-accent rounded-full border border-accent/30 flex-shrink-0 whitespace-nowrap">
+                                  {item.classification}
+                                </span>
+                              )}
+                            </div>
                           </div>
-                          <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
-                            <span>{item.boss_name}</span>
+                          <div className="flex items-center gap-1.5 sm:gap-2 text-[11px] sm:text-xs text-muted-foreground flex-wrap">
+                            <span className="truncate max-w-[100px] sm:max-w-none">{item.boss_name}</span>
                             {!item.is_loot_council && (
                               <>
                                 <span>•</span>
@@ -1717,12 +1720,13 @@ function DashboardContent() {
             </div>
 
             {/* Recently Received Items */}
-            <div className="bg-background-elevated border border-border rounded-xl p-6">
-              <div className="flex items-center gap-4 mb-6">
-                <HugeiconsIcon icon={CheckmarkCircle01Icon} size={32} className="text-success flex-shrink-0" />
+            <div className="bg-background-elevated border border-border rounded-xl p-4 sm:p-6">
+              <div className="flex items-center gap-3 sm:gap-4 mb-4 sm:mb-6">
+                <HugeiconsIcon icon={CheckmarkCircle01Icon} size={28} className="text-success flex-shrink-0 sm:hidden" />
+                <HugeiconsIcon icon={CheckmarkCircle01Icon} size={32} className="text-success flex-shrink-0 hidden sm:block" />
                 <div>
-                  <h2 className="text-[24px] font-bold text-foreground">Recently received</h2>
-                  <p className="text-sm text-muted-foreground mt-1">
+                  <h2 className="text-[20px] sm:text-[24px] font-bold text-foreground">Recently received</h2>
+                  <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 sm:mt-1">
                     {lootEfficiency && lootEfficiency.total > 0
                       ? `Won ${lootEfficiency.received} of ${lootEfficiency.total} items`
                       : 'Your recent loot awards'}
@@ -1738,31 +1742,32 @@ function DashboardContent() {
                   action={{ label: "View master sheet", onClick: () => router.push('/master-sheet'), variant: "outline" }}
                 />
               ) : (
-                <div className="space-y-3">
+                <div className="space-y-2 sm:space-y-3">
                   {receivedItems.map((item) => (
                     <div
                       key={item.id}
-                      className="bg-background-elevated border border-border rounded-xl p-4"
+                      className="bg-background-elevated border border-border rounded-xl p-3 sm:p-4"
                     >
-                      <div className="flex items-center gap-4">
-                        <div className="flex-shrink-0 w-10 h-10 bg-success/20 rounded-full flex items-center justify-center">
-                          <HugeiconsIcon icon={CheckmarkCircle01Icon} size={20} className="text-success" />
+                      <div className="flex items-start sm:items-center gap-3 sm:gap-4">
+                        <div className="flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 bg-success/20 rounded-full flex items-center justify-center mt-0.5 sm:mt-0">
+                          <HugeiconsIcon icon={CheckmarkCircle01Icon} size={16} className="text-success sm:hidden" />
+                          <HugeiconsIcon icon={CheckmarkCircle01Icon} size={20} className="text-success hidden sm:block" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1 min-w-0">
+                          <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 mb-1 min-w-0">
                             <div className="min-w-0 flex-1">
                               <ItemLink name={item.item_name} wowheadId={item.wowhead_id} clickable={true} showIcon={true} />
                             </div>
                             {item.classification && item.classification !== 'Unlimited' && (
-                              <span className="text-xs px-2 py-0.5 bg-success/20 text-success rounded-full border border-success/30 flex-shrink-0 whitespace-nowrap">
+                              <span className="text-xs px-2 py-0.5 bg-success/20 text-success rounded-full border border-success/30 flex-shrink-0 whitespace-nowrap w-fit">
                                 {item.classification}
                               </span>
                             )}
                           </div>
-                          <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
-                            <span>{item.boss_name}</span>
+                          <div className="flex items-center gap-1.5 sm:gap-2 text-[11px] sm:text-xs text-muted-foreground flex-wrap">
+                            <span className="truncate max-w-[120px] sm:max-w-none">{item.boss_name}</span>
                             <span>•</span>
-                            <span>{item.raid_tier_name}</span>
+                            <span className="truncate max-w-[100px] sm:max-w-none">{item.raid_tier_name}</span>
                             <span>•</span>
                             <span>{new Date(item.awarded_date).toLocaleDateString()}</span>
                           </div>
@@ -1777,9 +1782,9 @@ function DashboardContent() {
 
           {/* Actions Needed - Current Character */}
           {actionsNeeded.filter(submission => !dismissedActions.has(submission.id)).length > 0 && (
-            <div className="bg-background-elevated border border-border rounded-xl p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-[24px] font-bold text-foreground">Actions needed</h2>
+            <div className="bg-background-elevated border border-border rounded-xl p-4 sm:p-6">
+              <div className="flex items-center justify-between mb-4 sm:mb-6">
+                <h2 className="text-[20px] sm:text-[24px] font-bold text-foreground">Actions needed</h2>
               </div>
               <div className="space-y-4">
                 {actionsNeeded.filter(submission => !dismissedActions.has(submission.id)).map(submission => (
