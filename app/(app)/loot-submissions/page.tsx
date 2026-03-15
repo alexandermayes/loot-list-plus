@@ -2,6 +2,7 @@
 
 import { createClient } from '@/utils/supabase/client'
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { useRouter } from 'next/navigation'
 import { useGuildContext } from '@/app/contexts/GuildContext'
 import { useNotification } from '@/app/contexts/NotificationContext'
@@ -139,6 +140,16 @@ export default function MasterLootPage() {
   const [loadingDiff, setLoadingDiff] = useState(false)
   const [removingItemId, setRemovingItemId] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
+  const [isMobile, setIsMobile] = useState(false)
+
+  // Track viewport for mobile full-page vs desktop modal
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 639px)')
+    setIsMobile(mq.matches)
+    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches)
+    mq.addEventListener('change', handler)
+    return () => mq.removeEventListener('change', handler)
+  }, [])
 
   // PERFORMANCE: Track current request to prevent race conditions when rapidly clicking submissions
   const currentDetailRequestRef = useRef<string | null>(null)
@@ -671,8 +682,8 @@ export default function MasterLootPage() {
         </div>
       ) : phases.length > 0 && (
         <div className="sticky top-14 sm:top-0 z-20 px-4 sm:px-6 lg:px-8 py-1.5 bg-background">
-          <div className="flex items-center gap-3 overflow-x-auto pb-1">
-            <div className="flex gap-2">
+          <div className="flex items-center gap-3 overflow-x-auto scrollbar-hide pb-1">
+            <div className="flex gap-2 flex-shrink-0">
               {/* All Phases Button */}
               <Button
                 variant={activePhase === 'all' ? 'accent-subtle' : 'outline'}
@@ -741,34 +752,33 @@ export default function MasterLootPage() {
       <div className="space-y-4">
           {/* Filters and Delete Actions */}
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div className="flex items-center gap-3 w-full sm:w-auto">
-              <div className="flex gap-2 overflow-x-auto pb-1 sm:pb-0">
+            <div className="flex flex-col gap-3 w-full sm:w-auto">
+              <div className="flex gap-2 overflow-x-auto scrollbar-hide">
               {(['all', 'pending', 'approved', 'rejected'] as const).map((status) => (
                 <Button
                   key={status}
                   variant={filter === status ? 'accent-subtle' : 'outline'}
                   size="sm"
                   onClick={() => setFilter(status)}
-                  className="rounded-[40px] whitespace-nowrap"
+                  className="rounded-[40px] whitespace-nowrap flex-shrink-0"
                 >
                   {status.charAt(0).toUpperCase() + status.slice(1)}
                 </Button>
               ))}
               </div>
-              <div className="relative">
-                <HugeiconsIcon icon={Search01Icon} size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+              <div className="relative w-full sm:w-52">
+                <HugeiconsIcon icon={Search01Icon} size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
                 <Input
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search character..."
-                  size="sm"
                   variant="pill"
-                  className={`pl-8 w-44 ${searchQuery ? 'pr-8' : ''}`}
+                  className={`pl-9 w-full ${searchQuery ? 'pr-8' : ''}`}
                 />
                 {searchQuery && (
                   <button
                     onClick={() => setSearchQuery('')}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                   >
                     <HugeiconsIcon icon={Cancel01Icon} size={14} />
                   </button>
@@ -895,186 +905,259 @@ export default function MasterLootPage() {
         </div>
 
       {/* Submission Details Modal */}
-      <Modal open={!!viewingSubmission} onClose={() => { setViewingSubmission(null); setReviewNotes('') }} size="lg">
-        <ModalHeader onClose={() => { setViewingSubmission(null); setReviewNotes('') }}>
-          {(() => {
-            const submission = viewingSubmission ? submissions.find(s => s.id === viewingSubmission) : null
-            return (
-              <div className="flex flex-col gap-1">
-                <ModalTitle>
-                  <span style={{ color: submission?.member?.class?.color_hex || 'inherit' }}>
-                    {submission?.member?.character_name || 'Unknown Character'}
-                  </span>
-                  {submission?.member?.class?.name && (
-                    <span className="text-muted-foreground font-normal text-base ml-2">
-                      {submission.member.class.name}
-                    </span>
-                  )}
-                </ModalTitle>
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  {submission?.tier_name && (
-                    <span>{submission.tier_name}</span>
-                  )}
-                  {submission?.tier_name && submission?.submitted_at && <span>•</span>}
-                  {submission?.submitted_at && (
-                    <span>Submitted {new Date(submission.submitted_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
-                  )}
-                  {submission?.status && (
-                    <>
-                      <span>•</span>
-                      <StatusBadge status={submission.status as SubmissionStatus} />
-                    </>
-                  )}
-                </div>
-              </div>
-            )
-          })()}
-        </ModalHeader>
-        <ModalBody className="p-0">
-          {loadingDetails ? (
-            <div className="flex items-center justify-center py-12">
-              <LoadingSpinner size="sm" />
+      {/* Mobile: Full-page view */}
+      {!!viewingSubmission && (() => {
+        const viewedSubmission = submissions.find(s => s.id === viewingSubmission)
+        const canRemove = viewedSubmission?.status === 'approved'
+        const isPending = viewedSubmission?.status === 'pending'
+
+        const getRankGradient = (r: number) => {
+          if (r >= 48) return 'from-red-900 to-red-700'
+          if (r >= 45) return 'from-orange-900 to-orange-700'
+          if (r >= 42) return 'from-yellow-900 to-yellow-700'
+          if (r >= 39) return 'from-amber-900 to-amber-700'
+          if (r >= 25) return 'from-green-900 to-green-700'
+          return 'from-blue-900 to-blue-700'
+        }
+        const getRankBg = (r: number) => {
+          if (r >= 48) return 'bg-red-800'
+          if (r >= 45) return 'bg-orange-800'
+          if (r >= 42) return 'bg-yellow-800'
+          if (r >= 39) return 'bg-amber-800'
+          if (r >= 25) return 'bg-green-800'
+          return 'bg-blue-800'
+        }
+
+        const renderItemCell = (item: SubmissionDetailItem | undefined) => {
+          if (!item) return <span className="text-muted-foreground text-sm">-</span>
+          const isRemoved = !!item.removed_at
+          return (
+            <div className={`flex items-center gap-2 group ${isRemoved ? 'opacity-50' : ''}`}>
+              <ItemLink
+                name={item.loot_item?.name || 'Unknown'}
+                wowheadId={item.loot_item?.wowhead_id}
+                className={`font-medium text-sm ${isRemoved ? 'line-through' : ''}`}
+              />
+              {item.loot_item?.classification && (
+                <ClassificationBadge classification={item.loot_item.classification as 'Reserved' | 'Limited' | 'Unlimited'} />
+              )}
+              {isRemoved && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    handleRestoreItem(viewingSubmission!, item.loot_item.id, item.loot_item.name)
+                  }}
+                  className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-success/20 text-success flex-shrink-0 hover:bg-accent/20 hover:text-accent transition-colors"
+                  title="Restore item"
+                >
+                  Undo
+                </button>
+              )}
+              {canRemove && !isRemoved && item.loot_item?.id && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    handleRemoveItem(viewingSubmission!, item.loot_item.id, item.loot_item.name)
+                  }}
+                  disabled={removingItemId === item.loot_item.id}
+                  className="opacity-0 group-hover:opacity-100 ml-auto p-1 text-muted-foreground hover:text-destructive transition-opacity shrink-0"
+                  title="Remove from list"
+                >
+                  <HugeiconsIcon icon={Cancel01Icon} size={14} />
+                </button>
+              )}
             </div>
-          ) : submissionDetails.length === 0 ? (
-            <EmptyState
-              icon={ScrollIcon}
-              title="No ranked items"
-              description="This submission has no ranked items."
-              size="compact"
-            />
-          ) : (
-            <div className="overflow-x-auto">
-            <table className="w-full min-w-[320px] sm:min-w-[420px]">
-              <thead className="sticky top-0 z-10">
-                <tr className="bg-background-subtle border-b border-border">
-                  <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground w-12 bg-background-subtle">Rank</th>
-                  <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground bg-background-subtle">Item #1</th>
-                  <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground bg-background-subtle">Item #2</th>
-                </tr>
-              </thead>
-              <tbody>
-                {groupedSubmissionDetails.map(([rank, items]) => {
-                    const rankNum = Number(rank)
-                    const getRankColor = (r: number) => {
-                      if (r >= 48) return 'from-red-900 to-red-700'
-                      if (r >= 45) return 'from-orange-900 to-orange-700'
-                      if (r >= 42) return 'from-yellow-900 to-yellow-700'
-                      if (r >= 39) return 'from-amber-900 to-amber-700'
-                      if (r >= 25) return 'from-green-900 to-green-700'
-                      return 'from-blue-900 to-blue-700'
-                    }
-                    const itemsArr = items as SubmissionDetailItem[]
-                    const viewedSub = viewingSubmission ? submissions.find(s => s.id === viewingSubmission) : null
-                    const canRemove = viewedSub?.status === 'approved'
+          )
+        }
 
-                    const renderItemCell = (item: SubmissionDetailItem | undefined) => {
-                      if (!item) return <span className="text-muted-foreground text-sm">-</span>
-                      const isRemoved = !!item.removed_at
-                      return (
-                        <div className={`flex items-center gap-2 group ${isRemoved ? 'opacity-50' : ''}`}>
-                          <ItemLink
-                            name={item.loot_item?.name || 'Unknown'}
-                            wowheadId={item.loot_item?.wowhead_id}
-                            className={`font-medium text-sm ${isRemoved ? 'line-through' : ''}`}
-                          />
-                          {item.loot_item?.classification && (
-                            <ClassificationBadge classification={item.loot_item.classification as 'Reserved' | 'Limited' | 'Unlimited'} />
-                          )}
-                          {isRemoved && (
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                handleRestoreItem(viewingSubmission!, item.loot_item.id, item.loot_item.name)
-                              }}
-                              className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-success/20 text-success flex-shrink-0 hover:bg-accent/20 hover:text-accent transition-colors"
-                              title="Restore item"
-                            >
-                              Undo
-                            </button>
-                          )}
-                          {canRemove && !isRemoved && item.loot_item?.id && (
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                handleRemoveItem(viewingSubmission!, item.loot_item.id, item.loot_item.name)
-                              }}
-                              disabled={removingItemId === item.loot_item.id}
-                              className="opacity-0 group-hover:opacity-100 ml-auto p-1 text-muted-foreground hover:text-destructive transition-opacity shrink-0"
-                              title="Remove from list"
-                            >
-                              <HugeiconsIcon icon={Cancel01Icon} size={14} />
-                            </button>
-                          )}
-                        </div>
-                      )
-                    }
-
-                    return (
-                      <tr key={rank} className="border-b border-border">
-                        <td className={`px-3 py-2 font-semibold text-sm text-foreground bg-gradient-to-r ${getRankColor(rankNum)}`}>
-                          {rank}
-                        </td>
-                        <td className="px-3 py-2">{renderItemCell(itemsArr[0])}</td>
-                        <td className="px-3 py-2">{renderItemCell(itemsArr[1])}</td>
-                      </tr>
-                    )
-                  })}
-              </tbody>
-            </table>
-            </div>
-          )}
-
-          {/* Diff section - show changes from previous submission */}
-          {(() => {
-            const submission = viewingSubmission ? submissions.find(s => s.id === viewingSubmission) : null
-            if (!submission || submission.resubmission_count === 0) return null
-
-            return (
-              <div className="border-t border-border px-4 py-3">
-                <h4 className="text-[13px] font-semibold text-foreground mb-2">
-                  Changes from previous submission
-                </h4>
-                {loadingDiff ? (
-                  <div className="flex items-center justify-center py-4">
-                    <LoadingSpinner size="sm" />
-                  </div>
-                ) : submissionDiff.length === 0 ? (
-                  <p className="text-[13px] text-muted-foreground">No changes detected</p>
-                ) : (
-                  <div className="space-y-1">
-                    {submissionDiff.map((entry, i) => (
-                      <div key={i} className="text-[13px] flex items-center gap-1.5">
-                        {entry.type === 'added' && (
-                          <>
-                            <span className="text-success font-medium">+</span>
-                            <span className="text-foreground">{entry.item_name}</span>
-                            <span className="text-muted-foreground">(rank {entry.rank})</span>
-                          </>
-                        )}
-                        {entry.type === 'removed' && (
-                          <>
-                            <span className="text-destructive font-medium">-</span>
-                            <span className="text-foreground">{entry.item_name}</span>
-                            <span className="text-muted-foreground">(was rank {entry.old_rank})</span>
-                          </>
-                        )}
-                        {entry.type === 'moved' && (
-                          <>
-                            <span className="text-accent font-medium">~</span>
-                            <span className="text-foreground">{entry.item_name}</span>
-                            <span className="text-muted-foreground">rank {entry.old_rank} → {entry.new_rank}</span>
-                          </>
-                        )}
-                      </div>
-                    ))}
-                  </div>
+        const renderMobileItem = (item: SubmissionDetailItem | undefined, slotLabel: string) => {
+          if (!item) return null
+          const isRemoved = !!item.removed_at
+          return (
+            <div className="px-3 py-2 border-t border-border/50">
+              <p className="text-[11px] text-muted-foreground font-medium mb-1">{slotLabel}</p>
+              <div className={`flex items-center gap-2 group ${isRemoved ? 'opacity-50' : ''}`}>
+                <ItemLink
+                  name={item.loot_item?.name || 'Unknown'}
+                  wowheadId={item.loot_item?.wowhead_id}
+                  className={`font-medium text-sm ${isRemoved ? 'line-through' : ''}`}
+                />
+                {item.loot_item?.classification && (
+                  <ClassificationBadge classification={item.loot_item.classification as 'Reserved' | 'Limited' | 'Unlimited'} />
+                )}
+                {isRemoved && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleRestoreItem(viewingSubmission!, item.loot_item.id, item.loot_item.name)
+                    }}
+                    className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-success/20 text-success flex-shrink-0 hover:bg-accent/20 hover:text-accent transition-colors"
+                    title="Restore item"
+                  >
+                    Undo
+                  </button>
+                )}
+                {canRemove && !isRemoved && item.loot_item?.id && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleRemoveItem(viewingSubmission!, item.loot_item.id, item.loot_item.name)
+                    }}
+                    disabled={removingItemId === item.loot_item.id}
+                    className="ml-auto p-1 text-muted-foreground hover:text-destructive shrink-0"
+                    title="Remove from list"
+                  >
+                    <HugeiconsIcon icon={Cancel01Icon} size={14} />
+                  </button>
                 )}
               </div>
-            )
-          })()}
-        </ModalBody>
-        {viewingSubmission && submissions.find(s => s.id === viewingSubmission)?.status === 'pending' && (
-          <ModalFooter className="flex-col items-stretch gap-4">
+            </div>
+          )
+        }
+
+        const headerContent = (
+          <div className="flex flex-col gap-1">
+            <h2 className="text-[20px] font-semibold text-foreground">
+              <span style={{ color: viewedSubmission?.member?.class?.color_hex || 'inherit' }}>
+                {viewedSubmission?.member?.character_name || 'Unknown Character'}
+              </span>
+              {viewedSubmission?.member?.class?.name && (
+                <span className="text-muted-foreground font-normal text-base ml-2">
+                  {viewedSubmission.member.class.name}
+                </span>
+              )}
+            </h2>
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              {viewedSubmission?.tier_name && <span>{viewedSubmission.tier_name}</span>}
+              {viewedSubmission?.tier_name && viewedSubmission?.submitted_at && <span>•</span>}
+              {viewedSubmission?.submitted_at && (
+                <span>Submitted {new Date(viewedSubmission.submitted_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+              )}
+              {viewedSubmission?.status && (
+                <>
+                  <span>•</span>
+                  <StatusBadge status={viewedSubmission.status as SubmissionStatus} />
+                </>
+              )}
+            </div>
+          </div>
+        )
+
+        const bodyContent = (
+          <>
+            {loadingDetails ? (
+              <div className="flex items-center justify-center py-12">
+                <LoadingSpinner size="sm" />
+              </div>
+            ) : submissionDetails.length === 0 ? (
+              <EmptyState
+                icon={ScrollIcon}
+                title="No ranked items"
+                description="This submission has no ranked items."
+                size="compact"
+              />
+            ) : (
+              <>
+                {/* Desktop table */}
+                <div className="hidden sm:block overflow-x-auto">
+                  <table className="w-full min-w-[420px]">
+                    <thead className="sticky top-0 z-10">
+                      <tr className="bg-background-subtle border-b border-border">
+                        <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground w-12 bg-background-subtle">Rank</th>
+                        <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground bg-background-subtle">Item #1</th>
+                        <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground bg-background-subtle">Item #2</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {groupedSubmissionDetails.map(([rank, items]) => {
+                        const rankNum = Number(rank)
+                        const itemsArr = items as SubmissionDetailItem[]
+                        return (
+                          <tr key={rank} className="border-b border-border">
+                            <td className={`px-3 py-2 font-semibold text-sm text-foreground bg-gradient-to-r ${getRankGradient(rankNum)}`}>
+                              {rank}
+                            </td>
+                            <td className="px-3 py-2">{renderItemCell(itemsArr[0])}</td>
+                            <td className="px-3 py-2">{renderItemCell(itemsArr[1])}</td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Mobile card list */}
+                <div className="sm:hidden space-y-2 p-2">
+                  {groupedSubmissionDetails.map(([rank, items]) => {
+                    const rankNum = Number(rank)
+                    const itemsArr = items as SubmissionDetailItem[]
+                    return (
+                      <div key={rank} className="bg-card border border-border rounded-lg overflow-hidden">
+                        <div className="px-3 py-2 flex items-center gap-2">
+                          <span className={`inline-flex items-center justify-center w-8 h-6 rounded text-[12px] font-bold text-white ${getRankBg(rankNum)}`}>
+                            {rank}
+                          </span>
+                          <span className="text-[13px] text-muted-foreground">Rank {rank}</span>
+                        </div>
+                        {renderMobileItem(itemsArr[0], 'Item #1')}
+                        {renderMobileItem(itemsArr[1], 'Item #2')}
+                      </div>
+                    )
+                  })}
+                </div>
+              </>
+            )}
+          </>
+        )
+
+        const diffContent = (() => {
+          if (!viewedSubmission || viewedSubmission.resubmission_count === 0) return null
+          return (
+            <div className="border-t border-border px-4 py-3">
+              <h4 className="text-[13px] font-semibold text-foreground mb-2">
+                Changes from previous submission
+              </h4>
+              {loadingDiff ? (
+                <div className="flex items-center justify-center py-4">
+                  <LoadingSpinner size="sm" />
+                </div>
+              ) : submissionDiff.length === 0 ? (
+                <p className="text-[13px] text-muted-foreground">No changes detected</p>
+              ) : (
+                <div className="space-y-1">
+                  {submissionDiff.map((entry, i) => (
+                    <div key={i} className="text-[13px] flex items-center gap-1.5">
+                      {entry.type === 'added' && (
+                        <>
+                          <span className="text-success font-medium">+</span>
+                          <span className="text-foreground">{entry.item_name}</span>
+                          <span className="text-muted-foreground">(rank {entry.rank})</span>
+                        </>
+                      )}
+                      {entry.type === 'removed' && (
+                        <>
+                          <span className="text-destructive font-medium">-</span>
+                          <span className="text-foreground">{entry.item_name}</span>
+                          <span className="text-muted-foreground">(was rank {entry.old_rank})</span>
+                        </>
+                      )}
+                      {entry.type === 'moved' && (
+                        <>
+                          <span className="text-accent font-medium">~</span>
+                          <span className="text-foreground">{entry.item_name}</span>
+                          <span className="text-muted-foreground">rank {entry.old_rank} → {entry.new_rank}</span>
+                        </>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )
+        })()
+
+        const reviewFooter = isPending ? (
+          <div className="space-y-4">
             <div className="w-full">
               <Label htmlFor="review-notes" className="text-sm font-medium mb-2 block">
                 Review notes (optional)
@@ -1091,7 +1174,7 @@ export default function MasterLootPage() {
               <Button
                 variant="destructive"
                 onClick={async () => {
-                  await handleReview(viewingSubmission, 'rejected')
+                  await handleReview(viewingSubmission!, 'rejected')
                   setViewingSubmission(null)
                   setReviewNotes('')
                 }}
@@ -1102,7 +1185,7 @@ export default function MasterLootPage() {
               <Button
                 variant="success"
                 onClick={async () => {
-                  await handleReview(viewingSubmission, 'approved')
+                  await handleReview(viewingSubmission!, 'approved')
                   setViewingSubmission(null)
                   setReviewNotes('')
                 }}
@@ -1112,9 +1195,56 @@ export default function MasterLootPage() {
                 Approve
               </Button>
             </div>
-          </ModalFooter>
-        )}
-      </Modal>
+          </div>
+        ) : null
+
+        const closeSubmission = () => { setViewingSubmission(null); setReviewNotes('') }
+
+        return isMobile ? createPortal(
+          /* Mobile: Full-page view with fixed header/footer, scrollable body */
+          <div className="fixed inset-0 z-[100] bg-background flex flex-col">
+            {/* Fixed header */}
+            <div className="shrink-0 p-4 pb-3 border-b border-border">
+              <div className="flex items-start justify-between gap-3">
+                {headerContent}
+                <Button variant="outline" size="sm" className="shrink-0" onClick={closeSubmission}>
+                  Close
+                </Button>
+              </div>
+            </div>
+
+            {/* Scrollable loot area */}
+            <div className="flex-1 overflow-y-auto overscroll-contain">
+              {bodyContent}
+              {diffContent}
+            </div>
+
+            {/* Fixed footer with review actions */}
+            {reviewFooter && (
+              <div className="shrink-0 border-t border-border p-4">
+                {reviewFooter}
+              </div>
+            )}
+          </div>,
+          document.body
+        ) : (
+          /* Desktop: Modal */
+          <Modal open={true} onClose={closeSubmission} size="lg">
+            <ModalHeader onClose={closeSubmission}>
+              {headerContent}
+            </ModalHeader>
+            <ModalBody className="p-0">
+              {bodyContent}
+              {diffContent}
+            </ModalBody>
+            {reviewFooter && (
+              <ModalFooter className="flex-col items-stretch gap-4">
+                {reviewFooter}
+              </ModalFooter>
+            )}
+          </Modal>
+        )
+      })()}
 
       {/* Delete Confirmation Modal */}
       <Modal
