@@ -19,7 +19,7 @@ export default function TermsOfServicePage() {
           Terms of Service
         </Heading>
         <Text color="secondary" className="mb-8">
-          Last updated: February 6, 2026
+          Last updated: March 15, 2026
         </Text>
 
         <div className="space-y-8 text-foreground">
@@ -58,6 +58,12 @@ export default function TermsOfServicePage() {
               <li>
                 <Text>Coordinate loot distribution with guild officers</Text>
               </li>
+              <li>
+                <Text>Import characters from Battle.net</Text>
+              </li>
+              <li>
+                <Text>Sync loot data with the optional LootList+ World of Warcraft addon</Text>
+              </li>
             </ul>
           </section>
 
@@ -67,6 +73,12 @@ export default function TermsOfServicePage() {
               To use LootList+, you must authenticate using Discord OAuth. By connecting your
               Discord account, you authorize us to access certain information from your Discord
               profile as described in our Privacy Policy.
+            </Text>
+            <Text>
+              You may also optionally connect your Battle.net account to import your World of
+              Warcraft characters. By connecting Battle.net, you authorize us to access your
+              character data as described in our Privacy Policy. You can disconnect Battle.net
+              at any time from your profile settings.
             </Text>
             <Text>You agree to:</Text>
             <ul className="ml-6 list-disc space-y-2">

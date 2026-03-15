@@ -19,7 +19,7 @@ export default function PrivacyPolicyPage() {
           Privacy Policy
         </Heading>
         <Text color="secondary" className="mb-8">
-          Last updated: February 6, 2026
+          Last updated: March 15, 2026
         </Text>
 
         <div className="space-y-8 text-foreground">
@@ -67,7 +67,34 @@ export default function PrivacyPolicyPage() {
             </Text>
 
             <Heading level={3} className="mt-6">
-              2.2 Information You Provide
+              2.2 Information from Battle.net OAuth
+            </Heading>
+            <Text>
+              You may optionally connect your Battle.net account to import your World of Warcraft
+              characters. When you do, we collect:
+            </Text>
+            <ul className="ml-6 list-disc space-y-2">
+              <li>
+                <Text>Battle.net account ID</Text>
+              </li>
+              <li>
+                <Text>Character names, realms, classes, and specializations</Text>
+              </li>
+              <li>
+                <Text>Character level and faction</Text>
+              </li>
+              <li>
+                <Text>Active specialization data</Text>
+              </li>
+            </ul>
+            <Text className="mt-4">
+              Battle.net connection is optional. You can disconnect your Battle.net account at any
+              time from your profile settings. We store a Battle.net access token to retrieve
+              character data on your behalf, which is revoked when you disconnect.
+            </Text>
+
+            <Heading level={3} className="mt-6">
+              2.3 Information You Provide
             </Heading>
             <Text>When using the Service, you may provide:</Text>
             <ul className="ml-6 list-disc space-y-2">
@@ -94,7 +121,7 @@ export default function PrivacyPolicyPage() {
             </ul>
 
             <Heading level={3} className="mt-6">
-              2.3 Information Collected Automatically
+              2.4 Information Collected Automatically
             </Heading>
             <Text>We automatically collect:</Text>
             <ul className="ml-6 list-disc space-y-2">
@@ -116,7 +143,7 @@ export default function PrivacyPolicyPage() {
             </ul>
 
             <Heading level={3} className="mt-6">
-              2.4 Guild Activity Data
+              2.5 Guild Activity Data
             </Heading>
             <Text>When participating in a guild, we track:</Text>
             <ul className="ml-6 list-disc space-y-2">
@@ -130,9 +157,35 @@ export default function PrivacyPolicyPage() {
                 <Text>Loot approval/rejection status</Text>
               </li>
               <li>
+                <Text>Loot distribution and award history</Text>
+              </li>
+              <li>
                 <Text>Guild membership dates and roles</Text>
               </li>
             </ul>
+
+            <Heading level={3} className="mt-6">
+              2.6 Data from the LootList+ Addon
+            </Heading>
+            <Text>
+              If your guild uses the optional LootList+ World of Warcraft addon, data may be synced
+              between the game client and the Service. This includes:
+            </Text>
+            <ul className="ml-6 list-disc space-y-2">
+              <li>
+                <Text>Loot scores and priority data exported to the addon</Text>
+              </li>
+              <li>
+                <Text>Raid attendance and loot award data imported from the addon</Text>
+              </li>
+              <li>
+                <Text>Roll-off results and loot distribution decisions</Text>
+              </li>
+            </ul>
+            <Text className="mt-4">
+              Addon sync is initiated by guild officers. The addon does not transmit data to our
+              servers automatically. All syncs require manual action.
+            </Text>
           </section>
 
           <section className="space-y-4">
@@ -223,14 +276,39 @@ export default function PrivacyPolicyPage() {
                   <strong>Upstash</strong> - Rate limiting services
                 </Text>
               </li>
+              <li>
+                <Text>
+                  <strong>PostHog</strong> - Product analytics and session recording
+                </Text>
+              </li>
+              <li>
+                <Text>
+                  <strong>Battle.net (Blizzard)</strong> - Character data import
+                </Text>
+              </li>
             </ul>
+
+            <Heading level={3} className="mt-6">
+              4.3 Analytics and Session Recording
+            </Heading>
+            <Text>
+              We use PostHog for product analytics and session recording to understand how users
+              interact with the Service and to improve the user experience. Session recordings may
+              capture your clicks, mouse movements, scrolling, and page content visible during your
+              session.
+            </Text>
+            <Text className="mt-2">
+              Session recording is used solely to diagnose issues and improve the Service. Recordings
+              do not capture passwords, payment information, or content outside of LootList+. You can
+              opt out of session recording by using a browser extension that blocks analytics scripts.
+            </Text>
             <Text>
               These providers are contractually obligated to protect your information and use it
               only for the purposes we specify.
             </Text>
 
             <Heading level={3} className="mt-6">
-              4.3 Legal Requirements
+              4.4 Legal Requirements
             </Heading>
             <Text>We may disclose your information if required to do so by law or in response to:</Text>
             <ul className="ml-6 list-disc space-y-2">
@@ -249,7 +327,7 @@ export default function PrivacyPolicyPage() {
             </ul>
 
             <Heading level={3} className="mt-6">
-              4.4 What We Do NOT Do
+              4.5 What We Do NOT Do
             </Heading>
             <ul className="ml-6 list-disc space-y-2">
               <li>
@@ -461,13 +539,16 @@ export default function PrivacyPolicyPage() {
             <Heading level={3}>Summary of Key Points</Heading>
             <ul className="mt-4 ml-6 list-disc space-y-2">
               <li>
-                <Text>We collect information you provide and data from Discord OAuth</Text>
+                <Text>We collect information you provide and data from Discord and Battle.net OAuth</Text>
               </li>
               <li>
                 <Text>Your loot lists and attendance are visible to your guild members</Text>
               </li>
               <li>
-                <Text>We use Supabase, Vercel, and Discord to provide the Service</Text>
+                <Text>We use Supabase, Vercel, Discord, Battle.net, and PostHog to provide the Service</Text>
+              </li>
+              <li>
+                <Text>We use session recording to improve the Service (no passwords or payment data captured)</Text>
               </li>
               <li>
                 <Text>We do NOT sell your data or use it for advertising</Text>
