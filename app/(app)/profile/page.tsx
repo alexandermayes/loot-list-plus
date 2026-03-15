@@ -718,7 +718,7 @@ export default function ProfilePage() {
               <h2 className="text-[18px] font-semibold text-foreground">My guilds</h2>
               <p className="text-muted-foreground text-[13px] mt-1">Guilds you're a member of</p>
             </div>
-            <div className="p-6">
+            <div className="p-4 sm:p-6">
               {allGuilds.length > 0 ? (
                 <div className="space-y-3">
                   {allGuilds.map((membership) => {
@@ -727,30 +727,30 @@ export default function ProfilePage() {
                     return (
                       <div
                         key={membership.guild.id}
-                        className="flex items-center justify-between p-4 bg-background-inset border border-border rounded-lg"
+                        className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 bg-background-inset border border-border rounded-lg"
                       >
-                        <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-4 min-w-0">
                           {membership.guild.icon_url ? (
                             <Image
                               src={membership.guild.icon_url}
                               alt={membership.guild.name}
                               width={48}
                               height={48}
-                              className="w-12 h-12 rounded-lg border border-border/50 shadow-sm"
+                              className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg border border-border/50 shadow-sm shrink-0"
                             />
                           ) : (
-                            <div className="w-12 h-12 bg-gradient-to-br from-accent/30 to-accent/10 rounded-lg flex items-center justify-center border border-border/50 shadow-sm">
-                              <span className="text-accent font-bold text-lg">{membership.guild.name.charAt(0)}</span>
+                            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-accent/30 to-accent/10 rounded-lg flex items-center justify-center border border-border/50 shadow-sm shrink-0">
+                              <span className="text-accent font-bold text-base sm:text-lg">{membership.guild.name.charAt(0)}</span>
                             </div>
                           )}
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <p className="font-medium text-foreground">{membership.guild.name}</p>
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <p className="font-medium text-foreground truncate">{membership.guild.name}</p>
                               {isCreator && (
-                                <span className="px-2 py-0.5 bg-accent/20 border border-accent/30 rounded text-accent text-xs">Creator</span>
+                                <span className="px-2 py-0.5 bg-accent/20 border border-accent/30 rounded text-accent text-xs shrink-0">Creator</span>
                               )}
                             </div>
-                            <p className="text-[13px] text-muted-foreground">
+                            <p className="text-[13px] text-muted-foreground truncate">
                               {membership.guild.realm} • {membership.guild.faction}
                             </p>
                             <span className="inline-block mt-1 px-2 py-0.5 bg-background-elevated border border-border rounded text-muted-foreground text-xs">
@@ -759,7 +759,7 @@ export default function ProfilePage() {
                           </div>
                         </div>
                         {isGuildMaster ? (
-                          <div className="text-right">
+                          <div className="sm:text-right shrink-0">
                             <p className="text-[13px] text-muted-foreground mb-1">
                               Guild Masters cannot leave
                             </p>
@@ -780,6 +780,7 @@ export default function ProfilePage() {
                             size="sm"
                             onClick={() => setLeaveGuildId(membership.guild.id)}
                             disabled={leaving}
+                            className="w-full sm:w-auto shrink-0"
                           >
                             <HugeiconsIcon icon={Logout01Icon} size={16} />
                             Leave guild
