@@ -29,6 +29,7 @@ import { Heading } from '@/components/ui/typography'
 import ItemLink from '@/app/components/ItemLink'
 import { refreshWowheadTooltips } from '@/lib/wowhead'
 import { trackClientEvent } from '@/utils/analytics/client'
+import { notifySubmissionChanged } from '@/app/hooks/usePendingSubmissionCount'
 import { resolvePhaseGroups, getPhaseGroupLabel, getPhaseGroupShortLabel, getCanonicalPhase, type PhaseGroup } from '@/utils/phase-groups'
 import { getRaidIcon, getRaidShorthand } from '@/utils/raidIcons'
 
@@ -384,6 +385,9 @@ export default function MasterLootPage() {
       showNotification('success', `Submission ${status}`)
       setReviewNotes('')
       setReviewing(null)
+
+      // Update sidebar badge count immediately
+      notifySubmissionChanged()
 
       if (guildId && activePhase !== null && activeGuild?.active_expansion_id) {
         await loadSubmissions(guildId, activePhase, activeGuild.active_expansion_id)

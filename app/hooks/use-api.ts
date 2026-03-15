@@ -296,7 +296,8 @@ export function useTierSubmissionStatuses(
     fetcher,
     {
       ...swrConfig,
-      refreshInterval: 30000, // Refresh every 30 seconds to catch officer updates
+      revalidateOnFocus: true, // Refresh on tab focus to catch officer approvals/rejections
+      refreshInterval: 30000, // Also poll every 30 seconds as fallback
       ...options,
     }
   )
@@ -363,7 +364,7 @@ export function usePhaseSubmission(
     fetcher,
     {
       ...swrConfig,
-      revalidateOnFocus: false,
+      revalidateOnFocus: true, // Refresh on tab focus to catch officer approvals/rejections
       revalidateIfStale: false,
       revalidateOnReconnect: false,
       dedupingInterval: 30000,
@@ -393,7 +394,8 @@ export function usePhaseSubmissionStatuses(
     fetcher,
     {
       ...swrConfig,
-      refreshInterval: 30000, // Refresh every 30 seconds to catch officer updates
+      revalidateOnFocus: true, // Refresh on tab focus to catch officer approvals/rejections
+      refreshInterval: 30000, // Also poll every 30 seconds as fallback
       ...options,
     }
   )

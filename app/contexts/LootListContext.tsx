@@ -6,6 +6,7 @@ import { createClient } from '@/utils/supabase/client'
 import { useGuildContext } from './GuildContext'
 import { useNotification } from './NotificationContext'
 import { trackClientEvent } from '@/utils/analytics/client'
+import { notifySubmissionChanged } from '@/app/hooks/usePendingSubmissionCount'
 import {
   useRaidTiers,
   usePhaseLootItems,
@@ -898,6 +899,11 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
       // Invalidate phase statuses (for the tab badges)
       if (activeCharacter && activeGuild && targetExpansionId) {
         invalidatePhaseSubmissionStatuses(activeCharacter.id, activeGuild.id, targetExpansionId)
+      }
+
+      // Update sidebar badge count immediately (for officers viewing the nav)
+      if (submit) {
+        notifySubmissionChanged()
       }
     } catch (error) {
       showNotification('error', error instanceof Error ? error.message : 'Couldn\'t save. Try again.')
