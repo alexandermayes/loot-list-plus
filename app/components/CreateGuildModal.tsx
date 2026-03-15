@@ -116,7 +116,23 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
         .eq('user_id', currentUser.id)
         .single()
 
-      const verified = prefs?.discord_verified || false
+      let verified = prefs?.discord_verified || false
+
+      // Auto-verify if user logged in with Discord but not verified yet
+      if (!verified) {
+        try {
+          const verifyResponse = await fetch('/api/verify-discord', {
+            method: 'POST'
+          })
+
+          if (verifyResponse.ok) {
+            verified = true
+          }
+        } catch (err) {
+          console.error('Auto-verify failed:', err)
+        }
+      }
+
       setDiscordVerified(verified)
 
       if (verified) {
