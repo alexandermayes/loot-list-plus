@@ -1516,7 +1516,7 @@ export default function AdminLootItems() {
         {/* Items Table */}
         <div className="bg-background-elevated border border-border rounded-xl overflow-hidden">
           <div className="-mx-4 sm:mx-0 overflow-x-auto max-h-[calc(100vh-300px)] overflow-y-auto">
-            <table className="w-full table-fixed">
+            <table className="w-full table-fixed" style={{ minWidth: '1230px' }}>
               <colgroup>
                 <col style={{ width: '50px' }} />
                 <col style={{ width: '42px' }} />
@@ -1540,7 +1540,7 @@ export default function AdminLootItems() {
                   <th className="px-4 py-2.5 text-left text-[12px] font-medium text-foreground-muted bg-background-subtle"><span className="inline-flex items-center gap-1">Classification <InfoTooltip content="Item demand tier. Reserved and Limited cost 1 allocation point each. Unlimited costs 0 points." iconSize={11} /></span></th>
                   <th className="px-4 py-2.5 text-left text-[12px] font-medium text-foreground-muted bg-background-subtle">Primary</th>
                   <th className="px-4 py-2.5 text-left text-[12px] font-medium text-foreground-muted bg-background-subtle">Secondary</th>
-                  <th className="px-2 py-2.5 text-center text-[12px] font-medium text-foreground-muted w-12 sticky right-0 bg-background-subtle/80">Notes</th>
+                  <th className="px-2 py-2.5 text-center text-[12px] font-medium text-foreground-muted w-12 sticky right-0 bg-background-subtle">Notes</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
@@ -1667,7 +1667,7 @@ export default function AdminLootItems() {
                         variant="secondary"
                       />
                     </td>
-                    <td className="px-2 py-2.5 text-center sticky right-0 bg-background-elevated/80">
+                    <td className="px-2 py-2.5 text-center sticky right-0 bg-background-elevated">
                       <button
                         onClick={() => {
                           setNotesModalItem(item)
