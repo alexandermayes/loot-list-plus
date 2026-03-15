@@ -14,6 +14,31 @@ export interface UpdateEntry {
 
 export const updates: UpdateEntry[] = [
   {
+    date: 'March 15, 2026',
+    items: [
+      {
+        category: 'feature',
+        title: 'Remove items from approved loot lists',
+        description: 'Officers can now remove individual items from a raider\'s approved loot list without requiring a full resubmission.',
+      },
+      {
+        category: 'improvement',
+        title: 'Mobile layout fixes',
+        description: 'Fixed guild cards overlapping on the profile page, improved overview page for smaller screens, and prevented background scrolling when modals are open (including iOS).',
+      },
+      {
+        category: 'improvement',
+        title: 'Faster page loads',
+        description: 'Optimized Largest Contentful Paint and reduced layout shift across the app.',
+      },
+      {
+        category: 'improvement',
+        title: 'Cleaner Master Sheet ranks',
+        description: 'Simplified rank display in the Master Sheet summary view.',
+      },
+    ],
+  },
+  {
     date: 'March 11, 2026',
     items: [
       {
