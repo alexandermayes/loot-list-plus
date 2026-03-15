@@ -42,6 +42,16 @@ const getRankColor = (rank: number) => {
   return 'from-blue-900 to-blue-700' // Off-spec
 }
 
+// Solid background color for mobile cards (no gradient needed)
+const getRankBgColor = (rank: number) => {
+  if (rank >= 48) return 'bg-red-800'
+  if (rank >= 45) return 'bg-orange-800'
+  if (rank >= 42) return 'bg-yellow-800'
+  if (rank >= 39) return 'bg-amber-800'
+  if (rank >= 25) return 'bg-green-800'
+  return 'bg-blue-800'
+}
+
 // Type for tracking which items have errors
 type ItemError = {
   rank: number
@@ -236,6 +246,335 @@ const RankRow = memo(function RankRow({
   )
 })
 
+// MobileRankCard - stacked card layout for mobile (replaces table row below sm: breakpoint)
+const MobileRankCard = memo(function MobileRankCard({
+  rank,
+  lootItems,
+  selectedItemId1,
+  selectedItemId2,
+  selectedItems,
+  duplicateItems,
+  onItemSelect,
+  slot1Errors = [],
+  slot2Errors = [],
+  ownedWowheadIds = new Set(),
+  isApproved = false,
+  onRemoveItem,
+  removingItemId,
+  removedRankings = {},
+  onRestoreItem
+}: RankRowProps) {
+  const selectedItem1 = selectedItemId1 ? lootItems.find(i => i.id === selectedItemId1) : null
+  const selectedItem2 = selectedItemId2 ? lootItems.find(i => i.id === selectedItemId2) : null
+  const removedItemId1 = removedRankings[`${rank}-1`]
+  const removedItemId2 = removedRankings[`${rank}-2`]
+  const removedItem1 = removedItemId1 ? lootItems.find(i => i.id === removedItemId1) : null
+  const removedItem2 = removedItemId2 ? lootItems.find(i => i.id === removedItemId2) : null
+  const isDuplicate1 = selectedItemId1 && duplicateItems.includes(selectedItemId1)
+  const isDuplicate2 = selectedItemId2 && duplicateItems.includes(selectedItemId2)
+
+  const isSlot1DisabledByReserved = selectedItem2?.classification === 'Reserved'
+  const isSlot2DisabledByReserved = selectedItem1?.classification === 'Reserved'
+
+  const hasSlot1Error = slot1Errors.length > 0
+  const hasSlot2Error = slot2Errors.length > 0
+  const hasCardError = isDuplicate1 || isDuplicate2 || hasSlot1Error || hasSlot2Error
+
+  const slot1ErrorMessages = [...new Set(slot1Errors.map(e => e.message))]
+  const slot2ErrorMessages = [...new Set(slot2Errors.map(e => e.message))]
+
+  const renderSlot = (
+    slotNum: 1 | 2,
+    selectedItemId: string | undefined,
+    selectedItem: typeof selectedItem1,
+    removedItem: typeof removedItem1,
+    isSlotDisabledByReserved: boolean,
+    otherSlotReservedLabel: string,
+    hasError: boolean,
+    errorMessages: string[],
+    onRestore?: typeof onRestoreItem
+  ) => (
+    <div className="px-3 py-2.5 border-t border-border/50">
+      <p className="text-[11px] text-muted-foreground font-medium mb-1.5">Slot {slotNum}</p>
+      {!selectedItemId && removedItem ? (
+        <div className="px-3 py-2 bg-background-elevated border border-border rounded-lg opacity-50 group">
+          <span className="flex items-center gap-2 min-w-0">
+            <span className="truncate min-w-0"><ItemLink name={removedItem.name} wowheadId={removedItem.wowhead_id} clickable={false} className="line-through" /></span>
+            <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-success/20 text-success shrink-0 group-hover:hidden">Removed</span>
+            {onRestore && (
+              <button
+                onClick={() => onRestore(removedItem.id, removedItem.name)}
+                className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-accent/20 text-accent shrink-0 hidden group-hover:inline-block hover:bg-accent/30"
+              >
+                Undo
+              </button>
+            )}
+          </span>
+        </div>
+      ) : (
+        <div className="space-y-1.5">
+          <SearchableItemSelect
+            items={lootItems}
+            value={selectedItemId || ''}
+            onChange={(value) => onItemSelect(rank, slotNum, value)}
+            disabled={selectedItems}
+            currentValue={selectedItemId}
+            isSlotDisabled={isSlotDisabledByReserved}
+            hasError={hasError}
+            ownedWowheadIds={ownedWowheadIds}
+            readOnly={isApproved}
+            onRemove={isApproved && onRemoveItem && selectedItemId ? () => {
+              const item = lootItems.find(i => i.id === selectedItemId)
+              if (item) onRemoveItem(item.id, item.name)
+            } : undefined}
+            mobile
+          />
+          {/* Boss + classification inline below the select */}
+          {selectedItem ? (
+            <div className="flex items-center gap-2 pl-1">
+              <p className="text-foreground-muted text-[11px]">{normalizeBossName(selectedItem.boss_name)}</p>
+              {selectedItem.classification && (
+                <ClassificationBadge classification={selectedItem.classification as 'Reserved' | 'Limited' | 'Unlimited'} />
+              )}
+            </div>
+          ) : isSlotDisabledByReserved ? (
+            <p className="text-muted-foreground text-[11px] italic pl-1">{otherSlotReservedLabel}</p>
+          ) : null}
+          {hasError && (
+            <p className="text-destructive text-[11px] pl-1">
+              {errorMessages.join(' · ')}
+            </p>
+          )}
+        </div>
+      )}
+    </div>
+  )
+
+  return (
+    <div className={`bg-card border border-border rounded-lg overflow-hidden ${hasCardError ? 'border-destructive/50 bg-red-900/10' : ''}`}>
+      {/* Rank header */}
+      <div className={`px-3 py-2 flex items-center gap-2`}>
+        <span className={`inline-flex items-center justify-center w-8 h-6 rounded text-[12px] font-bold text-white ${getRankBgColor(rank)}`}>
+          {rank}
+        </span>
+        <span className="text-[13px] text-muted-foreground">Rank {rank}</span>
+      </div>
+      {renderSlot(1, selectedItemId1, selectedItem1, removedItem1, isSlot1DisabledByReserved, 'Reserved item in slot 2', hasSlot1Error, slot1ErrorMessages, onRestoreItem)}
+      {renderSlot(2, selectedItemId2, selectedItem2, removedItem2, isSlot2DisabledByReserved, 'Reserved item in slot 1', hasSlot2Error, slot2ErrorMessages, onRestoreItem)}
+    </div>
+  )
+})
+
+// BracketSection - shared component for rendering a bracket with both desktop table and mobile cards
+interface BracketSectionProps {
+  name: string
+  headerBgClass: string
+  borderColorClass: string
+  textColorClass: string
+  tooltipContent: string
+  subtitle?: string
+  showAllocationPoints?: boolean
+  ranks: number[]
+  lootItems: LootItem[]
+  disabledItems: Set<string>
+  rankings: Record<string, string>
+  duplicateItems: string[]
+  onItemSelect: (rank: number, slot: number, itemId: string) => void
+  getSlotErrors: (rank: number, slot: 1 | 2) => ItemError[]
+  ownedWowheadIds: Set<number>
+  isApproved: boolean
+  onRemoveItem: (lootItemId: string, itemName: string) => void
+  removingItemId: string | null
+  removedRankings: Record<string, string>
+  onRestoreItem: (lootItemId: string, itemName: string) => void
+  validation?: { allocationPoints: number; maxPoints: number; violations: string[] }
+  expandedErrors: Set<string>
+  toggleErrorExpanded: (bracketName: string) => void
+  isCollapsed: boolean
+  onToggleCollapse: () => void
+}
+
+function BracketSection({
+  name,
+  headerBgClass,
+  borderColorClass,
+  textColorClass,
+  tooltipContent,
+  subtitle,
+  showAllocationPoints = false,
+  ranks,
+  lootItems,
+  disabledItems,
+  rankings,
+  duplicateItems,
+  onItemSelect,
+  getSlotErrors,
+  ownedWowheadIds,
+  isApproved,
+  onRemoveItem,
+  removingItemId,
+  removedRankings,
+  onRestoreItem,
+  validation,
+  expandedErrors,
+  toggleErrorExpanded,
+  isCollapsed,
+  onToggleCollapse,
+}: BracketSectionProps) {
+  const isExpanded = expandedErrors.has(name)
+  const hasViolations = validation && validation.violations.length > 0
+
+  // Count how many ranks have at least one item selected
+  const rankedInSection = ranks.filter(r =>
+    rankings[`${r}-1`] || rankings[`${r}-2`]
+  ).length
+
+  return (
+    <div className="bg-card border border-border rounded-xl overflow-hidden">
+      {/* Header - tappable on mobile for collapse */}
+      <div
+        className={`${headerBgClass} border-l-4 ${borderColorClass} px-4 py-2 sm:cursor-default cursor-pointer`}
+        onClick={() => onToggleCollapse()}
+      >
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex-1">
+            <h2 className="text-[15px] font-semibold text-foreground inline-flex items-center gap-1.5">
+              {name} <InfoTooltip content={tooltipContent} />
+            </h2>
+            {showAllocationPoints && validation ? (
+              <p className={`text-[12px] font-medium mt-1 ${textColorClass}`}>
+                Allocation Points: {validation.allocationPoints}/{validation.maxPoints} <InfoTooltip content="Reserved and Limited items cost 1 point each. Unlimited items cost 0. You can spend up to 3 points per bracket." iconSize={12} />
+              </p>
+            ) : showAllocationPoints ? (
+              <p className={`${textColorClass} text-[12px] mt-1`}>Max 3 allocation points per bracket</p>
+            ) : subtitle ? (
+              <p className={`${textColorClass} text-[12px]`}>{subtitle}</p>
+            ) : null}
+          </div>
+          <div className="flex items-center gap-3">
+            {/* Error button (desktop + mobile) */}
+            {hasViolations && (
+              <div className="flex flex-col items-end gap-2">
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    toggleErrorExpanded(name)
+                  }}
+                  className="flex items-center gap-2"
+                >
+                  <span className="whitespace-nowrap">
+                    {validation!.violations.length} {validation!.violations.length === 1 ? 'Error' : 'Errors'}
+                  </span>
+                  <span className="text-xs">{isExpanded ? '▼' : '▶'}</span>
+                </Button>
+                {isExpanded && (
+                  <Alert variant="destructive" className="max-w-md px-3 py-2">
+                    <AlertDescription>
+                      <ul className="space-y-1 text-sm text-foreground">
+                        {validation!.violations.map((violation, idx) => (
+                          <li key={idx} className="flex items-center gap-2">
+                            <span className="text-destructive">•</span>
+                            <span>{violation}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </AlertDescription>
+                  </Alert>
+                )}
+              </div>
+            )}
+            {/* Collapse chevron (mobile only) */}
+            <div className="sm:hidden flex items-center gap-2">
+              {isCollapsed && (
+                <span className="text-[12px] text-muted-foreground">{rankedInSection} ranked</span>
+              )}
+              <svg
+                className={`w-4 h-4 text-muted-foreground transition-transform ${isCollapsed ? '' : 'rotate-90'}`}
+                fill="none" stroke="currentColor" viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Content - collapsible on mobile */}
+      <div className={`sm:block ${isCollapsed ? 'hidden' : 'block'}`}>
+        {/* Desktop table */}
+        <div className="hidden sm:block overflow-x-auto max-h-[70vh] overflow-y-auto">
+          <table className="w-full table-fixed">
+            <colgroup>
+              <col style={{ width: '64px' }} />
+              <col style={{ width: '320px' }} />
+              <col style={{ width: '160px' }} />
+              <col style={{ width: '320px' }} />
+              <col style={{ width: '160px' }} />
+            </colgroup>
+            <thead className="sticky top-0 z-10">
+              <tr className="bg-background-subtle border-b border-border">
+                <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted bg-background-subtle">Rank</th>
+                <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted bg-background-subtle">Loot #1</th>
+                <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted bg-background-subtle">Details</th>
+                <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted bg-background-subtle">Loot #2</th>
+                <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted bg-background-subtle">Details</th>
+              </tr>
+            </thead>
+            <tbody>
+              {ranks.map(rank => (
+                <RankRow
+                  key={rank}
+                  rank={rank}
+                  lootItems={lootItems}
+                  selectedItemId1={rankings[`${rank}-1`]}
+                  selectedItemId2={rankings[`${rank}-2`]}
+                  selectedItems={disabledItems}
+                  duplicateItems={duplicateItems}
+                  onItemSelect={onItemSelect}
+                  slot1Errors={getSlotErrors(rank, 1)}
+                  slot2Errors={getSlotErrors(rank, 2)}
+                  ownedWowheadIds={ownedWowheadIds}
+                  isApproved={isApproved}
+                  onRemoveItem={onRemoveItem}
+                  removingItemId={removingItemId}
+                  removedRankings={removedRankings}
+                  onRestoreItem={onRestoreItem}
+                />
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Mobile card list */}
+        <div className="sm:hidden space-y-2 p-2">
+          {ranks.map(rank => (
+            <MobileRankCard
+              key={rank}
+              rank={rank}
+              lootItems={lootItems}
+              selectedItemId1={rankings[`${rank}-1`]}
+              selectedItemId2={rankings[`${rank}-2`]}
+              selectedItems={disabledItems}
+              duplicateItems={duplicateItems}
+              onItemSelect={onItemSelect}
+              slot1Errors={getSlotErrors(rank, 1)}
+              slot2Errors={getSlotErrors(rank, 2)}
+              ownedWowheadIds={ownedWowheadIds}
+              isApproved={isApproved}
+              onRemoveItem={onRemoveItem}
+              removingItemId={removingItemId}
+              removedRankings={removedRankings}
+              onRestoreItem={onRestoreItem}
+            />
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function LootList() {
   const {
     activeGuild,
@@ -323,6 +662,10 @@ export default function LootList() {
   const [showUnrankedPanel, setShowUnrankedPanel] = useState(false)
   const [showMoreMenu, setShowMoreMenu] = useState(false)
   const [contentReady, setContentReady] = useState(false)
+  // Mobile collapsible brackets - No Bracket and Off-spec start collapsed
+  const [collapsedBrackets, setCollapsedBrackets] = useState<Set<string>>(
+    new Set(['No bracket (38-25) - Main-spec', 'Off-spec (24-1)'])
+  )
   const moreMenuRef = React.useRef<HTMLDivElement>(null)
 
   const { confirm, ConfirmDialog } = useConfirm()
@@ -383,6 +726,18 @@ export default function LootList() {
 
   const toggleErrorExpanded = useCallback((bracketName: string) => {
     setExpandedErrors(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(bracketName)) {
+        newSet.delete(bracketName)
+      } else {
+        newSet.add(bracketName)
+      }
+      return newSet
+    })
+  }, [])
+
+  const toggleBracketCollapsed = useCallback((bracketName: string) => {
+    setCollapsedBrackets(prev => {
       const newSet = new Set(prev)
       if (newSet.has(bracketName)) {
         newSet.delete(bracketName)
@@ -1113,489 +1468,104 @@ export default function LootList() {
           </div>
         )}
 
-        {/* Bracket 1 (50-48) */}
-        <div className="bg-card border border-border rounded-xl overflow-hidden">
-          <div className="bg-red-500/10 border-l-4 border-l-red-800/60 px-4 py-2">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <h2 className="text-[15px] font-semibold text-foreground inline-flex items-center gap-1.5">Bracket 1 (50-48) <InfoTooltip content="Highest priority tier. Reserved and Limited items here cost allocation points. Max 3 points per bracket." /></h2>
-                {(() => {
-                  const validation = getBracketValidation('Bracket 1 (50-48)')
-                  return validation ? (
-                    <p className={`text-[12px] font-medium mt-1 ${validation.violations.length > 0 ? 'text-red-200' : 'text-red-200'}`}>
-                      Allocation Points: {validation.allocationPoints}/{validation.maxPoints} <InfoTooltip content="Reserved and Limited items cost 1 point each. Unlimited items cost 0. You can spend up to 3 points per bracket." iconSize={12} />
-                    </p>
-                  ) : (
-                    <p className="text-red-200 text-[12px] mt-1">Max 3 allocation points per bracket</p>
-                  )
-                })()}
-              </div>
-              {(() => {
-                const validation = getBracketValidation('Bracket 1 (50-48)')
-                const bracketName = 'Bracket 1 (50-48)'
-                const isExpanded = expandedErrors.has(bracketName)
-                return validation && validation.violations.length > 0 ? (
-                  <div className="flex flex-col items-end gap-2">
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => toggleErrorExpanded(bracketName)}
-                      className="flex items-center gap-2"
-                    >
-                      <span className="whitespace-nowrap">
-                        {validation.violations.length} {validation.violations.length === 1 ? 'Error' : 'Errors'}
-                      </span>
-                      <span className="text-xs">{isExpanded ? '▼' : '▶'}</span>
-                    </Button>
-                    {isExpanded && (
-                      <Alert variant="destructive" className="max-w-md px-3 py-2">
-                        <AlertDescription>
-                          <ul className="space-y-1 text-sm text-foreground">
-                            {validation.violations.map((violation, idx) => (
-                              <li key={idx} className="flex items-center gap-2">
-                                <span className="text-destructive">•</span>
-                                <span>{violation}</span>
-                              </li>
-                            ))}
-                          </ul>
-                        </AlertDescription>
-                      </Alert>
-                    )}
-                  </div>
-                ) : null
-              })()}
-            </div>
-          </div>
-          <div className="overflow-x-auto max-h-[60vh] sm:max-h-[70vh] overflow-y-auto">
-            <table className="w-full table-fixed">
-              <colgroup>
-                <col style={{ width: '64px' }} />
-                <col style={{ width: '320px' }} />
-                <col style={{ width: '160px' }} />
-                <col style={{ width: '320px' }} />
-                <col style={{ width: '160px' }} />
-              </colgroup>
-              <thead className="sticky top-0 z-10">
-                <tr className="bg-background-subtle border-b border-border">
-                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted bg-background-subtle">Rank</th>
-                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted bg-background-subtle">Loot #1</th>
-                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted bg-background-subtle">Details</th>
-                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted bg-background-subtle">Loot #2</th>
-                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted bg-background-subtle">Details</th>
-                </tr>
-              </thead>
-              <tbody>
-                {bracket1.map(rank => (
-                  <RankRow
-                    key={rank}
-                    rank={rank}
-                    lootItems={bracket14Items}
-                    selectedItemId1={rankings[`${rank}-1`]}
-                    selectedItemId2={rankings[`${rank}-2`]}
-                    selectedItems={bracket14DisabledItems}
-                    duplicateItems={duplicateItems}
-                    onItemSelect={handleItemSelect}
-                    slot1Errors={getSlotErrors(rank, 1)}
-                    slot2Errors={getSlotErrors(rank, 2)}
-                    ownedWowheadIds={equippedWowheadIds}
-                    isApproved={originalStatus === 'approved' && !hasChanges && !isEditing}
-                    onRemoveItem={handleRemoveApprovedItem}
-                    removingItemId={removingItemId}
-                    removedRankings={removedRankings}
-                    onRestoreItem={handleRestoreItem}
-                  />
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        {/* Bracket 2 (47-45) */}
-        <div className="bg-card border border-border rounded-xl overflow-hidden">
-          <div className="bg-orange-500/10 border-l-4 border-l-orange-800/60 px-4 py-2">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <h2 className="text-[15px] font-semibold text-foreground inline-flex items-center gap-1.5">Bracket 2 (47-45) <InfoTooltip content="Second priority tier. Same allocation point rules as Bracket 1." /></h2>
-                {(() => {
-                  const validation = getBracketValidation('Bracket 2 (47-45)')
-                  return validation ? (
-                    <p className={`text-[12px] font-medium mt-1 ${validation.violations.length > 0 ? 'text-orange-200' : 'text-orange-200'}`}>
-                      Allocation Points: {validation.allocationPoints}/{validation.maxPoints} <InfoTooltip content="Reserved and Limited items cost 1 point each. Unlimited items cost 0. You can spend up to 3 points per bracket." iconSize={12} />
-                    </p>
-                  ) : (
-                    <p className="text-orange-200 text-[12px] mt-1">Max 3 allocation points per bracket</p>
-                  )
-                })()}
-              </div>
-              {(() => {
-                const validation = getBracketValidation('Bracket 2 (47-45)')
-                const bracketName = 'Bracket 2 (47-45)'
-                const isExpanded = expandedErrors.has(bracketName)
-                return validation && validation.violations.length > 0 ? (
-                  <div className="flex flex-col items-end gap-2">
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => toggleErrorExpanded(bracketName)}
-                      className="flex items-center gap-2"
-                    >
-                      <span className="whitespace-nowrap">
-                        {validation.violations.length} {validation.violations.length === 1 ? 'Error' : 'Errors'}
-                      </span>
-                      <span className="text-xs">{isExpanded ? '▼' : '▶'}</span>
-                    </Button>
-                    {isExpanded && (
-                      <Alert variant="destructive" className="max-w-md px-3 py-2">
-                        <AlertDescription>
-                          <ul className="space-y-1 text-sm text-foreground">
-                            {validation.violations.map((violation, idx) => (
-                              <li key={idx} className="flex items-center gap-2">
-                                <span className="text-destructive">•</span>
-                                <span>{violation}</span>
-                              </li>
-                            ))}
-                          </ul>
-                        </AlertDescription>
-                      </Alert>
-                    )}
-                  </div>
-                ) : null
-              })()}
-            </div>
-          </div>
-          <div className="overflow-x-auto max-h-[60vh] sm:max-h-[70vh] overflow-y-auto">
-            <table className="w-full table-fixed">
-              <colgroup>
-                <col style={{ width: '64px' }} />
-                <col style={{ width: '320px' }} />
-                <col style={{ width: '160px' }} />
-                <col style={{ width: '320px' }} />
-                <col style={{ width: '160px' }} />
-              </colgroup>
-              <thead className="sticky top-0 z-10">
-                <tr className="bg-background-subtle border-b border-border">
-                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted bg-background-subtle">Rank</th>
-                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted bg-background-subtle">Loot #1</th>
-                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted bg-background-subtle">Details</th>
-                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted bg-background-subtle">Loot #2</th>
-                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted bg-background-subtle">Details</th>
-                </tr>
-              </thead>
-              <tbody>
-                {bracket2.map(rank => (
-                  <RankRow
-                    key={rank}
-                    rank={rank}
-                    lootItems={bracket14Items}
-                    selectedItemId1={rankings[`${rank}-1`]}
-                    selectedItemId2={rankings[`${rank}-2`]}
-                    selectedItems={bracket14DisabledItems}
-                    duplicateItems={duplicateItems}
-                    onItemSelect={handleItemSelect}
-                    slot1Errors={getSlotErrors(rank, 1)}
-                    slot2Errors={getSlotErrors(rank, 2)}
-                    ownedWowheadIds={equippedWowheadIds}
-                    isApproved={originalStatus === 'approved' && !hasChanges && !isEditing}
-                    onRemoveItem={handleRemoveApprovedItem}
-                    removingItemId={removingItemId}
-                    removedRankings={removedRankings}
-                    onRestoreItem={handleRestoreItem}
-                  />
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        {/* Bracket 3 (44-42) */}
-        <div className="bg-card border border-border rounded-xl overflow-hidden">
-          <div className="bg-yellow-500/10 border-l-4 border-l-yellow-800/60 px-4 py-2">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <h2 className="text-[15px] font-semibold text-foreground inline-flex items-center gap-1.5">Bracket 3 (44-42) <InfoTooltip content="Third priority tier. Same allocation point rules as Brackets 1-2." /></h2>
-                {(() => {
-                  const validation = getBracketValidation('Bracket 3 (44-42)')
-                  return validation ? (
-                    <p className={`text-[12px] font-medium mt-1 ${validation.violations.length > 0 ? 'text-yellow-200' : 'text-yellow-200'}`}>
-                      Allocation Points: {validation.allocationPoints}/{validation.maxPoints} <InfoTooltip content="Reserved and Limited items cost 1 point each. Unlimited items cost 0. You can spend up to 3 points per bracket." iconSize={12} />
-                    </p>
-                  ) : (
-                    <p className="text-yellow-200 text-[12px] mt-1">Max 3 allocation points per bracket</p>
-                  )
-                })()}
-              </div>
-              {(() => {
-                const validation = getBracketValidation('Bracket 3 (44-42)')
-                const bracketName = 'Bracket 3 (44-42)'
-                const isExpanded = expandedErrors.has(bracketName)
-                return validation && validation.violations.length > 0 ? (
-                  <div className="flex flex-col items-end gap-2">
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => toggleErrorExpanded(bracketName)}
-                      className="flex items-center gap-2"
-                    >
-                      <span className="whitespace-nowrap">
-                        {validation.violations.length} {validation.violations.length === 1 ? 'Error' : 'Errors'}
-                      </span>
-                      <span className="text-xs">{isExpanded ? '▼' : '▶'}</span>
-                    </Button>
-                    {isExpanded && (
-                      <Alert variant="destructive" className="max-w-md px-3 py-2">
-                        <AlertDescription>
-                          <ul className="space-y-1 text-sm text-foreground">
-                            {validation.violations.map((violation, idx) => (
-                              <li key={idx} className="flex items-center gap-2">
-                                <span className="text-destructive">•</span>
-                                <span>{violation}</span>
-                              </li>
-                            ))}
-                          </ul>
-                        </AlertDescription>
-                      </Alert>
-                    )}
-                  </div>
-                ) : null
-              })()}
-            </div>
-          </div>
-          <div className="overflow-x-auto max-h-[60vh] sm:max-h-[70vh] overflow-y-auto">
-            <table className="w-full table-fixed">
-              <colgroup>
-                <col style={{ width: '64px' }} />
-                <col style={{ width: '320px' }} />
-                <col style={{ width: '160px' }} />
-                <col style={{ width: '320px' }} />
-                <col style={{ width: '160px' }} />
-              </colgroup>
-              <thead className="sticky top-0 z-10">
-                <tr className="bg-background-subtle border-b border-border">
-                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted bg-background-subtle">Rank</th>
-                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted bg-background-subtle">Loot #1</th>
-                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted bg-background-subtle">Details</th>
-                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted bg-background-subtle">Loot #2</th>
-                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted bg-background-subtle">Details</th>
-                </tr>
-              </thead>
-              <tbody>
-                {bracket3.map(rank => (
-                  <RankRow
-                    key={rank}
-                    rank={rank}
-                    lootItems={bracket14Items}
-                    selectedItemId1={rankings[`${rank}-1`]}
-                    selectedItemId2={rankings[`${rank}-2`]}
-                    selectedItems={bracket14DisabledItems}
-                    duplicateItems={duplicateItems}
-                    onItemSelect={handleItemSelect}
-                    slot1Errors={getSlotErrors(rank, 1)}
-                    slot2Errors={getSlotErrors(rank, 2)}
-                    ownedWowheadIds={equippedWowheadIds}
-                    isApproved={originalStatus === 'approved' && !hasChanges && !isEditing}
-                    onRemoveItem={handleRemoveApprovedItem}
-                    removingItemId={removingItemId}
-                    removedRankings={removedRankings}
-                    onRestoreItem={handleRestoreItem}
-                  />
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        {/* Bracket 4 (41-39) */}
-        <div className="bg-card border border-border rounded-xl overflow-hidden">
-          <div className="bg-amber-500/10 border-l-4 border-l-amber-800/60 px-4 py-2">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <h2 className="text-[15px] font-semibold text-foreground inline-flex items-center gap-1.5">Bracket 4 (41-39) <InfoTooltip content="Fourth priority tier. Same allocation point rules as Brackets 1-3." /></h2>
-                {(() => {
-                  const validation = getBracketValidation('Bracket 4 (41-39)')
-                  return validation ? (
-                    <p className={`text-[12px] font-medium mt-1 ${validation.violations.length > 0 ? 'text-amber-200' : 'text-amber-200'}`}>
-                      Allocation Points: {validation.allocationPoints}/{validation.maxPoints} <InfoTooltip content="Reserved and Limited items cost 1 point each. Unlimited items cost 0. You can spend up to 3 points per bracket." iconSize={12} />
-                    </p>
-                  ) : (
-                    <p className="text-amber-200 text-[12px] mt-1">Max 3 allocation points per bracket</p>
-                  )
-                })()}
-              </div>
-              {(() => {
-                const validation = getBracketValidation('Bracket 4 (41-39)')
-                const bracketName = 'Bracket 4 (41-39)'
-                const isExpanded = expandedErrors.has(bracketName)
-                return validation && validation.violations.length > 0 ? (
-                  <div className="flex flex-col items-end gap-2">
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => toggleErrorExpanded(bracketName)}
-                      className="flex items-center gap-2"
-                    >
-                      <span className="whitespace-nowrap">
-                        {validation.violations.length} {validation.violations.length === 1 ? 'Error' : 'Errors'}
-                      </span>
-                      <span className="text-xs">{isExpanded ? '▼' : '▶'}</span>
-                    </Button>
-                    {isExpanded && (
-                      <Alert variant="destructive" className="max-w-md px-3 py-2">
-                        <AlertDescription>
-                          <ul className="space-y-1 text-sm text-foreground">
-                            {validation.violations.map((violation, idx) => (
-                              <li key={idx} className="flex items-center gap-2">
-                                <span className="text-destructive">•</span>
-                                <span>{violation}</span>
-                              </li>
-                            ))}
-                          </ul>
-                        </AlertDescription>
-                      </Alert>
-                    )}
-                  </div>
-                ) : null
-              })()}
-            </div>
-          </div>
-          <div className="overflow-x-auto max-h-[60vh] sm:max-h-[70vh] overflow-y-auto">
-            <table className="w-full table-fixed">
-              <colgroup>
-                <col style={{ width: '64px' }} />
-                <col style={{ width: '320px' }} />
-                <col style={{ width: '160px' }} />
-                <col style={{ width: '320px' }} />
-                <col style={{ width: '160px' }} />
-              </colgroup>
-              <thead className="sticky top-0 z-10">
-                <tr className="bg-background-subtle border-b border-border">
-                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted bg-background-subtle">Rank</th>
-                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted bg-background-subtle">Loot #1</th>
-                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted bg-background-subtle">Details</th>
-                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted bg-background-subtle">Loot #2</th>
-                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted bg-background-subtle">Details</th>
-                </tr>
-              </thead>
-              <tbody>
-                {bracket4.map(rank => (
-                  <RankRow
-                    key={rank}
-                    rank={rank}
-                    lootItems={bracket14Items}
-                    selectedItemId1={rankings[`${rank}-1`]}
-                    selectedItemId2={rankings[`${rank}-2`]}
-                    selectedItems={bracket14DisabledItems}
-                    duplicateItems={duplicateItems}
-                    onItemSelect={handleItemSelect}
-                    slot1Errors={getSlotErrors(rank, 1)}
-                    slot2Errors={getSlotErrors(rank, 2)}
-                    ownedWowheadIds={equippedWowheadIds}
-                    isApproved={originalStatus === 'approved' && !hasChanges && !isEditing}
-                    onRemoveItem={handleRemoveApprovedItem}
-                    removingItemId={removingItemId}
-                    removedRankings={removedRankings}
-                    onRestoreItem={handleRestoreItem}
-                  />
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        {/* No Bracket (38-25) - Main-spec */}
-        <div className="bg-card border border-border rounded-xl overflow-hidden">
-          <div className="bg-green-500/10 border-l-4 border-l-green-800/60 px-4 py-2">
-            <h2 className="text-[15px] font-semibold text-foreground inline-flex items-center gap-1.5">No bracket (38-25) - Main-spec <InfoTooltip content="Standard priority list with no allocation point limits. Items here are still main-spec priority." /></h2>
-            <p className="text-green-200 text-[12px]">Still considered main-spec priority</p>
-          </div>
-          <div className="overflow-x-auto max-h-[60vh] sm:max-h-[70vh] overflow-y-auto">
-            <table className="w-full table-fixed">
-              <colgroup>
-                <col style={{ width: '64px' }} />
-                <col style={{ width: '320px' }} />
-                <col style={{ width: '160px' }} />
-                <col style={{ width: '320px' }} />
-                <col style={{ width: '160px' }} />
-              </colgroup>
-              <thead className="sticky top-0 z-10">
-                <tr className="bg-background-subtle border-b border-border">
-                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted bg-background-subtle">Rank</th>
-                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted bg-background-subtle">Loot #1</th>
-                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted bg-background-subtle">Details</th>
-                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted bg-background-subtle">Loot #2</th>
-                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted bg-background-subtle">Details</th>
-                </tr>
-              </thead>
-              <tbody>
-                {noBracket.map(rank => (
-                  <RankRow
-                    key={rank}
-                    rank={rank}
-                    lootItems={noBracketItems}
-                    selectedItemId1={rankings[`${rank}-1`]}
-                    selectedItemId2={rankings[`${rank}-2`]}
-                    selectedItems={noBracketDisabledItems}
-                    duplicateItems={duplicateItems}
-                    onItemSelect={handleItemSelect}
-                    ownedWowheadIds={equippedWowheadIds}
-                    isApproved={originalStatus === 'approved' && !hasChanges && !isEditing}
-                    onRemoveItem={handleRemoveApprovedItem}
-                    removingItemId={removingItemId}
-                    removedRankings={removedRankings}
-                    onRestoreItem={handleRestoreItem}
-                  />
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        {/* Off-spec (24-1) */}
-        <div className="bg-card border border-border rounded-xl overflow-hidden">
-          <div className="bg-blue-500/10 border-l-4 border-l-blue-800/60 px-4 py-2">
-            <h2 className="text-[15px] font-semibold text-foreground inline-flex items-center gap-1.5">Off-spec (24-1) <InfoTooltip content="Items for your secondary spec or role. Lower priority than main-spec but helps with guild flexibility." /></h2>
-            <p className="text-blue-200 text-[12px]">Off-spec items to support guild flexibility</p>
-          </div>
-          <div className="overflow-x-auto max-h-[60vh] sm:max-h-[70vh] overflow-y-auto">
-            <table className="w-full table-fixed">
-              <colgroup>
-                <col style={{ width: '64px' }} />
-                <col style={{ width: '320px' }} />
-                <col style={{ width: '160px' }} />
-                <col style={{ width: '320px' }} />
-                <col style={{ width: '160px' }} />
-              </colgroup>
-              <thead className="sticky top-0 z-10">
-                <tr className="bg-background-subtle border-b border-border">
-                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted bg-background-subtle">Rank</th>
-                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted bg-background-subtle">Loot #1</th>
-                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted bg-background-subtle">Details</th>
-                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted bg-background-subtle">Loot #2</th>
-                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted bg-background-subtle">Details</th>
-                </tr>
-              </thead>
-              <tbody>
-                {offSpec.map(rank => (
-                  <RankRow
-                    key={rank}
-                    rank={rank}
-                    lootItems={offSpecItems}
-                    selectedItemId1={rankings[`${rank}-1`]}
-                    selectedItemId2={rankings[`${rank}-2`]}
-                    selectedItems={offSpecDisabledItems}
-                    duplicateItems={duplicateItems}
-                    onItemSelect={handleItemSelect}
-                    ownedWowheadIds={equippedWowheadIds}
-                    isApproved={originalStatus === 'approved' && !hasChanges && !isEditing}
-                    onRemoveItem={handleRemoveApprovedItem}
-                    removingItemId={removingItemId}
-                    removedRankings={removedRankings}
-                    onRestoreItem={handleRestoreItem}
-                  />
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
+        {/* Bracket Sections */}
+        {([
+          {
+            name: 'Bracket 1 (50-48)',
+            headerBgClass: 'bg-red-500/10',
+            borderColorClass: 'border-l-red-800/60',
+            textColorClass: 'text-red-200',
+            tooltipContent: 'Highest priority tier. Reserved and Limited items here cost allocation points. Max 3 points per bracket.',
+            showAllocationPoints: true,
+            ranks: bracket1,
+            lootItems: bracket14Items,
+            disabledItems: bracket14DisabledItems,
+          },
+          {
+            name: 'Bracket 2 (47-45)',
+            headerBgClass: 'bg-orange-500/10',
+            borderColorClass: 'border-l-orange-800/60',
+            textColorClass: 'text-orange-200',
+            tooltipContent: 'Second priority tier. Same allocation point rules as Bracket 1.',
+            showAllocationPoints: true,
+            ranks: bracket2,
+            lootItems: bracket14Items,
+            disabledItems: bracket14DisabledItems,
+          },
+          {
+            name: 'Bracket 3 (44-42)',
+            headerBgClass: 'bg-yellow-500/10',
+            borderColorClass: 'border-l-yellow-800/60',
+            textColorClass: 'text-yellow-200',
+            tooltipContent: 'Third priority tier. Same allocation point rules as Brackets 1-2.',
+            showAllocationPoints: true,
+            ranks: bracket3,
+            lootItems: bracket14Items,
+            disabledItems: bracket14DisabledItems,
+          },
+          {
+            name: 'Bracket 4 (41-39)',
+            headerBgClass: 'bg-amber-500/10',
+            borderColorClass: 'border-l-amber-800/60',
+            textColorClass: 'text-amber-200',
+            tooltipContent: 'Fourth priority tier. Same allocation point rules as Brackets 1-3.',
+            showAllocationPoints: true,
+            ranks: bracket4,
+            lootItems: bracket14Items,
+            disabledItems: bracket14DisabledItems,
+          },
+          {
+            name: 'No bracket (38-25) - Main-spec',
+            headerBgClass: 'bg-green-500/10',
+            borderColorClass: 'border-l-green-800/60',
+            textColorClass: 'text-green-200',
+            tooltipContent: 'Standard priority list with no allocation point limits. Items here are still main-spec priority.',
+            subtitle: 'Still considered main-spec priority',
+            ranks: noBracket,
+            lootItems: noBracketItems,
+            disabledItems: noBracketDisabledItems,
+          },
+          {
+            name: 'Off-spec (24-1)',
+            headerBgClass: 'bg-blue-500/10',
+            borderColorClass: 'border-l-blue-800/60',
+            textColorClass: 'text-blue-200',
+            tooltipContent: 'Items for your secondary spec or role. Lower priority than main-spec but helps with guild flexibility.',
+            subtitle: 'Off-spec items to support guild flexibility',
+            ranks: offSpec,
+            lootItems: offSpecItems,
+            disabledItems: offSpecDisabledItems,
+          },
+        ] as const).map((bracket) => (
+          <BracketSection
+            key={bracket.name}
+            name={bracket.name}
+            headerBgClass={bracket.headerBgClass}
+            borderColorClass={bracket.borderColorClass}
+            textColorClass={bracket.textColorClass}
+            tooltipContent={bracket.tooltipContent}
+            subtitle={'subtitle' in bracket ? bracket.subtitle : undefined}
+            showAllocationPoints={'showAllocationPoints' in bracket ? bracket.showAllocationPoints : false}
+            ranks={bracket.ranks}
+            lootItems={bracket.lootItems}
+            disabledItems={bracket.disabledItems}
+            rankings={rankings}
+            duplicateItems={duplicateItems}
+            onItemSelect={handleItemSelect}
+            getSlotErrors={getSlotErrors}
+            ownedWowheadIds={equippedWowheadIds}
+            isApproved={originalStatus === 'approved' && !hasChanges && !isEditing}
+            onRemoveItem={handleRemoveApprovedItem}
+            removingItemId={removingItemId}
+            removedRankings={removedRankings}
+            onRestoreItem={handleRestoreItem}
+            validation={getBracketValidation(bracket.name)}
+            expandedErrors={expandedErrors}
+            toggleErrorExpanded={toggleErrorExpanded}
+            isCollapsed={collapsedBrackets.has(bracket.name)}
+            onToggleCollapse={() => toggleBracketCollapsed(bracket.name)}
+          />
+        ))}
 
         {/* How to Rank Modal */}
         <Modal open={showInstructionsModal} onClose={() => setShowInstructionsModal(false)} size="lg">

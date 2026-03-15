@@ -8,6 +8,7 @@
 'use client'
 
 import { useState, useRef, useEffect, useMemo, useCallback } from 'react'
+import { createPortal } from 'react-dom'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import ItemLink from './ItemLink'
@@ -50,6 +51,8 @@ interface SearchableItemSelectProps {
   readOnly?: boolean
   /** Called when X is clicked in read-only mode. If not set, falls back to onChange('') */
   onRemove?: () => void
+  /** When true, renders a full-screen modal instead of positioned dropdown (for mobile) */
+  mobile?: boolean
 }
 
 export default function SearchableItemSelect({
@@ -63,7 +66,8 @@ export default function SearchableItemSelect({
   hasError = false,
   ownedWowheadIds = new Set(),
   readOnly = false,
-  onRemove
+  onRemove,
+  mobile = false
 }: SearchableItemSelectProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [search, setSearch] = useState('')
@@ -288,8 +292,8 @@ export default function SearchableItemSelect({
         </div>
       </div>
 
-      {/* Dropdown */}
-      {isOpen && dropdownPosition.width > 0 && (
+      {/* Desktop Dropdown */}
+      {isOpen && !mobile && dropdownPosition.width > 0 && (
         <div
           ref={dropdownContentRef}
           className="fixed z-[9999] bg-background-elevated border border-border-strong rounded-lg shadow-lg max-h-96 overflow-hidden"
@@ -398,6 +402,126 @@ export default function SearchableItemSelect({
             )}
           </div>
         </div>
+      )}
+
+      {/* Mobile Full-Screen Modal */}
+      {isOpen && mobile && createPortal(
+        <div
+          className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[9999] flex flex-col"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setIsOpen(false)
+              setSearch('')
+            }
+          }}
+        >
+          <div className="flex flex-col h-full bg-background-elevated">
+            {/* Header with search */}
+            <div className="flex items-center gap-2 p-3 border-b border-border shrink-0">
+              <Input
+                ref={searchInputRef}
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search items..."
+                variant="rounded"
+                className="flex-1"
+              />
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setIsOpen(false)
+                  setSearch('')
+                }}
+              >
+                Cancel
+              </Button>
+            </div>
+
+            {/* Items List */}
+            <div className="flex-1 overflow-y-auto overscroll-contain">
+              {filteredItems.length === 0 ? (
+                <div className="px-3 py-8 text-center text-muted-foreground text-[13px]">
+                  No items found
+                </div>
+              ) : (
+                bossNames.map(boss => (
+                  <div key={boss}>
+                    {/* Boss Header */}
+                    <div className="px-3 py-2.5 bg-muted border-b border-border sticky top-0 z-10">
+                      <p className="text-xs font-semibold text-foreground uppercase tracking-wide">
+                        {boss}
+                      </p>
+                    </div>
+                    {/* Boss Items */}
+                    {itemsByBoss[boss].map(item => {
+                      const isLc = item.is_loot_council === true
+                      const isDisabled = (disabled.has(item.id) && currentValue !== item.id) || isLc
+                      const isOwned = ownedWowheadIds.has(item.wowhead_id)
+                      return (
+                        <button
+                          key={item.id}
+                          onClick={() => {
+                            if (!isDisabled) {
+                              handleSelect(item.id)
+                            }
+                          }}
+                          disabled={isDisabled}
+                          className={`w-full px-3 py-3 text-left flex items-center gap-2 min-w-0 border-b border-border/30 active:bg-muted ${
+                            isDisabled ? 'opacity-50' : ''
+                          }`}
+                        >
+                          <span className="flex-1 min-w-0 whitespace-normal">
+                            <span className="flex items-center gap-2">
+                              <span className="truncate whitespace-nowrap">
+                                <ItemLink name={item.name} wowheadId={item.wowhead_id} clickable={false} />
+                              </span>
+                              {isLc ? (
+                                <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-accent/20 text-accent flex-shrink-0">
+                                  Loot Council
+                                </span>
+                              ) : (
+                                <>
+                                  {item.dps_gain && item.dps_gain > 0 && (
+                                    <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-accent/20 text-accent flex-shrink-0">
+                                      +{item.dps_gain.toLocaleString()} DPS
+                                    </span>
+                                  )}
+                                  {isOwned && (
+                                    <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-success/20 text-success flex-shrink-0">
+                                      Owned
+                                    </span>
+                                  )}
+                                  {item.classification && item.classification !== 'Unlimited' && (
+                                    <span className="text-xs text-muted-foreground flex-shrink-0">
+                                      [{item.classification}]
+                                    </span>
+                                  )}
+                                </>
+                              )}
+                            </span>
+                            {!isLc && <ClassPrioritySubline lootItemClasses={item.loot_item_classes} />}
+                          </span>
+                          {value === item.id && (
+                            <img
+                              src="/icons/tick.svg"
+                              alt="Selected"
+                              width={16}
+                              height={16}
+                              className="icon-adaptive w-4 h-4 shrink-0"
+                            />
+                          )}
+                        </button>
+                      )
+                    })}
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>,
+        document.body
       )}
     </div>
   )
