@@ -74,7 +74,7 @@ const expansionVisuals: Record<string, ExpansionVisuals> = {
     accentColor: '#7FD99F',
     textColor: '#D4F0E0',
     borderColor: '#3D7A5A',
-    logoUrl: 'https://wow.zamimg.com/images/wow/icons/large/inv_helmet_leather_panda_b_02.jpg',
+    logoUrl: 'https://wow.zamimg.com/images/wow/icons/large/inv_helm_armor_bamboohat_c_01.jpg',
     artworkUrl: 'https://bnetcmsus-a.akamaihd.net/cms/blog_header/IOCQV46WYXS01536272302862.jpg'
   },
   'Warlords of Draenor': {
