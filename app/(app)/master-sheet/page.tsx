@@ -159,7 +159,7 @@ function MasterSheetContent() {
   const { showNotification } = useNotification()
   const [allItemRankings, setAllItemRankings] = useState<ItemRankings[]>([])
   const [initialLoading, setInitialLoading] = useState(true)
-  const [contentLoading, setContentLoading] = useState(false)
+  const [contentLoading, setContentLoading] = useState(true)
   const [contentReady, setContentReady] = useState(false)
   const [guildId, setGuildId] = useState<string | null>(null)
   const [member, setMember] = useState<MemberInfo | null>(null)
@@ -612,6 +612,7 @@ function MasterSheetContent() {
 
       if (selectedPhase === null || !guildId || !guildSettings || activeTierIds.length === 0) {
         setAllItemRankings([])
+        setContentLoading(false)
         return
       }
 
@@ -1673,6 +1674,8 @@ function MasterSheetContent() {
                             <img
                               src={getRaidIcon(iconTier.name)}
                               alt=""
+                              width={20}
+                              height={20}
                               className="w-5 h-5 rounded border border-border/50"
                             />
                           )}
@@ -1783,6 +1786,8 @@ function MasterSheetContent() {
                         <img
                           src={getBossImage(boss)!}
                           alt=""
+                          width={16}
+                          height={16}
                           className="w-4 h-4 rounded border border-border/50"
                         />
                       )}

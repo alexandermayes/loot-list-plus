@@ -3,6 +3,7 @@
 import { createClient } from '@/utils/supabase/client'
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import ItemLink from '@/app/components/ItemLink'
 import { useGuildContext } from '@/app/contexts/GuildContext'
 import { useNotification } from '@/app/contexts/NotificationContext'
@@ -1363,6 +1364,16 @@ export default function AdminLootItems() {
               value={viewMode}
               onChange={setViewMode}
             />
+
+            {/* Import Button */}
+            <Link href="/admin/sheet-import">
+              <Button variant="outline">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                </svg>
+                Import from spreadsheet
+              </Button>
+            </Link>
 
             {/* Settings Button */}
             <Button

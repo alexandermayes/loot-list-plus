@@ -113,13 +113,11 @@ export default function ProfilePage() {
     }
   }, [])
 
-  const loadBattlenetAccount = async () => {
-    if (!user) return
-
+  const loadBattlenetAccount = async (userId: string) => {
     const { data } = await supabase
       .from('battlenet_accounts')
       .select('battletag, region, updated_at')
-      .eq('user_id', user.id)
+      .eq('user_id', userId)
       .single()
 
     if (data) {
@@ -127,13 +125,11 @@ export default function ProfilePage() {
     }
   }
 
-  const loadNotificationPrefs = async () => {
-    if (!user) return
-
+  const loadNotificationPrefs = async (userId: string) => {
     const { data } = await supabase
       .from('user_preferences')
       .select('notify_submission_status')
-      .eq('user_id', user.id)
+      .eq('user_id', userId)
       .single()
 
     if (data) {
@@ -324,12 +320,21 @@ export default function ProfilePage() {
       }
 
       setAllGuilds(derivedMemberships)
+    }
+
+    // Load all data in parallel, then dismiss skeleton once everything is ready
+    // This prevents CLS from Battle.net/notification data arriving after the skeleton is removed
+    const loadAll = async () => {
+      if (!user) return
+      await Promise.all([
+        loadProfile(),
+        loadBattlenetAccount(user.id),
+        loadNotificationPrefs(user.id),
+      ])
       setLoading(false)
     }
 
-    loadProfile()
-    loadBattlenetAccount()
-    loadNotificationPrefs()
+    loadAll()
   }, [])
 
   if (loading) {

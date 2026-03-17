@@ -1285,9 +1285,9 @@ export default function LootList() {
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
                   <Skeleton className="w-10 h-10 rounded-lg" />
-                  <div className="space-y-1">
-                    <Skeleton className="h-5 w-32" />
-                    <Skeleton className="h-4 w-48" />
+                  <div className="space-y-1.5">
+                    <Skeleton className="h-6 w-48" />
+                    <Skeleton className="h-4 w-56" />
                   </div>
                 </div>
                 <div className="flex gap-2">
@@ -1434,22 +1434,27 @@ export default function LootList() {
         </div>
 
         {/* Deadline Warning - outside flex container so it matches status banner width */}
-        {!isLoading && !isContentLoading && phaseDeadline && isPastDeadline() && (
-          <div className="px-4 sm:px-6 lg:px-8">
-            <div className="bg-yellow-900/50 border border-yellow-500 rounded-xl p-4 text-yellow-200">
-              <div className="flex items-start gap-3">
-                <span className="text-xl">⏰</span>
-                <div>
-                  <p className="font-semibold mb-1">Submission deadline passed</p>
-                  <p className="text-sm">
-                    The deadline for Phase {selectedPhase} was {new Date(phaseDeadline).toLocaleString()}.
-                    You can still submit changes, but they will require officer approval before being visible on the master sheet.
-                  </p>
+        <div
+          className="grid transition-[grid-template-rows] duration-300 ease-in-out"
+          style={{ gridTemplateRows: !isLoading && !isContentLoading && phaseDeadline && isPastDeadline() ? '1fr' : '0fr' }}
+        >
+          <div className="overflow-hidden">
+            <div className="px-4 sm:px-6 lg:px-8 pb-2">
+              <div className="bg-yellow-900/50 border border-yellow-500 rounded-xl p-4 text-yellow-200">
+                <div className="flex items-start gap-3">
+                  <span className="text-xl">⏰</span>
+                  <div>
+                    <p className="font-semibold mb-1">Submission deadline passed</p>
+                    <p className="text-sm">
+                      The deadline for Phase {selectedPhase} was {phaseDeadline ? new Date(phaseDeadline).toLocaleString() : ''}.
+                      You can still submit changes, but they will require officer approval before being visible on the master sheet.
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-        )}
+        </div>
 
         {/* Main Content - Flex container for loot list and sidebar */}
         <div className={`flex px-4 sm:px-6 lg:px-8 pt-1.5 pb-6 ${showUnrankedPanel ? 'gap-6' : ''}`}>
@@ -1462,11 +1467,16 @@ export default function LootList() {
         <div className={`space-y-4 transition-opacity duration-200 ${contentReady ? 'opacity-100' : 'opacity-0'}`}>
 
         {/* Duplicate Warning */}
-        {duplicateItems.length > 0 && (
-          <div className="bg-red-900/50 border border-red-500 rounded-xl p-4 text-red-300">
-            <strong>Warning:</strong> You have duplicate items in the same bracket section. Non-token items can only appear once. Tokens can appear once per section.
+        <div
+          className="grid transition-[grid-template-rows] duration-300 ease-in-out"
+          style={{ gridTemplateRows: duplicateItems.length > 0 ? '1fr' : '0fr' }}
+        >
+          <div className="overflow-hidden">
+            <div className="bg-red-900/50 border border-red-500 rounded-xl p-4 text-red-300">
+              <strong>Warning:</strong> You have duplicate items in the same bracket section. Non-token items can only appear once. Tokens can appear once per section.
+            </div>
           </div>
-        )}
+        </div>
 
         {/* Bracket Sections */}
         {([

@@ -88,6 +88,8 @@ export const BossSection = memo(function BossSection({
             <img
               src={bossImage}
               alt={boss}
+              width={24}
+              height={24}
               className="w-6 h-6 rounded border border-border/50 shadow-sm"
             />
           )}

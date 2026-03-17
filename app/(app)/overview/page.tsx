@@ -250,6 +250,24 @@ function DashboardContent() {
     document.title = 'LootList+ • Overview'
   }, [])
 
+  // Preload LCP image (class icon) as soon as character data is available
+  useEffect(() => {
+    const className = activeCharacter?.class?.name
+    if (!className) return
+    const url = getClassIconUrl(className)
+    if (!url) return
+    // Avoid duplicate preload links
+    const existing = document.querySelector(`link[rel="preload"][href="${url}"]`)
+    if (existing) return
+    const link = document.createElement('link')
+    link.rel = 'preload'
+    link.as = 'image'
+    link.href = url
+    link.fetchPriority = 'high'
+    document.head.appendChild(link)
+    return () => { link.remove() }
+  }, [activeCharacter?.class?.name])
+
   // Track page view
   useEffect(() => {
     if (activeGuild?.id) trackClientEvent('overview_page_viewed', { guild_id: activeGuild.id })
@@ -567,7 +585,7 @@ function DashboardContent() {
       let savedDeduplicatedRaidEvents: Array<{ id: string; raid_date: string }> = []
       let savedAttendanceRecords: Array<{ raid_event_id: string; attended: boolean }> = []
 
-      // Start submission items fetch early - runs in parallel with guild settings cascade
+      // Start all independent fetches in parallel: submission items, guild settings, membership, expansion
       const submissionItemsPromise = supabase
         .from('loot_submission_items')
         .select(`
@@ -586,15 +604,41 @@ function DashboardContent() {
         .eq('submission.status', 'approved')
         .is('removed_at', null)
 
+      const guildSettingsPromise = supabase
+        .from('guild_settings')
+        .select('*')
+        .eq('guild_id', activeGuild.id)
+        .single()
+
+      const membershipPromise = characterId
+        ? supabase
+            .from('character_guild_memberships')
+            .select('joined_at, membership_status, trial_started_at, role')
+            .eq('character_id', characterId)
+            .eq('guild_id', activeGuild.id)
+            .single()
+        : Promise.resolve({ data: null, error: null })
+
+      const expansionDataPromise = activeGuild?.active_expansion_id
+        ? supabase
+            .from('expansions')
+            .select('raid_days_per_week, first_raid_day, second_raid_day, third_raid_day, fourth_raid_day, fifth_raid_day, timezone')
+            .eq('id', activeGuild.active_expansion_id)
+            .single()
+        : Promise.resolve({ data: null, error: null })
+
+      // Await all independent fetches in parallel
+      const [settingsResult, membershipResult, expansionDataResult] = await Promise.all([
+        guildSettingsPromise,
+        membershipPromise,
+        expansionDataPromise
+      ])
+
       // Try to get guild settings and attendance (may not be set up yet)
       try {
-        const { data: guildSettings, error: settingsError } = await supabase
-          .from('guild_settings')
-          .select('*')
-          .eq('guild_id', activeGuild.id)
-          .single()
+        const guildSettings = settingsResult.error ? null : settingsResult.data
 
-        if (guildSettings && !settingsError) {
+        if (guildSettings) {
           // Set decimal places for display formatting
           setDecimalPlaces(guildSettings.decimal_places ?? 2)
 
@@ -606,25 +650,6 @@ function DashboardContent() {
           // New member policy: check how to handle new members
           const newMemberMode = guildSettings.new_member_mode || 'raw'
           let effectiveStartDate = startDate
-
-          // Fetch membership and expansion data in parallel (both independent)
-          const [membershipResult, expansionDataResult] = await Promise.all([
-            characterId
-              ? supabase
-                  .from('character_guild_memberships')
-                  .select('joined_at, membership_status, trial_started_at, role')
-                  .eq('character_id', characterId)
-                  .eq('guild_id', activeGuild.id)
-                  .single()
-              : Promise.resolve({ data: null }),
-            activeGuild?.active_expansion_id
-              ? supabase
-                  .from('expansions')
-                  .select('raid_days_per_week, first_raid_day, second_raid_day, third_raid_day, fourth_raid_day, fifth_raid_day, timezone')
-                  .eq('id', activeGuild.active_expansion_id)
-                  .single()
-              : Promise.resolve({ data: null })
-          ])
 
           const membership = membershipResult.data
           if (membership) {
@@ -696,14 +721,14 @@ function DashboardContent() {
             // Handle duplicate raid events - prefer IDs with attendance records
             const raidEventIds = filteredRaidEvents.map((r: { id: string }) => r.id)
 
-            // Check which raid IDs have attendance for this character
-            const { data: existingAttendance } = await supabase
+            // Fetch all attendance records for this character in one query (consolidates two sequential queries)
+            const { data: allAttendanceRecords, error: attError } = await supabase
               .from('attendance_records')
-              .select('raid_event_id')
+              .select('raid_event_id, signed_up, attended, no_call_no_show')
               .eq('character_id', characterId)
               .in('raid_event_id', raidEventIds)
 
-            const raidIdsWithAttendance = new Set(existingAttendance?.map((r: { raid_event_id: string }) => r.raid_event_id) || [])
+            const raidIdsWithAttendance = new Set(allAttendanceRecords?.map((r: { raid_event_id: string }) => r.raid_event_id) || [])
 
             // Deduplicate by date, preferring IDs that have attendance records
             type RaidEvent = { id: string; raid_date: string }
@@ -720,16 +745,14 @@ function DashboardContent() {
             )
 
             const totalRaids = deduplicatedRaidEvents.length
-            const deduplicatedRaidIds = deduplicatedRaidEvents.map((r: RaidEvent) => r.id)
+            const deduplicatedRaidIds = new Set(deduplicatedRaidEvents.map((r: RaidEvent) => r.id))
 
-            // Now fetch attendance records using the deduplicated raid IDs
-            const { data: attendanceRecords, error: attError } = await supabase
-              .from('attendance_records')
-              .select('raid_event_id, signed_up, attended, no_call_no_show')
-              .eq('character_id', characterId)
-              .in('raid_event_id', deduplicatedRaidIds)
+            // Filter attendance records to only deduplicated raid events (no second query needed)
+            const attendanceRecords = allAttendanceRecords?.filter(
+              (r: { raid_event_id: string }) => deduplicatedRaidIds.has(r.raid_event_id)
+            ) || []
 
-            if (!attError && attendanceRecords && attendanceRecords.length > 0 && totalRaids > 0) {
+            if (!attError && attendanceRecords.length > 0 && totalRaids > 0) {
               attendanceScore = calculateAttendanceScore(
                 attendanceRecords,
                 totalRaids,
@@ -1381,6 +1404,9 @@ function DashboardContent() {
                     <img
                       src={getClassIconUrl(activeCharacter.class.name)}
                       alt={activeCharacter.class.name}
+                      width={64}
+                      height={64}
+                      fetchPriority="high"
                       className="w-16 h-16 rounded-full border-2 border-border/50 shadow-md"
                     />
                   ) : (
