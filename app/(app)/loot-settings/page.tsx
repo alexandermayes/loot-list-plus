@@ -1516,16 +1516,28 @@ export default function AdminLootItems() {
         {/* Items Table */}
         <div className="bg-background-elevated border border-border rounded-xl overflow-hidden">
           <div className="-mx-4 sm:mx-0 overflow-x-auto max-h-[calc(100vh-300px)] overflow-y-auto">
-            <table className="w-full">
+            <table className="w-full table-fixed" style={{ minWidth: '1100px' }}>
+              <colgroup>
+                <col className="w-[44px]" />
+                <col className="w-[40px]" />
+                <col className="w-[14%]" />
+                <col className="w-[9%]" />
+                <col className="w-[6%]" />
+                <col className="w-[8%]" />
+                <col className="w-[10%]" />
+                <col className="w-[19%]" />
+                <col className="w-[19%]" />
+                <col className="w-[44px]" />
+              </colgroup>
               <thead className="sticky top-14 sm:top-0 z-10">
-                <tr className="bg-background-subtle border-b border-border whitespace-nowrap">
+                <tr className="bg-background-subtle border-b border-border">
                   <th className="px-4 py-2.5 text-left text-[12px] font-medium text-foreground-muted bg-background-subtle">On</th>
                   <th className="px-2 py-2.5 text-center text-[12px] font-medium text-foreground-muted bg-background-subtle"><span className="inline-flex items-center gap-1">LC <InfoTooltip content="Loot Council. When enabled, officers decide the winner instead of using Loot Score. Use for progression-critical items." iconSize={11} /></span></th>
                   <th className="px-4 py-2.5 text-left text-[12px] font-medium text-foreground-muted bg-background-subtle">Item name</th>
                   <th className="px-4 py-2.5 text-left text-[12px] font-medium text-foreground-muted bg-background-subtle">Boss</th>
                   <th className="px-4 py-2.5 text-left text-[12px] font-medium text-foreground-muted bg-background-subtle">Slot</th>
                   <th className="px-4 py-2.5 text-left text-[12px] font-medium text-foreground-muted bg-background-subtle">Raid</th>
-                  <th className="px-4 py-2.5 text-left text-[12px] font-medium text-foreground-muted bg-background-subtle"><span className="inline-flex items-center gap-1">Classification <InfoTooltip content="Item demand tier. Reserved and Limited cost 1 allocation point each. Unlimited costs 0 points." iconSize={11} /></span></th>
+                  <th className="px-4 py-2.5 text-left text-[12px] font-medium text-foreground-muted bg-background-subtle whitespace-nowrap"><span className="inline-flex items-center gap-1">Classification <InfoTooltip content="Item demand tier. Reserved and Limited cost 1 allocation point each. Unlimited costs 0 points." iconSize={11} /></span></th>
                   <th className="px-4 py-2.5 text-left text-[12px] font-medium text-foreground-muted bg-background-subtle">Primary</th>
                   <th className="px-4 py-2.5 text-left text-[12px] font-medium text-foreground-muted bg-background-subtle">Secondary</th>
                   <th className="px-2 py-2.5 text-center text-[12px] font-medium text-foreground-muted sm:static sticky right-0 z-20 bg-background-subtle shadow-[-4px_0_8px_-4px_rgba(0,0,0,0.3)] sm:shadow-none">Notes</th>
