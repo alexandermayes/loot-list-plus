@@ -41,9 +41,9 @@ type Step = 'discord' | 'details' | 'settings'
 const EXPANSIONS = [
   { id: 'Classic', name: 'Classic', image: '/images/expansions/WoWlogo.webp', available: true },
   { id: 'The Burning Crusade', name: 'TBC', image: '/images/expansions/TBCLogo.webp', available: true },
-  { id: 'Wrath of the Lich King', name: 'WotLK', image: '/images/expansions/WrathLogo.webp', available: false },
-  { id: 'Cataclysm', name: 'Cata', image: '/images/expansions/Cataclysmlogo.webp', available: false },
-  { id: 'Mists of Pandaria', name: 'MoP', image: '/images/expansions/MoPlogo.webp', available: false },
+  { id: 'Wrath of the Lich King', name: 'WotLK', image: '/images/expansions/WrathLogo.webp', available: true },
+  { id: 'Cataclysm', name: 'Cata', image: '/images/expansions/Cataclysmlogo.webp', available: true },
+  { id: 'Mists of Pandaria', name: 'MoP', image: '/images/expansions/MoPlogo.webp', available: true },
 ]
 
 export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModalProps) {
