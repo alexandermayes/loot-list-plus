@@ -1540,7 +1540,7 @@ export default function AdminLootItems() {
                   <th className="px-4 py-2.5 text-left text-[12px] font-medium text-foreground-muted bg-background-subtle"><span className="inline-flex items-center gap-1">Classification <InfoTooltip content="Item demand tier. Reserved and Limited cost 1 allocation point each. Unlimited costs 0 points." iconSize={11} /></span></th>
                   <th className="px-4 py-2.5 text-left text-[12px] font-medium text-foreground-muted bg-background-subtle">Primary</th>
                   <th className="px-4 py-2.5 text-left text-[12px] font-medium text-foreground-muted bg-background-subtle">Secondary</th>
-                  <th className="px-2 py-2.5 text-center text-[12px] font-medium text-foreground-muted w-12 sticky right-0 bg-background-subtle">Notes</th>
+                  <th className="px-2 py-2.5 text-center text-[12px] font-medium text-foreground-muted w-12 sticky right-0 z-20 bg-background-subtle shadow-[-4px_0_8px_-4px_rgba(0,0,0,0.3)]">Notes</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
@@ -1667,7 +1667,7 @@ export default function AdminLootItems() {
                         variant="secondary"
                       />
                     </td>
-                    <td className="px-2 py-2.5 text-center sticky right-0 bg-background-elevated">
+                    <td className="px-2 py-2.5 text-center sticky right-0 bg-background-elevated shadow-[-4px_0_8px_-4px_rgba(0,0,0,0.3)]">
                       <button
                         onClick={() => {
                           setNotesModalItem(item)
