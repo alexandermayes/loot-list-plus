@@ -1524,9 +1524,9 @@ export default function AdminLootItems() {
                 <col className="w-[9%]" />
                 <col className="w-[6%]" />
                 <col className="w-[8%]" />
-                <col className="w-[12%]" />
+                <col className="w-[13%]" />
                 <col className="w-[18%]" />
-                <col className="w-[18%]" />
+                <col className="w-[17%]" />
                 <col className="w-[44px]" />
               </colgroup>
               <thead className="sticky top-14 sm:top-0 z-10">
@@ -1578,7 +1578,7 @@ export default function AdminLootItems() {
                     <td className="px-4 py-2.5 text-[12px] text-foreground-muted">
                       <div className="truncate">{(item.raid_tier as any)?.name}</div>
                     </td>
-                    <td className="px-4 py-2.5">
+                    <td className="px-2 py-2.5">
                       <Select
                         variant="pill"
                         size="sm"
