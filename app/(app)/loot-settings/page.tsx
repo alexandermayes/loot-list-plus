@@ -1516,21 +1516,9 @@ export default function AdminLootItems() {
         {/* Items Table */}
         <div className="bg-background-elevated border border-border rounded-xl overflow-hidden">
           <div className="-mx-4 sm:mx-0 overflow-x-auto max-h-[calc(100vh-300px)] overflow-y-auto">
-            <table className="w-full table-fixed" style={{ minWidth: '1230px' }}>
-              <colgroup>
-                <col style={{ width: '50px' }} />
-                <col style={{ width: '42px' }} />
-                <col style={{ width: '200px' }} />
-                <col style={{ width: '120px' }} />
-                <col style={{ width: '80px' }} />
-                <col style={{ width: '100px' }} />
-                <col style={{ width: '150px' }} />
-                <col style={{ width: '220px' }} />
-                <col style={{ width: '220px' }} />
-                <col style={{ width: '48px' }} />
-              </colgroup>
+            <table className="w-full">
               <thead className="sticky top-14 sm:top-0 z-10">
-                <tr className="bg-background-subtle border-b border-border">
+                <tr className="bg-background-subtle border-b border-border whitespace-nowrap">
                   <th className="px-4 py-2.5 text-left text-[12px] font-medium text-foreground-muted bg-background-subtle">On</th>
                   <th className="px-2 py-2.5 text-center text-[12px] font-medium text-foreground-muted bg-background-subtle"><span className="inline-flex items-center gap-1">LC <InfoTooltip content="Loot Council. When enabled, officers decide the winner instead of using Loot Score. Use for progression-critical items." iconSize={11} /></span></th>
                   <th className="px-4 py-2.5 text-left text-[12px] font-medium text-foreground-muted bg-background-subtle">Item name</th>
@@ -1540,7 +1528,7 @@ export default function AdminLootItems() {
                   <th className="px-4 py-2.5 text-left text-[12px] font-medium text-foreground-muted bg-background-subtle"><span className="inline-flex items-center gap-1">Classification <InfoTooltip content="Item demand tier. Reserved and Limited cost 1 allocation point each. Unlimited costs 0 points." iconSize={11} /></span></th>
                   <th className="px-4 py-2.5 text-left text-[12px] font-medium text-foreground-muted bg-background-subtle">Primary</th>
                   <th className="px-4 py-2.5 text-left text-[12px] font-medium text-foreground-muted bg-background-subtle">Secondary</th>
-                  <th className="px-2 py-2.5 text-center text-[12px] font-medium text-foreground-muted w-12 sticky right-0 z-20 bg-background-subtle shadow-[-4px_0_8px_-4px_rgba(0,0,0,0.3)]">Notes</th>
+                  <th className="px-2 py-2.5 text-center text-[12px] font-medium text-foreground-muted sm:static sticky right-0 z-20 bg-background-subtle shadow-[-4px_0_8px_-4px_rgba(0,0,0,0.3)] sm:shadow-none">Notes</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
@@ -1667,7 +1655,7 @@ export default function AdminLootItems() {
                         variant="secondary"
                       />
                     </td>
-                    <td className="px-2 py-2.5 text-center sticky right-0 bg-background-elevated shadow-[-4px_0_8px_-4px_rgba(0,0,0,0.3)]">
+                    <td className="px-2 py-2.5 text-center sm:static sticky right-0 bg-background-elevated shadow-[-4px_0_8px_-4px_rgba(0,0,0,0.3)] sm:shadow-none">
                       <button
                         onClick={() => {
                           setNotesModalItem(item)
