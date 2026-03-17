@@ -6,7 +6,7 @@ import { createPortal } from 'react-dom'
 import { useRouter } from 'next/navigation'
 import { useGuildContext } from '@/app/contexts/GuildContext'
 import { useNotification } from '@/app/contexts/NotificationContext'
-import { TierTabsSkeleton, SubmissionsListSkeleton, Skeleton } from '@/components/ui/skeletons'
+import { SubmissionsListSkeleton, Skeleton } from '@/components/ui/skeletons'
 import { StatusBadge, type SubmissionStatus } from '@/components/ui/status-badge'
 import { ClassificationBadge } from '@/components/ui/classification-badge'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -675,13 +675,19 @@ export default function MasterLootPage() {
         <p className="text-muted-foreground mt-1 text-base">Review and manage character loot submissions</p>
       </div>
 
-      {/* Phase Selector - Sticky */}
+      {/* Phase Selector - Sticky. Reserve consistent height to prevent CLS. */}
       {initialLoading ? (
-        <div className="sticky top-14 sm:top-0 z-20 px-4 sm:px-6 lg:px-8 py-1.5 bg-background">
-          <TierTabsSkeleton />
+        <div className="sticky top-14 sm:top-0 z-20 px-4 sm:px-6 lg:px-8 py-1.5 bg-background min-h-[46px]">
+          {/* Inline skeleton matching size="sm" phase buttons (h-8) used on this page */}
+          <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide pb-1">
+            <Skeleton className="h-8 w-[88px] rounded-[40px] flex-shrink-0" />
+            <Skeleton className="h-8 w-20 rounded-[40px] flex-shrink-0" />
+            <Skeleton className="h-8 w-20 rounded-[40px] flex-shrink-0" />
+            <Skeleton className="h-8 w-20 rounded-[40px] flex-shrink-0" />
+          </div>
         </div>
       ) : phases.length > 0 && (
-        <div className="sticky top-14 sm:top-0 z-20 px-4 sm:px-6 lg:px-8 py-1.5 bg-background">
+        <div className="sticky top-14 sm:top-0 z-20 px-4 sm:px-6 lg:px-8 py-1.5 bg-background min-h-[46px]">
           <div className="flex items-center gap-3 overflow-x-auto scrollbar-hide pb-1">
             <div className="flex gap-2 flex-shrink-0">
               {/* All Phases Button */}
@@ -714,6 +720,8 @@ export default function MasterLootPage() {
                           key={tier.name}
                           src={getRaidIcon(tier.name)}
                           alt=""
+                          width={16}
+                          height={16}
                           className="w-4 h-4 rounded border border-border/50"
                         />
                       ))}
@@ -731,17 +739,20 @@ export default function MasterLootPage() {
       <div className="px-4 sm:px-6 lg:px-8 pt-1.5 pb-6 space-y-6">
       {initialLoading ? (
         <div className="space-y-4">
-          {/* Filter bar skeleton */}
+          {/* Filter bar skeleton - matches real filter layout */}
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div className="flex gap-2">
-              <Skeleton className="h-8 w-16 rounded-[40px]" />
-              <Skeleton className="h-8 w-20 rounded-[40px]" />
-              <Skeleton className="h-8 w-22 rounded-[40px]" />
-              <Skeleton className="h-8 w-20 rounded-[40px]" />
+            <div className="flex flex-col gap-3 w-full sm:w-auto">
+              <div className="flex gap-2">
+                <Skeleton className="h-8 w-[42px] rounded-[40px]" />
+                <Skeleton className="h-8 w-[68px] rounded-[40px]" />
+                <Skeleton className="h-8 w-[80px] rounded-[40px]" />
+                <Skeleton className="h-8 w-[72px] rounded-[40px]" />
+              </div>
+              <Skeleton className="h-8 w-full sm:w-52 rounded-[40px]" />
             </div>
-            <div className="flex gap-2">
-              <Skeleton className="h-8 w-28 rounded-[40px]" />
-              <Skeleton className="h-8 w-24 rounded-[40px]" />
+            <div className="flex gap-2 flex-shrink-0">
+              <Skeleton className="h-8 w-[108px] rounded-[40px]" />
+              <Skeleton className="h-8 w-[82px] rounded-[40px]" />
             </div>
           </div>
           <SubmissionsListSkeleton count={5} />

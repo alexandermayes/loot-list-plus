@@ -1169,6 +1169,7 @@ function MasterSheetContent() {
   )
 
   // Compute max rankings count across all items for consistent column widths
+  // Minimum of 5 columns to prevent layout shift when data loads (skeleton assumes 5)
   const maxRankingsCount = useMemo(() => {
     let max = 0
     for (const { items } of sortedRaidTiers) {
@@ -1176,7 +1177,7 @@ function MasterSheetContent() {
         if (ir.rankings.length > max) max = ir.rankings.length
       }
     }
-    return max
+    return Math.max(max, 5)
   }, [sortedRaidTiers])
 
   // Check if any tier in the selected phase is disabled (for officer warning)
@@ -1821,10 +1822,10 @@ function MasterSheetContent() {
         <div className="px-4 sm:px-6 lg:px-8 pt-1.5 pb-6 space-y-6">
 
         {/* Content Loading State */}
-        {(initialLoading || contentLoading) ? (
+        {(initialLoading || contentLoading || !contentReady) ? (
           <MasterSheetContentSkeleton />
         ) : (
-        <div className={`transition-opacity duration-200 ${contentReady ? 'opacity-100' : 'opacity-0'}`}>
+        <div className="animate-fade-in">
         {/* Master Sheet Access Gates */}
         {!isOfficer && !hasApprovedSubmission ? (
           <div className="bg-background-elevated border border-border rounded-xl p-12 text-center">
@@ -1921,8 +1922,8 @@ function MasterSheetContent() {
         </div>
         )}
 
-        {/* Legend (rankings view only) */}
-        {viewMode === 'rankings' && (
+        {/* Legend (rankings view only, hidden during loading to prevent CLS) */}
+        {viewMode === 'rankings' && contentReady && !initialLoading && !contentLoading && (
         <div className="bg-background-elevated border border-border rounded-xl p-4">
           <div className="flex items-center justify-between">
             <p className="text-foreground-muted text-[12px]">

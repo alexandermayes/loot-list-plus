@@ -36,6 +36,7 @@ export type AnalyticsEvent =
   | 'character_imported'
   | 'loot_item_imported'
   | 'loot_item_removed_from_list'
+  | 'sheet_import_completed'
   | 'api_error'
 
 interface TrackEventParams {

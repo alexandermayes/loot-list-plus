@@ -101,20 +101,22 @@ export function VirtualizedMasterSheet({
   }, [sortedRaidTiers, collapsedRaidTiers])
 
   // Estimate item heights based on type and collapse state
+  // Each virtual item wrapper has pb-3 (12px) padding, included in estimates
   const estimateSize = useCallback(
     (index: number) => {
+      const WRAPPER_PADDING = 12 // pb-3
       const item = flattenedItems[index]
       if (item.type === 'raid-tier-header') {
-        return 60 // Header height
+        return 52 + WRAPPER_PADDING // Header: py-3 (24px) + content (~28px) = ~52px
       }
-      // Boss section: header (56px) + table if not collapsed
+      // Boss section: header + table if not collapsed
       const isCollapsed = collapsedBosses.has(item.boss)
       if (isCollapsed) {
-        return 60 // Just the boss header
+        return 52 + WRAPPER_PADDING // Just the boss header button
       }
-      // Header + table header + rows (estimated 52px per row)
+      // Boss header (52px) + table header (37px) + rows (45px per row) + border (1px)
       const itemCount = item.items.length
-      return 60 + 44 + itemCount * 52
+      return 52 + 37 + itemCount * 45 + 1 + WRAPPER_PADDING
     },
     [flattenedItems, collapsedBosses]
   )

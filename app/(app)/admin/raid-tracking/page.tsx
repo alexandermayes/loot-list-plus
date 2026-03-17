@@ -8,7 +8,7 @@ import { ArrowDown01Icon, ArrowUp01Icon, Upload01Icon, Cancel01Icon, MoreVertica
 import nextDynamic from 'next/dynamic'
 
 const LootHistoryTab = nextDynamic(() => import('./components/LootHistoryTab'), {
-  loading: () => <div className="p-8 text-center text-muted-foreground">Loading loot history...</div>
+  loading: () => <div className="min-h-[400px] p-8 text-center text-muted-foreground">Loading loot history...</div>
 })
 import { RaidTrackingPageSkeleton } from '@/components/ui/skeletons'
 import { Heading } from '@/components/ui/typography'

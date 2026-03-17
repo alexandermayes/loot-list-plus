@@ -109,16 +109,16 @@ export function LootCardSkeleton() {
  */
 export function SubmissionCardSkeleton() {
   return (
-    <div className="bg-background-elevated border border-border rounded-xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-      <div className="flex items-center gap-3 flex-wrap">
-        <Skeleton className="h-5 w-24" />
-        <Skeleton className="h-6 w-16 rounded-full" />
-        <Skeleton className="h-5 w-20 rounded-full" />
-        <Skeleton className="h-4 w-32 hidden sm:block" />
+    <div className="bg-background-elevated border border-border rounded-xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
+      <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+        <Skeleton className="h-[19px] w-24" />
+        <Skeleton className="h-[13px] w-16" />
+        <Skeleton className="h-5 w-[68px] rounded-full" />
+        <Skeleton className="h-[13px] w-40 hidden sm:block" />
       </div>
-      <div className="flex gap-2">
-        <Skeleton className="h-10 w-28 rounded-[40px]" />
-        <Skeleton className="h-10 w-10 rounded-[40px]" />
+      <div className="flex gap-2 flex-shrink-0">
+        <Skeleton className="h-8 w-[52px] rounded-[40px]" />
+        <Skeleton className="h-8 w-8 rounded-[40px]" />
       </div>
     </div>
   )
@@ -149,11 +149,15 @@ export function GuildCardSkeleton() {
 export function TierTabsSkeleton() {
   return (
     <div className="flex items-center gap-3">
-      <Skeleton className="h-4 w-20" />
-      <div className="flex gap-2">
+      {/* Matches phase tab buttons: h-11 (default Button size) with pill shape */}
+      <div className="hidden sm:flex gap-2 flex-1 min-w-0">
         {Array.from({ length: 4 }).map((_, i) => (
-          <Skeleton key={i} className="h-10 w-24 rounded-[40px]" />
+          <Skeleton key={i} className="h-11 w-32 rounded-[40px] flex-shrink-0" />
         ))}
+      </div>
+      {/* Mobile: single dropdown */}
+      <div className="sm:hidden flex-1">
+        <Skeleton className="h-9 w-full rounded-lg" />
       </div>
     </div>
   )
@@ -696,50 +700,79 @@ export function LootItemsPageSkeleton() {
 
 /**
  * Raid tracking page skeleton
+ * Matches: flex-col sm:flex-row header with Heading level={1} (42px) + SegmentedControl,
+ * status legend row, week accordion headers, and raid day cards.
  */
 export function RaidTrackingPageSkeleton() {
   return (
-    <div className="p-4 sm:p-6 lg:p-8 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
+    <div className="p-4 sm:p-6 lg:p-8 space-y-6 font-poppins">
+      {/* Header - matches flex-col sm:flex-row sm:items-start sm:justify-between gap-4 */}
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div>
-          <Skeleton className="h-8 w-36" />
-          <Skeleton className="h-5 w-64 mt-1" />
+          <Skeleton className="h-[42px] w-48" />
+          <Skeleton className="h-5 w-72 mt-1" />
         </div>
-        <div className="flex gap-2">
-          <Skeleton className="h-10 w-32 rounded-[40px]" />
-        </div>
+        {/* SegmentedControl: inline-flex rounded-[40px] with two options */}
+        <Skeleton className="h-10 w-56 rounded-[40px] self-start" />
       </div>
 
-      {/* Tabs */}
-      <Skeleton className="h-10 w-64 rounded-lg" />
-
-      {/* Calendar/Table View */}
-      <div className="bg-background-elevated border border-border rounded-xl overflow-hidden">
-        {/* Week Headers */}
-        <div className="px-4 py-3 border-b border-border bg-muted">
-          <div className="flex items-center gap-4">
-            <Skeleton className="h-5 w-28" />
-            {Array.from({ length: 4 }).map((_, i) => (
-              <Skeleton key={i} className="h-5 w-20" />
-            ))}
+      {/* Legend row - matches status legend with 4 colored squares + labels */}
+      <div className="flex items-center gap-3 sm:gap-4">
+        <Skeleton className="h-4 w-12" />
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={i} className="flex items-center gap-1">
+            <Skeleton className="w-5 h-5 rounded" />
+            <Skeleton className="h-4 w-14" />
           </div>
-        </div>
-        {/* Rows */}
-        <div className="divide-y divide-border">
-          {Array.from({ length: 10 }).map((_, i) => (
-            <div key={i} className="px-4 py-3">
-              <div className="flex items-center gap-4">
-                <div className="flex items-center gap-2 w-28">
-                  <Skeleton className="h-4 w-4 rounded-full" />
-                  <Skeleton className="h-4 w-20" />
+        ))}
+      </div>
+
+      {/* Week accordion sections */}
+      <div className="space-y-6">
+        {/* First week - expanded with raid day cards */}
+        <div className="space-y-3">
+          <div className="flex items-center gap-3">
+            <Skeleton className="w-6 h-6 rounded flex-shrink-0" />
+            <Skeleton className="h-[24px] w-72" />
+            <div className="flex-1 h-[1px] bg-foreground/10" />
+          </div>
+
+          {/* Raid day cards (2 per week) */}
+          {Array.from({ length: 2 }).map((_, i) => (
+            <div key={i} className="bg-background-elevated border border-border rounded-xl overflow-hidden">
+              <div className="px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
+                <div className="flex items-center gap-3 sm:gap-4">
+                  <Skeleton className="w-5 h-5 rounded flex-shrink-0" />
+                  <div>
+                    <Skeleton className="h-[18px] w-56" />
+                    <Skeleton className="h-4 w-40 mt-1" />
+                  </div>
                 </div>
-                {Array.from({ length: 4 }).map((_, j) => (
-                  <Skeleton key={j} className="h-8 w-20 rounded" />
-                ))}
+                <div className="flex gap-2 flex-shrink-0">
+                  <Skeleton className="h-9 w-28 rounded-[40px]" />
+                  <Skeleton className="h-9 w-20 rounded-[40px]" />
+                </div>
               </div>
             </div>
           ))}
+        </div>
+
+        {/* Second collapsed week */}
+        <div className="space-y-3">
+          <div className="flex items-center gap-3">
+            <Skeleton className="w-6 h-6 rounded flex-shrink-0" />
+            <Skeleton className="h-[24px] w-64" />
+            <div className="flex-1 h-[1px] bg-foreground/10" />
+          </div>
+        </div>
+
+        {/* Third collapsed week */}
+        <div className="space-y-3">
+          <div className="flex items-center gap-3">
+            <Skeleton className="w-6 h-6 rounded flex-shrink-0" />
+            <Skeleton className="h-[24px] w-60" />
+            <div className="flex-1 h-[1px] bg-foreground/10" />
+          </div>
         </div>
       </div>
     </div>
