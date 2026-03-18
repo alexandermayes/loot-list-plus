@@ -124,6 +124,11 @@ export default function AdminLootItems() {
   const [raidTiers, setRaidTiers] = useState<any[]>([])
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage, setItemsPerPage] = useState(100)
+
+  const goToPage = useCallback((page: number | ((prev: number) => number)) => {
+    setCurrentPage(page)
+    window.scrollTo({ top: 0 })
+  }, [])
   // Track specs for each item: { itemId: { primary: Set<specId>, secondary: Set<specId> } }
   const [itemSpecs, setItemSpecs] = useState<Record<string, { primary: Set<string>, secondary: Set<string> }>>({})
   // Track roles for each item: { itemId: Set<role> }
@@ -1715,7 +1720,7 @@ export default function AdminLootItems() {
                   <Button
                     variant="outline"
                     size="icon"
-                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                    onClick={() => goToPage(prev => Math.max(1, prev - 1))}
                     disabled={currentPage === 1}
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1736,7 +1741,7 @@ export default function AdminLootItems() {
                           key={1}
                           variant={currentPage === 1 ? 'accent-subtle' : 'outline'}
                           size="sm"
-                          onClick={() => setCurrentPage(1)}
+                          onClick={() => goToPage(1)}
                           className="min-w-[36px]"
                         >
                           1
@@ -1760,7 +1765,7 @@ export default function AdminLootItems() {
                             key={i}
                             variant={currentPage === i ? 'accent-subtle' : 'outline'}
                             size="sm"
-                            onClick={() => setCurrentPage(i)}
+                            onClick={() => goToPage(i)}
                             className="min-w-[36px]"
                           >
                             {i}
@@ -1782,7 +1787,7 @@ export default function AdminLootItems() {
                             key={totalPages}
                             variant={currentPage === totalPages ? 'accent-subtle' : 'outline'}
                             size="sm"
-                            onClick={() => setCurrentPage(totalPages)}
+                            onClick={() => goToPage(totalPages)}
                             className="min-w-[36px]"
                           >
                             {totalPages}
@@ -1798,7 +1803,7 @@ export default function AdminLootItems() {
                   <Button
                     variant="outline"
                     size="icon"
-                    onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                    onClick={() => goToPage(prev => Math.min(totalPages, prev + 1))}
                     disabled={currentPage === totalPages}
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
