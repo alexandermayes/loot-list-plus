@@ -1710,7 +1710,7 @@ export default function AdminLootItems() {
 
           {/* Pagination Controls */}
           {filteredItems.length > 0 && (
-            <div className="flex items-center justify-between px-4 py-6 bg-background-subtle border-t border-border">
+            <div className="flex items-center justify-between px-4 py-3 bg-background-subtle border-t border-border">
               {/* Left: Results display */}
               <div className="text-[12px] text-foreground-muted">
                 Showing {startIndex + 1} to {Math.min(endIndex, filteredItems.length)} of {filteredItems.length} results
