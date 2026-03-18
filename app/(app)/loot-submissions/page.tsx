@@ -139,6 +139,7 @@ export default function MasterLootPage() {
   const [submissionDiff, setSubmissionDiff] = useState<DiffEntry[]>([])
   const [loadingDiff, setLoadingDiff] = useState(false)
   const [removingItemId, setRemovingItemId] = useState<string | null>(null)
+  const [revertingChanges, setRevertingChanges] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [isMobile, setIsMobile] = useState(false)
 
@@ -406,6 +407,33 @@ export default function MasterLootPage() {
     } catch (error: any) {
       showNotification('error', error.message || 'Couldn\'t update submission. Try again.')
       setReviewing(null)
+    }
+  }
+
+  const handleRevertChanges = async (submissionId: string) => {
+    setRevertingChanges(true)
+    try {
+      const response = await fetch('/api/loot-submissions/revert', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ submission_id: submissionId })
+      })
+
+      if (!response.ok) {
+        const data = await response.json()
+        throw new Error(data.error || 'Couldn\'t revert changes')
+      }
+
+      showNotification('success', 'Changes rejected. List reverted to previously approved state.')
+      notifySubmissionChanged()
+
+      if (guildId && activePhase !== null && activeGuild?.active_expansion_id) {
+        await loadSubmissions(guildId, activePhase, activeGuild.active_expansion_id)
+      }
+    } catch (error: any) {
+      showNotification('error', error.message || 'Couldn\'t revert changes. Try again.')
+    } finally {
+      setRevertingChanges(false)
     }
   }
 
@@ -851,11 +879,14 @@ export default function MasterLootPage() {
                       </span>
                     )}
                     <StatusBadge status={submission.status as SubmissionStatus} />
+                    {submission.resubmission_count > 0 && submission.status === 'pending' && (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-warning/15 text-warning border border-warning/30">
+                        <HugeiconsIcon icon={AlertCircleIcon} size={12} />
+                        Resubmitted {submission.resubmission_count}x
+                      </span>
+                    )}
                     <span className="text-muted-foreground text-[13px]">
                       {submission.item_count} items • Submitted {submission.submitted_at ? new Date(submission.submitted_at).toLocaleDateString('en-US', { month: 'numeric', day: 'numeric', year: 'numeric' }) : 'N/A'}
-                      {submission.resubmission_count > 0 && (
-                        <> • Resubmitted {submission.resubmission_count}x</>
-                      )}
                     </span>
                   </div>
                   <div className="flex gap-2 flex-shrink-0 flex-wrap sm:flex-nowrap">
@@ -873,6 +904,21 @@ export default function MasterLootPage() {
                         >
                           Approve
                         </Button>
+                        {submission.resubmission_count > 0 && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleRevertChanges(submission.id)
+                            }}
+                            disabled={revertingChanges}
+                            loading={revertingChanges}
+                            title="Reject changes and revert to previously approved list"
+                          >
+                            Reject changes
+                          </Button>
+                        )}
                         <Button
                           variant="destructive"
                           size="sm"
@@ -1193,6 +1239,19 @@ export default function MasterLootPage() {
               >
                 Reject
               </Button>
+              {viewedSubmission?.resubmission_count > 0 && (
+                <Button
+                  variant="outline"
+                  onClick={async () => {
+                    await handleRevertChanges(viewingSubmission!)
+                    setViewingSubmission(null)
+                  }}
+                  disabled={revertingChanges}
+                  loading={revertingChanges}
+                >
+                  Reject changes
+                </Button>
+              )}
               <Button
                 variant="success"
                 onClick={async () => {
