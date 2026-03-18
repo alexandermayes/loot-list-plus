@@ -902,7 +902,7 @@ export default function MasterLootPage() {
                           disabled={reviewing === submission.id}
                           loading={reviewing === submission.id}
                         >
-                          Approve
+                          {submission.resubmission_count > 0 ? 'Approve changes' : 'Approve'}
                         </Button>
                         <Button
                           variant="destructive"
@@ -918,7 +918,7 @@ export default function MasterLootPage() {
                           disabled={reviewing === submission.id || revertingChanges}
                           loading={revertingChanges}
                         >
-                          Reject
+                          {submission.resubmission_count > 0 ? 'Reject changes' : 'Reject'}
                         </Button>
                       </>
                     )}
@@ -1233,7 +1233,7 @@ export default function MasterLootPage() {
                 disabled={reviewing === viewingSubmission || revertingChanges}
                 loading={revertingChanges}
               >
-                Reject
+                {viewedSubmission?.resubmission_count > 0 ? 'Reject changes' : 'Reject'}
               </Button>
               <Button
                 variant="success"
@@ -1245,7 +1245,7 @@ export default function MasterLootPage() {
                 disabled={reviewing === viewingSubmission}
                 loading={reviewing === viewingSubmission}
               >
-                Approve
+                {viewedSubmission?.resubmission_count > 0 ? 'Approve changes' : 'Approve'}
               </Button>
             </div>
           </div>
