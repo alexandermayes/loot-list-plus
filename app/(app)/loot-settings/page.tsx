@@ -127,7 +127,11 @@ export default function AdminLootItems() {
 
   const goToPage = useCallback((page: number | ((prev: number) => number)) => {
     setCurrentPage(page)
-    window.scrollTo({ top: 0 })
+    requestAnimationFrame(() => {
+      window.scrollTo({ top: 0 })
+      document.documentElement.scrollTop = 0
+      document.body.scrollTop = 0
+    })
   }, [])
   // Track specs for each item: { itemId: { primary: Set<specId>, secondary: Set<specId> } }
   const [itemSpecs, setItemSpecs] = useState<Record<string, { primary: Set<string>, secondary: Set<string> }>>({})
