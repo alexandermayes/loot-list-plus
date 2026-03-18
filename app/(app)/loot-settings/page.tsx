@@ -1534,7 +1534,7 @@ export default function AdminLootItems() {
 
         {/* Items Table */}
         <div className="bg-background-elevated border border-border rounded-xl overflow-hidden">
-          <div ref={tableContainerRef} className="-mx-4 sm:mx-0 overflow-x-auto max-h-[calc(100vh-300px)] overflow-y-auto">
+          <div ref={tableContainerRef} className="-mx-4 sm:mx-0 overflow-x-auto max-h-[calc(100vh-200px)] overflow-y-auto">
             <table className="w-full table-fixed" style={{ minWidth: '1100px' }}>
               <colgroup>
                 <col className="w-[44px]" />
