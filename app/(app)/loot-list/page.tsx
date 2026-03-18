@@ -718,8 +718,6 @@ export default function LootList() {
       variant: 'danger',
       onConfirm: () => {
         clearAllRankings()
-        // Brief delay to let auto-save trigger, then refresh
-        setTimeout(() => window.location.reload(), 500)
       }
     })
   }, [confirm, clearAllRankings])

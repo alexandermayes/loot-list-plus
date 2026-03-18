@@ -1,7 +1,7 @@
 'use client'
 
 import { createClient } from '@/utils/supabase/client'
-import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import ItemLink from '@/app/components/ItemLink'
 import { useGuildContext } from '@/app/contexts/GuildContext'
@@ -100,6 +100,7 @@ export default function AdminLootItems() {
   const [searchTerm, setSearchTerm] = useState('')
   const [filterTier, setFilterTier] = useState<string>('all')
   const [raidTiers, setRaidTiers] = useState<any[]>([])
+  const tableContainerRef = useRef<HTMLDivElement>(null)
   // Track specs for each item: { itemId: { primary: Set<specId>, secondary: Set<specId> } }
   const [itemSpecs, setItemSpecs] = useState<Record<string, { primary: Set<string>, secondary: Set<string> }>>({})
 
@@ -416,6 +417,11 @@ export default function AdminLootItems() {
     return matchesSearch && matchesTier
   }), [lootItems, searchTerm, filterTier])
 
+  // Scroll table to top when filters change
+  useEffect(() => {
+    tableContainerRef.current?.scrollTo(0, 0)
+  }, [searchTerm, filterTier])
+
   // Memoized stats to prevent multiple filter iterations
   const itemStats = useMemo(() => ({
     total: filteredItems.length,
@@ -494,7 +500,7 @@ export default function AdminLootItems() {
 
         {/* Items Table */}
         <div className="bg-background-elevated border border-border rounded-xl overflow-hidden">
-          <div className="-mx-4 sm:mx-0 overflow-x-auto max-h-[calc(100vh-456px)] sm:max-h-[calc(100vh-400px)]">
+          <div ref={tableContainerRef} className="-mx-4 sm:mx-0 overflow-x-auto max-h-[calc(100vh-456px)] sm:max-h-[calc(100vh-400px)]">
             <table className="w-full min-w-[900px]">
               <thead className="sticky top-0 z-10">
                 <tr className="bg-muted border-b border-border">
