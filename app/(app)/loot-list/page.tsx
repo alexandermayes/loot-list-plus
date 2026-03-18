@@ -768,6 +768,22 @@ export default function LootList() {
 
   const rankedCount = Object.keys(rankings).length
 
+  // Count ranks that have Item #1 but no Item #2
+  const emptySlot2Count = useMemo(() => {
+    const ranksWithSlot1 = new Set<string>()
+    const ranksWithSlot2 = new Set<string>()
+    for (const key of Object.keys(rankings)) {
+      const [rank, slot] = key.split('-')
+      if (slot === '1') ranksWithSlot1.add(rank)
+      if (slot === '2') ranksWithSlot2.add(rank)
+    }
+    let count = 0
+    for (const rank of ranksWithSlot1) {
+      if (!ranksWithSlot2.has(rank)) count++
+    }
+    return count
+  }, [rankings])
+
   // Create bracket-specific disabled sets for tokens
   // Tokens can be selected once per bracket section (Brackets 1-4, No Bracket, Off-spec)
   // Non-tokens are disabled everywhere once selected
@@ -1405,7 +1421,20 @@ export default function LootList() {
                         </Button>
                       ) : (
                         <Button
-                          onClick={() => saveSubmission(true)}
+                          onClick={() => {
+                            if (emptySlot2Count > 0) {
+                              confirm({
+                                title: 'Missing Item #2 selections',
+                                description: `${emptySlot2Count} rank${emptySlot2Count === 1 ? ' has' : 's have'} an empty Item #2 column. Filling both columns gives you a backup option if your first choice is taken. Submit anyway?`,
+                                confirmLabel: 'Submit anyway',
+                                cancelLabel: 'Keep editing',
+                                variant: 'default',
+                                onConfirm: () => saveSubmission(true),
+                              })
+                              return
+                            }
+                            saveSubmission(true)
+                          }}
                           disabled={
                             rankedCount === 0 ||
                             duplicateItems.length > 0 ||
