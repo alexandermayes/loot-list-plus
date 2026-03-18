@@ -19,8 +19,8 @@ export function InfoTooltip({ content, className, iconSize = 14 }: InfoTooltipPr
     if (!iconRef.current) return
     const rect = iconRef.current.getBoundingClientRect()
     setPosition({
-      top: rect.top + window.scrollY,
-      left: rect.left + rect.width / 2 + window.scrollX,
+      top: rect.top,
+      left: rect.left + rect.width / 2,
     })
     setVisible(true)
   }, [])
