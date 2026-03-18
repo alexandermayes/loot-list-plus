@@ -14,6 +14,41 @@ export interface UpdateEntry {
 
 export const updates: UpdateEntry[] = [
   {
+    date: 'March 18, 2026',
+    items: [
+      {
+        category: 'feature',
+        title: 'Resubmission review for officers',
+        description: 'When a raider resubmits their loot list, officers now see "Approve changes" and "Reject changes" buttons. Rejecting reverts the list to its previously approved state.',
+      },
+      {
+        category: 'feature',
+        title: 'New help articles',
+        description: 'Added FAQs for how to record loot awards (Gargul or manual import) and how to create loot lists for new phases.',
+      },
+      {
+        category: 'fix',
+        title: 'Cleared loot list reappearing',
+        description: 'Fixed a bug where clearing all rankings from a loot list (especially after a WowSims import) would repopulate the deleted list on refresh.',
+      },
+      {
+        category: 'fix',
+        title: 'Tooltip positioning',
+        description: 'Info tooltips no longer appear offset from their icon when the page or table is scrolled.',
+      },
+      {
+        category: 'improvement',
+        title: 'Loot management pagination',
+        description: 'The item list now scrolls to the top when changing pages, and the pagination bar takes up less space.',
+      },
+      {
+        category: 'fix',
+        title: 'Guild creation and permissions',
+        description: 'Fixed guild creation failing when Discord auto-verification was missing, and fixed officer permissions when the membership record was out of sync.',
+      },
+    ],
+  },
+  {
     date: 'March 15, 2026',
     items: [
       {
