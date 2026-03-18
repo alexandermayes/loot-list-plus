@@ -1,7 +1,7 @@
 'use client'
 
 import { createClient } from '@/utils/supabase/client'
-import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import ItemLink from '@/app/components/ItemLink'
@@ -125,12 +125,11 @@ export default function AdminLootItems() {
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage, setItemsPerPage] = useState(100)
 
+  const tableContainerRef = useRef<HTMLDivElement>(null)
   const goToPage = useCallback((page: number | ((prev: number) => number)) => {
     setCurrentPage(page)
     requestAnimationFrame(() => {
-      window.scrollTo({ top: 0 })
-      document.documentElement.scrollTop = 0
-      document.body.scrollTop = 0
+      tableContainerRef.current?.scrollTo(0, 0)
     })
   }, [])
   // Track specs for each item: { itemId: { primary: Set<specId>, secondary: Set<specId> } }
@@ -1535,7 +1534,7 @@ export default function AdminLootItems() {
 
         {/* Items Table */}
         <div className="bg-background-elevated border border-border rounded-xl overflow-hidden">
-          <div className="-mx-4 sm:mx-0 overflow-x-auto max-h-[calc(100vh-300px)] overflow-y-auto">
+          <div ref={tableContainerRef} className="-mx-4 sm:mx-0 overflow-x-auto max-h-[calc(100vh-300px)] overflow-y-auto">
             <table className="w-full table-fixed" style={{ minWidth: '1100px' }}>
               <colgroup>
                 <col className="w-[44px]" />
