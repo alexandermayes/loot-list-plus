@@ -880,8 +880,8 @@ export default function MasterLootPage() {
                     )}
                     <StatusBadge status={submission.status as SubmissionStatus} />
                     {submission.resubmission_count > 0 && submission.status === 'pending' && (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-warning/15 text-warning border border-warning/30">
-                        <HugeiconsIcon icon={AlertCircleIcon} size={12} />
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-warning/15 text-warning border border-warning/30">
+                        <HugeiconsIcon icon={AlertCircleIcon} size={11} />
                         Resubmitted {submission.resubmission_count}x
                       </span>
                     )}
@@ -904,29 +904,19 @@ export default function MasterLootPage() {
                         >
                           Approve
                         </Button>
-                        {submission.resubmission_count > 0 && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              handleRevertChanges(submission.id)
-                            }}
-                            disabled={revertingChanges}
-                            loading={revertingChanges}
-                            title="Reject changes and revert to previously approved list"
-                          >
-                            Reject changes
-                          </Button>
-                        )}
                         <Button
                           variant="destructive"
                           size="sm"
                           onClick={(e) => {
                             e.stopPropagation()
-                            handleReview(submission.id, 'rejected')
+                            if (submission.resubmission_count > 0) {
+                              handleRevertChanges(submission.id)
+                            } else {
+                              handleReview(submission.id, 'rejected')
+                            }
                           }}
-                          disabled={reviewing === submission.id}
+                          disabled={reviewing === submission.id || revertingChanges}
+                          loading={revertingChanges}
                         >
                           Reject
                         </Button>
@@ -1231,27 +1221,20 @@ export default function MasterLootPage() {
               <Button
                 variant="destructive"
                 onClick={async () => {
-                  await handleReview(viewingSubmission!, 'rejected')
-                  setViewingSubmission(null)
-                  setReviewNotes('')
+                  if (viewedSubmission?.resubmission_count > 0) {
+                    await handleRevertChanges(viewingSubmission!)
+                    setViewingSubmission(null)
+                  } else {
+                    await handleReview(viewingSubmission!, 'rejected')
+                    setViewingSubmission(null)
+                    setReviewNotes('')
+                  }
                 }}
-                disabled={reviewing === viewingSubmission}
+                disabled={reviewing === viewingSubmission || revertingChanges}
+                loading={revertingChanges}
               >
                 Reject
               </Button>
-              {viewedSubmission?.resubmission_count > 0 && (
-                <Button
-                  variant="outline"
-                  onClick={async () => {
-                    await handleRevertChanges(viewingSubmission!)
-                    setViewingSubmission(null)
-                  }}
-                  disabled={revertingChanges}
-                  loading={revertingChanges}
-                >
-                  Reject changes
-                </Button>
-              )}
               <Button
                 variant="success"
                 onClick={async () => {
