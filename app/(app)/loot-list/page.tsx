@@ -1425,7 +1425,7 @@ export default function LootList() {
                             if (emptySlot2Count > 0) {
                               confirm({
                                 title: 'Missing Item #2 selections',
-                                description: `${emptySlot2Count} rank${emptySlot2Count === 1 ? ' has' : 's have'} an empty Item #2 column. Filling both columns gives you a backup option if your first choice is taken. Submit anyway?`,
+                                description: `${emptySlot2Count} rank${emptySlot2Count === 1 ? ' has' : 's have'} an empty Item #2 column. Officers may send this back for completion.`,
                                 confirmLabel: 'Submit anyway',
                                 cancelLabel: 'Keep editing',
                                 variant: 'default',
