@@ -780,6 +780,77 @@ All Loot Scores are visible on the Master Sheet. Every player can see exactly wh
 If an item drops and nobody ranked it, it goes to free roll. /roll determines the winner, same as any other unlisted loot.
         `,
       },
+      {
+        slug: 'how-to-record-loot',
+        title: 'How do I award loot on the website?',
+        description: 'How loot distribution is recorded in LootList+',
+        content: `
+# How do I award loot on the website?
+
+Loot isn't awarded manually on the website. Instead, you **import loot data** into the Raid Tracking page after your raid.
+
+## Using Gargul (recommended)
+
+1. Use the [Gargul](https://www.curseforge.com/wow/addons/gargul) addon during your raid to handle loot distribution
+2. After the raid, export your loot history from Gargul
+3. Go to **Raid Tracking** in LootList+
+4. Paste the export into the loot import field
+
+Gargul tracks who received what automatically, so you don't have to remember anything after the raid.
+
+## Manual import
+
+If Gargul isn't an option, you can paste loot data manually using this format:
+
+\`\`\`
+DD/MM/YYYY;[itemId];CharacterName
+\`\`\`
+
+For example:
+\`\`\`
+15/03/2026;[29764];Memer
+15/03/2026;[29753];Jrocbaby
+15/03/2026;[28783];Bpie
+\`\`\`
+
+Find item IDs on [Wowhead](https://www.wowhead.com) (the number in the item's URL).
+
+## Why not manual awarding?
+
+Importing from your raid keeps records accurate and saves time. Instead of going back and forth between the game and the website, you handle all loot in one paste after the raid is done.
+        `,
+      },
+      {
+        slug: 'how-to-create-list-for-new-phase',
+        title: 'How do I make a Loot List for a new phase?',
+        description: 'How to enable new raid tiers and create lists for Phase 2 and beyond',
+        content: `
+# How do I make a Loot List for a new phase?
+
+If you only see Phase 1 items on your Loot List, your guild needs to **enable the raid tier** for the new phase first.
+
+## For officers
+
+1. Click the **gear icon** next to your guild name in the sidebar to open Guild Settings
+2. Find your expansion (e.g., Burning Crusade)
+3. Click the raid tier you want to enable (e.g., SSC / TK for Phase 2)
+4. Toggle **Loot** on to include those items in Loot Lists
+
+Once the tier is enabled, all raiders can see and rank items from that phase.
+
+## For raiders
+
+If you don't see items from a new phase, ask your officers to enable the raid tier in Guild Settings. You can't enable tiers yourself.
+
+Once the tier is active:
+
+1. Go to **Loot List** in the sidebar
+2. Select the new phase from the phase selector
+3. Rank items and submit for review
+
+You can have separate Loot Lists for each phase. Your Phase 1 list stays active while you work on Phase 2.
+        `,
+      },
     ],
   },
 ]
