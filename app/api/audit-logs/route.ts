@@ -72,7 +72,7 @@ export async function GET(request: NextRequest) {
     const userIds = [...new Set((logs || []).map(l => l.user_id).filter(Boolean))]
     const displayNames = userIds.length > 0
       ? await batchGetDisplayNames(serviceSupabase, userIds)
-      : {}
+      : new Map<string, string>()
 
     let enrichedLogs = (logs || []).map(log => ({
       ...log,

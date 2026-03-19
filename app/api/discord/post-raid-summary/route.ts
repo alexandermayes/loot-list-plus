@@ -6,6 +6,7 @@ import { trackApiError } from '@/utils/analytics/server'
 import { discordFetch } from '@/lib/discord'
 import { fetchWclReportForDate, getWclReportUrl } from '@/lib/warcraftlogs'
 import { parseDate } from '@/utils/date'
+import { resolveStatus } from '@/domain/scoring'
 
 const EMBED_FIELD_LIMIT = 1024
 
@@ -171,28 +172,26 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Categorize attendance
+    // Categorize attendance using engine's resolveStatus (single source of truth)
     const attended: string[] = []
     const late: string[] = []
     const benched: string[] = []
     const noShow: string[] = []
     const signedUp: string[] = []
+    const excused: string[] = []
 
     if (attendance) {
       for (const record of attendance) {
         const name = (record.character_id && charNameMap.get(record.character_id)) || record.character_name || 'Unknown'
-        if (record.no_call_no_show) {
-          noShow.push(name)
-        } else if (record.was_benched) {
-          benched.push(name)
-        } else if (record.attended) {
-          if (record.was_late) {
-            late.push(name)
-          } else {
-            attended.push(name)
-          }
-        } else if (record.signed_up) {
-          signedUp.push(name)
+        const status = resolveStatus(record)
+        switch (status) {
+          case 'attended': attended.push(name); break
+          case 'late': late.push(name); break
+          case 'benched': benched.push(name); break
+          case 'no_show': noShow.push(name); break
+          case 'excused': excused.push(name); break
+          case 'signed_up': signedUp.push(name); break
+          // 'absent' — no action (not in any list)
         }
       }
     }
@@ -242,6 +241,15 @@ export async function POST(request: NextRequest) {
       fields.push({
         name: `No-show (${noShow.length})`,
         value: truncateField(noShow, ', ', '\n... and {n} more'),
+        inline: false,
+      })
+    }
+
+    // Excused section
+    if (excused.length > 0) {
+      fields.push({
+        name: `Excused (${excused.length})`,
+        value: truncateField(excused, ', ', '\n... and {n} more'),
         inline: false,
       })
     }

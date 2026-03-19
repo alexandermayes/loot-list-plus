@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button'
 import { AttendanceStatsSkeleton, TableSkeleton } from '@/components/ui/skeletons'
 import { ErrorState } from '@/components/ui/error-state'
 import { Heading } from '@/components/ui/typography'
-import { computeAttendance, getRankModifier } from '@/domain/scoring'
+import { computeAttendance, getRankModifier, resolveStatus } from '@/domain/scoring'
 import { useNotification } from '@/app/contexts/NotificationContext'
 import { useGuildContext } from '@/app/contexts/GuildContext'
 import { getWclReportUrl } from '@/lib/warcraftlogs'
@@ -711,12 +711,12 @@ export default function AttendancePage() {
 
   const getAttendanceState = (status: AttendanceStatus | undefined): string => {
     if (!status) return 'empty'
-    if (status.no_call_no_show) return 'no-show'
-    if (status.was_benched) return 'benched'
-    if (status.was_late) return 'late'
-    if (status.attended) return 'attended'
-    if (status.signed_up) return 'signed-up'
-    return 'empty'
+    const resolved = resolveStatus(status)
+    // Map domain status names to display names used by getCellStyle/getCellLabel
+    if (resolved === 'signed_up') return 'signed-up'
+    if (resolved === 'no_show') return 'no-show'
+    if (resolved === 'absent') return 'empty'
+    return resolved // attended, late, benched, excused pass through
   }
 
   const getCellStyle = (state: string): string => {
@@ -726,6 +726,7 @@ export default function AttendancePage() {
       case 'benched': return 'bg-accent/30 text-accent'
       case 'signed-up': return 'bg-accent/30 text-accent'
       case 'no-show': return 'bg-destructive/30 text-destructive'
+      case 'excused': return 'bg-muted text-muted-foreground'
       default: return 'bg-muted text-foreground-muted'
     }
   }
@@ -737,6 +738,7 @@ export default function AttendancePage() {
       case 'benched': return 'B'
       case 'signed-up': return 'S'
       case 'no-show': return 'X'
+      case 'excused': return 'E'
       default: return '-'
     }
   }
