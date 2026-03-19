@@ -76,7 +76,7 @@ export async function GET(request: NextRequest) {
 
     let enrichedLogs = (logs || []).map(log => ({
       ...log,
-      user_display_name: (displayNames as Record<string, string>)[log.user_id] || 'Unknown',
+      user_display_name: displayNames.get(log.user_id) || 'Unknown',
     }))
 
     // Apply text search filter post-query
