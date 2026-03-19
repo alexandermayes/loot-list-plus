@@ -106,31 +106,12 @@ export async function POST(request: NextRequest) {
       }, { status: 422 })
     }
 
-    // Snapshot previous items before promoting (only if resubmitting)
+    // Increment resubmission count if this is a resubmission
     if (submission.submitted_at) {
       const currentCount = submission.resubmission_count ?? 0
-
-      if (submissionItems && submissionItems.length > 0) {
-        const snapshotItems = submissionItems.map((item: any) => ({
-          rank: item.rank,
-          slot: item.slot,
-          loot_item_id: item.loot_item_id,
-          item_name: item.loot_item?.name || 'Unknown',
-        }))
-
-        await serviceSupabase
-          .from('loot_submission_snapshots')
-          .insert({
-            submission_id,
-            version: currentCount,
-            items: snapshotItems,
-          })
-      }
-
-      // Increment resubmission count
       await serviceSupabase
         .from('loot_submissions')
-        .update({ resubmission_count: (currentCount) + 1 })
+        .update({ resubmission_count: currentCount + 1 })
         .eq('id', submission_id)
     }
 

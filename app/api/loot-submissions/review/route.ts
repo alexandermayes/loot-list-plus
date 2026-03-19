@@ -51,6 +51,40 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Can only review pending submissions' }, { status: 400 })
     }
 
+    // When approving, snapshot the current items so we can diff against
+    // them if the raider resubmits later
+    if (status === 'approved') {
+      const { data: currentItems } = await serviceSupabase
+        .from('loot_submission_items')
+        .select('rank, slot, loot_item_id, loot_item:loot_items(name)')
+        .eq('submission_id', submission_id)
+        .is('removed_at', null)
+
+      if (currentItems && currentItems.length > 0) {
+        const snapshotItems = currentItems.map((item: any) => ({
+          rank: item.rank,
+          slot: item.slot,
+          loot_item_id: item.loot_item_id,
+          item_name: item.loot_item?.name || 'Unknown',
+        }))
+
+        // Delete old snapshots and insert the new approved state
+        // We only need the latest approved snapshot for diff comparison
+        await serviceSupabase
+          .from('loot_submission_snapshots')
+          .delete()
+          .eq('submission_id', submission_id)
+
+        await serviceSupabase
+          .from('loot_submission_snapshots')
+          .insert({
+            submission_id,
+            version: 0,
+            items: snapshotItems,
+          })
+      }
+    }
+
     // Update the submission
     const { data, error: updateError } = await serviceSupabase
       .from('loot_submissions')
