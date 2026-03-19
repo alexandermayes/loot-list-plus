@@ -79,13 +79,14 @@ export default function SearchableItemSelect({
 
   const selectedItem = useMemo(() => items.find(i => i.id === value), [items, value])
 
-  // Filter items by search (memoized to prevent re-filtering on every render)
-  const filteredItems = useMemo(() =>
-    items.filter(item =>
-      item.name.toLowerCase().includes(search.toLowerCase())
-    ),
-    [items, search]
-  )
+  // Filter items by search — matches item name or boss name
+  const filteredItems = useMemo(() => {
+    const q = search.toLowerCase()
+    return items.filter(item =>
+      item.name.toLowerCase().includes(q) ||
+      item.boss_name?.toLowerCase().includes(q)
+    )
+  }, [items, search])
 
   // Group items by boss and sort by Classic WoW encounter order (memoized)
   // Normalize boss names to merge multi-boss encounters (e.g., Opera Event)
