@@ -46,7 +46,7 @@ export async function GET(request: NextRequest) {
       .from('raid_tiers')
       .select('id, name, is_active, is_guild_active, submission_deadline, phase')
       .eq('expansion_id', expansionId)
-      .or('is_guild_active.eq.true,is_guild_active.is.null')
+      .eq('is_guild_active', true)
 
     // Filter by current_phase (linear unlock: show phases <= current)
     if (!includeAllPhases) {

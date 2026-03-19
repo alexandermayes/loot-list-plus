@@ -99,13 +99,12 @@ export async function GET(request: NextRequest) {
       }
 
       // Get all active tiers matching the phase(s)
-      // Note: is_guild_active can be null (treated as true/enabled by default) or explicitly true/false
       const { data: phaseTiers, error: phaseTiersError } = await supabase
         .from('raid_tiers')
         .select('id')
         .eq('expansion_id', expansionId)
         .in('phase', phaseValues)
-        .or('is_guild_active.eq.true,is_guild_active.is.null')
+        .eq('is_guild_active', true)
 
       if (phaseTiersError) {
         console.error('Error fetching phase tiers:', phaseTiersError)

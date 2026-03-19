@@ -511,6 +511,7 @@ export function usePrioList(guildId: string | null, options?: SWRConfiguration) 
     fetcher,
     {
       ...swrConfig,
+      revalidateOnFocus: true,
       refreshInterval: 30000,
       ...options,
     }

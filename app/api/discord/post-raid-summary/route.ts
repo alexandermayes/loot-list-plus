@@ -152,7 +152,7 @@ export async function POST(request: NextRequest) {
         .select('name')
         .eq('expansion_id', guild.active_expansion_id)
         .eq('phase', currentPhase)
-        .or('is_guild_active.eq.true,is_guild_active.is.null')
+        .eq('is_guild_active', true)
         .order('id')
 
       if (phaseTiers && phaseTiers.length > 0) {

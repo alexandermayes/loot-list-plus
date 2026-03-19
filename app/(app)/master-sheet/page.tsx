@@ -440,7 +440,7 @@ function MasterSheetContent() {
             `)
             .eq('expansion.id', activeGuild.active_expansion_id)
             .lte('phase', currentPhase)
-            .or('is_guild_active.eq.true,is_guild_active.is.null')
+            .eq('is_guild_active', true)
 
           const { data: tiersData } = await tiersQuery
 

@@ -82,7 +82,7 @@ export async function POST(request: NextRequest) {
         .select('id')
         .eq('expansion_id', expansion_id)
         .eq('phase', currentPhase)
-        .or('is_guild_active.eq.true,is_guild_active.is.null')
+        .eq('is_guild_active', true)
         .limit(1)
         .maybeSingle()
 
@@ -105,7 +105,7 @@ export async function POST(request: NextRequest) {
           .from('raid_tiers')
           .select('id')
           .eq('expansion_id', expansion_id)
-          .or('is_guild_active.eq.true,is_guild_active.is.null')
+          .eq('is_guild_active', true)
           .limit(1)
           .maybeSingle()
         tierId = anyTier?.id
