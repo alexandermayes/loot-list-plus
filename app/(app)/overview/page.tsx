@@ -694,7 +694,7 @@ function DashboardContent() {
           const { data: allAttendanceRecords } = raidEventIds.length > 0
             ? await supabase
                 .from('attendance_records')
-                .select('raid_event_id, signed_up, attended, no_call_no_show, was_late, was_benched, is_excused')
+                .select('raid_event_id, signed_up, attended, no_call_no_show, was_late, was_benched, is_excused, points_override')
                 .eq('character_id', characterId)
                 .in('raid_event_id', raidEventIds)
             : { data: [] }

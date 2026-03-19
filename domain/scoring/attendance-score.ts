@@ -49,6 +49,13 @@ export function calculateAttendanceScore(
 
     records.forEach(r => {
       if (r.no_call_no_show || r.is_excused) return // Both skip the per-raid loop
+
+      // Officer override: use exact points value instead of computed
+      if (r.points_override != null) {
+        totalScore += Math.min(r.points_override, 1.0)
+        return
+      }
+
       let raidPoints = 0
       if (r.signed_up) {
         raidPoints += signupPointsPerRaid

@@ -58,6 +58,7 @@ export interface AttendanceRecord {
   was_late?: boolean
   was_benched?: boolean
   is_excused?: boolean
+  points_override?: number | null
 }
 
 // ─── Item Priority ───────────────────────────────────────────
@@ -98,6 +99,7 @@ export interface AttendanceInput {
     was_late?: boolean
     was_benched?: boolean
     is_excused?: boolean
+    points_override?: number | null
   }[]
   /** All raid events in the period (pre-filtered by guild_id, is_skipped) */
   raidEvents: RaidEvent[]

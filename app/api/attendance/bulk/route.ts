@@ -50,10 +50,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: permError || 'Insufficient permissions' }, { status: 403 })
     }
 
+    // Stamp modified_by on all records
+    const stampedRecords = records.map((r: AttendanceRecord) => ({ ...r, modified_by: user.id }))
+
     if (action === 'upsert') {
       const { data, error } = await serviceSupabase
         .from('attendance_records')
-        .upsert(records, { onConflict: onConflict || 'raid_event_id,character_id' })
+        .upsert(stampedRecords, { onConflict: onConflict || 'raid_event_id,character_id' })
         .select()
 
       if (error) {
@@ -76,7 +79,7 @@ export async function POST(request: NextRequest) {
     } else {
       const { data, error } = await serviceSupabase
         .from('attendance_records')
-        .insert(records)
+        .insert(stampedRecords)
         .select()
 
       if (error) {
@@ -154,7 +157,7 @@ export async function PATCH(request: NextRequest) {
 
     let query = serviceSupabase
       .from('attendance_records')
-      .update(updates)
+      .update({ ...updates, modified_by: user.id })
 
     if (filters.raid_event_id) {
       query = query.eq('raid_event_id', filters.raid_event_id)

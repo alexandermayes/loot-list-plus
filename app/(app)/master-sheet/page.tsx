@@ -329,7 +329,7 @@ function MasterSheetContent() {
     // Query 4: Fetch ALL attendance records for ALL characters in ONE query
     const { data: allAttendanceRecords } = await supabase
       .from('attendance_records')
-      .select('character_id, user_id, raid_event_id, signed_up, attended, no_call_no_show, was_late, was_benched, is_excused')
+      .select('character_id, user_id, raid_event_id, signed_up, attended, no_call_no_show, was_late, was_benched, is_excused, points_override')
       .in('character_id', characterIds)
       .in('raid_event_id', raidIds)
 

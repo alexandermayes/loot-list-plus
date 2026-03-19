@@ -580,4 +580,33 @@ describe('calculateAttendanceScore (late/benched)', () => {
     const scoreWith = calculateAttendanceScore([attended(), attended(), excused()], 3, PPR_SETTINGS)
     expect(scoreWith).toBe(scoreWithout)
   })
+
+  it('points_override replaces computed points for a record', () => {
+    // 1 attended (0.75) + 1 with override (0.5) = 1.25
+    const records = [
+      attended(),
+      { ...attended(), points_override: 0.5 },
+    ]
+    const score = calculateAttendanceScore(records, 2, PPR_SETTINGS)
+    expect(score).toBe(1.25)
+  })
+
+  it('points_override of 0 gives zero credit for that raid', () => {
+    const records = [
+      attended(),
+      { ...attended(), points_override: 0 },
+    ]
+    const score = calculateAttendanceScore(records, 2, PPR_SETTINGS)
+    expect(score).toBe(0.75)
+  })
+
+  it('points_override null falls through to computed scoring', () => {
+    const records = [
+      attended(),
+      { ...attended(), points_override: null },
+    ]
+    const score = calculateAttendanceScore(records, 2, PPR_SETTINGS)
+    // Both get full computed points: 2 * 0.75 = 1.5
+    expect(score).toBe(1.5)
+  })
 })

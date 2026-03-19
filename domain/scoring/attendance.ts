@@ -169,6 +169,7 @@ export function computeAttendance(input: AttendanceInput): AttendanceResult {
       was_late: r.was_late,
       was_benched: r.was_benched,
       is_excused: r.is_excused,
+      points_override: r.points_override,
     }))
 
   const totalRaids = dedupedEvents.length
