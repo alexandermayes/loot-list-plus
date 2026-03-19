@@ -135,6 +135,23 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: permError || 'Insufficient permissions' }, { status: 403 })
     }
 
+    // Optimistic locking: if client sends expected_updated_at for the raid event,
+    // verify it hasn't been modified by another officer since the client loaded data
+    if (filters.raid_event_id && filters.expected_updated_at) {
+      const { data: raidEvent } = await serviceSupabase
+        .from('raid_events')
+        .select('updated_at')
+        .eq('id', filters.raid_event_id)
+        .single()
+
+      if (raidEvent?.updated_at && raidEvent.updated_at !== filters.expected_updated_at) {
+        return NextResponse.json({
+          error: 'Attendance was modified by another officer. Refresh and try again.',
+          code: 'CONFLICT',
+        }, { status: 409 })
+      }
+    }
+
     let query = serviceSupabase
       .from('attendance_records')
       .update(updates)
@@ -156,6 +173,14 @@ export async function PATCH(request: NextRequest) {
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 })
+    }
+
+    // Touch the raid event's updated_at so other clients detect the change
+    if (filters.raid_event_id) {
+      await serviceSupabase
+        .from('raid_events')
+        .update({ updated_at: new Date().toISOString() })
+        .eq('id', filters.raid_event_id)
     }
 
     logAudit({

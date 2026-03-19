@@ -52,9 +52,12 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (!settings?.blp_enabled) {
-      // BLP not enabled, skip silently
       return NextResponse.json({ data: { updated: 0, message: 'BLP not enabled for this guild' } })
     }
+
+    // Note: BLP double-increment is prevented by the loot_history unique constraint
+    // (issue 7). The client only calls BLP update after a successful loot_history insert.
+    // If the insert fails as duplicate (network retry), the BLP call never fires.
 
     // Find eligible characters: those who had the item ranked AND attended the raid
     const eligibleCharacters = await getEligibleCharacters(supabase, guild_id, loot_item_id, raid_event_id)

@@ -182,39 +182,23 @@ export async function PATCH(
       }
     }
 
-    // Save the phase groups
-    const { error: updateError } = await serviceSupabase
-      .from('expansions')
-      .update({ phase_groups: phaseGroups })
-      .eq('id', expansionId)
-      .eq('guild_id', guildId)
+    // Atomic save + migrate in a single transaction via RPC
+    // Prevents TOCTOU race where a submission is created between conflict check and migration
+    const { error: mergeError } = await serviceSupabase.rpc('merge_phase_groups', {
+      p_expansion_id: expansionId,
+      p_guild_id: guildId,
+      p_phase_groups: phaseGroups,
+      p_merged_groups: mergedGroups,
+    })
 
-    if (updateError) {
-      console.error('Error saving phase_groups:', updateError)
-      return NextResponse.json({ error: 'Failed to save phase groups' }, { status: 500 })
-    }
-
-    // For single-phase submissions that are now part of a merged group,
-    // migrate them to the canonical phase (min in group)
-    for (const group of mergedGroups) {
-      const canonicalPhase = Math.min(...group)
-      const otherPhases = group.filter((p: number) => p !== canonicalPhase)
-
-      if (otherPhases.length > 0) {
-        // Update any submissions on non-canonical phases to the canonical phase
-        // (safe because we already checked there are no conflicts)
-        const { error: migrateError } = await serviceSupabase
-          .from('loot_submissions')
-          .update({ phase: canonicalPhase })
-          .eq('expansion_id', expansionId)
-          .eq('guild_id', guildId)
-          .in('phase', otherPhases)
-
-        if (migrateError) {
-          console.error('Error migrating submissions:', migrateError)
-          // Non-fatal: the config is saved, submissions can be fixed manually
-        }
+    if (mergeError) {
+      console.error('Error merging phase groups:', mergeError)
+      if (mergeError.message?.includes('CONFLICT')) {
+        return NextResponse.json({
+          error: 'A new submission was created while merging. Refresh and try again.',
+        }, { status: 409 })
       }
+      return NextResponse.json({ error: 'Failed to save phase groups' }, { status: 500 })
     }
 
     return NextResponse.json({ success: true, phase_groups: phaseGroups })

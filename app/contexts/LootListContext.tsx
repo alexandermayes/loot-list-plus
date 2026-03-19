@@ -642,47 +642,20 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
       }
       submissionId = upsertedSub.id
 
-      // Delete existing active rankings (preserve soft-deleted/removed items)
-      const { error: deleteError } = await supabase
-        .from('loot_submission_items')
-        .delete()
-        .eq('submission_id', submissionId)
-        .is('removed_at', null)
-
-      if (deleteError) {
-        console.error('[doAutoSave] Failed to delete items:', deleteError)
-        throw new Error(`Couldn't delete items: ${deleteError.message}`)
-      }
-      // Insert new rankings
-      const rankingsToInsert = Object.entries(currentRankings).map(([key, loot_item_id]) => {
+      // Atomic save: DELETE + INSERT in a single transaction via RPC
+      const itemsJson = Object.entries(currentRankings).map(([key, loot_item_id]) => {
         const [rankStr, slotStr] = key.split('-')
-        return {
-          submission_id: submissionId,
-          loot_item_id,
-          rank: parseInt(rankStr),
-          slot: parseInt(slotStr)
-        }
+        return { loot_item_id, rank: parseInt(rankStr), slot: parseInt(slotStr) }
       })
 
-      if (rankingsToInsert.length > 0) {
-        const { data: upsertedItems, error: itemsError } = await supabase
-          .from('loot_submission_items')
-          .upsert(rankingsToInsert, { onConflict: 'submission_id,rank,slot', ignoreDuplicates: false })
-          .select()
+      const { error: saveError } = await supabase.rpc('save_submission_items', {
+        p_submission_id: submissionId,
+        p_items: itemsJson,
+      })
 
-        if (itemsError) {
-          console.error('[doAutoSave] Failed to upsert items:', itemsError)
-          throw new Error(itemsError.message)
-        }
-        // Verify items were actually saved
-        const { data: verifyItems } = await supabase
-          .from('loot_submission_items')
-          .select('id, submission_id, rank, slot')
-          .eq('submission_id', submissionId)
-
-        if (verifyItems && verifyItems.length !== rankingsToInsert.length) {
-          console.warn('[doAutoSave] Item count mismatch! Some items may not have been saved.')
-        }
+      if (saveError) {
+        console.error('[doAutoSave] Failed to save items:', saveError)
+        throw new Error(saveError.message)
       }
 
       // Mark this state as saved (store object copy for value comparison)
@@ -782,47 +755,20 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
       }
       submissionId = upsertedSub.id
 
-      // Delete and re-insert active rankings (preserve soft-deleted/removed items)
-      const { error: deleteError } = await supabase
-        .from('loot_submission_items')
-        .delete()
-        .eq('submission_id', submissionId)
-        .is('removed_at', null)
-
-      if (deleteError) {
-        console.error('[saveSubmission] Failed to delete items:', deleteError)
-        throw new Error(`Couldn't delete items: ${deleteError.message}`)
-      }
-
-      const rankingsToInsert = Object.entries(rankings).map(([key, loot_item_id]) => {
+      // Atomic save: DELETE + INSERT in a single transaction via RPC
+      const itemsJson = Object.entries(rankings).map(([key, loot_item_id]) => {
         const [rankStr, slotStr] = key.split('-')
-        return {
-          submission_id: submissionId,
-          loot_item_id,
-          rank: parseInt(rankStr),
-          slot: parseInt(slotStr)
-        }
+        return { loot_item_id, rank: parseInt(rankStr), slot: parseInt(slotStr) }
       })
 
-      if (rankingsToInsert.length > 0) {
-        const { data: insertedItems, error: itemsError } = await supabase
-          .from('loot_submission_items')
-          .insert(rankingsToInsert)
-          .select()
+      const { error: saveError } = await supabase.rpc('save_submission_items', {
+        p_submission_id: submissionId,
+        p_items: itemsJson,
+      })
 
-        if (itemsError) {
-          console.error('[saveSubmission] Failed to insert items:', itemsError)
-          throw itemsError
-        }
-        // Verify items were actually saved by querying them back
-        const { data: verifyItems } = await supabase
-          .from('loot_submission_items')
-          .select('id, submission_id, rank, slot, loot_item_id')
-          .eq('submission_id', submissionId)
-
-        if (verifyItems && verifyItems.length !== rankingsToInsert.length) {
-          console.warn('[saveSubmission] Item count mismatch! Some items may not have been saved.')
-        }
+      if (saveError) {
+        console.error('[saveSubmission] Failed to save items:', saveError)
+        throw new Error(saveError.message)
       }
 
       // If submitting, call the server-side validation + promotion API

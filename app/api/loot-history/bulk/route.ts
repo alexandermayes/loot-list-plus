@@ -35,6 +35,18 @@ export async function POST(request: NextRequest) {
 
     const results: { index: number; success: boolean; error?: string; id?: string }[] = []
 
+    // Look up expansion_id from raid_tier_id (first item's tier)
+    let expansionId: string | null = null
+    const firstTierId = items[0]?.raid_tier_id
+    if (firstTierId) {
+      const { data: tier } = await serviceSupabase
+        .from('raid_tiers')
+        .select('expansion_id')
+        .eq('id', firstTierId)
+        .single()
+      expansionId = tier?.expansion_id || null
+    }
+
     for (let i = 0; i < items.length; i++) {
       const item = items[i]
       const insertData: Record<string, unknown> = {
@@ -45,6 +57,7 @@ export async function POST(request: NextRequest) {
         awarded_date: item.awarded_date,
         awarded_by: user.id,
         notes: item.notes || null,
+        expansion_id: expansionId,
       }
 
       if (item.character_id) insertData.character_id = item.character_id
