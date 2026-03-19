@@ -26,7 +26,7 @@ import { parseDate, toDateString } from '@/utils/date'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
-import { DashboardContentSkeleton } from '@/components/ui/skeletons'
+import { DashboardContentSkeleton, DashboardDataSkeleton } from '@/components/ui/skeletons'
 import { ScrollIcon, StarIcon } from '@hugeicons/core-free-icons'
 import { StatusBadge, type SubmissionStatus } from '@/components/ui/status-badge'
 import { Heading } from '@/components/ui/typography'
@@ -482,19 +482,6 @@ function DashboardContent() {
         class: activeCharacter.class
       }
 
-      // Get submissions for CURRENT CHARACTER ONLY for current expansion
-      const { data: submissions, error: submissionsError } = await supabase
-        .from('loot_submissions')
-        .select('id, character_id, guild_id, raid_tier_id, expansion_id, phase, status, updated_at')
-        .eq('character_id', activeCharacter.id)
-        .eq('guild_id', guildId)
-        .eq('expansion_id', expansionId)
-        .order('updated_at', { ascending: false })
-
-      if (submissionsError) {
-        console.error('Error loading submissions:', submissionsError)
-      }
-
       // Build a phase-to-tier-names map for display labels
       const phaseTierNames: Record<number, string[]> = {}
       for (const tier of currentExpansionTiers) {
@@ -504,7 +491,28 @@ function DashboardContent() {
         }
       }
 
-      // Transform submissions for current character
+      // Fire all three independent data fetches in parallel:
+      // 1. Submissions (for stats/actions), 2. Loot priority, 3. Received items
+      const submissionsPromise = supabase
+        .from('loot_submissions')
+        .select('id, character_id, guild_id, raid_tier_id, expansion_id, phase, status, updated_at')
+        .eq('character_id', activeCharacter.id)
+        .eq('guild_id', guildId)
+        .eq('expansion_id', expansionId)
+        .order('updated_at', { ascending: false })
+
+      const [submissionsResult] = await Promise.all([
+        submissionsPromise,
+        loadLootPriority([activeCharacter.id]),
+        loadReceivedItems(activeCharacter.id)
+      ])
+
+      // Process submissions result (stats + actions)
+      const { data: submissions, error: submissionsError } = submissionsResult
+      if (submissionsError) {
+        console.error('Error loading submissions:', submissionsError)
+      }
+
       type SubmissionRow = { id: string; character_id: string; raid_tier_id: string | null; expansion_id: string | null; phase: number | null; status: string; updated_at: string }
       const transformedSubmissions: LootSubmission[] = (submissions || []).map((sub: SubmissionRow) => {
         const phaseLabel = sub.phase != null && phaseTierNames[sub.phase]
@@ -528,7 +536,6 @@ function DashboardContent() {
 
       setAllSubmissions(transformedSubmissions)
 
-      // Calculate stats for CURRENT CHARACTER ONLY
       const completedCount = transformedSubmissions.filter(s => s.status === 'approved').length
       const pendingCount = transformedSubmissions.filter(s => s.status === 'pending').length
       const actionsCount = transformedSubmissions.filter(s =>
@@ -541,17 +548,10 @@ function DashboardContent() {
         actionsNeeded: actionsCount
       })
 
-      // Get actions needed for current character
       const actions = transformedSubmissions.filter(s =>
         s.status === 'draft' || s.status === 'needs_revision'
       )
       setActionsNeeded(actions)
-
-      // Load loot priority and received items in parallel (performance optimization)
-      await Promise.all([
-        loadLootPriority([activeCharacter.id]),
-        loadReceivedItems(activeCharacter.id)
-      ])
 
     } catch (error) {
       console.error('Error loading dashboard data:', error)
@@ -583,7 +583,7 @@ function DashboardContent() {
       let savedDeduplicatedRaidEvents: Array<{ id: string; raid_date: string }> = []
       let savedAttendanceRecords: Array<{ raid_event_id: string; attended: boolean }> = []
 
-      // Start all independent fetches in parallel: submission items, guild settings, membership, expansion
+      // Start all independent fetches in parallel: submission items, guild settings, membership, expansion, raid events
       const submissionItemsPromise = supabase
         .from('loot_submission_items')
         .select(`
@@ -625,11 +625,28 @@ function DashboardContent() {
             .single()
         : Promise.resolve({ data: null, error: null })
 
-      // Await all independent fetches in parallel
-      const [settingsResult, membershipResult, expansionDataResult] = await Promise.all([
+      // Start raid events query eagerly with a generous 12-week window.
+      // We'll filter client-side to the actual rolling_attendance_weeks once settings arrive.
+      // This eliminates a sequential round-trip (previously waited for settings first).
+      const maxRollingWeeks = 12
+      const eagerPeriodStart = new Date()
+      eagerPeriodStart.setDate(eagerPeriodStart.getDate() - (maxRollingWeeks * 7))
+      const todayStr = toDateString(new Date())
+
+      const raidEventsPromise = supabase
+        .from('raid_events')
+        .select('id, raid_date')
+        .eq('guild_id', activeGuild.id)
+        .eq('is_skipped', false)
+        .gte('raid_date', toDateString(eagerPeriodStart))
+        .lte('raid_date', todayStr)
+
+      // Await all independent fetches in parallel (5 queries instead of 3 + 1 sequential)
+      const [settingsResult, membershipResult, expansionDataResult, raidEventsResult] = await Promise.all([
         guildSettingsPromise,
         membershipPromise,
-        expansionDataPromise
+        expansionDataPromise,
+        raidEventsPromise
       ])
 
       // Try to get guild settings and attendance (may not be set up yet)
@@ -676,21 +693,17 @@ function DashboardContent() {
           }
           savedRaidDays = raidDays
 
-          // Fetch raid events and attendance records for the engine
-          const todayStr = toDateString(new Date())
+          // Filter the eagerly-fetched raid events to the actual rolling window
           const rollingWeeks = guildSettings.rolling_attendance_weeks || 4
-          const periodStart = new Date()
-          periodStart.setDate(periodStart.getDate() - (rollingWeeks * 7))
+          const actualPeriodStart = new Date()
+          actualPeriodStart.setDate(actualPeriodStart.getDate() - (rollingWeeks * 7))
+          const actualPeriodStartStr = toDateString(actualPeriodStart)
 
-          const { data: raidEventsData } = await supabase
-            .from('raid_events')
-            .select('id, raid_date')
-            .eq('guild_id', activeGuild.id)
-            .eq('is_skipped', false)
-            .gte('raid_date', toDateString(periodStart))
-            .lte('raid_date', todayStr)
+          const raidEventsData = (raidEventsResult.data || []).filter(
+            (e: { raid_date: string }) => e.raid_date >= actualPeriodStartStr
+          )
 
-          const raidEventIds = raidEventsData?.map((r: { id: string }) => r.id) || []
+          const raidEventIds = raidEventsData.map((r: { id: string }) => r.id)
           const { data: allAttendanceRecords } = raidEventIds.length > 0
             ? await supabase
                 .from('attendance_records')
@@ -1320,21 +1333,23 @@ function DashboardContent() {
     return <WelcomeScreen />
   }
 
-  // Determine if we're in a loading state
-  const isLoading = loading || guildLoading
+  // Hero section (greeting + character card) can render as soon as guild context is ready.
+  // Dashboard data sections below the hero wait for the full data load.
+  const heroReady = !guildLoading && !!activeGuild
+  const dataLoading = loading || guildLoading
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 space-y-6 font-poppins">
       {/* Header - Always visible but stable during loading */}
       <div>
         <Heading level={1}>
-          {isLoading || greetingIndex === null || !greetingName
+          {!heroReady || greetingIndex === null || !greetingName
             ? 'Welcome back!'
             : <>{GREETINGS[greetingIndex][0]}<span style={{ color: activeCharacter?.class?.color_hex || undefined }}>{greetingName}</span>{GREETINGS[greetingIndex][1]}</>
           }
         </Heading>
         <p className="text-muted-foreground mt-1 text-base">
-          {isLoading
+          {!heroReady
             ? 'Loading your dashboard...'
             : activeCharacter
               ? `Viewing loot for ${activeCharacter.name}`
@@ -1345,15 +1360,15 @@ function DashboardContent() {
       </div>
 
       {/* Officer banner: unconverted Feral Druids in guild */}
-      {!isLoading && isOfficer && activeGuild && (
+      {heroReady && isOfficer && activeGuild && (
         <GuardianConversionBanner guildId={activeGuild.id} />
       )}
 
       {/* Setup checklist for new guilds */}
-      {!isLoading && <SetupChecklist />}
+      {heroReady && <SetupChecklist />}
 
-      {/* Show skeleton while loading */}
-      {isLoading ? (
+      {/* Show full skeleton only while guild context is loading */}
+      {guildLoading ? (
         <DashboardContentSkeleton />
       ) : (
         <>
@@ -1400,10 +1415,10 @@ function DashboardContent() {
             </div>
           )}
 
-          {/* Current Character Info Card with Stats */}
+          {/* Current Character Info Card with Stats - renders immediately from GuildContext */}
           {activeCharacter && (
             <div className="flex flex-col lg:flex-row gap-6">
-              {/* Character Info Card */}
+              {/* Character Info Card (contains LCP element: class icon) */}
               <div className="bg-background-elevated border border-border rounded-xl p-6 lg:w-1/3">
                 <div className="flex items-center gap-4">
                   {activeCharacter.class?.name ? (
@@ -1449,7 +1464,7 @@ function DashboardContent() {
                 </div>
               </div>
 
-              {/* Stats Grid */}
+              {/* Stats Grid - shows zeros while data loads, updates when ready */}
               <div className="grid grid-cols-3 lg:grid-cols-3 gap-3 sm:gap-6 lg:flex-1">
                 {/* Completed Lists */}
                 <div className="bg-background-elevated border border-border rounded-xl p-3 sm:p-6">
@@ -1492,6 +1507,12 @@ function DashboardContent() {
               </div>
             </div>
           )}
+
+          {/* Data-dependent sections: show skeleton while loading, real content when ready */}
+          {dataLoading ? (
+            activeCharacter ? <DashboardDataSkeleton /> : null
+          ) : (
+          <>
 
           {/* Insights Row */}
           {activeCharacter && (scoreBreakdown || attendanceData) && (
@@ -1880,6 +1901,9 @@ function DashboardContent() {
                 ))}
               </div>
             </div>
+          )}
+
+          </>
           )}
 
         </>

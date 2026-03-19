@@ -679,7 +679,7 @@ export default function LootList() {
   // Fade in content after loading to avoid wowhead tooltip flash
   useEffect(() => {
     if (!isLoading && !isContentLoading) {
-      const timer = setTimeout(() => setContentReady(true), 150)
+      const timer = setTimeout(() => setContentReady(true), 50)
       return () => clearTimeout(timer)
     } else {
       setContentReady(false)

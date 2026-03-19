@@ -230,6 +230,19 @@ export function DashboardContentSkeleton() {
         </div>
       </div>
 
+      <DashboardDataSkeleton />
+    </div>
+  )
+}
+
+/**
+ * Skeleton for dashboard data sections below the hero (insights + loot grids).
+ * Used when the hero/character card renders immediately from GuildContext
+ * while dashboard data is still loading.
+ */
+export function DashboardDataSkeleton() {
+  return (
+    <div className="space-y-6">
       {/* Insights Row */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {Array.from({ length: 3 }).map((_, i) => (

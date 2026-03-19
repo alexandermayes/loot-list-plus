@@ -305,43 +305,38 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
     }
   }, [guildLoading, resolvedGroups, searchParams, selectedPhase, router])
 
-  // Load guild settings for slot restrictions
+  // Load guild settings and phase deadlines in parallel
+  // These were previously separate useEffects causing sequential fetches
   useEffect(() => {
     if (!activeGuild?.id) return
 
-    const loadSettings = async () => {
-      const { data } = await supabase
+    const loadSettingsAndDeadlines = async () => {
+      const settingsPromise = supabase
         .from('guild_settings')
         .select('enforce_slot_restrictions')
         .eq('guild_id', activeGuild.id)
         .single()
-      setEnforceSlotRestrictions(data?.enforce_slot_restrictions ?? true)
-    }
-    loadSettings()
-  }, [activeGuild?.id, supabase])
 
-  // Load phase deadlines from expansion
-  useEffect(() => {
-    if (!targetExpansionId) {
-      setExpansionPhaseDeadlines({})
-      return
-    }
+      const deadlinesPromise = targetExpansionId
+        ? supabase
+            .from('expansions')
+            .select('phase_deadlines')
+            .eq('id', targetExpansionId)
+            .single()
+        : Promise.resolve({ data: null })
 
-    const loadPhaseDeadlines = async () => {
-      const { data } = await supabase
-        .from('expansions')
-        .select('phase_deadlines')
-        .eq('id', targetExpansionId)
-        .single()
+      const [settingsResult, deadlinesResult] = await Promise.all([settingsPromise, deadlinesPromise])
 
-      if (data?.phase_deadlines) {
-        setExpansionPhaseDeadlines(data.phase_deadlines as Record<string, string | null>)
+      setEnforceSlotRestrictions(settingsResult.data?.enforce_slot_restrictions ?? true)
+
+      if (deadlinesResult.data?.phase_deadlines) {
+        setExpansionPhaseDeadlines(deadlinesResult.data.phase_deadlines as Record<string, string | null>)
       } else {
         setExpansionPhaseDeadlines({})
       }
     }
-    loadPhaseDeadlines()
-  }, [targetExpansionId, supabase])
+    loadSettingsAndDeadlines()
+  }, [activeGuild?.id, targetExpansionId, supabase])
 
   // Sync rankings from submission data
   // Only overwrite local rankings on initial load or tier switch, not after our own saves

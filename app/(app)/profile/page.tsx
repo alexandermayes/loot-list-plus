@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react'
 import { trackClientEvent } from '@/utils/analytics/client'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
-import { ProfileContentSkeleton } from '@/components/ui/skeletons'
+import { Skeleton } from '@/components/ui/skeletons'
 import { useGuildContext } from '@/app/contexts/GuildContext'
 import { useNotification } from '@/app/contexts/NotificationContext'
 import {
@@ -274,49 +274,42 @@ export default function ProfilePage() {
     const loadProfile = async () => {
       if (!user) return
 
-      // Get all guild memberships from character-based system
-      const { data: userCharacters } = await supabase
-        .from('characters')
-        .select('id')
-        .eq('user_id', user.id)
+      // Single query: join through character_guild_memberships to get characters + guilds
+      // Avoids sequential characters -> memberships waterfall
+      const { data: charMemberships } = await supabase
+        .from('character_guild_memberships')
+        .select(`
+          id,
+          role,
+          joined_at,
+          character:characters!inner(id, name, is_main, user_id),
+          guild:guilds(id, name, realm, faction, created_by, icon_url)
+        `)
+        .eq('characters.user_id', user.id)
+        .eq('is_active', true)
 
       let derivedMemberships: any[] = []
 
-      if (userCharacters && userCharacters.length > 0) {
-        const characterIds = userCharacters.map((c: { id: string }) => c.id)
-        const { data: charMemberships } = await supabase
-          .from('character_guild_memberships')
-          .select(`
-            id,
-            role,
-            joined_at,
-            character:characters(id, name, is_main),
-            guild:guilds(id, name, realm, faction, created_by, icon_url)
-          `)
-          .in('character_id', characterIds)
-          .eq('is_active', true)
+      if (charMemberships && charMemberships.length > 0) {
+        // Group by guild and pick the main character for each
+        const guildMap = new Map<string, any>()
+        for (const m of charMemberships) {
+          const guild = Array.isArray(m.guild) ? m.guild[0] : m.guild
+          const char = Array.isArray(m.character) ? m.character[0] : m.character
+          if (!guild) continue
 
-        if (charMemberships && charMemberships.length > 0) {
-          // Group by guild and pick the main character for each
-          const guildMap = new Map<string, any>()
-          for (const m of charMemberships) {
-            const guild = Array.isArray(m.guild) ? m.guild[0] : m.guild
-            const char = Array.isArray(m.character) ? m.character[0] : m.character
-            if (!guild) continue
-
-            const existing = guildMap.get(guild.id)
-            if (!existing || (char?.is_main && !existing.character?.is_main)) {
-              guildMap.set(guild.id, {
-                ...m,
-                guild,
-                character: char,
-                guild_id: guild.id,
-                user_id: user.id
-              })
-            }
+          const existing = guildMap.get(guild.id)
+          if (!existing || (char?.is_main && !existing.character?.is_main)) {
+            guildMap.set(guild.id, {
+              ...m,
+              guild,
+              character: char,
+              guild_id: guild.id,
+              user_id: user.id
+            })
           }
-          derivedMemberships = Array.from(guildMap.values())
         }
+        derivedMemberships = Array.from(guildMap.values())
       }
 
       setAllGuilds(derivedMemberships)
@@ -336,15 +329,6 @@ export default function ProfilePage() {
 
     loadAll()
   }, [])
-
-  if (loading) {
-    return (
-      <div className="p-4 sm:p-6 lg:p-8 space-y-6 font-poppins">
-        {/* Header skeleton shown during load */}
-        <ProfileContentSkeleton />
-      </div>
-    )
-  }
 
   const avatarUrl = user?.user_metadata?.avatar_url
     ? (user.user_metadata.avatar_url.startsWith('http')
@@ -417,6 +401,47 @@ export default function ProfilePage() {
       </div>
 
       {/* Tab Content */}
+      {loading ? (
+        <div className="space-y-6">
+          <div className="bg-background-elevated border border-border rounded-xl overflow-hidden">
+            <div className="px-6 py-4 border-b border-border">
+              <Skeleton className="h-5 w-40" />
+              <Skeleton className="h-4 w-64 mt-2" />
+            </div>
+            <div className="p-4 sm:p-6 space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="space-y-1.5">
+                  <Skeleton className="h-4 w-40" />
+                  <Skeleton className="h-3.5 w-72" />
+                </div>
+                <Skeleton className="h-6 w-10 rounded-full" />
+              </div>
+              <div className="flex items-center justify-between">
+                <div className="space-y-1.5">
+                  <Skeleton className="h-4 w-36" />
+                  <Skeleton className="h-3.5 w-80" />
+                </div>
+                <Skeleton className="h-4 w-16" />
+              </div>
+            </div>
+          </div>
+          <div className="bg-background-elevated border border-border rounded-xl overflow-hidden">
+            <div className="px-6 py-4 border-b border-border">
+              <Skeleton className="h-5 w-36" />
+              <Skeleton className="h-4 w-56 mt-2" />
+            </div>
+            <div className="p-4 sm:p-6">
+              <Skeleton className="h-4 w-72 mb-4" />
+              <div className="flex items-center gap-3">
+                <Skeleton className="h-4 w-16" />
+                <Skeleton className="h-9 w-24 rounded-[52px]" />
+                <Skeleton className="h-9 w-36 rounded-[52px]" />
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : (
+      <>
       {activeTab === 'account' && (
         <div className="space-y-6">
           {/* Notifications */}
@@ -811,8 +836,9 @@ export default function ProfilePage() {
           </div>
         </div>
       )}
+      </>
+      )}
 
-      {/* Leave Guild Confirmation Modal */}
       {/* Leave Guild Confirmation Modal */}
       <Modal open={!!leaveGuildId} onClose={() => !leaving && setLeaveGuildId(null)} size="sm">
         <ModalHeader>
