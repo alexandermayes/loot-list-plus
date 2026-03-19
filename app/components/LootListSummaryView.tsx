@@ -176,11 +176,11 @@ export default function LootListSummaryView({
                   <div className="flex flex-wrap gap-2">
                     {displayPlayers
                       .sort((a, b) => {
-                        // Sort by primary rank first, then by item rank
+                        // Sort by primary rank first (descending: 50 = highest priority)
                         if (a.primary_rank !== b.primary_rank) {
-                          return a.primary_rank - b.primary_rank
+                          return b.primary_rank - a.primary_rank
                         }
-                        return a.item_rank - b.item_rank
+                        return b.item_rank - a.item_rank
                       })
                       .map((player) => (
                         <div
