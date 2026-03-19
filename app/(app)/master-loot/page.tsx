@@ -242,17 +242,20 @@ export default function MasterLootPage() {
     setReviewing(submissionId)
 
     try {
-      const { data, error } = await supabase
-        .from('loot_submissions')
-        .update({
+      const response = await fetch('/api/loot-submissions/review', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          submission_id: submissionId,
           status,
-          review_notes: reviewNotes || null,
-          reviewed_at: new Date().toISOString()
+          review_notes: reviewNotes || null
         })
-        .eq('id', submissionId)
-        .select()
+      })
 
-      if (error) throw error
+      if (!response.ok) {
+        const data = await response.json()
+        throw new Error(data.error || 'Couldn\'t update submission')
+      }
 
       const submission = submissions.find(s => s.id === submissionId)
       trackClientEvent('master_loot_awarded', {

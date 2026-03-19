@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button'
 import { AttendanceStatsSkeleton, TableSkeleton } from '@/components/ui/skeletons'
 import { ErrorState } from '@/components/ui/error-state'
 import { Heading } from '@/components/ui/typography'
-import { calculateAttendanceScore, getRankModifier } from '@/utils/calculations'
+import { computeAttendance, getRankModifier } from '@/domain/scoring'
 import { useNotification } from '@/app/contexts/NotificationContext'
 import { useGuildContext } from '@/app/contexts/GuildContext'
 import { getWclReportUrl } from '@/lib/warcraftlogs'
@@ -535,19 +535,37 @@ export default function AttendancePage() {
           setAttendanceRecords(recordsData as any)
         }
 
-        // Calculate personal attendance score using deduplicated events
+        // Calculate personal attendance score using the engine
         if (deduplicatedRaidEvents.length > 0) {
           const raidIds = deduplicatedRaidEvents.map((r: RaidEvent) => r.id)
 
           const { data: recentRecords } = await supabase
             .from('attendance_records')
-            .select('signed_up, attended, no_call_no_show')
+            .select('raid_event_id, signed_up, attended, no_call_no_show')
             .eq('character_id', characterData.id)
             .in('raid_event_id', raidIds)
 
           if (recentRecords && recentRecords.length > 0) {
-            const score = calculateAttendanceScore(recentRecords, deduplicatedRaidEvents.length, settingsData || {})
-            setAttendanceScore(score)
+            const raidDaysForEngine = [
+              raidDaysSource?.first_raid_day,
+              raidDaysSource?.second_raid_day,
+              raidDaysSource?.third_raid_day,
+              raidDaysSource?.fourth_raid_day,
+              raidDaysSource?.fifth_raid_day
+            ].filter((d): d is number => d !== null && d !== undefined)
+              .slice(0, raidDaysSource?.raid_days_per_week || 2)
+
+            const newMemberMode = (settingsData?.new_member_mode || 'raw') as 'raw' | 'fair' | 'minimum_gate'
+            const result = computeAttendance({
+              records: recentRecords,
+              raidEvents: deduplicatedRaidEvents,
+              config: settingsData || {},
+              raidDays: raidDaysForEngine,
+              memberJoinedAt: membershipData?.joined_at ? toDateString(new Date(membershipData.joined_at)) : undefined,
+              newMemberMode,
+              asOfDate: toDateString(new Date()),
+            })
+            setAttendanceScore(result.score)
           }
         }
 
@@ -646,49 +664,32 @@ export default function AttendancePage() {
         })
       })
 
-      // Calculate attendance score for each raider
+      // Calculate attendance score for each raider using the engine
+      const newMemberMode = (settings?.new_member_mode || 'raw') as 'raw' | 'fair' | 'minimum_gate'
+      const todayStr = toDateString(new Date())
+
       const raiders: GuildRaider[] = activeRaiders.map((s: any) => {
         const char = s.character as any
         const charAttendance = attendanceByCharacter[s.character_id] || new Map()
-        const userId = char.user_id
 
-        // New member policy: check how to handle new members
-        const newMemberMode = settings?.new_member_mode || 'raw'
+        // Build records array from the attendance map
+        const charRecords = Array.from(charAttendance.entries()).map(([raidId, status]) => ({
+          raid_event_id: raidId,
+          signed_up: status.signed_up,
+          attended: status.attended,
+          no_call_no_show: status.no_call_no_show,
+        }))
+
         const joinedAt = joinDateByCharacterId[s.character_id]
-        const memberJoinDate = joinedAt ? new Date(joinedAt) : null
-
-        // If member has attendance records before their join date (retroactive import),
-        // use the earliest attended raid as their effective start date
-        let effectiveStartDate = memberJoinDate
-        if (effectiveStartDate && charAttendance.size > 0) {
-          const attendedRaidDates = raidEvents
-            .filter(r => charAttendance.has(r.id))
-            .map(r => parseDate(r.raid_date))
-          if (attendedRaidDates.length > 0) {
-            const earliestAttendance = new Date(Math.min(...attendedRaidDates.map(d => d.getTime())))
-            if (earliestAttendance < effectiveStartDate) {
-              effectiveStartDate = earliestAttendance
-            }
-          }
-        }
-
-        // For 'fair' and 'minimum_gate' modes, filter raids to only those after effective start date
-        const eligibleRaidEvents = (newMemberMode === 'fair' || newMemberMode === 'minimum_gate') && effectiveStartDate
-          ? raidEvents.filter(r => parseDate(r.raid_date) >= effectiveStartDate)
-          : raidEvents
-
-        const eligibleRaidIds = new Set(eligibleRaidEvents.map(r => r.id))
-
-        // Get records for score calculation (only for eligible raids)
-        const records = Array.from(charAttendance.entries())
-          .filter(([raidId]) => eligibleRaidIds.has(raidId))
-          .map(([, status]) => ({
-            signed_up: status.signed_up,
-            attended: status.attended,
-            no_call_no_show: status.no_call_no_show
-          }))
-
-        const score = calculateAttendanceScore(records, eligibleRaidEvents.length, settings || {})
+        const result = computeAttendance({
+          records: charRecords,
+          raidEvents,
+          config: settings || {},
+          raidDays: [], // raidEvents already pre-filtered by caller
+          memberJoinedAt: joinedAt ? toDateString(new Date(joinedAt)) : undefined,
+          newMemberMode,
+          asOfDate: todayStr,
+        })
 
         return {
           id: s.character_id,
@@ -696,7 +697,7 @@ export default function AttendancePage() {
           role: roleByCharacterId[s.character_id] || 'Member',
           className: char.class?.name || 'Unknown',
           classColor: char.class?.color_hex || '#ffffff',
-          attendanceScore: score,
+          attendanceScore: result.score,
           attendance: charAttendance
         }
       })

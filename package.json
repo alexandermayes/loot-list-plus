@@ -8,6 +8,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "seed:classic": "tsx scripts/seed-classic-raids.ts",
     "seed:test": "tsx scripts/seed-test-data.ts",
     "seed:test:clean": "tsx scripts/seed-test-data.ts --clean",
@@ -70,6 +72,7 @@
     "tailwindcss": "^3.4.19",
     "tailwindcss-animate": "^1.0.7",
     "tsx": "^4.19.2",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^4.1.0"
   }
 }

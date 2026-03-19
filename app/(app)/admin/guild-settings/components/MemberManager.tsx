@@ -10,7 +10,7 @@ import { UserBlock01Icon, Shield01Icon, UserIcon, CrownIcon, StarIcon, Time01Ico
 import { Select } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
 import { useConfirm } from '@/components/ui/confirm-modal'
-import { ROLE_POSITIONS } from '@/utils/roles'
+import { ROLE_POSITIONS } from '@/domain/guild/roles'
 
 interface Character {
   id: string

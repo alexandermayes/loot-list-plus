@@ -32,8 +32,8 @@ import { Heading } from '@/components/ui/typography'
 import { InfoTooltip } from '@/components/ui/info-tooltip'
 import { useGuildContext } from '@/app/contexts/GuildContext'
 import ItemLink from '@/app/components/ItemLink'
-import { calculateAttendanceScore, getRankModifier, getRoleModifierWithLabel, calculateLootScore, getTrialPenalty, calculateBadLuckBonus } from '@/utils/calculations'
-import { getSpecRoles, getRoleDisplayName, type Role } from '@/utils/spec-role-mapping'
+import { computeScore, computeAttendance, getRoleModifierWithLabel, calculateBadLuckBonus, type ItemPriority, type AttendanceResult } from '@/domain/scoring'
+import { getSpecRoles, getRoleDisplayName, type Role } from '@/domain/loot/spec-role-mapping'
 import { refreshWowheadTooltips } from '@/lib/wowhead'
 import { useNotification } from '@/app/contexts/NotificationContext'
 import { trackClientEvent } from '@/utils/analytics/client'
@@ -641,32 +641,14 @@ function DashboardContent() {
         if (guildSettings) {
           // Set decimal places for display formatting
           setDecimalPlaces(guildSettings.decimal_places ?? 2)
-
-          // Try to get attendance records
-          const rollingWeeks = guildSettings.rolling_attendance_weeks || 4
-          const startDate = new Date()
-          startDate.setDate(startDate.getDate() - (rollingWeeks * 7))
-
-          // New member policy: check how to handle new members
-          const newMemberMode = guildSettings.new_member_mode || 'raw'
-          let effectiveStartDate = startDate
+          savedGuildSettings = guildSettings
 
           const membership = membershipResult.data
           if (membership) {
             membershipStatus = membership.membership_status || 'full'
             trialStartedAt = membership.trial_started_at || null
             characterRole = membership.role || 'Member'
-
-            // For 'fair' and 'minimum_gate' modes, use join date filtering
-            if ((newMemberMode === 'fair' || newMemberMode === 'minimum_gate') && membership.joined_at) {
-              const joinedAt = new Date(membership.joined_at)
-              if (joinedAt > startDate) {
-                effectiveStartDate = joinedAt
-              }
-            }
           }
-
-          const startDateStr = toDateString(effectiveStartDate)
 
           // Get expansion's raid day configuration
           let raidDays: number[] = []
@@ -694,81 +676,48 @@ function DashboardContent() {
             ].filter((day): day is number => day !== null && day !== undefined)
               .slice(0, (guildSettings as any).raid_days_per_week || 2)
           }
-
-          // Save for widget use
-          savedGuildSettings = guildSettings
           savedRaidDays = raidDays
 
-          // First get raid events for the period
+          // Fetch raid events and attendance records for the engine
           const todayStr = toDateString(new Date())
-          const { data: raidEventsData, error: raidError } = await supabase
+          const rollingWeeks = guildSettings.rolling_attendance_weeks || 4
+          const periodStart = new Date()
+          periodStart.setDate(periodStart.getDate() - (rollingWeeks * 7))
+
+          const { data: raidEventsData } = await supabase
             .from('raid_events')
             .select('id, raid_date')
             .eq('guild_id', activeGuild.id)
             .eq('is_skipped', false)
-            .gte('raid_date', startDateStr)
+            .gte('raid_date', toDateString(periodStart))
             .lte('raid_date', todayStr)
 
-          // Filter to only raids on configured raid days
-          const filteredRaidEvents = raidDays.length > 0 && raidEventsData
-            ? raidEventsData.filter((event: { id: string; raid_date: string }) => {
-                const eventDate = parseDate(event.raid_date)
-                return raidDays.includes(eventDate.getDay())
-              })
-            : raidEventsData
+          const raidEventIds = raidEventsData?.map((r: { id: string }) => r.id) || []
+          const { data: allAttendanceRecords } = raidEventIds.length > 0
+            ? await supabase
+                .from('attendance_records')
+                .select('raid_event_id, signed_up, attended, no_call_no_show')
+                .eq('character_id', characterId)
+                .in('raid_event_id', raidEventIds)
+            : { data: [] }
 
-          if (filteredRaidEvents && filteredRaidEvents.length > 0) {
-            // Handle duplicate raid events - prefer IDs with attendance records
-            const raidEventIds = filteredRaidEvents.map((r: { id: string }) => r.id)
+          // Compute attendance via engine (handles windowing, dedup, new member mode)
+          const newMemberMode = (guildSettings.new_member_mode || 'raw') as 'raw' | 'fair' | 'minimum_gate'
+          const attendanceResult = computeAttendance({
+            records: allAttendanceRecords || [],
+            raidEvents: raidEventsData || [],
+            config: guildSettings,
+            raidDays,
+            memberJoinedAt: membership?.joined_at ? toDateString(new Date(membership.joined_at)) : undefined,
+            newMemberMode,
+            asOfDate: todayStr,
+          })
 
-            // Fetch all attendance records for this character in one query (consolidates two sequential queries)
-            const { data: allAttendanceRecords, error: attError } = await supabase
-              .from('attendance_records')
-              .select('raid_event_id, signed_up, attended, no_call_no_show')
-              .eq('character_id', characterId)
-              .in('raid_event_id', raidEventIds)
+          attendanceScore = attendanceResult.score
+          attendedRaidCount = attendanceResult.raidsAttended
+          totalRaidCount = attendanceResult.raidsInWindow
 
-            const raidIdsWithAttendance = new Set(allAttendanceRecords?.map((r: { raid_event_id: string }) => r.raid_event_id) || [])
-
-            // Deduplicate by date, preferring IDs that have attendance records
-            type RaidEvent = { id: string; raid_date: string }
-            const deduplicatedRaidEvents: RaidEvent[] = Array.from(
-              filteredRaidEvents.reduce((map: Map<string, RaidEvent>, event: RaidEvent) => {
-                const existing = map.get(event.raid_date)
-                if (!existing) {
-                  map.set(event.raid_date, event)
-                } else if (raidIdsWithAttendance.has(event.id) && !raidIdsWithAttendance.has(existing.id)) {
-                  map.set(event.raid_date, event)
-                }
-                return map
-              }, new Map<string, RaidEvent>()).values()
-            )
-
-            const totalRaids = deduplicatedRaidEvents.length
-            const deduplicatedRaidIds = new Set(deduplicatedRaidEvents.map((r: RaidEvent) => r.id))
-
-            // Filter attendance records to only deduplicated raid events (no second query needed)
-            const attendanceRecords = allAttendanceRecords?.filter(
-              (r: { raid_event_id: string }) => deduplicatedRaidIds.has(r.raid_event_id)
-            ) || []
-
-            if (!attError && attendanceRecords.length > 0 && totalRaids > 0) {
-              attendanceScore = calculateAttendanceScore(
-                attendanceRecords,
-                totalRaids,
-                guildSettings
-              )
-              attendedRaidCount = attendanceRecords.filter((r: { attended: boolean }) => r.attended).length
-              totalRaidCount = totalRaids
-              // Save for sparkline computation
-              savedDeduplicatedRaidEvents = deduplicatedRaidEvents as Array<{ id: string; raid_date: string }>
-              savedAttendanceRecords = attendanceRecords as Array<{ raid_event_id: string; attended: boolean }>
-            }
-          }
-
-          roleModifier = getRankModifier(characterRole, guildSettings)
-
-          // Compute spec roles for role bonus
+          // Compute spec roles for role bonus display
           const specName = activeCharacter?.spec?.name || null
           const className = activeCharacter?.class?.name || null
           let specRoles: string[] = []
@@ -777,11 +726,29 @@ function DashboardContent() {
             specRoles = getSpecRoles(fullSpecName)
             specRole = specRoles.length > 0 ? specRoles[0] : null
           }
-          const roleResult = getRoleModifierWithLabel(specRoles, guildSettings)
-          roleBonus = roleResult.bonus
-          specRole = roleResult.matchedRole
 
-          trialPenaltyValue = getTrialPenalty(membershipStatus, guildSettings)
+          // Use engine for modifier display values
+          const dummyScore = computeScore({
+            itemRank: 0,
+            character: {
+              characterId,
+              specId: activeCharacter?.spec?.id || null,
+              specRoles,
+              guildRank: characterRole,
+              membershipStatus,
+            },
+            attendance: attendanceResult,
+            config: guildSettings,
+            itemPriority: null,
+            timesPassed: 0,
+          })
+          roleModifier = dummyScore.components.rankModifier
+          roleBonus = dummyScore.components.roleBonus
+          trialPenaltyValue = dummyScore.components.trialPenalty
+
+          // Get matched role label for display
+          const roleResult = getRoleModifierWithLabel(specRoles, guildSettings)
+          specRole = roleResult.matchedRole
         }
       } catch (error) {
         // Attendance system not set up yet, use rank only
@@ -869,8 +836,26 @@ function DashboardContent() {
       let competitionMap: Record<string, { totalWanting: number; userRank: number }> = {}
       let totalReceivedCount = 0
       const receivedWowheadIds = new Set<number>()
+      let prioritiesMap: Record<string, ItemPriority> = {}
 
       await Promise.all([
+        // Priorities: fetch officer-set item priorities for score calculation
+        (async () => {
+          try {
+            const { data: priorities } = await supabase
+              .from('guild_item_priorities')
+              .select('item_id, role_priorities, class_priorities, character_priorities, priority_bonuses')
+              .eq('guild_id', activeGuild.id)
+              .in('item_id', filteredItemIds)
+            if (priorities) {
+              for (const p of priorities) {
+                prioritiesMap[p.item_id] = p as ItemPriority
+              }
+            }
+          } catch {
+            // Priorities not critical — scores will omit priority bonus
+          }
+        })(),
         // BLP: fetch times_passed for this character's items
         (async () => {
           if (savedGuildSettings?.blp_enabled) {
@@ -1082,9 +1067,29 @@ function DashboardContent() {
               }
             })
 
-          // Calculate loot score for this item
-          const itemBlp = savedGuildSettings?.blp_enabled ? calculateBadLuckBonus(blpData[item.id] || 0, savedGuildSettings) : 0
-          const lootScore = calculateLootScore(charRanking.rank, attendanceScore, roleModifier, itemBlp, 0, trialPenaltyValue, roleBonus)
+          // Calculate loot score for this item (now includes priority bonus — was hardcoded 0 before)
+          const specName = activeCharacter?.spec?.name || null
+          const className = activeCharacter?.class?.name || null
+          let itemSpecRoles: string[] = []
+          if (specName && className) {
+            const fullSpecName = className === specName ? className : `${specName} ${className}`
+            itemSpecRoles = getSpecRoles(fullSpecName)
+          }
+          const itemScoreResult = computeScore({
+            itemRank: charRanking.rank,
+            character: {
+              characterId,
+              specId: activeCharacter?.spec?.id || null,
+              specRoles: itemSpecRoles,
+              guildRank: characterRole,
+              membershipStatus,
+            },
+            attendance: { score: attendanceScore },
+            config: savedGuildSettings || {},
+            itemPriority: prioritiesMap[item.id] || null,
+            timesPassed: blpData[item.id] || 0,
+          })
+          const lootScore = itemScoreResult.total
 
           priorityItems.push({
             item_id: item.id,

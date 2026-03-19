@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient, getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { verifyOfficerPermissions, verifyRoleChangePermissions, verifyMemberRemovalPermissions } from '@/utils/server-roles'
-import { ROLE_POSITIONS } from '@/utils/roles'
+import { ROLE_POSITIONS } from '@/domain/guild/roles'
 import { trackApiError } from '@/utils/analytics/server'
 import { batchGetDisplayNames } from '@/utils/batch-display-names'
 

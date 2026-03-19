@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { verifyOfficerPermissions } from '@/utils/server-roles'
+import { logAudit } from '@/utils/audit/log'
 
 /**
  * POST /api/loot-history/bulk
@@ -69,6 +70,28 @@ export async function POST(request: NextRequest) {
     const successCount = results.filter(r => r.success).length
     const failedCount = results.filter(r => !r.success).length
 
+    // Audit log successful awards (fire and forget)
+    for (const result of results) {
+      if (result.success && result.id) {
+        const item = items[result.index]
+        logAudit({
+          supabase: serviceSupabase,
+          guildId: guild_id,
+          tableName: 'loot_history',
+          recordId: result.id,
+          action: 'INSERT',
+          userId: user.id,
+          newData: {
+            loot_item_id: item.loot_item_id,
+            character_id: item.character_id,
+            character_name: item.character_name,
+            raid_event_id: item.raid_event_id,
+            awarded_date: item.awarded_date,
+          },
+        })
+      }
+    }
+
     return NextResponse.json({ results, successCount, failedCount })
   } catch (error) {
     console.error('Error in POST /api/loot-history/bulk:', error)
@@ -110,6 +133,13 @@ export async function DELETE(request: NextRequest) {
     }
 
     if (raid_event_id) {
+      // Read what we're about to delete for the audit log
+      const { data: toDelete } = await serviceSupabase
+        .from('loot_history')
+        .select('id, loot_item_id, character_id, character_name')
+        .eq('raid_event_id', raid_event_id)
+        .eq('guild_id', guild_id)
+
       const { error } = await serviceSupabase
         .from('loot_history')
         .delete()
@@ -119,7 +149,27 @@ export async function DELETE(request: NextRequest) {
       if (error) {
         return NextResponse.json({ error: error.message }, { status: 500 })
       }
+
+      // Audit log each deleted entry
+      for (const entry of toDelete || []) {
+        logAudit({
+          supabase: serviceSupabase,
+          guildId: guild_id,
+          tableName: 'loot_history',
+          recordId: entry.id,
+          action: 'DELETE',
+          userId: user.id,
+          oldData: { ...entry, raid_event_id },
+        })
+      }
     } else if (ids) {
+      // Read what we're about to delete for the audit log
+      const { data: toDelete } = await serviceSupabase
+        .from('loot_history')
+        .select('id, loot_item_id, character_id, character_name')
+        .in('id', ids)
+        .eq('guild_id', guild_id)
+
       const { error } = await serviceSupabase
         .from('loot_history')
         .delete()
@@ -128,6 +178,19 @@ export async function DELETE(request: NextRequest) {
 
       if (error) {
         return NextResponse.json({ error: error.message }, { status: 500 })
+      }
+
+      // Audit log each deleted entry
+      for (const entry of toDelete || []) {
+        logAudit({
+          supabase: serviceSupabase,
+          guildId: guild_id,
+          tableName: 'loot_history',
+          recordId: entry.id,
+          action: 'DELETE',
+          userId: user.id,
+          oldData: entry,
+        })
       }
     }
 
@@ -173,6 +236,14 @@ export async function PATCH(request: NextRequest) {
       if (key in updates) sanitized[key] = updates[key]
     }
 
+    // Read current state for audit log
+    const { data: before } = await serviceSupabase
+      .from('loot_history')
+      .select('character_id, character_name, notes')
+      .eq('id', id)
+      .eq('guild_id', guild_id)
+      .single()
+
     const { error } = await serviceSupabase
       .from('loot_history')
       .update(sanitized)
@@ -182,6 +253,18 @@ export async function PATCH(request: NextRequest) {
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
+
+    // Audit log the reassignment
+    logAudit({
+      supabase: serviceSupabase,
+      guildId: guild_id,
+      tableName: 'loot_history',
+      recordId: id,
+      action: 'UPDATE',
+      userId: user.id,
+      oldData: before,
+      newData: sanitized,
+    })
 
     return NextResponse.json({ success: true })
   } catch (error) {

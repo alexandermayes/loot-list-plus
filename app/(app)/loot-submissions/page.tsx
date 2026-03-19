@@ -31,7 +31,7 @@ import ItemLink from '@/app/components/ItemLink'
 import { refreshWowheadTooltips } from '@/lib/wowhead'
 import { trackClientEvent } from '@/utils/analytics/client'
 import { notifySubmissionChanged } from '@/app/hooks/usePendingSubmissionCount'
-import { resolvePhaseGroups, getPhaseGroupLabel, getPhaseGroupShortLabel, getCanonicalPhase, type PhaseGroup } from '@/utils/phase-groups'
+import { resolvePhaseGroups, getPhaseGroupLabel, getPhaseGroupShortLabel, getCanonicalPhase, type PhaseGroup } from '@/domain/expansion/phase-groups'
 import { getRaidIcon, getRaidShorthand } from '@/utils/raidIcons'
 
 interface Submission {
@@ -356,19 +356,19 @@ export default function MasterLootPage() {
     setReviewing(submissionId)
 
     try {
-      const { data, error } = await supabase
-        .from('loot_submissions')
-        .update({
+      const response = await fetch('/api/loot-submissions/review', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          submission_id: submissionId,
           status,
           review_notes: reviewNotes || null
         })
-        .eq('id', submissionId)
-        .select()
+      })
 
-      if (error) throw error
-
-      if (!data || data.length === 0) {
-        throw new Error('No rows updated - check RLS policies')
+      if (!response.ok) {
+        const data = await response.json()
+        throw new Error(data.error || 'Couldn\'t update submission')
       }
 
       // Send Discord DM notification (fire and forget - don't block on this)

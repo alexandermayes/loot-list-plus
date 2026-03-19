@@ -4,7 +4,7 @@
  */
 
 import { SupabaseClient } from '@supabase/supabase-js'
-import { ROLE_POSITIONS, DEFAULT_ROLES, isOfficerPosition, isGuildMasterPosition } from './roles'
+import { ROLE_POSITIONS, DEFAULT_ROLES, isOfficerPosition, isGuildMasterPosition } from '@/domain/guild/roles'
 
 interface GuildRole {
   name: string

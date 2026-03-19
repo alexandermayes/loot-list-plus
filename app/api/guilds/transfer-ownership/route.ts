@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { isGuildCreator, getGuildRoles, getRolePositionFromRoles } from '@/utils/server-roles'
-import { ROLE_POSITIONS } from '@/utils/roles'
+import { ROLE_POSITIONS } from '@/domain/guild/roles'
 
 // POST - Transfer guild ownership to another member
 // Only the current guild owner can transfer ownership

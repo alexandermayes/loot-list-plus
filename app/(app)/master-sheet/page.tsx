@@ -4,12 +4,12 @@ import Image from 'next/image'
 import { createClient } from '@/utils/supabase/client'
 import { useState, useEffect, useRef, useCallback, useMemo, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { calculateAttendanceScore, getRankModifier, getRoleModifier, calculateLootScore, calculatePriorityBonus, getTrialPenalty, calculateBadLuckBonus, type ItemPriority } from '@/utils/calculations'
-import { getSpecRoles } from '@/utils/spec-role-mapping'
+import { computeScore, computeAttendance, type ItemPriority, type AttendanceResult } from '@/domain/scoring'
+import { getSpecRoles } from '@/domain/loot/spec-role-mapping'
 import { getBossOrder, normalizeBossName } from '@/utils/bossOrder'
 import { getBossImage } from '@/utils/bossImages'
 import { getRaidIcon, getRaidShorthand } from '@/utils/raidIcons'
-import { resolvePhaseGroups, getPhaseGroupShortLabel, type PhaseGroup } from '@/utils/phase-groups'
+import { resolvePhaseGroups, getPhaseGroupShortLabel, type PhaseGroup } from '@/domain/expansion/phase-groups'
 import { parseDate, toDateString } from '@/utils/date'
 import { StarFilledIcon } from '@/components/ui/icons'
 import { useGuildContext } from '@/app/contexts/GuildContext'
@@ -244,22 +244,16 @@ function MasterSheetContent() {
   }
 
   // Batched attendance calculation for multiple characters
-  // Instead of N queries per character, this fetches all data in bulk (5 queries total)
+  // Bulk-fetches data (4 queries), then uses computeAttendance() per character
   const calculateAttendanceBatch = async (
     characters: Array<{ id: string; user_id: string }>
-  ): Promise<Record<string, { score: number; raidsAttended: number }>> => {
+  ): Promise<Record<string, AttendanceResult>> => {
     if (!guildId || !guildSettings || characters.length === 0) {
       return {}
     }
 
     const characterIds = characters.map(c => c.id)
-    const weeks = guildSettings.rolling_attendance_weeks || 4
-    const daysAgo = weeks * 7
-    const periodStart = new Date()
-    periodStart.setDate(periodStart.getDate() - daysAgo)
-    const periodStartStr = toDateString(periodStart)
-
-    const newMemberMode = guildSettings.new_member_mode || 'raw'
+    const newMemberMode = (guildSettings.new_member_mode || 'raw') as 'raw' | 'fair' | 'minimum_gate'
 
     // Query 1: Fetch ALL memberships in one query (for join dates in fair/minimum_gate modes)
     let membershipsByCharacter = new Map<string, { joined_at: string | null }>()
@@ -312,6 +306,12 @@ function MasterSheetContent() {
 
     // Query 3: Fetch ALL raid events ONCE
     const todayStr = toDateString(new Date())
+    const weeks = guildSettings.rolling_attendance_weeks || 4
+    const daysAgo = weeks * 7
+    const periodStart = new Date()
+    periodStart.setDate(periodStart.getDate() - daysAgo)
+    const periodStartStr = toDateString(periodStart)
+
     const { data: recentRaids } = await supabase
       .from('raid_events')
       .select('id, raid_date')
@@ -321,23 +321,10 @@ function MasterSheetContent() {
       .lte('raid_date', todayStr)
 
     if (!recentRaids || recentRaids.length === 0) {
-      return Object.fromEntries(characterIds.map(id => [id, { score: 0, raidsAttended: 0 }]))
+      return Object.fromEntries(characterIds.map(id => [id, { score: 0, raidsAttended: 0, raidsInWindow: 0, isEligible: true }]))
     }
 
-    // Filter to only raids on configured raid days
-    type RaidEventRecord = { id: string; raid_date: string }
-    const filteredRaids = raidDays.length > 0
-      ? recentRaids.filter((event: RaidEventRecord) => {
-          const eventDate = parseDate(event.raid_date)
-          return raidDays.includes(eventDate.getDay())
-        })
-      : recentRaids
-
-    if (filteredRaids.length === 0) {
-      return Object.fromEntries(characterIds.map(id => [id, { score: 0, raidsAttended: 0 }]))
-    }
-
-    const raidIds = filteredRaids.map((r: RaidEventRecord) => r.id)
+    const raidIds = recentRaids.map((r: { id: string }) => r.id)
 
     // Query 4: Fetch ALL attendance records for ALL characters in ONE query
     const { data: allAttendanceRecords } = await supabase
@@ -346,7 +333,7 @@ function MasterSheetContent() {
       .in('character_id', characterIds)
       .in('raid_event_id', raidIds)
 
-    // Build lookup: character_id -> Set of raid_event_ids with attendance
+    // Build lookup: character_id -> attendance records
     const attendanceByCharacter = new Map<string, Array<{
       raid_event_id: string
       signed_up: boolean
@@ -362,79 +349,24 @@ function MasterSheetContent() {
       attendanceByCharacter.get(record.character_id)!.push(record)
     }
 
-    // Process each character in memory (no more queries)
-    const results: Record<string, { score: number; raidsAttended: number }> = {}
+    // Compute attendance per character using the engine
+    const results: Record<string, AttendanceResult> = {}
 
     for (const character of characters) {
-      // Determine effective start date for this character
-      let effectiveStartDate = periodStart
-      if (newMemberMode === 'fair' || newMemberMode === 'minimum_gate') {
-        const membership = membershipsByCharacter.get(character.id)
-        if (membership?.joined_at) {
-          const memberJoinDate = new Date(membership.joined_at)
-          if (memberJoinDate > periodStart) {
-            effectiveStartDate = memberJoinDate
-          }
-        }
+      const membership = membershipsByCharacter.get(character.id)
+      const characterRecords = attendanceByCharacter.get(character.id) || []
 
-        // If member has attendance records before their join date (retroactive import),
-        // use the earliest attended raid as their effective start date
-        const characterAttendance = attendanceByCharacter.get(character.id) || []
-        if (characterAttendance.length > 0) {
-          const attendedRaidDates = filteredRaids
-            .filter((r: RaidEventRecord) => characterAttendance.some(a => a.raid_event_id === r.id))
-            .map((r: RaidEventRecord) => parseDate(r.raid_date))
-          if (attendedRaidDates.length > 0) {
-            const earliestAttendance = new Date(Math.min(...attendedRaidDates.map((d: Date) => d.getTime())))
-            if (earliestAttendance < effectiveStartDate) {
-              effectiveStartDate = earliestAttendance
-            }
-          }
-        }
-      }
-
-      // Filter raids to those after effective start date
-      const effectiveRaids = filteredRaids.filter((r: RaidEventRecord) => {
-        const raidDate = parseDate(r.raid_date)
-        return raidDate >= effectiveStartDate
+      const result = computeAttendance({
+        records: characterRecords,
+        raidEvents: recentRaids,
+        config: guildSettings,
+        raidDays,
+        memberJoinedAt: membership?.joined_at ? toDateString(new Date(membership.joined_at)) : undefined,
+        newMemberMode,
+        asOfDate: todayStr,
       })
 
-      if (effectiveRaids.length === 0) {
-        results[character.id] = { score: 0, raidsAttended: 0 }
-        continue
-      }
-
-      // Get attendance records for this character
-      const characterAttendance = attendanceByCharacter.get(character.id) || []
-      const raidIdsWithAttendance = new Set(characterAttendance.map(a => a.raid_event_id))
-
-      // Deduplicate by date, preferring IDs that have attendance records
-      const deduplicatedRaidEvents: RaidEventRecord[] = Array.from(
-        effectiveRaids.reduce((map: Map<string, RaidEventRecord>, event: RaidEventRecord) => {
-          const existing = map.get(event.raid_date)
-          if (!existing) {
-            map.set(event.raid_date, event)
-          } else if (raidIdsWithAttendance.has(event.id) && !raidIdsWithAttendance.has(existing.id)) {
-            map.set(event.raid_date, event)
-          }
-          return map
-        }, new Map<string, RaidEventRecord>()).values()
-      )
-
-      const totalRaids = deduplicatedRaidEvents.length
-      const deduplicatedRaidIds = new Set(deduplicatedRaidEvents.map((r: RaidEventRecord) => r.id))
-
-      // Filter attendance to only deduplicated raids
-      const relevantRecords = characterAttendance.filter(a => deduplicatedRaidIds.has(a.raid_event_id))
-
-      if (relevantRecords.length === 0) {
-        results[character.id] = { score: 0, raidsAttended: 0 }
-        continue
-      }
-
-      const score = calculateAttendanceScore(relevantRecords, totalRaids, guildSettings)
-      const raidsAttended = relevantRecords.filter(r => r.attended).length
-      results[character.id] = { score, raidsAttended }
+      results[character.id] = result
     }
 
     return results
@@ -780,8 +712,7 @@ function MasterSheetContent() {
         )
 
         // Determine minimum raids required for eligibility
-        const minimumRaidDays = guildSettings.minimum_raid_days || 2
-        const isMinimumGateMode = guildSettings.new_member_mode === 'minimum_gate'
+        // Eligibility is now computed by computeAttendance() via attendanceCache
 
         // Build rankings for each item
         type SubmissionData = { id: string; status: string; character_id: string | null }
@@ -818,74 +749,53 @@ function MasterSheetContent() {
               continue
             }
 
-            const attendanceData = attendanceCache[character.id] || { score: 0, raidsAttended: 0 }
-            const attendance = attendanceData.score
-            const raidsAttended = attendanceData.raidsAttended
-            // Find membership for the current guild (may not exist for approved submissions without membership)
+            const attendanceData = attendanceCache[character.id] || { score: 0, raidsAttended: 0, raidsInWindow: 0, isEligible: true }
             const guildMembership = character.character_guild_memberships?.find(
               (m: CharacterGuildMembership) => m.guild_id === activeGuild!.id
             )
-            const characterRole = guildMembership?.role || 'Member'
-            const roleModifier = getRankModifier(characterRole, guildSettings)
-
-            // Calculate priority bonus
-            const itemPriority = prioritiesMap[item.id]
             const charClass = Array.isArray(character.class) ? character.class[0] : character.class
             const charSpec = Array.isArray(character.spec) ? character.spec[0] : character.spec
-            const specId = character.spec_id || null
             const specName = charSpec?.name || null
             const className = charClass?.name || null
-
-            // Determine the character's role based on their spec
-            let specRole: string | null = null
             let specRoles: string[] = []
             if (specName && className) {
               const fullSpecName = className === specName ? className : `${specName} ${className}`
               specRoles = getSpecRoles(fullSpecName)
-              specRole = specRoles.length > 0 ? specRoles[0] : null
             }
 
-            const priorityBonus = calculatePriorityBonus(
-              itemPriority,
-              character.id,
-              specId,
-              specRole
-            )
-
-            // Calculate BLP bonus from tracked passes
-            const blpKey = `${character.id}-${item.id}`
-            const timesPassed = blpDataMap[blpKey] || 0
-            const badLuckBonus = calculateBadLuckBonus(timesPassed, guildSettings)
-
-            // Get membership status and calculate trial penalty
             const membershipStatus = guildMembership?.membership_status || 'full'
-            const trialPenalty = getTrialPenalty(membershipStatus, guildSettings)
-            const isTrial = membershipStatus === 'trial'
-
-            // Calculate role bonus based on spec roles (best of all matching roles)
-            const roleBonus = getRoleModifier(specRoles, guildSettings)
-
-            const lootScore = calculateLootScore(r.rank, attendance, roleModifier, badLuckBonus, priorityBonus, trialPenalty, roleBonus)
-
-            // Determine eligibility based on minimum_gate mode
-            const isEligible = !isMinimumGateMode || raidsAttended >= minimumRaidDays
+            const blpKey = `${character.id}-${item.id}`
+            const scoreResult = computeScore({
+              itemRank: r.rank,
+              character: {
+                characterId: character.id,
+                specId: character.spec_id || null,
+                specRoles,
+                guildRank: guildMembership?.role || 'Member',
+                membershipStatus,
+              },
+              attendance: attendanceData,
+              config: guildSettings,
+              itemPriority: prioritiesMap[item.id] || null,
+              timesPassed: blpDataMap[blpKey] || 0,
+            })
 
             rankings.push({
               player_name: character.name || 'Unknown',
               class_name: charClass?.name || 'Unknown',
               class_color: charClass?.color_hex || '#888888',
-              loot_score: lootScore,
+              loot_score: scoreResult.total,
               rank: r.rank,
-              attendance_score: attendance,
-              role_modifier: roleModifier,
-              role_bonus: roleBonus,
-              priority_bonus: priorityBonus,
-              bad_luck_bonus: badLuckBonus,
-              trial_penalty: trialPenalty,
-              is_trial: isTrial,
+              attendance_score: scoreResult.components.attendanceScore,
+              role_modifier: scoreResult.components.rankModifier,
+              role_bonus: scoreResult.components.roleBonus,
+              priority_bonus: scoreResult.components.priorityBonus,
+              bad_luck_bonus: scoreResult.components.badLuckBonus,
+              trial_penalty: scoreResult.components.trialPenalty,
+              is_trial: membershipStatus === 'trial',
               character_id: character.id,
-              raids_attended: raidsAttended,
-              is_eligible: isEligible,
+              raids_attended: attendanceData.raidsAttended,
+              is_eligible: attendanceData.isEligible,
             })
           }
 
@@ -1434,72 +1344,53 @@ function MasterSheetContent() {
           continue
         }
 
-        const attendanceData = attendanceCache[character.id] || { score: 0, raidsAttended: 0 }
-        const attendance = attendanceData.score
-        const raidsAttended = attendanceData.raidsAttended
+        const attendanceData = attendanceCache[character.id] || { score: 0, raidsAttended: 0, raidsInWindow: 0, isEligible: true }
         const guildMembership = character.character_guild_memberships?.find(
           (m: CharacterGuildMembership) => m.guild_id === activeGuild.id
         )
-        const characterRole = guildMembership?.role || 'Member'
-        const roleModifier = getRankModifier(characterRole, guildSettings)
-
-        // Calculate priority bonus
-        const itemPriority = prioritiesMap[item.id]
         const charClass = Array.isArray(character.class) ? character.class[0] : character.class
         const charSpec = Array.isArray(character.spec) ? character.spec[0] : character.spec
-        const specId = character.spec_id || null
         const specName = charSpec?.name || null
         const className = charClass?.name || null
-
-        let specRole: string | null = null
         let specRoles: string[] = []
         if (specName && className) {
           const fullSpecName = className === specName ? className : `${specName} ${className}`
           specRoles = getSpecRoles(fullSpecName)
-          specRole = specRoles.length > 0 ? specRoles[0] : null
         }
 
-        const priorityBonus = calculatePriorityBonus(
-          itemPriority,
-          character.id,
-          specId,
-          specRole
-        )
-
-        // Calculate BLP bonus from tracked passes
-        const tierBlpKey = `${character.id}-${item.id}`
-        const tierTimesPassed = tierBlpDataMap[tierBlpKey] || 0
-        const badLuckBonus = calculateBadLuckBonus(tierTimesPassed, guildSettings)
-
-        // Calculate trial penalty
         const membershipStatus = guildMembership?.membership_status || 'full'
-        const trialPenalty = getTrialPenalty(membershipStatus, guildSettings)
-        const isTrial = membershipStatus === 'trial'
-
-        // Calculate role bonus based on spec roles (best of all matching roles)
-        const roleBonus = getRoleModifier(specRoles, guildSettings)
-
-        const lootScore = calculateLootScore(r.rank, attendance, roleModifier, badLuckBonus, priorityBonus, trialPenalty, roleBonus)
-
-        // Determine eligibility based on minimum_gate mode
-        const isEligible = !isMinimumGateMode || raidsAttended >= minimumRaidDays
+        const tierBlpKey = `${character.id}-${item.id}`
+        const scoreResult = computeScore({
+          itemRank: r.rank,
+          character: {
+            characterId: character.id,
+            specId: character.spec_id || null,
+            specRoles,
+            guildRank: guildMembership?.role || 'Member',
+            membershipStatus,
+          },
+          attendance: attendanceData,
+          config: guildSettings,
+          itemPriority: prioritiesMap[item.id] || null,
+          timesPassed: tierBlpDataMap[tierBlpKey] || 0,
+        })
 
         rankings.push({
           player_name: character.name || 'Unknown',
           class_name: charClass?.name || 'Unknown',
           class_color: charClass?.color_hex || '#888888',
-          loot_score: lootScore,
+          loot_score: scoreResult.total,
           rank: r.rank,
-          attendance_score: attendance,
-          role_modifier: roleModifier,
-          role_bonus: roleBonus,
-          priority_bonus: priorityBonus,
-          bad_luck_bonus: badLuckBonus,
-          trial_penalty: trialPenalty,
-          is_trial: isTrial,
+          attendance_score: scoreResult.components.attendanceScore,
+          role_modifier: scoreResult.components.rankModifier,
+          role_bonus: scoreResult.components.roleBonus,
+          priority_bonus: scoreResult.components.priorityBonus,
+          bad_luck_bonus: scoreResult.components.badLuckBonus,
+          trial_penalty: scoreResult.components.trialPenalty,
+          is_trial: membershipStatus === 'trial',
           character_id: character.id,
-          raids_attended: raidsAttended,
-          is_eligible: isEligible,
+          raids_attended: attendanceData.raidsAttended,
+          is_eligible: attendanceData.isEligible,
         })
       }
 

@@ -22,7 +22,7 @@ import {
   type EquippedItem
 } from '@/app/hooks/use-api'
 import { refreshWowheadTooltips } from '@/lib/wowhead'
-import { buildSlotCoverageMap, computeUpgradeTier } from '@/lib/slot-normalization'
+import { buildSlotCoverageMap, computeUpgradeTier } from '@/domain/loot/slot-normalization'
 // preloadItemIcons is lazy-loaded (190KB module) - only imported when items are ready
 import {
   createBracketStates,
@@ -30,8 +30,8 @@ import {
   findNextNoBracketSlot,
   placeInBracket,
   type BracketItem
-} from '@/lib/bracket-validation'
-import { resolvePhaseGroups, type PhaseGroup } from '@/utils/phase-groups'
+} from '@/domain/loot/bracket-validation'
+import { resolvePhaseGroups, type PhaseGroup } from '@/domain/expansion/phase-groups'
 
 // Define raid tier progression order (Classic + TBC + WotLK)
 const RAID_TIER_ORDER: Record<string, number> = {
@@ -758,8 +758,7 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
     try {
       let submissionId = submissionData?.submission?.id
 
-      // Use upsert to handle race conditions and unique constraint
-      const newStatus = submit ? 'pending' : 'draft'
+      // Always save items as draft first (validation happens server-side on submit)
       const { data: upsertedSub, error: subError } = await supabase
         .from('loot_submissions')
         .upsert({
@@ -768,8 +767,8 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
           guild_id: activeGuild.id,
           expansion_id: targetExpansionId,
           phase: selectedPhase,
-          status: newStatus,
-          submitted_at: submit ? new Date().toISOString() : (submissionData?.submission?.submitted_at || null),
+          status: 'draft',
+          submitted_at: submissionData?.submission?.submitted_at || null,
           updated_at: new Date().toISOString()
         }, {
           onConflict: 'character_id,guild_id,expansion_id,phase'
@@ -782,40 +781,6 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
         throw subError
       }
       submissionId = upsertedSub.id
-
-      // Snapshot previous items before overwriting (only on formal submit, not first time)
-      if (submit && submissionId) {
-        const { data: existingItems } = await supabase
-          .from('loot_submission_items')
-          .select('rank, slot, loot_item_id, loot_item:loot_items(name)')
-          .eq('submission_id', submissionId)
-          .is('removed_at', null)
-
-        if (existingItems && existingItems.length > 0) {
-          const currentCount = upsertedSub.resubmission_count ?? 0
-          const snapshotItems = existingItems.map((item: any) => ({
-            rank: item.rank,
-            slot: item.slot,
-            loot_item_id: item.loot_item_id,
-            item_name: item.loot_item?.name || 'Unknown'
-          }))
-
-          // Save snapshot of previous items
-          await supabase
-            .from('loot_submission_snapshots')
-            .insert({
-              submission_id: submissionId,
-              version: currentCount,
-              items: snapshotItems
-            })
-
-          // Increment resubmission count
-          await supabase
-            .from('loot_submissions')
-            .update({ resubmission_count: currentCount + 1 })
-            .eq('id', submissionId)
-        }
-      }
 
       // Delete and re-insert active rankings (preserve soft-deleted/removed items)
       const { error: deleteError } = await supabase
@@ -860,6 +825,26 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
         }
       }
 
+      // If submitting, call the server-side validation + promotion API
+      if (submit) {
+        const response = await fetch('/api/loot-submissions/submit', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ submission_id: submissionId })
+        })
+
+        if (!response.ok) {
+          const data = await response.json()
+          if (data.violations) {
+            const violationMsg = data.violations.map((v: any) => `${v.bracket}: ${v.detail}`).join('. ')
+            throw new Error(`Bracket rules violated. ${violationMsg}`)
+          }
+          throw new Error(data.error || 'Couldn\'t submit list')
+        }
+      }
+
+      const finalStatus = submit ? 'pending' : 'draft'
+
       showNotification('success', submit ? 'Loot list submitted for review' : 'Draft saved')
       trackClientEvent(submit ? 'loot_list_submitted' : 'loot_list_saved', {
         character_id: activeCharacter.id,
@@ -883,7 +868,7 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
 
       // Update initial state to reflect saved state
       setInitialRankings({ ...rankings })
-      setOriginalStatus(submit ? 'pending' : 'draft')
+      setOriginalStatus(finalStatus)
 
       // Store what we saved so the sync effect doesn't overwrite local state
       lastSavedRankingsRef.current = { ...rankings }
@@ -892,7 +877,7 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
 
       // Optimistically update the SWR submission data so the status banner updates immediately
       mutateSubmission(
-        { submission: { ...submissionData?.submission, ...upsertedSub, status: newStatus } as any, rankings },
+        { submission: { ...submissionData?.submission, ...upsertedSub, status: finalStatus } as any, rankings },
         false // don't revalidate — we already have the correct data
       )
 

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { verifyOfficerPermissions } from '@/utils/server-roles'
+import { logAudit } from '@/utils/audit/log'
 
 interface AttendanceRecord {
   raid_event_id: string
@@ -59,7 +60,19 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: error.message }, { status: 500 })
       }
 
-      return NextResponse.json({ success: true, count: data?.length || 0 })
+      const count = data?.length || 0
+      const raidEventId = records[0]?.raid_event_id
+      logAudit({
+        supabase: serviceSupabase,
+        guildId: guild_id,
+        tableName: 'attendance_records',
+        recordId: raidEventId || guild_id,
+        action: 'INSERT',
+        userId: user.id,
+        newData: { action: 'upsert', record_count: count, raid_event_id: raidEventId },
+      })
+
+      return NextResponse.json({ success: true, count })
     } else {
       const { data, error } = await serviceSupabase
         .from('attendance_records')
@@ -70,7 +83,19 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: error.message }, { status: 500 })
       }
 
-      return NextResponse.json({ success: true, count: data?.length || 0 })
+      const count = data?.length || 0
+      const raidEventId = records[0]?.raid_event_id
+      logAudit({
+        supabase: serviceSupabase,
+        guildId: guild_id,
+        tableName: 'attendance_records',
+        recordId: raidEventId || guild_id,
+        action: 'INSERT',
+        userId: user.id,
+        newData: { action: 'insert', record_count: count, raid_event_id: raidEventId },
+      })
+
+      return NextResponse.json({ success: true, count })
     }
   } catch (error) {
     console.error('Error in POST /api/attendance/bulk:', error)
@@ -132,6 +157,17 @@ export async function PATCH(request: NextRequest) {
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
+
+    logAudit({
+      supabase: serviceSupabase,
+      guildId: guild_id,
+      tableName: 'attendance_records',
+      recordId: filters.raid_event_id || filters.id || guild_id,
+      action: 'UPDATE',
+      userId: user.id,
+      oldData: { filters },
+      newData: updates,
+    })
 
     return NextResponse.json({ success: true })
   } catch (error) {
@@ -202,6 +238,22 @@ export async function DELETE(request: NextRequest) {
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
+
+    logAudit({
+      supabase: serviceSupabase,
+      guildId: guild_id,
+      tableName: 'attendance_records',
+      recordId: raid_event_id || guild_id,
+      action: 'DELETE',
+      userId: user.id,
+      oldData: {
+        raid_event_id,
+        ids: ids?.length,
+        character_id,
+        character_id_is_null,
+        character_names,
+      },
+    })
 
     return NextResponse.json({ success: true })
   } catch (error) {

@@ -3,7 +3,7 @@
 import { useState, useCallback } from 'react'
 import ItemLink from './ItemLink'
 import MultiSelectDropdown from './MultiSelectDropdown'
-import { allRoles, getRoleDisplayName, type Role } from '@/utils/spec-role-mapping'
+import { allRoles, getRoleDisplayName, type Role } from '@/domain/loot/spec-role-mapping'
 import {
   Modal,
   ModalHeader,

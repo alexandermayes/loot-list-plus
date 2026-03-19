@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { verifyOfficerPermissions } from '@/utils/server-roles'
+import { logStatusChange } from '@/utils/audit/log'
 
 // POST - Revert a resubmitted list to its previously approved snapshot
 export async function POST(request: NextRequest) {
@@ -21,7 +22,7 @@ export async function POST(request: NextRequest) {
     // Get the submission to verify guild and check state
     const { data: submission, error: subError } = await serviceSupabase
       .from('loot_submissions')
-      .select('id, guild_id, status, resubmission_count')
+      .select('id, guild_id, status, resubmission_count, character_id')
       .eq('id', submission_id)
       .single()
 
@@ -106,6 +107,18 @@ export async function POST(request: NextRequest) {
       console.error('Error updating submission status:', updateError)
       return NextResponse.json({ error: 'Failed to update submission status' }, { status: 500 })
     }
+
+    // Audit log (fire and forget)
+    logStatusChange({
+      supabase: serviceSupabase,
+      guildId: submission.guild_id,
+      tableName: 'loot_submissions',
+      recordId: submission_id,
+      userId: user.id,
+      oldStatus: 'pending',
+      newStatus: 'approved',
+      additionalData: { action: 'revert', character_id: submission.character_id ?? undefined },
+    })
 
     return NextResponse.json({ success: true })
   } catch (error) {

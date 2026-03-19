@@ -19,7 +19,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import StyledSelect from '@/app/components/StyledSelect'
 import MultiSelectDropdown from '@/app/components/MultiSelectDropdown'
-import { specMapping, allRoles, getRoleDisplayName } from '@/utils/spec-role-mapping'
+import { specMapping, allRoles, getRoleDisplayName } from '@/domain/loot/spec-role-mapping'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { ArrowDown01Icon, ArrowUp01Icon, Settings01Icon, Calendar03Icon, Settings02Icon, UserAdd01Icon, DiceIcon, Medal01Icon, Clock01Icon, GiftIcon, StickyNote01Icon, Search01Icon, Layers01Icon } from '@hugeicons/core-free-icons'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -858,7 +858,7 @@ export default function AdminLootItems() {
 
   // Add all specs of a role to an item
   const addRoleSpecs = async (itemId: string, role: 'tank' | 'healer' | 'physical' | 'caster', specType: 'primary' | 'secondary') => {
-    const { getSpecsForRole } = await import('@/utils/spec-role-mapping')
+    const { getSpecsForRole } = await import('@/domain/loot/spec-role-mapping')
     const roleSpecNames = getSpecsForRole(role)
 
     // Find the spec IDs that match these spec names (using combined_name)
@@ -1031,7 +1031,7 @@ export default function AdminLootItems() {
 
   // Remove all specs of a role from an item
   const removeRoleSpecs = async (itemId: string, role: 'tank' | 'healer' | 'physical' | 'caster', specType: 'primary' | 'secondary') => {
-    const { getSpecsForRole } = await import('@/utils/spec-role-mapping')
+    const { getSpecsForRole } = await import('@/domain/loot/spec-role-mapping')
     const roleSpecNames = getSpecsForRole(role)
 
     // Find the spec IDs that match these spec names
@@ -1142,7 +1142,7 @@ export default function AdminLootItems() {
 
   // Get role group specs - returns spec IDs for each role - MEMOIZED
   const getRoleGroupSpecs = useMemo(() => {
-    const { getSpecsForRole } = require('@/utils/spec-role-mapping')
+    const { getSpecsForRole } = require('@/domain/loot/spec-role-mapping')
 
     const roles = ['tank', 'healer', 'physical', 'caster'] as const
     const roleGroups: Record<string, Set<string>> = {}

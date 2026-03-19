@@ -183,6 +183,116 @@ export function findNextValidSlot(
 }
 
 /**
+ * Validation error from bracket rule checking.
+ */
+export interface BracketViolation {
+  bracket: string
+  rule: string
+  detail: string
+}
+
+/**
+ * Validate a complete list of ranked items against bracket rules.
+ * Returns an array of violations (empty = valid).
+ *
+ * Used server-side to gate submission (status → pending).
+ */
+export function validateBracketRules(
+  items: { rank: number; slot: number; item: BracketItem }[],
+  enforceSlotRestrictions: boolean
+): BracketViolation[] {
+  const violations: BracketViolation[] = []
+  const itemsById = new Map(items.map(i => [i.item.id, i.item]))
+
+  // Group items by bracket
+  const bracketItems = new Map<number, typeof items>()
+  for (const entry of items) {
+    const bracketIndex = BRACKET_CONFIG.findIndex(b => b.ranks.includes(entry.rank))
+    if (bracketIndex === -1) continue // No Bracket or Off-spec zone — no rules
+    const existing = bracketItems.get(bracketIndex) || []
+    existing.push(entry)
+    bracketItems.set(bracketIndex, existing)
+  }
+
+  for (const [bracketIndex, bracketEntries] of bracketItems) {
+    const config = BRACKET_CONFIG[bracketIndex]
+
+    // Rule 1: Allocation points
+    let totalPoints = 0
+    for (const entry of bracketEntries) {
+      totalPoints += entry.item.allocation_cost || 0
+    }
+    if (totalPoints > config.maxPoints) {
+      violations.push({
+        bracket: config.name,
+        rule: 'allocation_limit',
+        detail: `${totalPoints} allocation points exceeds limit of ${config.maxPoints}`,
+      })
+    }
+
+    // Rule 2: Duplicate item types (non-token)
+    const typesSeen = new Set<string>()
+    for (const entry of bracketEntries) {
+      const t = entry.item.item_type
+      if (t && t !== 'Token') {
+        if (typesSeen.has(t)) {
+          violations.push({
+            bracket: config.name,
+            rule: 'duplicate_type',
+            detail: `Duplicate item type "${t}" in bracket`,
+          })
+          break // one violation per bracket is enough
+        }
+        typesSeen.add(t)
+      }
+    }
+
+    // Rule 3: Token slot restriction (optional)
+    if (enforceSlotRestrictions) {
+      let tokenCount = 0
+      for (const entry of bracketEntries) {
+        if (entry.item.item_slot === 'Token') tokenCount++
+      }
+      if (tokenCount > 1) {
+        violations.push({
+          bracket: config.name,
+          rule: 'duplicate_token',
+          detail: `${tokenCount} tokens in bracket (max 1 when slot restrictions enabled)`,
+        })
+      }
+    }
+
+    // Rule 4: Reserved companion rule
+    const byRank = new Map<number, typeof items>()
+    for (const entry of bracketEntries) {
+      const existing = byRank.get(entry.rank) || []
+      existing.push(entry)
+      byRank.set(entry.rank, existing)
+    }
+    for (const [rank, rankEntries] of byRank) {
+      const hasReserved = rankEntries.some(e => e.item.classification === 'Reserved')
+      if (hasReserved && rankEntries.length > 1) {
+        violations.push({
+          bracket: config.name,
+          rule: 'reserved_companion',
+          detail: `Reserved item at rank ${rank} must be alone (found ${rankEntries.length} items)`,
+        })
+      }
+      const reservedInSlot2 = rankEntries.some(e => e.item.classification === 'Reserved' && e.slot === 2)
+      if (reservedInSlot2) {
+        violations.push({
+          bracket: config.name,
+          rule: 'reserved_slot',
+          detail: `Reserved item at rank ${rank} cannot be in slot 2`,
+        })
+      }
+    }
+  }
+
+  return violations
+}
+
+/**
  * Find the next available slot in the No Bracket zone (ranks 38-25).
  * No allocation limits or type restrictions apply here.
  * Still respects Reserved companion rule.

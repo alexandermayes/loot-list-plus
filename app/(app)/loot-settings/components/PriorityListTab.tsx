@@ -11,7 +11,7 @@ import { Search01Icon } from '@hugeicons/core-free-icons'
 import { Button } from '@/components/ui/button'
 import { Select } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
-import { allRoles, getRoleDisplayName, type Role } from '@/utils/spec-role-mapping'
+import { allRoles, getRoleDisplayName, type Role } from '@/domain/loot/spec-role-mapping'
 import { useNotification } from '@/app/contexts/NotificationContext'
 
 // Lazy load the modal to reduce initial bundle size

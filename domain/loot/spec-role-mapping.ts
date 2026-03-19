@@ -29,7 +29,10 @@ export const specMapping: Record<string, SpecInfo> = {
   'Warlock': { class: 'Warlock', shorthand: null, roles: ['caster'] },
   'Rogue': { class: 'Rogue', shorthand: null, roles: ['physical'] },
   'Blood Death Knight': { class: 'Death Knight', shorthand: 'Blood', roles: ['tank'] },
-  'Frost/Unholy Death Knight': { class: 'Death Knight', shorthand: ['Frost', 'Unholy'], roles: ['physical'] }
+  'Frost/Unholy Death Knight': { class: 'Death Knight', shorthand: ['Frost', 'Unholy', 'DK'], roles: ['physical'] },
+  'Brewmaster Monk': { class: 'Monk', shorthand: 'Brew', roles: ['tank'] },
+  'Windwalker Monk': { class: 'Monk', shorthand: 'Wind', roles: ['physical'] },
+  'Mistweaver Monk': { class: 'Monk', shorthand: 'Mist', roles: ['healer'] }
 }
 
 export const rolesBySpec: Record<string, Role[]> = {

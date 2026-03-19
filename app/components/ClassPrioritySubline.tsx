@@ -1,7 +1,7 @@
 'use client'
 
 import React from 'react'
-import { specMapping, type Role } from '@/utils/spec-role-mapping'
+import { specMapping, type Role } from '@/domain/loot/spec-role-mapping'
 
 interface LootItemClass {
   class_id: string
