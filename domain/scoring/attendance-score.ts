@@ -20,12 +20,16 @@ export function calculateAttendanceScore(
 
   if (records.length === 0 || totalRaids === 0) return 0
 
+  const latePenaltyEnabled = config.late_early_penalty_enabled
+  const latePenaltyValue = config.late_early_penalty_value || 0
+
+  // Count attended raids (benched counts as attended for scoring)
   let attendedCount = 0
   let signedUpCount = 0
 
   records.forEach(r => {
     if (r.no_call_no_show) return
-    if (r.attended) attendedCount++
+    if (r.attended || r.was_benched) attendedCount++
     if (r.signed_up) signedUpCount++
   })
 
@@ -43,8 +47,16 @@ export function calculateAttendanceScore(
       if (r.signed_up) {
         raidPoints += signupPointsPerRaid
       }
-      if (r.attended) {
+      // Benched = full attendance credit (available but not needed)
+      if (r.was_benched) {
         raidPoints += attendancePointsPerRaid
+      } else if (r.attended) {
+        let attendPoints = attendancePointsPerRaid
+        // Late penalty: reduce attendance portion
+        if (r.was_late && latePenaltyEnabled) {
+          attendPoints = Math.max(0, attendPoints - latePenaltyValue)
+        }
+        raidPoints += attendPoints
       }
       totalScore += Math.min(raidPoints, 1.0)
     })

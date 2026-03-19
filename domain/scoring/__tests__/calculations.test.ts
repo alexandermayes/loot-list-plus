@@ -11,7 +11,7 @@ import {
   getDefaultSettings,
 } from '@/domain/scoring'
 import {
-  attended, signedUpOnly, ncns, absent,
+  attended, signedUpOnly, ncns, absent, late, benched,
   DEFAULT_PPR_SETTINGS, DEFAULT_LINEAR_SETTINGS, DEFAULT_BREAKPOINT_SETTINGS,
   LOOT_SCORE_FIXTURES,
 } from './fixtures'
@@ -496,5 +496,72 @@ describe('getDefaultSettings', () => {
     expect(defaults.max_attendance_bonus).toBe(4)
     expect(defaults.blp_enabled).toBe(false)
     expect(defaults.trial_penalty_enabled).toBe(false)
+  })
+})
+
+// ─── Late/benched attendance scoring ──────────────────────────
+
+describe('calculateAttendanceScore (late/benched)', () => {
+  const PPR_SETTINGS = {
+    ...DEFAULT_PPR_SETTINGS,
+    late_early_penalty_enabled: true,
+    late_early_penalty_value: 0.25,
+  }
+
+  it('gives benched raiders full attendance credit', () => {
+    // 4 raids: 2 attended, 2 benched. All should count as attended.
+    const records = [attended(), attended(), benched(), benched()]
+    const score = calculateAttendanceScore(records, 4, PPR_SETTINGS)
+    // Each raid = 0.75 attendance + 0 signup = 0.75 (no signup)
+    // 4 * 0.75 = 3.0
+    expect(score).toBe(3)
+  })
+
+  it('gives benched+signed_up raiders full credit', () => {
+    const records = [benched(true), benched(true)]
+    const score = calculateAttendanceScore(records, 2, PPR_SETTINGS)
+    // Each raid = 0.75 attendance + 0.25 signup = 1.0
+    // 2 * 1.0 = 2.0
+    expect(score).toBe(2)
+  })
+
+  it('applies late penalty when enabled', () => {
+    // 2 raids: 1 normal, 1 late. Penalty = 0.25
+    const records = [attended(), late()]
+    const score = calculateAttendanceScore(records, 2, PPR_SETTINGS)
+    // Normal: 0.75, Late: 0.75 - 0.25 = 0.50
+    // Total = 1.25
+    expect(score).toBe(1.25)
+  })
+
+  it('does not apply late penalty when disabled', () => {
+    const records = [attended(), late()]
+    const score = calculateAttendanceScore(records, 2, {
+      ...PPR_SETTINGS,
+      late_early_penalty_enabled: false,
+    })
+    // No penalty: both get 0.75
+    expect(score).toBe(1.5)
+  })
+
+  it('late+signed_up still gets signup credit', () => {
+    const records = [late(true)]
+    const score = calculateAttendanceScore(records, 1, PPR_SETTINGS)
+    // Attendance: 0.75 - 0.25 = 0.50, signup: 0.25 = 0.75
+    expect(score).toBe(0.75)
+  })
+
+  it('benched raiders are not penalized like absent ones', () => {
+    // Benched should score higher than absent
+    const benchedScore = calculateAttendanceScore([benched()], 1, PPR_SETTINGS)
+    const absentScore = calculateAttendanceScore([absent()], 1, PPR_SETTINGS)
+    expect(benchedScore).toBeGreaterThan(absentScore)
+  })
+
+  it('ncns still excluded from scoring (not affected by benched change)', () => {
+    const records = [ncns(), benched()]
+    const score = calculateAttendanceScore(records, 2, PPR_SETTINGS)
+    // NCNS = 0 (skipped), benched = 0.75. Total = 0.75
+    expect(score).toBe(0.75)
   })
 })

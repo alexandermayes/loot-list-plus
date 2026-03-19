@@ -541,7 +541,7 @@ export default function AttendancePage() {
 
           const { data: recentRecords } = await supabase
             .from('attendance_records')
-            .select('raid_event_id, signed_up, attended, no_call_no_show')
+            .select('raid_event_id, signed_up, attended, no_call_no_show, was_late, was_benched')
             .eq('character_id', characterData.id)
             .in('raid_event_id', raidIds)
 

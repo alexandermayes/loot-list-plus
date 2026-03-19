@@ -26,6 +26,14 @@ export function absent() {
   return { signed_up: false, attended: false, no_call_no_show: false }
 }
 
+export function late(signedUp = false) {
+  return { signed_up: signedUp, attended: true, no_call_no_show: false, was_late: true }
+}
+
+export function benched(signedUp = false) {
+  return { signed_up: signedUp, attended: false, no_call_no_show: false, was_benched: true }
+}
+
 // --- Settings presets ---
 
 export const DEFAULT_PPR_SETTINGS = {

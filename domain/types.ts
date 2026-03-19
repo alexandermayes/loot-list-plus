@@ -55,6 +55,8 @@ export interface AttendanceRecord {
   signed_up: boolean
   attended: boolean
   no_call_no_show: boolean
+  was_late?: boolean
+  was_benched?: boolean
 }
 
 // ─── Item Priority ───────────────────────────────────────────
@@ -91,6 +93,8 @@ export interface AttendanceInput {
     signed_up: boolean
     attended: boolean
     no_call_no_show: boolean
+    was_late?: boolean
+    was_benched?: boolean
   }[]
   /** All raid events in the period (pre-filtered by guild_id, is_skipped) */
   raidEvents: RaidEvent[]
