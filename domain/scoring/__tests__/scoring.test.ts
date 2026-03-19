@@ -1,7 +1,7 @@
 /**
  * Tests that verify domain/scoring exports work correctly.
  * These import from @/domain/scoring (the new path) and must produce
- * identical results to the golden tests in utils/__tests__/calculations.test.ts.
+ * identical results to the golden tests in calculations.test.ts.
  */
 import { describe, it, expect } from 'vitest'
 import {
@@ -20,7 +20,7 @@ import {
   attended, signedUpOnly, ncns, absent,
   DEFAULT_PPR_SETTINGS, DEFAULT_LINEAR_SETTINGS, DEFAULT_BREAKPOINT_SETTINGS,
   LOOT_SCORE_FIXTURES,
-} from '@/utils/__tests__/fixtures'
+} from './fixtures'
 
 describe('domain/scoring (parity with utils/calculations)', () => {
   describe('calculateAttendanceScore - points-per-raid', () => {

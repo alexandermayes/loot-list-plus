@@ -3,7 +3,7 @@ import { computeScore } from '../engine'
 import { explainScore } from '../explain'
 import { calculateLootScore } from '../loot-score'
 import type { ScoreInput, ItemPriority } from '../../types'
-import { LOOT_SCORE_FIXTURES } from '@/utils/__tests__/fixtures'
+import { LOOT_SCORE_FIXTURES } from './fixtures'
 
 // ─── Helpers ─────────────────────────────────────────────────
 

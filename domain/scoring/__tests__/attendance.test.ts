@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { computeAttendance, resolveStatus } from '../attendance'
 import { calculateAttendanceScore } from '../attendance-score'
 import type { AttendanceInput, RaidEvent } from '../../types'
-import { attended, signedUpOnly, ncns, absent } from '@/utils/__tests__/fixtures'
+import { attended, signedUpOnly, ncns, absent } from './fixtures'
 
 // ─── Helpers ─────────────────────────────────────────────────
 
