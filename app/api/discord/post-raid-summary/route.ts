@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
+import { verifyOfficerPermissions } from '@/utils/server-roles'
 import { trackApiError } from '@/utils/analytics/server'
 import { discordFetch } from '@/lib/discord'
 import { fetchWclReportForDate, getWclReportUrl } from '@/lib/warcraftlogs'
@@ -54,59 +55,19 @@ export async function POST(request: NextRequest) {
 
     const supabase = createServiceRoleClient()
 
-    // Verify caller is an officer
+    const { hasPermission } = await verifyOfficerPermissions(supabase, user.id, guild_id)
+    if (!hasPermission) {
+      return NextResponse.json({ error: 'Only officers can post raid summaries' }, { status: 403 })
+    }
+
     const { data: guild } = await supabase
       .from('guilds')
-      .select('created_by, name, discord_server_id, active_expansion_id')
+      .select('name, discord_server_id, active_expansion_id')
       .eq('id', guild_id)
       .single()
 
     if (!guild) {
       return NextResponse.json({ error: 'Guild not found' }, { status: 404 })
-    }
-
-    const isGuildCreator = guild.created_by === user.id
-
-    if (!isGuildCreator) {
-      const { data: callerCharacters } = await supabase
-        .from('characters')
-        .select('id')
-        .eq('user_id', user.id)
-
-      if (!callerCharacters || callerCharacters.length === 0) {
-        return NextResponse.json({ error: 'Not a member of this guild' }, { status: 403 })
-      }
-
-      const characterIds = callerCharacters.map((c: { id: string }) => c.id)
-
-      const { data: membership } = await supabase
-        .from('character_guild_memberships')
-        .select('role')
-        .eq('guild_id', guild_id)
-        .in('character_id', characterIds)
-        .eq('is_active', true)
-        .limit(1)
-        .single()
-
-      if (!membership) {
-        return NextResponse.json({ error: 'Not a member of this guild' }, { status: 403 })
-      }
-
-      const { data: roleData } = await supabase
-        .from('guild_roles')
-        .select('position')
-        .eq('guild_id', guild_id)
-        .eq('name', membership.role)
-        .single()
-
-      const position = roleData?.position ?? (
-        membership.role === 'Guild Master' ? 100 :
-        membership.role === 'Officer' ? 50 : 0
-      )
-
-      if (position < 50) {
-        return NextResponse.json({ error: 'Only officers can post raid summaries' }, { status: 403 })
-      }
     }
 
     // Parallelize independent queries: settings and raid event

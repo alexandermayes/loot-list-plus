@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
+import { verifyOfficerPermissions } from '@/utils/server-roles'
 import { trackApiError } from '@/utils/analytics/server'
 import { discordFetch } from '@/lib/discord'
 
@@ -38,22 +39,15 @@ export async function GET(request: NextRequest) {
 
     const supabase = createServiceRoleClient()
 
-    // Verify caller is an officer in this guild
-    const { data: callerCharacters } = await supabase
-      .from('characters')
-      .select('id')
-      .eq('user_id', user.id)
-
-    if (!callerCharacters || callerCharacters.length === 0) {
-      return NextResponse.json({ error: 'Not a member of this guild' }, { status: 403 })
+    const { hasPermission } = await verifyOfficerPermissions(supabase, user.id, guildId)
+    if (!hasPermission) {
+      return NextResponse.json({ error: 'Only officers can manage Discord settings' }, { status: 403 })
     }
 
-    const characterIds = callerCharacters.map((c: { id: string }) => c.id)
-
-    // Check guild creator status
+    // Get guild's Discord server ID
     const { data: guild } = await supabase
       .from('guilds')
-      .select('created_by, discord_server_id')
+      .select('discord_server_id')
       .eq('id', guildId)
       .single()
 
@@ -63,40 +57,6 @@ export async function GET(request: NextRequest) {
 
     if (!guild.discord_server_id) {
       return NextResponse.json({ channels: [], error: 'No Discord server linked' })
-    }
-
-    const isGuildCreator = guild.created_by === user.id
-
-    if (!isGuildCreator) {
-      const { data: membership } = await supabase
-        .from('character_guild_memberships')
-        .select('role')
-        .eq('guild_id', guildId)
-        .in('character_id', characterIds)
-        .eq('is_active', true)
-        .limit(1)
-        .single()
-
-      if (!membership) {
-        return NextResponse.json({ error: 'Not a member of this guild' }, { status: 403 })
-      }
-
-      // Check officer status via guild_roles
-      const { data: roleData } = await supabase
-        .from('guild_roles')
-        .select('position')
-        .eq('guild_id', guildId)
-        .eq('name', membership.role)
-        .single()
-
-      const position = roleData?.position ?? (
-        membership.role === 'Guild Master' ? 100 :
-        membership.role === 'Officer' ? 50 : 0
-      )
-
-      if (position < 50) {
-        return NextResponse.json({ error: 'Only officers can manage Discord settings' }, { status: 403 })
-      }
     }
 
     // Fetch channels from Discord API
