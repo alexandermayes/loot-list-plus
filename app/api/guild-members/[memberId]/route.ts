@@ -3,6 +3,7 @@ import { createClient, getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { verifyOfficerPermissions } from '@/utils/server-roles'
 import { trackApiError, trackEvent } from '@/utils/analytics/server'
+import { logAudit } from '@/utils/audit/log'
 
 // PATCH - Update guild member (role, etc) - LEGACY ENDPOINT for guild_members table
 export async function PATCH(
@@ -77,6 +78,17 @@ export async function PATCH(
     }
 
     trackEvent({ event: 'member_role_changed', userId: user.id, properties: { member_id: memberId, new_role: role, guild_id: targetMember.guild_id } })
+
+    logAudit({
+      supabase: serviceSupabase,
+      guildId: targetMember.guild_id,
+      tableName: 'guild_members',
+      recordId: memberId,
+      action: 'UPDATE',
+      userId: user.id,
+      oldData: { role: targetMember.role },
+      newData: { role },
+    })
 
     return NextResponse.json({
       success: true,
@@ -194,6 +206,16 @@ export async function DELETE(
       .delete()
       .eq('user_id', targetMember.user_id)
       .eq('active_guild_id', targetMember.guild_id)
+
+    logAudit({
+      supabase: serviceSupabase,
+      guildId: targetMember.guild_id,
+      tableName: 'guild_members',
+      recordId: memberId,
+      action: 'DELETE',
+      userId: user.id,
+      oldData: { role: targetMember.role, target_user_id: targetMember.user_id },
+    })
 
     return NextResponse.json({
       success: true,

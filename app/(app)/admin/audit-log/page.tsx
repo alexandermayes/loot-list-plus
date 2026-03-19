@@ -28,6 +28,9 @@ const TABLE_LABELS: Record<string, string> = {
   attendance_records: 'Attendance',
   guild_settings: 'Guild settings',
   loot_submission_items: 'List items',
+  character_guild_memberships: 'Members',
+  guild_members: 'Members (legacy)',
+  blp_tracking: 'Bad luck protection',
 }
 
 const ACTION_LABELS: Record<string, string> = {
@@ -104,6 +107,22 @@ function describeSummary(log: AuditLog): string {
       return `Changed ${changed_fields.join(', ')}`
     }
     return `Updated guild settings`
+  }
+
+  // Member management
+  if (table_name === 'character_guild_memberships' || table_name === 'guild_members') {
+    if (action === 'UPDATE') {
+      const newRole = new_data?.new_role || new_data?.role
+      if (newRole) return `Changed role to ${newRole}`
+      return `Updated member`
+    }
+    if (action === 'DELETE') return `Removed member from guild`
+  }
+
+  // BLP
+  if (table_name === 'blp_tracking') {
+    const count = new_data?.incremented_count
+    return `Updated BLP: ${count || 0} passed, 1 winner reset`
   }
 
   // Submission items
@@ -201,6 +220,8 @@ export default function AuditLogPage() {
             <option value="attendance_records">Attendance</option>
             <option value="guild_settings">Guild settings</option>
             <option value="loot_submission_items">List items</option>
+            <option value="character_guild_memberships">Members</option>
+            <option value="blp_tracking">Bad luck protection</option>
           </Select>
           <Select
             value={actionFilter}

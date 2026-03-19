@@ -3,6 +3,7 @@ import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { verifyOfficerPermissions } from '@/utils/server-roles'
 import { trackApiError } from '@/utils/analytics/server'
+import { logAudit } from '@/utils/audit/log'
 
 interface UpdateBLPRequest {
   guild_id: string
@@ -88,6 +89,22 @@ export async function POST(request: NextRequest) {
     if (resetError) {
       console.error('Failed to reset winner BLP:', resetError)
     }
+
+    logAudit({
+      supabase,
+      guildId: guild_id,
+      tableName: 'blp_tracking',
+      recordId: loot_item_id,
+      action: 'UPDATE',
+      userId: user.id,
+      newData: {
+        loot_item_id,
+        winner_character_id,
+        raid_event_id,
+        eligible_count: eligibleCharacters.length,
+        incremented_count: incrementedCount,
+      },
+    })
 
     return NextResponse.json({
       data: {
