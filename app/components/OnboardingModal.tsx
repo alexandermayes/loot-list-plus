@@ -106,7 +106,7 @@ export default function OnboardingModal({ open, onClose }: OnboardingModalProps)
               variant="ghost"
               size="icon"
               onClick={handleClose}
-              className="absolute top-4 right-4 z-10 w-8 h-8 min-h-0 rounded-full bg-background/50 hover:bg-background/80 text-foreground-secondary hover:text-foreground"
+              className="absolute top-4 right-4 z-20 w-8 h-8 min-h-0 rounded-full bg-background/50 hover:bg-background/80 text-foreground-secondary hover:text-foreground"
             >
               <HugeiconsIcon icon={Cancel01Icon} size={18} />
             </Button>
