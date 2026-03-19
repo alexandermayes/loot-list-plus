@@ -696,7 +696,7 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
                             variant="ghost"
                             onClick={() => exp.available && setExpansion(exp.id)}
                             disabled={!exp.available}
-                            className={`flex flex-col items-center gap-1 w-full h-auto p-0 ${!exp.available ? 'cursor-not-allowed' : ''}`}
+                            className={`flex flex-col items-center gap-1 w-full h-auto p-0 !ring-0 !outline-none ${!exp.available ? 'cursor-not-allowed' : ''}`}
                           >
                             <div className={`relative aspect-square w-full rounded-lg overflow-hidden border-2 transition ${
                               !exp.available

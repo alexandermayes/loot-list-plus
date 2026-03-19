@@ -14,6 +14,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { trackClientEvent } from '@/utils/analytics/client'
+import { CreateGuildModal } from '@/app/components/CreateGuildModal'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { Cancel01Icon, InformationCircleIcon } from '@hugeicons/core-free-icons'
 
@@ -28,6 +29,7 @@ export default function WelcomeScreen() {
   const [availableGuilds, setAvailableGuilds] = useState<any[]>([])
   const [discordError, setDiscordError] = useState('')
   const [joiningGuildId, setJoiningGuildId] = useState<string | null>(null)
+  const [showCreateGuild, setShowCreateGuild] = useState(false)
   const router = useRouter()
   const supabase = createClient()
 
@@ -317,7 +319,7 @@ export default function WelcomeScreen() {
               </p>
               <Button
                 variant="outline"
-                onClick={() => router.push('/guild-select/create')}
+                onClick={() => setShowCreateGuild(true)}
                 className="w-full max-w-xs"
               >
                 Create a guild
@@ -461,6 +463,16 @@ export default function WelcomeScreen() {
           </div>
         </div>
       </Modal>
+
+      {/* Create Guild Modal */}
+      <CreateGuildModal
+        isOpen={showCreateGuild}
+        onClose={() => setShowCreateGuild(false)}
+        onSuccess={() => {
+          setShowCreateGuild(false)
+          router.refresh()
+        }}
+      />
     </>
   )
 }
