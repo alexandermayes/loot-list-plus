@@ -48,7 +48,7 @@ function formatDate(d: Date): string {
  * Single source of truth — replaces 3+ inline implementations.
  *
  * Priority order (first match wins):
- *   no_call_no_show > was_benched > (attended && was_late) > attended > signed_up > absent
+ *   no_call_no_show > is_excused > was_benched > (attended && was_late) > attended > signed_up > absent
  */
 export function resolveStatus(record: {
   attended?: boolean
@@ -56,8 +56,10 @@ export function resolveStatus(record: {
   was_benched?: boolean
   no_call_no_show?: boolean
   signed_up?: boolean
+  is_excused?: boolean
 }): AttendanceStatus {
   if (record.no_call_no_show) return 'no_show'
+  if (record.is_excused) return 'excused'
   if (record.was_benched) return 'benched'
   if (record.attended && record.was_late) return 'late'
   if (record.attended) return 'attended'
@@ -166,6 +168,7 @@ export function computeAttendance(input: AttendanceInput): AttendanceResult {
       no_call_no_show: r.no_call_no_show,
       was_late: r.was_late,
       was_benched: r.was_benched,
+      is_excused: r.is_excused,
     }))
 
   const totalRaids = dedupedEvents.length

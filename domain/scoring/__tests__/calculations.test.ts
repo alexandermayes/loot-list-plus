@@ -11,7 +11,7 @@ import {
   getDefaultSettings,
 } from '@/domain/scoring'
 import {
-  attended, signedUpOnly, ncns, absent, late, benched,
+  attended, signedUpOnly, ncns, absent, late, benched, excused,
   DEFAULT_PPR_SETTINGS, DEFAULT_LINEAR_SETTINGS, DEFAULT_BREAKPOINT_SETTINGS,
   LOOT_SCORE_FIXTURES,
 } from './fixtures'
@@ -563,5 +563,21 @@ describe('calculateAttendanceScore (late/benched)', () => {
     const score = calculateAttendanceScore(records, 2, PPR_SETTINGS)
     // NCNS = 0 (skipped), benched = 0.75. Total = 0.75
     expect(score).toBe(0.75)
+  })
+
+  it('excused absence excluded from denominator (raid doesnt count)', () => {
+    // 2 attended, 1 excused, 3 total raids
+    // Effective total = 3 - 1 = 2. Score = 2 * 0.75 = 1.5
+    const records = [attended(), attended(), excused()]
+    const score = calculateAttendanceScore(records, 3, PPR_SETTINGS)
+    expect(score).toBe(1.5)
+  })
+
+  it('excused absence gives same score as if raid never happened', () => {
+    // 2 attended out of 2 raids (no excused)
+    const scoreWithout = calculateAttendanceScore([attended(), attended()], 2, PPR_SETTINGS)
+    // 2 attended + 1 excused out of 3 raids
+    const scoreWith = calculateAttendanceScore([attended(), attended(), excused()], 3, PPR_SETTINGS)
+    expect(scoreWith).toBe(scoreWithout)
   })
 })

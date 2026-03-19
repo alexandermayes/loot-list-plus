@@ -57,6 +57,7 @@ export interface AttendanceRecord {
   no_call_no_show: boolean
   was_late?: boolean
   was_benched?: boolean
+  is_excused?: boolean
 }
 
 // ─── Item Priority ───────────────────────────────────────────
@@ -76,6 +77,7 @@ export type AttendanceStatus =
   | 'late'        // Attended but late
   | 'benched'     // Available but sat out
   | 'no_show'     // Unexcused absence (excluded from totals)
+  | 'excused'     // Excused absence (excluded from totals, like NCNS)
   | 'signed_up'   // Signed up but didn't attend
   | 'absent'      // Not present, no signup
 
@@ -95,6 +97,7 @@ export interface AttendanceInput {
     no_call_no_show: boolean
     was_late?: boolean
     was_benched?: boolean
+    is_excused?: boolean
   }[]
   /** All raid events in the period (pre-filtered by guild_id, is_skipped) */
   raidEvents: RaidEvent[]

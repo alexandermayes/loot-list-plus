@@ -126,7 +126,7 @@ export async function POST(request: NextRequest) {
     const [attendanceResult, lootResult] = await Promise.all([
       supabase
         .from('attendance_records')
-        .select('character_name, character_id, signed_up, attended, no_call_no_show, was_late, was_benched')
+        .select('character_name, character_id, signed_up, attended, no_call_no_show, was_late, was_benched, is_excused')
         .eq('raid_event_id', raid_event_id),
       supabase
         .from('loot_history')

@@ -34,6 +34,10 @@ export function benched(signedUp = false) {
   return { signed_up: signedUp, attended: false, no_call_no_show: false, was_benched: true }
 }
 
+export function excused() {
+  return { signed_up: false, attended: false, no_call_no_show: false, is_excused: true }
+}
+
 // --- Settings presets ---
 
 export const DEFAULT_PPR_SETTINGS = {

@@ -541,7 +541,7 @@ export default function AttendancePage() {
 
           const { data: recentRecords } = await supabase
             .from('attendance_records')
-            .select('raid_event_id, signed_up, attended, no_call_no_show, was_late, was_benched')
+            .select('raid_event_id, signed_up, attended, no_call_no_show, was_late, was_benched, is_excused')
             .eq('character_id', characterData.id)
             .in('raid_event_id', raidIds)
 
@@ -616,7 +616,7 @@ export default function AttendancePage() {
         // Query 3: Get all attendance records for these raid events
         supabase
           .from('attendance_records')
-          .select('raid_event_id, character_id, signed_up, attended, no_call_no_show, was_late, was_benched')
+          .select('raid_event_id, character_id, signed_up, attended, no_call_no_show, was_late, was_benched, is_excused')
           .in('raid_event_id', raidEventIds)
       ])
 

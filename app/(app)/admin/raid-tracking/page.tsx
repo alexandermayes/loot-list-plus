@@ -81,9 +81,10 @@ interface AttendanceStatus {
   no_call_no_show: boolean
   was_late: boolean
   was_benched: boolean
+  is_excused?: boolean
 }
 
-type CellState = 'attended' | 'late' | 'standby' | 'no-show' | 'empty'
+type CellState = 'attended' | 'late' | 'standby' | 'no-show' | 'excused' | 'empty'
 
 export default function RaidTrackingPage() {
   const [members, setMembers] = useState<Member[]>([])
@@ -484,7 +485,7 @@ export default function RaidTrackingPage() {
     // Load attendance records
     const { data: records } = await supabase
       .from('attendance_records')
-      .select('character_id, character_name, signed_up, attended, no_call_no_show, was_late, was_benched')
+      .select('character_id, character_name, signed_up, attended, no_call_no_show, was_late, was_benched, is_excused')
       .eq('raid_event_id', raidId)
 
     const attendanceMap: Record<string, AttendanceStatus> = {}
@@ -610,6 +611,7 @@ export default function RaidTrackingPage() {
   const getCellState = (status: AttendanceStatus | undefined): CellState => {
     if (!status) return 'empty'
     if (status.no_call_no_show) return 'no-show'
+    if (status.is_excused) return 'excused'
     if (status.attended && status.was_late) return 'late'
     if (status.was_benched) return 'standby'
     if (status.attended) return 'attended'
@@ -622,6 +624,7 @@ export default function RaidTrackingPage() {
       case 'late': return 'bg-background-elevated border border-border border-l-2 border-l-warning'
       case 'standby': return 'bg-background-elevated border border-border border-l-2 border-l-warning'
       case 'no-show': return 'bg-background-elevated border border-border border-l-2 border-l-destructive'
+      case 'excused': return 'bg-background-elevated border border-border border-l-2 border-l-muted-foreground'
       default: return 'bg-background-elevated border border-border'
     }
   }
@@ -634,20 +637,23 @@ export default function RaidTrackingPage() {
     let newStatus: AttendanceStatus
     switch (state) {
       case 'attended':
-        newStatus = { signed_up: preserveSignedUp, attended: true, no_call_no_show: false, was_late: false, was_benched: false }
+        newStatus = { signed_up: preserveSignedUp, attended: true, no_call_no_show: false, was_late: false, was_benched: false, is_excused: false }
         break
       case 'late':
-        newStatus = { signed_up: preserveSignedUp, attended: true, no_call_no_show: false, was_late: true, was_benched: false }
+        newStatus = { signed_up: preserveSignedUp, attended: true, no_call_no_show: false, was_late: true, was_benched: false, is_excused: false }
         break
       case 'standby':
-        newStatus = { signed_up: preserveSignedUp, attended: false, no_call_no_show: false, was_late: false, was_benched: true }
+        newStatus = { signed_up: preserveSignedUp, attended: false, no_call_no_show: false, was_late: false, was_benched: true, is_excused: false }
         break
       case 'no-show':
-        newStatus = { signed_up: preserveSignedUp, attended: false, no_call_no_show: true, was_late: false, was_benched: false }
+        newStatus = { signed_up: preserveSignedUp, attended: false, no_call_no_show: true, was_late: false, was_benched: false, is_excused: false }
+        break
+      case 'excused':
+        newStatus = { signed_up: preserveSignedUp, attended: false, no_call_no_show: false, was_late: false, was_benched: false, is_excused: true }
         break
       case 'empty':
       default:
-        newStatus = { signed_up: preserveSignedUp, attended: false, no_call_no_show: false, was_late: false, was_benched: false }
+        newStatus = { signed_up: preserveSignedUp, attended: false, no_call_no_show: false, was_late: false, was_benched: false, is_excused: false }
         break
     }
 
@@ -689,7 +695,7 @@ export default function RaidTrackingPage() {
   const cycleStatus = (raidId: string, characterId: string, userId: string) => {
     const current = attendance[raidId]?.[characterId]
     const currentState = getCellState(current)
-    const cycle: CellState[] = ['empty', 'attended', 'late', 'standby', 'no-show']
+    const cycle: CellState[] = ['empty', 'attended', 'late', 'standby', 'no-show', 'excused']
     const currentIdx = cycle.indexOf(currentState)
     const nextState = cycle[(currentIdx + 1) % cycle.length]
     setAttendanceStatus(raidId, characterId, userId, nextState)
@@ -2574,6 +2580,7 @@ export default function RaidTrackingPage() {
                               {state === 'late' && <span className="text-[11px] font-medium text-warning bg-warning/15 px-2 py-0.5 rounded-full flex-shrink-0">Late</span>}
                               {state === 'standby' && <span className="text-[11px] font-medium text-warning bg-warning/15 px-2 py-0.5 rounded-full flex-shrink-0">Standby</span>}
                               {state === 'no-show' && <span className="text-[11px] font-medium text-destructive bg-destructive/15 px-2 py-0.5 rounded-full flex-shrink-0">No Show</span>}
+                              {state === 'excused' && <span className="text-[11px] font-medium text-muted-foreground bg-muted px-2 py-0.5 rounded-full flex-shrink-0">Excused</span>}
                               {isSignedUp && <span className="text-[11px] font-medium text-accent bg-accent/15 px-2 py-0.5 rounded-full flex-shrink-0">Signed up</span>}
                             </button>
 
@@ -2688,6 +2695,7 @@ export default function RaidTrackingPage() {
                             {state === 'late' && <span className="text-[11px] font-medium text-warning bg-warning/15 px-2 py-0.5 rounded-full flex-shrink-0">Late</span>}
                             {state === 'standby' && <span className="text-[11px] font-medium text-warning bg-warning/15 px-2 py-0.5 rounded-full flex-shrink-0">Standby</span>}
                             {state === 'no-show' && <span className="text-[11px] font-medium text-destructive bg-destructive/15 px-2 py-0.5 rounded-full flex-shrink-0">No Show</span>}
+                            {state === 'excused' && <span className="text-[11px] font-medium text-muted-foreground bg-muted px-2 py-0.5 rounded-full flex-shrink-0">Excused</span>}
                           </div>
                         </div>
                       )

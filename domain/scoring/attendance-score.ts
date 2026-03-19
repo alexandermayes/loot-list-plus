@@ -24,16 +24,22 @@ export function calculateAttendanceScore(
   const latePenaltyValue = config.late_early_penalty_value || 0
 
   // Count attended raids (benched counts as attended for scoring)
+  // Excused absences excluded from both numerator and denominator.
+  // NCNS excluded from numerator only (missing a raid still hurts your percentage).
   let attendedCount = 0
   let signedUpCount = 0
+  let excusedCount = 0
 
   records.forEach(r => {
+    if (r.is_excused) { excusedCount++; return }
     if (r.no_call_no_show) return
     if (r.attended || r.was_benched) attendedCount++
     if (r.signed_up) signedUpCount++
   })
 
-  const attendancePercentage = attendedCount / totalRaids
+  const effectiveTotal = totalRaids - excusedCount
+  if (effectiveTotal <= 0) return 0
+  const attendancePercentage = attendedCount / effectiveTotal
 
   if (config.attendance_type === 'points-per-raid') {
     const attendancePointsPerRaid = 1 - config.signup_weight
@@ -42,7 +48,7 @@ export function calculateAttendanceScore(
     let totalScore = 0
 
     records.forEach(r => {
-      if (r.no_call_no_show) return
+      if (r.no_call_no_show || r.is_excused) return // Both skip the per-raid loop
       let raidPoints = 0
       if (r.signed_up) {
         raidPoints += signupPointsPerRaid
@@ -66,7 +72,7 @@ export function calculateAttendanceScore(
     const baseScore = attendancePercentage * config.max_attendance_bonus
 
     if (config.use_signups) {
-      const signupPercentage = signedUpCount / totalRaids
+      const signupPercentage = signedUpCount / effectiveTotal
       const signupBonus = signupPercentage * config.max_attendance_bonus * config.signup_weight
       return Math.min(baseScore + signupBonus, config.max_attendance_bonus)
     }
