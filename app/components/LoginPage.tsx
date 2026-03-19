@@ -15,9 +15,10 @@ import { Key01Icon, Tick01Icon } from '@hugeicons/core-free-icons'
 interface LoginPageProps {
   nextParam?: string | null
   isAuthenticated?: boolean
+  authError?: string | null
 }
 
-export default function LoginPage({ nextParam = null, isAuthenticated = false }: LoginPageProps) {
+export default function LoginPage({ nextParam = null, isAuthenticated = false, authError = null }: LoginPageProps) {
   const supabase = createClient()
 
   // Extract invite code from next param
@@ -145,6 +146,15 @@ export default function LoginPage({ nextParam = null, isAuthenticated = false }:
             </div>
 
             <div className="flex flex-col gap-2.5 w-full">
+              {authError && (
+                <Alert variant="destructive" className="mb-2">
+                  <AlertDescription>
+                    {authError === 'auth_failed'
+                      ? 'Discord sign-in failed. Try again or check that popups aren\'t blocked.'
+                      : `Sign-in error: ${authError}`}
+                  </AlertDescription>
+                </Alert>
+              )}
               <Button
                 onClick={handleDiscordLogin}
                 variant="primary"

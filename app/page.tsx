@@ -76,10 +76,10 @@ export async function generateMetadata(): Promise<Metadata> {
   }
 }
 
-export default async function Home({ searchParams }: { searchParams: Promise<{ next?: string }> }) {
+export default async function Home({ searchParams }: { searchParams: Promise<{ next?: string; error?: string }> }) {
   const headersList = await headers()
   const host = headersList.get('host') || ''
-  const { next } = await searchParams
+  const { next, error } = await searchParams
 
   // Show marketing landing page on getlootlist.com
   if (isLandingHost(host)) {
@@ -111,5 +111,5 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ n
 
   // Show login page for unauthenticated users on app domain
   // Pass next param as prop to avoid useSearchParams + Suspense flicker
-  return <LoginPage nextParam={next || null} isAuthenticated={!!user} />
+  return <LoginPage nextParam={next || null} isAuthenticated={!!user} authError={error || null} />
 }
