@@ -132,7 +132,11 @@ export default function LootListSummaryView({
       <div className="space-y-3">
         {sortedItems.map((item) => {
           const isExpanded = expandedItems.has(item.item_id)
-          const displayPlayers = isExpanded ? item.players : item.players.slice(0, 3)
+          const sortedPlayers = [...item.players].sort((a, b) => {
+            if (a.primary_rank !== b.primary_rank) return b.primary_rank - a.primary_rank
+            return b.item_rank - a.item_rank
+          })
+          const displayPlayers = isExpanded ? sortedPlayers : sortedPlayers.slice(0, 3)
           const hasMore = item.players.length > 3
 
           return (
@@ -174,15 +178,7 @@ export default function LootListSummaryView({
                 {/* Players List */}
                 <div className="mt-3 pt-3 border-t border-border/50">
                   <div className="flex flex-wrap gap-2">
-                    {displayPlayers
-                      .sort((a, b) => {
-                        // Sort by primary rank first (descending: 50 = highest priority)
-                        if (a.primary_rank !== b.primary_rank) {
-                          return b.primary_rank - a.primary_rank
-                        }
-                        return b.item_rank - a.item_rank
-                      })
-                      .map((player) => (
+                    {displayPlayers.map((player) => (
                         <div
                           key={player.character_id}
                           className="flex items-center gap-1.5 px-2.5 py-1 bg-background-inset border border-border rounded-full"
