@@ -5,6 +5,7 @@ import { useState, useEffect, useMemo, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import dynamic from 'next/dynamic'
 import WelcomeScreen from '@/app/components/WelcomeScreen'
+import { SetupChecklist } from '@/app/components/SetupChecklist'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { UserIcon, CheckmarkCircle01Icon, AlertCircleIcon, Award01Icon, Cancel01Icon, Add01Icon, Calendar03Icon, Shield01Icon, AnalyticsUpIcon } from '@hugeicons/core-free-icons'
 
@@ -1347,6 +1348,9 @@ function DashboardContent() {
       {!isLoading && isOfficer && activeGuild && (
         <GuardianConversionBanner guildId={activeGuild.id} />
       )}
+
+      {/* Setup checklist for new guilds */}
+      {!isLoading && <SetupChecklist />}
 
       {/* Show skeleton while loading */}
       {isLoading ? (
