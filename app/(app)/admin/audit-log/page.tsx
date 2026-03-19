@@ -6,6 +6,7 @@ import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Button } from '@/components/ui/button'
 import { Select } from '@/components/ui/select'
+import { Input } from '@/components/ui/input'
 import { Heading } from '@/components/ui/typography'
 import { Search01Icon } from '@hugeicons/core-free-icons'
 
@@ -153,6 +154,8 @@ export default function AuditLogPage() {
   const [loading, setLoading] = useState(true)
   const [tableFilter, setTableFilter] = useState('')
   const [actionFilter, setActionFilter] = useState('')
+  const [search, setSearch] = useState('')
+  const [debouncedSearch, setDebouncedSearch] = useState('')
 
   const fetchLogs = useCallback(async () => {
     if (!activeGuild?.id) return
@@ -165,6 +168,7 @@ export default function AuditLogPage() {
     })
     if (tableFilter) params.set('table_name', tableFilter)
     if (actionFilter) params.set('action', actionFilter)
+    if (debouncedSearch) params.set('search', debouncedSearch)
 
     try {
       const res = await fetch(`/api/audit-logs?${params}`)
@@ -178,16 +182,22 @@ export default function AuditLogPage() {
     } finally {
       setLoading(false)
     }
-  }, [activeGuild?.id, offset, tableFilter, actionFilter])
+  }, [activeGuild?.id, offset, tableFilter, actionFilter, debouncedSearch])
 
   useEffect(() => {
     fetchLogs()
   }, [fetchLogs])
 
+  // Debounce search input
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search), 300)
+    return () => clearTimeout(timer)
+  }, [search])
+
   // Reset pagination when filters change
   useEffect(() => {
     setOffset(0)
-  }, [tableFilter, actionFilter])
+  }, [tableFilter, actionFilter, debouncedSearch])
 
   if (!isOfficer) {
     return (
@@ -209,6 +219,13 @@ export default function AuditLogPage() {
       <div className="flex items-center justify-between">
         <Heading level={2}>Audit log</Heading>
         <div className="flex items-center gap-3">
+          <Input
+            placeholder="Search by name..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            variant="pill"
+            className="w-48"
+          />
           <Select
             value={tableFilter}
             onChange={(e) => setTableFilter(e.target.value)}

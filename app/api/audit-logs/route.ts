@@ -15,6 +15,7 @@ import { batchGetDisplayNames } from '@/utils/batch-display-names'
  * - offset: Optional (default 0)
  * - table_name: Optional filter (e.g. 'loot_submissions', 'loot_history', 'attendance_records')
  * - action: Optional filter ('INSERT', 'UPDATE', 'DELETE')
+ * - search: Optional text search (filters by user display name or data content, applied post-query)
  */
 export async function GET(request: NextRequest) {
   try {
@@ -29,6 +30,7 @@ export async function GET(request: NextRequest) {
     const offset = parseInt(searchParams.get('offset') || '0')
     const tableFilter = searchParams.get('table_name')
     const actionFilter = searchParams.get('action')
+    const searchTerm = searchParams.get('search')?.toLowerCase()
 
     if (!guildId) {
       return NextResponse.json({ error: 'guild_id is required' }, { status: 400 })
@@ -41,12 +43,16 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Only officers can view audit logs' }, { status: 403 })
     }
 
+    // When searching, fetch more rows and filter post-query
+    const fetchLimit = searchTerm ? 200 : limit
+    const fetchOffset = searchTerm ? 0 : offset
+
     let query = serviceSupabase
       .from('audit_logs')
-      .select('*', { count: 'exact' })
+      .select('*', { count: searchTerm ? undefined : 'exact' })
       .eq('guild_id', guildId)
       .order('created_at', { ascending: false })
-      .range(offset, offset + limit - 1)
+      .range(fetchOffset, fetchOffset + fetchLimit - 1)
 
     if (tableFilter) {
       query = query.eq('table_name', tableFilter)
@@ -68,14 +74,33 @@ export async function GET(request: NextRequest) {
       ? await batchGetDisplayNames(serviceSupabase, userIds)
       : {}
 
-    const enrichedLogs = (logs || []).map(log => ({
+    let enrichedLogs = (logs || []).map(log => ({
       ...log,
       user_display_name: (displayNames as Record<string, string>)[log.user_id] || 'Unknown',
     }))
 
+    // Apply text search filter post-query
+    if (searchTerm) {
+      enrichedLogs = enrichedLogs.filter(log => {
+        const haystack = [
+          log.user_display_name,
+          JSON.stringify(log.old_data),
+          JSON.stringify(log.new_data),
+        ].join(' ').toLowerCase()
+        return haystack.includes(searchTerm)
+      })
+    }
+
+    const totalFiltered = searchTerm ? enrichedLogs.length : (count || 0)
+
+    // Apply pagination after search filtering
+    if (searchTerm) {
+      enrichedLogs = enrichedLogs.slice(offset, offset + limit)
+    }
+
     return NextResponse.json({
       logs: enrichedLogs,
-      total: count || 0,
+      total: totalFiltered,
       limit,
       offset,
     })
