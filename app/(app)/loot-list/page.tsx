@@ -768,13 +768,19 @@ export default function LootList() {
 
   const rankedCount = Object.keys(rankings).length
 
-  // Check if the user has zero Item #2 selections entirely
-  const hasNoSlot2Items = useMemo(() => {
+  // Check if either item column is completely empty
+  const emptyColumn = useMemo(() => {
+    let hasSlot1 = false
+    let hasSlot2 = false
     for (const key of Object.keys(rankings)) {
-      const [, slot] = key.split('-')
-      if (slot === '2') return false
+      const slot = key.split('-')[1]
+      if (slot === '1') hasSlot1 = true
+      if (slot === '2') hasSlot2 = true
+      if (hasSlot1 && hasSlot2) return null
     }
-    return true
+    if (!hasSlot1 && !hasSlot2) return null // empty list, no warning needed
+    if (!hasSlot1) return 'Item #1'
+    return 'Item #2'
   }, [rankings])
 
   // Create bracket-specific disabled sets for tokens
@@ -1415,10 +1421,10 @@ export default function LootList() {
                       ) : (
                         <Button
                           onClick={() => {
-                            if (hasNoSlot2Items && rankedCount > 0) {
+                            if (emptyColumn && rankedCount > 0) {
                               confirm({
-                                title: 'Missing Item #2 selections',
-                                description: 'Your Item #2 column is completely empty. Filling it gives you a backup option if your first choice is taken.',
+                                title: `Missing ${emptyColumn} selections`,
+                                description: `Your ${emptyColumn} column is completely empty. Filling both columns gives you a backup option if your first choice is taken.`,
                                 confirmLabel: 'Submit anyway',
                                 cancelLabel: 'Keep editing',
                                 variant: 'default',
