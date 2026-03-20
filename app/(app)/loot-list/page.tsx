@@ -768,20 +768,13 @@ export default function LootList() {
 
   const rankedCount = Object.keys(rankings).length
 
-  // Count ranks that have Item #1 but no Item #2
-  const emptySlot2Count = useMemo(() => {
-    const ranksWithSlot1 = new Set<string>()
-    const ranksWithSlot2 = new Set<string>()
+  // Check if the user has zero Item #2 selections entirely
+  const hasNoSlot2Items = useMemo(() => {
     for (const key of Object.keys(rankings)) {
-      const [rank, slot] = key.split('-')
-      if (slot === '1') ranksWithSlot1.add(rank)
-      if (slot === '2') ranksWithSlot2.add(rank)
+      const [, slot] = key.split('-')
+      if (slot === '2') return false
     }
-    let count = 0
-    for (const rank of ranksWithSlot1) {
-      if (!ranksWithSlot2.has(rank)) count++
-    }
-    return count
+    return true
   }, [rankings])
 
   // Create bracket-specific disabled sets for tokens
@@ -1422,10 +1415,10 @@ export default function LootList() {
                       ) : (
                         <Button
                           onClick={() => {
-                            if (emptySlot2Count > 0) {
+                            if (hasNoSlot2Items && rankedCount > 0) {
                               confirm({
                                 title: 'Missing Item #2 selections',
-                                description: `${emptySlot2Count} rank${emptySlot2Count === 1 ? ' has' : 's have'} an empty Item #2 column. Officers may send this back for completion.`,
+                                description: 'Your Item #2 column is completely empty. Filling it gives you a backup option if your first choice is taken.',
                                 confirmLabel: 'Submit anyway',
                                 cancelLabel: 'Keep editing',
                                 variant: 'default',
