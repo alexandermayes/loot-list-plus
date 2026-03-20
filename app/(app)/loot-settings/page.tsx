@@ -71,6 +71,14 @@ interface ItemClassRelation {
   spec_type: string // 'primary' or 'secondary'
 }
 
+// Classes that didn't exist in earlier expansions
+const EXPANSION_CLASS_EXCLUSIONS: Record<string, string[]> = {
+  'Classic': ['Death Knight', 'Monk'],
+  'The Burning Crusade': ['Death Knight', 'Monk'],
+  'Wrath of the Lich King': ['Monk'],
+  'Cataclysm': ['Monk'],
+}
+
 // Define raid tier progression order (Classic + TBC + WotLK)
 const getRaidTierOrder = (tierName: string): number => {
   const order: Record<string, number> = {
@@ -543,8 +551,23 @@ export default function AdminLootItems() {
         setClassSpecs(transformedSpecs as any)
       }
 
-      // Load raid tiers for filtering (only for active expansion)
+      // Load expansion name and filter classes not available in this expansion
       if (activeGuild.active_expansion_id) {
+        const { data: expansionData } = await supabase
+          .from('expansions')
+          .select('name')
+          .eq('id', activeGuild.active_expansion_id)
+          .single()
+
+        if (expansionData) {
+          const excluded = EXPANSION_CLASS_EXCLUSIONS[expansionData.name] || []
+          if (excluded.length > 0) {
+            setClasses(prev => prev.filter(c => !excluded.includes(c.name)))
+            setClassSpecs(prev => prev.filter((s: any) => !excluded.includes(s.class_name)))
+          }
+        }
+
+      // Load raid tiers for filtering (only for active expansion)
         const { data: tiersData } = await supabase
           .from('raid_tiers')
           .select('id, name')
