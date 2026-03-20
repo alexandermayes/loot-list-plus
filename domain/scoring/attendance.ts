@@ -44,13 +44,16 @@ function formatDate(d: Date): string {
 // ─── resolveStatus ──────────────────────────────────────────
 
 /**
- * Resolve attendance status from legacy boolean flags.
+ * Resolve attendance status from the `status` column (preferred) or
+ * legacy boolean flags (fallback during dual-write transition).
+ *
  * Single source of truth — replaces 3+ inline implementations.
  *
- * Priority order (first match wins):
+ * Boolean priority order (first match wins):
  *   no_call_no_show > is_excused > was_benched > (attended && was_late) > attended > signed_up > absent
  */
 export function resolveStatus(record: {
+  status?: string | null
   attended?: boolean
   was_late?: boolean
   was_benched?: boolean
@@ -58,6 +61,13 @@ export function resolveStatus(record: {
   signed_up?: boolean
   is_excused?: boolean
 }): AttendanceStatus {
+  // Prefer pre-computed status column if present and valid
+  const validStatuses: AttendanceStatus[] = ['attended', 'late', 'benched', 'no_show', 'excused', 'signed_up', 'absent']
+  if (record.status && validStatuses.includes(record.status as AttendanceStatus)) {
+    return record.status as AttendanceStatus
+  }
+
+  // Fallback: resolve from boolean flags
   if (record.no_call_no_show) return 'no_show'
   if (record.is_excused) return 'excused'
   if (record.was_benched) return 'benched'

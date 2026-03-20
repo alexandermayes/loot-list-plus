@@ -3,6 +3,7 @@ import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { verifyOfficerPermissions } from '@/utils/server-roles'
 import { logAudit } from '@/utils/audit/log'
+import { resolveStatus } from '@/domain/scoring'
 
 interface AttendanceRecord {
   raid_event_id: string
@@ -14,6 +15,7 @@ interface AttendanceRecord {
   no_call_no_show?: boolean
   was_late?: boolean
   was_benched?: boolean
+  is_excused?: boolean
 }
 
 /**
@@ -50,8 +52,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: permError || 'Insufficient permissions' }, { status: 403 })
     }
 
-    // Stamp modified_by on all records
-    const stampedRecords = records.map((r: AttendanceRecord) => ({ ...r, modified_by: user.id }))
+    // Stamp modified_by and computed status on all records (dual-write)
+    const stampedRecords = records.map((r: AttendanceRecord) => ({
+      ...r,
+      modified_by: user.id,
+      status: resolveStatus(r),
+    }))
 
     if (action === 'upsert') {
       const { data, error } = await serviceSupabase
@@ -155,9 +161,18 @@ export async function PATCH(request: NextRequest) {
       }
     }
 
+    // If boolean attendance fields are being updated, compute status (dual-write)
+    const attendanceBooleans = ['attended', 'was_late', 'was_benched', 'no_call_no_show', 'signed_up', 'is_excused']
+    const hasAttendanceBooleans = attendanceBooleans.some(k => k in updates)
+    const patchUpdates = {
+      ...updates,
+      modified_by: user.id,
+      ...(hasAttendanceBooleans ? { status: resolveStatus(updates) } : {}),
+    }
+
     let query = serviceSupabase
       .from('attendance_records')
-      .update({ ...updates, modified_by: user.id })
+      .update(patchUpdates)
 
     if (filters.raid_event_id) {
       query = query.eq('raid_event_id', filters.raid_event_id)
