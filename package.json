@@ -8,6 +8,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "gen:types": "supabase gen types typescript --project-id zjnhjstbqekudlsozsvi 2>/dev/null > lib/database.types.ts",
     "test": "vitest run",
     "test:watch": "vitest",
     "seed:classic": "tsx scripts/seed-classic-raids.ts",
