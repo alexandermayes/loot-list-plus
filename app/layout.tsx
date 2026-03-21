@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Poppins } from "next/font/google";
 import Script from "next/script";
 import { GuildContextProvider } from "./contexts/GuildContext";
+import { ExpansionProvider } from "./contexts/ExpansionContext";
 import { NotificationProvider } from "./contexts/NotificationContext";
 import { ThemeProvider } from "./components/ThemeProvider";
 import { SWRProvider } from "./components/SWRProvider";
@@ -159,11 +160,13 @@ export default function RootLayout({
           <SWRProvider>
             <NotificationProvider>
               <GuildContextProvider>
-                <PostHogProvider>
-                  <NotificationContainer />
-                  {children}
-                  <SpeedInsights />
-                </PostHogProvider>
+                <ExpansionProvider>
+                  <PostHogProvider>
+                    <NotificationContainer />
+                    {children}
+                    <SpeedInsights />
+                  </PostHogProvider>
+                </ExpansionProvider>
               </GuildContextProvider>
             </NotificationProvider>
           </SWRProvider>

@@ -9,7 +9,7 @@
  */
 
 import { memo, useContext, useState, useEffect } from 'react'
-import { GuildDataContext } from '@/app/contexts/GuildContext'
+import { ExpansionDataContext } from '@/app/contexts/ExpansionContext'
 
 // Lazy-load the 190KB item-icons module. Cache the getter once loaded.
 let _getItemIconUrl: ((id: number, size: 'small' | 'medium' | 'large') => string | null) | null = null
@@ -63,8 +63,8 @@ interface ItemLinkProps {
 
 const ItemLink = memo(function ItemLink({ name, wowheadId, className = '', clickable = true, showIcon = true, domain: domainProp }: ItemLinkProps) {
   // Read expansion from guild context (safe - returns undefined outside provider)
-  const guildData = useContext(GuildDataContext)
-  const expansionDomain = domainProp ?? getWowheadDomain(guildData?.currentExpansion?.expansion_name)
+  const expansionData = useContext(ExpansionDataContext)
+  const expansionDomain = domainProp ?? getWowheadDomain(expansionData?.currentExpansion?.expansion_name)
 
   // Fallback: guess from item ID ranges if no context available
   const domain = expansionDomain ?? (

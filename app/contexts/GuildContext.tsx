@@ -6,6 +6,9 @@ import { useRouter } from 'next/navigation'
 import { useNotification } from '@/app/contexts/NotificationContext'
 import type { User, AuthChangeEvent, Session } from '@supabase/supabase-js'
 
+// Re-export expansion types for backward compatibility
+export type { GuildExpansion } from './ExpansionContext'
+
 // Types
 export interface Guild {
   id: string
@@ -81,22 +84,6 @@ export interface CharacterGuildMembership {
   guild: Guild
 }
 
-export interface GuildExpansion {
-  expansion_id: string
-  expansion_name: string
-  raid_start_date: string | null
-  is_current: boolean
-  created_at: string
-  // Raid schedule settings
-  raid_days_per_week: number
-  first_raid_day: number | null
-  second_raid_day: number | null
-  third_raid_day: number | null
-  fourth_raid_day: number | null
-  fifth_raid_day: number | null
-  timezone: string
-}
-
 // Separate interface for data (changes frequently, triggers re-renders)
 export interface GuildDataContextType {
   // Existing State
@@ -111,11 +98,6 @@ export interface GuildDataContextType {
   userCharacters: Character[]
   characterMemberships: CharacterGuildMembership[]
 
-  // Expansion State
-  currentExpansion: GuildExpansion | null
-  guildExpansions: GuildExpansion[]
-  viewingExpansionId: string | null // For when users view past expansions
-
   // Derived state
   isOfficer: boolean
   hasMultipleGuilds: boolean
@@ -128,12 +110,14 @@ export interface GuildActionsContextType {
   refreshGuilds: () => Promise<void>
   switchCharacter: (characterId: string) => Promise<void>
   refreshCharacters: () => Promise<void>
-  setViewingExpansion: (expansionId: string | null) => void
-  refreshExpansions: () => Promise<void>
 }
 
-// Combined type for backward compatibility
-export interface GuildContextType extends GuildDataContextType, GuildActionsContextType {}
+// Expansion imports for the combined facade (circular at module level but safe — both export only functions)
+import { useExpansionData, useExpansionActions } from './ExpansionContext'
+import type { ExpansionDataContextType, ExpansionActionsContextType } from './ExpansionContext'
+
+// Combined type for backward compatibility (includes expansion fields)
+export interface GuildContextType extends GuildDataContextType, GuildActionsContextType, ExpansionDataContextType, ExpansionActionsContextType {}
 
 // Create separate contexts for data and actions
 // This prevents components that only use actions from re-rendering when data changes
@@ -151,11 +135,6 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
   const [activeCharacter, setActiveCharacter] = useState<Character | null>(null)
   const [userCharacters, setUserCharacters] = useState<Character[]>([])
   const [characterMemberships, setCharacterMemberships] = useState<CharacterGuildMembership[]>([])
-
-  // Expansion State
-  const [currentExpansion, setCurrentExpansion] = useState<GuildExpansion | null>(null)
-  const [guildExpansions, setGuildExpansions] = useState<GuildExpansion[]>([])
-  const [viewingExpansionId, setViewingExpansionId] = useState<string | null>(null)
 
   const [guildsLoading, setGuildsLoading] = useState(true)
   const [charactersLoading, setCharactersLoading] = useState(true)
@@ -645,46 +624,6 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  // Load expansions for active guild
-  const loadExpansions = async (guildId: string) => {
-    try {
-      const { data, error } = await supabase
-        .rpc('get_guild_expansions', { p_guild_id: guildId })
-
-      if (error) {
-        console.error('Error loading expansions:', error)
-        showNotification('error', 'Couldn\'t load expansion data. Check your connection and try again.')
-        setGuildExpansions([])
-        setCurrentExpansion(null)
-        return
-      }
-
-      setGuildExpansions(data || [])
-
-      // Set current expansion
-      const current = (data || []).find((exp: GuildExpansion) => exp.is_current)
-      setCurrentExpansion(current || null)
-
-      // Reset viewing expansion when guild changes
-      setViewingExpansionId(null)
-    } catch (error) {
-      console.error('Error in loadExpansions:', error)
-      showNotification('error', 'Couldn\'t load expansion data. Check your connection and try again.')
-      setGuildExpansions([])
-      setCurrentExpansion(null)
-    }
-  }
-
-  const refreshExpansions = useCallback(async () => {
-    if (activeGuild) {
-      await loadExpansions(activeGuild.id)
-    }
-  }, [activeGuild])
-
-  const setViewingExpansion = useCallback((expansionId: string | null) => {
-    setViewingExpansionId(expansionId)
-  }, [])
-
   // Switch to a different guild (with optional character)
   const switchGuild = useCallback(async (guildId: string, characterId?: string) => {
     if (!user) return
@@ -836,17 +775,6 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
     }
   }, [user])
 
-  // Load expansions when active guild changes
-  useEffect(() => {
-    if (activeGuild) {
-      loadExpansions(activeGuild.id)
-    } else {
-      setGuildExpansions([])
-      setCurrentExpansion(null)
-      setViewingExpansionId(null)
-    }
-  }, [activeGuild?.id])
-
   // Listen for auth changes
   useEffect(() => {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -866,9 +794,6 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
         setActiveCharacter(null)
         setUserCharacters([])
         setCharacterMemberships([])
-        setGuildExpansions([])
-        setCurrentExpansion(null)
-        setViewingExpansionId(null)
         setUser(null)
         window.location.href = '/'
       }
@@ -973,9 +898,6 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
     activeCharacter,
     userCharacters,
     characterMemberships,
-    currentExpansion,
-    guildExpansions,
-    viewingExpansionId,
     isOfficer,
     hasMultipleGuilds,
     hasMultipleCharacters
@@ -988,9 +910,6 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
     activeCharacter,
     userCharacters,
     characterMemberships,
-    currentExpansion,
-    guildExpansions,
-    viewingExpansionId,
     isOfficer,
     hasMultipleGuilds,
     hasMultipleCharacters
@@ -1003,15 +922,11 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
     refreshGuilds,
     switchCharacter,
     refreshCharacters,
-    setViewingExpansion,
-    refreshExpansions
   }), [
     switchGuild,
     refreshGuilds,
     switchCharacter,
     refreshCharacters,
-    setViewingExpansion,
-    refreshExpansions
   ])
 
   return (
@@ -1043,8 +958,11 @@ export function useGuildActions() {
 
 // Combined hook for backward compatibility
 // Components using this will re-render on any context change
+// Includes expansion data/actions so consumers don't need to change imports
 export function useGuildContext(): GuildContextType {
   const data = useGuildData()
   const actions = useGuildActions()
-  return { ...data, ...actions }
+  const expansionData = useExpansionData()
+  const expansionActions = useExpansionActions()
+  return { ...data, ...actions, ...expansionData, ...expansionActions }
 }
