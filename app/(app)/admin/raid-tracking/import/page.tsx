@@ -159,15 +159,27 @@ export default function ImportPage() {
         raidEventId = newRaid.id
       }
 
-      // Find user by character name
-      const { data: member } = await supabase
-        .from('guild_members')
-        .select('user_id')
-        .eq('guild_id', guildId)
-        .eq('character_name', characterName)
-        .single()
+      // Find character by name, then verify guild membership
+      const { data: character } = await supabase
+        .from('characters')
+        .select('id, user_id')
+        .eq('name', characterName)
+        .limit(1)
+        .maybeSingle()
 
-      if (!member) continue
+      if (!character) continue
+
+      const { data: membership } = await supabase
+        .from('character_guild_memberships')
+        .select('id')
+        .eq('character_id', character.id)
+        .eq('guild_id', guildId)
+        .eq('is_active', true)
+        .limit(1)
+        .maybeSingle()
+
+      if (!membership) continue
+      const member = { user_id: character.user_id }
 
       // Create or update attendance record
       const signedUp = signedUpIdx >= 0 ? row[signedUpIdx]?.toLowerCase() === 'true' || row[signedUpIdx] === '1' : false

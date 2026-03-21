@@ -74,22 +74,13 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Verify user is a member of this guild (check both old and new systems)
-    // Check old system first
-    const { data: oldMembership } = await supabase
-      .from('guild_members')
-      .select('id')
-      .eq('user_id', user.id)
-      .eq('guild_id', guild_id)
-      .maybeSingle()
-
-    // Check new character-based system
-    let hasCharacterMembership = false
+    // Verify user is a member of this guild via character memberships
     const { data: userCharacters } = await supabase
       .from('characters')
       .select('id')
       .eq('user_id', user.id)
 
+    let isMember = false
     if (userCharacters && userCharacters.length > 0) {
       const characterIds = userCharacters.map(c => c.id)
       const { data: charMembership } = await supabase
@@ -100,10 +91,10 @@ export async function POST(request: NextRequest) {
         .eq('is_active', true)
         .limit(1)
 
-      hasCharacterMembership = !!(charMembership && charMembership.length > 0)
+      isMember = !!(charMembership && charMembership.length > 0)
     }
 
-    if (!oldMembership && !hasCharacterMembership) {
+    if (!isMember) {
       return NextResponse.json(
         { error: 'You are not a member of this guild' },
         { status: 403 }
