@@ -136,12 +136,8 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
   const [userCharacters, setUserCharacters] = useState<Character[]>([])
   const [characterMemberships, setCharacterMemberships] = useState<CharacterGuildMembership[]>([])
 
-  const [guildsLoading, setGuildsLoading] = useState(true)
-  const [charactersLoading, setCharactersLoading] = useState(true)
+  const [loading, setLoading] = useState(true)
   const [user, setUser] = useState<User | null>(null)
-
-  // Combined loading state - only false when both guilds AND characters are loaded
-  const loading = guildsLoading || charactersLoading
 
   const supabase = createClient()
   const router = useRouter()
@@ -151,159 +147,28 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
   // This prevents UI flashing when users tab away and return (Supabase fires SIGNED_IN on visibility change)
   const hasInitiallyLoaded = useRef(false)
 
-  // Load user's guilds and active guild
-  const loadGuilds = async () => {
+  // Load user data: auth check, characters, guild memberships, active guild/character.
+  // Single function replaces the old loadGuilds + loadCharacters two-phase pattern.
+  // Auth check (getUser) runs first; if no user, bail early without redirect
+  // (the SIGNED_OUT event handler redirects if truly signed out).
+  const loadUserData = async () => {
     try {
-      setGuildsLoading(true)
+      setLoading(true)
 
-      // Get authenticated user
+      // Authenticate first — this was previously in loadGuilds
       const { data: { user: currentUser } } = await supabase.auth.getUser()
       if (!currentUser) {
         setActiveGuild(null)
         setActiveMember(null)
         setUserGuilds([])
-        setGuildsLoading(false)
-        setCharactersLoading(false)
+        setActiveCharacter(null)
+        setUserCharacters([])
+        setCharacterMemberships([])
         // Don't hard redirect here - auth session may still be initializing.
         // The SIGNED_OUT event handler will redirect if truly signed out.
         return
       }
       setUser(currentUser)
-
-      // Fetch memberships and active guild in parallel
-      const [membershipsResult, activeGuildResult] = await Promise.all([
-        supabase
-          .from('guild_members')
-          .select(`
-            id,
-            user_id,
-            guild_id,
-            character_name,
-            class_id,
-            role,
-            is_active,
-            joined_at,
-            joined_via,
-            guild:guilds (
-              id,
-              name,
-              realm,
-              faction,
-              discord_server_id,
-              icon_url,
-              created_by,
-              is_active,
-              require_discord_verification,
-              created_at,
-              active_expansion_id
-            ),
-            class:wow_classes (
-              name,
-              color_hex
-            )
-          `)
-          .eq('user_id', currentUser.id)
-          .eq('is_active', true)
-          .order('joined_at', { ascending: true }),
-        supabase
-          .from('user_active_guilds')
-          .select('active_guild_id')
-          .eq('user_id', currentUser.id)
-          .single()
-      ])
-
-      const { data: memberships, error: membershipsError } = membershipsResult
-      const { data: activeGuildData } = activeGuildResult
-
-      if (membershipsError) {
-        console.error('Error loading guild memberships:', membershipsError)
-        console.error('Error details:', JSON.stringify(membershipsError, null, 2))
-        console.error('Error code:', membershipsError?.code)
-        console.error('Error message:', membershipsError?.message)
-        console.error('Error hint:', membershipsError?.hint)
-        setUserGuilds([])
-        setGuildsLoading(false)
-        return
-      }
-
-      // Transform data into GuildMembership format
-      const guilds: GuildMembership[] = (memberships || []).map((m: any) => ({
-        guild: m.guild as Guild,
-        member: {
-          id: m.id,
-          user_id: m.user_id,
-          guild_id: m.guild_id,
-          character_name: m.character_name,
-          class_id: m.class_id,
-          role: m.role,
-          is_active: m.is_active,
-          joined_at: m.joined_at,
-          joined_via: m.joined_via
-        } as GuildMember,
-        class: m.class || { name: 'Unknown', color_hex: '#808080' }
-      }))
-
-      setUserGuilds(guilds)
-
-      // If user has no guilds, redirect to guild selection
-      if (guilds.length === 0) {
-        setActiveGuild(null)
-        setActiveMember(null)
-        setGuildsLoading(false)
-        // Don't redirect here - let pages handle it
-        return
-      }
-
-      let targetGuildId: string | null = null
-
-      if (activeGuildData?.active_guild_id) {
-        // Verify user is still a member of the saved active guild
-        const isStillMember = guilds.some(g => g.guild.id === activeGuildData.active_guild_id)
-        if (isStillMember) {
-          targetGuildId = activeGuildData.active_guild_id
-        }
-      }
-
-      // If no valid active guild, use first guild
-      if (!targetGuildId && guilds.length > 0) {
-        targetGuildId = guilds[0].guild.id
-
-        // Save as active guild
-        await supabase
-          .from('user_active_guilds')
-          .upsert({
-            user_id: currentUser.id,
-            active_guild_id: targetGuildId,
-            updated_at: new Date().toISOString()
-          })
-      }
-
-      // Set active guild and member
-      if (targetGuildId) {
-        const activeGuildship = guilds.find(g => g.guild.id === targetGuildId)
-        if (activeGuildship) {
-          setActiveGuild(activeGuildship.guild)
-          setActiveMember(activeGuildship.member)
-        }
-      }
-
-    } catch (error) {
-      console.error('Error in loadGuilds:', error)
-      showNotification('error', 'Couldn\'t load your guilds. Check your connection and try again.')
-    } finally {
-      setGuildsLoading(false)
-      hasInitiallyLoaded.current = true
-    }
-  }
-
-  // Load user's characters and their guild memberships
-  const loadCharacters = async () => {
-    try {
-      setCharactersLoading(true)
-      if (!user) {
-        setCharactersLoading(false)
-        return
-      }
 
       // Fetch all user's characters
       const { data: characters, error: charactersError } = await supabase
@@ -320,7 +185,7 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
             name
           )
         `)
-        .eq('user_id', user.id)
+        .eq('user_id', currentUser.id)
         .order('is_main', { ascending: false })
         .order('created_at', { ascending: true })
 
@@ -338,6 +203,7 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
       // Fetch specs and memberships in parallel for better performance
       let enrichedCharacters: typeof characters = []
       let transformedMemberships: any[] = []
+      let derivedGuilds: GuildMembership[] = []
 
       if (characters && characters.length > 0) {
         type CharacterData = { id: string; spec_id: string | null; name: string; [key: string]: unknown }
@@ -486,11 +352,11 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
           }
 
           // Build userGuilds array from character memberships
-          const derivedGuilds: GuildMembership[] = Array.from(guildMap.values()).map(({ guild, role, membership }) => ({
+          derivedGuilds = Array.from(guildMap.values()).map(({ guild, role, membership }) => ({
             guild: guild as Guild,
             member: {
               id: membership.id,
-              user_id: user.id,
+              user_id: currentUser.id,
               guild_id: guild.id,
               character_name: membership.character?.name || '',
               class_id: membership.character?.class_id || '',
@@ -503,17 +369,6 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
           }))
 
           setUserGuilds(derivedGuilds)
-
-          // Update activeMember role from character_guild_memberships (new system)
-          // The legacy guild_members table role may be stale
-          setActiveMember(prev => {
-            if (!prev) return prev
-            const derived = derivedGuilds.find(g => g.guild.id === prev.guild_id)
-            if (derived && derived.member.role !== prev.role) {
-              return { ...prev, role: derived.member.role }
-            }
-            return prev
-          })
         }
       } else {
         setUserCharacters([])
@@ -525,7 +380,7 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
       const { data: activeCharData } = await supabase
         .from('user_active_characters')
         .select('active_character_id, active_guild_id')
-        .eq('user_id', user.id)
+        .eq('user_id', currentUser.id)
         .maybeSingle()
 
       if (activeCharData?.active_character_id) {
@@ -539,13 +394,19 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
         setActiveCharacter(enrichedCharacters[0])
       }
 
-      // Set activeGuild from character memberships (new system)
-      // This is critical - the old loadGuilds uses guild_members table which may be empty
+      // Helper to set both activeGuild and activeMember from derived data
+      const setActiveGuildAndMember = (guild: Guild) => {
+        setActiveGuild(guild)
+        const derived = derivedGuilds.find(g => g.guild.id === guild.id)
+        setActiveMember(derived?.member || null)
+      }
+
+      // Set activeGuild from character memberships
       if (activeCharData?.active_guild_id) {
         // Find the guild from memberships
         const membershipWithGuild = transformedMemberships.find(m => m.guild_id === activeCharData.active_guild_id)
         if (membershipWithGuild?.guild) {
-          setActiveGuild(membershipWithGuild.guild as Guild)
+          setActiveGuildAndMember(membershipWithGuild.guild as Guild)
         } else {
           // No active membership found for this guild
           // This could mean: 1) User left the guild, or 2) User joined guild but hasn't created a character yet
@@ -569,7 +430,7 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
                   active_guild_id: null,
                   updated_at: new Date().toISOString()
                 })
-                .eq('user_id', user.id)
+                .eq('user_id', currentUser.id)
             }
           } else {
             // User has characters but no membership in this guild - stale reference
@@ -580,11 +441,11 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
                 active_guild_id: null,
                 updated_at: new Date().toISOString()
               })
-              .eq('user_id', user.id)
+              .eq('user_id', currentUser.id)
 
             // If user has other guild memberships, set the first one as active
             if (transformedMemberships.length > 0 && transformedMemberships[0]?.guild) {
-              setActiveGuild(transformedMemberships[0].guild as Guild)
+              setActiveGuildAndMember(transformedMemberships[0].guild as Guild)
 
               await supabase
                 .from('user_active_characters')
@@ -592,7 +453,7 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
                   active_guild_id: transformedMemberships[0].guild_id,
                   updated_at: new Date().toISOString()
                 })
-                .eq('user_id', user.id)
+                .eq('user_id', currentUser.id)
             } else {
               // User has no guild memberships - set activeGuild to null
               setActiveGuild(null)
@@ -601,13 +462,13 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
         }
       } else if (transformedMemberships.length > 0 && transformedMemberships[0]?.guild) {
         // If no saved active guild, use first guild from character memberships
-        setActiveGuild(transformedMemberships[0].guild as Guild)
+        setActiveGuildAndMember(transformedMemberships[0].guild as Guild)
 
         // Also save this as the active guild
         await supabase
           .from('user_active_characters')
           .upsert({
-            user_id: user.id,
+            user_id: currentUser.id,
             active_character_id: enrichedCharacters[0]?.id || null,
             active_guild_id: transformedMemberships[0].guild_id,
             updated_at: new Date().toISOString()
@@ -617,10 +478,11 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
         setActiveGuild(null)
       }
     } catch (error) {
-      console.error('Error in loadCharacters:', error)
-      showNotification('error', 'Couldn\'t load your characters. Check your connection and try again.')
+      console.error('Error in loadUserData:', error)
+      showNotification('error', 'Couldn\'t load your data. Check your connection and try again.')
     } finally {
-      setCharactersLoading(false)
+      setLoading(false)
+      hasInitiallyLoaded.current = true
     }
   }
 
@@ -753,27 +615,20 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
     }
   }, [user, userCharacters, activeGuild, characterMemberships, router, showNotification])
 
-  // Refresh guilds (useful after joining a new guild)
+  // Refresh all user data (guilds + characters). Both callbacks call the same
+  // function because guild state is now derived entirely from character memberships.
   const refreshGuilds = useCallback(async () => {
-    await loadGuilds()
+    await loadUserData()
   }, [])
 
-  // Refresh characters (useful after creating a new character)
   const refreshCharacters = useCallback(async () => {
-    await loadCharacters()
+    await loadUserData()
   }, [])
 
-  // Load guilds and characters on mount
+  // Load all user data on mount (single call replaces old loadGuilds + loadCharacters chain)
   useEffect(() => {
-    loadGuilds()
+    loadUserData()
   }, [])
-
-  // Load characters when user is set
-  useEffect(() => {
-    if (user) {
-      loadCharacters()
-    }
-  }, [user])
 
   // Listen for auth changes
   useEffect(() => {
@@ -784,7 +639,7 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
         // This prevents UI flashing when users tab away and return
         // (Supabase fires SIGNED_IN on visibility change when restoring session)
         if (!hasInitiallyLoaded.current) {
-          loadGuilds()
+          loadUserData()
         }
       } else if (event === 'SIGNED_OUT') {
         hasInitiallyLoaded.current = false
@@ -838,7 +693,8 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
         }
       }
 
-      // Check old system (backwards compatibility)
+      // Check via activeMember (covers the no-character edge case where user
+      // joined a guild but hasn't created a character yet)
       if (activeMember) {
         const { data: roleData } = await supabase
           .from('guild_roles')
