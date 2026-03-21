@@ -262,12 +262,6 @@ export async function PUT(request: NextRequest) {
         .eq('role', 'Guild Master')
         .neq('character_id', character_ids[0])
 
-      await serviceSupabase
-        .from('guild_members')
-        .update({ role: 'Officer' })
-        .eq('guild_id', guild_id)
-        .eq('role', 'Guild Master')
-        .neq('user_id', target_user_id)
     }
 
     // Update character_guild_memberships
@@ -281,13 +275,6 @@ export async function PUT(request: NextRequest) {
       console.error('Error updating role:', updateError)
       return NextResponse.json({ error: 'Failed to update role' }, { status: 500 })
     }
-
-    // Also update guild_members for backwards compatibility
-    await serviceSupabase
-      .from('guild_members')
-      .update({ role: new_role })
-      .eq('guild_id', guild_id)
-      .eq('user_id', target_user_id)
 
     logAudit({
       supabase: serviceSupabase,
@@ -362,13 +349,6 @@ export async function DELETE(request: NextRequest) {
       console.error('Error removing member:', updateError)
       return NextResponse.json({ error: 'Failed to remove member' }, { status: 500 })
     }
-
-    // Also update guild_members for backwards compatibility
-    await serviceSupabase
-      .from('guild_members')
-      .update({ is_active: false })
-      .eq('guild_id', guildId)
-      .eq('user_id', targetUserId)
 
     logAudit({
       supabase: serviceSupabase,

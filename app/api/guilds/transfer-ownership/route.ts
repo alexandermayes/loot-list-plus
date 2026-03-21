@@ -115,24 +115,6 @@ export async function POST(request: NextRequest) {
         .eq('is_active', true)
     }
 
-    // Also update guild_members table for backwards compatibility
-    await serviceSupabase
-      .from('guild_members')
-      .update({ role: guildMasterRoleName })
-      .eq('guild_id', guild_id)
-      .eq('user_id', new_owner_user_id)
-
-    if (currentOwnerCharacterIds.length > 0) {
-      const officerRole = roles.find(r => r.position >= ROLE_POSITIONS.OFFICER && r.position < ROLE_POSITIONS.GUILD_MASTER)
-      const officerRoleName = officerRole?.name || 'Officer'
-
-      await serviceSupabase
-        .from('guild_members')
-        .update({ role: officerRoleName })
-        .eq('guild_id', guild_id)
-        .eq('user_id', user.id)
-    }
-
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error('Error in POST /api/guilds/transfer-ownership:', error)

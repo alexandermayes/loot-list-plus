@@ -24,15 +24,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Check if user is a member of this guild (check both old and new systems)
-    const { data: oldMembership } = await supabase
-      .from('guild_members')
-      .select('id, guild_id')
-      .eq('user_id', user.id)
-      .eq('guild_id', guild_id)
-      .maybeSingle()
-
-    // Check new character-based system
+    // Check character-based membership system
     const { data: userCharacters } = await supabase
       .from('characters')
       .select('id')
@@ -53,7 +45,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    if (!oldMembership && characterMemberships.length === 0) {
+    if (characterMemberships.length === 0) {
       return NextResponse.json(
         { error: 'You are not a member of this guild' },
         { status: 404 }
@@ -74,20 +66,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Delete the old system membership if exists
-    if (oldMembership) {
-      const { error: deleteError } = await supabase
-        .from('guild_members')
-        .delete()
-        .eq('user_id', user.id)
-        .eq('guild_id', guild_id)
-
-      if (deleteError) {
-        console.error('Error deleting guild membership:', deleteError)
-      }
-    }
-
-    // Delete character memberships (new system)
+    // Deactivate character memberships (trigger syncs guild_members automatically)
     if (characterMemberships.length > 0) {
       const charMembershipIds = characterMemberships.map(m => m.id)
       const { error: charDeleteError } = await supabase
@@ -104,46 +83,22 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Check if user has any other guilds (check both systems)
-    const { data: remainingOldMemberships } = await supabase
-      .from('guild_members')
-      .select('guild_id')
-      .eq('user_id', user.id)
-      .limit(1)
-
-    let hasRemainingCharMemberships = false
+    // Check if user has any other guild memberships
+    let newActiveGuildId: string | null = null
+    let hasOtherGuilds = false
     if (userCharacters && userCharacters.length > 0) {
       const characterIds = userCharacters.map(c => c.id)
-      const { data: remainingCharMemberships } = await supabase
+      const { data: remainingMembership } = await supabase
         .from('character_guild_memberships')
         .select('guild_id')
         .in('character_id', characterIds)
         .eq('is_active', true)
         .limit(1)
+        .maybeSingle()
 
-      hasRemainingCharMemberships = !!(remainingCharMemberships && remainingCharMemberships.length > 0)
-    }
-
-    // Determine if user has any remaining guilds
-    const hasOtherGuilds = (remainingOldMemberships && remainingOldMemberships.length > 0) || hasRemainingCharMemberships
-
-    // Find a guild_id to set as the new active guild
-    let newActiveGuildId: string | null = null
-    if (remainingOldMemberships && remainingOldMemberships.length > 0) {
-      newActiveGuildId = remainingOldMemberships[0].guild_id
-    } else if (hasRemainingCharMemberships && userCharacters && userCharacters.length > 0) {
-      // Get the first remaining character membership's guild
-      const characterIds = userCharacters.map(c => c.id)
-      const { data: firstCharMembership } = await supabase
-        .from('character_guild_memberships')
-        .select('guild_id')
-        .in('character_id', characterIds)
-        .eq('is_active', true)
-        .limit(1)
-        .single()
-
-      if (firstCharMembership) {
-        newActiveGuildId = firstCharMembership.guild_id
+      if (remainingMembership) {
+        hasOtherGuilds = true
+        newActiveGuildId = remainingMembership.guild_id
       }
     }
 

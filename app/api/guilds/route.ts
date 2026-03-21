@@ -204,16 +204,6 @@ export async function POST(request: NextRequest) {
         )
       }
 
-      // Also create legacy guild_members record for backwards compatibility
-      await serviceSupabase
-        .from('guild_members')
-        .upsert({
-          guild_id: guild.id,
-          user_id: user.id,
-          role: 'Guild Master',
-          is_active: true,
-          joined_via: 'manual'
-        }, { onConflict: 'guild_id,user_id' })
     } else {
       // No valid character - user will be prompted to create one
       // Guild Master role will be assigned when character is created (CreateCharacterModal checks created_by)

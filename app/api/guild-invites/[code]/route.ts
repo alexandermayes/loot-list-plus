@@ -225,17 +225,6 @@ export async function POST(
         )
       }
 
-      // Also reactivate legacy guild_members record
-      await serviceSupabase
-        .from('guild_members')
-        .upsert({
-          guild_id: guildId,
-          user_id: user.id,
-          role: 'Member',
-          is_active: true,
-          joined_via: 'invite_code'
-        }, { onConflict: 'guild_id,user_id' })
-
       // Set as active character and guild for user
       await serviceSupabase
         .from('user_active_characters')
@@ -272,17 +261,6 @@ export async function POST(
         { status: 500 }
       )
     }
-
-    // Also create legacy guild_members record for backwards compatibility
-    await serviceSupabase
-      .from('guild_members')
-      .upsert({
-        guild_id: guildId,
-        user_id: user.id,
-        role: 'Member',
-        is_active: true,
-        joined_via: 'invite_code'
-      }, { onConflict: 'guild_id,user_id' })
 
     // Set as active character and guild for user
     await serviceSupabase
