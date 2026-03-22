@@ -20,6 +20,8 @@ import {
   Time01Icon,
   Shield01Icon,
 } from '@hugeicons/core-free-icons'
+import { explainScore } from '@/domain/scoring/explain'
+import type { ScoreResult, ScoreComponents, ScoreLine } from '@/domain/types'
 
 interface PlayerRanking {
   player_name: string
@@ -43,6 +45,31 @@ interface ScoreComparisonModalProps {
   itemName: string
   userRanking: PlayerRanking | null
   winnerRanking: PlayerRanking | null
+}
+
+/** Reconstruct a ScoreResult from flat PlayerRanking fields */
+function rankingToScoreResult(r: PlayerRanking): ScoreResult {
+  const components: ScoreComponents = {
+    itemRank: r.rank,
+    attendanceScore: r.attendance_score,
+    rankModifier: r.role_modifier,
+    roleBonus: r.role_bonus,
+    badLuckBonus: r.bad_luck_bonus,
+    priorityBonus: r.priority_bonus,
+    trialPenalty: r.trial_penalty,
+  }
+  return { total: r.loot_score, components }
+}
+
+/** Icon + color per component key (UI concern, not domain) */
+const COMPONENT_STYLES: Record<string, { icon: any; iconColor: string }> = {
+  itemRank: { icon: Target01Icon, iconColor: 'bg-yellow-500/20 text-yellow-500' },
+  attendance: { icon: Calendar03Icon, iconColor: 'bg-blue-500/20 text-blue-500' },
+  rankModifier: { icon: UserIcon, iconColor: 'bg-purple-500/20 text-purple-500' },
+  roleBonus: { icon: Shield01Icon, iconColor: 'bg-cyan-500/20 text-cyan-500' },
+  badLuckBonus: { icon: SparklesIcon, iconColor: 'bg-red-500/20 text-red-500' },
+  priorityBonus: { icon: Award01Icon, iconColor: 'bg-green-500/20 text-green-500' },
+  trialPenalty: { icon: Time01Icon, iconColor: 'bg-yellow-500/20 text-yellow-500' },
 }
 
 function ScoreRow({
@@ -77,57 +104,46 @@ function ScoreRow({
   )
 }
 
-function getTip(userRanking: PlayerRanking, winnerRanking: PlayerRanking): string {
-  const totalDiff = winnerRanking.loot_score - userRanking.loot_score
-
-  // Find the biggest contributing factor
-  const gaps = [
-    { name: 'item rank', diff: winnerRanking.rank - userRanking.rank },
-    { name: 'attendance', diff: winnerRanking.attendance_score - userRanking.attendance_score },
-    { name: 'role modifier', diff: winnerRanking.role_modifier - userRanking.role_modifier },
-    { name: 'role bonus', diff: (winnerRanking.role_bonus || 0) - (userRanking.role_bonus || 0) },
-    { name: 'priority bonus', diff: winnerRanking.priority_bonus - userRanking.priority_bonus },
-    { name: 'trial penalty', diff: winnerRanking.trial_penalty - userRanking.trial_penalty },
-  ]
+/** Generate a contextual tip based on the biggest gap between two explanations */
+function getTip(userLines: ScoreLine[], winnerLines: ScoreLine[], userRanking: PlayerRanking, totalDiff: number): string {
+  // Build a gap map by key
+  const winnerMap = new Map(winnerLines.map(l => [l.key, l.value]))
+  const gaps = userLines.map(l => ({
+    key: l.key || '',
+    label: l.label,
+    diff: (winnerMap.get(l.key!) || 0) - l.value,
+  }))
 
   const biggestGap = gaps.reduce((max, gap) => gap.diff > max.diff ? gap : max, gaps[0])
 
-  // Very close - likely would have come down to a roll
   if (totalDiff < 1) {
     return "You were neck and neck. With scores this close, it often comes down to the roll."
   }
 
-  // Attendance was the main factor
-  if (biggestGap.name === 'attendance' && biggestGap.diff > 1) {
+  if (biggestGap.key === 'attendance' && biggestGap.diff > 1) {
     return "Attendance made the difference here. Staying consistent with raids will help your score over time."
   }
 
-  // Item rank was the main factor
-  if (biggestGap.name === 'item rank' && biggestGap.diff >= 2) {
+  if (biggestGap.key === 'itemRank' && biggestGap.diff >= 2) {
     return "They ranked this item higher than you did. For future tiers, consider how you prioritize your most-wanted items."
   }
 
-  // Priority bonus was the factor
-  if (biggestGap.name === 'priority bonus' && biggestGap.diff > 0) {
+  if (biggestGap.key === 'priorityBonus' && biggestGap.diff > 0) {
     return "This item has priority set for certain roles or specs. The winner matched a priority that gave them a boost."
   }
 
-  // Role modifier (guild rank)
-  if (biggestGap.name === 'role modifier' && biggestGap.diff > 0) {
+  if (biggestGap.key === 'rankModifier' && biggestGap.diff > 0) {
     return "Guild rank contributed to their score. This reflects their role and responsibilities in the guild."
   }
 
-  // Role bonus (raid role)
-  if (biggestGap.name === 'role bonus' && biggestGap.diff > 0) {
+  if (biggestGap.key === 'roleBonus' && biggestGap.diff > 0) {
     return "Their raid role (Tank, Healer, DPS) has a higher bonus configured. This is set by officers in loot settings."
   }
 
-  // Trial penalty
-  if (biggestGap.name === 'trial penalty' && userRanking.is_trial) {
+  if (biggestGap.key === 'trialPenalty' && userRanking.is_trial) {
     return "Your trial status applies a penalty to your score. Once promoted to full member, this penalty will be removed."
   }
 
-  // Generic fallback
   return "Keep showing up consistently and you'll be well-positioned for future drops."
 }
 
@@ -140,8 +156,27 @@ export default function ScoreComparisonModal({
 }: ScoreComparisonModalProps) {
   if (!userRanking || !winnerRanking) return null
 
-  const tip = getTip(userRanking, winnerRanking)
+  // Generate explanations from canonical engine path
+  const userExplanation = explainScore(rankingToScoreResult(userRanking))
+  const winnerExplanation = explainScore(rankingToScoreResult(winnerRanking))
+
+  // Merge lines by key for side-by-side comparison
+  // Use the union of both explanations' keys (one may have lines the other doesn't)
+  const allKeys = new Map<string, { label: string; userValue: number; winnerValue: number }>()
+  for (const line of userExplanation.lines) {
+    allKeys.set(line.key!, { label: line.label, userValue: line.value, winnerValue: 0 })
+  }
+  for (const line of winnerExplanation.lines) {
+    const existing = allKeys.get(line.key!)
+    if (existing) {
+      existing.winnerValue = line.value
+    } else {
+      allKeys.set(line.key!, { label: line.label, userValue: 0, winnerValue: line.value })
+    }
+  }
+
   const scoreDiff = winnerRanking.loot_score - userRanking.loot_score
+  const tip = getTip(userExplanation.lines, winnerExplanation.lines, userRanking, scoreDiff)
 
   return (
     <Modal open={open} onClose={onClose} size="default">
@@ -152,7 +187,6 @@ export default function ScoreComparisonModal({
       <ModalBody className="space-y-4">
         {/* Score Summary */}
         <div className="flex gap-4">
-          {/* User Score */}
           <div className="flex-1 bg-background-subtle border border-border rounded-lg p-4 text-center">
             <p className="text-muted-foreground text-[12px] uppercase tracking-wide mb-1">Your score</p>
             <p className="text-foreground text-2xl font-semibold">{userRanking.loot_score.toFixed(1)}</p>
@@ -161,7 +195,6 @@ export default function ScoreComparisonModal({
             </p>
           </div>
 
-          {/* Winner Score */}
           <div className="flex-1 bg-accent/10 border border-accent/30 rounded-lg p-4 text-center">
             <p className="text-muted-foreground text-[12px] uppercase tracking-wide mb-1">Winner's score</p>
             <p className="text-accent text-2xl font-semibold">{winnerRanking.loot_score.toFixed(1)}</p>
@@ -178,7 +211,7 @@ export default function ScoreComparisonModal({
           </span>
         </div>
 
-        {/* Detailed Breakdown */}
+        {/* Detailed Breakdown — driven by explainScore() */}
         <div className="bg-background-subtle border border-border rounded-lg p-4">
           <div className="flex items-center gap-3 mb-3 pb-2 border-b border-border">
             <span className="text-muted-foreground text-[12px] uppercase tracking-wide flex-1">Component</span>
@@ -188,59 +221,19 @@ export default function ScoreComparisonModal({
           </div>
 
           <div className="divide-y divide-border/50">
-            <ScoreRow
-              label="Item rank"
-              icon={Target01Icon}
-              iconColor="bg-yellow-500/20 text-yellow-500"
-              userValue={userRanking.rank}
-              winnerValue={winnerRanking.rank}
-            />
-            <ScoreRow
-              label="Attendance"
-              icon={Calendar03Icon}
-              iconColor="bg-blue-500/20 text-blue-500"
-              userValue={userRanking.attendance_score}
-              winnerValue={winnerRanking.attendance_score}
-            />
-            <ScoreRow
-              label="Rank modifier"
-              icon={UserIcon}
-              iconColor="bg-purple-500/20 text-purple-500"
-              userValue={userRanking.role_modifier}
-              winnerValue={winnerRanking.role_modifier}
-            />
-            {((userRanking.role_bonus || 0) !== 0 || (winnerRanking.role_bonus || 0) !== 0) && (
-              <ScoreRow
-                label="Role bonus"
-                icon={Shield01Icon}
-                iconColor="bg-cyan-500/20 text-cyan-500"
-                userValue={userRanking.role_bonus || 0}
-                winnerValue={winnerRanking.role_bonus || 0}
-              />
-            )}
-            <ScoreRow
-              label="Bad luck bonus"
-              icon={SparklesIcon}
-              iconColor="bg-red-500/20 text-red-500"
-              userValue={userRanking.bad_luck_bonus}
-              winnerValue={winnerRanking.bad_luck_bonus}
-            />
-            <ScoreRow
-              label="Priority bonus"
-              icon={Award01Icon}
-              iconColor="bg-green-500/20 text-green-500"
-              userValue={userRanking.priority_bonus}
-              winnerValue={winnerRanking.priority_bonus}
-            />
-            {(userRanking.trial_penalty !== 0 || winnerRanking.trial_penalty !== 0) && (
-              <ScoreRow
-                label="Trial penalty"
-                icon={Time01Icon}
-                iconColor="bg-yellow-500/20 text-yellow-500"
-                userValue={userRanking.trial_penalty}
-                winnerValue={winnerRanking.trial_penalty}
-              />
-            )}
+            {[...allKeys.entries()].map(([key, { label, userValue, winnerValue }]) => {
+              const style = COMPONENT_STYLES[key] || { icon: InformationCircleIcon, iconColor: 'bg-muted text-muted-foreground' }
+              return (
+                <ScoreRow
+                  key={key}
+                  label={label}
+                  icon={style.icon}
+                  iconColor={style.iconColor}
+                  userValue={userValue}
+                  winnerValue={winnerValue}
+                />
+              )
+            })}
           </div>
         </div>
 
