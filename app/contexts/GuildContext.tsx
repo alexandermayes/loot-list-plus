@@ -136,6 +136,9 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
   const [userCharacters, setUserCharacters] = useState<Character[]>([])
   const [characterMemberships, setCharacterMemberships] = useState<CharacterGuildMembership[]>([])
 
+  // Cached role positions — avoids re-querying guild_roles on every officer check
+  const [rolePositionCache, setRolePositionCache] = useState<Map<string, Map<string, number>>>(new Map())
+
   const [loading, setLoading] = useState(true)
   const [user, setUser] = useState<User | null>(null)
 
@@ -369,6 +372,7 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
           }))
 
           setUserGuilds(derivedGuilds)
+          setRolePositionCache(guildRolePositions)
         }
       } else {
         setUserCharacters([])
@@ -659,86 +663,35 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
-  // Derived state
-  // Check if user has officer role via position (>= 50) instead of hardcoded names
-  // This allows guilds to customize role names while maintaining permissions
-  const [isOfficer, setIsOfficer] = useState(false)
+  // Derived state — officer check using cached role positions (zero DB queries)
+  const defaultPositions = useMemo(() => new Map([['Guild Master', 100], ['Officer', 50], ['Member', 0]]), [])
 
-  useEffect(() => {
-    const checkOfficerStatus = async () => {
-      // No guild = not an officer
-      if (!activeGuild) {
-        setIsOfficer(false)
-        return
-      }
+  const isOfficer = useMemo(() => {
+    if (!activeGuild) return false
 
-      // Guild creator is always an officer (even without a character)
-      // First check from cached activeGuild
-      if (user && activeGuild.created_by && activeGuild.created_by === user.id) {
-        setIsOfficer(true)
-        return
-      }
+    // Guild creator is always an officer (even without a character)
+    if (user && activeGuild.created_by === user.id) return true
 
-      // Fallback: query guild directly to verify created_by (in case cached data is stale)
-      if (user) {
-        const { data: guildCheck } = await supabase
-          .from('guilds')
-          .select('created_by')
-          .eq('id', activeGuild.id)
-          .single()
+    // Helper to check role position from cache
+    const getRolePosition = (roleName: string): number => {
+      const guildPositions = rolePositionCache.get(activeGuild.id)
+      if (guildPositions) return guildPositions.get(roleName) ?? defaultPositions.get(roleName) ?? 0
+      return defaultPositions.get(roleName) ?? 0
+    }
 
-        if (guildCheck?.created_by === user.id) {
-          setIsOfficer(true)
-          return
-        }
-      }
+    // Check via activeMember (covers the no-character edge case)
+    if (activeMember && getRolePosition(activeMember.role) >= 50) return true
 
-      // Check via activeMember (covers the no-character edge case where user
-      // joined a guild but hasn't created a character yet)
-      if (activeMember) {
-        const { data: roleData } = await supabase
-          .from('guild_roles')
-          .select('position')
-          .eq('guild_id', activeGuild.id)
-          .eq('name', activeMember.role)
-          .single()
-
-        if (roleData && roleData.position >= 50) {
-          setIsOfficer(true)
-          return
-        }
-      }
-
-      // Check new character system
-      if (!activeCharacter) {
-        setIsOfficer(false)
-        return
-      }
-
-      // Find the membership for the active character in the active guild
+    // Check via active character's membership
+    if (activeCharacter) {
       const membership = characterMemberships.find(
         m => m.character_id === activeCharacter.id && m.guild_id === activeGuild.id
       )
-
-      if (!membership) {
-        setIsOfficer(false)
-        return
-      }
-
-      // Fetch the role position from guild_roles
-      const { data: roleData } = await supabase
-        .from('guild_roles')
-        .select('position')
-        .eq('guild_id', activeGuild.id)
-        .eq('name', membership.role)
-        .single()
-
-      // Position >= 50 means officer or guild master
-      setIsOfficer(!!(roleData && roleData.position >= 50))
+      if (membership && getRolePosition(membership.role) >= 50) return true
     }
 
-    checkOfficerStatus()
-  }, [activeCharacter, activeGuild, characterMemberships, activeMember, user])
+    return false
+  }, [activeCharacter, activeGuild, characterMemberships, activeMember, user, rolePositionCache, defaultPositions])
 
   const hasMultipleGuilds = userGuilds.length > 1
   const hasMultipleCharacters = userCharacters.length > 1
