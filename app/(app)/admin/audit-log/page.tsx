@@ -21,6 +21,7 @@ interface AuditLog {
   new_data: Record<string, any> | null
   changed_fields: string[] | null
   created_at: string
+  _character_names: Record<string, string>
 }
 
 const TABLE_LABELS: Record<string, string> = {
@@ -62,6 +63,18 @@ function formatTimestamp(iso: string): string {
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: d.getFullYear() !== now.getFullYear() ? 'numeric' : undefined })
 }
 
+/** Resolve a character ID to its name using the enriched _character_names map */
+function resolveCharName(log: AuditLog, id: string | undefined | null): string {
+  if (!id) return 'unknown'
+  return log._character_names?.[id] || id.slice(0, 8) + '...'
+}
+
+/** Resolve an array of character IDs to a comma-separated name list */
+function resolveCharNames(log: AuditLog, ids: string[] | undefined | null): string {
+  if (!ids || ids.length === 0) return ''
+  return ids.map(id => resolveCharName(log, id)).join(', ')
+}
+
 function describeSummary(log: AuditLog): string {
   const { table_name, action, old_data, new_data, changed_fields } = log
 
@@ -94,12 +107,17 @@ function describeSummary(log: AuditLog): string {
     }
   }
 
-  // Attendance
+  // Attendance — resolve character IDs to names
   if (table_name === 'attendance_records') {
+    const charIds = old_data?.filters?.character_ids || new_data?.filters?.character_ids
+    const charId = old_data?.filters?.character_id || old_data?.character_id || new_data?.character_id
+    const charNames = charIds ? resolveCharNames(log, charIds) : charId ? resolveCharName(log, charId) : ''
+    const forWho = charNames ? ` for ${charNames}` : ''
+
     const count = new_data?.record_count || old_data?.ids
-    if (action === 'INSERT') return `Saved ${count || ''} attendance record${count !== 1 ? 's' : ''}`
-    if (action === 'UPDATE') return `Updated attendance records`
-    if (action === 'DELETE') return `Deleted attendance records`
+    if (action === 'INSERT') return `Saved ${count || ''} attendance record${count !== 1 ? 's' : ''}${forWho}`
+    if (action === 'UPDATE') return `Updated attendance${forWho}`
+    if (action === 'DELETE') return `Deleted attendance records${forWho}`
   }
 
   // Guild settings
@@ -110,14 +128,18 @@ function describeSummary(log: AuditLog): string {
     return `Updated guild settings`
   }
 
-  // Member management
+  // Member management — resolve character IDs to names
   if (table_name === 'character_guild_memberships' || table_name === 'guild_members') {
+    const charIds = new_data?.character_ids || old_data?.character_ids
+    const targetName = charIds ? resolveCharNames(log, charIds) : ''
+    const forWho = targetName ? ` for ${targetName}` : ''
+
     if (action === 'UPDATE') {
       const newRole = new_data?.new_role || new_data?.role
-      if (newRole) return `Changed role to ${newRole}`
-      return `Updated member`
+      if (newRole) return `Changed role to ${newRole}${forWho}`
+      return `Updated member${forWho}`
     }
-    if (action === 'DELETE') return `Removed member from guild`
+    if (action === 'DELETE') return `Removed ${targetName || 'member'} from guild`
   }
 
   // BLP
@@ -298,6 +320,12 @@ export default function AuditLogPage() {
                         <span className="text-[13px]">{describeSummary(log)}</span>
                         {log.new_data?.review_notes && (
                           <DetailLine label="Notes" value={log.new_data.review_notes} />
+                        )}
+                        {log.table_name === 'attendance_records' && log.action === 'UPDATE' && log.new_data?.status && (
+                          <DetailLine label="Status" value={log.new_data.status} />
+                        )}
+                        {log.table_name === 'character_guild_memberships' && log.new_data?.new_role && (
+                          <DetailLine label="New role" value={log.new_data.new_role} />
                         )}
                       </div>
                     </td>

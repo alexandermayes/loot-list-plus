@@ -74,18 +74,53 @@ export async function GET(request: NextRequest) {
       ? await batchGetDisplayNames(serviceSupabase, userIds)
       : new Map<string, string>()
 
+    // Resolve character IDs embedded in old_data/new_data to names
+    // Attendance logs store character_ids arrays, member logs store target character info
+    const characterIdSet = new Set<string>()
+    for (const log of (logs || [])) {
+      for (const data of [log.old_data, log.new_data]) {
+        if (!data) continue
+        // Extract from filters.character_ids (attendance PATCH)
+        if (data.filters?.character_ids) {
+          for (const id of data.filters.character_ids) characterIdSet.add(id)
+        }
+        // Extract from filters.character_id (attendance DELETE)
+        if (data.filters?.character_id) characterIdSet.add(data.filters.character_id)
+        // Extract from character_id (direct field)
+        if (data.character_id && typeof data.character_id === 'string') characterIdSet.add(data.character_id)
+        // Extract from character_ids array (member management)
+        if (Array.isArray(data.character_ids)) {
+          for (const id of data.character_ids) characterIdSet.add(id)
+        }
+      }
+    }
+
+    const characterNames = new Map<string, string>()
+    if (characterIdSet.size > 0) {
+      const { data: chars } = await serviceSupabase
+        .from('characters')
+        .select('id, name')
+        .in('id', [...characterIdSet])
+      if (chars) {
+        for (const c of chars) characterNames.set(c.id, c.name)
+      }
+    }
+
     let enrichedLogs = (logs || []).map(log => ({
       ...log,
       user_display_name: displayNames.get(log.user_id) || 'Unknown',
+      _character_names: Object.fromEntries(characterNames),
     }))
 
-    // Apply text search filter post-query
+    // Apply text search filter post-query (includes resolved character names)
     if (searchTerm) {
+      const charNameValues = [...characterNames.values()].join(' ')
       enrichedLogs = enrichedLogs.filter(log => {
         const haystack = [
           log.user_display_name,
           JSON.stringify(log.old_data),
           JSON.stringify(log.new_data),
+          charNameValues,
         ].join(' ').toLowerCase()
         return haystack.includes(searchTerm)
       })
