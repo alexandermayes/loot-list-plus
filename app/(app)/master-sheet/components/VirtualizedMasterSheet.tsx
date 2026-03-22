@@ -30,6 +30,7 @@ interface VirtualizedMasterSheetProps {
   onToggleRaidTierCollapse: (tierId: string) => void
   onToggleBossCollapse: (boss: string) => void
   activeCharacterId?: string
+  isOfficer?: boolean
   guildSettings?: {
     decimal_places?: number
     minimum_raid_days?: number
@@ -49,6 +50,7 @@ export function VirtualizedMasterSheet({
   onToggleRaidTierCollapse,
   onToggleBossCollapse,
   activeCharacterId,
+  isOfficer,
   guildSettings,
   onCompare,
   maxRankingsCount,
@@ -152,6 +154,7 @@ export function VirtualizedMasterSheet({
               isCollapsed={collapsedBosses.has(item.boss)}
               onToggleCollapse={onToggleBossCollapse}
               activeCharacterId={activeCharacterId}
+              isOfficer={isOfficer}
               guildSettings={guildSettings}
               onCompare={onCompare}
               maxRankingsCount={maxRankingsCount}

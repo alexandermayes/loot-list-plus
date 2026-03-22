@@ -1,9 +1,12 @@
 'use client'
 
-import { memo } from 'react'
+import { memo, useState, useRef, useEffect, useCallback } from 'react'
+import { createPortal } from 'react-dom'
 import ItemLink from '@/app/components/ItemLink'
 import { Button } from '@/components/ui/button'
 import { getBossImage } from '@/utils/bossImages'
+import type { ScoreResult, ScoreComponents, ScoringConfig } from '@/domain/types'
+import { explainScore } from '@/domain/scoring/explain'
 
 interface LootItem {
   id: string
@@ -38,13 +41,103 @@ interface ItemRankings {
   rankings: PlayerRanking[]
 }
 
+/** Reconstruct a ScoreResult from the flat PlayerRanking fields */
+function rankingToScoreResult(r: PlayerRanking): ScoreResult {
+  const components: ScoreComponents = {
+    itemRank: r.rank,
+    attendanceScore: r.attendance_score,
+    rankModifier: r.role_modifier,
+    roleBonus: r.role_bonus,
+    badLuckBonus: r.bad_luck_bonus,
+    priorityBonus: r.priority_bonus,
+    trialPenalty: r.trial_penalty,
+  }
+  return { total: r.loot_score, components }
+}
+
+/** Officer-only score breakdown popover — shows explainScore() lines on click */
+function ScoreBreakdownPopover({
+  ranking,
+  config,
+  decimalPlaces,
+  onClose,
+  anchorRef,
+}: {
+  ranking: PlayerRanking
+  config: Partial<ScoringConfig>
+  decimalPlaces: number
+  onClose: () => void
+  anchorRef: HTMLElement | null
+}) {
+  const popoverRef = useRef<HTMLDivElement>(null)
+  const [position, setPosition] = useState<{ top: number; left: number } | null>(null)
+
+  useEffect(() => {
+    if (!anchorRef) return
+    const rect = anchorRef.getBoundingClientRect()
+    setPosition({
+      top: rect.bottom + 4,
+      left: rect.left + rect.width / 2,
+    })
+  }, [anchorRef])
+
+  // Close on click outside
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (popoverRef.current && !popoverRef.current.contains(e.target as Node)) {
+        onClose()
+      }
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [onClose])
+
+  if (!position) return null
+
+  const result = rankingToScoreResult(ranking)
+  const explanation = explainScore(result, config)
+
+  return createPortal(
+    <div
+      ref={popoverRef}
+      className="fixed z-[9999] bg-background-elevated border border-border rounded-lg shadow-lg p-3 w-56"
+      style={{ top: position.top, left: position.left, transform: 'translateX(-50%)' }}
+    >
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-[12px] font-semibold" style={{ color: ranking.class_color }}>
+          {ranking.player_name}
+        </span>
+        <span className="text-[12px] font-bold text-foreground">{explanation.total.toFixed(decimalPlaces)}</span>
+      </div>
+      <div className="space-y-1">
+        {explanation.lines.map(line => (
+          <div key={line.key} className="flex items-center justify-between">
+            <span className="text-[11px] text-foreground-secondary">{line.label}</span>
+            <span className={`text-[11px] font-medium ${line.value >= 0 ? 'text-foreground' : 'text-destructive'}`}>
+              {line.value >= 0 ? '+' : ''}{line.value.toFixed(decimalPlaces)}
+            </span>
+          </div>
+        ))}
+      </div>
+      {ranking.is_trial && (
+        <p className="text-[10px] text-warning mt-1.5 pt-1.5 border-t border-border">Trial member</p>
+      )}
+      {!ranking.is_eligible && (
+        <p className="text-[10px] text-destructive mt-1.5 pt-1.5 border-t border-border">Ineligible (min raids not met)</p>
+      )}
+    </div>,
+    document.body
+  )
+}
+
 interface BossSectionProps {
   boss: string
   items: ItemRankings[]
   isCollapsed: boolean
   onToggleCollapse: (boss: string) => void
   activeCharacterId?: string
-  guildSettings?: {
+  isOfficer?: boolean
+  guildSettings?: Partial<ScoringConfig> & {
     decimal_places?: number
     minimum_raid_days?: number
   }
@@ -62,6 +155,7 @@ export const BossSection = memo(function BossSection({
   isCollapsed,
   onToggleCollapse,
   activeCharacterId,
+  isOfficer,
   guildSettings,
   onCompare,
   maxRankingsCount = 5,
@@ -180,6 +274,8 @@ export const BossSection = memo(function BossSection({
                     key={ir.item.id}
                     itemRanking={ir}
                     activeCharacterId={activeCharacterId}
+                    isOfficer={isOfficer}
+                    guildSettings={guildSettings}
                     decimalPlaces={decimalPlaces}
                     minimumRaidDays={minimumRaidDays}
                     onCompare={onCompare}
@@ -198,6 +294,8 @@ export const BossSection = memo(function BossSection({
 interface ItemRowProps {
   itemRanking: ItemRankings
   activeCharacterId?: string
+  isOfficer?: boolean
+  guildSettings?: Partial<ScoringConfig> & { decimal_places?: number; minimum_raid_days?: number }
   decimalPlaces: number
   minimumRaidDays: number
   onCompare?: (itemName: string, userRanking: PlayerRanking, winnerRanking: PlayerRanking) => void
@@ -210,12 +308,18 @@ interface ItemRowProps {
 const ItemRow = memo(function ItemRow({
   itemRanking: ir,
   activeCharacterId,
+  isOfficer,
+  guildSettings,
   decimalPlaces,
   minimumRaidDays,
   onCompare,
   columnCount,
 }: ItemRowProps) {
   const columnIndices = Array.from({ length: columnCount }, (_, i) => i)
+  // Officer score popover state
+  const [activePopover, setActivePopover] = useState<{ index: number; anchor: HTMLElement } | null>(null)
+  const closePopover = useCallback(() => setActivePopover(null), [])
+
   return (
     <tr
       id={`item-${ir.item.id}`}
@@ -270,9 +374,26 @@ const ItemRow = memo(function ItemRow({
                       <span className="text-destructive text-[10px] ml-0.5" title={`Ineligible: ${ranking.raids_attended}/${minimumRaidDays} raids attended`}>⊘</span>
                     )}
                   </span>
-                  <span className="text-[11px] text-foreground-muted">
+                  <span
+                    className={`text-[11px] text-foreground-muted ${isOfficer ? 'cursor-pointer hover:text-accent transition-colors' : ''}`}
+                    onClick={isOfficer ? (e) => {
+                      e.stopPropagation()
+                      setActivePopover(prev =>
+                        prev?.index === index ? null : { index, anchor: e.currentTarget as HTMLElement }
+                      )
+                    } : undefined}
+                  >
                     {ranking.loot_score.toFixed(decimalPlaces)}
                   </span>
+                  {activePopover?.index === index && isOfficer && guildSettings && (
+                    <ScoreBreakdownPopover
+                      ranking={ranking}
+                      config={guildSettings}
+                      decimalPlaces={decimalPlaces}
+                      onClose={closePopover}
+                      anchorRef={activePopover.anchor}
+                    />
+                  )}
                   {canCompare && (
                     <span className="text-[10px] text-accent mt-0.5">Why?</span>
                   )}

@@ -1801,6 +1801,7 @@ function MasterSheetContent() {
                 onToggleRaidTierCollapse={toggleRaidTierCollapse}
                 onToggleBossCollapse={toggleBossCollapse}
                 activeCharacterId={activeCharacter?.id}
+                isOfficer={isOfficer}
                 guildSettings={guildSettings ?? undefined}
                 onCompare={handleCompare}
                 maxRankingsCount={maxRankingsCount}
