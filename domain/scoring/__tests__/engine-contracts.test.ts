@@ -15,8 +15,9 @@ import { computeScore } from '../engine'
 import { computeAttendance, resolveStatus } from '../attendance'
 import { calculateAttendanceScore } from '../attendance-score'
 import { explainScore } from '../explain'
+import { withDefaults } from '../defaults'
 import { validateBracketRules } from '../../loot/bracket-validation'
-import type { ScoreInput, ScoreResult, ScoreExplanation, AttendanceInput, ItemPriority } from '../../types'
+import type { ScoreInput, ScoreResult, ScoreExplanation, AttendanceInput, ItemPriority, ScoringConfig } from '../../types'
 
 // ─── Helpers ─────────────────────────────────────────────────
 
@@ -544,5 +545,198 @@ describe('score never NaN or Infinity', () => {
     )
     expect(isFinite(score)).toBe(true)
     expect(score).toBe(0)
+  })
+})
+
+// ─── 10. Config Boundary Contracts ────────────────────────────
+
+describe('config boundary contracts', () => {
+  it('withDefaults fills all required fields from empty config', () => {
+    const config = withDefaults({})
+    expect(config.attendance_type).toBe('points-per-raid')
+    expect(typeof config.rolling_attendance_weeks).toBe('number')
+    expect(typeof config.max_attendance_bonus).toBe('number')
+    expect(typeof config.signup_weight).toBe('number')
+  })
+
+  it('withDefaults preserves provided values', () => {
+    const config = withDefaults({ attendance_type: 'linear', max_attendance_bonus: 10 })
+    expect(config.attendance_type).toBe('linear')
+    expect(config.max_attendance_bonus).toBe(10)
+  })
+
+  it('zero config values do not break scoring', () => {
+    const result = computeScore(makeInput({
+      config: {
+        max_attendance_bonus: 0,
+        rolling_attendance_weeks: 0,
+        signup_weight: 0,
+        blp_increment: 0,
+        blp_maximum: 0,
+      },
+    }))
+    expect(isFinite(result.total)).toBe(true)
+  })
+
+  it('negative penalty values reduce total', () => {
+    const base = computeScore(makeInput({ itemRank: 30, attendance: { score: 2 } }))
+    const withPenalty = computeScore(makeInput({
+      itemRank: 30,
+      attendance: { score: 2 },
+      character: { characterId: 'c', specId: null, specRoles: [], guildRank: 'Member', membershipStatus: 'trial' },
+      config: { trial_penalty_enabled: true, trial_penalty_value: -5 },
+    }))
+    expect(withPenalty.total).toBeLessThan(base.total)
+  })
+})
+
+// ─── 11. computeAttendance Stability Contracts ────────────────
+
+describe('computeAttendance stability contracts', () => {
+  it('rolling window excludes events outside window', () => {
+    const result = computeAttendance(makeAttendanceInput({
+      raidEvents: makeEvents(['2026-01-01', '2026-03-15', '2026-03-17']),
+      records: [
+        { raid_event_id: 'event-0', attended: true },
+        { raid_event_id: 'event-1', attended: true },
+        { raid_event_id: 'event-2', attended: true },
+      ],
+      config: { rolling_attendance_weeks: 4 },
+      asOfDate: '2026-03-18',
+    }))
+    // Jan 1 is outside the 4-week window from Mar 18
+    expect(result.raidsInWindow).toBe(2)
+  })
+
+  it('excused raids excluded from denominator', () => {
+    const result = computeAttendance(makeAttendanceInput({
+      raidEvents: makeEvents(['2026-03-11', '2026-03-13', '2026-03-15', '2026-03-17']),
+      records: [
+        { raid_event_id: 'event-0', attended: true },
+        { raid_event_id: 'event-1', is_excused: true },
+        { raid_event_id: 'event-2', attended: true },
+        { raid_event_id: 'event-3', attended: true },
+      ],
+      config: { rolling_attendance_weeks: 4, attendance_type: 'points-per-raid', attendance_points_per_raid: 1 },
+      asOfDate: '2026-03-18',
+    }))
+    // 3 attended out of 3 effective raids (1 excused), should be full score
+    expect(result.raidsAttended).toBe(3)
+  })
+
+  it('empty events returns zero score with eligible status', () => {
+    const result = computeAttendance(makeAttendanceInput({
+      raidEvents: [],
+      records: [],
+    }))
+    expect(result.score).toBe(0)
+    expect(result.raidsInWindow).toBe(0)
+    expect(result.isEligible).toBe(true)
+  })
+
+  it('new member fair mode uses join date as effective start', () => {
+    const result = computeAttendance(makeAttendanceInput({
+      raidEvents: makeEvents(['2026-03-01', '2026-03-08', '2026-03-15']),
+      records: [
+        { raid_event_id: 'event-2', attended: true },
+      ],
+      config: { rolling_attendance_weeks: 8 },
+      memberJoinedAt: '2026-03-10',
+      newMemberMode: 'fair',
+      asOfDate: '2026-03-18',
+    }))
+    // Only event-2 (Mar 15) is after join date (Mar 10)
+    expect(result.raidsInWindow).toBe(1)
+    expect(result.raidsAttended).toBe(1)
+  })
+})
+
+// ─── 12. Cross-Mode Attendance Score Range ────────────────────
+
+describe('attendance score range consistency', () => {
+  const fullAttendance = Array(8).fill(null).map((_, i) => ({
+    raid_event_id: `event-${i}`,
+    attended: true,
+    signed_up: true,
+  }))
+
+  it('PPR mode score bounded by max_attendance_bonus', () => {
+    const score = calculateAttendanceScore(fullAttendance, 8, {
+      attendance_type: 'points-per-raid',
+      attendance_points_per_raid: 1,
+      max_attendance_bonus: 4,
+    })
+    expect(score).toBeLessThanOrEqual(4)
+    expect(score).toBeGreaterThanOrEqual(0)
+  })
+
+  it('linear mode score bounded by max_attendance_bonus', () => {
+    const score = calculateAttendanceScore(fullAttendance, 8, {
+      attendance_type: 'linear',
+      max_attendance_bonus: 4,
+    })
+    expect(score).toBeLessThanOrEqual(4)
+    expect(score).toBeGreaterThanOrEqual(0)
+  })
+
+  it('breakpoint mode score bounded by max_attendance_bonus', () => {
+    const score = calculateAttendanceScore(fullAttendance, 8, {
+      attendance_type: 'breakpoint',
+      max_attendance_bonus: 4,
+      max_attendance_threshold: 0.9,
+      middle_attendance_bonus: 2,
+      middle_attendance_threshold: 0.5,
+    })
+    expect(score).toBeLessThanOrEqual(4)
+    expect(score).toBeGreaterThanOrEqual(0)
+  })
+
+  it('all modes return 0 for zero attendance', () => {
+    const zeroRecords = Array(4).fill(null).map((_, i) => ({
+      raid_event_id: `event-${i}`,
+      attended: false,
+      signed_up: false,
+      no_call_no_show: false,
+    }))
+
+    for (const mode of ['points-per-raid', 'linear', 'breakpoint'] as const) {
+      const score = calculateAttendanceScore(zeroRecords, 4, { attendance_type: mode, max_attendance_bonus: 4 })
+      expect(score).toBe(0)
+    }
+  })
+})
+
+// ─── 13. Priority Bonus Contracts ─────────────────────────────
+
+describe('priority bonus contracts', () => {
+  it('higher priority rank produces higher or equal score', () => {
+    const rank1: ItemPriority = { priority_rank: 1, spec_match: true, role_match: true }
+    const rank3: ItemPriority = { priority_rank: 3, spec_match: true, role_match: true }
+
+    const scoreR1 = computeScore(makeInput({
+      config: { guild_item_priorities_enabled: true, priority_bonus_value: 5 },
+      itemPriority: rank1,
+    }))
+    const scoreR3 = computeScore(makeInput({
+      config: { guild_item_priorities_enabled: true, priority_bonus_value: 5 },
+      itemPriority: rank3,
+    }))
+    expect(scoreR1.components.priorityBonus).toBeGreaterThanOrEqual(scoreR3.components.priorityBonus)
+  })
+
+  it('null priority produces zero bonus', () => {
+    const result = computeScore(makeInput({
+      config: { guild_item_priorities_enabled: true, priority_bonus_value: 5 },
+      itemPriority: null,
+    }))
+    expect(result.components.priorityBonus).toBe(0)
+  })
+
+  it('disabled priority setting produces zero bonus even with priority data', () => {
+    const result = computeScore(makeInput({
+      config: { guild_item_priorities_enabled: false, priority_bonus_value: 5 },
+      itemPriority: { priority_rank: 1, spec_match: true, role_match: true },
+    }))
+    expect(result.components.priorityBonus).toBe(0)
   })
 })
