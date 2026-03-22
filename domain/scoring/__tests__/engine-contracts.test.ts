@@ -746,3 +746,152 @@ describe('priority bonus contracts', () => {
     expect(result.components.priorityBonus).toBe(0)
   })
 })
+
+// ─── 14. explainScore Output Stability ────────────────────────
+
+describe('explainScore output stability', () => {
+  it('always includes itemRank and attendance lines', () => {
+    const result = computeScore(makeInput())
+    const explanation = explainScore(result)
+    const keys = explanation.lines.map(l => l.key)
+    expect(keys).toContain('itemRank')
+    expect(keys).toContain('attendance')
+  })
+
+  it('itemRank is always the first line', () => {
+    const result = computeScore(makeInput({ itemRank: 42 }))
+    const explanation = explainScore(result)
+    expect(explanation.lines[0].key).toBe('itemRank')
+    expect(explanation.lines[0].value).toBe(42)
+  })
+
+  it('attendance is always the second line', () => {
+    const result = computeScore(makeInput({ attendance: { score: 3.5 } }))
+    const explanation = explainScore(result)
+    expect(explanation.lines[1].key).toBe('attendance')
+    expect(explanation.lines[1].value).toBe(3.5)
+  })
+
+  it('zero-value optional components are excluded', () => {
+    const result = computeScore(makeInput())
+    const explanation = explainScore(result)
+    const keys = explanation.lines.map(l => l.key)
+    // Default input has no rank modifier, role bonus, trial penalty, BLP, or priority
+    expect(keys).not.toContain('rankModifier')
+    expect(keys).not.toContain('roleBonus')
+    expect(keys).not.toContain('trialPenalty')
+    expect(keys).not.toContain('badLuckBonus')
+    expect(keys).not.toContain('priorityBonus')
+  })
+
+  it('non-zero components appear with correct keys', () => {
+    const config = {
+      trial_penalty_enabled: true, trial_penalty_value: -2,
+      blp_enabled: true, blp_increment: 1, blp_maximum: 5,
+      raid_roles_overall_bonus_priority: true, role_modifiers: { tank: 2 },
+    }
+    const result = computeScore(makeInput({
+      character: { characterId: 'c', specId: null, specRoles: ['tank'], guildRank: 'Yiker', membershipStatus: 'trial' },
+      config,
+      timesPassed: 3,
+    }))
+    const explanation = explainScore(result, config)
+    const keys = explanation.lines.map(l => l.key)
+    expect(keys).toContain('trialPenalty')
+    expect(keys).toContain('badLuckBonus')
+    expect(keys).toContain('roleBonus')
+  })
+
+  it('every line has key, label, value, and detail', () => {
+    const config = {
+      trial_penalty_enabled: true, trial_penalty_value: -2,
+      blp_enabled: true, blp_increment: 1, blp_maximum: 5,
+    }
+    const result = computeScore(makeInput({
+      character: { characterId: 'c', specId: null, specRoles: [], guildRank: 'Member', membershipStatus: 'trial' },
+      config,
+      timesPassed: 2,
+    }))
+    const explanation = explainScore(result, config)
+    for (const line of explanation.lines) {
+      expect(line.key).toBeDefined()
+      expect(typeof line.label).toBe('string')
+      expect(typeof line.value).toBe('number')
+      expect(typeof line.detail).toBe('string')
+      expect(line.label.length).toBeGreaterThan(0)
+      expect(line.detail.length).toBeGreaterThan(0)
+    }
+  })
+
+  it('context includes rankName when ScoreInput provided', () => {
+    const input = makeInput({
+      character: { characterId: 'c', specId: null, specRoles: [], guildRank: 'Pro Yiker', membershipStatus: 'full' },
+      config: { rank_modifiers: { 'Pro Yiker': 3 } },
+    })
+    const result = computeScore(input)
+    const explanation = explainScore(result, input)
+    const rankLine = explanation.lines.find(l => l.key === 'rankModifier')
+    expect(rankLine).toBeDefined()
+    expect(rankLine!.context?.rankName).toBe('Pro Yiker')
+  })
+
+  it('context includes matchedRole when ScoreInput with specRoles provided', () => {
+    const input = makeInput({
+      character: { characterId: 'c', specId: null, specRoles: ['tank'], guildRank: 'Member', membershipStatus: 'full' },
+      config: { raid_roles_overall_bonus_priority: true, role_modifiers: { tank: 2 } },
+    })
+    const result = computeScore(input)
+    const explanation = explainScore(result, input)
+    const roleLine = explanation.lines.find(l => l.key === 'roleBonus')
+    expect(roleLine).toBeDefined()
+    expect(roleLine!.context?.matchedRole).toBe('tank')
+  })
+
+  it('total in explanation always matches computeScore total', () => {
+    const inputs = [
+      makeInput(),
+      makeInput({ itemRank: 1, attendance: { score: 4 } }),
+      makeInput({
+        itemRank: 35,
+        attendance: { score: 2.5 },
+        config: { trial_penalty_enabled: true, trial_penalty_value: -2, blp_enabled: true, blp_increment: 1, blp_maximum: 5 },
+        character: { characterId: 'c', specId: null, specRoles: [], guildRank: 'Member', membershipStatus: 'trial' },
+        timesPassed: 3,
+      }),
+    ]
+    for (const input of inputs) {
+      const result = computeScore(input)
+      const explanation = explainScore(result)
+      expect(explanation.total).toBe(result.total)
+    }
+  })
+})
+
+// ─── 15. BLP Maximum Bounds ───────────────────────────────────
+
+describe('BLP maximum bounds', () => {
+  it('BLP never exceeds blp_maximum regardless of times passed', () => {
+    const result = computeScore(makeInput({
+      config: { blp_enabled: true, blp_increment: 1, blp_maximum: 5 },
+      timesPassed: 100,
+    }))
+    expect(result.components.badLuckBonus).toBeLessThanOrEqual(5)
+    expect(result.components.badLuckBonus).toBe(5)
+  })
+
+  it('BLP is zero when disabled', () => {
+    const result = computeScore(makeInput({
+      config: { blp_enabled: false },
+      timesPassed: 10,
+    }))
+    expect(result.components.badLuckBonus).toBe(0)
+  })
+
+  it('BLP is zero with zero times passed', () => {
+    const result = computeScore(makeInput({
+      config: { blp_enabled: true, blp_increment: 1, blp_maximum: 5 },
+      timesPassed: 0,
+    }))
+    expect(result.components.badLuckBonus).toBe(0)
+  })
+})
