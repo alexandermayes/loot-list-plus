@@ -14,6 +14,61 @@ export interface UpdateEntry {
 
 export const updates: UpdateEntry[] = [
   {
+    date: 'March 21, 2026',
+    items: [
+      {
+        category: 'feature',
+        title: 'Excused absences',
+        description: 'Officers can now mark raiders as excused for a raid. Excused raids are excluded from your attendance score denominator, so they won\'t hurt your Loot Score.',
+      },
+      {
+        category: 'feature',
+        title: 'Attendance points override',
+        description: 'Officers can set a manual points override on any attendance record, replacing the calculated value for that raid.',
+      },
+      {
+        category: 'feature',
+        title: 'Setup checklist for new guilds',
+        description: 'New guild officers see a progress checklist on the overview page showing what to set up: expansion, raid schedule, loot settings, roster, and first raid.',
+      },
+      {
+        category: 'feature',
+        title: 'First-time loot list guidance',
+        description: 'Raiders who haven\'t ranked any items yet see a helpful banner explaining how to get started with their loot list.',
+      },
+      {
+        category: 'improvement',
+        title: 'Class filtering by expansion',
+        description: 'Character creation now only shows classes available in your guild\'s active expansion. No more Death Knights in Classic.',
+      },
+      {
+        category: 'improvement',
+        title: 'Guild creation without leaving the page',
+        description: 'Creating a new guild now opens a modal instead of navigating to a separate page.',
+      },
+      {
+        category: 'improvement',
+        title: 'Faster page loads',
+        description: 'Reduced Largest Contentful Paint and layout shift across the app for snappier navigation.',
+      },
+      {
+        category: 'fix',
+        title: 'Master Sheet sorting',
+        description: 'Summary view now correctly sorts players by highest item rank, and collapsed groups show the right top entries.',
+      },
+      {
+        category: 'fix',
+        title: 'Sheet import column warnings',
+        description: 'Import now warns when Item #1 or Item #2 columns are completely empty, catching misconfigured spreadsheets before they cause blank lists.',
+      },
+      {
+        category: 'fix',
+        title: 'Submission diff accuracy',
+        description: 'The "what changed" comparison on resubmissions now correctly snapshots the list at approval time, not at resubmission time.',
+      },
+    ],
+  },
+  {
     date: 'March 18, 2026',
     items: [
       {
