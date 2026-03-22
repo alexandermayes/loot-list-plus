@@ -33,7 +33,7 @@ import { Heading } from '@/components/ui/typography'
 import { InfoTooltip } from '@/components/ui/info-tooltip'
 import { useGuildContext } from '@/app/contexts/GuildContext'
 import ItemLink from '@/app/components/ItemLink'
-import { computeScore, computeAttendance, getRoleModifierWithLabel, calculateBadLuckBonus, type ItemPriority, type AttendanceResult } from '@/domain/scoring'
+import { computeScore, computeAttendance, explainScore, getRoleModifierWithLabel, calculateBadLuckBonus, type ItemPriority, type AttendanceResult, type ScoreExplanation } from '@/domain/scoring'
 import { getSpecRoles, getRoleDisplayName, type Role } from '@/domain/loot/spec-role-mapping'
 import { refreshWowheadTooltips } from '@/lib/wowhead'
 import { useNotification } from '@/app/contexts/NotificationContext'
@@ -196,17 +196,9 @@ function DashboardContent() {
   // Guild settings for display formatting
   const [decimalPlaces, setDecimalPlaces] = useState<number>(2)
 
-  // Widget state
-  const [scoreBreakdown, setScoreBreakdown] = useState<{
-    attendanceScore: number
-    roleModifier: number
-    roleName: string
-    roleBonus: number
-    roleLabel: string | null
-    trialPenalty: number
-    blpRange: { min: number; max: number } | null
-    blpEnabled: boolean
-  } | null>(null)
+  // Widget state — score explanation from the engine + BLP range (which is item-dependent)
+  const [scoreExplanation, setScoreExplanation] = useState<ScoreExplanation | null>(null)
+  const [blpInfo, setBlpInfo] = useState<{ enabled: boolean; range: { min: number; max: number } | null }>({ enabled: false, range: null })
 
   const [attendanceData, setAttendanceData] = useState<{
     percentage: number
@@ -572,6 +564,7 @@ function DashboardContent() {
       let roleBonus = 0
       let specRole: string | null = null
       let trialPenaltyValue = 0
+      let baseExplanation: ScoreExplanation | null = null
       let attendedRaidCount = 0
       let totalRaidCount = 0
       let membershipStatus = 'full'
@@ -738,8 +731,8 @@ function DashboardContent() {
             specRole = specRoles.length > 0 ? specRoles[0] : null
           }
 
-          // Use engine for modifier display values
-          const dummyScore = computeScore({
+          // Use engine for modifier display values + explanation
+          const baseInput = {
             itemRank: 0,
             character: {
               characterId,
@@ -752,10 +745,14 @@ function DashboardContent() {
             config: guildSettings,
             itemPriority: null,
             timesPassed: 0,
-          })
+          }
+          const dummyScore = computeScore(baseInput)
           roleModifier = dummyScore.components.rankModifier
           roleBonus = dummyScore.components.roleBonus
           trialPenaltyValue = dummyScore.components.trialPenalty
+
+          // Generate contract-driven explanation for the score widget
+          baseExplanation = explainScore(dummyScore, baseInput)
 
           // Get matched role label for display
           const roleResult = getRoleModifierWithLabel(specRoles, guildSettings)
@@ -1127,17 +1124,14 @@ function DashboardContent() {
       setLootPriority(topPriority)
 
       // Hoist computed values to widget state
-      // Score breakdown
+      // Score explanation from the engine (contract-driven)
+      setScoreExplanation(baseExplanation)
+
+      // BLP range is item-dependent (varies across the player's list), so computed separately
       const blpValues = Object.values(blpData).map(tp => calculateBadLuckBonus(tp, savedGuildSettings || {}))
-      setScoreBreakdown({
-        attendanceScore,
-        roleModifier,
-        roleName: characterRole,
-        roleBonus,
-        roleLabel: specRole,
-        trialPenalty: trialPenaltyValue,
-        blpEnabled: !!savedGuildSettings?.blp_enabled,
-        blpRange: savedGuildSettings?.blp_enabled && blpValues.length > 0
+      setBlpInfo({
+        enabled: !!savedGuildSettings?.blp_enabled,
+        range: savedGuildSettings?.blp_enabled && blpValues.length > 0
           ? { min: Math.min(...blpValues), max: Math.max(...blpValues) }
           : null
       })
@@ -1515,46 +1509,44 @@ function DashboardContent() {
           <>
 
           {/* Insights Row */}
-          {activeCharacter && (scoreBreakdown || attendanceData) && (
+          {activeCharacter && (scoreExplanation || attendanceData) && (
             <div className={`grid grid-cols-1 ${trialData?.isTrial ? 'md:grid-cols-3' : 'md:grid-cols-2 lg:grid-cols-3'} gap-4`}>
-              {/* Widget 1: Score Breakdown */}
-              {scoreBreakdown && (
+              {/* Widget 1: Score Breakdown (contract-driven from explainScore) */}
+              {scoreExplanation && (
                 <div className="bg-background-elevated border border-border rounded-xl p-5">
                   <div className="flex items-center gap-2 mb-4">
                     <HugeiconsIcon icon={AnalyticsUpIcon} size={18} className="text-accent" />
                     <h3 className="text-[15px] font-semibold text-foreground">Score breakdown</h3>
                   </div>
                   <div className="space-y-2.5">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[13px] text-foreground-secondary inline-flex items-center gap-1.5">Attendance <InfoTooltip content="Points earned from showing up to raids. Based on a rolling window configured by your officers." /></span>
-                      <span className="text-[13px] font-medium text-foreground">+{scoreBreakdown.attendanceScore.toFixed(decimalPlaces)}</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-[13px] text-foreground-secondary inline-flex items-center gap-1.5">Rank bonus <span className="text-muted-foreground">({scoreBreakdown.roleName})</span> <InfoTooltip content="Guild-configured modifier based on your guild rank. Most members have 0." /></span>
-                      <span className={`text-[13px] font-medium ${scoreBreakdown.roleModifier >= 0 ? 'text-foreground' : 'text-destructive'}`}>
-                        {scoreBreakdown.roleModifier >= 0 ? '+' : ''}{scoreBreakdown.roleModifier.toFixed(decimalPlaces)}
-                      </span>
-                    </div>
-                    {scoreBreakdown.roleBonus !== 0 && (
-                      <div className="flex items-center justify-between">
-                        <span className="text-[13px] text-foreground-secondary inline-flex items-center gap-1.5">Role bonus {scoreBreakdown.roleLabel && <span className="text-muted-foreground">({getRoleDisplayName(scoreBreakdown.roleLabel as Role)})</span>} <InfoTooltip content="Guild-configured modifier based on your raid role (Tank, Healer, DPS)." /></span>
-                        <span className={`text-[13px] font-medium ${scoreBreakdown.roleBonus >= 0 ? 'text-foreground' : 'text-destructive'}`}>
-                          {scoreBreakdown.roleBonus >= 0 ? '+' : ''}{scoreBreakdown.roleBonus.toFixed(decimalPlaces)}
-                        </span>
-                      </div>
-                    )}
-                    {scoreBreakdown.trialPenalty !== 0 && (
-                      <div className="flex items-center justify-between">
-                        <span className="text-[13px] text-foreground-secondary inline-flex items-center gap-1.5">Trial penalty <InfoTooltip content="Score penalty for trial members, giving established raiders priority. Resets when promoted to full member." /></span>
-                        <span className="text-[13px] font-medium text-destructive">{scoreBreakdown.trialPenalty.toFixed(decimalPlaces)}</span>
-                      </div>
-                    )}
+                    {scoreExplanation.lines
+                      .filter(line => line.key !== 'itemRank' && line.key !== 'badLuckBonus')
+                      .map(line => {
+                        const contextLabel = line.key === 'rankModifier' && line.context?.rankName
+                          ? ` (${line.context.rankName})`
+                          : line.key === 'roleBonus' && line.context?.matchedRole
+                            ? ` (${getRoleDisplayName(line.context.matchedRole as Role)})`
+                            : ''
+
+                        return (
+                          <div key={line.key} className="flex items-center justify-between">
+                            <span className="text-[13px] text-foreground-secondary inline-flex items-center gap-1.5">
+                              {line.label}
+                              {contextLabel && <span className="text-muted-foreground">{contextLabel}</span>}
+                              <InfoTooltip content={line.detail} />
+                            </span>
+                            <span className={`text-[13px] font-medium ${line.value >= 0 ? 'text-foreground' : 'text-destructive'}`}>
+                              {line.value >= 0 ? '+' : ''}{line.value.toFixed(decimalPlaces)}
+                            </span>
+                          </div>
+                        )
+                      })}
                     <div className="flex items-center justify-between">
                       <span className="text-[13px] text-foreground-secondary inline-flex items-center gap-1.5">Bad luck protection <InfoTooltip content="Bonus points that grow the longer you go without receiving loot. Resets on your next item." /></span>
                       <span className="text-[13px] font-medium text-muted-foreground">
-                        {scoreBreakdown.blpRange
-                          ? `+${scoreBreakdown.blpRange.min.toFixed(decimalPlaces)} to +${scoreBreakdown.blpRange.max.toFixed(decimalPlaces)}`
-                          : scoreBreakdown.blpEnabled
+                        {blpInfo.range
+                          ? `+${blpInfo.range.min.toFixed(decimalPlaces)} to +${blpInfo.range.max.toFixed(decimalPlaces)}`
+                          : blpInfo.enabled
                             ? '+0.00'
                             : 'Not enabled'}
                       </span>

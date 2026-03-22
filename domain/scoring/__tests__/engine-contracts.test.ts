@@ -17,7 +17,7 @@ import { calculateAttendanceScore } from '../attendance-score'
 import { explainScore } from '../explain'
 import { withDefaults } from '../defaults'
 import { validateBracketRules } from '../../loot/bracket-validation'
-import type { ScoreInput, ScoreResult, ScoreExplanation, AttendanceInput, ItemPriority, ScoringConfig } from '../../types'
+import type { ScoreInput, ScoreResult, ScoreExplanation, AttendanceInput, AttendanceRecord, ItemPriority, ScoringConfig } from '../../types'
 
 // ─── Helpers ─────────────────────────────────────────────────
 
@@ -52,6 +52,16 @@ function makeAttendanceInput(overrides: Partial<AttendanceInput> = {}): Attendan
 
 function makeEvents(dates: string[]) {
   return dates.map((d, i) => ({ id: `event-${i}`, raid_date: d }))
+}
+
+function makeRecord(eventIndex: number, overrides: Partial<AttendanceRecord> = {}): AttendanceRecord & { raid_event_id: string } {
+  return {
+    raid_event_id: `event-${eventIndex}`,
+    signed_up: false,
+    attended: false,
+    no_call_no_show: false,
+    ...overrides,
+  }
 }
 
 // ─── 1. Stable Ranking Order ─────────────────────────────────
@@ -597,9 +607,9 @@ describe('computeAttendance stability contracts', () => {
     const result = computeAttendance(makeAttendanceInput({
       raidEvents: makeEvents(['2026-01-01', '2026-03-15', '2026-03-17']),
       records: [
-        { raid_event_id: 'event-0', attended: true },
-        { raid_event_id: 'event-1', attended: true },
-        { raid_event_id: 'event-2', attended: true },
+        makeRecord(0, { attended: true }),
+        makeRecord(1, { attended: true }),
+        makeRecord(2, { attended: true }),
       ],
       config: { rolling_attendance_weeks: 4 },
       asOfDate: '2026-03-18',
@@ -612,15 +622,15 @@ describe('computeAttendance stability contracts', () => {
     const result = computeAttendance(makeAttendanceInput({
       raidEvents: makeEvents(['2026-03-11', '2026-03-13', '2026-03-15', '2026-03-17']),
       records: [
-        { raid_event_id: 'event-0', attended: true },
-        { raid_event_id: 'event-1', is_excused: true },
-        { raid_event_id: 'event-2', attended: true },
-        { raid_event_id: 'event-3', attended: true },
+        makeRecord(0, { attended: true }),
+        makeRecord(1, { is_excused: true }),
+        makeRecord(2, { attended: true }),
+        makeRecord(3, { attended: true }),
       ],
-      config: { rolling_attendance_weeks: 4, attendance_type: 'points-per-raid', attendance_points_per_raid: 1 },
+      config: { rolling_attendance_weeks: 4, attendance_type: 'points-per-raid' },
       asOfDate: '2026-03-18',
     }))
-    // 3 attended out of 3 effective raids (1 excused), should be full score
+    // 3 attended out of 3 effective raids (1 excused)
     expect(result.raidsAttended).toBe(3)
   })
 
@@ -638,7 +648,7 @@ describe('computeAttendance stability contracts', () => {
     const result = computeAttendance(makeAttendanceInput({
       raidEvents: makeEvents(['2026-03-01', '2026-03-08', '2026-03-15']),
       records: [
-        { raid_event_id: 'event-2', attended: true },
+        makeRecord(2, { attended: true }),
       ],
       config: { rolling_attendance_weeks: 8 },
       memberJoinedAt: '2026-03-10',
@@ -654,16 +664,13 @@ describe('computeAttendance stability contracts', () => {
 // ─── 12. Cross-Mode Attendance Score Range ────────────────────
 
 describe('attendance score range consistency', () => {
-  const fullAttendance = Array(8).fill(null).map((_, i) => ({
-    raid_event_id: `event-${i}`,
-    attended: true,
-    signed_up: true,
-  }))
+  const fullAttendance = Array(8).fill(null).map((_, i) =>
+    makeRecord(i, { attended: true, signed_up: true })
+  )
 
   it('PPR mode score bounded by max_attendance_bonus', () => {
     const score = calculateAttendanceScore(fullAttendance, 8, {
       attendance_type: 'points-per-raid',
-      attendance_points_per_raid: 1,
       max_attendance_bonus: 4,
     })
     expect(score).toBeLessThanOrEqual(4)
@@ -692,12 +699,7 @@ describe('attendance score range consistency', () => {
   })
 
   it('all modes return 0 for zero attendance', () => {
-    const zeroRecords = Array(4).fill(null).map((_, i) => ({
-      raid_event_id: `event-${i}`,
-      attended: false,
-      signed_up: false,
-      no_call_no_show: false,
-    }))
+    const zeroRecords = Array(4).fill(null).map((_, i) => makeRecord(i))
 
     for (const mode of ['points-per-raid', 'linear', 'breakpoint'] as const) {
       const score = calculateAttendanceScore(zeroRecords, 4, { attendance_type: mode, max_attendance_bonus: 4 })
@@ -709,34 +711,38 @@ describe('attendance score range consistency', () => {
 // ─── 13. Priority Bonus Contracts ─────────────────────────────
 
 describe('priority bonus contracts', () => {
-  it('higher priority rank produces higher or equal score', () => {
-    const rank1: ItemPriority = { priority_rank: 1, spec_match: true, role_match: true }
-    const rank3: ItemPriority = { priority_rank: 3, spec_match: true, role_match: true }
+  const makePriority = (rolePriority: number): ItemPriority => ({
+    role_priorities: { tank: rolePriority },
+    class_priorities: {},
+    character_priorities: {},
+    priority_bonuses: { role: 5, class: 3, character: 2 },
+  })
 
+  it('higher priority rank (lower number) produces higher or equal score', () => {
     const scoreR1 = computeScore(makeInput({
-      config: { guild_item_priorities_enabled: true, priority_bonus_value: 5 },
-      itemPriority: rank1,
+      character: { characterId: 'c', specId: null, specRoles: ['tank'], guildRank: 'Member', membershipStatus: 'full' },
+      itemPriority: makePriority(1),
     }))
     const scoreR3 = computeScore(makeInput({
-      config: { guild_item_priorities_enabled: true, priority_bonus_value: 5 },
-      itemPriority: rank3,
+      character: { characterId: 'c', specId: null, specRoles: ['tank'], guildRank: 'Member', membershipStatus: 'full' },
+      itemPriority: makePriority(3),
     }))
     expect(scoreR1.components.priorityBonus).toBeGreaterThanOrEqual(scoreR3.components.priorityBonus)
   })
 
   it('null priority produces zero bonus', () => {
     const result = computeScore(makeInput({
-      config: { guild_item_priorities_enabled: true, priority_bonus_value: 5 },
       itemPriority: null,
     }))
     expect(result.components.priorityBonus).toBe(0)
   })
 
-  it('disabled priority setting produces zero bonus even with priority data', () => {
+  it('no matching role produces zero role bonus', () => {
     const result = computeScore(makeInput({
-      config: { guild_item_priorities_enabled: false, priority_bonus_value: 5 },
-      itemPriority: { priority_rank: 1, spec_match: true, role_match: true },
+      character: { characterId: 'c', specId: null, specRoles: ['healer'], guildRank: 'Member', membershipStatus: 'full' },
+      itemPriority: makePriority(1), // tank priority, but character is healer
     }))
+    // Should get 0 for role bonus since healer doesn't match tank priority
     expect(result.components.priorityBonus).toBe(0)
   })
 })

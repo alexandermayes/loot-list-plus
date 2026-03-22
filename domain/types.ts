@@ -171,6 +171,10 @@ export interface ScoreLine {
   label: string
   value: number
   detail: string
+  /** Optional key identifying the component (for UI styling/icons) */
+  key?: 'itemRank' | 'attendance' | 'rankModifier' | 'roleBonus' | 'priorityBonus' | 'trialPenalty' | 'badLuckBonus'
+  /** Optional context for richer UI rendering (e.g., rank name, role label) */
+  context?: Record<string, string | number | boolean>
 }
 
 /** Human-readable score breakdown from explainScore() */
