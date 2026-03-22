@@ -86,12 +86,19 @@ export async function POST(request: NextRequest) {
       hasOtherGuilds = !!(remaining && remaining.length > 0)
     }
 
-    // Clear active guild entry since it was deleted
-    await supabase
-      .from('user_active_guilds')
-      .delete()
+    // Clear active guild if it was the deleted guild
+    const { data: activeChar } = await supabase
+      .from('user_active_characters')
+      .select('active_guild_id')
       .eq('user_id', user.id)
-      .eq('active_guild_id', guild_id)
+      .maybeSingle()
+
+    if (activeChar?.active_guild_id === guild_id) {
+      await supabase
+        .from('user_active_characters')
+        .update({ active_guild_id: null, updated_at: new Date().toISOString() })
+        .eq('user_id', user.id)
+    }
 
     return NextResponse.json({
       success: true,

@@ -549,15 +549,6 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
         return
       }
 
-      // Also update user_active_characters to keep both tables in sync
-      await supabase
-        .from('user_active_characters')
-        .upsert({
-          user_id: user.id,
-          active_guild_id: guildId,
-          updated_at: new Date().toISOString()
-        })
-
       // Update local state
       setActiveGuild(targetGuild.guild)
       setActiveMember(targetGuild.member)

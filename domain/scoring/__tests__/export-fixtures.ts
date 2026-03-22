@@ -61,7 +61,7 @@ const fixtures = {
   ],
   lootScoreTests: LOOT_SCORE_FIXTURES.map(f => ({
     ...f,
-    expected: calculateLootScore(f.itemRank, f.attendanceScore, f.rankModifier, f.badLuckBonus, f.priorityBonus, f.trialPenalty, f.roleBonus),
+    expected: calculateLootScore(f.input.itemRank, f.input.attendanceScore, f.input.rankModifier, f.input.badLuckBonus, f.input.priorityBonus, f.input.trialPenalty, f.input.roleBonus),
   })),
   modifierTests: {
     rankModifier: [

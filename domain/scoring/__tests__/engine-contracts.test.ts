@@ -146,12 +146,13 @@ describe('explainScore payload contract', () => {
   })
 
   it('every line has label, value, and detail', () => {
+    const config = { blp_enabled: true, blp_increment: 1, blp_maximum: 5 }
     const result = computeScore(makeInput({
       attendance: { score: 3 },
-      config: { blp_enabled: true, blp_increment: 1, blp_maximum: 5 },
+      config,
       timesPassed: 2,
     }))
-    const explanation = explainScore(result, result.components)
+    const explanation = explainScore(result, config)
     for (const line of explanation.lines) {
       expect(typeof line.label).toBe('string')
       expect(typeof line.value).toBe('number')
@@ -168,18 +169,19 @@ describe('explainScore payload contract', () => {
   })
 
   it('line values sum to total', () => {
+    const config = {
+      trial_penalty_enabled: true, trial_penalty_value: -2,
+      blp_enabled: true, blp_increment: 1, blp_maximum: 5,
+      raid_roles_overall_bonus_priority: true, role_modifiers: { tank: 2 },
+    }
     const result = computeScore(makeInput({
       itemRank: 45,
       attendance: { score: 3 },
       character: { characterId: 'c', specId: null, specRoles: ['tank'], guildRank: 'Yiker', membershipStatus: 'trial' },
-      config: {
-        trial_penalty_enabled: true, trial_penalty_value: -2,
-        blp_enabled: true, blp_increment: 1, blp_maximum: 5,
-        raid_roles_overall_bonus_priority: true, role_modifiers: { tank: 2 },
-      },
+      config,
       timesPassed: 3,
     }))
-    const explanation = explainScore(result, result.components)
+    const explanation = explainScore(result, config)
     const lineSum = explanation.lines.reduce((sum, l) => sum + l.value, 0)
     expect(lineSum).toBe(explanation.total)
   })

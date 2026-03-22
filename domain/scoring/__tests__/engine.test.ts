@@ -184,16 +184,17 @@ describe('explainScore', () => {
   })
 
   it('includes non-zero components', () => {
+    const config = {
+      trial_penalty_enabled: true, trial_penalty_value: -2,
+      raid_roles_overall_bonus_priority: true, role_modifiers: { tank: 2 },
+      blp_enabled: true, blp_increment: 1, blp_maximum: 5,
+    }
     const result = computeScore(makeInput({
       character: { characterId: 'c', specId: null, specRoles: ['tank'], guildRank: 'Member', membershipStatus: 'trial' },
-      config: {
-        trial_penalty_enabled: true, trial_penalty_value: -2,
-        raid_roles_overall_bonus_priority: true, role_modifiers: { tank: 2 },
-        blp_enabled: true, blp_increment: 1, blp_maximum: 5,
-      },
+      config,
       timesPassed: 3,
     }))
-    const explanation = explainScore(result, result.components)
+    const explanation = explainScore(result, config)
 
     const labels = explanation.lines.map(l => l.label)
     expect(labels).toContain('Item rank')

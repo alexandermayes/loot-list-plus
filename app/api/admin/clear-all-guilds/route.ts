@@ -96,21 +96,21 @@ export async function POST(request: NextRequest) {
       // Not critical, continue
     }
 
-    // Delete active guild entries
+    // Clear active guild references in user_active_characters
     let activeQuery = supabase
-      .from('user_active_guilds')
-      .delete()
+      .from('user_active_characters')
+      .update({ active_guild_id: null, updated_at: new Date().toISOString() })
 
     if (keepGuildId) {
       activeQuery = activeQuery.neq('active_guild_id', keepGuildId)
     } else {
-      activeQuery = activeQuery.neq('user_id', '00000000-0000-0000-0000-000000000000')
+      activeQuery = activeQuery.not('active_guild_id', 'is', null)
     }
 
     const { error: activeError } = await activeQuery
 
     if (activeError) {
-      console.error('Error deleting active guilds:', activeError)
+      console.error('Error clearing active guilds:', activeError)
       // Not critical, continue
     }
 

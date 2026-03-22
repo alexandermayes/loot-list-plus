@@ -102,57 +102,24 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // If user was leaving their active guild, update or clear their active guild
-    const { data: activeGuild } = await supabase
-      .from('user_active_guilds')
-      .select('active_guild_id')
-      .eq('user_id', user.id)
-      .single()
-
-    // Also check user_active_characters (new system)
+    // If user was leaving their active guild, update or clear it
     const { data: activeCharData } = await supabase
       .from('user_active_characters')
       .select('active_guild_id')
       .eq('user_id', user.id)
-      .single()
+      .maybeSingle()
 
-    const wasActiveGuild = activeGuild?.active_guild_id === guild_id || activeCharData?.active_guild_id === guild_id
+    const wasActiveGuild = activeCharData?.active_guild_id === guild_id
 
     if (wasActiveGuild) {
-      if (newActiveGuildId) {
-        // Set another guild as active (old system)
-        await supabase
-          .from('user_active_guilds')
-          .upsert({
-            user_id: user.id,
-            active_guild_id: newActiveGuildId,
-            updated_at: new Date().toISOString()
-          })
-
-        // Set another guild as active (new system)
-        await supabase
-          .from('user_active_characters')
-          .update({
-            active_guild_id: newActiveGuildId,
-            updated_at: new Date().toISOString()
-          })
-          .eq('user_id', user.id)
-      } else {
-        // No more guilds, delete active guild entries
-        await supabase
-          .from('user_active_guilds')
-          .delete()
-          .eq('user_id', user.id)
-
-        // Clear active guild in user_active_characters (but keep the record for character)
-        await supabase
-          .from('user_active_characters')
-          .update({
-            active_guild_id: null,
-            updated_at: new Date().toISOString()
-          })
-          .eq('user_id', user.id)
-      }
+      // Update active guild to another guild, or clear it
+      await supabase
+        .from('user_active_characters')
+        .update({
+          active_guild_id: newActiveGuildId || null,
+          updated_at: new Date().toISOString()
+        })
+        .eq('user_id', user.id)
     }
 
     trackEvent({ event: 'guild_left', userId: user.id, properties: { guild_id } })

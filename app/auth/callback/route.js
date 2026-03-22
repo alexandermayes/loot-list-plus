@@ -44,16 +44,15 @@ export async function GET(request) {
         }
 
         // If user has guilds, ensure they have an active guild set
-        const { data: existingActiveGuild } = await supabase
-          .from('user_active_guilds')
+        const { data: existingActive } = await supabase
+          .from('user_active_characters')
           .select('active_guild_id')
           .eq('user_id', user.id)
-          .single()
+          .maybeSingle()
 
-        // If no active guild is set, set the first guild as active
-        if (!existingActiveGuild && firstGuildId) {
+        if (!existingActive?.active_guild_id && firstGuildId) {
           await supabase
-            .from('user_active_guilds')
+            .from('user_active_characters')
             .upsert({
               user_id: user.id,
               active_guild_id: firstGuildId,
