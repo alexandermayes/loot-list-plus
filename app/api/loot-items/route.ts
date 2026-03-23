@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
+import { verifyOfficerPermissions } from '@/utils/server-roles'
+import { logAudit } from '@/utils/audit/log'
 import { trackApiError } from '@/utils/analytics/server'
 import {
   CLASS_PROFICIENCIES,
@@ -291,6 +293,97 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('Error in GET /api/loot-items:', error)
     trackApiError('unknown', 'GET /api/loot-items', error instanceof Error ? error : new Error(String(error)))
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+}
+
+/**
+ * PATCH /api/loot-items
+ *
+ * Update loot item properties. Uses service role to bypass RLS
+ * after verifying officer permissions.
+ *
+ * Body: {
+ *   guild_id: string,
+ *   item_id: string,
+ *   updates: {
+ *     is_available?: boolean,
+ *     is_loot_council?: boolean,
+ *     classification?: string,
+ *     allocation_cost?: number,
+ *     officer_notes?: string | null,
+ *     roles?: string[],
+ *   }
+ * }
+ */
+export async function PATCH(request: NextRequest) {
+  try {
+    const { user, error: authError } = await getAuthenticatedUser()
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const body = await request.json()
+    const { guild_id, item_id, updates } = body
+
+    if (!guild_id || !item_id || !updates) {
+      return NextResponse.json({ error: 'guild_id, item_id, and updates are required' }, { status: 400 })
+    }
+
+    const serviceSupabase = createServiceRoleClient()
+
+    const { hasPermission, error: permError } = await verifyOfficerPermissions(serviceSupabase, user.id, guild_id)
+    if (!hasPermission) {
+      return NextResponse.json({ error: permError || 'Insufficient permissions' }, { status: 403 })
+    }
+
+    // Allowlist of updatable fields
+    const allowedFields = ['is_available', 'is_loot_council', 'classification', 'allocation_cost', 'officer_notes', 'roles']
+    const sanitized: Record<string, unknown> = {}
+    for (const key of allowedFields) {
+      if (key in updates) {
+        sanitized[key] = updates[key]
+      }
+    }
+
+    if (Object.keys(sanitized).length === 0) {
+      return NextResponse.json({ error: 'No valid fields to update' }, { status: 400 })
+    }
+
+    // Verify the item belongs to this guild (via raid_tiers chain)
+    const { data: item } = await serviceSupabase
+      .from('loot_items')
+      .select('id, raid_tier_id, raid_tiers!inner(guild_id)')
+      .eq('id', item_id)
+      .single()
+
+    if (!item || (item as any).raid_tiers?.guild_id !== guild_id) {
+      return NextResponse.json({ error: 'Item not found in this guild' }, { status: 404 })
+    }
+
+    const { data, error } = await serviceSupabase
+      .from('loot_items')
+      .update(sanitized)
+      .eq('id', item_id)
+      .select()
+
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 })
+    }
+
+    logAudit({
+      supabase: serviceSupabase,
+      guildId: guild_id,
+      tableName: 'loot_items',
+      recordId: item_id,
+      action: 'UPDATE',
+      userId: user.id,
+      newData: sanitized,
+    })
+
+    return NextResponse.json({ success: true, item: data?.[0] })
+  } catch (error) {
+    console.error('Error in PATCH /api/loot-items:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

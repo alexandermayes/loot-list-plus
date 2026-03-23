@@ -251,51 +251,52 @@ export default function AdminLootItems() {
     }
   }, [lootItems])
 
-  const toggleAvailability = async (itemId: string, currentStatus: boolean) => {
-    const { error } = await supabase
-      .from('loot_items')
-      .update({ is_available: !currentStatus })
-      .eq('id', itemId)
+  /** Server-side loot item update — bypasses RLS via service role after officer permission check */
+  const updateLootItem = async (itemId: string, updates: Record<string, unknown>): Promise<boolean> => {
+    if (!activeGuild?.id) return false
 
-    if (!error) {
-      setLootItems(items => items.map(item =>
-        item.id === itemId ? { ...item, is_available: !currentStatus } : item
-      ))
+    const res = await fetch('/api/loot-items', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ guild_id: activeGuild.id, item_id: itemId, updates }),
+    })
+
+    if (!res.ok) {
+      const errBody = await res.json().catch(() => ({}))
+      showNotification('error', errBody.error || 'Couldn\'t save changes. Try again.')
+      return false
     }
+
+    return true
+  }
+
+  const toggleAvailability = async (itemId: string, currentStatus: boolean) => {
+    const success = await updateLootItem(itemId, { is_available: !currentStatus })
+    if (!success) return
+
+    setLootItems(items => items.map(item =>
+      item.id === itemId ? { ...item, is_available: !currentStatus } : item
+    ))
   }
 
   const toggleLootCouncil = async (itemId: string, currentStatus: boolean) => {
-    const { error } = await supabase
-      .from('loot_items')
-      .update({ is_loot_council: !currentStatus })
-      .eq('id', itemId)
+    const success = await updateLootItem(itemId, { is_loot_council: !currentStatus })
+    if (!success) return
 
-    if (!error) {
-      setLootItems(items => items.map(item =>
-        item.id === itemId ? { ...item, is_loot_council: !currentStatus } : item
-      ))
-      showNotification('success', `Item ${!currentStatus ? 'marked as' : 'removed from'} Loot Council`)
-    } else {
-      showNotification('error', 'Failed to update. Try again.')
-    }
+    setLootItems(items => items.map(item =>
+      item.id === itemId ? { ...item, is_loot_council: !currentStatus } : item
+    ))
+    showNotification('success', `Item ${!currentStatus ? 'marked as' : 'removed from'} Loot Council`)
   }
 
   const updateClassification = async (itemId: string, classification: string) => {
     const allocationCost = (classification === 'Reserved' || classification === 'Limited') ? 1 : 0
+    const success = await updateLootItem(itemId, { classification, allocation_cost: allocationCost })
+    if (!success) return
 
-    const { error } = await supabase
-      .from('loot_items')
-      .update({
-        classification,
-        allocation_cost: allocationCost
-      })
-      .eq('id', itemId)
-
-    if (!error) {
-      setLootItems(items => items.map(item =>
-        item.id === itemId ? { ...item, classification, allocation_cost: allocationCost } : item
-      ))
-    }
+    setLootItems(items => items.map(item =>
+      item.id === itemId ? { ...item, classification, allocation_cost: allocationCost } : item
+    ))
   }
 
   // Add a spec to an item (immediately saves to database)

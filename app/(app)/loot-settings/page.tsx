@@ -687,16 +687,28 @@ export default function AdminLootItems() {
     }
   }
 
-  const toggleLootCouncil = async (itemId: string, currentStatus: boolean) => {
-    const { error } = await supabase
-      .from('loot_items')
-      .update({ is_loot_council: !currentStatus })
-      .eq('id', itemId)
+  /** Server-side loot item update — bypasses RLS via service role after officer permission check */
+  const updateLootItem = async (itemId: string, updates: Record<string, unknown>): Promise<boolean> => {
+    if (!activeGuild?.id) return false
 
-    if (error) {
-      showNotification('error', 'Failed to update. Try again.')
-      return
+    const res = await fetch('/api/loot-items', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ guild_id: activeGuild.id, item_id: itemId, updates }),
+    })
+
+    if (!res.ok) {
+      const errBody = await res.json().catch(() => ({}))
+      showNotification('error', errBody.error || 'Couldn\'t save changes. Try again.')
+      return false
     }
+
+    return true
+  }
+
+  const toggleLootCouncil = async (itemId: string, currentStatus: boolean) => {
+    const success = await updateLootItem(itemId, { is_loot_council: !currentStatus })
+    if (!success) return
 
     setLootItems(items => items.map(item =>
       item.id === itemId ? { ...item, is_loot_council: !currentStatus } : item
@@ -705,22 +717,8 @@ export default function AdminLootItems() {
   }
 
   const toggleAvailability = async (itemId: string, currentStatus: boolean) => {
-    const { data, error } = await supabase
-      .from('loot_items')
-      .update({ is_available: !currentStatus })
-      .eq('id', itemId)
-      .select()
-
-    if (error) {
-      console.error('Error toggling availability:', {
-        message: error.message,
-        details: error.details,
-        hint: error.hint,
-        code: error.code
-      })
-      showNotification('error', error.message || 'Couldn\'t update availability. Try again.')
-      return
-    }
+    const success = await updateLootItem(itemId, { is_available: !currentStatus })
+    if (!success) return
 
     setLootItems(items => items.map(item =>
       item.id === itemId ? { ...item, is_available: !currentStatus } : item
@@ -729,52 +727,17 @@ export default function AdminLootItems() {
 
   const updateClassification = async (itemId: string, classification: string) => {
     const allocationCost = (classification === 'Reserved' || classification === 'Limited') ? 1 : 0
-
-    const { data, error } = await supabase
-      .from('loot_items')
-      .update({
-        classification,
-        allocation_cost: allocationCost
-      })
-      .eq('id', itemId)
-      .select()
-
-    if (error) {
-      console.error('Error updating classification:', {
-        message: error.message,
-        details: error.details,
-        hint: error.hint,
-        code: error.code
-      })
-      showNotification('error', error.message || 'Couldn\'t update classification. Try again.')
-      return
-    }
+    const success = await updateLootItem(itemId, { classification, allocation_cost: allocationCost })
+    if (!success) return
 
     setLootItems(items => items.map(item =>
       item.id === itemId ? { ...item, classification, allocation_cost: allocationCost } : item
     ))
   }
 
-  // Update officer notes for an item
   const updateNotes = async (itemId: string, notes: string): Promise<boolean> => {
-    const { data, error } = await supabase
-      .from('loot_items')
-      .update({ officer_notes: notes || null })
-      .eq('id', itemId)
-      .select('id, officer_notes')
-
-    if (error) {
-      console.error('Error updating notes:', error)
-      showNotification('error', 'Couldn\'t save notes. Try again.')
-      return false
-    }
-
-    // Check if the update actually worked (RLS might silently block it)
-    if (!data || data.length === 0) {
-      console.error('Notes update failed - no rows updated (RLS may have blocked it)')
-      showNotification('error', 'You don\'t have permission to edit notes.')
-      return false
-    }
+    const success = await updateLootItem(itemId, { officer_notes: notes || null })
+    if (!success) return false
 
     setItemNotes(prev => ({ ...prev, [itemId]: notes }))
     setLootItems(items => items.map(item =>
@@ -1146,20 +1109,12 @@ export default function AdminLootItems() {
       newRoles.add(role)
     }
 
-    // Update database
-    const { error } = await supabase
-      .from('loot_items')
-      .update({ roles: Array.from(newRoles) })
-      .eq('id', itemId)
-
-    if (!error) {
-      // Update local state
+    const success = await updateLootItem(itemId, { roles: Array.from(newRoles) })
+    if (success) {
       setItemRoles(prev => ({
         ...prev,
         [itemId]: newRoles
       }))
-    } else {
-      console.error('Error updating roles:', error)
     }
   }
 
