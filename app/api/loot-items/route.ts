@@ -350,7 +350,7 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: 'No valid fields to update' }, { status: 400 })
     }
 
-    // Verify the item belongs to this guild (via raid_tiers chain)
+    // Verify the item belongs to this guild (loot_items → raid_tiers → expansions → guild)
     const { data: item } = await serviceSupabase
       .from('loot_items')
       .select('id, raid_tier_id')
@@ -361,14 +361,24 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: 'Item not found' }, { status: 404 })
     }
 
-    const { data: tier } = await serviceSupabase
-      .from('raid_tiers')
-      .select('guild_id')
-      .eq('id', item.raid_tier_id)
-      .single()
+    if (item.raid_tier_id) {
+      const { data: tier } = await serviceSupabase
+        .from('raid_tiers')
+        .select('expansion_id')
+        .eq('id', item.raid_tier_id)
+        .single()
 
-    if (!tier || tier.guild_id !== guild_id) {
-      return NextResponse.json({ error: 'Item not found in this guild' }, { status: 404 })
+      if (tier?.expansion_id) {
+        const { data: expansion } = await serviceSupabase
+          .from('expansions')
+          .select('guild_id')
+          .eq('id', tier.expansion_id)
+          .single()
+
+        if (expansion && expansion.guild_id !== guild_id) {
+          return NextResponse.json({ error: 'Item not found in this guild' }, { status: 404 })
+        }
+      }
     }
 
     const { data, error } = await serviceSupabase
