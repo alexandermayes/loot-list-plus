@@ -43,6 +43,12 @@ export default function LandingFooter() {
             >
               Privacy Policy
             </a>
+            <a
+              href="/blog"
+              className="text-sm text-foreground-secondary hover:text-foreground transition-colors"
+            >
+              Blog
+            </a>
           </div>
 
           {/* Tagline */}

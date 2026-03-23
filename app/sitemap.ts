@@ -15,6 +15,18 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.8,
     },
     {
+      url: 'https://www.getlootlist.com/blog',
+      lastModified: new Date(),
+      changeFrequency: 'weekly',
+      priority: 0.8,
+    },
+    {
+      url: 'https://www.getlootlist.com/blog/how-to-set-up-a-fair-loot-system-for-your-wow-guild',
+      lastModified: new Date('2026-03-23'),
+      changeFrequency: 'monthly',
+      priority: 0.9,
+    },
+    {
       url: 'https://www.getlootlist.com/terms',
       lastModified: new Date('2026-02-06'),
       changeFrequency: 'yearly',

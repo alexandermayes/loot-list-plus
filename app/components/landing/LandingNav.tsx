@@ -80,6 +80,13 @@ export default function LandingNav() {
             >
               Testimonials
             </Button>
+            <a
+              href="/blog"
+              onClick={() => trackClientEvent('landing_nav_clicked', { target: 'blog', source: 'nav' })}
+              className="text-base font-medium text-foreground hover:text-accent transition-colors"
+            >
+              Blog
+            </a>
           </div>
 
           {/* CTA Button */}
