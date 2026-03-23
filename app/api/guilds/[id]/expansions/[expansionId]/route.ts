@@ -1,4 +1,4 @@
-import { createClient, getAuthenticatedUser } from '@/utils/supabase/server'
+import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { verifyOfficerPermissions } from '@/utils/server-roles'
 import { NextRequest, NextResponse } from 'next/server'
@@ -51,10 +51,8 @@ export async function PATCH(
       return NextResponse.json({ error: 'Officer permissions required' }, { status: 403 })
     }
 
-    const supabase = await createClient()
-
-    // Verify expansion belongs to this guild
-    const { data: expansion, error: expError } = await supabase
+    // Verify expansion belongs to this guild (use service role to bypass RLS)
+    const { data: expansion, error: expError } = await serviceSupabase
       .from('expansions')
       .select('id, name')
       .eq('id', expansionId)
