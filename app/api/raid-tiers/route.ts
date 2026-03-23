@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
+import { verifyOfficerPermissions } from '@/utils/server-roles'
 
 // GET - Fetch raid tiers for an expansion
 // By default, filters to only show phases <= current_phase (linear unlock)
@@ -72,6 +73,67 @@ export async function GET(request: NextRequest) {
     )
   } catch (error) {
     console.error('Error in GET /api/raid-tiers:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+}
+
+/**
+ * PATCH /api/raid-tiers
+ *
+ * Update raid tier properties. Uses service role to bypass RLS
+ * after verifying officer permissions.
+ *
+ * Body: {
+ *   guild_id: string,
+ *   tier_id: string,
+ *   updates: { is_guild_active?: boolean, master_sheet_visible?: boolean }
+ * }
+ */
+export async function PATCH(request: NextRequest) {
+  try {
+    const { user, error: authError } = await getAuthenticatedUser()
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const body = await request.json()
+    const { guild_id, tier_id, updates } = body
+
+    if (!guild_id || !tier_id || !updates) {
+      return NextResponse.json({ error: 'guild_id, tier_id, and updates are required' }, { status: 400 })
+    }
+
+    const serviceSupabase = createServiceRoleClient()
+
+    const { hasPermission } = await verifyOfficerPermissions(serviceSupabase, user.id, guild_id)
+    if (!hasPermission) {
+      return NextResponse.json({ error: 'Officer permissions required' }, { status: 403 })
+    }
+
+    // Allowlist of updatable fields
+    const allowedFields = ['is_guild_active', 'master_sheet_visible']
+    const sanitized: Record<string, unknown> = {}
+    for (const key of allowedFields) {
+      if (key in updates) sanitized[key] = updates[key]
+    }
+
+    if (Object.keys(sanitized).length === 0) {
+      return NextResponse.json({ error: 'No valid fields to update' }, { status: 400 })
+    }
+
+    const { data, error } = await serviceSupabase
+      .from('raid_tiers')
+      .update(sanitized)
+      .eq('id', tier_id)
+      .select()
+
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 })
+    }
+
+    return NextResponse.json({ success: true, tier: data?.[0] })
+  } catch (error) {
+    console.error('Error in PATCH /api/raid-tiers:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

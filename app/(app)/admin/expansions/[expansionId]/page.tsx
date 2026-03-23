@@ -354,31 +354,23 @@ export default function ExpansionDetailPage({ params }: { params: Promise<{ expa
   }
 
   const handleToggleGuildActive = async (tierId: string, currentValue: boolean) => {
+    if (!activeGuild) return
     setUpdating(tierId)
 
     try {
-      const { data, error } = await supabase
-        .from('raid_tiers')
-        .update({ is_guild_active: !currentValue })
-        .eq('id', tierId)
-        .select()
+      const res = await fetch('/api/raid-tiers', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ guild_id: activeGuild.id, tier_id: tierId, updates: { is_guild_active: !currentValue } }),
+      })
 
-      if (error) {
-        if (error.message?.includes('is_guild_active') || error.code === '42703') {
-          showNotification('error', 'Please run the database migration to enable this feature.')
-        } else {
-          throw error
-        }
-        return
-      }
-
-      if (!data || data.length === 0) {
-        showNotification('error', 'Couldn\'t update. Check your permissions and try again.')
+      if (!res.ok) {
+        const errBody = await res.json().catch(() => ({}))
+        showNotification('error', errBody.error || 'Couldn\'t update raid. Try again.')
         return
       }
 
       showNotification('success', !currentValue ? 'Raid added to loot lists' : 'Raid removed from loot lists')
-      // Invalidate SWR caches so other pages pick up the change
       mutate((key: string) => typeof key === 'string' && (key.startsWith('/api/raid-tiers') || key.startsWith('/api/loot-items')), undefined, { revalidate: true })
       await loadData()
     } catch (error: any) {
@@ -390,19 +382,19 @@ export default function ExpansionDetailPage({ params }: { params: Promise<{ expa
   }
 
   const handleToggleMasterSheetVisibility = async (tierId: string, currentValue: boolean) => {
+    if (!activeGuild) return
     setUpdating(tierId)
 
     try {
-      const { data, error } = await supabase
-        .from('raid_tiers')
-        .update({ master_sheet_visible: !currentValue })
-        .eq('id', tierId)
-        .select()
+      const res = await fetch('/api/raid-tiers', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ guild_id: activeGuild.id, tier_id: tierId, updates: { master_sheet_visible: !currentValue } }),
+      })
 
-      if (error) throw error
-
-      if (!data || data.length === 0) {
-        showNotification('error', 'Couldn\'t update. Check your permissions and try again.')
+      if (!res.ok) {
+        const errBody = await res.json().catch(() => ({}))
+        showNotification('error', errBody.error || 'Couldn\'t update visibility. Try again.')
         return
       }
 
@@ -418,10 +410,11 @@ export default function ExpansionDetailPage({ params }: { params: Promise<{ expa
   }
 
   const handleUpdatePhaseDeadline = async (phase: number) => {
+    if (!activeGuild) return
     setUpdating(`phase-${phase}`)
 
     try {
-      // Get current phase_deadlines from expansion
+      // Get current phase_deadlines from expansion (read is fine via client)
       const { data: currentData } = await supabase
         .from('expansions')
         .select('phase_deadlines')
@@ -431,18 +424,21 @@ export default function ExpansionDetailPage({ params }: { params: Promise<{ expa
       const currentDeadlines = (currentData?.phase_deadlines || {}) as Record<string, string | null>
       const deadlineValue = phaseDeadlineInputs[phase] || null
 
-      // Update the specific phase deadline
       const updatedDeadlines = {
         ...currentDeadlines,
         [phase.toString()]: deadlineValue
       }
 
-      const { error } = await supabase
-        .from('expansions')
-        .update({ phase_deadlines: updatedDeadlines })
-        .eq('id', expansionId)
+      const res = await fetch(`/api/guilds/${activeGuild.id}/expansions/${expansionId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phaseDeadlines: updatedDeadlines }),
+      })
 
-      if (error) throw error
+      if (!res.ok) {
+        const errBody = await res.json().catch(() => ({}))
+        throw new Error(errBody.error || 'Failed to update')
+      }
 
       showNotification('success', deadlineValue ? `Phase ${phase} deadline updated` : `Phase ${phase} deadline cleared`)
       await loadData()

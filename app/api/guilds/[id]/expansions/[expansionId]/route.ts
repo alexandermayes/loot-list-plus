@@ -35,7 +35,8 @@ export async function PATCH(
       thirdRaidDay,
       fourthRaidDay,
       fifthRaidDay,
-      timezone
+      timezone,
+      phaseDeadlines,
     } = body
 
     // Fast auth check using getSession (no network call)
@@ -103,6 +104,9 @@ export async function PATCH(
     }
     if (timezone !== undefined) {
       expansionUpdate.timezone = timezone
+    }
+    if (phaseDeadlines !== undefined) {
+      (expansionUpdate as Record<string, unknown>).phase_deadlines = phaseDeadlines
     }
 
     // Update expansion if any fields provided
