@@ -60,7 +60,7 @@ function RotatingClassIcon() {
     <img
       src={iconUrl}
       alt="Class icon"
-      className={`w-5 h-5 rounded-full flex-shrink-0 border border-primary/30 transition-all duration-300 ${
+      className={`w-5 h-5 rounded-full flex-shrink-0 border border-border transition-all duration-300 ${
         isTransitioning ? 'opacity-0 scale-75' : 'opacity-100 scale-100'
       }`}
     />
@@ -217,7 +217,7 @@ export function CharacterSelector() {
           <img
             src={getClassIconUrl(activeCharacter.class.name)}
             alt={activeCharacter.class.name}
-            className="w-5 h-5 rounded-full flex-shrink-0 border border-border/50 shadow-sm"
+            className="w-5 h-5 rounded-full flex-shrink-0 border border-border shadow-sm"
           />
         ) : (
           <div
@@ -289,7 +289,7 @@ export function CharacterSelector() {
                         <img
                           src={getClassIconUrl(char.class.name)}
                           alt={char.class.name}
-                          className="w-5 h-5 rounded-full flex-shrink-0 border border-border/50 shadow-sm"
+                          className="w-5 h-5 rounded-full flex-shrink-0 border border-border shadow-sm"
                         />
                       ) : (
                         <div
@@ -357,7 +357,7 @@ export function CharacterSelector() {
                           <img
                             src={getClassIconUrl(char.class.name)}
                             alt={char.class.name}
-                            className="w-5 h-5 rounded-full flex-shrink-0 border border-border/50 shadow-sm"
+                            className="w-5 h-5 rounded-full flex-shrink-0 border border-border shadow-sm"
                           />
                         ) : (
                           <div

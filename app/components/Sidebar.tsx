@@ -892,7 +892,7 @@ export default function Sidebar({ currentView = 'overview', onViewChange, isMobi
                 <img
                   src="https://wow.zamimg.com/images/wow/icons/large/inv_shirt_guildtabard_01.jpg"
                   alt="Guild Tabard"
-                  className="w-10 h-10 rounded-lg border-2 border-border/50 shadow-md"
+                  className="w-10 h-10 rounded-lg border-2 border-border shadow-md"
                 />
                 <div>
                   <h3 className="text-[20px] font-bold text-foreground">Join a guild</h3>
@@ -1105,7 +1105,7 @@ export default function Sidebar({ currentView = 'overview', onViewChange, isMobi
                             <img
                               src={`https://cdn.discordapp.com/icons/${guild.discord_server_id}/${guild.discord_icon}.png`}
                               alt={guild.discord_name || guild.name}
-                              className="w-10 h-10 rounded-full"
+                              className="w-10 h-10 rounded-full border border-border"
                             />
                           )}
                           <div className="flex-1 min-w-0">

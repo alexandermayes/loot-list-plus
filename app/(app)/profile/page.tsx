@@ -363,7 +363,7 @@ export default function ProfilePage() {
             width={80}
             height={80}
             priority
-            className="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-2 border-border/50 shadow-md"
+            className="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-2 border-border shadow-md"
           />
           <div className="flex-1 min-w-0">
             <h1 className="text-xl sm:text-[28px] font-bold text-foreground">{displayName}</h1>

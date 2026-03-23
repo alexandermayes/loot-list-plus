@@ -5,7 +5,6 @@ import { useState, useEffect, useMemo, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import dynamic from 'next/dynamic'
 import WelcomeScreen from '@/app/components/WelcomeScreen'
-import { SetupChecklist } from '@/app/components/SetupChecklist'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { UserIcon, CheckmarkCircle01Icon, AlertCircleIcon, Award01Icon, Cancel01Icon, Add01Icon, Calendar03Icon, Shield01Icon, AnalyticsUpIcon } from '@hugeicons/core-free-icons'
 
@@ -1358,9 +1357,6 @@ function DashboardContent() {
         <GuardianConversionBanner guildId={activeGuild.id} />
       )}
 
-      {/* Setup checklist for new guilds */}
-      {heroReady && <SetupChecklist />}
-
       {/* Show full skeleton only while guild context is loading */}
       {guildLoading ? (
         <DashboardContentSkeleton />
@@ -1422,10 +1418,10 @@ function DashboardContent() {
                       width={64}
                       height={64}
                       fetchPriority="high"
-                      className="w-16 h-16 rounded-full border-2 border-border/50 shadow-md"
+                      className="w-16 h-16 rounded-full border-2 border-border shadow-md"
                     />
                   ) : (
-                    <div className="w-16 h-16 bg-accent rounded-full flex items-center justify-center border-2 border-border/50 shadow-md">
+                    <div className="w-16 h-16 bg-accent rounded-full flex items-center justify-center border-2 border-border shadow-md">
                       <HugeiconsIcon icon={UserIcon} size={32} className="text-foreground" />
                     </div>
                   )}
