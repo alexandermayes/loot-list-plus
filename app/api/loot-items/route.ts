@@ -353,11 +353,21 @@ export async function PATCH(request: NextRequest) {
     // Verify the item belongs to this guild (via raid_tiers chain)
     const { data: item } = await serviceSupabase
       .from('loot_items')
-      .select('id, raid_tier_id, raid_tiers!inner(guild_id)')
+      .select('id, raid_tier_id')
       .eq('id', item_id)
       .single()
 
-    if (!item || (item as any).raid_tiers?.guild_id !== guild_id) {
+    if (!item) {
+      return NextResponse.json({ error: 'Item not found' }, { status: 404 })
+    }
+
+    const { data: tier } = await serviceSupabase
+      .from('raid_tiers')
+      .select('guild_id')
+      .eq('id', item.raid_tier_id)
+      .single()
+
+    if (!tier || tier.guild_id !== guild_id) {
       return NextResponse.json({ error: 'Item not found in this guild' }, { status: 404 })
     }
 
