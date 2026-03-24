@@ -552,7 +552,7 @@ export default function ProfilePage() {
                         window.location.href = `/api/auth/battlenet?region=${battlenetRegion}`
                       }}
                     >
-                      <Image src="/icons/battlenet.svg" alt="" width={16} height={16} className="w-4 h-4 brightness-0 dark:invert" />
+                      <Image src="/icons/battlenet.svg" alt="" width={16} height={16} className="w-4 h-4 brightness-0" />
                       Connect Battle.net
                     </Button>
                   </div>
