@@ -34,9 +34,78 @@ export const metadata: Metadata = {
 
 const APP_URL = 'https://www.lootlistplus.com'
 
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Article',
+  headline: 'How to Set Up a Fair Loot System for Your WoW Guild',
+  description:
+    'Compare DKP, EPGP, Loot Council, and Suicide Kings. Learn what makes a loot system fair and how to set one up for your WoW Classic guild.',
+  datePublished: '2026-03-23T00:00:00Z',
+  dateModified: '2026-03-23T00:00:00Z',
+  author: {
+    '@type': 'Organization',
+    name: 'LootList+',
+    url: 'https://www.getlootlist.com',
+  },
+  publisher: {
+    '@type': 'Organization',
+    name: 'LootList+',
+    url: 'https://www.getlootlist.com',
+    logo: {
+      '@type': 'ImageObject',
+      url: 'https://www.getlootlist.com/lootlist-icon.svg',
+    },
+  },
+  mainEntityOfPage: {
+    '@type': 'WebPage',
+    '@id': 'https://www.getlootlist.com/blog/how-to-set-up-a-fair-loot-system-for-your-wow-guild',
+  },
+  wordCount: 1450,
+  articleSection: 'Guild Management',
+  keywords: [
+    'wow loot system',
+    'wow guild loot distribution',
+    'wow loot council alternative',
+    'wow classic loot priority',
+    'dkp vs epgp',
+  ],
+}
+
+const breadcrumbLd = {
+  '@context': 'https://schema.org',
+  '@type': 'BreadcrumbList',
+  itemListElement: [
+    {
+      '@type': 'ListItem',
+      position: 1,
+      name: 'Home',
+      item: 'https://www.getlootlist.com',
+    },
+    {
+      '@type': 'ListItem',
+      position: 2,
+      name: 'Blog',
+      item: 'https://www.getlootlist.com/blog',
+    },
+    {
+      '@type': 'ListItem',
+      position: 3,
+      name: 'How to Set Up a Fair Loot System for Your WoW Guild',
+    },
+  ],
+}
+
 export default function BlogPost() {
   return (
     <main className="bg-background overflow-x-hidden">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }}
+      />
       <LandingNav />
 
       {/* Article */}
