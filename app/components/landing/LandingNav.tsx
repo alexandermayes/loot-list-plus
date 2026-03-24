@@ -9,6 +9,15 @@ import { trackClientEvent } from '@/utils/analytics/client'
 
 const APP_URL = 'https://www.lootlistplus.com'
 
+function navigateToSection(sectionId: string) {
+  const el = document.getElementById(sectionId)
+  if (el) {
+    scrollToSection(sectionId)
+  } else {
+    window.location.href = `/#${sectionId}`
+  }
+}
+
 export default function LandingNav() {
   const [scrolled, setScrolled] = useState(false)
 
@@ -36,7 +45,7 @@ export default function LandingNav() {
           {/* Logo */}
           <Button
             variant="ghost"
-            onClick={() => scrollToSection('hero')}
+            onClick={() => navigateToSection('hero')}
             className="p-0 h-auto hover:bg-transparent hover:opacity-80"
           >
             <Image
@@ -54,7 +63,7 @@ export default function LandingNav() {
               variant="ghost"
               onClick={() => {
                 trackClientEvent('landing_nav_clicked', { target: 'features', source: 'nav' })
-                scrollToSection('features')
+                navigateToSection('features')
               }}
               className="p-0 h-auto text-base font-medium text-foreground hover:text-accent hover:bg-transparent"
             >
@@ -64,7 +73,7 @@ export default function LandingNav() {
               variant="ghost"
               onClick={() => {
                 trackClientEvent('landing_nav_clicked', { target: 'how-it-works', source: 'nav' })
-                scrollToSection('how-it-works')
+                navigateToSection('how-it-works')
               }}
               className="p-0 h-auto text-base font-medium text-foreground hover:text-accent hover:bg-transparent"
             >
@@ -74,7 +83,7 @@ export default function LandingNav() {
               variant="ghost"
               onClick={() => {
                 trackClientEvent('landing_nav_clicked', { target: 'testimonials', source: 'nav' })
-                scrollToSection('testimonials')
+                navigateToSection('testimonials')
               }}
               className="p-0 h-auto text-base font-medium text-foreground hover:text-accent hover:bg-transparent"
             >
