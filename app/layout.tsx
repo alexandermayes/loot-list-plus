@@ -8,6 +8,7 @@ import { ThemeProvider } from "./components/ThemeProvider";
 import { SWRProvider } from "./components/SWRProvider";
 import { PostHogProvider } from "./components/PostHogProvider";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import { Analytics } from "@vercel/analytics/next";
 import NotificationContainer from "./components/NotificationContainer";
 import "./globals.css";
 
@@ -165,6 +166,7 @@ export default function RootLayout({
                     <NotificationContainer />
                     {children}
                     <SpeedInsights />
+                    <Analytics />
                   </PostHogProvider>
                 </ExpansionProvider>
               </GuildContextProvider>
