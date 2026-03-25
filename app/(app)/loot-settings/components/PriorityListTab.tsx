@@ -575,52 +575,81 @@ export default function PriorityListTab() {
       </div>
 
       {/* Boss Quick Navigation */}
-      {!contentLoading && bossNames.length > 0 && (
+      {!contentLoading && lootItems.length > 0 && (
         <div className="flex flex-col sm:flex-row gap-3">
           {/* Mobile: Search + Boss dropdown row */}
           <div className="sm:hidden flex gap-2">
             {/* Search input */}
             <div className="flex-1 bg-background-elevated border border-border rounded-xl p-2">
+              <div className="relative">
+                <Input
+                  variant="rounded"
+                  size="sm"
+                  type="text"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  placeholder="Search..."
+                  className={searchTerm ? 'pr-7' : ''}
+                />
+                {searchTerm && (
+                  <button
+                    onClick={() => setSearchTerm('')}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                    aria-label="Clear search"
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                )}
+              </div>
+            </div>
+            {/* Boss dropdown */}
+            {bossNames.length > 0 && (
+              <div className="flex-1 bg-background-elevated border border-border rounded-xl p-2">
+                <Select
+                  variant="rounded"
+                  size="sm"
+                  onChange={(e) => {
+                    const element = document.getElementById(`prio-boss-${e.target.value.replace(/\s+/g, '-')}`)
+                    if (element) {
+                      element.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                    }
+                  }}
+                  defaultValue=""
+                >
+                  <option value="" disabled>Jump to boss...</option>
+                  {bossNames.map((boss) => (
+                    <option key={boss} value={boss}>{boss}</option>
+                  ))}
+                </Select>
+              </div>
+            )}
+          </div>
+          {/* Desktop: Search input */}
+          <div className="hidden sm:flex flex-shrink-0 bg-background-elevated border border-border rounded-xl p-3 items-center">
+            <div className="relative">
               <Input
                 variant="rounded"
                 size="sm"
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Search..."
+                placeholder="Search items..."
+                className={`w-full sm:w-[160px] ${searchTerm ? 'pr-7' : ''}`}
               />
+              {searchTerm && (
+                <button
+                  onClick={() => setSearchTerm('')}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  aria-label="Clear search"
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              )}
             </div>
-            {/* Boss dropdown */}
-            <div className="flex-1 bg-background-elevated border border-border rounded-xl p-2">
-              <Select
-                variant="rounded"
-                size="sm"
-                onChange={(e) => {
-                  const element = document.getElementById(`prio-boss-${e.target.value.replace(/\s+/g, '-')}`)
-                  if (element) {
-                    element.scrollIntoView({ behavior: 'smooth', block: 'start' })
-                  }
-                }}
-                defaultValue=""
-              >
-                <option value="" disabled>Jump to boss...</option>
-                {bossNames.map((boss) => (
-                  <option key={boss} value={boss}>{boss}</option>
-                ))}
-              </Select>
-            </div>
-          </div>
-          {/* Desktop: Search input */}
-          <div className="hidden sm:flex flex-shrink-0 bg-background-elevated border border-border rounded-xl p-3 items-center">
-            <Input
-              variant="rounded"
-              size="sm"
-              type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Search items..."
-              className="w-full sm:w-[160px]"
-            />
           </div>
           {/* Desktop: Boss chips container with horizontal scroll fade */}
           <div className="flex-1 min-w-0 bg-background-elevated border border-border rounded-xl p-3 overflow-hidden hidden sm:block">
@@ -680,7 +709,7 @@ export default function PriorityListTab() {
             <EmptyState
               icon={Search01Icon}
               title="No items found"
-              description="No items found for this phase."
+              description={searchTerm ? `No items matching "${searchTerm}".` : "No items found for this phase."}
               size="default"
               variant="card"
             />
