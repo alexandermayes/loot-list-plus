@@ -14,6 +14,46 @@ export interface UpdateEntry {
 
 export const updates: UpdateEntry[] = [
   {
+    date: 'March 25, 2026',
+    items: [
+      {
+        category: 'feature',
+        title: 'Officer diagnostic tool',
+        description: 'Officers can now check a raider\'s data integrity via /api/admin/diagnose. Returns character info, submission status, attendance records, and computed score to help troubleshoot issues.',
+      },
+      {
+        category: 'feature',
+        title: 'Score breakdown on Master Sheet',
+        description: 'Officers can click any raider on the Master Sheet to see a full breakdown of how their Loot Score was calculated, including ranking, attendance, and modifiers.',
+      },
+      {
+        category: 'improvement',
+        title: 'Priorities tab search',
+        description: 'The search bar on the Priorities tab no longer disappears, and now includes a clear button.',
+      },
+      {
+        category: 'fix',
+        title: 'Attendance score showing 0 for some raiders',
+        description: 'Personal attendance score could show 0 even when the guild table showed the correct value. Now uses the same computation path as the guild table.',
+      },
+      {
+        category: 'fix',
+        title: 'Attendance calculation for new members',
+        description: 'The "fair" new member mode wasn\'t using your join date, counting raids from before you joined against your attendance. Fixed.',
+      },
+      {
+        category: 'fix',
+        title: 'Loot settings not saving',
+        description: 'Phase deadlines, raid tier toggles, and loot item changes weren\'t persisting due to a permissions issue. All fixed.',
+      },
+      {
+        category: 'fix',
+        title: 'Guild owner role editing',
+        description: 'Guild owners couldn\'t edit their own role name or position. Now works correctly.',
+      },
+    ],
+  },
+  {
     date: 'March 21, 2026',
     items: [
       {
