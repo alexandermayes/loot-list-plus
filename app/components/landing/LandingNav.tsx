@@ -79,17 +79,7 @@ export default function LandingNav() {
             >
               How it works
             </Button>
-            <Button
-              variant="ghost"
-              onClick={() => {
-                trackClientEvent('landing_nav_clicked', { target: 'testimonials', source: 'nav' })
-                navigateToSection('testimonials')
-              }}
-              className="p-0 h-auto text-base font-medium text-foreground hover:text-accent hover:bg-transparent"
-            >
-              Testimonials
-            </Button>
-            <a
+            <
               href="/blog"
               onClick={() => trackClientEvent('landing_nav_clicked', { target: 'blog', source: 'nav' })}
               className="text-base font-medium text-foreground hover:text-accent transition-colors"
