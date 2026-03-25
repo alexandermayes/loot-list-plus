@@ -307,10 +307,10 @@ export default function AttendancePage() {
             .eq('id', activeCharData.active_guild_id)
             .single(),
 
-          // Query 4: Get character's role in the guild
+          // Query 4: Get character's role and join date in the guild
           supabase
             .from('character_guild_memberships')
-            .select('role')
+            .select('role, joined_at')
             .eq('character_id', activeCharData.active_character_id)
             .eq('guild_id', activeCharData.active_guild_id)
             .single()
