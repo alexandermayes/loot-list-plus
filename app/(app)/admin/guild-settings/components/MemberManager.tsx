@@ -188,11 +188,11 @@ export default function MemberManager() {
 
   // Check if current user can modify a member
   const canModifyMember = (targetUserId: string, targetRole: string) => {
-    // Cannot modify the guild creator
-    if (targetUserId === guildCreatorId) return false
-
-    // Guild creator can modify anyone
+    // Guild creator can modify anyone, including themselves
     if (isCurrentUserCreator) return true
+
+    // Non-creators cannot modify the guild creator
+    if (targetUserId === guildCreatorId) return false
 
     // Get target's position
     const targetRoleInfo = roles.find(r => r.name === targetRole)
