@@ -53,6 +53,8 @@ interface AttendanceStatus {
   no_call_no_show: boolean
   was_late?: boolean
   was_benched?: boolean
+  is_excused?: boolean
+  points_override?: number | null
 }
 
 interface WeekGroup {
@@ -535,42 +537,8 @@ export default function AttendancePage() {
           setAttendanceRecords(recordsData as any)
         }
 
-        // Calculate personal attendance score using the engine
-        if (deduplicatedRaidEvents.length > 0) {
-          const raidIds = deduplicatedRaidEvents.map((r: RaidEvent) => r.id)
-
-          const { data: recentRecords } = await supabase
-            .from('attendance_records')
-            .select('raid_event_id, signed_up, attended, no_call_no_show, was_late, was_benched, is_excused, points_override')
-            .eq('character_id', characterData.id)
-            .in('raid_event_id', raidIds)
-
-          if (recentRecords && recentRecords.length > 0) {
-            const raidDaysForEngine = [
-              raidDaysSource?.first_raid_day,
-              raidDaysSource?.second_raid_day,
-              raidDaysSource?.third_raid_day,
-              raidDaysSource?.fourth_raid_day,
-              raidDaysSource?.fifth_raid_day
-            ].filter((d): d is number => d !== null && d !== undefined)
-              .slice(0, raidDaysSource?.raid_days_per_week || 2)
-
-            const newMemberMode = (settingsData?.new_member_mode || 'raw') as 'raw' | 'fair' | 'minimum_gate'
-            const result = computeAttendance({
-              records: recentRecords,
-              raidEvents: deduplicatedRaidEvents,
-              config: settingsData || {},
-              raidDays: raidDaysForEngine,
-              memberJoinedAt: membershipData?.joined_at ? toDateString(new Date(membershipData.joined_at)) : undefined,
-              newMemberMode,
-              asOfDate: toDateString(new Date()),
-            })
-            setAttendanceScore(result.score)
-          }
-        }
-
-        // Load guild-wide attendance data
-        await loadGuildAttendance(activeCharData.active_guild_id, deduplicatedRaidEvents, settingsData)
+        // Load guild-wide attendance data (includes score for all characters)
+        await loadGuildAttendance(activeCharData.active_guild_id, deduplicatedRaidEvents, settingsData, characterData.id)
       } catch (error) {
         console.error('Failed to load attendance data:', error)
         setError("Couldn't load attendance data. Check your connection and try again.")
@@ -587,7 +555,7 @@ export default function AttendancePage() {
     })
   }, [user])
 
-  const loadGuildAttendance = async (guildId: string, raidEvents: RaidEvent[], settings: any) => {
+  const loadGuildAttendance = async (guildId: string, raidEvents: RaidEvent[], settings: any, activeCharacterId?: string) => {
     try {
       const raidEventIds = raidEvents.map(r => r.id)
 
@@ -650,7 +618,7 @@ export default function AttendancePage() {
 
       // Build attendance map: characterId -> raidEventId -> status
       const attendanceByCharacter: Record<string, Map<string, AttendanceStatus>> = {}
-      allAttendance?.forEach((record: { raid_event_id: string; character_id: string | null; signed_up: boolean; attended: boolean; no_call_no_show: boolean; was_late?: boolean; was_benched?: boolean }) => {
+      allAttendance?.forEach((record: { raid_event_id: string; character_id: string | null; signed_up: boolean; attended: boolean; no_call_no_show: boolean; was_late?: boolean; was_benched?: boolean; is_excused?: boolean; points_override?: number | null }) => {
         if (!record.character_id) return
         if (!attendanceByCharacter[record.character_id]) {
           attendanceByCharacter[record.character_id] = new Map()
@@ -660,7 +628,9 @@ export default function AttendancePage() {
           attended: record.attended,
           no_call_no_show: record.no_call_no_show,
           was_late: record.was_late,
-          was_benched: record.was_benched
+          was_benched: record.was_benched,
+          is_excused: record.is_excused,
+          points_override: record.points_override,
         })
       })
 
@@ -678,6 +648,10 @@ export default function AttendancePage() {
           signed_up: status.signed_up,
           attended: status.attended,
           no_call_no_show: status.no_call_no_show,
+          was_late: status.was_late,
+          was_benched: status.was_benched,
+          is_excused: status.is_excused,
+          points_override: status.points_override,
         }))
 
         const joinedAt = joinDateByCharacterId[s.character_id]
@@ -703,6 +677,38 @@ export default function AttendancePage() {
       })
 
       setGuildRaiders(raiders)
+
+      // Set personal attendance score from guild computation.
+      // This avoids a separate client-side query that can fail silently due to RLS.
+      if (activeCharacterId) {
+        const myRaider = raiders.find(r => r.id === activeCharacterId)
+        if (myRaider) {
+          setAttendanceScore(myRaider.attendanceScore)
+        } else {
+          // Character has no approved submission but may have attendance records.
+          // Fall back to computing from the guild-wide attendance data.
+          const charAttendance = attendanceByCharacter[activeCharacterId]
+          if (charAttendance && charAttendance.size > 0) {
+            const charRecords = Array.from(charAttendance.entries()).map(([raidId, status]) => ({
+              raid_event_id: raidId,
+              signed_up: status.signed_up,
+              attended: status.attended,
+              no_call_no_show: status.no_call_no_show,
+            }))
+            const joinedAt = joinDateByCharacterId[activeCharacterId]
+            const result = computeAttendance({
+              records: charRecords,
+              raidEvents,
+              config: settings || {},
+              raidDays: [],
+              memberJoinedAt: joinedAt ? toDateString(new Date(joinedAt)) : undefined,
+              newMemberMode,
+              asOfDate: todayStr,
+            })
+            setAttendanceScore(result.score)
+          }
+        }
+      }
     } catch (error) {
       console.error('Failed to load guild attendance data:', error)
       showNotification('error', "Couldn't load guild attendance data. Try refreshing the page.")
