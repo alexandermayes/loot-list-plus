@@ -142,6 +142,7 @@ interface BossSectionProps {
     minimum_raid_days?: number
   }
   onCompare?: (itemName: string, userRanking: PlayerRanking, winnerRanking: PlayerRanking) => void
+  onItemClick?: (item: LootItem, rankings: PlayerRanking[]) => void
   maxRankingsCount?: number
 }
 
@@ -158,6 +159,7 @@ export const BossSection = memo(function BossSection({
   isOfficer,
   guildSettings,
   onCompare,
+  onItemClick,
   maxRankingsCount = 5,
 }: BossSectionProps) {
   const bossImage = getBossImage(boss)
@@ -216,7 +218,11 @@ export const BossSection = memo(function BossSection({
                     <ItemLink
                       name={ir.item.name}
                       wowheadId={ir.item.wowhead_id}
-                      className="font-medium text-[13px]"
+                      className={`font-medium text-[13px] ${isOfficer && onItemClick ? 'cursor-pointer' : ''}`}
+                      onClick={isOfficer && onItemClick ? (e: React.MouseEvent) => {
+                        e.preventDefault()
+                        onItemClick(ir.item, ir.rankings)
+                      } : undefined}
                     />
                     <p className="text-[11px] text-foreground-muted mt-0.5">{ir.item.item_slot}</p>
                   </div>
@@ -279,6 +285,7 @@ export const BossSection = memo(function BossSection({
                     decimalPlaces={decimalPlaces}
                     minimumRaidDays={minimumRaidDays}
                     onCompare={onCompare}
+                    onItemClick={onItemClick}
                     columnCount={columnCount}
                   />
                 ))}
@@ -299,6 +306,7 @@ interface ItemRowProps {
   decimalPlaces: number
   minimumRaidDays: number
   onCompare?: (itemName: string, userRanking: PlayerRanking, winnerRanking: PlayerRanking) => void
+  onItemClick?: (item: LootItem, rankings: PlayerRanking[]) => void
   columnCount: number
 }
 
@@ -313,6 +321,7 @@ const ItemRow = memo(function ItemRow({
   decimalPlaces,
   minimumRaidDays,
   onCompare,
+  onItemClick,
   columnCount,
 }: ItemRowProps) {
   const columnIndices = Array.from({ length: columnCount }, (_, i) => i)
@@ -329,7 +338,11 @@ const ItemRow = memo(function ItemRow({
         <ItemLink
           name={ir.item.name}
           wowheadId={ir.item.wowhead_id}
-          className="font-medium text-[13px]"
+          className={`font-medium text-[13px] ${isOfficer && onItemClick ? 'cursor-pointer' : ''}`}
+          onClick={isOfficer && onItemClick ? (e: React.MouseEvent) => {
+            e.preventDefault()
+            onItemClick(ir.item, ir.rankings)
+          } : undefined}
         />
       </td>
       <td className="px-3 py-2.5 text-[12px] text-foreground-muted">

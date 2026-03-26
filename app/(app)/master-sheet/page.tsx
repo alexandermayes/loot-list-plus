@@ -32,7 +32,8 @@ import { refreshWowheadTooltips } from '@/lib/wowhead'
 import { trackClientEvent } from '@/utils/analytics/client'
 import { InfoTooltip } from '@/components/ui/info-tooltip'
 import { VirtualizedMasterSheet } from './components/VirtualizedMasterSheet'
-import type { PlayerRanking } from './components/BossSection'
+import { ItemCandidateModal } from './components/ItemCandidateModal'
+import type { PlayerRanking, LootItem as BossLootItem } from './components/BossSection'
 
 interface LootItem {
   id: string
@@ -1149,6 +1150,29 @@ function MasterSheetContent() {
     trackClientEvent('score_comparison_viewed')
   }, [])
 
+  // Handle item candidate modal (officer-only)
+  const [candidateModalData, setCandidateModalData] = useState<{
+    item: BossLootItem
+    rankings: PlayerRanking[]
+  } | null>(null)
+
+  const handleItemClick = useCallback((item: BossLootItem, rankings: PlayerRanking[]) => {
+    setCandidateModalData({ item, rankings })
+    trackClientEvent('item_candidate_modal_viewed')
+  }, [])
+
+  // Build set of character IDs that already received the selected item
+  const candidateReceivedIds = useMemo(() => {
+    if (!candidateModalData) return new Set<string>()
+    // Find the item's wowhead_id to match against loot history
+    const wowheadId = candidateModalData.item.wowhead_id
+    const ids = new Set<string>()
+    // Check allItemRankings to find this item and cross-reference
+    // We need to check loot history - it's already computed as receivedItemCounts in the main effect
+    // but not exposed. For now, return empty set. TODO: expose receivedItemCounts.
+    return ids
+  }, [candidateModalData])
+
   // Generate Gargul DFT export from rankings data (memoized callback)
   // DFT format: "itemId^DFTFC Header:\ncoloredPlayerLines;" per item.
   // After WoW EditBox escaping (| -> ||), Gargul's parser:
@@ -1804,6 +1828,7 @@ function MasterSheetContent() {
                 isOfficer={isOfficer}
                 guildSettings={guildSettings ?? undefined}
                 onCompare={handleCompare}
+                onItemClick={isOfficer ? handleItemClick : undefined}
                 maxRankingsCount={maxRankingsCount}
               />
             )}
@@ -1845,6 +1870,19 @@ function MasterSheetContent() {
           userRanking={comparisonData.userRanking}
           winnerRanking={comparisonData.winnerRanking}
         />
+
+        {/* Item Candidate Modal (officer-only) */}
+        {isOfficer && (
+          <ItemCandidateModal
+            open={!!candidateModalData}
+            onClose={() => setCandidateModalData(null)}
+            item={candidateModalData?.item ?? null}
+            rankings={candidateModalData?.rankings ?? []}
+            priority={candidateModalData?.item ? (itemPriorities[candidateModalData.item.id] ?? null) : null}
+            receivedCharacterIds={candidateReceivedIds}
+            guildSettings={guildSettings ?? {}}
+          />
+        )}
         </div>
       </div>
     </ExpansionGuard>

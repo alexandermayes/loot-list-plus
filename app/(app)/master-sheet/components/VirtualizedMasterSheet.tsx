@@ -2,7 +2,7 @@
 
 import { useMemo, useCallback, useRef } from 'react'
 import { useWindowVirtualizer } from '@tanstack/react-virtual'
-import { BossSection, type ItemRankings, type PlayerRanking } from './BossSection'
+import { BossSection, type ItemRankings, type PlayerRanking, type LootItem } from './BossSection'
 import { RaidTierHeader } from './RaidTierHeader'
 import { normalizeBossName } from '@/utils/bossOrder'
 import { getBossOrder } from '@/utils/bossOrder'
@@ -36,6 +36,7 @@ interface VirtualizedMasterSheetProps {
     minimum_raid_days?: number
   }
   onCompare?: (itemName: string, userRanking: PlayerRanking, winnerRanking: PlayerRanking) => void
+  onItemClick?: (item: LootItem, rankings: PlayerRanking[]) => void
   maxRankingsCount?: number
 }
 
@@ -53,6 +54,7 @@ export function VirtualizedMasterSheet({
   isOfficer,
   guildSettings,
   onCompare,
+  onItemClick,
   maxRankingsCount,
 }: VirtualizedMasterSheetProps) {
   const listRef = useRef<HTMLDivElement>(null)
@@ -157,6 +159,7 @@ export function VirtualizedMasterSheet({
               isOfficer={isOfficer}
               guildSettings={guildSettings}
               onCompare={onCompare}
+              onItemClick={onItemClick}
               maxRankingsCount={maxRankingsCount}
             />
           )
@@ -212,6 +215,7 @@ export function VirtualizedMasterSheet({
                   activeCharacterId={activeCharacterId}
                   guildSettings={guildSettings}
                   onCompare={onCompare}
+                  onItemClick={onItemClick}
                   maxRankingsCount={maxRankingsCount}
                 />
               )}

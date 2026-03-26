@@ -59,9 +59,11 @@ interface ItemLinkProps {
   showIcon?: boolean
   /** Override wowhead domain (e.g. 'tbc', 'wotlk'). Auto-detected from guild context if omitted. */
   domain?: string
+  /** Custom click handler. If provided, prevents default navigation. */
+  onClick?: (e: React.MouseEvent) => void
 }
 
-const ItemLink = memo(function ItemLink({ name, wowheadId, className = '', clickable = true, showIcon = true, domain: domainProp }: ItemLinkProps) {
+const ItemLink = memo(function ItemLink({ name, wowheadId, className = '', clickable = true, showIcon = true, domain: domainProp, onClick: onClickProp }: ItemLinkProps) {
   // Read expansion from guild context (safe - returns undefined outside provider)
   const expansionData = useContext(ExpansionDataContext)
   const expansionDomain = domainProp ?? getWowheadDomain(expansionData?.currentExpansion?.expansion_name)
@@ -74,6 +76,11 @@ const ItemLink = memo(function ItemLink({ name, wowheadId, className = '', click
   )
 
   const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    if (onClickProp) {
+      e.preventDefault()
+      onClickProp(e)
+      return
+    }
     if (!clickable) {
       e.preventDefault()
     }

@@ -17,6 +17,7 @@ type ClientEvent =
   | 'gargul_export_completed'
   | 'score_breakdown_viewed'
   | 'score_comparison_viewed'
+  | 'item_candidate_modal_viewed'
   | 'loot_list_saved'
   | 'loot_list_submitted'
   | 'master_sheet_viewed'
