@@ -15,6 +15,15 @@ export const metadata: Metadata = {
 
 const posts = [
   {
+    slug: 'why-attendance-tracking-matters-more-than-loot-rules',
+    title: 'Why Attendance Tracking Matters More Than Loot Rules',
+    description:
+      'Your loot system is only as good as your attendance data. If you\'re spending hours debating DKP vs EPGP but tracking attendance in a spreadsheet that\'s three weeks out of date, you\'re solving the wrong problem.',
+    date: 'March 26, 2026',
+    readTime: '7 min read',
+    tag: 'Guide',
+  },
+  {
     slug: 'how-to-set-up-a-fair-loot-system-for-your-wow-guild',
     title: 'How to Set Up a Fair Loot System for Your WoW Guild',
     description:
