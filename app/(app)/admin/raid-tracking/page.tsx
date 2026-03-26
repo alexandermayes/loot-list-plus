@@ -950,6 +950,8 @@ export default function RaidTrackingPage() {
     const unlinkedUpdates: any[] = []
     let matchedCount = 0
     let unmatchedCount = 0
+    const seenCharIds = new Set<string>()
+    const seenNames = new Set<string>()
 
     names.forEach(name => {
       const member = members.find(m =>
@@ -957,7 +959,8 @@ export default function RaidTrackingPage() {
       )
 
       if (member) {
-        // Character exists in guild - create linked record
+        if (seenCharIds.has(member.character_id)) return
+        seenCharIds.add(member.character_id)
         matchedCount++
         linkedUpdates.push({
           raid_event_id: showImportModal.raidId,
@@ -970,7 +973,9 @@ export default function RaidTrackingPage() {
           was_benched: false
         })
       } else {
-        // Character doesn't exist - create unlinked record
+        const nameLower = name.toLowerCase()
+        if (seenNames.has(nameLower)) return
+        seenNames.add(nameLower)
         unmatchedCount++
         unlinkedUpdates.push({
           raid_event_id: showImportModal.raidId,
@@ -1354,11 +1359,17 @@ export default function RaidTrackingPage() {
       const linkedUpdates: any[] = []
       const unlinkedUpdates: any[] = []
       const linkedCharacterIds: string[] = []
+      const seenCharacterIds = new Set<string>()
+      const seenUnlinkedNames = new Set<string>()
 
       names.forEach(name => {
         const member = resolveNameForImport(name, resolvedMap)
 
         if (member) {
+          // Deduplicate by character_id to prevent "ON CONFLICT DO UPDATE cannot affect a row a second time"
+          // This can happen when both a character name and its alias appear in the attendance list
+          if (seenCharacterIds.has(member.character_id)) return
+          seenCharacterIds.add(member.character_id)
           linkedCharacterIds.push(member.character_id)
           linkedUpdates.push({
             raid_event_id: showImportModal.raidId,
@@ -1372,6 +1383,9 @@ export default function RaidTrackingPage() {
           })
           results.attendance.success++
         } else {
+          const nameLower = name.toLowerCase()
+          if (seenUnlinkedNames.has(nameLower)) return
+          seenUnlinkedNames.add(nameLower)
           unlinkedUpdates.push({
             raid_event_id: showImportModal.raidId,
             character_name: name,
