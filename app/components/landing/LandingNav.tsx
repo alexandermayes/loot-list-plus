@@ -79,7 +79,7 @@ export default function LandingNav() {
             >
               How it works
             </Button>
-            <
+            <a
               href="/blog"
               onClick={() => trackClientEvent('landing_nav_clicked', { target: 'blog', source: 'nav' })}
               className="text-base font-medium text-foreground hover:text-accent transition-colors"
