@@ -1,6 +1,6 @@
 'use client'
 
-import { memo, useMemo } from 'react'
+import { memo, useMemo, useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Modal, ModalHeader, ModalTitle, ModalDescription, ModalBody } from '@/components/ui/modal'
 import { Button } from '@/components/ui/button'
@@ -15,6 +15,13 @@ interface ItemPriority {
   priority_bonuses: { role: number; class: number; character: number }
 }
 
+interface LootAward {
+  character_name: string
+  character_class_color: string | null
+  awarded_date: string
+  awarded_by_name: string | null
+}
+
 interface ItemCandidateModalProps {
   open: boolean
   onClose: () => void
@@ -23,6 +30,7 @@ interface ItemCandidateModalProps {
   priority: ItemPriority | null
   receivedCharacterIds: Set<string>
   guildSettings: Partial<ScoringConfig> & { decimal_places?: number; minimum_raid_days?: number }
+  guildId: string | null
 }
 
 function PrioritySummary({ priority }: { priority: ItemPriority }) {
@@ -62,6 +70,11 @@ function PrioritySummary({ priority }: { priority: ItemPriority }) {
   )
 }
 
+function formatDate(dateStr: string): string {
+  const d = new Date(dateStr)
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+}
+
 export const ItemCandidateModal = memo(function ItemCandidateModal({
   open,
   onClose,
@@ -70,8 +83,37 @@ export const ItemCandidateModal = memo(function ItemCandidateModal({
   priority,
   receivedCharacterIds,
   guildSettings,
+  guildId,
 }: ItemCandidateModalProps) {
   const decimalPlaces = guildSettings?.decimal_places ?? 2
+  const [recentAwards, setRecentAwards] = useState<LootAward[]>([])
+  const [awardsLoading, setAwardsLoading] = useState(false)
+
+  // Fetch recent loot history for this item when modal opens
+  useEffect(() => {
+    if (!open || !item || !guildId) {
+      setRecentAwards([])
+      return
+    }
+
+    let cancelled = false
+    setAwardsLoading(true)
+
+    fetch(`/api/loot-history?guild_id=${guildId}&item=${encodeURIComponent(item.name)}&limit=5`)
+      .then(res => res.ok ? res.json() : null)
+      .then(data => {
+        if (cancelled) return
+        setRecentAwards(data?.data || [])
+      })
+      .catch(() => {
+        if (!cancelled) setRecentAwards([])
+      })
+      .finally(() => {
+        if (!cancelled) setAwardsLoading(false)
+      })
+
+    return () => { cancelled = true }
+  }, [open, item?.name, guildId])
 
   const sortedRankings = useMemo(
     () => [...rankings].sort((a, b) => b.loot_score - a.loot_score),
@@ -231,6 +273,31 @@ export const ItemCandidateModal = memo(function ItemCandidateModal({
             </table>
           </div>
         )}
+
+        {/* Recent awards (audit receipt) */}
+        <div className="px-6 py-4 border-t border-border bg-background-subtle">
+          <p className="text-[12px] font-medium text-foreground-secondary uppercase tracking-wider mb-2">Recent awards</p>
+          {awardsLoading ? (
+            <p className="text-[12px] text-muted-foreground">Loading...</p>
+          ) : recentAwards.length === 0 ? (
+            <p className="text-[12px] text-muted-foreground">This item hasn't been awarded yet.</p>
+          ) : (
+            <div className="space-y-1">
+              {recentAwards.map((award, i) => (
+                <div key={i} className="flex items-center gap-2 text-[12px]">
+                  <span className="text-muted-foreground tabular-nums">{formatDate(award.awarded_date)}</span>
+                  <span className="text-muted-foreground">&rarr;</span>
+                  <span className="font-medium" style={{ color: award.character_class_color || undefined }}>
+                    {award.character_name}
+                  </span>
+                  {award.awarded_by_name && (
+                    <span className="text-muted-foreground">by {award.awarded_by_name}</span>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </ModalBody>
     </Modal>
   )

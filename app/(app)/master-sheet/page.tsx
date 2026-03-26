@@ -1888,6 +1888,7 @@ function MasterSheetContent() {
             priority={candidateModalData?.item ? (itemPriorities[candidateModalData.item.id] ?? null) : null}
             receivedCharacterIds={candidateReceivedIds}
             guildSettings={guildSettings ?? {}}
+            guildId={guildId}
           />
         )}
         </div>
