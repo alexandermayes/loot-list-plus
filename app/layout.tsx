@@ -101,7 +101,7 @@ const jsonLd = {
         "height": 512
       },
       "sameAs": [
-        "https://discord.gg/bigyikes"
+        "https://discord.gg/JNJewThYAB"
       ]
     },
     {

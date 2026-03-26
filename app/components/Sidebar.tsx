@@ -786,7 +786,7 @@ export default function Sidebar({ currentView = 'overview', onViewChange, isMobi
           </Button>
 
           <a
-            href="https://discord.gg/WWaUQZMz9M"
+            href="https://discord.gg/JNJewThYAB"
             target="_blank"
             rel="noopener noreferrer"
             className="w-full px-3.5 py-2 flex items-center gap-3 rounded-[40px] transition font-poppins font-medium text-[13px] text-foreground hover:bg-muted"

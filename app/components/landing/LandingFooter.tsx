@@ -55,7 +55,7 @@ export default function LandingFooter() {
           <p className="text-xs text-foreground-muted text-center md:text-right">
             Made with &lt;3 by{' '}
             <a
-              href="https://discord.gg/bigyikes"
+              href="https://discord.gg/JNJewThYAB"
               target="_blank"
               rel="noopener noreferrer"
               className="text-foreground-secondary hover:text-foreground transition-colors"

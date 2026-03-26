@@ -103,7 +103,7 @@ function AppLayoutContent({
               />
             </Link>
             <a
-              href="https://discord.gg/WWaUQZMz9M"
+              href="https://discord.gg/JNJewThYAB"
               target="_blank"
               rel="noopener noreferrer"
               className="p-2 rounded-full hover:bg-muted transition-colors"
