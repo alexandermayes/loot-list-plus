@@ -207,35 +207,23 @@ export default function PriorityListTab() {
         }
 
         // Load all characters in the guild (for individual priority)
-        const { data: memberships } = await supabase
-          .from('character_guild_memberships')
-          .select(`
-            character:characters(
-              id,
-              name,
-              class:wow_classes(name, color_hex)
-            )
-          `)
-          .eq('guild_id', activeGuild.id)
-          .eq('is_active', true)
-
-        if (memberships) {
-          const chars = memberships
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            .map((m: any) => {
-              const char = m.character as any
-              if (!char) return null
-              // Handle both array and single object returns from Supabase
-              const charData = Array.isArray(char) ? char[0] : char
-              if (!charData) return null
-              return {
-                id: charData.id,
-                name: charData.name,
-                class: Array.isArray(charData.class) ? charData.class[0] : charData.class
-              } as Character
-            })
-            .filter((c: Character | null): c is Character => c !== null)
-          setCharacters(chars.sort((a: Character, b: Character) => a.name.localeCompare(b.name)))
+        // Uses guild-members API with service role to bypass RLS on character_guild_memberships
+        const membersResponse = await fetch(`/api/guild-members?guild_id=${activeGuild.id}`)
+        if (membersResponse.ok) {
+          const membersData = await membersResponse.json()
+          if (membersData?.members) {
+            const chars: Character[] = []
+            for (const member of membersData.members) {
+              for (const char of member.characters || []) {
+                chars.push({
+                  id: char.id,
+                  name: char.name,
+                  class: char.class || null
+                })
+              }
+            }
+            setCharacters(chars.sort((a: Character, b: Character) => a.name.localeCompare(b.name)))
+          }
         }
 
       } catch (error) {
