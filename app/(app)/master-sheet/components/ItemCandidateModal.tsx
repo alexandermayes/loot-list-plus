@@ -1,11 +1,12 @@
 'use client'
 
 import { memo, useMemo } from 'react'
+import Link from 'next/link'
 import { Modal, ModalHeader, ModalTitle, ModalDescription, ModalBody } from '@/components/ui/modal'
+import { Button } from '@/components/ui/button'
 import ItemLink from '@/app/components/ItemLink'
-import type { ScoreResult, ScoreComponents, ScoringConfig } from '@/domain/types'
-import { explainScore } from '@/domain/scoring/explain'
-import type { ItemRankings, PlayerRanking, LootItem } from './BossSection'
+import type { ScoringConfig } from '@/domain/types'
+import type { PlayerRanking, LootItem } from './BossSection'
 
 interface ItemPriority {
   role_priorities: Record<string, number | null>
@@ -22,19 +23,6 @@ interface ItemCandidateModalProps {
   priority: ItemPriority | null
   receivedCharacterIds: Set<string>
   guildSettings: Partial<ScoringConfig> & { decimal_places?: number; minimum_raid_days?: number }
-}
-
-function rankingToScoreResult(r: PlayerRanking): ScoreResult {
-  const components: ScoreComponents = {
-    itemRank: r.rank,
-    attendanceScore: r.attendance_score,
-    rankModifier: r.role_modifier,
-    roleBonus: r.role_bonus,
-    badLuckBonus: r.bad_luck_bonus,
-    priorityBonus: r.priority_bonus,
-    trialPenalty: r.trial_penalty,
-  }
-  return { total: r.loot_score, components }
 }
 
 function PrioritySummary({ priority }: { priority: ItemPriority }) {
@@ -114,15 +102,24 @@ export const ItemCandidateModal = memo(function ItemCandidateModal({
   return (
     <Modal open={open} onClose={onClose} size="full">
       <ModalHeader onClose={onClose}>
-        <ModalTitle>
-          <ItemLink name={item.name} wowheadId={item.wowhead_id} className="text-lg" />
-        </ModalTitle>
-        <ModalDescription>
-          {item.boss_name} &middot; {item.item_slot}
-          {priority && (
-            <span className="ml-2 text-accent text-[12px]">Has priority rules</span>
-          )}
-        </ModalDescription>
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <ModalTitle>
+              <ItemLink name={item.name} wowheadId={item.wowhead_id} className="text-lg" />
+            </ModalTitle>
+            <ModalDescription>
+              {item.boss_name} &middot; {item.item_slot}
+              {priority && (
+                <span className="ml-2 text-accent text-[12px]">Has priority rules</span>
+              )}
+            </ModalDescription>
+          </div>
+          <Link href="/loot-settings" onClick={onClose}>
+            <Button variant="outline" size="sm" className="shrink-0">
+              Edit priority
+            </Button>
+          </Link>
+        </div>
       </ModalHeader>
       <ModalBody className="p-0">
         {/* Priority summary */}

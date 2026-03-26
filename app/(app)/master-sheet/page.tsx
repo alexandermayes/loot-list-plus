@@ -187,6 +187,8 @@ function MasterSheetContent() {
   const [aggregateItems, setAggregateItems] = useState<LootListAggregateItem[]>([])
   const [aggregateLoading, setAggregateLoading] = useState(false)
   const [aggregateBossFilter, setAggregateBossFilter] = useState<string | null>(null)
+  // Loot history: character_id-wowhead_id -> count of times received
+  const [lootReceivedCounts, setLootReceivedCounts] = useState<Map<string, number>>(new Map())
 
   const supabase = createClient()
   const searchParams = useSearchParams()
@@ -643,6 +645,7 @@ function MasterSheetContent() {
           const key = `${h.character_id}-${wowheadId}`
           receivedItemCounts.set(key, (receivedItemCounts.get(key) || 0) + 1)
         }
+        setLootReceivedCounts(receivedItemCounts)
 
         if (rankingsError) {
           console.error('Error loading rankings:', rankingsError)
@@ -1164,14 +1167,17 @@ function MasterSheetContent() {
   // Build set of character IDs that already received the selected item
   const candidateReceivedIds = useMemo(() => {
     if (!candidateModalData) return new Set<string>()
-    // Find the item's wowhead_id to match against loot history
     const wowheadId = candidateModalData.item.wowhead_id
     const ids = new Set<string>()
-    // Check allItemRankings to find this item and cross-reference
-    // We need to check loot history - it's already computed as receivedItemCounts in the main effect
-    // but not exposed. For now, return empty set. TODO: expose receivedItemCounts.
+    // Keys are `${character_id}-${wowhead_id}` — match candidates by checking their specific key
+    for (const r of candidateModalData.rankings) {
+      const key = `${r.character_id}-${wowheadId}`
+      if (lootReceivedCounts.has(key)) {
+        ids.add(r.character_id)
+      }
+    }
     return ids
-  }, [candidateModalData])
+  }, [candidateModalData, lootReceivedCounts])
 
   // Generate Gargul DFT export from rankings data (memoized callback)
   // DFT format: "itemId^DFTFC Header:\ncoloredPlayerLines;" per item.
@@ -1325,6 +1331,7 @@ function MasterSheetContent() {
       const key = `${h.character_id}-${wowheadId}`
       receivedItemCounts.set(key, (receivedItemCounts.get(key) || 0) + 1)
     }
+    setLootReceivedCounts(receivedItemCounts)
 
     // Pre-calculate attendance for all characters in a single batched query
     const attendanceCache = await calculateAttendanceBatch(
