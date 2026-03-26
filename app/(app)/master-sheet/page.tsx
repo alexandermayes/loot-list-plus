@@ -33,6 +33,7 @@ import { trackClientEvent } from '@/utils/analytics/client'
 import { InfoTooltip } from '@/components/ui/info-tooltip'
 import { VirtualizedMasterSheet } from './components/VirtualizedMasterSheet'
 import { ItemCandidateModal } from './components/ItemCandidateModal'
+import { RaidModeView } from './components/RaidModeView'
 import type { PlayerRanking, LootItem as BossLootItem } from './components/BossSection'
 
 interface LootItem {
@@ -183,7 +184,7 @@ function MasterSheetContent() {
     winnerRanking: PlayerRanking | null
   }>({ itemName: '', userRanking: null, winnerRanking: null })
   // Officer aggregate view state
-  const [viewMode, setViewMode] = useState<'rankings' | 'aggregate'>('rankings')
+  const [viewMode, setViewMode] = useState<'rankings' | 'aggregate' | 'raid'>('rankings')
   const [aggregateItems, setAggregateItems] = useState<LootListAggregateItem[]>([])
   const [aggregateLoading, setAggregateLoading] = useState(false)
   const [aggregateBossFilter, setAggregateBossFilter] = useState<string | null>(null)
@@ -1620,18 +1621,20 @@ function MasterSheetContent() {
                       variant="rounded"
                       size="sm"
                       value={viewMode}
-                      onChange={(e) => setViewMode(e.target.value as 'rankings' | 'aggregate')}
+                      onChange={(e) => setViewMode(e.target.value as 'rankings' | 'aggregate' | 'raid')}
                       className="bg-background-elevated font-medium"
                     >
                       <option value="rankings">Rankings</option>
                       <option value="aggregate">Summary</option>
+                      <option value="raid">Raid mode</option>
                     </Select>
                   </div>
                   {/* Desktop: Toggle buttons */}
                   <SegmentedControl
                     options={[
                       { value: 'rankings', label: 'Rankings' },
-                      { value: 'aggregate', label: 'Summary' }
+                      { value: 'aggregate', label: 'Summary' },
+                      { value: 'raid', label: 'Raid mode' },
                     ]}
                     value={viewMode}
                     onChange={setViewMode}
@@ -1813,6 +1816,12 @@ function MasterSheetContent() {
                 bosses={[...new Set(aggregateItems.map(i => i.boss_name))].sort()}
                 selectedBoss={aggregateBossFilter}
                 onBossFilter={setAggregateBossFilter}
+              />
+            ) : viewMode === 'raid' && isOfficer ? (
+              <RaidModeView
+                sortedRaidTiers={sortedRaidTiers}
+                onItemClick={handleItemClick}
+                decimalPlaces={guildSettings?.decimal_places}
               />
             ) : (
             <>
