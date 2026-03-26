@@ -178,6 +178,7 @@ export default function AuditLogPage() {
   const [actionFilter, setActionFilter] = useState('')
   const [search, setSearch] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
+  const [searchExhausted, setSearchExhausted] = useState(true)
 
   const fetchLogs = useCallback(async () => {
     if (!activeGuild?.id) return
@@ -198,9 +199,11 @@ export default function AuditLogPage() {
       const data = await res.json()
       setLogs(data.logs)
       setTotal(data.total)
+      setSearchExhausted(data.search_exhausted !== false)
     } catch {
       setLogs([])
       setTotal(0)
+      setSearchExhausted(true)
     } finally {
       setLoading(false)
     }
@@ -339,6 +342,9 @@ export default function AuditLogPage() {
             <div className="flex items-center justify-between">
               <span className="text-sm text-muted-foreground">
                 {total} entries
+                {debouncedSearch && !searchExhausted && (
+                  <span className="text-warning ml-2">Search covers recent entries only. Older logs may not appear.</span>
+                )}
               </span>
               <div className="flex items-center gap-2">
                 <Button

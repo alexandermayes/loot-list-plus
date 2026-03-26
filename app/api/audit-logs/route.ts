@@ -43,8 +43,9 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Only officers can view audit logs' }, { status: 403 })
     }
 
-    // When searching, fetch more rows and filter post-query
-    const fetchLimit = searchTerm ? 200 : limit
+    // When searching, fetch a large window and filter post-query.
+    // 2000 covers most guilds. Results beyond this are invisible to search.
+    const fetchLimit = searchTerm ? 2000 : limit
     const fetchOffset = searchTerm ? 0 : offset
 
     let query = serviceSupabase
@@ -112,21 +113,50 @@ export async function GET(request: NextRequest) {
       _character_names: Object.fromEntries(characterNames),
     }))
 
-    // Apply text search filter post-query (includes resolved character names)
+    // Apply text search filter post-query
+    // Character names are matched per-log (not globally) to avoid false positives
     if (searchTerm) {
-      const charNameValues = [...characterNames.values()].join(' ')
       enrichedLogs = enrichedLogs.filter(log => {
+        // Collect character names specific to THIS log entry
+        const logCharNames: string[] = []
+        for (const data of [log.old_data, log.new_data]) {
+          if (!data) continue
+          if (data.filters?.character_ids) {
+            for (const id of data.filters.character_ids) {
+              const name = characterNames.get(id)
+              if (name) logCharNames.push(name)
+            }
+          }
+          if (data.filters?.character_id) {
+            const name = characterNames.get(data.filters.character_id)
+            if (name) logCharNames.push(name)
+          }
+          if (data.character_id && typeof data.character_id === 'string') {
+            const name = characterNames.get(data.character_id)
+            if (name) logCharNames.push(name)
+          }
+          if (Array.isArray(data.character_ids)) {
+            for (const id of data.character_ids) {
+              const name = characterNames.get(id)
+              if (name) logCharNames.push(name)
+            }
+          }
+          // Also check character_name directly in data (e.g., loot history)
+          if (data.character_name) logCharNames.push(data.character_name)
+        }
+
         const haystack = [
           log.user_display_name,
           JSON.stringify(log.old_data),
           JSON.stringify(log.new_data),
-          charNameValues,
+          logCharNames.join(' '),
         ].join(' ').toLowerCase()
         return haystack.includes(searchTerm)
       })
     }
 
     const totalFiltered = searchTerm ? enrichedLogs.length : (count || 0)
+    const searchExhausted = searchTerm ? (logs || []).length < fetchLimit : true
 
     // Apply pagination after search filtering
     if (searchTerm) {
@@ -138,6 +168,7 @@ export async function GET(request: NextRequest) {
       total: totalFiltered,
       limit,
       offset,
+      search_exhausted: searchExhausted,
     })
   } catch (error) {
     console.error('Error in GET /api/audit-logs:', error)

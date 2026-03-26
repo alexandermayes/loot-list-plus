@@ -122,7 +122,7 @@ export async function GET() {
       const usesAttendance = guildAttendance.length > 0
       const usesSubmissions = guildSubmissions.length > 0
       const usesLootTracking = guildLoot.length > 0
-      const usesAuditLog = guildAudit.some(a => a.table_name === 'audit_logs')
+      const usesAuditLog = guildAudit.length > 0
       const customizedSettings = guildSettings && (
         guildSettings.rolling_attendance_weeks !== 4 ||
         guildSettings.attendance_type !== 'rolling' ||
