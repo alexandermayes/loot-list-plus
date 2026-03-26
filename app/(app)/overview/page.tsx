@@ -37,6 +37,7 @@ import { getSpecRoles, getRoleDisplayName, type Role } from '@/domain/loot/spec-
 import { refreshWowheadTooltips } from '@/lib/wowhead'
 import { useNotification } from '@/app/contexts/NotificationContext'
 import { trackClientEvent } from '@/utils/analytics/client'
+import { SetupGuide } from './components/SetupGuide'
 
 // Get next N raid dates from configured raid days
 function getNextRaidDates(raidDays: number[], timezone: string, count = 2): Date[] {
@@ -1355,6 +1356,15 @@ function DashboardContent() {
       {/* Officer banner: unconverted Feral Druids in guild */}
       {heroReady && isOfficer && activeGuild && (
         <GuardianConversionBanner guildId={activeGuild.id} />
+      )}
+
+      {/* Setup guide for new guild admins */}
+      {heroReady && isOfficer && activeGuild && (
+        <SetupGuide
+          guildId={activeGuild.id}
+          guildName={activeGuild.name}
+          hasExpansion={!!activeGuild.active_expansion_id}
+        />
       )}
 
       {/* Show full skeleton only while guild context is loading */}
