@@ -2,8 +2,6 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 
-const SUPER_ADMIN_IDS = process.env.SUPER_ADMIN_IDS?.split(',').filter(Boolean) || []
-
 /**
  * GET /api/admin/analytics
  *
@@ -21,7 +19,8 @@ export async function GET() {
     }
 
     const isDevelopment = process.env.NODE_ENV === 'development'
-    const isSuperAdmin = SUPER_ADMIN_IDS.includes(user.id)
+    const superAdminIds = process.env.SUPER_ADMIN_IDS?.split(',').filter(Boolean) || []
+    const isSuperAdmin = superAdminIds.includes(user.id)
 
     if (!isDevelopment && !isSuperAdmin) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
