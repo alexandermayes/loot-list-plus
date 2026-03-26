@@ -23,7 +23,15 @@ export async function GET() {
     const isSuperAdmin = superAdminIds.includes(user.id)
 
     if (!isDevelopment && !isSuperAdmin) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      return NextResponse.json({
+        error: 'Forbidden',
+        debug: {
+          user_id: user.id,
+          env_set: !!process.env.SUPER_ADMIN_IDS,
+          env_length: process.env.SUPER_ADMIN_IDS?.length || 0,
+          admin_count: superAdminIds.length,
+        }
+      }, { status: 403 })
     }
 
     const supabase = createServiceRoleClient()
