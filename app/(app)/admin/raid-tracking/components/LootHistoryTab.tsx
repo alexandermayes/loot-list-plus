@@ -5,7 +5,7 @@ import { useState, useEffect, useCallback } from 'react'
 import ItemLink from '@/app/components/ItemLink'
 import { useGuildContext } from '@/app/contexts/GuildContext'
 import { useNotification } from '@/app/contexts/NotificationContext'
-import { LoadingSpinner } from '@/components/ui/loading-spinner'
+import { Skeleton } from '@/components/ui/skeletons'
 import { Text } from '@/components/ui/typography'
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -179,8 +179,52 @@ export default function LootHistoryTab() {
 
   if (loading && entries.length === 0) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <LoadingSpinner />
+      <div className="space-y-6">
+        {/* Stats skeleton */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className={`bg-background-elevated border border-border rounded-xl p-4${i === 2 ? ' col-span-2 sm:col-span-1' : ''}`}>
+              <Skeleton className="h-4 w-20" />
+              <Skeleton className="h-7 w-12 mt-1" />
+            </div>
+          ))}
+        </div>
+        {/* Filters skeleton */}
+        <div className="bg-background-elevated border border-border rounded-xl p-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i}>
+                <Skeleton className="h-3.5 w-20 mb-2" />
+                <Skeleton className="h-9 w-full rounded-[52px]" />
+              </div>
+            ))}
+          </div>
+        </div>
+        {/* Table skeleton */}
+        <div className="rounded-xl border border-border overflow-hidden">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-border bg-background-subtle">
+                <th className="text-left px-4 py-2.5"><Skeleton className="h-3 w-12" /></th>
+                <th className="text-left px-4 py-2.5"><Skeleton className="h-3 w-10" /></th>
+                <th className="text-left px-4 py-2.5"><Skeleton className="h-3 w-14" /></th>
+                <th className="text-left px-4 py-2.5"><Skeleton className="h-3 w-12" /></th>
+                <th className="text-left px-4 py-2.5"><Skeleton className="h-3 w-10" /></th>
+              </tr>
+            </thead>
+            <tbody>
+              {Array.from({ length: 8 }).map((_, i) => (
+                <tr key={i} className="border-b border-border last:border-0">
+                  <td className="px-4 py-3"><Skeleton className="h-4 w-16" /></td>
+                  <td className="px-4 py-3"><Skeleton className="h-4 w-32" /></td>
+                  <td className="px-4 py-3"><Skeleton className="h-4 w-24" /></td>
+                  <td className="px-4 py-3"><Skeleton className="h-4 w-20" /></td>
+                  <td className="px-4 py-3"><Skeleton className="h-4 w-16" /></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     )
   }
