@@ -15,6 +15,8 @@ import { CrownIcon, CheckListIcon, SparklesIcon, Cancel01Icon, Shield01Icon, Arr
 interface OnboardingModalProps {
   open: boolean
   onClose: () => void
+  isOfficer?: boolean
+  guildName?: string
 }
 
 const TOTAL_STEPS = 3
@@ -58,7 +60,7 @@ const epicGlowVariants = {
   }
 }
 
-export default function OnboardingModal({ open, onClose }: OnboardingModalProps) {
+export default function OnboardingModal({ open, onClose, isOfficer, guildName }: OnboardingModalProps) {
   const [step, setStep] = useState(0)
   const [direction, setDirection] = useState(0)
 
@@ -137,10 +139,10 @@ export default function OnboardingModal({ open, onClose }: OnboardingModalProps)
               </div>
 
               <h2 className="text-xl font-semibold text-foreground mb-1">
-                Welcome to LootList+
+                {isOfficer ? `Welcome to LootList+` : `Welcome${guildName ? ` to ${guildName}` : ''}`}
               </h2>
               <p className="text-foreground-secondary text-[14px]">
-                Here&apos;s how the loot system works
+                {isOfficer ? 'Here\'s a quick overview of how loot works' : 'Here\'s how the loot system works'}
               </p>
             </div>
           </div>
@@ -198,12 +200,25 @@ export default function OnboardingModal({ open, onClose }: OnboardingModalProps)
                         <HugeiconsIcon icon={CheckListIcon} size={24} className="text-accent" />
                       </motion.div>
                       <div>
-                        <h3 className="text-foreground font-semibold text-[16px] mb-2">Getting started</h3>
+                        <h3 className="text-foreground font-semibold text-[16px] mb-2">
+                          {isOfficer ? 'Your setup checklist' : 'Getting started'}
+                        </h3>
                         <ol className="text-foreground-secondary text-[14px] space-y-1.5 list-decimal list-inside">
-                          <li>Find your guild</li>
-                          <li>Register your character</li>
-                          <li>Submit your loot list</li>
-                          <li>Get your loot</li>
+                          {isOfficer ? (
+                            <>
+                              <li>Share your <span className="text-foreground font-medium">invite code</span> with guildies</li>
+                              <li>Set your <span className="text-foreground font-medium">raid schedule</span> in guild settings</li>
+                              <li>Review and approve <span className="text-foreground font-medium">loot lists</span> as they come in</li>
+                              <li>Log your first raid and <span className="text-foreground font-medium">track attendance</span></li>
+                            </>
+                          ) : (
+                            <>
+                              <li>Go to <span className="text-foreground font-medium">Loot List</span> and rank the items you want</li>
+                              <li>Hit <span className="text-foreground font-medium">Submit</span> to send your list for officer approval</li>
+                              <li>Your score builds from <span className="text-foreground font-medium">attendance + ranking</span></li>
+                              <li>When loot drops, the highest score wins</li>
+                            </>
+                          )}
                         </ol>
                       </div>
                     </div>

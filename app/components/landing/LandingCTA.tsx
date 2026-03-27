@@ -73,7 +73,7 @@ export default function LandingCTA() {
             variants={fadeInUp}
             className="font-poppins text-base md:text-lg text-foreground-secondary mb-10 max-w-xl mx-auto"
           >
-            Join guilds who have already made the switch. Set up in minutes, not hours.
+            Free to use. Set up your guild, invite your raiders, and run your first raid night with scores in under 10 minutes.
           </motion.p>
 
           {/* CTA Buttons */}

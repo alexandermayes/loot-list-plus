@@ -1922,6 +1922,8 @@ function DashboardContent() {
       <OnboardingModal
         open={showOnboarding}
         onClose={handleCloseOnboarding}
+        isOfficer={isOfficer}
+        guildName={activeGuild?.name}
       />
 
       {/* Guardian Druid conversion prompt for Feral Druid players */}
