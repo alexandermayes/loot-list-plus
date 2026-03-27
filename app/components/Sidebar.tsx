@@ -280,6 +280,8 @@ export default function Sidebar({ currentView = 'overview', onViewChange, isMobi
         'loot-submissions': '/loot-submissions',
         'loot-settings': '/loot-settings',
         'raid-tracking': '/admin/raid-tracking',
+        'prio-list': '/admin/prio-list',
+        'addon': '/admin/addon',
       }
       router.push(routeMap[view] || '/overview')
     }
@@ -299,6 +301,7 @@ export default function Sidebar({ currentView = 'overview', onViewChange, isMobi
     { name: 'Raid Tracking', view: 'raid-tracking', icon: '/icons/raid-tracking.svg' },
     { name: 'Loot Submissions', view: 'loot-submissions', icon: '/icons/master-loot.svg' },
     { name: 'Loot Management', view: 'loot-settings', icon: '/icons/guild-settings.svg' },
+    { name: 'WoW Addon', view: 'addon', icon: '/icons/raid-tracking.svg' },
   ] : []
 
   const isActive = (view: string) => {
@@ -315,6 +318,8 @@ export default function Sidebar({ currentView = 'overview', onViewChange, isMobi
       'loot-submissions': '/loot-submissions',
       'loot-settings': '/loot-settings',
       'raid-tracking': '/admin/raid-tracking',
+      'prio-list': '/admin/prio-list',
+      'addon': '/admin/addon',
     }
     return pathname === routeMap[view]
   }
