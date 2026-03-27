@@ -167,6 +167,24 @@ export async function POST(request: NextRequest) {
       // Continue anyway - roles can be created later via trigger or manually
     }
 
+    // Auto-generate an invite code so the admin can share immediately
+    const inviteCode = Math.random().toString(36).substring(2, 10).toUpperCase()
+    const { error: inviteError } = await serviceSupabase
+      .from('guild_invite_codes')
+      .insert({
+        guild_id: guild.id,
+        code: inviteCode,
+        created_by: user.id,
+        is_active: true,
+        max_uses: null,
+        expires_at: null,
+      })
+
+    if (inviteError) {
+      console.error('Error creating invite code:', inviteError)
+      // Non-critical — admin can create one manually in settings
+    }
+
     // Check if user has a properly configured character (with class set)
     const { data: existingCharacters } = await serviceSupabase
       .from('characters')

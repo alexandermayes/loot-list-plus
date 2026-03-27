@@ -1506,11 +1506,32 @@ export default function LootList() {
 
         {/* First-time guidance */}
         {Object.keys(rankings).length === 0 && (
-          <div className="bg-accent/10 border border-accent/30 rounded-xl p-5">
-            <p className="text-[15px] font-semibold text-foreground mb-1">Time to rank your loot</p>
-            <p className="text-[13px] text-foreground-secondary">
-              Click any slot below and pick the item you want most. Rank 50 = highest priority. Fill brackets 1-4 with your most wanted items, then work your way down. When you're done, hit Submit.
-            </p>
+          <div className="bg-accent/10 border border-accent/30 rounded-xl p-6">
+            <div className="flex items-start gap-4">
+              <div className="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center shrink-0">
+                <span className="text-xl">🎯</span>
+              </div>
+              <div>
+                <p className="text-[16px] font-semibold text-foreground">Time to rank your loot</p>
+                <p className="text-[13px] text-foreground-secondary mt-1">
+                  Your loot list tells officers what you want most. Here's how it works:
+                </p>
+                <div className="mt-3 space-y-2">
+                  <div className="flex items-start gap-2 text-[13px]">
+                    <span className="text-accent font-bold mt-px">1.</span>
+                    <span className="text-foreground-secondary"><span className="text-foreground font-medium">Click any empty slot</span> below to pick an item from the raid loot tables.</span>
+                  </div>
+                  <div className="flex items-start gap-2 text-[13px]">
+                    <span className="text-accent font-bold mt-px">2.</span>
+                    <span className="text-foreground-secondary"><span className="text-foreground font-medium">Rank 50 = highest priority.</span> Put your most wanted items in Bracket 1 at the top.</span>
+                  </div>
+                  <div className="flex items-start gap-2 text-[13px]">
+                    <span className="text-accent font-bold mt-px">3.</span>
+                    <span className="text-foreground-secondary"><span className="text-foreground font-medium">Hit Submit</span> when you're done. Your officer will review and approve your list.</span>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         )}
 

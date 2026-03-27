@@ -3,7 +3,7 @@
 import Image from 'next/image'
 import { createClient } from '@/utils/supabase/client'
 import { useState, useEffect, useRef, useCallback, useMemo, Suspense } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { useSearchParams, useRouter } from 'next/navigation'
 import { computeScore, computeAttendance, type ItemPriority, type AttendanceResult } from '@/domain/scoring'
 import { getSpecRoles } from '@/domain/loot/spec-role-mapping'
 import { getBossOrder, normalizeBossName } from '@/utils/bossOrder'
@@ -159,6 +159,7 @@ export default function MasterSheet() {
 function MasterSheetContent() {
   const { activeGuild, activeCharacter, loading: guildLoading, isOfficer } = useGuildContext()
   const { showNotification } = useNotification()
+  const router = useRouter()
   const [allItemRankings, setAllItemRankings] = useState<ItemRankings[]>([])
   const [initialLoading, setInitialLoading] = useState(true)
   const [contentLoading, setContentLoading] = useState(true)
@@ -1829,9 +1830,16 @@ function MasterSheetContent() {
             {sortedRaidTiers.length === 0 ? (
               <EmptyState
                 icon={ScrollIcon}
-                title="No loot items yet"
-                description="Items will appear here once loot is configured for this raid tier."
+                title="No rankings yet"
+                description={isOfficer
+                  ? "Rankings appear once raiders submit and you approve their loot lists. Check submissions to get started."
+                  : "Rankings appear after you submit your loot list and an officer approves it."
+                }
                 variant="card"
+                action={isOfficer
+                  ? { label: 'View submissions', onClick: () => router.push('/master-loot'), variant: 'primary' as const }
+                  : hasApprovedSubmission ? undefined : { label: 'Create my loot list', onClick: () => router.push('/loot-list'), variant: 'primary' as const }
+                }
               />
             ) : (
               <VirtualizedMasterSheet
