@@ -22,19 +22,19 @@ export default function sitemap(): MetadataRoute.Sitemap {
     },
     {
       url: 'https://www.getlootlist.com/blog/how-to-set-up-a-fair-loot-system-for-your-wow-guild',
-      lastModified: new Date('2026-03-23'),
+      lastModified: new Date(2026, 2, 23),
       changeFrequency: 'monthly',
       priority: 0.9,
     },
     {
       url: 'https://www.getlootlist.com/terms',
-      lastModified: new Date('2026-02-06'),
+      lastModified: new Date(2026, 1, 6),
       changeFrequency: 'yearly',
       priority: 0.3,
     },
     {
       url: 'https://www.getlootlist.com/privacy',
-      lastModified: new Date('2026-02-06'),
+      lastModified: new Date(2026, 1, 6),
       changeFrequency: 'yearly',
       priority: 0.3,
     },

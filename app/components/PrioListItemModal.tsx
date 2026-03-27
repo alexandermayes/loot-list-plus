@@ -415,11 +415,11 @@ export function PrioListItemModal({
 
         {/* Notes */}
         <div className="space-y-3 pt-4 border-t border-border-strong">
-          <Label>Notes (optional)</Label>
+          <Label>Officer notes</Label>
           <Textarea
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
-            placeholder="Add any notes for loot council..."
+            placeholder="Why is this priority set this way? Visible to officers in the candidate comparison view."
             rows={2}
             variant="rounded"
             size="sm"

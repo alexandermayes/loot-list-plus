@@ -13,6 +13,7 @@ interface ItemPriority {
   class_priorities: Record<string, number | null>
   character_priorities: Record<string, number | null>
   priority_bonuses: { role: number; class: number; character: number }
+  notes?: string | null
 }
 
 interface LootAward {
@@ -166,8 +167,13 @@ export const ItemCandidateModal = memo(function ItemCandidateModal({
       <ModalBody className="p-0">
         {/* Priority summary */}
         {priority && (
-          <div className="px-6 py-3 border-b border-border bg-background-subtle">
+          <div className="px-6 py-3 border-b border-border bg-background-subtle space-y-1.5">
             <PrioritySummary priority={priority} />
+            {priority.notes && (
+              <p className="text-[12px] text-muted-foreground italic">
+                {priority.notes}
+              </p>
+            )}
           </div>
         )}
 

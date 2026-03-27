@@ -4,6 +4,7 @@ import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { verifyOfficerPermissions } from '@/utils/server-roles'
 import { logAudit } from '@/utils/audit/log'
 import { trackEvent, trackApiError } from '@/utils/analytics/server'
+import { toDateString } from '@/utils/date'
 
 /**
  * POST /api/loot-submissions/remove-item
@@ -170,7 +171,7 @@ export async function POST(request: Request) {
           character_name: character.name,
           loot_item_id,
           raid_tier_id: lootItem.raid_tier_id,
-          awarded_date: new Date().toISOString().split('T')[0],
+          awarded_date: toDateString(new Date()),
           awarded_by: user.id,
           notes: reason || 'Obtained outside of raid',
         })
