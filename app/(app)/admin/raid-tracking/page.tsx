@@ -8,7 +8,24 @@ import { ArrowDown01Icon, ArrowUp01Icon, Upload01Icon, Cancel01Icon, MoreVertica
 import nextDynamic from 'next/dynamic'
 
 const LootHistoryTab = nextDynamic(() => import('./components/LootHistoryTab'), {
-  loading: () => <div className="min-h-[400px] p-8 text-center text-muted-foreground">Loading loot history...</div>
+  loading: () => (
+    <div className="min-h-[400px] space-y-4 p-4">
+      <div className="flex gap-3">
+        <div className="h-9 w-48 bg-muted rounded-[52px] animate-pulse" />
+        <div className="h-9 w-32 bg-muted rounded-[52px] animate-pulse" />
+      </div>
+      <div className="rounded-xl border border-border overflow-hidden">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <div key={i} className="flex items-center gap-4 px-4 py-3 border-b border-border last:border-b-0">
+            <div className="w-8 h-8 bg-muted rounded animate-pulse shrink-0" />
+            <div className="h-4 w-40 bg-muted rounded animate-pulse flex-1" />
+            <div className="h-4 w-24 bg-muted rounded animate-pulse" />
+            <div className="h-4 w-16 bg-muted rounded animate-pulse" />
+          </div>
+        ))}
+      </div>
+    </div>
+  )
 })
 import { RaidTrackingPageSkeleton } from '@/components/ui/skeletons'
 import { Heading } from '@/components/ui/typography'

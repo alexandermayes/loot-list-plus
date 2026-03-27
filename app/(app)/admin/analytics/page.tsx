@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { LoadingSpinner } from '@/components/ui/loading-spinner'
+import { Skeleton } from '@/components/ui/skeletons'
 import { Heading, Text } from '@/components/ui/typography'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -141,8 +141,34 @@ export default function AnalyticsPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-96">
-        <LoadingSpinner />
+      <div className="p-8 max-w-6xl mx-auto space-y-8">
+        <div>
+          <Skeleton className="h-8 w-48" />
+          <Skeleton className="h-5 w-72 mt-1" />
+        </div>
+        {/* Summary cards skeleton */}
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="bg-background-elevated border border-border rounded-xl p-4">
+              <Skeleton className="h-4 w-16" />
+              <Skeleton className="h-7 w-10 mt-1" />
+            </div>
+          ))}
+        </div>
+        {/* Size distribution skeleton */}
+        <div className="bg-background-elevated border border-border rounded-xl p-6 space-y-3">
+          <Skeleton className="h-6 w-44" />
+          {Array.from({ length: 5 }).map((_, i) => (
+            <Skeleton key={i} className="h-8 w-full rounded" />
+          ))}
+        </div>
+        {/* Feature adoption skeleton */}
+        <div className="bg-background-elevated border border-border rounded-xl p-6 space-y-3">
+          <Skeleton className="h-6 w-40" />
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} className="h-8 w-full rounded" />
+          ))}
+        </div>
       </div>
     )
   }

@@ -5,7 +5,7 @@ import { useState, useEffect, useMemo } from 'react'
 import dynamic from 'next/dynamic'
 import ItemLink from '@/app/components/ItemLink'
 import { useGuildContext } from '@/app/contexts/GuildContext'
-import { LoadingSpinner } from '@/components/ui/loading-spinner'
+import { Skeleton } from '@/components/ui/skeletons'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Search01Icon } from '@hugeicons/core-free-icons'
 import { Button } from '@/components/ui/button'
@@ -466,8 +466,46 @@ export default function PriorityListTab() {
 
   if (initialLoading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <LoadingSpinner />
+      <div className="space-y-6">
+        {/* Phase tabs skeleton */}
+        <div className="hidden sm:flex gap-2">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <Skeleton key={i} className="h-9 w-24 rounded-[40px]" />
+          ))}
+        </div>
+        {/* Stats grid skeleton */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="bg-background-elevated border border-border rounded-xl p-4">
+              <Skeleton className="h-4 w-20" />
+              <Skeleton className="h-7 w-12 mt-1" />
+            </div>
+          ))}
+        </div>
+        {/* Search + boss nav skeleton */}
+        <div className="hidden sm:flex gap-3">
+          <div className="flex-shrink-0 bg-background-elevated border border-border rounded-xl p-3">
+            <Skeleton className="h-9 w-[160px] rounded-[52px]" />
+          </div>
+          <div className="flex-1 bg-background-elevated border border-border rounded-xl p-3">
+            <div className="flex gap-2">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <Skeleton key={i} className="h-9 w-28 rounded-[40px] flex-shrink-0" />
+              ))}
+            </div>
+          </div>
+        </div>
+        {/* Boss section skeletons */}
+        {Array.from({ length: 3 }).map((_, i) => (
+          <div key={i} className="space-y-2">
+            <Skeleton className="h-12 w-full rounded-xl" />
+            <div className="space-y-1">
+              {Array.from({ length: 4 }).map((_, j) => (
+                <Skeleton key={j} className="h-11 w-full rounded-lg" />
+              ))}
+            </div>
+          </div>
+        ))}
       </div>
     )
   }
@@ -684,11 +722,17 @@ export default function PriorityListTab() {
 
       {/* Content Loading State */}
       {contentLoading ? (
-        <div className="bg-background-elevated border border-border rounded-xl p-12">
-          <div className="flex flex-col items-center justify-center gap-4">
-            <LoadingSpinner />
-            <p className="text-muted-foreground text-sm">Loading items...</p>
-          </div>
+        <div className="space-y-2">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="space-y-2">
+              <Skeleton className="h-12 w-full rounded-xl" />
+              <div className="space-y-1">
+                {Array.from({ length: 4 }).map((_, j) => (
+                  <Skeleton key={j} className="h-11 w-full rounded-lg" />
+                ))}
+              </div>
+            </div>
+          ))}
         </div>
       ) : (
         <>

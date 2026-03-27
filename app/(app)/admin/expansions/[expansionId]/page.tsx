@@ -14,7 +14,7 @@ import { resolvePhaseGroups, isMergedGroup, type PhaseGroup } from '@/domain/exp
 import { Button } from '@/components/ui/button'
 import { DateTimePicker } from '@/components/ui/date-time-picker'
 import { Switch } from '@/components/ui/switch'
-import { LoadingSpinner } from '@/components/ui/loading-spinner'
+import { Skeleton } from '@/components/ui/skeletons'
 
 interface RaidTier {
   id: string
@@ -572,8 +572,43 @@ export default function ExpansionDetailPage({ params }: { params: Promise<{ expa
 
   if (loading || guildLoading) {
     return (
-      <div className="p-8 flex items-center justify-center min-h-[40vh]">
-        <LoadingSpinner />
+      <div className="p-4 sm:p-6 lg:p-8 space-y-6">
+        {/* Back button skeleton */}
+        <Skeleton className="h-10 w-20 rounded-lg" />
+        {/* Expansion header skeleton */}
+        <div className="rounded-xl border border-border p-6 bg-background-elevated">
+          <div className="flex items-start gap-4">
+            <Skeleton className="w-16 h-16 rounded-lg flex-shrink-0" />
+            <div className="flex-1 space-y-2">
+              <Skeleton className="h-7 w-48" />
+              <Skeleton className="h-4 w-64" />
+              <div className="flex gap-4 mt-2">
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-4 w-24" />
+              </div>
+            </div>
+          </div>
+        </div>
+        {/* Phase cards skeleton */}
+        {Array.from({ length: 3 }).map((_, i) => (
+          <div key={i} className="bg-background-elevated border border-border rounded-xl p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <Skeleton className="h-6 w-24" />
+              <Skeleton className="h-6 w-16 rounded-full" />
+            </div>
+            <div className="space-y-3">
+              {Array.from({ length: 2 }).map((_, j) => (
+                <div key={j} className="flex items-center justify-between py-2">
+                  <div className="flex items-center gap-3">
+                    <Skeleton className="w-8 h-8 rounded" />
+                    <Skeleton className="h-5 w-40" />
+                  </div>
+                  <Skeleton className="h-8 w-16 rounded-full" />
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
       </div>
     )
   }
