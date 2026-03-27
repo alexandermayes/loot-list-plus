@@ -14,6 +14,51 @@ export interface UpdateEntry {
 
 export const updates: UpdateEntry[] = [
   {
+    date: 'March 27, 2026',
+    items: [
+      {
+        category: 'feature',
+        title: 'Item candidate comparison',
+        description: 'Officers can click any item on the Master Sheet to see all ranked candidates with full score breakdowns, eligibility badges, priority rules, and recent award history.',
+      },
+      {
+        category: 'feature',
+        title: 'Raid mode',
+        description: 'New compact view on the Master Sheet for use during raids. Searchable item list with top 3 candidates per item. Click to open the full comparison.',
+      },
+      {
+        category: 'feature',
+        title: 'Setup guide for new guilds',
+        description: 'Officers see a 5-step progress tracker on the Overview page that auto-checks as you invite raiders, set raid days, get loot lists, and log your first raid.',
+      },
+      {
+        category: 'improvement',
+        title: 'Role-aware onboarding',
+        description: 'The welcome tutorial now shows different content for officers (admin checklist) and raiders (how to submit your first loot list).',
+      },
+      {
+        category: 'improvement',
+        title: 'Smarter empty states',
+        description: 'Empty Master Sheet and Loot List pages now show role-specific guidance. Officers see "check submissions," raiders see "create my loot list."',
+      },
+      {
+        category: 'fix',
+        title: 'Audit log search accuracy',
+        description: 'Search was matching unrelated logs when any character name appeared in results. Now matches only the specific log entry. Search window also increased from 200 to 2000 entries.',
+      },
+      {
+        category: 'fix',
+        title: 'Priority list showing only your own character',
+        description: 'The individual raiders dropdown in loot management only showed the current user. Now shows all guild members.',
+      },
+      {
+        category: 'fix',
+        title: 'Date handling corrections',
+        description: 'Fixed a timezone issue where loot award dates could shift by one day for users in US timezones.',
+      },
+    ],
+  },
+  {
     date: 'March 25, 2026',
     items: [
       {
