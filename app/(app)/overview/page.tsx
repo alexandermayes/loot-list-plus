@@ -168,6 +168,7 @@ function DashboardContent() {
   const { showNotification } = useNotification()
   const [raidTiers, setRaidTiers] = useState<RaidTier[]>([])
   const [loading, setLoading] = useState(true)
+  const [insightsLoading, setInsightsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [greetingIndex, setGreetingIndex] = useState<number | null>(null)
   const [greetingName, setGreetingName] = useState<string>('')
@@ -483,9 +484,9 @@ function DashboardContent() {
         }
       }
 
-      // Fire all three independent data fetches in parallel:
-      // 1. Submissions (for stats/actions), 2. Loot priority, 3. Received items
-      const submissionsPromise = supabase
+      // Fast path: submissions query for stats (renders immediately)
+      // Slow path: loot priority + received items (load in background, render progressively)
+      const submissionsResult = await supabase
         .from('loot_submissions')
         .select('id, character_id, guild_id, raid_tier_id, expansion_id, phase, status, updated_at')
         .eq('character_id', activeCharacter.id)
@@ -493,11 +494,12 @@ function DashboardContent() {
         .eq('expansion_id', expansionId)
         .order('updated_at', { ascending: false })
 
-      const [submissionsResult] = await Promise.all([
-        submissionsPromise,
+      // Fire slow queries in background — they'll update their own state when done
+      setInsightsLoading(true)
+      Promise.all([
         loadLootPriority([activeCharacter.id]),
         loadReceivedItems(activeCharacter.id)
-      ])
+      ]).finally(() => setInsightsLoading(false))
 
       // Process submissions result (stats + actions)
       const { data: submissions, error: submissionsError } = submissionsResult
@@ -1508,9 +1510,9 @@ function DashboardContent() {
             </div>
           )}
 
-          {/* Data-dependent sections: show skeleton while loading, real content when ready */}
-          {dataLoading ? (
-            activeCharacter ? <DashboardDataSkeleton /> : null
+          {/* Insights: load progressively (don't block stats above) */}
+          {insightsLoading ? (
+            activeCharacter && !dataLoading ? <DashboardDataSkeleton /> : null
           ) : (
           <>
 

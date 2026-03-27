@@ -507,82 +507,71 @@ export default function AdminLootItems() {
     try {
       setMember(activeMember)
 
-      // Load guild settings (which also loads guild roles)
-      await loadSettings(activeGuild.id)
+      // Parallelize all independent data loads
+      const [, classesResult, specsResult, expansionResult, tiersResult] = await Promise.all([
+        // 1. Guild settings (also loads guild roles internally)
+        loadSettings(activeGuild.id),
 
-      // Load all WoW classes
-      const { data: classesData } = await supabase
-        .from('wow_classes')
-        .select('*')
-        .order('name')
+        // 2. WoW classes
+        supabase.from('wow_classes').select('*').order('name'),
 
-      if (classesData) {
-        setClasses(classesData)
-      }
+        // 3. Class specs with class info
+        supabase.from('class_specs').select('id, name, class_id, wow_classes!inner(name)').order('name'),
 
-      // Load all class specs with class information
-      const { data: specsData } = await supabase
-        .from('class_specs')
-        .select(`
-          id,
-          name,
-          class_id,
-          wow_classes!inner(name)
-        `)
-        .order('name')
+        // 4. Expansion name (for class filtering)
+        activeGuild.active_expansion_id
+          ? supabase.from('expansions').select('name').eq('id', activeGuild.active_expansion_id).single()
+          : Promise.resolve({ data: null }),
 
-      if (specsData) {
-        // Transform specs to include combined name for role mapping
-        const transformedSpecs = specsData.map((spec: any) => {
-          // The wow_classes join returns an object or array
+        // 5. Raid tiers
+        activeGuild.active_expansion_id
+          ? supabase.from('raid_tiers').select('id, name').eq('expansion_id', activeGuild.active_expansion_id).eq('is_guild_active', true)
+          : Promise.resolve({ data: null }),
+      ])
+
+      // Process classes
+      let classesData = classesResult.data || []
+      if (classesData.length > 0) setClasses(classesData)
+
+      // Process specs
+      let transformedSpecs: any[] = []
+      if (specsResult.data) {
+        transformedSpecs = specsResult.data.map((spec: any) => {
           const className = Array.isArray(spec.wow_classes)
             ? spec.wow_classes[0]?.name
             : spec.wow_classes?.name
-
           return {
             ...spec,
             class_name: className,
-            // Create combined name like "Holy Paladin" to match spec-role-mapping
             combined_name: spec.name === className
-              ? spec.name // Hunter, Mage, Warlock, Rogue
-              : `${spec.name} ${className}` // "Holy Paladin", "Protection Warrior"
+              ? spec.name
+              : `${spec.name} ${className}`
           }
         })
         setClassSpecs(transformedSpecs as any)
       }
 
-      // Load expansion name and filter classes not available in this expansion
+      // Filter classes by expansion exclusions
+      if (expansionResult.data) {
+        const excluded = EXPANSION_CLASS_EXCLUSIONS[expansionResult.data.name] || []
+        if (excluded.length > 0) {
+          classesData = classesData.filter((c: any) => !excluded.includes(c.name))
+          setClasses(classesData)
+          transformedSpecs = transformedSpecs.filter((s: any) => !excluded.includes(s.class_name))
+          setClassSpecs(transformedSpecs as any)
+        }
+      }
+
+      // Process raid tiers
+      if (tiersResult.data) {
+        const sortedTiers = tiersResult.data.sort((a: { name: string }, b: { name: string }) =>
+          getRaidTierOrder(a.name) - getRaidTierOrder(b.name)
+        )
+        setRaidTiers(sortedTiers)
+      }
+
+      // Load loot items (depends on expansion ID, not on above results)
       if (activeGuild.active_expansion_id) {
-        const { data: expansionData } = await supabase
-          .from('expansions')
-          .select('name')
-          .eq('id', activeGuild.active_expansion_id)
-          .single()
-
-        if (expansionData) {
-          const excluded = EXPANSION_CLASS_EXCLUSIONS[expansionData.name] || []
-          if (excluded.length > 0) {
-            setClasses(prev => prev.filter(c => !excluded.includes(c.name)))
-            setClassSpecs(prev => prev.filter((s: any) => !excluded.includes(s.class_name)))
-          }
-        }
-
-      // Load raid tiers for filtering (only for active expansion)
-        const { data: tiersData } = await supabase
-          .from('raid_tiers')
-          .select('id, name')
-          .eq('expansion_id', activeGuild.active_expansion_id)
-          .eq('is_guild_active', true)
-
-        if (tiersData) {
-          // Sort by progression order
-          const sortedTiers = tiersData.sort((a: { name: string }, b: { name: string }) =>
-            getRaidTierOrder(a.name) - getRaidTierOrder(b.name)
-          )
-          setRaidTiers(sortedTiers)
-        }
-
-        // Load all loot items
         await loadLootItems(activeGuild.active_expansion_id)
       }
     } catch (error) {
