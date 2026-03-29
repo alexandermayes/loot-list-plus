@@ -654,6 +654,26 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
+  // Recover from stale session when user returns to a backgrounded tab.
+  // Supabase auto-refresh only works while the tab is active. If the token
+  // expires while backgrounded, the user comes back to a broken app.
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && hasInitiallyLoaded.current) {
+        // Validate session is still alive
+        supabase.auth.getUser().then((result: { data: { user: unknown } }) => {
+          if (!result.data.user && user) {
+            // Session expired while tab was hidden — force re-login
+            window.location.href = '/'
+          }
+        })
+      }
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
+  }, [user])
+
   // Derived state — officer check using cached role positions (zero DB queries)
   const defaultPositions = useMemo(() => new Map([['Guild Master', 100], ['Officer', 50], ['Member', 0]]), [])
 
