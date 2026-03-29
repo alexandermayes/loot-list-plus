@@ -1098,17 +1098,17 @@ export default function RaidTrackingPage() {
   const parseMRTNames = (data: string): string[] => {
     return data
       .trim()
-      .split(/\n/)
-      .map(line => {
+      .split(/[\n,;]+/)
+      .map(entry => {
+        const line = entry.trim()
         // Skip header lines (contain date pattern or " - ")
         if (line.match(/\d{2}\/\d{2}\/\d{4}/) || line.includes(' - ')) {
           return ''
         }
         // Strip the "x" marker and any surrounding whitespace
-        // Handle formats: "Name    x", "Name,", "Name"
+        // Handle formats: "Name    x", "Name"
         return line
           .replace(/\s+x\s*$/i, '')  // Remove trailing "x" with whitespace
-          .replace(/,\s*$/, '')       // Remove trailing comma
           .trim()
       })
       .filter(name => name.length > 0 && name.length <= 50)
@@ -2812,7 +2812,7 @@ export default function RaidTrackingPage() {
                 variant="rounded"
                 value={attendanceData}
                 onChange={e => setAttendanceData(e.target.value)}
-                placeholder={"Paste character names (comma-separated or one per line)\n\nZev\nDeny\nCheck"}
+                placeholder={"Paste character names (one per line, comma, or semicolon separated)\n\nZev\nDeny\nCheck"}
                 className="h-44 font-mono resize-none"
               />
               {attendancePreview && (
@@ -2874,7 +2874,7 @@ export default function RaidTrackingPage() {
                 variant="rounded"
                 value={signupsData}
                 onChange={e => setSignupsData(e.target.value)}
-                placeholder={"Paste character names (comma-separated or one per line)\n\nZev\nDeny\nCheck"}
+                placeholder={"Paste character names (one per line, comma, or semicolon separated)\n\nZev\nDeny\nCheck"}
                 className="h-24 font-mono resize-none"
               />
               {signupsPreview && (
