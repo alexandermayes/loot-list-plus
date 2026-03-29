@@ -1555,7 +1555,7 @@ function DashboardContent() {
                         {blpInfo.enabled && (
                           <span className="inline-flex items-center gap-1 ml-1">
                             &middot; BLP applied per item
-                            <InfoTooltip content="Bad luck protection varies per item. Each item you've been passed over for gets a bonus that resets when you receive it." />
+                            <InfoTooltip content="Bad luck protection varies per item. When loot is awarded through raid tracking and you don't win, your BLP for that item increases. Resets when you receive it." />
                           </span>
                         )}
                       </p>
