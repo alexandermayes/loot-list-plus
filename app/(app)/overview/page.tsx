@@ -1549,19 +1549,20 @@ function DashboardContent() {
                           </div>
                         )
                       })}
-                    <div className="flex items-center justify-between">
-                      <span className="text-[13px] text-foreground-secondary inline-flex items-center gap-1.5">Bad luck protection <InfoTooltip content="Bonus points that grow the longer you go without receiving loot. Resets on your next item." /></span>
-                      <span className="text-[13px] font-medium text-muted-foreground">
-                        {blpInfo.range
-                          ? `+${blpInfo.range.min.toFixed(decimalPlaces)} to +${blpInfo.range.max.toFixed(decimalPlaces)}`
-                          : blpInfo.enabled
-                            ? '+0.00'
-                            : 'Not enabled'}
-                      </span>
-                    </div>
                     <div className="border-t border-border pt-2 mt-2">
                       <p className="text-[11px] text-muted-foreground">Base score before item ranking</p>
                     </div>
+                    {blpInfo.enabled && (
+                      <div className="mt-1">
+                        <p className="text-[11px] text-muted-foreground inline-flex items-center gap-1">
+                          Bad luck protection: {blpInfo.range
+                            ? <span className="text-foreground-secondary font-medium">+{blpInfo.range.min.toFixed(decimalPlaces)} to +{blpInfo.range.max.toFixed(decimalPlaces)}</span>
+                            : <span className="text-foreground-secondary font-medium">+0</span>
+                          } per item
+                          <InfoTooltip content="BLP is per item, not global. Each item you've been passed over for gets a small bonus. The value varies across your list. Resets when you receive the item." />
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
