@@ -1554,8 +1554,8 @@ function DashboardContent() {
                         Base score before item ranking
                         {blpInfo.enabled && (
                           <span className="inline-flex items-center gap-1 ml-1">
-                            &middot; BLP shown per item below
-                            <InfoTooltip content="Bad luck protection varies per item. Each item you've been passed over for gets a bonus. Check your items below to see the values." />
+                            &middot; BLP applied per item
+                            <InfoTooltip content="Bad luck protection varies per item. Each item you've been passed over for gets a bonus that resets when you receive it." />
                           </span>
                         )}
                       </p>
