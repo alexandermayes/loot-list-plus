@@ -336,7 +336,7 @@ export function usePhaseLootItems(
     fetcher,
     {
       ...swrConfig,
-      revalidateOnFocus: false,
+      revalidateOnFocus: true, // Re-check item availability when raider tabs back
       dedupingInterval: 10000,
       ...options,
     }
