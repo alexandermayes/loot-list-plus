@@ -419,12 +419,16 @@ export default function MasterLootPage() {
         body: JSON.stringify({ submission_id: submissionId })
       })
 
+      const data = await response.json()
       if (!response.ok) {
-        const data = await response.json()
         throw new Error(data.error || 'Couldn\'t revert changes')
       }
 
-      showNotification('success', 'Changes rejected. List reverted to previously approved state.')
+      if (data.fallback === 'rejected') {
+        showNotification('success', 'Submission rejected.')
+      } else {
+        showNotification('success', 'Changes rejected. List reverted to previously approved state.')
+      }
       notifySubmissionChanged()
 
       if (guildId && activePhase !== null && activeGuild?.active_expansion_id) {

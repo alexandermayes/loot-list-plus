@@ -54,7 +54,32 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (snapError || !snapshot?.items) {
-      return NextResponse.json({ error: 'No snapshot found to revert to' }, { status: 404 })
+      // No snapshot exists — list was never approved before this resubmission.
+      // Fall back to a regular rejection instead of erroring.
+      const { error: rejectError } = await serviceSupabase
+        .from('loot_submissions')
+        .update({
+          status: 'rejected',
+          review_notes: 'Rejected by officer.',
+        })
+        .eq('id', submission_id)
+
+      if (rejectError) {
+        return NextResponse.json({ error: 'Failed to reject submission' }, { status: 500 })
+      }
+
+      logStatusChange({
+        supabase: serviceSupabase,
+        guildId: submission.guild_id,
+        tableName: 'loot_submissions',
+        recordId: submission_id,
+        userId: user.id,
+        oldStatus: 'pending',
+        newStatus: 'rejected',
+        additionalData: { action: 'reject_no_snapshot', character_id: submission.character_id ?? undefined },
+      })
+
+      return NextResponse.json({ success: true, fallback: 'rejected' })
     }
 
     const snapshotItems = snapshot.items as Array<{
