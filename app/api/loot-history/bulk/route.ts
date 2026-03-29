@@ -47,6 +47,14 @@ export async function POST(request: NextRequest) {
       expansionId = tier?.expansion_id || null
     }
 
+    // Check BLP settings once (used after inserts)
+    const { data: guildSettings } = await serviceSupabase
+      .from('guild_settings')
+      .select('blp_enabled')
+      .eq('guild_id', guild_id)
+      .single()
+    const blpEnabled = guildSettings?.blp_enabled === true
+
     for (let i = 0; i < items.length; i++) {
       const item = items[i]
       const insertData: Record<string, unknown> = {
@@ -83,10 +91,12 @@ export async function POST(request: NextRequest) {
     const successCount = results.filter(r => r.success).length
     const failedCount = results.filter(r => !r.success).length
 
-    // Audit log successful awards (fire and forget)
+    // Audit log and BLP updates for successful awards
     for (const result of results) {
       if (result.success && result.id) {
         const item = items[result.index]
+
+        // Audit log
         logAudit({
           supabase: serviceSupabase,
           guildId: guild_id,
@@ -102,6 +112,12 @@ export async function POST(request: NextRequest) {
             awarded_date: item.awarded_date,
           },
         })
+
+        // BLP: increment for non-winners, reset for winner (server-side)
+        if (blpEnabled && item.character_id && item.loot_item_id && item.raid_event_id) {
+          updateBLP(serviceSupabase, guild_id, item.loot_item_id, item.character_id, item.raid_event_id)
+            .catch(err => console.error('BLP update failed:', err))
+        }
       }
     }
 
@@ -284,4 +300,70 @@ export async function PATCH(request: NextRequest) {
     console.error('Error in PATCH /api/loot-history/bulk:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
+}
+
+/**
+ * Server-side BLP update after loot award.
+ * Finds eligible characters (item ranked + attended raid),
+ * increments BLP for non-winners, resets for the winner.
+ */
+async function updateBLP(
+  supabase: ReturnType<typeof createServiceRoleClient>,
+  guildId: string,
+  lootItemId: string,
+  winnerCharacterId: string,
+  raidEventId: string,
+) {
+  // Find characters with this item in an approved submission
+  const { data: submissionItems } = await supabase
+    .from('loot_submission_items')
+    .select(`
+      loot_submissions!inner (
+        character_id,
+        status,
+        guild_id
+      )
+    `)
+    .eq('loot_item_id', lootItemId)
+    .eq('loot_submissions.guild_id', guildId)
+    .eq('loot_submissions.status', 'approved')
+    .is('removed_at', null)
+
+  if (!submissionItems?.length) return
+
+  const charactersWithItem = new Set<string>()
+  for (const item of submissionItems as unknown as { loot_submissions: { character_id: string } }[]) {
+    if (item.loot_submissions?.character_id) {
+      charactersWithItem.add(item.loot_submissions.character_id)
+    }
+  }
+
+  if (charactersWithItem.size === 0) return
+
+  // Filter to characters who attended this raid
+  const { data: attendanceRecords } = await supabase
+    .from('attendance_records')
+    .select('character_id')
+    .eq('raid_event_id', raidEventId)
+    .eq('attended', true)
+    .in('character_id', Array.from(charactersWithItem))
+
+  const eligible = attendanceRecords?.map(r => r.character_id) || []
+
+  // Increment for non-winners
+  for (const characterId of eligible) {
+    if (characterId === winnerCharacterId) continue
+    await supabase.rpc('increment_blp', {
+      p_guild_id: guildId,
+      p_character_id: characterId,
+      p_loot_item_id: lootItemId,
+    })
+  }
+
+  // Reset winner's BLP
+  await supabase.rpc('reset_blp', {
+    p_guild_id: guildId,
+    p_character_id: winnerCharacterId,
+    p_loot_item_id: lootItemId,
+  })
 }

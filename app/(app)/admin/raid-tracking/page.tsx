@@ -1920,19 +1920,7 @@ export default function RaidTrackingPage() {
             const entry = entryMap.get(r.index)
             if (r.success) {
               successCount++
-              // Update BLP (Bad Luck Protection) - fire and forget
-              if (entry?.matchedCharacter?.character_id && entry?.matchedItem) {
-                fetch('/api/blp/update', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({
-                    guild_id: activeGuild.id,
-                    loot_item_id: entry.matchedItem.id,
-                    winner_character_id: entry.matchedCharacter.character_id,
-                    raid_event_id: showImportModal.raidId
-                  })
-                }).catch(err => console.error('BLP update failed:', err))
-              }
+              // BLP is now updated server-side in /api/loot-history/bulk
             } else {
               errorCount++
               const name = entry?.characterName || 'Unknown'
