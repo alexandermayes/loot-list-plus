@@ -14,6 +14,21 @@ export interface UpdateEntry {
 
 export const updates: UpdateEntry[] = [
   {
+    date: 'March 30, 2026',
+    items: [
+      {
+        category: 'fix',
+        title: 'Candidate comparison shows correct recent awards',
+        description: 'The "Recent awards" section in the item comparison modal was showing random recent loot instead of awards for the specific item. Now correctly filtered.',
+      },
+      {
+        category: 'fix',
+        title: 'Navigation stays fresh after updates',
+        description: 'Clicking between pages after a site update no longer shows stale or broken content. The app now detects new deployments and refreshes automatically.',
+      },
+    ],
+  },
+  {
     date: 'March 29, 2026',
     items: [
       {
