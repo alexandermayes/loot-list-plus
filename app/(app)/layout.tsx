@@ -14,6 +14,7 @@ import { Bug01Icon, Notification03Icon } from '@hugeicons/core-free-icons'
 import { SidebarProvider, useSidebar } from '@/app/contexts/SidebarContext'
 import { AccentColorProvider } from '@/app/contexts/AccentColorContext'
 import { useGuildContext } from '@/app/contexts/GuildContext'
+import { DeploymentCheck } from '@/app/components/DeploymentCheck'
 
 const FeedbackModal = dynamic(() => import('@/app/components/FeedbackModal').then(mod => ({ default: mod.FeedbackModal })), {
   loading: () => null
@@ -193,6 +194,7 @@ export default function AppLayout({
   return (
     <AccentColorProvider>
       <SidebarProvider>
+        <DeploymentCheck />
         <AppLayoutContent>{children}</AppLayoutContent>
       </SidebarProvider>
     </AccentColorProvider>

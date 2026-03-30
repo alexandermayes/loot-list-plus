@@ -148,6 +148,13 @@ const nextConfig: NextConfig = {
     ];
   },
   experimental: {
+    // Reduce App Router client cache to prevent stale RSC payloads after deployments.
+    // dynamic: 0 means navigating to a page always fetches fresh server data instead
+    // of serving a cached response from a previous visit in this session.
+    staleTimes: {
+      dynamic: 0,
+      static: 180,
+    },
     // Tree-shake large icon and animation libraries for smaller bundles
     optimizePackageImports: [
       '@hugeicons/core-free-icons',
