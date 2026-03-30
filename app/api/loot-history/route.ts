@@ -116,7 +116,19 @@ export async function GET(request: NextRequest) {
 
     // Apply filters
     if (raidTierFilter && raidTierFilter !== 'all') {
-      query = query.eq('loot_items.raid_tier_id', raidTierFilter)
+      // Resolve item IDs for the raid tier, then filter on the main table.
+      // PostgREST .eq on a joined table only filters the join, not parent rows.
+      const { data: tierItems } = await supabase
+        .from('loot_items')
+        .select('id')
+        .eq('raid_tier_id', raidTierFilter)
+
+      const tierItemIds = tierItems?.map(i => i.id) || []
+      if (tierItemIds.length > 0) {
+        query = query.in('loot_item_id', tierItemIds)
+      } else {
+        return NextResponse.json({ data: [], pagination: { total: 0, limit, offset, filtered_count: 0 } })
+      }
     }
 
     if (fromDate) {
@@ -135,7 +147,22 @@ export async function GET(request: NextRequest) {
     if (lootItemId) {
       query = query.eq('loot_item_id', lootItemId)
     } else if (itemFilter) {
-      query = query.ilike('loot_items.name', `%${itemFilter}%`)
+      // Look up matching loot_item_ids first, then filter on the main table.
+      // Filtering via .ilike('loot_items.name', ...) only filters the join,
+      // not the parent rows, so we need to resolve IDs explicitly.
+      const { data: matchingItems } = await supabase
+        .from('loot_items')
+        .select('id')
+        .ilike('name', `%${itemFilter}%`)
+        .limit(100)
+
+      const matchingIds = matchingItems?.map(i => i.id) || []
+      if (matchingIds.length > 0) {
+        query = query.in('loot_item_id', matchingIds)
+      } else {
+        // No items match, return empty
+        return NextResponse.json({ data: [], pagination: { total: 0, limit, offset, filtered_count: 0 } })
+      }
     }
 
     // Apply pagination
