@@ -194,6 +194,7 @@ export async function GET(request: NextRequest) {
         .order('awarded_date', { ascending: false })
         .order('created_at', { ascending: false })
 
+      if (lootItemId) fallbackQuery = fallbackQuery.eq('loot_item_id', lootItemId)
       if (fromDate) fallbackQuery = fallbackQuery.gte('awarded_date', fromDate)
       if (toDate) fallbackQuery = fallbackQuery.lte('awarded_date', toDate)
       if (characterFilter) fallbackQuery = fallbackQuery.ilike('character_name', `%${characterFilter}%`)
