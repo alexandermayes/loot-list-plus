@@ -14,6 +14,56 @@ export interface UpdateEntry {
 
 export const updates: UpdateEntry[] = [
   {
+    date: 'March 29, 2026',
+    items: [
+      {
+        category: 'fix',
+        title: 'Bad luck protection now works',
+        description: 'BLP was only updating from one of seven loot award paths. Now handled server-side so every loot award correctly increments BLP for non-winners and resets for winners.',
+      },
+      {
+        category: 'improvement',
+        title: 'BLP display clarified',
+        description: 'BLP is no longer shown as a confusing global modifier in the score breakdown. It now appears per item in your "Next in line" section where it makes sense.',
+      },
+      {
+        category: 'improvement',
+        title: 'Help center updated',
+        description: 'New FAQ articles for "What is Bad Luck Protection?" and "Why can\'t I select an item?" plus updated articles covering Raid Mode, excused absences, priorities, and more.',
+      },
+      {
+        category: 'improvement',
+        title: 'Comma and semicolon attendance import',
+        description: 'Paste attendance names separated by commas, semicolons, or one per line. Previously only newlines worked despite the placeholder saying otherwise.',
+      },
+      {
+        category: 'fix',
+        title: 'Shamans blocked from Mail items',
+        description: 'Items with "gauntlets" in the name were incorrectly classified as Plate armor, preventing Mail-wearing classes from selecting them.',
+      },
+      {
+        category: 'fix',
+        title: 'Navigation breaking after overnight tab',
+        description: 'Leaving the app open in a background tab overnight no longer requires a hard refresh. The app now detects expired sessions and redirects to login automatically.',
+      },
+      {
+        category: 'fix',
+        title: 'Rejecting a never-approved resubmission',
+        description: 'Officers could not reject a list that was edited and resubmitted before first approval. Now falls back to a normal rejection instead of showing "No snapshot found."',
+      },
+      {
+        category: 'fix',
+        title: 'Wildfury Greatstaff boss fix',
+        description: 'Moved from Leotheras the Blind to Trash drops where it belongs.',
+      },
+      {
+        category: 'improvement',
+        title: 'Faster page loads',
+        description: 'Overview and Loot Management pages load faster. Stats and character card render immediately while score insights load in the background.',
+      },
+    ],
+  },
+  {
     date: 'March 27, 2026',
     items: [
       {
