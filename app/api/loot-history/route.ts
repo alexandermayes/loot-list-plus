@@ -46,6 +46,7 @@ export async function GET(request: NextRequest) {
     const offset = parseInt(searchParams.get('offset') || '0')
     const characterFilter = searchParams.get('character')
     const itemFilter = searchParams.get('item')
+    const lootItemId = searchParams.get('loot_item_id')
     const raidTierFilter = searchParams.get('raid_tier_id')
     const fromDate = searchParams.get('from')
     const toDate = searchParams.get('to')
@@ -131,7 +132,9 @@ export async function GET(request: NextRequest) {
       query = query.ilike('character_name', `%${characterFilter}%`)
     }
 
-    if (itemFilter) {
+    if (lootItemId) {
+      query = query.eq('loot_item_id', lootItemId)
+    } else if (itemFilter) {
       query = query.ilike('loot_items.name', `%${itemFilter}%`)
     }
 

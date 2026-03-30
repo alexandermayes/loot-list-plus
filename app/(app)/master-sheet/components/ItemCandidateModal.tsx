@@ -100,7 +100,7 @@ export const ItemCandidateModal = memo(function ItemCandidateModal({
     let cancelled = false
     setAwardsLoading(true)
 
-    fetch(`/api/loot-history?guild_id=${guildId}&item=${encodeURIComponent(item.name)}&limit=5`)
+    fetch(`/api/loot-history?guild_id=${guildId}&loot_item_id=${item.id}&limit=5`)
       .then(res => res.ok ? res.json() : null)
       .then(data => {
         if (cancelled) return
@@ -114,7 +114,7 @@ export const ItemCandidateModal = memo(function ItemCandidateModal({
       })
 
     return () => { cancelled = true }
-  }, [open, item?.name, guildId])
+  }, [open, item?.id, guildId])
 
   const sortedRankings = useMemo(
     () => [...rankings].sort((a, b) => b.loot_score - a.loot_score),
