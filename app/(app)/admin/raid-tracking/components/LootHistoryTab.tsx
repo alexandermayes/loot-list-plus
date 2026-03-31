@@ -393,10 +393,10 @@ export default function LootHistoryTab() {
                     <td className="px-4 py-3 text-foreground text-sm whitespace-nowrap">
                       {formatDate(entry.awarded_date)}
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-3 text-sm">
                       <ItemLink name={entry.item_name} wowheadId={entry.wowhead_id} />
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-3 text-sm">
                       <span
                         className="font-medium"
                         style={{ color: entry.character_class_color || undefined }}

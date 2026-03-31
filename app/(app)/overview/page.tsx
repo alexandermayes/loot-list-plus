@@ -71,26 +71,186 @@ function getClassIconUrl(className: string | undefined): string {
   return `https://wow.zamimg.com/images/wow/icons/large/classicon_${classNameLower}.jpg`
 }
 
-// Get random WoW-themed greeting (returns [prefix, suffix] to allow coloring the name separately)
-const GREETINGS = [
-  ['Welcome back, ', '.'],
-  ['Well met, ', '.'],
-  ['Greetings, ', '.'],
-  ["Lok'tar Ogar, ", '.'],
-  ['Strength and honor, ', '.'],
-  ['Light be with you, ', '.'],
-  ['Victory or death, ', '.'],
-  ['Ready for raid, ', '?'],
-  ['May your loot be epic, ', '.'],
-  ['Time to hunt some purples, ', '.'],
-  ['Zug zug, ', '.'],
-  ['For glory, ', '.'],
-  ['The hunt begins, ', '.'],
-  ["Let's get that loot, ", '.'],
-] as const
+// Greeting tuples: [prefix, suffix]
+type Greeting = readonly [string, string]
 
-function getRandomGreetingIndex(): number {
-  return Math.floor(Math.random() * GREETINGS.length)
+// Generic greetings (any faction/class)
+const GENERIC_GREETINGS: Greeting[] = [
+  ['Welcome back, ', ''],
+  ['Ready for raid, ', '?'],
+  ['May your loot be epic, ', ''],
+  ['Time to hunt some purples, ', ''],
+  ['The hunt begins, ', ''],
+  ["Let's get that loot, ", ''],
+  ['Good to see you, ', ''],
+  ['Locked in and ready, ', ''],
+  ['The council recognizes ', ''],
+  ['Raid night awaits, ', ''],
+  ['Loot awaits, ', ''],
+  ['Back for more, ', '?'],
+  ['Another raid day, ', ''],
+  ['Eyes on the prize, ', ''],
+  ['First pull soon, ', ''],
+  ['Flasks up, ', ''],
+  ['Bis or bust, ', ''],
+  ['Your list is waiting, ', ''],
+  ['Welcome to prog night, ', ''],
+  ['Clear the instance, ', ''],
+]
+
+// Horde-only greetings
+const HORDE_GREETINGS: Greeting[] = [
+  ["Lok'tar Ogar, ", ''],
+  ['Strength and honor, ', ''],
+  ['Victory or death, ', ''],
+  ['Zug zug, ', ''],
+  ['For the Horde, ', ''],
+  ['Blood and thunder, ', ''],
+  ['Aka magosh, ', ''],
+  ['Throm-Ka, ', ''],
+  ['Spirits guide you, ', ''],
+  ['Time is money, ', ''],
+  ['Dabu, ', ''],
+  ['Kek, ', ''],
+  ['Swobu, ', ''],
+  ['The Warchief sends regards, ', ''],
+  ['Honor guide your blade, ', ''],
+  ['Orgrimmar stands behind you, ', ''],
+  ['Thunder Bluff welcomes you, ', ''],
+  ['The Dark Lady watches over you, ', ''],
+  ['We are the Horde, ', ''],
+  ['No mercy, ', ''],
+]
+
+// Alliance-only greetings
+const ALLIANCE_GREETINGS: Greeting[] = [
+  ['Well met, ', ''],
+  ['Light be with you, ', ''],
+  ['For the Alliance, ', ''],
+  ['By the Light, ', ''],
+  ['Glory to the Alliance, ', ''],
+  ['Elune guide you, ', ''],
+  ['Honor and glory, ', ''],
+  ['Stand as one, ', ''],
+  ['Keep your feet on the ground, ', ''],
+  ['May the Light protect you, ', ''],
+  ['Stormwind salutes you, ', ''],
+  ['Ishnu-alah, ', ''],
+  ['Gnomeregan forever, ', ''],
+  ['Walk with the Naaru, ', ''],
+  ['Kings honor, ', ''],
+  ['Live to serve, ', ''],
+  ['Light guide your path, ', ''],
+  ['For Khaz Modan, ', ''],
+  ['By Elune, ', ''],
+  ['Strength in unity, ', ''],
+]
+
+// Class-specific greetings (keyed by class name)
+const CLASS_GREETINGS: Record<string, Greeting[]> = {
+  Warrior: [
+    ['Charge in, ', ''],
+    ['No retreat, ', ''],
+    ['Arms or fury, ', '?'],
+    ['Shields up, ', ''],
+    ['Recklessness engaged, ', ''],
+    ['Execute phase coming, ', ''],
+  ],
+  Paladin: [
+    ['The Light protects, ', ''],
+    ['Bubble hearth later, ', ''],
+    ['Justice demands it, ', ''],
+    ['Lay on Hands ready, ', ''],
+    ['Blessings up, ', ''],
+    ['Retribution awaits, ', ''],
+  ],
+  Hunter: [
+    ['All loot is hunter loot, ', ''],
+    ['Lock and load, ', ''],
+    ['Eyes of the beast, ', ''],
+    ['Misdirect on the tank, ', ''],
+    ['Feign death ready, ', ''],
+    ['Steady shot, ', ''],
+  ],
+  Rogue: [
+    ['Sneaking in, ', ''],
+    ['From the shadows, ', ''],
+    ['Tricks on you, ', ''],
+    ['Vanish is up, ', ''],
+    ['Cloak and dagger, ', ''],
+    ['Backstab ready, ', ''],
+  ],
+  Priest: [
+    ['Stay in the light, ', ''],
+    ["Don't forget to shield, ", ''],
+    ['Fortitude up, ', ''],
+    ['Prayer of mending on, ', ''],
+    ['Spirit shell ready, ', ''],
+    ['Mind control resisted, ', ''],
+  ],
+  'Death Knight': [
+    ['Suffer well, ', ''],
+    ['The chill of death awaits, ', ''],
+    ['Rise up, ', ''],
+    ['Army of the dead standing by, ', ''],
+    ['Grip them close, ', ''],
+    ['Runeblades sharpened, ', ''],
+  ],
+  Shaman: [
+    ['The elements call, ', ''],
+    ['Totems down, ', ''],
+    ['Storm, earth and fire, ', ''],
+    ['Heroism ready, ', ''],
+    ['Chain heal bouncing, ', ''],
+    ['Ankh is off cooldown, ', ''],
+  ],
+  Mage: [
+    ['Conjure up some luck, ', ''],
+    ['Portals are extra, ', ''],
+    ['Int food ready, ', ''],
+    ['Blink and you miss it, ', ''],
+    ['Spellsteal on cooldown, ', ''],
+    ['Arcane intellect up, ', ''],
+  ],
+  Warlock: [
+    ['Your soul is mine, ', ''],
+    ['Summoning stone is up, ', ''],
+    ['Fear nothing, ', ''],
+    ['Soulstone ready, ', ''],
+    ['Healthstone in your bags, ', ''],
+    ['Curses applied, ', ''],
+  ],
+  Druid: [
+    ['Nature calls, ', ''],
+    ['Innervate ready, ', ''],
+    ['Wild growth, ', ''],
+    ['Bear form engaged, ', ''],
+    ['Rebirth is off cooldown, ', ''],
+    ['Shapeshifting in, ', ''],
+  ],
+}
+
+// Pick a random greeting weighted toward specificity: class > faction > generic
+function pickGreeting(faction?: string, className?: string): Greeting {
+  const pool: Greeting[] = []
+
+  // Always include generic
+  pool.push(...GENERIC_GREETINGS)
+
+  // Add faction-specific
+  if (faction === 'Horde') {
+    pool.push(...HORDE_GREETINGS)
+  } else if (faction === 'Alliance') {
+    pool.push(...ALLIANCE_GREETINGS)
+  }
+
+  // Add class-specific (doubled to weight them higher)
+  const classGreets = className ? CLASS_GREETINGS[className] : undefined
+  if (classGreets) {
+    pool.push(...classGreets, ...classGreets)
+  }
+
+  return pool[Math.floor(Math.random() * pool.length)]
 }
 
 interface RaidTier {
@@ -170,7 +330,7 @@ function DashboardContent() {
   const [loading, setLoading] = useState(true)
   const [insightsLoading, setInsightsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [greetingIndex, setGreetingIndex] = useState<number | null>(null)
+  const [greeting, setGreeting] = useState<Greeting | null>(null)
   const [greetingName, setGreetingName] = useState<string>('')
 
   // New dashboard state
@@ -351,8 +511,8 @@ function DashboardContent() {
 
   // Set greeting based on active character name (falls back to profile name)
   useEffect(() => {
-    if (greetingIndex === null) {
-      setGreetingIndex(getRandomGreetingIndex())
+    if (!greeting) {
+      setGreeting(pickGreeting(activeGuild?.faction, activeCharacter?.class?.name))
     }
     if (activeCharacter?.name) {
       setGreetingName(activeCharacter.name)
@@ -361,7 +521,7 @@ function DashboardContent() {
     if (user) {
       setGreetingName(user?.user_metadata?.custom_claims?.global_name || user?.user_metadata?.full_name || user?.user_metadata?.name || 'User')
     }
-  }, [activeCharacter, user])
+  }, [activeCharacter, activeGuild, user])
 
   // Handle dismissing an action
   const handleDismissAction = (e: React.MouseEvent, submissionId: string) => {
@@ -1339,9 +1499,9 @@ function DashboardContent() {
       {/* Header - Always visible but stable during loading */}
       <div>
         <Heading level={1}>
-          {!heroReady || greetingIndex === null || !greetingName
+          {!heroReady || !greeting || !greetingName
             ? 'Welcome back!'
-            : <>{GREETINGS[greetingIndex][0]}<span style={{ color: activeCharacter?.class?.color_hex || undefined }}>{greetingName}</span>{GREETINGS[greetingIndex][1]}</>
+            : <>{greeting[0]}<span style={{ color: activeCharacter?.class?.color_hex || undefined }}>{greetingName}</span>{greeting[1]}</>
           }
         </Heading>
         <p className="text-muted-foreground mt-1 text-base">
