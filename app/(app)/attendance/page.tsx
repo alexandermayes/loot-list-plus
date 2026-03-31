@@ -559,62 +559,47 @@ export default function AttendancePage() {
     try {
       const raidEventIds = raidEvents.map(r => r.id)
 
-      // Build raider list from loot submissions directly.
-      // Submitters may not have active guild memberships, so we can't rely
-      // on character_guild_memberships as the sole source of truth.
-      const [submissionsResult, membersResponse, attendanceResult] = await Promise.all([
-        // Query 1: Get all characters with loot submissions
-        supabase
-          .from('loot_submissions')
-          .select(`
-            character_id,
-            character:characters!inner (
-              id,
-              name,
-              user_id,
-              class:wow_classes(name, color_hex)
-            )
-          `)
-          .eq('guild_id', guildId)
-          .eq('status', 'approved'),
-
-        // Query 2: Fetch roles from guild-members API (uses service role to see all members)
+      // Build raider list from guild memberships (all active members).
+      // Previously this used approved loot submissions, which meant characters
+      // without an approved list were invisible in attendance tracking.
+      const [membersResponse, attendanceResult] = await Promise.all([
+        // Query 1: Fetch guild members via API (uses service role to see all members)
         fetch(`/api/guild-members?guild_id=${guildId}`).then(r => r.ok ? r.json() : null),
 
-        // Query 3: Get all attendance records for these raid events
+        // Query 2: Get all attendance records for these raid events
         supabase
           .from('attendance_records')
           .select('raid_event_id, character_id, signed_up, attended, no_call_no_show, was_late, was_benched, is_excused, points_override')
           .in('raid_event_id', raidEventIds)
       ])
 
-      const submissionsData = submissionsResult.data
       const allAttendance = attendanceResult.data
 
-      if (!submissionsData || submissionsData.length === 0 || raidEvents.length === 0) {
+      if (!membersResponse?.members || membersResponse.members.length === 0 || raidEvents.length === 0) {
         setGuildRaiders([])
         return
       }
 
-      // Build role and join date lookups by character_id from API response
+      // Build role, join date, and character lookups from guild members
       const roleByCharacterId: Record<string, string> = {}
       const joinDateByCharacterId: Record<string, string> = {}
-      if (membersResponse?.members) {
-        for (const member of membersResponse.members) {
-          for (const char of member.characters || []) {
-            roleByCharacterId[char.id] = member.role || 'Member'
-            if (member.joined_at) joinDateByCharacterId[char.id] = member.joined_at
-          }
+      // Flatten all guild member characters into the raider list
+      const activeRaiders: Array<{ character_id: string; character: { id: string; name: string; user_id: string; class: { name: string; color_hex: string } | null } }> = []
+      for (const member of membersResponse.members) {
+        for (const char of member.characters || []) {
+          roleByCharacterId[char.id] = member.role || 'Member'
+          if (member.joined_at) joinDateByCharacterId[char.id] = member.joined_at
+          activeRaiders.push({
+            character_id: char.id,
+            character: {
+              id: char.id,
+              name: char.name,
+              user_id: member.user_id,
+              class: char.class || null
+            }
+          })
         }
       }
-
-      // Deduplicate submissions by character_id
-      const seen = new Set<string>()
-      const activeRaiders = submissionsData.filter((s: any) => {
-        if (seen.has(s.character_id)) return false
-        seen.add(s.character_id)
-        return true
-      })
 
       // Build attendance map: characterId -> raidEventId -> status
       const attendanceByCharacter: Record<string, Map<string, AttendanceStatus>> = {}
@@ -685,8 +670,8 @@ export default function AttendancePage() {
         if (myRaider) {
           setAttendanceScore(myRaider.attendanceScore)
         } else {
-          // Character has no approved submission but may have attendance records.
-          // Fall back to computing from the guild-wide attendance data.
+          // Active character not in guild member list (e.g. left guild) but may
+          // have attendance records. Fall back to computing from raw data.
           const charAttendance = attendanceByCharacter[activeCharacterId]
           if (charAttendance && charAttendance.size > 0) {
             const charRecords = Array.from(charAttendance.entries()).map(([raidId, status]) => ({

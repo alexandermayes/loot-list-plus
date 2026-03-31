@@ -628,7 +628,7 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
   // Listen for auth changes
   useEffect(() => {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event: AuthChangeEvent, _session: Session | null) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event: AuthChangeEvent, _session: Session | null) => {
       if (event === 'SIGNED_IN') {
         // Only reload guilds on fresh sign-in, not on token refresh/session restore
         // This prevents UI flashing when users tab away and return
@@ -637,6 +637,17 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
           loadUserData()
         }
       } else if (event === 'SIGNED_OUT') {
+        // Supabase can fire spurious SIGNED_OUT events during session initialization
+        // on a new device (e.g., before the browser client picks up cookies from the
+        // server-side callback). Verify the session is truly gone before redirecting.
+        const { data: { user: currentUser } } = await supabase.auth.getUser()
+        if (currentUser) {
+          // Session is still valid — this was a false alarm. Reload data if needed.
+          if (!hasInitiallyLoaded.current) {
+            loadUserData()
+          }
+          return
+        }
         hasInitiallyLoaded.current = false
         setActiveGuild(null)
         setActiveMember(null)
@@ -658,15 +669,21 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
   // Supabase auto-refresh only works while the tab is active. If the token
   // expires while backgrounded, the user comes back to a broken app.
   useEffect(() => {
-    const handleVisibilityChange = () => {
+    const handleVisibilityChange = async () => {
       if (document.visibilityState === 'visible' && hasInitiallyLoaded.current) {
-        // Validate session is still alive
-        supabase.auth.getUser().then((result: { data: { user: unknown } }) => {
-          if (!result.data.user && user) {
-            // Session expired while tab was hidden — force re-login
+        // Validate session is still alive. Retry once after a short delay to
+        // allow the Supabase client to finish any in-flight token refresh.
+        const { data: { user: currentUser } } = await supabase.auth.getUser()
+        if (!currentUser && user) {
+          // First check failed — wait briefly and retry before hard-redirecting.
+          // The client may be mid-refresh after the tab was backgrounded.
+          await new Promise(resolve => setTimeout(resolve, 1000))
+          const { data: { user: retryUser } } = await supabase.auth.getUser()
+          if (!retryUser) {
+            // Session is genuinely gone — force re-login
             window.location.href = '/'
           }
-        })
+        }
       }
     }
 

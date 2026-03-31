@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server'
+import { createServerClient } from '@supabase/ssr'
 import { Ratelimit } from '@upstash/ratelimit'
 import { Redis } from '@upstash/redis'
 
@@ -144,12 +145,45 @@ const bodySizeLimits: Record<string, number> = {
   default: 1024 * 1024,        // 1MB for all other routes
 }
 
+// Refresh Supabase session cookies on every request so the browser client
+// always starts with a valid access token. Without this, tokens expire while
+// the tab is open and the browser client fires spurious SIGNED_OUT events,
+// especially on a second device where there's no prior session to fall back on.
+async function refreshSupabaseSession(request: NextRequest): Promise<NextResponse> {
+  const response = NextResponse.next({ request })
+
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll()
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value, options }) => {
+            request.cookies.set(name, value)
+            response.cookies.set(name, value, options)
+          })
+        },
+      },
+    }
+  )
+
+  // getUser() validates the JWT and refreshes expired tokens automatically.
+  // The refreshed tokens are written back to cookies via setAll above.
+  await supabase.auth.getUser()
+
+  return response
+}
+
 export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname
 
-  // Only rate limit API routes
+  // Refresh Supabase auth cookies on page navigations (not API/auth routes,
+  // those are handled by their own auth checks)
   if (!pathname.startsWith('/api') && !pathname.startsWith('/auth')) {
-    return NextResponse.next()
+    return refreshSupabaseSession(request)
   }
 
   // Skip rate limiting for Vercel Cron jobs (authenticated via CRON_SECRET)
@@ -236,9 +270,7 @@ export async function middleware(request: NextRequest) {
 // Configure which routes use the middleware
 export const config = {
   matcher: [
-    // Match all API routes
-    '/api/:path*',
-    // Match auth callback
-    '/auth/:path*',
+    // Match all page routes for session refresh (excludes static files)
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)',
   ],
 }

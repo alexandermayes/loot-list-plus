@@ -256,56 +256,27 @@ export default function RaidTrackingPage() {
           setGuildSettings(settings)
         }
 
-        // Build raider list from loot submissions directly.
-        // Submitters may not have active guild memberships, so we can't rely
-        // on character_guild_memberships as the sole source of truth.
-        const { data: submissionsData } = await supabase
-          .from('loot_submissions')
-          .select(`
-            character_id,
-            character:characters!inner (
-              id,
-              name,
-              user_id,
-              class:wow_classes(name, color_hex)
-            )
-          `)
-          .eq('guild_id', activeGuild.id)
-          .eq('status', 'approved')
-
-        // Fetch roles from guild-members API (uses service role to see all members)
+        // Build raider list from guild memberships (all active members).
+        // Previously this used approved loot submissions, which meant characters
+        // without an approved list were invisible in raid tracking.
         const membersResponse = await fetch(`/api/guild-members?guild_id=${activeGuild.id}`)
         const membersResult = membersResponse.ok ? await membersResponse.json() : null
 
-        // Build a role lookup by character_id from the API response
-        const roleByCharacterId: Record<string, string> = {}
-        if (membersResult?.members) {
+        if (membersResult?.members && membersResult.members.length > 0) {
+          const formattedMembers: Member[] = []
           for (const member of membersResult.members) {
             for (const char of member.characters || []) {
-              roleByCharacterId[char.id] = member.role || 'Member'
+              formattedMembers.push({
+                character_id: char.id,
+                user_id: member.user_id,
+                character_name: char.name || 'Unknown',
+                class_name: char.class?.name || 'Unknown',
+                class_color: char.class?.color_hex || '#888888',
+                role: member.role || 'Member'
+              })
             }
           }
-        }
-
-        if (submissionsData && submissionsData.length > 0) {
-          // Deduplicate by character_id (a user might have multiple submissions)
-          const seen = new Set<string>()
-          const formattedMembers: Member[] = submissionsData
-            .filter((s: any) => {
-              if (seen.has(s.character_id)) return false
-              seen.add(s.character_id)
-              return true
-            })
-            .map((s: any) => ({
-              character_id: s.character_id,
-              user_id: s.character?.user_id,
-              character_name: s.character?.name || 'Unknown',
-              class_name: s.character?.class?.name || 'Unknown',
-              class_color: s.character?.class?.color_hex || '#888888',
-              role: roleByCharacterId[s.character_id] || 'Member'
-            }))
-            .sort((a: Member, b: Member) => a.character_name.localeCompare(b.character_name))
-
+          formattedMembers.sort((a: Member, b: Member) => a.character_name.localeCompare(b.character_name))
           setMembers(formattedMembers)
         }
 
