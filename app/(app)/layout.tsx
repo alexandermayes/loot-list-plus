@@ -7,7 +7,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import Sidebar from '@/app/components/Sidebar'
 import { MobileMenuButton } from '@/app/components/MobileMenuButton'
-import { LoadingSpinner } from '@/components/ui/loading-spinner'
+import { Skeleton } from '@/components/ui/skeletons'
 import { Button } from '@/components/ui/button'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { Bug01Icon, Notification03Icon } from '@hugeicons/core-free-icons'
@@ -48,7 +48,142 @@ function AppLayoutContent({
   }
 
   if (loading) {
-    return <LoadingSpinner fullScreen />
+    return (
+      <div className="min-h-screen bg-background-elevated">
+        {/* Sidebar skeleton - desktop only */}
+        {!isMobile && (
+          <aside
+            className="fixed left-0 top-0 h-screen bg-background-subtle flex flex-col px-2.5 z-50"
+            style={{ width: sidebarWidth }}
+          >
+            {/* Logo area */}
+            <div className="px-3 pt-9 pb-6">
+              <Skeleton className="h-4 w-[102px]" />
+            </div>
+
+            {/* Guild selector skeleton */}
+            <div className="flex flex-col gap-1 mb-6">
+              <div className="px-3">
+                <Skeleton className="h-2.5 w-10 mb-1" />
+              </div>
+              <div className="bg-background-elevated border border-border rounded-xl px-3.5 py-2 flex items-center gap-3">
+                <Skeleton className="w-5 h-5 rounded" />
+                <div className="flex-1 space-y-1.5">
+                  <Skeleton className="h-3 w-24" />
+                  <Skeleton className="h-2 w-16" />
+                </div>
+              </div>
+            </div>
+
+            {/* Character selector skeleton */}
+            <div className="flex flex-col gap-1 mb-6">
+              <div className="px-3">
+                <Skeleton className="h-2.5 w-16 mb-1" />
+              </div>
+              <div className="bg-background-elevated border border-border rounded-xl px-3.5 py-2 flex items-center gap-3">
+                <Skeleton className="w-5 h-5 rounded-full" />
+                <div className="flex-1 space-y-1.5">
+                  <Skeleton className="h-3 w-20" />
+                  <Skeleton className="h-2 w-14" />
+                </div>
+              </div>
+            </div>
+
+            {/* Nav items skeleton */}
+            <div className="flex flex-col gap-2">
+              <Skeleton className="h-10 w-[88px] rounded-[40px]" />
+              <Skeleton className="h-10 w-[108px] rounded-[40px]" />
+              <Skeleton className="h-10 w-[80px] rounded-[40px]" />
+              <Skeleton className="h-10 w-[96px] rounded-[40px]" />
+            </div>
+          </aside>
+        )}
+
+        {/* Mobile header skeleton */}
+        {isMobile && (
+          <header className="fixed top-0 left-0 right-0 h-14 bg-background-elevated border-b border-border z-30 flex items-center justify-between px-4">
+            <div className="flex items-center gap-3">
+              <Skeleton className="w-10 h-10 rounded-full" />
+              <Skeleton className="h-4 w-[102px]" />
+            </div>
+            <div className="flex items-center gap-2">
+              <Skeleton className="w-8 h-8 rounded-full" />
+              <Skeleton className="w-8 h-8 rounded-full" />
+              <Skeleton className="w-8 h-8 rounded-full" />
+            </div>
+          </header>
+        )}
+
+        {/* Content area skeleton */}
+        <main
+          className="min-h-screen bg-background"
+          style={{ marginLeft: isMobile ? 0 : sidebarWidth }}
+        >
+          <div className={`w-full ${isMobile ? 'pt-14' : ''}`}>
+            <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
+              {/* Page header */}
+              <div>
+                <Skeleton className="h-[42px] w-40" />
+                <Skeleton className="h-5 w-64 mt-1" />
+              </div>
+              {/* Stat cards row */}
+              <div className="flex flex-col lg:flex-row gap-6">
+                <div className="bg-background-elevated border border-border rounded-xl p-6 lg:w-1/3">
+                  <div className="flex items-center gap-4">
+                    <Skeleton className="w-16 h-16 rounded-full" />
+                    <div className="flex-1 space-y-2">
+                      <Skeleton className="h-3 w-24" />
+                      <Skeleton className="h-6 w-32" />
+                      <Skeleton className="h-4 w-20" />
+                    </div>
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:flex-1">
+                  {[0, 1, 2].map(i => (
+                    <div key={i} className="bg-background-elevated border border-border rounded-xl p-3 sm:p-6">
+                      <div className="flex items-center justify-between">
+                        <div className="space-y-3">
+                          <Skeleton className="h-4 w-16 sm:w-24" />
+                          <Skeleton className="h-8 sm:h-10 w-12 sm:w-16" />
+                        </div>
+                        <Skeleton className="w-10 h-10 sm:w-12 sm:h-12 rounded-full" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              {/* Content cards */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {[0, 1].map(i => (
+                  <div key={i} className="bg-background-elevated border border-border rounded-xl p-6">
+                    <div className="flex items-center gap-4 mb-6">
+                      <Skeleton className="w-8 h-8 rounded" />
+                      <div className="space-y-2">
+                        <Skeleton className="h-6 w-32" />
+                        <Skeleton className="h-4 w-48" />
+                      </div>
+                    </div>
+                    <div className="space-y-3">
+                      {[0, 1, 2].map(j => (
+                        <div key={j} className="bg-background-inset border border-border rounded-xl p-4">
+                          <div className="flex items-center gap-4">
+                            <Skeleton className="w-10 h-10 rounded-full flex-shrink-0" />
+                            <div className="flex-1 space-y-2">
+                              <Skeleton className="h-4 w-40" />
+                              <Skeleton className="h-3 w-24" />
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </main>
+      </div>
+    )
   }
 
   return (
