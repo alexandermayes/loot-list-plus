@@ -591,19 +591,9 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
         return
       }
 
-      // Update local state
+      // Update local state — the layout key includes activeCharacter.id,
+      // so this triggers a full remount of page content (same as guild switch).
       setActiveCharacter(targetChar)
-
-      // If switching to a character in active guild, update isOfficer
-      if (activeGuild) {
-        const membership = characterMemberships.find(
-          m => m.character_id === characterId && m.guild_id === activeGuild.id
-        )
-        if (membership) {
-          // Character is in current guild, refresh to update permissions
-          router.refresh()
-        }
-      }
     } catch (error) {
       console.error('Error in switchCharacter:', error)
       showNotification('error', 'Couldn\'t switch characters. Check your connection and try again.')
