@@ -14,6 +14,81 @@ export interface UpdateEntry {
 
 export const updates: UpdateEntry[] = [
   {
+    date: 'April 1, 2026',
+    items: [
+      {
+        category: 'feature',
+        title: 'Personalized greetings',
+        description: 'The overview greeting now adapts to your faction, class, and time of day. Horde players see Horde greetings, Alliance see Alliance, and your class gets its own lines too.',
+      },
+      {
+        category: 'feature',
+        title: 'Boss quotes on the Master Sheet',
+        description: 'Expanding a boss section now shows an iconic quote from that boss. Over 100 quotes from Classic through Mists of Pandaria.',
+      },
+      {
+        category: 'feature',
+        title: 'Loot award glow',
+        description: 'Newly awarded items in loot history now briefly glow when they first appear, so you can spot fresh awards at a glance.',
+      },
+      {
+        category: 'feature',
+        title: 'First loot celebration',
+        description: 'The first time a character receives an item, the overview page celebrates with a "Grats!" moment. One-time per character.',
+      },
+      {
+        category: 'feature',
+        title: 'Tied score indicator',
+        description: 'When players have the same Loot Score on the Master Sheet, a dice icon now appears next to their score.',
+      },
+      {
+        category: 'improvement',
+        title: 'Hearthstone logout',
+        description: 'Logging out now shows a hearthstone cast bar instead of a generic loading spinner.',
+      },
+      {
+        category: 'improvement',
+        title: 'Dynamic overview subtitle',
+        description: 'The overview subtitle now shows contextual info like upcoming raid nights, Loot List deadlines, pending reviews, or your #1 priority item.',
+      },
+      {
+        category: 'improvement',
+        title: 'Help page tips',
+        description: 'The help page now shows a random loading-screen-style tip about LootList+ features below the search bar.',
+      },
+      {
+        category: 'improvement',
+        title: 'Better empty states and toast messages',
+        description: 'Empty states and success notifications across the app now use clearer, more helpful copy that guides you to the next action.',
+      },
+      {
+        category: 'improvement',
+        title: 'Landing page redesign',
+        description: 'Completely redesigned landing page with new layout, animations, and interactive feature previews.',
+      },
+      {
+        category: 'improvement',
+        title: 'Faster page loading',
+        description: 'Replaced the fullscreen loading spinner with a skeleton app shell that renders instantly while data loads in the background.',
+      },
+      {
+        category: 'feature',
+        title: 'Hidden surprises',
+        description: 'We hid a few things around the app for you to find. Keep your eyes open.',
+      },
+      {
+        category: 'fix',
+        title: 'Multi-device logout fixed',
+        description: 'Logging out on one device no longer causes auth errors on other devices. Sessions are now properly cleaned up.',
+      },
+      {
+        category: 'fix',
+        title: 'Character switching fully reloads page data',
+        description: 'Switching characters now triggers a full page remount so all data refreshes correctly, matching guild switch behavior.',
+      },
+    ],
+  },
+  {
     date: 'March 30, 2026',
     items: [
       {
