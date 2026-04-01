@@ -1,5 +1,6 @@
 'use client'
 
+import dynamic from 'next/dynamic'
 import Image from 'next/image'
 import { createClient } from '@/utils/supabase/client'
 import { useState, useEffect, useRef, useCallback, useMemo, Suspense } from 'react'
@@ -25,14 +26,16 @@ import { HugeiconsIcon } from '@hugeicons/react'
 import { ScrollIcon, ArrowUpRight01Icon, InformationCircleIcon, ArrowUp01Icon, ArrowDown01Icon } from '@hugeicons/core-free-icons'
 import { HorizontalScroll } from '@/components/ui/horizontal-scroll'
 import { Heading } from '@/components/ui/typography'
-import ScoreBreakdownModal from '@/app/components/ScoreBreakdownModal'
-import ScoreComparisonModal from '@/app/components/ScoreComparisonModal'
-import LootListSummaryView, { LootListAggregateItem } from '@/app/components/LootListSummaryView'
+import type { LootListAggregateItem } from '@/app/components/LootListSummaryView'
+
+const ScoreBreakdownModal = dynamic(() => import('@/app/components/ScoreBreakdownModal'), { loading: () => null })
+const ScoreComparisonModal = dynamic(() => import('@/app/components/ScoreComparisonModal'), { loading: () => null })
+const LootListSummaryView = dynamic(() => import('@/app/components/LootListSummaryView'), { loading: () => null })
 import { refreshWowheadTooltips } from '@/lib/wowhead'
 import { trackClientEvent } from '@/utils/analytics/client'
 import { InfoTooltip } from '@/components/ui/info-tooltip'
 import { VirtualizedMasterSheet } from './components/VirtualizedMasterSheet'
-import { ItemCandidateModal } from './components/ItemCandidateModal'
+const ItemCandidateModal = dynamic(() => import('./components/ItemCandidateModal').then(mod => ({ default: mod.ItemCandidateModal })), { loading: () => null })
 import { RaidModeView } from './components/RaidModeView'
 import type { PlayerRanking, LootItem as BossLootItem } from './components/BossSection'
 

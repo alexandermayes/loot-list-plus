@@ -173,24 +173,35 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
       }
       setUser(currentUser)
 
-      // Fetch all user's characters
-      const { data: characters, error: charactersError } = await supabase
-        .from('characters')
-        .select(`
-          *,
-          class:wow_classes (
-            id,
-            name,
-            color_hex
-          ),
-          spec:class_specs (
-            id,
-            name
-          )
-        `)
-        .eq('user_id', currentUser.id)
-        .order('is_main', { ascending: false })
-        .order('created_at', { ascending: true })
+      // Fetch characters and active character preference in parallel
+      // (both only need currentUser.id, no interdependency)
+      const [charactersResult, activeCharResult] = await Promise.all([
+        supabase
+          .from('characters')
+          .select(`
+            *,
+            class:wow_classes (
+              id,
+              name,
+              color_hex
+            ),
+            spec:class_specs (
+              id,
+              name
+            )
+          `)
+          .eq('user_id', currentUser.id)
+          .order('is_main', { ascending: false })
+          .order('created_at', { ascending: true }),
+        supabase
+          .from('user_active_characters')
+          .select('active_character_id, active_guild_id')
+          .eq('user_id', currentUser.id)
+          .maybeSingle(),
+      ])
+
+      const { data: characters, error: charactersError } = charactersResult
+      const { data: activeCharData } = activeCharResult
 
       if (charactersError) {
         console.error('Error loading characters:', charactersError)
@@ -380,13 +391,7 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
         setUserGuilds([])
       }
 
-      // Check for saved active character (just get IDs, we already have character data)
-      const { data: activeCharData } = await supabase
-        .from('user_active_characters')
-        .select('active_character_id, active_guild_id')
-        .eq('user_id', currentUser.id)
-        .maybeSingle()
-
+      // Use the active character preference we fetched in parallel above
       if (activeCharData?.active_character_id) {
         // Find the character from our enriched characters (which have specs attached)
         const activeChar = enrichedCharacters.find((c: { id: string }) => c.id === activeCharData.active_character_id)

@@ -5,7 +5,14 @@ import { createPortal } from 'react-dom'
 import ItemLink from '@/app/components/ItemLink'
 import { Button } from '@/components/ui/button'
 import { getBossImage } from '@/utils/bossImages'
-import { getBossQuote } from '@/data/boss-quotes'
+// Lazy-load boss quotes to keep initial bundle small
+let _bossQuotes: typeof import('@/data/boss-quotes') | null = null
+async function loadBossQuote(boss: string): Promise<string | null> {
+  if (!_bossQuotes) {
+    _bossQuotes = await import('@/data/boss-quotes')
+  }
+  return _bossQuotes.getBossQuote(boss)
+}
 import type { ScoreResult, ScoreComponents, ScoringConfig } from '@/domain/types'
 import { explainScore } from '@/domain/scoring/explain'
 
@@ -185,8 +192,15 @@ export const BossSection = memo(function BossSection({
   maxRankingsCount = 5,
 }: BossSectionProps) {
   const bossImage = getBossImage(boss)
-  const bossQuote = getBossQuote(boss)
+  const [bossQuote, setBossQuote] = useState<string | null>(null)
   const decimalPlaces = guildSettings?.decimal_places ?? 2
+
+  // Lazy-load boss quote when section is expanded
+  useEffect(() => {
+    if (!isCollapsed && bossQuote === null) {
+      loadBossQuote(boss).then(setBossQuote)
+    }
+  }, [isCollapsed, boss])
   const minimumRaidDays = guildSettings?.minimum_raid_days || 2
   const columnCount = maxRankingsCount || 5
   const columnIndices = Array.from({ length: columnCount }, (_, i) => i)
