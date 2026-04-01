@@ -290,6 +290,14 @@ export default function RaidTrackingPage() {
           setCharacterAliases(aliasData)
         }
 
+        // Auto-link any unlinked attendance records that now match guild members.
+        // Awaited so linking completes before loadRaidAttendance reads records.
+        await fetch('/api/attendance/auto-link', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ guild_id: activeGuild.id })
+        }).catch(() => {}) // Silently ignore — filtering fix in loadRaidAttendance handles display
+
         // Generate and load raid dates
         if (settings) {
           await generateRaidDates(activeGuild.id, settings, currentExpansion)
@@ -479,8 +487,10 @@ export default function RaidTrackingPage() {
     const attendanceMap: Record<string, AttendanceStatus> = {}
     const unlinked: UnlinkedAttendee[] = []
 
-    // Build set of linked member names for duplicate detection
-    const linkedMemberNames = new Set(members.map(m => m.character_name.toLowerCase()))
+    // Build set of character_ids that have linked records in THIS raid
+    const linkedCharIdsInRaid = new Set(
+      records?.filter((r: any) => r.character_id).map((r: any) => r.character_id)
+    )
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     records?.forEach((r: any) => {
@@ -494,9 +504,12 @@ export default function RaidTrackingPage() {
           was_benched: r.was_benched
         }
       } else if (r.character_name) {
-        // Unlinked attendee - only add if name doesn't match a linked member
-        // (prevents duplicates from appearing when both linked and unlinked records exist)
-        if (!linkedMemberNames.has(r.character_name.toLowerCase())) {
+        // Unlinked attendee - only skip if a linked record for this member already exists
+        // in this raid (prevents duplicates when both linked and unlinked records exist)
+        const matchedMember = members.find(
+          m => m.character_name.toLowerCase() === r.character_name.toLowerCase()
+        )
+        if (!matchedMember || !linkedCharIdsInRaid.has(matchedMember.character_id)) {
           unlinked.push({
             character_name: r.character_name,
             status: {
@@ -1434,18 +1447,44 @@ export default function RaidTrackingPage() {
         }
       }
 
-      // For unlinked attendees, delete existing and re-insert
-      await fetch('/api/attendance/bulk', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          guild_id: activeGuild.id,
-          raid_event_id: showImportModal.raidId,
-          character_id_is_null: true
+      // For unlinked attendees, selectively delete stale records and upsert current ones.
+      // Only delete unlinked records whose names are NOT in the new import data,
+      // rather than nuking all unlinked records (which caused data loss when names
+      // were filtered from the pre-fill due to matching a newly-linked member).
+      const newUnlinkedNames = new Set(unlinkedUpdates.map(u => u.character_name?.toLowerCase()))
+      type UnlinkedRecord = { id: string; character_name: string | null }
+      const { data: existingUnlinked } = await supabase
+        .from('attendance_records')
+        .select('id, character_name')
+        .eq('raid_event_id', showImportModal.raidId)
+        .is('character_id', null)
+
+      const staleIds = (existingUnlinked as UnlinkedRecord[] || [])
+        .filter(r => r.character_name && !newUnlinkedNames.has(r.character_name.toLowerCase()))
+        .map(r => r.id)
+
+      if (staleIds.length > 0) {
+        await fetch('/api/attendance/bulk', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ guild_id: activeGuild.id, ids: staleIds })
         })
-      })
+      }
 
       if (unlinkedUpdates.length > 0) {
+        // Delete existing unlinked records that will be re-inserted (to avoid duplicates)
+        const refreshIds = (existingUnlinked as UnlinkedRecord[] || [])
+          .filter(r => r.character_name && newUnlinkedNames.has(r.character_name.toLowerCase()))
+          .map(r => r.id)
+
+        if (refreshIds.length > 0) {
+          await fetch('/api/attendance/bulk', {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ guild_id: activeGuild.id, ids: refreshIds })
+          })
+        }
+
         await fetch('/api/attendance/bulk', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
