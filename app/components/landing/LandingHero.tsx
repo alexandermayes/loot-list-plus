@@ -23,6 +23,7 @@ const APP_URL = 'https://www.lootlistplus.com'
 
 export default function LandingHero() {
   const previewRef = useRef(null)
+  const videoRef = useRef<HTMLVideoElement>(null)
   const isPreviewInView = useInView(previewRef, { once: true, margin: '-100px' })
   const [stats, setStats] = useState<{ guilds: number; raiders: number; loot: number } | null>(null)
 
@@ -170,12 +171,15 @@ export default function LandingHero() {
           >
             <div className="relative rounded-[16px] border border-[#383838] shadow-[0px_-4px_40px_0px_rgba(255,255,255,0.05)] overflow-hidden">
               <video
+                ref={videoRef}
                 autoPlay
                 loop
                 muted
                 playsInline
+                preload="auto"
                 className="w-full h-auto"
                 poster="/images/landing/dashboard-preview.png"
+                onCanPlay={() => videoRef.current?.play().catch(() => {})}
               >
                 <source src="/images/landing/hero-demo.mp4" type="video/mp4" />
               </video>
