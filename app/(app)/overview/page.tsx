@@ -103,23 +103,23 @@ const HORDE_GREETINGS: Greeting[] = [
   ["Lok'tar Ogar, ", ''],
   ['Strength and honor, ', ''],
   ['Victory or death, ', ''],
-  ['Zug zug, ', ''],
   ['For the Horde, ', ''],
   ['Blood and thunder, ', ''],
-  ['Aka magosh, ', ''],
-  ['Throm-Ka, ', ''],
   ['Spirits guide you, ', ''],
   ['Time is money, ', ''],
-  ['Dabu, ', ''],
-  ['Kek, ', ''],
-  ['Swobu, ', ''],
-  ['The Warchief sends regards, ', ''],
   ['Honor guide your blade, ', ''],
   ['Orgrimmar stands behind you, ', ''],
   ['Thunder Bluff welcomes you, ', ''],
   ['The Dark Lady watches over you, ', ''],
   ['We are the Horde, ', ''],
   ['No mercy, ', ''],
+  ['Glory or death, ', ''],
+  ['The ancestors watch, ', ''],
+  ['Thrall would be proud, ', ''],
+  ['For Orgrimmar, ', ''],
+  ['War drums are beating, ', ''],
+  ['The Horde needs you, ', ''],
+  ['Warchief approves, ', ''],
 ]
 
 // Alliance-only greetings
@@ -129,21 +129,21 @@ const ALLIANCE_GREETINGS: Greeting[] = [
   ['For the Alliance, ', ''],
   ['By the Light, ', ''],
   ['Glory to the Alliance, ', ''],
-  ['Elune guide you, ', ''],
   ['Honor and glory, ', ''],
   ['Stand as one, ', ''],
   ['Keep your feet on the ground, ', ''],
   ['May the Light protect you, ', ''],
   ['Stormwind salutes you, ', ''],
-  ['Ishnu-alah, ', ''],
-  ['Gnomeregan forever, ', ''],
   ['Walk with the Naaru, ', ''],
-  ['Kings honor, ', ''],
+  ["King's honor, ", ''],
   ['Live to serve, ', ''],
   ['Light guide your path, ', ''],
   ['For Khaz Modan, ', ''],
-  ['By Elune, ', ''],
   ['Strength in unity, ', ''],
+  ['The Alliance stands strong, ', ''],
+  ['Varian would be proud, ', ''],
+  ['For Azeroth, ', ''],
+  ['The Light prevails, ', ''],
 ]
 
 // Class-specific greetings (keyed by class name)
@@ -230,8 +230,21 @@ const CLASS_GREETINGS: Record<string, Greeting[]> = {
   ],
 }
 
+// Time-of-day greetings (small chance to appear)
+function getTimeGreeting(): Greeting | null {
+  const hour = new Date().getHours()
+  if (hour < 6) return ['Burning the midnight oil, ', '']
+  if (hour < 8) return ['Early bird gets the loot, ', '']
+  if (hour >= 23) return ['Late night grind, ', '?']
+  return null
+}
+
 // Pick a random greeting weighted toward specificity: class > faction > generic
 function pickGreeting(faction?: string, className?: string): Greeting {
+  // 20% chance to show a time-of-day greeting if one applies
+  const timeGreet = getTimeGreeting()
+  if (timeGreet && Math.random() < 0.2) return timeGreet
+
   const pool: Greeting[] = []
 
   // Always include generic
@@ -343,6 +356,7 @@ function DashboardContent() {
   const [showOnboarding, setShowOnboarding] = useState(false)
   const [showGuardianConversion, setShowGuardianConversion] = useState(false)
   const [guardianSpecId, setGuardianSpecId] = useState<string | null>(null)
+  const [showFirstLootCelebration, setShowFirstLootCelebration] = useState(false)
 
   // Stats state
   const [stats, setStats] = useState({
@@ -1477,6 +1491,16 @@ function DashboardContent() {
 
       setReceivedItems(transformedItems)
 
+      // First loot celebration — one-time confetti per character
+      if (transformedItems.length > 0 && activeCharacter) {
+        const celebKey = `lootlist_first_loot_${activeCharacter.id}`
+        if (typeof window !== 'undefined' && !localStorage.getItem(celebKey)) {
+          localStorage.setItem(celebKey, 'true')
+          setShowFirstLootCelebration(true)
+          setTimeout(() => setShowFirstLootCelebration(false), 3000)
+        }
+      }
+
     } catch (error) {
       console.error('Error loading received items:', error)
       showNotification('error', 'Couldn\'t load your received items. Try refreshing the page.')
@@ -1489,6 +1513,56 @@ function DashboardContent() {
     return <WelcomeScreen />
   }
 
+  // Dynamic contextual subtitle for the overview greeting
+  const getContextualSubtitle = () => {
+    const lines: string[] = []
+    const charName = activeCharacter?.name || 'adventurer'
+
+    // Raid timing
+    if (nextRaidDates.length > 0) {
+      const next = nextRaidDates[0]
+      const now = new Date()
+      const diffMs = next.getTime() - now.getTime()
+      const diffHours = diffMs / (1000 * 60 * 60)
+      if (diffHours > 0 && diffHours <= 24) {
+        lines.push('Raid night is today. Flasks ready?')
+      } else if (diffHours > 24 && diffHours <= 48) {
+        lines.push('Raid night is tomorrow.')
+      }
+    }
+
+    // Deadline approaching
+    if (lootListDeadline) {
+      const deadline = new Date(lootListDeadline)
+      const now = new Date()
+      const diffDays = Math.ceil((deadline.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+      if (diffDays > 0 && diffDays <= 3) {
+        lines.push(`Loot List deadline in ${diffDays} day${diffDays === 1 ? '' : 's'}.`)
+      }
+    }
+
+    // Actions needed (officer)
+    if (isOfficer && actionsNeeded.length > 0) {
+      lines.push(`${actionsNeeded.length} submission${actionsNeeded.length === 1 ? '' : 's'} waiting for review.`)
+    }
+
+    // Received items
+    if (receivedItems.length > 0) {
+      lines.push(`${receivedItems.length} item${receivedItems.length === 1 ? '' : 's'} received this tier. Keep it up.`)
+    }
+
+    // Priority count
+    if (lootPriority.length > 0) {
+      lines.push(`#1 priority: ${lootPriority[0].item_name}`)
+    }
+
+    // Pick a contextual line if available, otherwise fallback
+    if (lines.length > 0) {
+      return lines[Math.floor(Math.random() * lines.length)]
+    }
+    return `Viewing loot for ${charName}`
+  }
+
   // Hero section (greeting + character card) can render as soon as guild context is ready.
   // Dashboard data sections below the hero wait for the full data load.
   const heroReady = !guildLoading && !!activeGuild
@@ -1496,6 +1570,43 @@ function DashboardContent() {
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 space-y-6 font-poppins">
+      {/* First loot celebration */}
+      {showFirstLootCelebration && (
+        <div className="fixed inset-0 pointer-events-none z-[9999] overflow-hidden" aria-hidden="true">
+          <div className="absolute inset-0 flex items-center justify-center">
+            <p
+              className="text-3xl sm:text-5xl font-black tracking-wider animate-fade-in"
+              style={{
+                color: '#a335ee',
+                textShadow: '0 0 40px rgba(163, 53, 238, 0.5), 0 0 80px rgba(163, 53, 238, 0.2)',
+              }}
+            >
+              Grats!
+            </p>
+          </div>
+          {Array.from({ length: 40 }, (_, i) => (
+            <span
+              key={i}
+              className="absolute text-lg"
+              style={{
+                left: `${Math.random() * 100}%`,
+                top: '-20px',
+                animation: `loot-rain ${2 + Math.random() * 2}s ease-in ${Math.random() * 1}s forwards`,
+              }}
+            >
+              {['✨', '🎉', '⭐', '💜', '🟣', '💎'][Math.floor(Math.random() * 6)]}
+            </span>
+          ))}
+          <style>{`
+            @keyframes loot-rain {
+              0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+              80% { opacity: 1; }
+              100% { transform: translateY(110vh) rotate(360deg); opacity: 0; }
+            }
+          `}</style>
+        </div>
+      )}
+
       {/* Header - Always visible but stable during loading */}
       <div>
         <Heading level={1}>
@@ -1508,7 +1619,7 @@ function DashboardContent() {
           {!heroReady
             ? 'Loading your dashboard...'
             : activeCharacter
-              ? `Viewing loot for ${activeCharacter.name}`
+              ? getContextualSubtitle()
               : activeGuild
                 ? `Welcome back to ${activeGuild.name}`
                 : 'Loading your dashboard...'}
@@ -1849,9 +1960,9 @@ function DashboardContent() {
                 <EmptyState
                   icon={ScrollIcon}
                   title="No priority items yet"
-                  description={`Submit your loot list and once it's approved, your priorities will show up here after the deadline.${lootListDeadline ? ` Deadline: ${new Date(lootListDeadline).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}.` : ''}`}
+                  description={`Submit your Loot List and get it approved to see where you rank.${lootListDeadline ? ` Deadline: ${new Date(lootListDeadline).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}.` : ''}`}
                   size="compact"
-                  action={{ label: "Create a list", onClick: () => router.push('/loot-list'), variant: "primary" }}
+                  action={{ label: "Create my list", onClick: () => router.push('/loot-list'), variant: "primary" }}
                 />
               ) : (
                 <div className="space-y-2 sm:space-y-3">
@@ -1964,10 +2075,10 @@ function DashboardContent() {
               {receivedItems.length === 0 ? (
                 <EmptyState
                   icon={StarIcon}
-                  title="No loot received yet"
-                  description="Your awarded items will appear here"
+                  title="Nothing in your bags yet"
+                  description="Awarded items show up here after raid night"
                   size="compact"
-                  action={{ label: "View master sheet", onClick: () => router.push('/master-sheet'), variant: "outline" }}
+                  action={{ label: "View Master Sheet", onClick: () => router.push('/master-sheet'), variant: "outline" }}
                 />
               ) : (
                 <div className="space-y-2 sm:space-y-3">

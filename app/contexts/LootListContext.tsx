@@ -786,7 +786,7 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
 
       const finalStatus = submit ? 'pending' : 'draft'
 
-      showNotification('success', submit ? 'Loot list submitted for review' : 'Draft saved')
+      showNotification('success', submit ? 'Loot List submitted. Officers will review it.' : 'Draft saved. Pick up where you left off anytime.')
       trackClientEvent(submit ? 'loot_list_submitted' : 'loot_list_saved', {
         character_id: activeCharacter.id,
         phase: selectedPhase,

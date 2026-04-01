@@ -264,7 +264,12 @@ export default function MasterLootPage() {
         character_name: submission?.member?.character_name || 'Unknown'
       })
 
-      showNotification('success', `Submission ${status}`)
+      const statusMessages: Record<string, string> = {
+        approved: 'Submission approved. Rankings will update.',
+        needs_revision: 'Sent back for revision.',
+        pending: 'Submission set to pending.',
+      }
+      showNotification('success', statusMessages[status] || `Submission ${status}`)
       setReviewNotes('')
       setReviewing(null)
 

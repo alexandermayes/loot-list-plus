@@ -858,7 +858,7 @@ export default function RaidTrackingPage() {
         showNotification('error', data.error || 'Couldn\'t post to Discord. Try again.')
         return
       }
-      showNotification('success', 'Raid summary posted to Discord.')
+      showNotification('success', 'Raid summary posted to Discord. Your raiders can see it.')
     } catch {
       showNotification('error', 'Couldn\'t post to Discord. Check your connection.')
     } finally {
@@ -2907,7 +2907,7 @@ export default function RaidTrackingPage() {
             size="sm"
             value={lootSearchQuery}
             onChange={e => setLootSearchQuery(e.target.value)}
-            placeholder="Search for item by name..."
+            placeholder="Search loot tables..."
             autoFocus
           />
 
@@ -2959,7 +2959,7 @@ export default function RaidTrackingPage() {
             size="sm"
             value={attendeeSearchQuery}
             onChange={e => setAttendeeSearchQuery(e.target.value)}
-            placeholder="Search members..."
+            placeholder="Search raiders..."
             autoFocus
           />
 

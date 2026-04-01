@@ -5,8 +5,29 @@ import { createPortal } from 'react-dom'
 import ItemLink from '@/app/components/ItemLink'
 import { Button } from '@/components/ui/button'
 import { getBossImage } from '@/utils/bossImages'
+import { getBossQuote } from '@/data/boss-quotes'
 import type { ScoreResult, ScoreComponents, ScoringConfig } from '@/domain/types'
 import { explainScore } from '@/domain/scoring/explain'
+
+/** Tiny dice icon that spins on click — shows when players are tied */
+function TieDice() {
+  const [spinning, setSpinning] = useState(false)
+
+  return (
+    <span
+      className={`cursor-pointer select-none inline-block ${spinning ? 'animate-spin' : ''}`}
+      style={{ animationDuration: '0.4s', animationIterationCount: 1 }}
+      onClick={(e) => {
+        e.stopPropagation()
+        setSpinning(true)
+        setTimeout(() => setSpinning(false), 400)
+      }}
+      title="Tied! Click to roll"
+    >
+      🎲
+    </span>
+  )
+}
 
 interface LootItem {
   id: string
@@ -16,6 +37,7 @@ interface LootItem {
   wowhead_id: number
   raid_tier_id?: string
   is_loot_council?: boolean
+  classification?: string
 }
 
 interface PlayerRanking {
@@ -163,6 +185,7 @@ export const BossSection = memo(function BossSection({
   maxRankingsCount = 5,
 }: BossSectionProps) {
   const bossImage = getBossImage(boss)
+  const bossQuote = getBossQuote(boss)
   const decimalPlaces = guildSettings?.decimal_places ?? 2
   const minimumRaidDays = guildSettings?.minimum_raid_days || 2
   const columnCount = maxRankingsCount || 5
@@ -189,7 +212,12 @@ export const BossSection = memo(function BossSection({
               className="w-6 h-6 rounded border border-border/50 shadow-sm"
             />
           )}
-          <h2 className="text-[15px] font-semibold text-foreground">{boss}</h2>
+          <div>
+            <h2 className="text-[15px] font-semibold text-foreground">{boss}</h2>
+            {bossQuote && !isCollapsed && (
+              <p className="text-[11px] italic text-muted-foreground/60 mt-0.5">&quot;{bossQuote}&quot;</p>
+            )}
+          </div>
         </div>
         <div className="flex items-center gap-3">
           <span className="text-[12px] text-foreground-muted font-medium">
@@ -371,6 +399,12 @@ const ItemRow = memo(function ItemRow({
                   } ${
                     !ranking.is_eligible ? 'opacity-50' : ''
                   }`}
+                  title={
+                    index > 0 && ir.rankings[index - 1] &&
+                    ranking.loot_score === ir.rankings[index - 1].loot_score
+                      ? 'Tied score — /roll to decide!'
+                      : undefined
+                  }
                   onClick={canCompare && onCompare ? () => {
                     onCompare(ir.item.name, ranking, ir.rankings[0])
                   } : undefined}
@@ -388,7 +422,7 @@ const ItemRow = memo(function ItemRow({
                     )}
                   </span>
                   <span
-                    className={`text-[11px] text-foreground-muted ${isOfficer ? 'cursor-pointer hover:text-accent transition-colors' : ''}`}
+                    className={`text-[11px] text-foreground-muted inline-flex items-center gap-0.5 ${isOfficer ? 'cursor-pointer hover:text-accent transition-colors' : ''}`}
                     onClick={isOfficer ? (e) => {
                       e.stopPropagation()
                       setActivePopover(prev =>
@@ -397,6 +431,10 @@ const ItemRow = memo(function ItemRow({
                     } : undefined}
                   >
                     {ranking.loot_score.toFixed(decimalPlaces)}
+                    {index > 0 && ir.rankings[index - 1] &&
+                      ranking.loot_score === ir.rankings[index - 1].loot_score && (
+                      <TieDice />
+                    )}
                   </span>
                   {activePopover?.index === index && isOfficer && guildSettings && (
                     <ScoreBreakdownPopover

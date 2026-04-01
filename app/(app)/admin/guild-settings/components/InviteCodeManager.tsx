@@ -197,7 +197,7 @@ export default function InviteCodeManager() {
           <EmptyState
             icon={SentIcon}
             title="No invite codes"
-            description="Generate a code to invite members to your guild."
+            description="Generate a code to start recruiting guildies."
             size="compact"
           />
         ) : (

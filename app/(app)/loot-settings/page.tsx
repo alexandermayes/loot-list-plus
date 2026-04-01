@@ -478,7 +478,7 @@ export default function AdminLootItems() {
       }
 
       setShowSettingsModal(false)
-      showNotification('success', 'Settings saved')
+      showNotification('success', 'Loot settings saved. Good to go.')
     } catch (error: any) {
       console.error('Error saving settings:', error)
       showNotification('error', error.message || 'Couldn\'t save settings. Try again.')

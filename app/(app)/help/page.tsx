@@ -81,12 +81,31 @@ function SearchResult({
   )
 }
 
+// Loading screen tips — WoW style
+const TIPS = [
+  'Raiders who submit their Loot Lists early get reviewed first.',
+  'You can rank up to 50 items on your Loot List.',
+  'Your Loot Score combines ranking, attendance and modifiers.',
+  'Officers can set per-item priority rules from loot settings.',
+  'Linking your Battle.net account auto-imports your characters.',
+  'Reserved items can only be placed alone at a rank.',
+  'Attendance points are earned by showing up to raids on time.',
+  'The Master Sheet shows everyone\'s priorities at a glance.',
+  'You can export Master Sheet data to clipboard for spreadsheets.',
+  'Trial members have a temporary penalty to their Loot Score.',
+  'Excused absences don\'t count against your attendance.',
+  'Invite codes let you recruit guildies without sharing a link.',
+  'Each expansion and phase has its own Loot List.',
+  'Your #1 priority item has the best chance of being awarded.',
+]
+
 export default function HelpPage() {
   const router = useRouter()
   const [searchQuery, setSearchQuery] = useState('')
   const [searchResults, setSearchResults] = useState<
     Array<HelpArticle & { categoryId: string; categoryTitle: string }>
   >([])
+  const [tip] = useState(() => TIPS[Math.floor(Math.random() * TIPS.length)])
 
   useEffect(() => {
     document.title = 'LootList+ • Help Center'
@@ -137,6 +156,13 @@ export default function HelpPage() {
           variant="rounded"
         />
       </div>
+
+      {/* Loading screen tip */}
+      {!searchQuery.trim() && (
+        <p className="text-center text-[12px] text-muted-foreground/60 italic -mt-6 mb-10">
+          Tip: {tip}
+        </p>
+      )}
 
       {/* Search Results */}
       {searchQuery.trim() && (

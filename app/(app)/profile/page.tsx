@@ -94,7 +94,7 @@ export default function ProfilePage() {
     // Handle Battle.net OAuth callback status
     const battlenetStatus = searchParams.get('battlenet')
     if (battlenetStatus === 'connected') {
-      showNotification('success', 'Battle.net account connected')
+      showNotification('success', 'Battle.net linked. Your characters are syncing.')
       // Clean up URL params
       router.replace('/profile', { scroll: false })
     } else if (battlenetStatus === 'denied') {
@@ -346,10 +346,31 @@ export default function ProfilePage() {
 
   return (
     <>
-      {/* Full-screen overlay during logout to prevent flash */}
+      {/* Hearthstone cast bar during logout */}
       {loggingOut && (
-        <div className="fixed inset-0 bg-background z-[9999] flex items-center justify-center">
-          <LoadingSpinner text="Logging out..." />
+        <div className="fixed inset-0 bg-background z-[9999] flex flex-col items-center justify-center gap-6">
+          <img
+            src="/images/hearthstone-icon.png"
+            alt=""
+            className="w-12 h-12 animate-pulse"
+          />
+          <div className="w-64 sm:w-80">
+            <p className="text-sm text-muted-foreground text-center mb-2">Hearthstoning...</p>
+            <div className="h-2.5 bg-muted rounded-full overflow-hidden border border-border">
+              <div
+                className="h-full bg-accent rounded-full"
+                style={{
+                  animation: 'cast-bar 1.5s ease-in-out forwards',
+                }}
+              />
+            </div>
+          </div>
+          <style>{`
+            @keyframes cast-bar {
+              0% { width: 0%; }
+              100% { width: 100%; }
+            }
+          `}</style>
         </div>
       )}
 

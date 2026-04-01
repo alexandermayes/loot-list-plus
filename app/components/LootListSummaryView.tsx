@@ -119,7 +119,7 @@ export default function LootListSummaryView({
       <EmptyState
         icon={ScrollIcon}
         title="No ranked items"
-        description="No approved loot lists found for this tier"
+        description="No approved Loot Lists for this tier yet."
         variant="card"
       />
     )

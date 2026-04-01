@@ -15,6 +15,7 @@ import { SidebarProvider, useSidebar } from '@/app/contexts/SidebarContext'
 import { AccentColorProvider } from '@/app/contexts/AccentColorContext'
 import { useGuildContext } from '@/app/contexts/GuildContext'
 import { DeploymentCheck } from '@/app/components/DeploymentCheck'
+import { KonamiEasterEgg } from '@/app/components/KonamiEasterEgg'
 
 const FeedbackModal = dynamic(() => import('@/app/components/FeedbackModal').then(mod => ({ default: mod.FeedbackModal })), {
   loading: () => null
@@ -330,6 +331,7 @@ export default function AppLayout({
     <AccentColorProvider>
       <SidebarProvider>
         <DeploymentCheck />
+        <KonamiEasterEgg />
         <AppLayoutContent>{children}</AppLayoutContent>
       </SidebarProvider>
     </AccentColorProvider>

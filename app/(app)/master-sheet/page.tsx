@@ -1832,8 +1832,8 @@ function MasterSheetContent() {
                 icon={ScrollIcon}
                 title="No rankings yet"
                 description={isOfficer
-                  ? "Rankings appear once raiders submit and you approve their loot lists. Check submissions to get started."
-                  : "Rankings appear after you submit your loot list and an officer approves it."
+                  ? "Rankings show up once raiders submit their Loot Lists and you approve them."
+                  : "Rankings show up after you submit your Loot List and an Officer approves it."
                 }
                 variant="card"
                 action={isOfficer

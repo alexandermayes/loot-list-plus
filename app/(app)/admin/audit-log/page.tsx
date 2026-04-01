@@ -245,7 +245,7 @@ export default function AuditLogPage() {
         <Heading level={2}>Audit log</Heading>
         <div className="flex items-center gap-3">
           <Input
-            placeholder="Search by name..."
+            placeholder="Search by player or action..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             variant="pill"
@@ -306,8 +306,8 @@ export default function AuditLogPage() {
       ) : logs.length === 0 ? (
         <EmptyState
           icon={Search01Icon}
-          title="No audit logs"
-          description="Activity will show up here as officers make changes."
+          title="All quiet on the logs"
+          description="Activity shows up here when officers make changes."
         />
       ) : (
         <>

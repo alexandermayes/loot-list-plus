@@ -1,7 +1,7 @@
 'use client'
 
 import { createClient } from '@/utils/supabase/client'
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import ItemLink from '@/app/components/ItemLink'
 import { useGuildContext } from '@/app/contexts/GuildContext'
 import { useNotification } from '@/app/contexts/NotificationContext'
@@ -38,6 +38,10 @@ export default function LootHistoryTab() {
   const [itemSearch, setItemSearch] = useState('')
   const [fromDate, setFromDate] = useState('')
   const [toDate, setToDate] = useState('')
+
+  // Track known entry IDs to detect newly added loot awards
+  const knownIdsRef = useRef<Set<string>>(new Set())
+  const [newEntryIds, setNewEntryIds] = useState<Set<string>>(new Set())
 
   const supabase = createClient()
   const { activeGuild, isOfficer } = useGuildContext()
@@ -83,10 +87,32 @@ export default function LootHistoryTab() {
         return
       }
 
+      const incoming: LootHistoryEntry[] = result.data
+
+      // Detect newly awarded items (not seen in previous loads)
+      if (knownIdsRef.current.size > 0) {
+        const fresh = new Set<string>()
+        for (const entry of incoming) {
+          if (!knownIdsRef.current.has(entry.id)) {
+            fresh.add(entry.id)
+          }
+        }
+        if (fresh.size > 0) {
+          setNewEntryIds(fresh)
+          // Clear glow after animation completes
+          setTimeout(() => setNewEntryIds(new Set()), 1600)
+        }
+      }
+
+      // Track all known IDs
+      for (const entry of incoming) {
+        knownIdsRef.current.add(entry.id)
+      }
+
       if (append) {
-        setEntries(prev => [...prev, ...result.data])
+        setEntries(prev => [...prev, ...incoming])
       } else {
-        setEntries(result.data)
+        setEntries(incoming)
       }
 
       setTotal(result.pagination.total)
@@ -330,8 +356,8 @@ export default function LootHistoryTab() {
           title="No loot awards found"
           description={
             filterTier !== 'all' || characterSearch || itemSearch || fromDate || toDate
-              ? "Try adjusting your filters"
-              : "Loot awards will appear here when items are distributed"
+              ? "Try adjusting your filters."
+              : "Loot awards show up here after items are distributed in raid."
           }
           size="default"
           variant="card"
@@ -389,7 +415,7 @@ export default function LootHistoryTab() {
               </thead>
               <tbody className="divide-y divide-border">
                 {entries.map((entry) => (
-                  <tr key={entry.id} className="hover:bg-muted/50">
+                  <tr key={entry.id} className={`hover:bg-muted/50 ${newEntryIds.has(entry.id) ? 'animate-loot-glow' : ''}`}>
                     <td className="px-4 py-3 text-foreground text-sm whitespace-nowrap">
                       {formatDate(entry.awarded_date)}
                     </td>

@@ -155,7 +155,7 @@ Access your profile by clicking your name at the bottom of the sidebar.
 ## Account tab
 
 - **Discord connection** - Shows your linked Discord account and verification status
-- **Sign out** - Log out of LootList+
+- **Log out** - Log out of LootList+
 - **Danger zone** - Disconnect Discord or permanently delete your account
 
 ## Preferences tab

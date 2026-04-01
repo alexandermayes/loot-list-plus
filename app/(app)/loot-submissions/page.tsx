@@ -394,7 +394,12 @@ export default function MasterLootPage() {
         character_name: submission?.member?.character_name,
       })
 
-      showNotification('success', `Submission ${status}`)
+      const statusMessages: Record<string, string> = {
+        approved: 'Submission approved. Rankings will update.',
+        needs_revision: 'Sent back for revision.',
+        pending: 'Submission set to pending.',
+      }
+      showNotification('success', statusMessages[status] || `Submission ${status}`)
       setReviewNotes('')
       setReviewing(null)
 
@@ -814,7 +819,7 @@ export default function MasterLootPage() {
                 <Input
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search character..."
+                  placeholder="Search raiders..."
                   variant="pill"
                   className={`pl-9 w-full ${searchQuery ? 'pr-8' : ''}`}
                 />
@@ -860,7 +865,7 @@ export default function MasterLootPage() {
               <EmptyState
                 icon={ScrollIcon}
                 title="No submissions yet"
-                description="Loot List submissions will appear here once raiders submit their lists."
+                description="Loot Lists will show up here once your raiders submit them."
                 variant="card"
               />
             ) : (

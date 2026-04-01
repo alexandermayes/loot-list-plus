@@ -614,7 +614,7 @@ export default function PriorityListTab() {
                   type="text"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  placeholder="Search..."
+                  placeholder="Search items..."
                   className={searchTerm ? 'pr-7' : ''}
                 />
                 {searchTerm && (

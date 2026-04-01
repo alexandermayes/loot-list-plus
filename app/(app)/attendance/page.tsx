@@ -531,10 +531,14 @@ export default function AttendancePage() {
           .eq('raid_event.guild_id', activeCharData.active_guild_id)
           .gte('raid_event.raid_date', toDateString(lowerBound))
           .lte('raid_event.raid_date', toDateString(periodEnd))
-          .order('raid_event.raid_date', { ascending: false })
 
         if (recordsData) {
-          setAttendanceRecords(recordsData as any)
+          const sorted = [...recordsData].sort((a: any, b: any) => {
+            const dateA = (a.raid_event as any)?.raid_date ?? ''
+            const dateB = (b.raid_event as any)?.raid_date ?? ''
+            return dateB.localeCompare(dateA)
+          })
+          setAttendanceRecords(sorted as any)
         }
 
         // Load guild-wide attendance data (includes score for all characters)

@@ -205,7 +205,7 @@ export default function GuildSettingsPage() {
         throw new Error(data.error || 'Couldn\'t update guild information. Try again.')
       }
 
-      showNotification('success', 'Guild settings saved' + (shouldFetchIcon && finalIconUrl ? '. Discord icon updated.' : ''))
+      showNotification('success', 'Guild settings saved.' + (shouldFetchIcon && finalIconUrl ? ' Discord icon updated.' : ''))
 
       // Reload page to show updated guild info in sidebar
       setTimeout(() => {
