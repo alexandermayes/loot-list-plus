@@ -149,7 +149,7 @@ const bodySizeLimits: Record<string, number> = {
 // always starts with a valid access token. Without this, tokens expire while
 // the tab is open and the browser client fires spurious SIGNED_OUT events,
 // especially on a second device where there's no prior session to fall back on.
-async function refreshSupabaseSession(request: NextRequest): Promise<NextResponse> {
+async function refreshSupabaseSession(request: NextRequest): Promise<{ response: NextResponse; user: unknown }> {
   const response = NextResponse.next({ request })
 
   const supabase = createServerClient(
@@ -172,9 +172,9 @@ async function refreshSupabaseSession(request: NextRequest): Promise<NextRespons
 
   // getUser() validates the JWT and refreshes expired tokens automatically.
   // The refreshed tokens are written back to cookies via setAll above.
-  await supabase.auth.getUser()
+  const { data: { user } } = await supabase.auth.getUser()
 
-  return response
+  return { response, user }
 }
 
 export async function middleware(request: NextRequest) {
@@ -183,7 +183,21 @@ export async function middleware(request: NextRequest) {
   // Refresh Supabase auth cookies on page navigations (not API/auth routes,
   // those are handled by their own auth checks)
   if (!pathname.startsWith('/api') && !pathname.startsWith('/auth')) {
-    return refreshSupabaseSession(request)
+    const { response, user } = await refreshSupabaseSession(request)
+
+    // Protect app routes: redirect unauthenticated users to login
+    // Public routes (/, /login, /guild-select, /updates, /legal/*, /dev-login) are excluded
+    const isPublicRoute = ['/', '/login', '/guild-select', '/updates', '/dev-login'].includes(pathname)
+      || pathname.startsWith('/legal/')
+      || pathname.startsWith('/guild-select/')
+
+    if (!isPublicRoute && !user) {
+      const loginUrl = new URL('/', request.url)
+      loginUrl.searchParams.set('next', pathname)
+      return NextResponse.redirect(loginUrl)
+    }
+
+    return response
   }
 
   // Skip rate limiting for Vercel Cron jobs (authenticated via CRON_SECRET)

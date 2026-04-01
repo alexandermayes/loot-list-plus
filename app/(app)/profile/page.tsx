@@ -182,7 +182,14 @@ export default function ProfilePage() {
 
   const handleLogout = async () => {
     setLoggingOut(true)
-    await supabase.auth.signOut()
+    // Redirect after cast bar completes, even if signOut is slow
+    const redirectTimer = setTimeout(() => { window.location.href = '/' }, 1500)
+    try {
+      await supabase.auth.signOut()
+    } catch {
+      // Sign out may fail on network issues, redirect anyway
+    }
+    clearTimeout(redirectTimer)
     window.location.href = '/'
   }
 
@@ -355,12 +362,12 @@ export default function ProfilePage() {
             className="w-12 h-12 animate-pulse"
           />
           <div className="w-64 sm:w-80">
-            <p className="text-sm text-muted-foreground text-center mb-2">Hearthstoning...</p>
+            <p className="text-sm text-muted-foreground text-center mb-2">Hearthing...</p>
             <div className="h-2.5 bg-muted rounded-full overflow-hidden border border-border">
               <div
                 className="h-full bg-accent rounded-full"
                 style={{
-                  animation: 'cast-bar 1.5s ease-in-out forwards',
+                  animation: 'cast-bar 1.2s ease-in-out forwards',
                 }}
               />
             </div>
