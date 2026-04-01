@@ -12,6 +12,7 @@ import LandingAppPreview from '@/app/components/landing/LandingAppPreview'
 import LandingValueProps from '@/app/components/landing/LandingValueProps'
 import LandingCTA from '@/app/components/landing/LandingCTA'
 import LandingFooter from '@/app/components/landing/LandingFooter'
+import FloatingParticles from '@/app/components/landing/FloatingParticles'
 
 // Login page (client component for Supabase OAuth)
 import LoginPage from '@/app/components/LoginPage'
@@ -83,12 +84,13 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ n
   // Show marketing landing page on getlootlist.com
   if (isLandingHost(host)) {
     return (
-      <main className="bg-background overflow-x-hidden">
+      <main className="bg-[#080808] overflow-x-hidden">
+        <FloatingParticles />
         <LandingNav />
         <LandingHero />
+        <LandingAppPreview />
         <LandingFeatures />
         <LandingHowItWorks />
-        <LandingAppPreview />
         <LandingValueProps />
         <LandingCTA />
         <LandingFooter />

@@ -1,6 +1,7 @@
 import { Heading, Text } from '@/components/ui/typography'
 import type { Metadata } from 'next'
-import LegalNav from '@/app/components/LegalNav'
+import LandingNav from '@/app/components/landing/LandingNav'
+import LandingFooter from '@/app/components/landing/LandingFooter'
 
 export const metadata: Metadata = {
   title: 'Terms of Service',
@@ -12,9 +13,9 @@ export const metadata: Metadata = {
 
 export default function TermsOfServicePage() {
   return (
-    <div className="min-h-screen bg-background">
-      <LegalNav />
-      <div className="mx-auto max-w-4xl px-6 py-12">
+    <div className="min-h-screen bg-[#080808]">
+      <LandingNav />
+      <div className="mx-auto max-w-4xl px-6 pt-32 pb-12">
         <Heading level={1} className="mb-2">
           Terms of Service
         </Heading>
@@ -301,6 +302,7 @@ export default function TermsOfServicePage() {
           </section>
         </div>
       </div>
+      <LandingFooter />
     </div>
   )
 }

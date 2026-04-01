@@ -3,9 +3,10 @@
 import { useRef, useEffect } from 'react'
 import { motion, useInView } from 'framer-motion'
 import { fadeInUp, staggerContainer } from '@/lib/animations'
-import Image from 'next/image'
-import { Button } from '@/components/ui/button'
 import { trackClientEvent } from '@/utils/analytics/client'
+import Image from 'next/image'
+import ParallaxItem from './ParallaxItem'
+import MagneticButton from './MagneticButton'
 
 const APP_URL = 'https://www.lootlistplus.com'
 
@@ -18,28 +19,27 @@ export default function LandingCTA() {
   }, [isInView])
 
   return (
-    <section id="cta" className="relative py-32 md:py-40 overflow-hidden">
-      {/* Background with image */}
-      <div className="absolute inset-0">
-        <picture>
-          <source
-            type="image/webp"
-            srcSet="/images/landing/landing-background-640w.webp 640w, /images/landing/landing-background-1024w.webp 1024w, /images/landing/landing-background-1920w.webp 1920w, /images/landing/landing-background-2560w.webp 2560w"
-            sizes="100vw"
-          />
-          <Image
-            src="/images/landing/landing-background-2560w.webp"
-            alt=""
-            fill
-            className="object-cover object-center opacity-30"
-            quality={82}
-          />
-        </picture>
-        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/95 to-background/80" />
-      </div>
+    <section id="cta" className="relative pt-16 md:pt-24 pb-32 md:pb-40 bg-[#080808]">
+      {/* Floating decorative items - flanking the CTA content */}
+      <ParallaxItem
+        speed={0.1}
+        slideFrom="left"
+        className="absolute left-[80px] top-[35%] w-[195px] h-[171px] hidden md:block pointer-events-none breathing-glow"
+        style={{ transform: 'translateY(-50%) rotate(-23deg)', '--glow-color': 'rgba(237,89,6,0.5)' } as React.CSSProperties}
+        tooltip={{ name: "Cinderheart Crown", quality: "epic", type: "Plate Helmet", flavor: "Warm to the touch. Always." }}
+      >
+        <Image src="/images/landing/items/item-orange-bottom.png" alt="" fill className="object-contain" />
+      </ParallaxItem>
 
-      {/* Orange glow effect */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-accent/10 rounded-full blur-[120px]" />
+      <ParallaxItem
+        speed={-0.1}
+        slideFrom="right"
+        className="absolute right-[17px] top-[30%] w-[300px] h-[240px] hidden md:block pointer-events-none breathing-glow"
+        style={{ transform: 'translateY(-50%)', '--glow-color': 'rgba(67,163,236,0.5)' } as React.CSSProperties}
+        tooltip={{ name: "Frostmaw, Blade of the Deep", quality: "epic", type: "One-Hand Sword", flavor: "Pulled from a frozen lakebed. Still dripping." }}
+      >
+        <Image src="/images/landing/items/item-blue-bottom.png" alt="" fill className="object-contain" />
+      </ParallaxItem>
 
       <div className="relative z-10 max-w-4xl mx-auto px-6 md:px-12 lg:px-20">
         <motion.div
@@ -47,75 +47,36 @@ export default function LandingCTA() {
           initial="hidden"
           animate={isInView ? 'visible' : 'hidden'}
           variants={staggerContainer}
-          className="text-center"
+          className="flex flex-col items-center gap-6 text-center"
         >
-          {/* Icon */}
-          <motion.div variants={fadeInUp} className="flex justify-center mb-6">
-            <Image
-              src="/lootlist-icon.svg"
-              alt="LootList+ Icon"
-              width={48}
-              height={64}
-              className="w-12 h-auto"
-            />
-          </motion.div>
-
           {/* Headline */}
           <motion.h2
             variants={fadeInUp}
-            className="font-poppins font-bold text-[28px] md:text-[42px] leading-tight text-foreground mb-4"
+            className="font-poppins font-bold text-[40px] md:text-[72px] leading-[1.05] text-white max-w-[696px]"
           >
-            Ready to modernize your loot system?
+            A better way to run{' '}
+            <span className="font-wow text-shimmer-purple text-[48px] md:text-[80px]">loot</span>.
           </motion.h2>
 
           {/* Subheadline */}
           <motion.p
             variants={fadeInUp}
-            className="font-poppins text-base md:text-lg text-foreground-secondary mb-10 max-w-xl mx-auto"
+            className="font-poppins font-medium text-[16px] text-[#bababa] max-w-[696px]"
           >
-            Free to use. Set up your guild, invite your raiders, and run your first raid night with scores in under 10 minutes.
+            Bring loot lists, attendance, and fair distribution into one system your whole guild can trust.
           </motion.p>
 
-          {/* CTA Buttons */}
-          <motion.div variants={fadeInUp} className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button
-              variant="primary"
-              size="lg"
-              asChild
-              className="gap-3 font-poppins font-semibold shadow-lg hover:shadow-xl"
+          {/* CTA Button - Magnetic */}
+          <motion.div variants={fadeInUp}>
+            <MagneticButton
+              as="a"
+              href={APP_URL}
+              onClick={() => trackClientEvent('landing_cta_clicked', { cta: 'bottom_get_started' })}
+              className="inline-flex items-center justify-center px-4 py-3 rounded-[60px] bg-white font-poppins font-semibold text-[16px] text-black no-underline hover:bg-white/90 transition-colors"
             >
-              <a href={APP_URL} onClick={() => trackClientEvent('landing_cta_clicked', { cta: 'bottom_get_started' })}>
-                <Image
-                  src="/discord-icon.svg"
-                  alt="Discord"
-                  width={24}
-                  height={24}
-                  className="w-6 h-6"
-                />
-                Get started free
-              </a>
-            </Button>
+              Get started for free
+            </MagneticButton>
           </motion.div>
-
-          {/* Secondary link */}
-          <motion.p variants={fadeInUp} className="mt-6 text-sm text-foreground-muted">
-            Already have an account?{' '}
-            <a href={APP_URL} onClick={() => trackClientEvent('landing_cta_clicked', { cta: 'bottom_login' })} className="text-foreground hover:text-accent transition-colors">
-              Log in
-            </a>
-          </motion.p>
-
-          {/* Terms */}
-          <motion.p variants={fadeInUp} className="mt-8 text-xs text-foreground-muted max-w-md mx-auto">
-            By continuing, you agree to our{' '}
-            <a href="/terms" className="text-foreground-secondary hover:text-foreground underline underline-offset-2 transition-colors">
-              Terms of Service
-            </a>
-            {' '}and{' '}
-            <a href="/privacy" className="text-foreground-secondary hover:text-foreground underline underline-offset-2 transition-colors">
-              Privacy Policy
-            </a>.
-          </motion.p>
         </motion.div>
       </div>
     </section>

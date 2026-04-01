@@ -2,6 +2,55 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Friz Quadrata - WoW title font (self-hosted, add .woff2 to /public/fonts/) */
+@font-face {
+  font-family: 'Friz Quadrata';
+  src: url('/fonts/FrizQuadrata.woff2') format('woff2'),
+       url('/fonts/FrizQuadrata.woff') format('woff');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Glow on hover for floating items */
+.breathing-glow {
+  filter: drop-shadow(0px 0px 8px var(--glow-color));
+  transition: filter 0.4s ease-out;
+}
+
+.breathing-glow:hover {
+  filter: drop-shadow(0px 0px 50px var(--glow-color)) drop-shadow(0px 0px 20px var(--glow-color));
+}
+
+/* Purple shimmer on hover for landing page accent text */
+.text-shimmer-purple {
+  color: #9940ec;
+  display: inline-block;
+  padding: 0.1em 0;
+}
+
+.text-shimmer-purple:hover {
+  background: linear-gradient(
+    90deg,
+    #9940ec 0%,
+    #9940ec 30%,
+    #e0b0ff 45%,
+    #9940ec 60%,
+    #9940ec 100%
+  );
+  background-size: 300% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  animation: shimmer-purple 0.8s ease-out forwards;
+}
+
+@keyframes shimmer-purple {
+  0% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
 /**
  * LootList+ Design System - CSS Variables
  *

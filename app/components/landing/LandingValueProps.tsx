@@ -1,78 +1,70 @@
 'use client'
 
-import { useRef, useEffect } from 'react'
+import { useRef, useEffect, useState } from 'react'
 import { motion, useInView } from 'framer-motion'
-import { fadeInUp, slideInLeft, slideInRight, staggerContainer } from '@/lib/animations'
+import { fadeInUp, staggerContainer } from '@/lib/animations'
 import { trackClientEvent } from '@/utils/analytics/client'
-import { HugeiconsIcon } from '@hugeicons/react'
-import {
-  EyeIcon,
-  BalanceScaleIcon,
-  DashboardSpeed01Icon,
-  GridTableIcon
-} from '@hugeicons/core-free-icons'
+import Image from 'next/image'
+import ParallaxItem from './ParallaxItem'
 
-const valueProps = [
-  {
-    title: 'Complete transparency',
-    description: 'Every loot decision is visible to everyone. See who submitted what, attendance records and exactly why loot was allocated the way it was. No more "loot council drama", just data.',
-    icon: EyeIcon,
-    color: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
-    glowColor: 'shadow-blue-500/20'
-  },
-  {
-    title: 'Built-in fairness',
-    description: 'Attendance-based scoring means consistent raiders get priority. The system tracks who shows up, on time, week after week. Dedication gets rewarded automatically.',
-    icon: BalanceScaleIcon,
-    color: 'bg-green-500/10 text-green-400 border-green-500/20',
-    glowColor: 'shadow-green-500/20'
-  },
-  {
-    title: 'Save hours every week',
-    description: 'Auto-save, real-time validation and streamlined workflows eliminate manual tracking. What used to take hours of spreadsheet work now happens in minutes.',
-    icon: DashboardSpeed01Icon,
-    color: 'bg-accent/10 text-accent border-accent/20',
-    glowColor: 'shadow-accent/20'
-  },
-  {
-    title: 'Replace the chaos',
-    description: 'No more Discord messages, Google Sheets or manual lists. Everything your guild needs is in one organized, searchable, always-up-to-date system.',
-    icon: GridTableIcon,
-    color: 'bg-purple-500/10 text-purple-400 border-purple-500/20',
-    glowColor: 'shadow-purple-500/20'
+const statGradient = 'linear-gradient(200deg, rgb(46, 42, 53) 15%, rgb(80, 73, 95) 83%)'
+const quoteGradient = 'linear-gradient(190deg, rgb(12, 11, 14) 15%, rgb(23, 21, 27) 83%)'
+
+function TiltCard({ children, className, style }: { children: React.ReactNode; className?: string; style?: React.CSSProperties }) {
+  const cardRef = useRef<HTMLDivElement>(null)
+  const [transform, setTransform] = useState('')
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!cardRef.current) return
+    const rect = cardRef.current.getBoundingClientRect()
+    const x = (e.clientX - rect.left) / rect.width - 0.5
+    const y = (e.clientY - rect.top) / rect.height - 0.5
+    setTransform(`perspective(800px) rotateY(${x * 6}deg) rotateX(${-y * 6}deg)`)
   }
-]
 
-function ValuePropCard({ prop, index }: { prop: typeof valueProps[0], index: number }) {
-  const ref = useRef(null)
-  const isInView = useInView(ref, { once: true, margin: '-50px' })
-  const isEven = index % 2 === 0
+  const handleMouseLeave = () => {
+    setTransform('')
+  }
 
   return (
-    <motion.div
-      ref={ref}
-      initial="hidden"
-      animate={isInView ? 'visible' : 'hidden'}
-      variants={isEven ? slideInLeft : slideInRight}
-      className={`flex flex-col ${isEven ? 'md:flex-row' : 'md:flex-row-reverse'} items-center gap-8 md:gap-12`}
+    <div
+      ref={cardRef}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
+      className={className}
+      style={{
+        ...style,
+        transform,
+        transition: transform ? 'transform 0.1s ease-out' : 'transform 0.4s ease-out',
+      }}
     >
-      {/* Icon side */}
-      <div className="flex-shrink-0">
-        <div className={`w-24 h-24 md:w-32 md:h-32 rounded-2xl ${prop.color} border flex items-center justify-center shadow-lg ${prop.glowColor}`}>
-          <HugeiconsIcon icon={prop.icon} size={48} className="md:w-14 md:h-14" />
-        </div>
-      </div>
+      {children}
+    </div>
+  )
+}
 
-      {/* Content side */}
-      <div className={`flex-1 ${isEven ? 'md:text-left' : 'md:text-right'} text-center`}>
-        <h3 className="font-poppins font-semibold text-xl md:text-2xl text-foreground mb-3">
-          {prop.title}
-        </h3>
-        <p className={`font-poppins text-sm md:text-base text-foreground-secondary leading-relaxed max-w-lg ${isEven ? 'mx-auto md:mx-0' : 'mx-auto md:ml-auto md:mr-0'}`}>
-          {prop.description}
-        </p>
-      </div>
-    </motion.div>
+function StatCard({ value, label, className }: { value: string; label: string; className?: string }) {
+  return (
+    <TiltCard
+      className={`flex flex-col items-center justify-center overflow-hidden rounded-[28px] pb-4 ${className || ''}`}
+      style={{ backgroundImage: statGradient }}
+    >
+      <p className="font-poppins font-bold text-[48px] md:text-[72px] text-white leading-normal">{value}</p>
+      <p className="font-poppins font-medium text-[16px] text-[#bababa] leading-normal text-center px-4">{label}</p>
+    </TiltCard>
+  )
+}
+
+function QuoteCard({ quote, className }: { quote: string; className?: string }) {
+  return (
+    <TiltCard
+      className={`flex items-center justify-center overflow-hidden rounded-[20px] md:rounded-[28px] p-6 md:p-12 lg:p-20 ${className || ''}`}
+      style={{ backgroundImage: quoteGradient }}
+    >
+      <p className="font-poppins font-medium text-[16px] text-[#bababa] leading-normal text-center">
+        &ldquo;{quote}&rdquo;
+      </p>
+    </TiltCard>
   )
 }
 
@@ -85,42 +77,89 @@ export default function LandingValueProps() {
   }, [isInView])
 
   return (
-    <section id="value-props" className="relative py-32 md:py-40 bg-background-subtle">
-      <div className="relative z-10 max-w-5xl mx-auto px-6 md:px-12 lg:px-20">
+    <section id="value-props" className="relative pt-24 md:pt-32 pb-12 md:pb-16 bg-[#080808]">
+      {/* Floating items overlaying the stats cards - original Figma sizes */}
+
+
+
+      {/* Yellow glow - right edge, overlapping into section above, flipped horizontally */}
+      <ParallaxItem
+        speed={-0.15}
+        slideFrom="right"
+        className="absolute right-[-33px] top-[-100px] w-[233px] h-[283px] hidden lg:block pointer-events-none z-30 breathing-glow"
+        style={{ '--glow-color': 'rgba(251,239,142,0.5)' } as React.CSSProperties}
+        tooltip={{ name: "Oathbreaker's Maul", quality: "epic", type: "Two-Hand Mace", flavor: "The vow it broke still echoes." }}
+      >
+        <Image src="/images/landing/items/item-yellow-glow.png" alt="" fill className="object-contain" />
+      </ParallaxItem>
+
+
+      <div ref={ref} className="relative z-10 max-w-[1200px] mx-auto px-6 md:px-12">
         {/* Section Header */}
         <motion.div
-          ref={ref}
           initial="hidden"
           animate={isInView ? 'visible' : 'hidden'}
           variants={staggerContainer}
           className="text-center mb-16"
         >
-          <motion.span
-            variants={fadeInUp}
-            className="inline-block px-4 py-1.5 bg-accent/10 text-accent text-xs font-semibold uppercase tracking-wider rounded-full mb-4"
-          >
-            Why LootList+
-          </motion.span>
           <motion.h2
             variants={fadeInUp}
-            className="font-poppins font-bold text-[28px] md:text-[36px] text-foreground mb-4"
+            className="font-poppins font-bold text-[28px] md:text-[40px] leading-[1.1] text-white"
           >
-            Built for guilds who take loot seriously
+            Built for guilds who take<br />
+            <span className="font-wow text-shimmer-purple text-[32px] md:text-[44px]">loot seriously</span>.
           </motion.h2>
-          <motion.p
-            variants={fadeInUp}
-            className="font-poppins text-base text-foreground-secondary max-w-2xl mx-auto"
-          >
-            We rebuilt loot management from the ground up with the features guilds actually need.
-          </motion.p>
         </motion.div>
 
-        {/* Value Props */}
-        <div className="space-y-16 md:space-y-20">
-          {valueProps.map((prop, index) => (
-            <ValuePropCard key={prop.title} prop={prop} index={index} />
-          ))}
-        </div>
+        {/* Row 1: 100% stat + quote */}
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={isInView ? { opacity: 1, y: 0 } : {}}
+          transition={{ delay: 0.2 }}
+          className="flex flex-col md:flex-row gap-4 mb-4"
+        >
+          <StatCard value="100%" label="transparent" className="h-[250px] md:h-[300px] flex-shrink-0 md:w-auto md:flex-1" />
+          <QuoteCard
+            quote="LootList+ gave our guild a clear, transparent system for every loot decision. Everyone can see who submitted what, attendance records, and exactly why loot was assigned the way it was."
+            className="h-[250px] md:h-[300px] md:flex-[2]"
+          />
+        </motion.div>
+
+        {/* Row 2: quote + 3+ stat + quote */}
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={isInView ? { opacity: 1, y: 0 } : {}}
+          transition={{ delay: 0.3 }}
+          className="flex flex-col md:flex-row gap-4 mb-4"
+        >
+          <QuoteCard
+            quote="Attendance-based scoring makes the process feel fair. Raiders who consistently show up and put in the work are rewarded automatically."
+            className="h-[250px] md:h-[300px] md:flex-1"
+          />
+          <StatCard value="3+" label="hours saved a week" className="h-[250px] md:h-[300px] flex-shrink-0 md:w-[384px]" />
+          <QuoteCard
+            quote="What used to live across Discord messages, spreadsheets, and manual notes is now all in one place. It saves our officers hours every week."
+            className="h-[250px] md:h-[300px] md:flex-1"
+          />
+        </motion.div>
+
+        {/* Row 3: quote + 1 stat */}
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={isInView ? { opacity: 1, y: 0 } : {}}
+          transition={{ delay: 0.4 }}
+          className="flex flex-col md:flex-row gap-4"
+        >
+          <QuoteCard
+            quote="LootList+ replaced the chaos with a system that's organized, searchable, and always up to date."
+            className="h-[250px] md:h-[300px] md:flex-[2]"
+          />
+          <StatCard
+            value="1"
+            label="organized system for loot, attendance, and priorities"
+            className="h-[250px] md:h-[300px] flex-shrink-0 md:w-auto md:flex-1"
+          />
+        </motion.div>
       </div>
     </section>
   )
