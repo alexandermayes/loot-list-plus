@@ -190,6 +190,10 @@ export async function middleware(request: NextRequest) {
     const isPublicRoute = ['/', '/login', '/guild-select', '/updates', '/dev-login'].includes(pathname)
       || pathname.startsWith('/legal/')
       || pathname.startsWith('/guild-select/')
+      || pathname.startsWith('/blog')
+      || pathname.startsWith('/changelog')
+      || pathname.startsWith('/terms')
+      || pathname.startsWith('/privacy')
 
     if (!isPublicRoute && !user) {
       const loginUrl = new URL('/', request.url)
@@ -285,6 +289,6 @@ export async function middleware(request: NextRequest) {
 export const config = {
   matcher: [
     // Match all page routes for session refresh (excludes static files)
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)',
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|mp4|woff|woff2)$).*)',
   ],
 }
