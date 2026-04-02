@@ -1,9 +1,10 @@
 'use client'
 
-import { useRef, useState } from 'react'
+import { useRef, useState, useCallback } from 'react'
 import { createPortal } from 'react-dom'
-import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion'
+import { motion, useScroll, useTransform, useAnimation, AnimatePresence } from 'framer-motion'
 import { useMouseParallax } from './useMouseParallax'
+import { ClickEffect, ClickEffectType } from './ClickEffects'
 
 interface ParallaxItemProps {
   children: React.ReactNode
@@ -12,17 +13,13 @@ interface ParallaxItemProps {
   style?: React.CSSProperties
   slideFrom?: 'left' | 'right'
   delay?: number
-  /** Depth layer for mouse parallax (higher = moves more). Default 1 */
   depth?: number
-  /** Idle float config */
   float?: {
-    /** Y distance in px (default 12) */
     distance?: number
-    /** Duration in seconds (default 6) */
     duration?: number
-    /** Delay offset in seconds (default 0) */
     delay?: number
   }
+  clickEffect?: ClickEffectType
   tooltip?: {
     name: string
     quality: 'legendary' | 'epic' | 'rare' | 'uncommon'
@@ -47,11 +44,14 @@ export default function ParallaxItem({
   delay = 0,
   depth = 1,
   float,
+  clickEffect,
   tooltip,
 }: ParallaxItemProps) {
   const ref = useRef(null)
   const [hovered, setHovered] = useState(false)
   const [mousePos, setMousePos] = useState({ x: 0, y: 0, rightSide: false })
+  const [effects, setEffects] = useState<Array<{ id: number; x: number; y: number }>>([])
+  const clickControls = useAnimation()
   const { scrollYProgress } = useScroll({
     target: ref,
     offset: ['start end', 'end start'],
@@ -60,13 +60,42 @@ export default function ParallaxItem({
   const y = useTransform(scrollYProgress, [0, 1], [speed * -200, speed * 200])
   const initialX = slideFrom === 'left' ? -60 : slideFrom === 'right' ? 60 : 0
 
-  // Mouse-reactive parallax
-  const mouse = useMouseParallax(depth)
+  const mouse = useMouseParallax(ref, depth)
 
-  // Idle float animation
   const floatDistance = float?.distance ?? 12
   const floatDuration = float?.duration ?? 6
   const floatDelay = float?.delay ?? 0
+  const [floatKeyframes] = useState(() => {
+    const randY1 = -(floatDistance * (0.4 + Math.random() * 0.6))
+    const randY2 = floatDistance * (0.2 + Math.random() * 0.4)
+    const randY3 = -(floatDistance * (0.3 + Math.random() * 0.5))
+    const randX1 = (Math.random() - 0.5) * floatDistance * 0.5
+    const randX2 = (Math.random() - 0.5) * floatDistance * 0.4
+    const randRot1 = (Math.random() - 0.5) * 3
+    const randRot2 = (Math.random() - 0.5) * 2
+    return {
+      y: [0, randY1, randY2, randY3, 0],
+      x: [0, randX1, randX2, -randX1, 0],
+      rotate: [0, randRot1, randRot2, -randRot1, 0],
+    }
+  })
+
+  const handleClick = useCallback((e: React.MouseEvent) => {
+    if (!clickEffect) return
+
+    // Scale punch
+    clickControls.start({
+      scale: [1, 1.12, 0.96, 1.03, 1],
+      transition: { duration: 0.45, ease: 'easeOut' },
+    })
+
+    const id = Date.now() + Math.random()
+    setEffects(prev => [...prev, { id, x: e.clientX, y: e.clientY }])
+  }, [clickEffect, clickControls])
+
+  const removeEffect = useCallback((id: number) => {
+    setEffects(prev => prev.filter(e => e.id !== id))
+  }, [])
 
   const handleMouseMove = (e: React.MouseEvent) => {
     const isRightSide = e.clientX > window.innerWidth / 2
@@ -81,45 +110,58 @@ export default function ParallaxItem({
     <motion.div
       ref={ref}
       className={className}
-      style={{
-        ...style,
-        y,
-        x: mouse.x,
-        // Layer mouse Y on top of scroll Y via a wrapper below
-      }}
+      style={{ ...style, y }}
       initial={{ opacity: 0, x: initialX }}
-      whileInView={{ opacity: 1, x: 0 }}
-      viewport={{ once: true, margin: '-50px' }}
+      animate={{ opacity: 1, x: 0 }}
       transition={{ duration: 0.8, delay, ease: 'easeOut' }}
     >
       {/* Idle float layer */}
       <motion.div
-        animate={{
-          y: [0, -floatDistance, 0],
-        }}
+        className="w-full h-full"
+        animate={floatKeyframes}
         transition={{
           duration: floatDuration,
           repeat: Infinity,
           ease: 'easeInOut',
           delay: floatDelay,
+          repeatType: 'mirror',
         }}
-        style={{ y: mouse.y }}
+        style={{ x: mouse.x }}
       >
-        {/* Hover interaction layer */}
+        {/* Hover + click layer */}
         <motion.div
           animate={hovered ? { y: -10, rotate: 2, scale: 1.05 } : { y: 0, rotate: 0, scale: 1 }}
           transition={{ type: 'spring', stiffness: 300, damping: 20 }}
           className="w-full h-full"
-          style={tooltip ? { cursor: 'pointer', pointerEvents: 'auto' } : undefined}
+          style={tooltip || clickEffect ? { cursor: 'pointer', pointerEvents: 'auto' } : undefined}
           onMouseEnter={() => setHovered(true)}
           onMouseLeave={() => setHovered(false)}
           onMouseMove={tooltip ? handleMouseMove : undefined}
+          onClick={handleClick}
         >
-          {children}
+          <motion.div className="w-full h-full" animate={clickControls}>
+            {children}
+          </motion.div>
         </motion.div>
       </motion.div>
 
-      {/* WoW-style tooltip - rendered via portal at cursor position */}
+      {/* Click effects — rendered via portal */}
+      {clickEffect && typeof document !== 'undefined' && createPortal(
+        <AnimatePresence>
+          {effects.map(effect => (
+            <ClickEffect
+              key={effect.id}
+              type={clickEffect}
+              x={effect.x}
+              y={effect.y}
+              onComplete={() => removeEffect(effect.id)}
+            />
+          ))}
+        </AnimatePresence>,
+        document.body,
+      )}
+
+      {/* WoW-style tooltip */}
       {tooltip && typeof document !== 'undefined' && (
         createPortal(
           <AnimatePresence>

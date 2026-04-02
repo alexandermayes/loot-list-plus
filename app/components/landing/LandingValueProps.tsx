@@ -83,8 +83,11 @@ export default function LandingValueProps() {
         <ParallaxItem
           speed={-0.15}
           slideFrom="right"
+          depth={1.0}
+          float={{ distance: 13, duration: 7.5, delay: 1.8 }}
+          clickEffect="frostShatter"
           className="absolute right-[-250px] top-[-180px] w-[639px] h-[507px] hidden lg:block pointer-events-none z-30 breathing-glow"
-          style={{ '--glow-color': 'rgba(72,205,244,0.25)' } as React.CSSProperties}
+          style={{ '--glow-color': 'rgba(72,205,244,0.25)', '--glow-duration': '5.5s', '--glow-delay': '0.8s' } as React.CSSProperties}
           tooltip={{ name: "Invincible's Reins", quality: "epic", type: "Mount", flavor: "Riding him will make you Invincible, not invisible." }}
         >
           <Image src="/images/landing/items/invincibles-reins.png" alt="" fill className="object-contain" style={{ transform: 'rotate(-6deg)' }} />

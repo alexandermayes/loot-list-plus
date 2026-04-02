@@ -1,47 +1,58 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, RefObject } from 'react'
 import { useMotionValue, useSpring } from 'framer-motion'
 
 /**
- * Tracks mouse position across the viewport and returns smooth
- * motion values for parallax offset. Higher depth = more movement.
- *
- * Movement is relative to viewport center so items shift symmetrically.
+ * Proximity-based mouse parallax. Only shifts the item when the cursor
+ * is within `radius` px of the element's center. Effect strength fades
+ * with distance.
  */
-export function useMouseParallax(depth: number = 1) {
-  const [enabled, setEnabled] = useState(false)
+export function useMouseParallax(
+  ref: RefObject<HTMLElement | null>,
+  depth: number = 1,
+  radius: number = 400,
+) {
   const rawX = useMotionValue(0)
   const rawY = useMotionValue(0)
 
-  // Smooth spring physics — slow & floaty to feel ambient, not reactive
-  const x = useSpring(rawX, { stiffness: 30, damping: 30, mass: 1 })
-  const y = useSpring(rawY, { stiffness: 30, damping: 30, mass: 1 })
+  const x = useSpring(rawX, { stiffness: 40, damping: 30, mass: 1 })
+  const y = useSpring(rawY, { stiffness: 40, damping: 30, mass: 1 })
 
   useEffect(() => {
-    // Only enable on devices with a pointer (no touch)
     const mq = window.matchMedia('(pointer: fine)')
     if (!mq.matches) return
-    setEnabled(true)
 
-    const maxShift = 25 * depth
+    const maxShift = 20 * depth
 
     const handleMouseMove = (e: MouseEvent) => {
-      // Normalize to -1...1 from viewport center
-      const nx = (e.clientX / window.innerWidth - 0.5) * 2
-      const ny = (e.clientY / window.innerHeight - 0.5) * 2
-      rawX.set(nx * maxShift)
-      rawY.set(ny * maxShift)
+      const el = ref.current
+      if (!el) return
+
+      const rect = el.getBoundingClientRect()
+      const cx = rect.left + rect.width / 2
+      const cy = rect.top + rect.height / 2
+
+      const dx = e.clientX - cx
+      const dy = e.clientY - cy
+      const dist = Math.sqrt(dx * dx + dy * dy)
+
+      if (dist > radius) {
+        rawX.set(0)
+        rawY.set(0)
+        return
+      }
+
+      // Strength falls off as cursor moves away (1 at center, 0 at radius)
+      const strength = 1 - dist / radius
+
+      rawX.set((dx / radius) * maxShift * strength)
+      rawY.set((dy / radius) * maxShift * strength)
     }
 
     window.addEventListener('mousemove', handleMouseMove, { passive: true })
     return () => window.removeEventListener('mousemove', handleMouseMove)
-  }, [depth, rawX, rawY])
-
-  // Return zero motion values when disabled so nothing shifts on touch
-  if (!enabled) {
-    return { x: rawX, y: rawY } // both stay at 0
-  }
+  }, [depth, radius, rawX, rawY, ref])
 
   return { x, y }
 }

@@ -27,13 +27,10 @@ export default function LandingHero() {
   const isPreviewInView = useInView(previewRef, { once: true, margin: '-100px' })
   const [stats, setStats] = useState<{ guilds: number; raiders: number; loot: number } | null>(null)
 
-  // Dashboard zoom-out on scroll
+  // Dashboard scale-up on scroll — uses page scroll so it always starts at 1 when at top
   const dashboardRef = useRef(null)
-  const { scrollYProgress: dashScroll } = useScroll({
-    target: dashboardRef,
-    offset: ['start end', 'end start'],
-  })
-  const dashboardScale = useTransform(dashScroll, [0, 0.15, 0.35, 0.55, 0.75, 1], [1.12, 1.08, 1.04, 1.01, 0.99, 0.97])
+  const { scrollY } = useScroll()
+  const dashboardScale = useTransform(scrollY, [0, 250], [1, 1.15], { clamp: true })
 
   useEffect(() => {
     fetch('/api/guild-count')
@@ -56,7 +53,7 @@ export default function LandingHero() {
       />
 
       {/* Max-width wrapper for floating items so they don't drift too far on wide screens */}
-      <div className="absolute inset-0 max-w-[1440px] mx-auto">
+      <div className="absolute inset-0 max-w-[1440px] mx-auto overflow-visible">
       {/* 1. Thunderfury - top left, angled with tip pointing up-right */}
       <ParallaxItem
         speed={-0.15}
@@ -66,6 +63,7 @@ export default function LandingHero() {
         float={{ distance: 14, duration: 7, delay: 0 }}
         className="absolute left-[-200px] top-[160px] w-[580px] h-[530px] hidden lg:block pointer-events-none breathing-glow z-30"
         style={{ '--glow-color': 'rgba(24,110,238,0.25)', '--glow-duration': '4.5s', '--glow-delay': '0s' } as React.CSSProperties}
+        clickEffect="lightning"
         tooltip={{ name: "Thunderfury, Blessed Blade of the Windseeker", quality: "legendary", type: "One-Hand Sword", flavor: "Forged from the shattered remnants of Thunderaan's prison." }}
       >
         <Image src="/images/landing/items/thunderfury.png" alt="" fill className="object-contain" style={{ transform: 'rotate(158deg) scaleY(-1)' }} />
@@ -78,6 +76,7 @@ export default function LandingHero() {
         delay={0.8}
         depth={1.5}
         float={{ distance: 10, duration: 5.5, delay: 1.2 }}
+        clickEffect="shockwave"
         className="absolute right-[-250px] top-[190px] w-[550px] h-[500px] hidden lg:block pointer-events-none breathing-glow z-30"
         style={{ '--glow-color': 'rgba(241,131,24,0.5)', '--glow-duration': '3.8s', '--glow-delay': '1s' } as React.CSSProperties}
         tooltip={{ name: "Sulfuras, Hand of Ragnaros", quality: "legendary", type: "Two-Hand Mace", flavor: "Too hot to handle." }}
@@ -91,6 +90,7 @@ export default function LandingHero() {
         slideFrom="left"
         depth={0.8}
         float={{ distance: 16, duration: 8, delay: 2.5 }}
+        clickEffect="slash"
         className="absolute left-[-280px] bottom-[-250px] w-[641px] h-[616px] hidden lg:block pointer-events-none z-30 breathing-glow"
         style={{ '--glow-color': 'rgba(141,244,31,0.25)', '--glow-duration': '5s', '--glow-delay': '0.5s' } as React.CSSProperties}
         tooltip={{ name: "Warglaive of Azzinoth", quality: "legendary", type: "One-Hand Sword", flavor: "Wielded by the Betrayer himself." }}
@@ -104,6 +104,7 @@ export default function LandingHero() {
         slideFrom="right"
         depth={2}
         float={{ distance: 8, duration: 4.5, delay: 0.8 }}
+        clickEffect="eyeFlash"
         className="absolute right-[-20px] bottom-[-100px] w-[208px] h-[199px] hidden lg:block pointer-events-none z-30 breathing-glow"
         style={{ '--glow-color': 'rgba(208,37,19,0.25)', '--glow-duration': '3.5s', '--glow-delay': '1.8s' } as React.CSSProperties}
         tooltip={{ name: "Cursed Vision of Sargeras", quality: "epic", type: "Leather Helmet", flavor: "His eyes see what yours cannot." }}
@@ -191,6 +192,7 @@ export default function LandingHero() {
                 playsInline
                 preload="auto"
                 className="w-full h-auto"
+                style={{ filter: 'brightness(1.5) contrast(1.05) saturate(1.1)' }}
                 poster="/images/landing/dashboard-preview.png"
                 onCanPlay={() => videoRef.current?.play().catch(() => {})}
               >

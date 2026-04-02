@@ -25,8 +25,11 @@ export default function LandingCTA() {
         <ParallaxItem
           speed={0.1}
           slideFrom="left"
+          depth={1.4}
+          float={{ distance: 9, duration: 6, delay: 0.3 }}
+          clickEffect="warCry"
           className="absolute left-[-220px] top-[-10%] w-[600px] h-[600px] hidden md:block pointer-events-none breathing-glow"
-          style={{ transform: 'rotate(3deg)', '--glow-color': 'rgba(253,87,27,0.5)' } as React.CSSProperties}
+          style={{ transform: 'rotate(3deg)', '--glow-color': 'rgba(253,87,27,0.5)', '--glow-duration': '4s', '--glow-delay': '1.2s' } as React.CSSProperties}
           tooltip={{ name: "Tusks of Mannoroth", quality: "epic", type: "Plate Shoulder", flavor: "The trophy of a lifetime." }}
         >
           <Image src="/images/landing/items/tusks-of-mannoroth.png" alt="" fill className="object-contain" />
@@ -36,8 +39,11 @@ export default function LandingCTA() {
         <ParallaxItem
           speed={-0.1}
           slideFrom="right"
+          depth={1.1}
+          float={{ distance: 12, duration: 7, delay: 2.0 }}
+          clickEffect="shadowCleave"
           className="absolute right-[-120px] top-[10%] w-[380px] h-[380px] hidden md:block pointer-events-none breathing-glow"
-          style={{ '--glow-color': 'rgba(100,200,100,0.25)' } as React.CSSProperties}
+          style={{ '--glow-color': 'rgba(100,200,100,0.25)', '--glow-duration': '4.8s', '--glow-delay': '0.6s' } as React.CSSProperties}
           tooltip={{ name: "Corrupted Ashbringer", quality: "epic", type: "Two-Hand Sword", flavor: "Blade of the Scarlet Highlord." }}
         >
           <Image src="/images/landing/items/cursed-ashbringer.png" alt="" fill className="object-contain" />
