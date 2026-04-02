@@ -12,14 +12,25 @@
   font-display: swap;
 }
 
-/* Glow on hover for floating items */
+/* Pulsing glow for floating items */
 .breathing-glow {
-  filter: drop-shadow(0px 0px 8px var(--glow-color));
-  transition: filter 0.4s ease-out;
+  animation: glowPulse var(--glow-duration, 4s) ease-in-out infinite;
+  animation-delay: var(--glow-delay, 0s);
 }
 
 .breathing-glow:hover {
+  animation: none;
   filter: drop-shadow(0px 0px 50px var(--glow-color)) drop-shadow(0px 0px 20px var(--glow-color));
+  transition: filter 0.4s ease-out;
+}
+
+@keyframes glowPulse {
+  0%, 100% {
+    filter: drop-shadow(0px 0px 6px var(--glow-color));
+  }
+  50% {
+    filter: drop-shadow(0px 0px 22px var(--glow-color)) drop-shadow(0px 0px 8px var(--glow-color));
+  }
 }
 
 /* Purple shimmer on hover for landing page accent text */

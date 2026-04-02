@@ -3,6 +3,7 @@
 import { useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion'
+import { useMouseParallax } from './useMouseParallax'
 
 interface ParallaxItemProps {
   children: React.ReactNode
@@ -11,6 +12,17 @@ interface ParallaxItemProps {
   style?: React.CSSProperties
   slideFrom?: 'left' | 'right'
   delay?: number
+  /** Depth layer for mouse parallax (higher = moves more). Default 1 */
+  depth?: number
+  /** Idle float config */
+  float?: {
+    /** Y distance in px (default 12) */
+    distance?: number
+    /** Duration in seconds (default 6) */
+    duration?: number
+    /** Delay offset in seconds (default 0) */
+    delay?: number
+  }
   tooltip?: {
     name: string
     quality: 'legendary' | 'epic' | 'rare' | 'uncommon'
@@ -26,7 +38,17 @@ const qualityColors = {
   uncommon: '#1eff00',
 }
 
-export default function ParallaxItem({ children, speed, className, style, slideFrom, delay = 0, tooltip }: ParallaxItemProps) {
+export default function ParallaxItem({
+  children,
+  speed,
+  className,
+  style,
+  slideFrom,
+  delay = 0,
+  depth = 1,
+  float,
+  tooltip,
+}: ParallaxItemProps) {
   const ref = useRef(null)
   const [hovered, setHovered] = useState(false)
   const [mousePos, setMousePos] = useState({ x: 0, y: 0, rightSide: false })
@@ -37,6 +59,14 @@ export default function ParallaxItem({ children, speed, className, style, slideF
 
   const y = useTransform(scrollYProgress, [0, 1], [speed * -200, speed * 200])
   const initialX = slideFrom === 'left' ? -60 : slideFrom === 'right' ? 60 : 0
+
+  // Mouse-reactive parallax
+  const mouse = useMouseParallax(depth)
+
+  // Idle float animation
+  const floatDistance = float?.distance ?? 12
+  const floatDuration = float?.duration ?? 6
+  const floatDelay = float?.delay ?? 0
 
   const handleMouseMove = (e: React.MouseEvent) => {
     const isRightSide = e.clientX > window.innerWidth / 2
@@ -51,22 +81,42 @@ export default function ParallaxItem({ children, speed, className, style, slideF
     <motion.div
       ref={ref}
       className={className}
-      style={{ ...style, y }}
+      style={{
+        ...style,
+        y,
+        x: mouse.x,
+        // Layer mouse Y on top of scroll Y via a wrapper below
+      }}
       initial={{ opacity: 0, x: initialX }}
       whileInView={{ opacity: 1, x: 0 }}
       viewport={{ once: true, margin: '-50px' }}
       transition={{ duration: 0.8, delay, ease: 'easeOut' }}
     >
+      {/* Idle float layer */}
       <motion.div
-        animate={hovered ? { y: -10, rotate: 2, scale: 1.05 } : { y: 0, rotate: 0, scale: 1 }}
-        transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-        className="w-full h-full"
-        style={tooltip ? { cursor: 'pointer', pointerEvents: 'auto' } : undefined}
-        onMouseEnter={() => setHovered(true)}
-        onMouseLeave={() => setHovered(false)}
-        onMouseMove={tooltip ? handleMouseMove : undefined}
+        animate={{
+          y: [0, -floatDistance, 0],
+        }}
+        transition={{
+          duration: floatDuration,
+          repeat: Infinity,
+          ease: 'easeInOut',
+          delay: floatDelay,
+        }}
+        style={{ y: mouse.y }}
       >
-        {children}
+        {/* Hover interaction layer */}
+        <motion.div
+          animate={hovered ? { y: -10, rotate: 2, scale: 1.05 } : { y: 0, rotate: 0, scale: 1 }}
+          transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+          className="w-full h-full"
+          style={tooltip ? { cursor: 'pointer', pointerEvents: 'auto' } : undefined}
+          onMouseEnter={() => setHovered(true)}
+          onMouseLeave={() => setHovered(false)}
+          onMouseMove={tooltip ? handleMouseMove : undefined}
+        >
+          {children}
+        </motion.div>
       </motion.div>
 
       {/* WoW-style tooltip - rendered via portal at cursor position */}

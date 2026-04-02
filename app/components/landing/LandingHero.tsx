@@ -62,8 +62,10 @@ export default function LandingHero() {
         speed={-0.15}
         slideFrom="left"
         delay={0.6}
+        depth={1.2}
+        float={{ distance: 14, duration: 7, delay: 0 }}
         className="absolute left-[-200px] top-[160px] w-[580px] h-[530px] hidden lg:block pointer-events-none breathing-glow z-30"
-        style={{ '--glow-color': 'rgba(24,110,238,0.25)' } as React.CSSProperties}
+        style={{ '--glow-color': 'rgba(24,110,238,0.25)', '--glow-duration': '4.5s', '--glow-delay': '0s' } as React.CSSProperties}
         tooltip={{ name: "Thunderfury, Blessed Blade of the Windseeker", quality: "legendary", type: "One-Hand Sword", flavor: "Forged from the shattered remnants of Thunderaan's prison." }}
       >
         <Image src="/images/landing/items/thunderfury.png" alt="" fill className="object-contain" style={{ transform: 'rotate(158deg) scaleY(-1)' }} />
@@ -74,8 +76,10 @@ export default function LandingHero() {
         speed={-0.2}
         slideFrom="right"
         delay={0.8}
+        depth={1.5}
+        float={{ distance: 10, duration: 5.5, delay: 1.2 }}
         className="absolute right-[-250px] top-[190px] w-[550px] h-[500px] hidden lg:block pointer-events-none breathing-glow z-30"
-        style={{ '--glow-color': 'rgba(241,131,24,0.5)' } as React.CSSProperties}
+        style={{ '--glow-color': 'rgba(241,131,24,0.5)', '--glow-duration': '3.8s', '--glow-delay': '1s' } as React.CSSProperties}
         tooltip={{ name: "Sulfuras, Hand of Ragnaros", quality: "legendary", type: "Two-Hand Mace", flavor: "Too hot to handle." }}
       >
         <Image src="/images/landing/items/hand-of-rag.png" alt="" fill className="object-contain" style={{ transform: 'rotate(50deg)' }} />
@@ -85,8 +89,10 @@ export default function LandingHero() {
       <ParallaxItem
         speed={0.15}
         slideFrom="left"
+        depth={0.8}
+        float={{ distance: 16, duration: 8, delay: 2.5 }}
         className="absolute left-[-280px] bottom-[-250px] w-[641px] h-[616px] hidden lg:block pointer-events-none z-30 breathing-glow"
-        style={{ '--glow-color': 'rgba(141,244,31,0.25)' } as React.CSSProperties}
+        style={{ '--glow-color': 'rgba(141,244,31,0.25)', '--glow-duration': '5s', '--glow-delay': '0.5s' } as React.CSSProperties}
         tooltip={{ name: "Warglaive of Azzinoth", quality: "legendary", type: "One-Hand Sword", flavor: "Wielded by the Betrayer himself." }}
       >
         <Image src="/images/landing/items/warglaives.png" alt="" fill className="object-contain" style={{ transform: 'rotate(41deg)' }} />
@@ -96,8 +102,10 @@ export default function LandingHero() {
       <ParallaxItem
         speed={0.25}
         slideFrom="right"
+        depth={2}
+        float={{ distance: 8, duration: 4.5, delay: 0.8 }}
         className="absolute right-[-20px] bottom-[-100px] w-[208px] h-[199px] hidden lg:block pointer-events-none z-30 breathing-glow"
-        style={{ '--glow-color': 'rgba(208,37,19,0.25)' } as React.CSSProperties}
+        style={{ '--glow-color': 'rgba(208,37,19,0.25)', '--glow-duration': '3.5s', '--glow-delay': '1.8s' } as React.CSSProperties}
         tooltip={{ name: "Cursed Vision of Sargeras", quality: "epic", type: "Leather Helmet", flavor: "His eyes see what yours cannot." }}
       >
         <Image src="/images/landing/items/cursed-vision.png" alt="" fill className="object-contain" style={{ transform: 'rotate(14deg)' }} />
