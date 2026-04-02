@@ -38,7 +38,7 @@ export default function LandingCTA() {
           slideFrom="right"
           className="absolute right-[-120px] top-[10%] w-[380px] h-[380px] hidden md:block pointer-events-none breathing-glow"
           style={{ '--glow-color': 'rgba(100,200,100,0.25)' } as React.CSSProperties}
-          tooltip={{ name: "Corrupted Ashbringer", quality: "legendary", type: "Two-Hand Sword", flavor: "Blade of the Scarlet Highlord." }}
+          tooltip={{ name: "Corrupted Ashbringer", quality: "epic", type: "Two-Hand Sword", flavor: "Blade of the Scarlet Highlord." }}
         >
           <Image src="/images/landing/items/cursed-ashbringer.png" alt="" fill className="object-contain" />
         </ParallaxItem>
