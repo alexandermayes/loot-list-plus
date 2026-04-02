@@ -21,25 +21,26 @@ export default function LandingCTA() {
   return (
     <section id="cta" className="relative pt-16 md:pt-24 pb-32 md:pb-40 bg-[#080808]">
       <div className="absolute inset-0 max-w-[1440px] mx-auto">
-        {/* Floating decorative items - flanking the CTA content */}
+        {/* 7. Tusks of Mannoroth - bottom left */}
         <ParallaxItem
           speed={0.1}
           slideFrom="left"
-          className="absolute left-[80px] top-[35%] w-[195px] h-[171px] hidden md:block pointer-events-none breathing-glow"
-          style={{ transform: 'translateY(-50%) rotate(-23deg)', '--glow-color': 'rgba(237,89,6,0.5)' } as React.CSSProperties}
-          tooltip={{ name: "Cinderheart Crown", quality: "epic", type: "Plate Helmet", flavor: "Warm to the touch. Always." }}
+          className="absolute left-[-220px] top-[-10%] w-[600px] h-[600px] hidden md:block pointer-events-none breathing-glow"
+          style={{ transform: 'rotate(3deg)', '--glow-color': 'rgba(253,87,27,0.5)' } as React.CSSProperties}
+          tooltip={{ name: "Tusks of Mannoroth", quality: "epic", type: "Plate Shoulder", flavor: "The trophy of a lifetime." }}
         >
-          <Image src="/images/landing/items/item-orange-bottom.png" alt="" fill className="object-contain" />
+          <Image src="/images/landing/items/tusks-of-mannoroth.png" alt="" fill className="object-contain" />
         </ParallaxItem>
 
+        {/* 8. Cursed Ashbringer - bottom right */}
         <ParallaxItem
           speed={-0.1}
           slideFrom="right"
-          className="absolute right-[17px] top-[30%] w-[300px] h-[240px] hidden md:block pointer-events-none breathing-glow"
-          style={{ transform: 'translateY(-50%)', '--glow-color': 'rgba(67,163,236,0.5)' } as React.CSSProperties}
-          tooltip={{ name: "Frostmaw, Blade of the Deep", quality: "epic", type: "One-Hand Sword", flavor: "Pulled from a frozen lakebed. Still dripping." }}
+          className="absolute right-[-120px] top-[10%] w-[380px] h-[380px] hidden md:block pointer-events-none breathing-glow"
+          style={{ '--glow-color': 'rgba(100,200,100,0.25)' } as React.CSSProperties}
+          tooltip={{ name: "Corrupted Ashbringer", quality: "legendary", type: "Two-Hand Sword", flavor: "Blade of the Scarlet Highlord." }}
         >
-          <Image src="/images/landing/items/item-blue-bottom.png" alt="" fill className="object-contain" />
+          <Image src="/images/landing/items/cursed-ashbringer.png" alt="" fill className="object-contain" />
         </ParallaxItem>
       </div>
 

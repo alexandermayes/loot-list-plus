@@ -40,15 +40,15 @@ export default function LandingHowItWorks() {
     <section id="how-it-works" className="relative py-24 md:py-32" style={{ background: 'linear-gradient(180deg, #0C0B0E 0%, #17151B 100%)' }}>
 
       <div className="absolute inset-0 max-w-[1440px] mx-auto">
-        {/* Purple book */}
+        {/* 5. Val'anyr */}
         <ParallaxItem
           speed={-0.2}
           slideFrom="left"
-          className="absolute left-[-20px] top-[-80px] w-[195px] h-[195px] hidden lg:block pointer-events-none z-30 breathing-glow"
-          style={{ '--glow-color': 'rgba(159,58,213,0.5)' } as React.CSSProperties}
-          tooltip={{ name: "Grimoire of the Hollow Veil", quality: "epic", type: "Off Hand", flavor: "The pages turn themselves at night." }}
+          className="absolute left-[-100px] top-[-180px] w-[420px] h-[500px] hidden lg:block pointer-events-none z-30 breathing-glow"
+          style={{ '--glow-color': 'rgba(72,205,244,0.25)' } as React.CSSProperties}
+          tooltip={{ name: "Val'anyr, Hammer of Ancient Kings", quality: "legendary", type: "One-Hand Mace", flavor: "The power of creation courses through its crystal core." }}
         >
-          <Image src="/images/landing/items/item-purple-glow.png" alt="" fill className="object-contain" />
+          <Image src="/images/landing/items/valanyr.png" alt="" fill className="object-contain" style={{ transform: 'rotate(73deg)' }} />
         </ParallaxItem>
       </div>
 

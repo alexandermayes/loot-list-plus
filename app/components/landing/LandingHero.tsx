@@ -57,49 +57,50 @@ export default function LandingHero() {
 
       {/* Max-width wrapper for floating items so they don't drift too far on wide screens */}
       <div className="absolute inset-0 max-w-[1440px] mx-auto">
-      {/* Floating decorative items with parallax + breathing glow + slide-in */}
+      {/* 1. Thunderfury - top left, angled with tip pointing up-right */}
       <ParallaxItem
         speed={-0.15}
         slideFrom="left"
         delay={0.6}
-        className="absolute left-[-68px] top-[183px] w-[280px] h-[312px] hidden lg:block pointer-events-none breathing-glow z-30"
-        style={{ '--glow-color': 'rgba(148,240,175,0.5)' } as React.CSSProperties}
-        tooltip={{ name: "Corrupted Ashbringer", quality: "epic", type: "Two-Hand Sword", flavor: "Blade of the Scarlet Highlord." }}
+        className="absolute left-[-200px] top-[160px] w-[580px] h-[530px] hidden lg:block pointer-events-none breathing-glow z-30"
+        style={{ '--glow-color': 'rgba(24,110,238,0.25)' } as React.CSSProperties}
+        tooltip={{ name: "Thunderfury, Blessed Blade of the Windseeker", quality: "legendary", type: "One-Hand Sword", flavor: "Forged from the shattered remnants of Thunderaan's prison." }}
       >
-        <Image src="/images/landing/items/item-green-glow.png" alt="" fill className="object-contain" />
+        <Image src="/images/landing/items/thunderfury.png" alt="" fill className="object-contain" style={{ transform: 'rotate(158deg) scaleY(-1)' }} />
       </ParallaxItem>
 
+      {/* 2. Hand of Rag - top right */}
       <ParallaxItem
         speed={-0.2}
         slideFrom="right"
         delay={0.8}
-        className="absolute right-[-74px] top-[273px] w-[299px] h-[347px] hidden lg:block pointer-events-none breathing-glow z-30"
-        style={{ '--glow-color': 'rgba(82,209,120,0.5)' } as React.CSSProperties}
-        tooltip={{ name: "Arcanite Ripper", quality: "epic", type: "Two-Hand Axe", flavor: "Rocketh on." }}
+        className="absolute right-[-250px] top-[190px] w-[550px] h-[500px] hidden lg:block pointer-events-none breathing-glow z-30"
+        style={{ '--glow-color': 'rgba(241,131,24,0.5)' } as React.CSSProperties}
+        tooltip={{ name: "Sulfuras, Hand of Ragnaros", quality: "legendary", type: "Two-Hand Mace", flavor: "Too hot to handle." }}
       >
-        <Image src="/images/landing/items/item-green-crystal.png" alt="" fill className="object-contain" style={{ transform: 'rotate(149deg) scaleY(-1)' }} />
+        <Image src="/images/landing/items/hand-of-rag.png" alt="" fill className="object-contain" style={{ transform: 'rotate(50deg)' }} />
       </ParallaxItem>
 
-      {/* Cyan item */}
+      {/* 3. Warglaives - bottom left */}
       <ParallaxItem
         speed={0.15}
         slideFrom="left"
-        className="absolute left-[21px] bottom-[-200px] w-[240px] h-[389px] hidden lg:block pointer-events-none z-30 breathing-glow"
-        style={{ transform: 'rotate(15deg)', '--glow-color': 'rgba(14,240,253,0.5)' } as React.CSSProperties}
-        tooltip={{ name: "Spire of Frozen Reckoning", quality: "epic", type: "Staff", flavor: "Cold enough to crack a hearthstone." }}
+        className="absolute left-[-280px] bottom-[-250px] w-[641px] h-[616px] hidden lg:block pointer-events-none z-30 breathing-glow"
+        style={{ '--glow-color': 'rgba(141,244,31,0.25)' } as React.CSSProperties}
+        tooltip={{ name: "Warglaive of Azzinoth", quality: "legendary", type: "One-Hand Sword", flavor: "Wielded by the Betrayer himself." }}
       >
-        <Image src="/images/landing/items/item-cyan-glow.png" alt="" fill className="object-contain" />
+        <Image src="/images/landing/items/warglaives.png" alt="" fill className="object-contain" style={{ transform: 'rotate(41deg)' }} />
       </ParallaxItem>
 
-      {/* Orange item */}
+      {/* 4. Cursed Vision of Sargeras - bottom right */}
       <ParallaxItem
         speed={0.25}
         slideFrom="right"
-        className="absolute right-[-40px] bottom-[-200px] w-[287px] h-[394px] hidden lg:block pointer-events-none z-30 breathing-glow"
-        style={{ transform: 'scaleX(-1) rotate(45deg)', '--glow-color': 'rgba(223,96,19,0.5)' } as React.CSSProperties}
-        tooltip={{ name: "Emberfang, Oath of the Pyreguard", quality: "epic", type: "One-Hand Sword", flavor: "Every swing leaves a scar on the air." }}
+        className="absolute right-[-20px] bottom-[-100px] w-[208px] h-[199px] hidden lg:block pointer-events-none z-30 breathing-glow"
+        style={{ '--glow-color': 'rgba(208,37,19,0.25)' } as React.CSSProperties}
+        tooltip={{ name: "Cursed Vision of Sargeras", quality: "epic", type: "Leather Helmet", flavor: "His eyes see what yours cannot." }}
       >
-        <Image src="/images/landing/items/item-orange-glow.png" alt="" fill className="object-contain" />
+        <Image src="/images/landing/items/cursed-vision.png" alt="" fill className="object-contain" style={{ transform: 'rotate(14deg)' }} />
       </ParallaxItem>
 
       </div>{/* end max-width wrapper for floating items */}

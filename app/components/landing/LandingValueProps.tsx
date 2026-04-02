@@ -79,15 +79,15 @@ export default function LandingValueProps() {
   return (
     <section id="value-props" className="relative pt-24 md:pt-32 pb-12 md:pb-16 bg-[#080808]">
       <div className="absolute inset-0 max-w-[1440px] mx-auto">
-        {/* Yellow glow - right edge, overlapping into section above */}
+        {/* 6. Invincible's Reins - right side */}
         <ParallaxItem
           speed={-0.15}
           slideFrom="right"
-          className="absolute right-[-33px] top-[-100px] w-[233px] h-[283px] hidden lg:block pointer-events-none z-30 breathing-glow"
-          style={{ '--glow-color': 'rgba(251,239,142,0.5)' } as React.CSSProperties}
-          tooltip={{ name: "Oathbreaker's Maul", quality: "epic", type: "Two-Hand Mace", flavor: "The vow it broke still echoes." }}
+          className="absolute right-[-250px] top-[-180px] w-[639px] h-[507px] hidden lg:block pointer-events-none z-30 breathing-glow"
+          style={{ '--glow-color': 'rgba(72,205,244,0.25)' } as React.CSSProperties}
+          tooltip={{ name: "Invincible's Reins", quality: "epic", type: "Mount", flavor: "Riding him will make you Invincible, not invisible." }}
         >
-          <Image src="/images/landing/items/item-yellow-glow.png" alt="" fill className="object-contain" />
+          <Image src="/images/landing/items/invincibles-reins.png" alt="" fill className="object-contain" style={{ transform: 'rotate(-6deg)' }} />
         </ParallaxItem>
       </div>
 
