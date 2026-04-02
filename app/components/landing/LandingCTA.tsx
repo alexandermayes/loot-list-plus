@@ -20,26 +20,28 @@ export default function LandingCTA() {
 
   return (
     <section id="cta" className="relative pt-16 md:pt-24 pb-32 md:pb-40 bg-[#080808]">
-      {/* Floating decorative items - flanking the CTA content */}
-      <ParallaxItem
-        speed={0.1}
-        slideFrom="left"
-        className="absolute left-[80px] top-[35%] w-[195px] h-[171px] hidden md:block pointer-events-none breathing-glow"
-        style={{ transform: 'translateY(-50%) rotate(-23deg)', '--glow-color': 'rgba(237,89,6,0.5)' } as React.CSSProperties}
-        tooltip={{ name: "Cinderheart Crown", quality: "epic", type: "Plate Helmet", flavor: "Warm to the touch. Always." }}
-      >
-        <Image src="/images/landing/items/item-orange-bottom.png" alt="" fill className="object-contain" />
-      </ParallaxItem>
+      <div className="absolute inset-0 max-w-[1440px] mx-auto">
+        {/* Floating decorative items - flanking the CTA content */}
+        <ParallaxItem
+          speed={0.1}
+          slideFrom="left"
+          className="absolute left-[80px] top-[35%] w-[195px] h-[171px] hidden md:block pointer-events-none breathing-glow"
+          style={{ transform: 'translateY(-50%) rotate(-23deg)', '--glow-color': 'rgba(237,89,6,0.5)' } as React.CSSProperties}
+          tooltip={{ name: "Cinderheart Crown", quality: "epic", type: "Plate Helmet", flavor: "Warm to the touch. Always." }}
+        >
+          <Image src="/images/landing/items/item-orange-bottom.png" alt="" fill className="object-contain" />
+        </ParallaxItem>
 
-      <ParallaxItem
-        speed={-0.1}
-        slideFrom="right"
-        className="absolute right-[17px] top-[30%] w-[300px] h-[240px] hidden md:block pointer-events-none breathing-glow"
-        style={{ transform: 'translateY(-50%)', '--glow-color': 'rgba(67,163,236,0.5)' } as React.CSSProperties}
-        tooltip={{ name: "Frostmaw, Blade of the Deep", quality: "epic", type: "One-Hand Sword", flavor: "Pulled from a frozen lakebed. Still dripping." }}
-      >
-        <Image src="/images/landing/items/item-blue-bottom.png" alt="" fill className="object-contain" />
-      </ParallaxItem>
+        <ParallaxItem
+          speed={-0.1}
+          slideFrom="right"
+          className="absolute right-[17px] top-[30%] w-[300px] h-[240px] hidden md:block pointer-events-none breathing-glow"
+          style={{ transform: 'translateY(-50%)', '--glow-color': 'rgba(67,163,236,0.5)' } as React.CSSProperties}
+          tooltip={{ name: "Frostmaw, Blade of the Deep", quality: "epic", type: "One-Hand Sword", flavor: "Pulled from a frozen lakebed. Still dripping." }}
+        >
+          <Image src="/images/landing/items/item-blue-bottom.png" alt="" fill className="object-contain" />
+        </ParallaxItem>
+      </div>
 
       <div className="relative z-10 max-w-4xl mx-auto px-6 md:px-12 lg:px-20">
         <motion.div

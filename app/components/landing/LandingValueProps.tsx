@@ -78,20 +78,18 @@ export default function LandingValueProps() {
 
   return (
     <section id="value-props" className="relative pt-24 md:pt-32 pb-12 md:pb-16 bg-[#080808]">
-      {/* Floating items overlaying the stats cards - original Figma sizes */}
-
-
-
-      {/* Yellow glow - right edge, overlapping into section above, flipped horizontally */}
-      <ParallaxItem
-        speed={-0.15}
-        slideFrom="right"
-        className="absolute right-[-33px] top-[-100px] w-[233px] h-[283px] hidden lg:block pointer-events-none z-30 breathing-glow"
-        style={{ '--glow-color': 'rgba(251,239,142,0.5)' } as React.CSSProperties}
-        tooltip={{ name: "Oathbreaker's Maul", quality: "epic", type: "Two-Hand Mace", flavor: "The vow it broke still echoes." }}
-      >
-        <Image src="/images/landing/items/item-yellow-glow.png" alt="" fill className="object-contain" />
-      </ParallaxItem>
+      <div className="absolute inset-0 max-w-[1440px] mx-auto">
+        {/* Yellow glow - right edge, overlapping into section above */}
+        <ParallaxItem
+          speed={-0.15}
+          slideFrom="right"
+          className="absolute right-[-33px] top-[-100px] w-[233px] h-[283px] hidden lg:block pointer-events-none z-30 breathing-glow"
+          style={{ '--glow-color': 'rgba(251,239,142,0.5)' } as React.CSSProperties}
+          tooltip={{ name: "Oathbreaker's Maul", quality: "epic", type: "Two-Hand Mace", flavor: "The vow it broke still echoes." }}
+        >
+          <Image src="/images/landing/items/item-yellow-glow.png" alt="" fill className="object-contain" />
+        </ParallaxItem>
+      </div>
 
 
       <div ref={ref} className="relative z-10 max-w-[1200px] mx-auto px-6 md:px-12">

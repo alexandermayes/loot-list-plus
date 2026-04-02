@@ -39,16 +39,18 @@ export default function LandingHowItWorks() {
   return (
     <section id="how-it-works" className="relative py-24 md:py-32" style={{ background: 'linear-gradient(180deg, #0C0B0E 0%, #17151B 100%)' }}>
 
-      {/* Purple book */}
-      <ParallaxItem
-        speed={-0.2}
-        slideFrom="left"
-        className="absolute left-[-20px] top-[-80px] w-[195px] h-[195px] hidden lg:block pointer-events-none z-30 breathing-glow"
-        style={{ '--glow-color': 'rgba(159,58,213,0.5)' } as React.CSSProperties}
-        tooltip={{ name: "Grimoire of the Hollow Veil", quality: "epic", type: "Off Hand", flavor: "The pages turn themselves at night." }}
-      >
-        <Image src="/images/landing/items/item-purple-glow.png" alt="" fill className="object-contain" />
-      </ParallaxItem>
+      <div className="absolute inset-0 max-w-[1440px] mx-auto">
+        {/* Purple book */}
+        <ParallaxItem
+          speed={-0.2}
+          slideFrom="left"
+          className="absolute left-[-20px] top-[-80px] w-[195px] h-[195px] hidden lg:block pointer-events-none z-30 breathing-glow"
+          style={{ '--glow-color': 'rgba(159,58,213,0.5)' } as React.CSSProperties}
+          tooltip={{ name: "Grimoire of the Hollow Veil", quality: "epic", type: "Off Hand", flavor: "The pages turn themselves at night." }}
+        >
+          <Image src="/images/landing/items/item-purple-glow.png" alt="" fill className="object-contain" />
+        </ParallaxItem>
+      </div>
 
       <div ref={ref} className="relative z-10 max-w-[1200px] mx-auto px-6 md:px-12">
         {/* Section Header */}

@@ -55,6 +55,8 @@ export default function LandingHero() {
         aria-hidden="true"
       />
 
+      {/* Max-width wrapper for floating items so they don't drift too far on wide screens */}
+      <div className="absolute inset-0 max-w-[1440px] mx-auto">
       {/* Floating decorative items with parallax + breathing glow + slide-in */}
       <ParallaxItem
         speed={-0.15}
@@ -99,6 +101,8 @@ export default function LandingHero() {
       >
         <Image src="/images/landing/items/item-orange-glow.png" alt="" fill className="object-contain" />
       </ParallaxItem>
+
+      </div>{/* end max-width wrapper for floating items */}
 
       {/* Hero Content + Dashboard Preview */}
       <div className="relative z-20">
