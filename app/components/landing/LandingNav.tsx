@@ -29,10 +29,7 @@ export default function LandingNav() {
   }, [])
 
   return (
-    <motion.header
-      initial={{ y: -100 }}
-      animate={{ y: 0 }}
-      transition={{ duration: 0.5, ease: 'easeOut' }}
+    <header
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
         scrolled
           ? 'bg-[#080808]/80 backdrop-blur-xl border-b border-[#383838]/50 shadow-lg'
@@ -121,6 +118,6 @@ export default function LandingNav() {
           </a>
         </nav>
       </div>
-    </motion.header>
+    </header>
   )
 }

@@ -49,3 +49,25 @@ next-env.d.ts
 
 # npm config (contains license key)
 .npmrc
+
+# internal docs and planning
+LootListPlus-Marketing-Plan.md
+CLAUDE.md
+DISCORD-AUTH-INFO.md
+DISCORD-VERIFICATION-SETUP.md
+MULTI_EXPANSION_BUGS.md
+SETUP-CLASS-SPECS.md
+SETUP-CLASSIFICATION.md
+SETUP-LOOT-DATABASE.md
+TESTING_MULTI_EXPANSION.md
+UI-COMPONENTS.md
+WARP.md
+docs/
+migrations/*.md
+scripts/*.md
+loadtest/*.md
+discord-bot/*.md
+
+# Claude config (keep commands/ tracked)
+.claude/*
+!.claude/commands/

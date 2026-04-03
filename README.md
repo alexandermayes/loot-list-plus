@@ -36,7 +36,9 @@ LootList+ helps guilds distribute raid loot fairly. Raiders submit ranked lists 
 | Classic | Full loot data | 6 phases (MC/Onyxia through Naxx) | 800+ |
 | The Burning Crusade | Full loot data | 5 phases (Kara through Sunwell) | 651 |
 | Wrath of the Lich King | Full loot data | 5 phases (Naxx/EoE through Ruby Sanctum) | 1,353 |
-| Cataclysm through The War Within | Phase definitions only | Coming soon | - |
+| Cataclysm | Full loot data | 5 phases (BWD/BoT through Dragon Soul) | 978 |
+| Mists of Pandaria | Full loot data | 5 phases (MSV through Siege of Orgrimmar) | 1,705 |
+| Warlords of Draenor through The War Within | Phase definitions only | Coming soon | - |
 
 ## Tech stack
 
@@ -73,4 +75,4 @@ supabase/migrations/ # Database migrations
 
 ## License
 
-Private and proprietary. All rights reserved.
+Proprietary. See [LICENSE](LICENSE) for details.
