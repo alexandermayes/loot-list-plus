@@ -20,15 +20,6 @@ LootList+ helps guilds distribute raid loot fairly. Raiders submit ranked lists 
 - **Loot history** - Full audit trail of every item awarded
 - **Discord webhooks** - Notify channels on submissions, approvals, and awards
 
-### In-game addon
-- **Roll-off system** - Start rolls from the loot window, MS > OS priority with score tiebreakers
-- **Auto-trade** - Awarded items auto-placed in trade window
-- **Loot announcements** - Epic+ drops announced to raid chat with priority info
-- **PackMule** - Auto-distribute sub-epic items to your designated enchanter
-- **Attendance tracking** - Late joiner and early leaver detection, per-boss roster snapshots
-- **Score tooltips** - See LootList+ scores on item tooltips in-game
-- **Data sync** - Import/export compressed strings between web and addon
-
 ## Supported expansions
 
 | Expansion | Status | Raids | Items |
