@@ -101,7 +101,7 @@ const breadcrumbLd = {
 
 export default function BlogPost() {
   return (
-    <main className="bg-background overflow-x-hidden">
+    <main className="bg-background overflow-x-hidden" style={{ background: 'linear-gradient(180deg, #0f0e12 0%, #080808 40%)' }}>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}

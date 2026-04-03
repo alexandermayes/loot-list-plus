@@ -45,7 +45,7 @@ const posts = [
 
 export default function BlogIndex() {
   return (
-    <main className="bg-background overflow-x-hidden">
+    <main className="bg-background overflow-x-hidden" style={{ background: 'linear-gradient(180deg, #0f0e12 0%, #080808 40%)' }}>
       <LandingNav />
 
       <section className="relative pt-32 pb-20 px-6 md:px-12 lg:px-20">

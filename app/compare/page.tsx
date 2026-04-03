@@ -111,7 +111,7 @@ function Partial({ label }: { label: string }) {
 
 export default function ComparePage() {
   return (
-    <main className="bg-background overflow-x-hidden">
+    <main className="bg-background overflow-x-hidden" style={{ background: 'linear-gradient(180deg, #0f0e12 0%, #080808 40%)' }}>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
@@ -152,7 +152,12 @@ export default function ComparePage() {
                 <thead>
                   <tr className="bg-background-subtle border-b border-border">
                     <th className="text-left py-3 px-4 font-semibold text-foreground min-w-[220px]">Feature</th>
-                    <th className="text-center py-3 px-3 font-semibold text-accent min-w-[90px]">LootList+</th>
+                    <th className="text-center py-3 px-3 font-semibold text-accent min-w-[90px]">
+                      <span className="flex justify-center">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src="/images/landing/logo-landing.svg" alt="LootList+" width={77} height={12} />
+                      </span>
+                    </th>
                     <th className="text-center py-3 px-3 font-semibold text-foreground-secondary min-w-[90px]">TMB</th>
                     <th className="text-center py-3 px-3 font-semibold text-foreground-secondary min-w-[90px]">DKP</th>
                     <th className="text-center py-3 px-3 font-semibold text-foreground-secondary min-w-[90px]">EPGP</th>
