@@ -14,6 +14,21 @@ export interface UpdateEntry {
 
 export const updates: UpdateEntry[] = [
   {
+    date: 'April 3, 2026',
+    items: [
+      {
+        category: 'improvement',
+        title: 'Landing page polish',
+        description: 'Floating items now react to your mouse, click to interact with them, and stay contained on ultra-wide monitors. Items updated to iconic WoW legendaries.',
+      },
+      {
+        category: 'feature',
+        title: 'New blog post: DKP Is Dead',
+        description: 'A guide to what Classic guilds are running instead of DKP in 2026, and why priority lists are winning.',
+      },
+    ],
+  },
+  {
     date: 'April 1, 2026',
     items: [
       {
