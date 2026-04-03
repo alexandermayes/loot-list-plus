@@ -1115,8 +1115,8 @@ export default function MasterLootPage() {
             ) : (
               <>
                 {/* Desktop table */}
-                <div className="hidden sm:block overflow-x-auto">
-                  <table className="w-full min-w-[420px]">
+                <div className="hidden sm:block">
+                  <table className="w-full">
                     <thead className="sticky top-0 z-10">
                       <tr className="bg-background-subtle border-b border-border">
                         <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground w-12 bg-background-subtle">Rank</th>
@@ -1218,6 +1218,25 @@ export default function MasterLootPage() {
               <Label htmlFor="review-notes" className="text-sm font-medium mb-2 block">
                 Review notes (optional)
               </Label>
+              <div className="flex flex-wrap gap-1.5 mb-2">
+                {[
+                  'You cannot make changes after the deadline without officer approval.',
+                  'Both columns need to be filled out before we can approve.',
+                  'Your list is looking sparse. Try to rank at least 20 items.',
+                  'Some items on your list aren\'t available in this raid tier.',
+                  'Duplicate items found. Each item can only appear once.',
+                  'Looks good, approved!',
+                ].map((suggestion) => (
+                  <button
+                    key={suggestion}
+                    type="button"
+                    className="px-2.5 py-1 text-[11px] rounded-full border border-border bg-background-subtle text-foreground-secondary hover:bg-muted hover:text-foreground transition-colors text-left"
+                    onClick={() => setReviewNotes(suggestion)}
+                  >
+                    {suggestion}
+                  </button>
+                ))}
+              </div>
               <Textarea
                 id="review-notes"
                 value={reviewNotes}
@@ -1291,7 +1310,7 @@ export default function MasterLootPage() {
           document.body
         ) : (
           /* Desktop: Modal */
-          <Modal open={true} onClose={closeSubmission} size="lg">
+          <Modal open={true} onClose={closeSubmission} size="xl">
             <ModalHeader onClose={closeSubmission}>
               {headerContent}
             </ModalHeader>
