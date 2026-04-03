@@ -32,7 +32,7 @@ export default function LandingCTA() {
           style={{ transform: 'rotate(3deg)', '--glow-color': 'rgba(253,87,27,0.5)', '--glow-duration': '4s', '--glow-delay': '1.2s' } as React.CSSProperties}
           tooltip={{ name: "Tusks of Mannoroth", quality: "epic", type: "Plate Shoulder", flavor: "The trophy of a lifetime." }}
         >
-          <Image src="/images/landing/items/tusks-of-mannoroth.png" alt="" fill className="object-contain" />
+          <Image src="/images/landing/items/tusks-of-mannoroth.png" alt="" fill sizes="600px" className="object-contain" />
         </ParallaxItem>
 
         {/* 8. Cursed Ashbringer - bottom right */}
@@ -46,7 +46,7 @@ export default function LandingCTA() {
           style={{ '--glow-color': 'rgba(100,200,100,0.25)', '--glow-duration': '4.8s', '--glow-delay': '0.6s' } as React.CSSProperties}
           tooltip={{ name: "Corrupted Ashbringer", quality: "epic", type: "Two-Hand Sword", flavor: "Blade of the Scarlet Highlord." }}
         >
-          <Image src="/images/landing/items/cursed-ashbringer.png" alt="" fill className="object-contain" />
+          <Image src="/images/landing/items/cursed-ashbringer.png" alt="" fill sizes="600px" className="object-contain" />
         </ParallaxItem>
       </div>
 

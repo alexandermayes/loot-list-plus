@@ -51,7 +51,7 @@ export default function LandingHowItWorks() {
           style={{ '--glow-color': 'rgba(72,205,244,0.25)', '--glow-duration': '4.2s', '--glow-delay': '0.3s' } as React.CSSProperties}
           tooltip={{ name: "Val'anyr, Hammer of Ancient Kings", quality: "legendary", type: "One-Hand Mace", flavor: "The power of creation courses through its crystal core." }}
         >
-          <Image src="/images/landing/items/valanyr.png" alt="" fill className="object-contain" style={{ transform: 'rotate(73deg)' }} />
+          <Image src="/images/landing/items/valanyr.png" alt="" fill sizes="500px" className="object-contain" style={{ transform: 'rotate(73deg)' }} />
         </ParallaxItem>
       </div>
 

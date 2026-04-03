@@ -33,12 +33,15 @@ import { trackClientEvent } from '@/utils/analytics/client'
 import { notifySubmissionChanged } from '@/app/hooks/usePendingSubmissionCount'
 import { resolvePhaseGroups, getPhaseGroupLabel, getPhaseGroupShortLabel, getCanonicalPhase, type PhaseGroup } from '@/domain/expansion/phase-groups'
 import { getRaidIcon, getRaidShorthand } from '@/utils/raidIcons'
+import { useRaidTeam } from '@/app/hooks/useRaidTeam'
+import { TeamSelector } from '@/app/components/TeamSelector'
 
 interface Submission {
   id: string
   status: string
   submitted_at: string | null
   review_notes: string | null
+  character_id: string
   tier_name?: string
   tier_id?: string
   resubmission_count: number
@@ -160,6 +163,8 @@ export default function MasterLootPage() {
   const { activeGuild, loading: guildLoading, isOfficer } = useGuildContext()
   const { showNotification } = useNotification()
   const { confirm, ConfirmDialog } = useConfirm()
+  const { activeTeamId, teams, hasTeams, setTeam } = useRaidTeam()
+  const [teamCharacterIds, setTeamCharacterIds] = useState<Set<string> | null>(null)
 
   useEffect(() => {
     document.title = 'LootList+ • Loot Submissions'
@@ -351,6 +356,25 @@ export default function MasterLootPage() {
       loadSubmissions(guildId, activePhase, activeGuild.active_expansion_id)
     }
   }, [activePhase, guildId, activeGuild?.active_expansion_id, loadSubmissions])
+
+  // Fetch team member character IDs when a team is selected
+  useEffect(() => {
+    if (!activeTeamId) {
+      setTeamCharacterIds(null)
+      return
+    }
+    let cancelled = false
+    supabase
+      .from('raid_team_members')
+      .select('character_id')
+      .eq('raid_team_id', activeTeamId)
+      .then(({ data }) => {
+        if (!cancelled && data) {
+          setTeamCharacterIds(new Set(data.map((m: { character_id: string }) => m.character_id)))
+        }
+      })
+    return () => { cancelled = true }
+  }, [activeTeamId, supabase])
 
   const handleReview = async (submissionId: string, status: 'approved' | 'rejected') => {
     setReviewing(submissionId)
@@ -682,6 +706,7 @@ export default function MasterLootPage() {
 
   const filteredSubmissions = submissions.filter(sub => {
     if (filter !== 'all' && sub.status !== filter) return false
+    if (teamCharacterIds && !teamCharacterIds.has(sub.character_id)) return false
     if (searchQuery) {
       const q = searchQuery.toLowerCase()
       return sub.member?.character_name?.toLowerCase().includes(q)
@@ -801,7 +826,7 @@ export default function MasterLootPage() {
           {/* Filters and Delete Actions */}
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div className="flex flex-col gap-3 w-full sm:w-auto">
-              <div className="flex gap-2 overflow-x-auto scrollbar-hide">
+              <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide">
               {(['all', 'pending', 'approved', 'rejected'] as const).map((status) => (
                 <Button
                   key={status}
@@ -813,6 +838,14 @@ export default function MasterLootPage() {
                   {status.charAt(0).toUpperCase() + status.slice(1)}
                 </Button>
               ))}
+              {hasTeams && (
+                <TeamSelector
+                  teams={teams}
+                  activeTeamId={activeTeamId}
+                  onTeamChange={setTeam}
+                  className="w-36"
+                />
+              )}
               </div>
               <div className="relative w-full sm:w-52">
                 <HugeiconsIcon icon={Search01Icon} size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
