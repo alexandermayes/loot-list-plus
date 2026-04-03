@@ -133,40 +133,16 @@ export default function LandingValueProps() {
           />
         </motion.div>
 
-        {/* Row 2: quote + 3+ stat + quote */}
+        {/* Row 2: stat + stat + stat */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={isInView ? { opacity: 1, y: 0 } : {}}
           transition={{ delay: 0.3 }}
           className="flex flex-col md:flex-row gap-4 mb-4"
         >
-          <QuoteCard
-            quote="Attendance-based scoring makes the process feel fair. Raiders who consistently show up and put in the work are rewarded automatically."
-            className="h-[250px] md:h-[300px] md:flex-1"
-          />
-          <StatCard value="3+" label="hours saved a week" className="h-[250px] md:h-[300px] flex-shrink-0 md:w-[384px]" />
-          <QuoteCard
-            quote="What used to live across Discord messages, spreadsheets, and manual notes is now all in one place. It saves our officers hours every week."
-            className="h-[250px] md:h-[300px] md:flex-1"
-          />
-        </motion.div>
-
-        {/* Row 3: quote + 1 stat */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={isInView ? { opacity: 1, y: 0 } : {}}
-          transition={{ delay: 0.4 }}
-          className="flex flex-col md:flex-row gap-4"
-        >
-          <QuoteCard
-            quote="LootList+ replaced the chaos with a system that's organized, searchable, and always up to date."
-            className="h-[250px] md:h-[300px] md:flex-[2]"
-          />
-          <StatCard
-            value="1"
-            label="organized system for loot, attendance, and priorities"
-            className="h-[250px] md:h-[300px] flex-shrink-0 md:w-auto md:flex-1"
-          />
+          <StatCard value="3+" label="hours saved a week" className="h-[250px] md:h-[300px] flex-shrink-0 md:w-auto md:flex-1" />
+          <StatCard value="0" label="spreadsheets needed" className="h-[250px] md:h-[300px] flex-shrink-0 md:w-auto md:flex-1" />
+          <StatCard value="1" label="system for loot, attendance, and priorities" className="h-[250px] md:h-[300px] flex-shrink-0 md:w-auto md:flex-1" />
         </motion.div>
       </div>
     </section>
