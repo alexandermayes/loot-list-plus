@@ -10,13 +10,18 @@ import MagneticButton from './MagneticButton'
 import CountUp from './CountUp'
 import { updates } from '@/lib/updates-data'
 
-// Get the latest feature from updates
-function getLatestFeature() {
+function getRecentFeatures() {
+  const features: string[] = []
   for (const entry of updates) {
-    const feature = entry.items.find(item => item.category === 'feature')
-    if (feature) return feature.title
+    for (const item of entry.items) {
+      if (item.category === 'feature') {
+        features.push(item.title.replace(/^New blog post: /, ''))
+        if (features.length >= 3) return `${features[0]}, ${features[1]}, and more`
+      }
+    }
   }
-  return 'Check out what\'s new in LootList+'
+  if (features.length === 0) return 'See what\'s new'
+  return features.join(', ')
 }
 
 const APP_URL = 'https://www.lootlistplus.com'
@@ -134,7 +139,7 @@ export default function LandingHero() {
                 NEW
               </span>
               <span className="font-poppins text-[14px] text-white">
-                Just shipped: {getLatestFeature()}
+                {getRecentFeatures()}
               </span>
               <Image src="/images/landing/icons/arrow-right-02.svg" alt="" width={16} height={16} />
             </motion.a>
