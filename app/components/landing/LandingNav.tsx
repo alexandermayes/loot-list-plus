@@ -78,6 +78,13 @@ export default function LandingNav() {
                 How it works
               </button>
               <a
+                href="/compare"
+                onClick={() => trackClientEvent('landing_nav_clicked', { target: 'compare', source: 'nav' })}
+                className="text-white hover:text-[#9940ec] transition-colors no-underline"
+              >
+                Compare
+              </a>
+              <a
                 href="/blog"
                 onClick={() => trackClientEvent('landing_nav_clicked', { target: 'blog', source: 'nav' })}
                 className="text-white hover:text-[#9940ec] transition-colors no-underline"

@@ -12,6 +12,7 @@ import LandingAppPreview from '@/app/components/landing/LandingAppPreview'
 import LandingValueProps from '@/app/components/landing/LandingValueProps'
 import LandingCTA from '@/app/components/landing/LandingCTA'
 import LandingFooter from '@/app/components/landing/LandingFooter'
+import LandingCompare from '@/app/components/landing/LandingCompare'
 import FloatingParticles from '@/app/components/landing/FloatingParticles'
 
 // Login page (client component for Supabase OAuth)
@@ -91,6 +92,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ n
         <LandingHero />
         <LandingAppPreview />
         <LandingFeatures />
+        <LandingCompare />
         <LandingHowItWorks />
         <LandingValueProps />
         <LandingCTA />
