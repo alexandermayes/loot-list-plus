@@ -15,6 +15,15 @@ export const metadata: Metadata = {
 
 const posts = [
   {
+    slug: 'dkp-is-dead-what-classic-guilds-use-in-2026',
+    title: 'DKP Is Dead: What Classic Guilds Use in 2026',
+    description:
+      'DKP had its time, but Classic guilds in 2026 have moved on. Here\'s what replaced it, why, and what the best guilds are running today.',
+    date: 'April 2, 2026',
+    readTime: '8 min read',
+    tag: 'Guide',
+  },
+  {
     slug: 'why-attendance-tracking-matters-more-than-loot-rules',
     title: 'Why Attendance Tracking Matters More Than Loot Rules',
     description:
