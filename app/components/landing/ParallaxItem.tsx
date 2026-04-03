@@ -85,7 +85,7 @@ export default function ParallaxItem({
 
     // Scale punch
     clickControls.start({
-      scale: [1, 1.12, 0.96, 1.03, 1],
+      scale: [1, 1.06, 0.98, 1],
       transition: { duration: 0.45, ease: 'easeOut' },
     })
 
