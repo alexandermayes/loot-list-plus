@@ -21,6 +21,7 @@ import LoginPage from '@/app/components/LoginPage'
 const LANDING_PAGE_HOSTS = [
   'getlootlist.com',
   'www.getlootlist.com',
+  'localhost',
 ]
 
 function isLandingHost(host: string): boolean {
@@ -84,7 +85,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ n
   // Show marketing landing page on getlootlist.com
   if (isLandingHost(host)) {
     return (
-      <main className="bg-[#080808] overflow-x-hidden">
+      <main className="relative bg-[#080808] overflow-x-hidden">
         <FloatingParticles />
         <LandingNav />
         <LandingHero />

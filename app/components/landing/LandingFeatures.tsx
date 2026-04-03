@@ -183,6 +183,7 @@ export default function LandingFeatures() {
               src={features[activeIndex].image}
               alt={features[activeIndex].text}
               fill
+              sizes="(max-width: 1024px) 100vw, 544px"
               className="object-cover object-left-top"
             />
           </motion.div>

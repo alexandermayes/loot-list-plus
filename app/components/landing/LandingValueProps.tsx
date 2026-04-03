@@ -55,15 +55,21 @@ function StatCard({ value, label, className }: { value: string; label: string; c
   )
 }
 
-function QuoteCard({ quote, className }: { quote: string; className?: string }) {
+function QuoteCard({ quote, author, className }: { quote: string; author?: { name: string; guild: string }; className?: string }) {
   return (
     <TiltCard
-      className={`flex items-center justify-center overflow-hidden rounded-[20px] md:rounded-[28px] p-6 md:p-12 lg:p-20 ${className || ''}`}
+      className={`flex flex-col items-center justify-center overflow-hidden rounded-[20px] md:rounded-[28px] p-6 md:p-12 lg:p-20 ${className || ''}`}
       style={{ backgroundImage: quoteGradient }}
     >
       <p className="font-poppins font-medium text-[16px] text-[#bababa] leading-normal text-center">
         &ldquo;{quote}&rdquo;
       </p>
+      {author && (
+        <div className="mt-5">
+          <p className="font-poppins font-semibold text-[13px] text-white leading-tight text-center">{author.name}</p>
+          <p className="font-poppins text-[12px] text-[#bababa] leading-tight text-center">{author.guild}</p>
+        </div>
+      )}
     </TiltCard>
   )
 }
@@ -90,7 +96,7 @@ export default function LandingValueProps() {
           style={{ '--glow-color': 'rgba(72,205,244,0.25)', '--glow-duration': '5.5s', '--glow-delay': '0.8s' } as React.CSSProperties}
           tooltip={{ name: "Invincible's Reins", quality: "epic", type: "Mount", flavor: "Riding him will make you Invincible, not invisible." }}
         >
-          <Image src="/images/landing/items/invincibles-reins.png" alt="" fill className="object-contain" style={{ transform: 'rotate(-6deg)' }} />
+          <Image src="/images/landing/items/invincibles-reins.png" alt="" fill sizes="640px" className="object-contain" style={{ transform: 'rotate(-6deg)' }} />
         </ParallaxItem>
       </div>
 
@@ -121,7 +127,8 @@ export default function LandingValueProps() {
         >
           <StatCard value="100%" label="transparent" className="h-[250px] md:h-[300px] flex-shrink-0 md:w-auto md:flex-1" />
           <QuoteCard
-            quote="LootList+ gave our guild a clear, transparent system for every loot decision. Everyone can see who submitted what, attendance records, and exactly why loot was assigned the way it was."
+            quote="One of the biggest benefits we've seen is how much it cuts down on loot drama. The transparency and structure it provides keep things fair and clear for everyone, while also incentivizing raiders to maintain good attendance and consistently show up prepared."
+            author={{ name: 'Scizophrenic', guild: 'Crucible' }}
             className="h-[250px] md:h-[300px] md:flex-[2]"
           />
         </motion.div>

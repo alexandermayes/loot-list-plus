@@ -110,14 +110,14 @@ export default function ParallaxItem({
     <motion.div
       ref={ref}
       className={className}
-      style={{ ...style, y }}
+      style={{ ...style, y, position: 'absolute' as const }}
       initial={{ opacity: 0, x: initialX }}
       animate={{ opacity: 1, x: 0 }}
       transition={{ duration: 0.8, delay, ease: 'easeOut' }}
     >
       {/* Idle float layer */}
       <motion.div
-        className="w-full h-full"
+        className="relative w-full h-full"
         animate={floatKeyframes}
         transition={{
           duration: floatDuration,
@@ -132,14 +132,14 @@ export default function ParallaxItem({
         <motion.div
           animate={hovered ? { y: -10, rotate: 2, scale: 1.05 } : { y: 0, rotate: 0, scale: 1 }}
           transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-          className="w-full h-full"
+          className="relative w-full h-full"
           style={tooltip || clickEffect ? { cursor: 'pointer', pointerEvents: 'auto' } : undefined}
           onMouseEnter={() => setHovered(true)}
           onMouseLeave={() => setHovered(false)}
           onMouseMove={tooltip ? handleMouseMove : undefined}
           onClick={handleClick}
         >
-          <motion.div className="w-full h-full" animate={clickControls}>
+          <motion.div className="relative w-full h-full" animate={clickControls}>
             {children}
           </motion.div>
         </motion.div>
