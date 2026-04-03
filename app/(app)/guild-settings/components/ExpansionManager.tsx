@@ -709,7 +709,7 @@ export default function ExpansionManager() {
 
                       return (
                         <Link
-                          href={`/admin/expansions/${exp.expansion_id}`}
+                          href={`/expansions/${exp.expansion_id}`}
                           className="block mt-4 p-4 rounded-xl transition-colors hover:bg-white/5"
                           style={{
                             backgroundColor: `${visuals.accentColor}10`,

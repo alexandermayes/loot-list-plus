@@ -1654,7 +1654,7 @@ function DashboardContent() {
                   <p className="text-foreground font-semibold text-base">Action required</p>
                   <p className="text-muted-foreground text-sm mt-1">{error}</p>
                   {isOfficer && (
-                    <Button className="mt-3" onClick={() => router.push('/admin/expansions')}>
+                    <Button className="mt-3" onClick={() => router.push('/expansions')}>
                       Manage expansions
                     </Button>
                   )}

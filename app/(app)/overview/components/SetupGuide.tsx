@@ -71,7 +71,7 @@ export function SetupGuide({ guildId, guildName, hasExpansion }: SetupGuideProps
           description: `${guildName} is set up and ready to go.`,
           icon: CheckmarkCircle01Icon,
           complete: true,
-          href: '/admin/guild-settings',
+          href: '/guild-settings',
           cta: 'Guild settings',
         },
         {
@@ -82,7 +82,7 @@ export function SetupGuide({ guildId, guildName, hasExpansion }: SetupGuideProps
             : 'Create an invite code so your raiders can join.',
           icon: UserGroupIcon,
           complete: hasInviteCode,
-          href: '/admin/guild-settings',
+          href: '/guild-settings',
           cta: hasInviteCode ? 'Manage invites' : 'Create invite code',
         },
         {
@@ -93,7 +93,7 @@ export function SetupGuide({ guildId, guildName, hasExpansion }: SetupGuideProps
             : 'Tell us which days you raid so attendance tracking works.',
           icon: Calendar03Icon,
           complete: hasRaidSchedule,
-          href: '/admin/guild-settings',
+          href: '/guild-settings',
           cta: hasRaidSchedule ? 'Edit schedule' : 'Set raid days',
         },
         {
@@ -115,7 +115,7 @@ export function SetupGuide({ guildId, guildName, hasExpansion }: SetupGuideProps
             : 'After your first raid, log attendance to start building scores.',
           icon: Award01Icon,
           complete: hasRaids,
-          href: '/admin/raid-tracking',
+          href: '/raid-tracking',
           cta: hasRaids ? 'Raid tracking' : 'Log a raid',
         },
       ])

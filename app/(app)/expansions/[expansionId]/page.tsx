@@ -618,7 +618,7 @@ export default function ExpansionDetailPage({ params }: { params: Promise<{ expa
       <div className="p-8">
         <Button
           variant="ghost"
-          onClick={() => router.push('/admin/guild-settings')}
+          onClick={() => router.push('/guild-settings')}
           className="mb-6"
         >
           <HugeiconsIcon icon={ArrowLeft01Icon} size={16} />
@@ -640,7 +640,7 @@ export default function ExpansionDetailPage({ params }: { params: Promise<{ expa
       {/* Back Button */}
       <Button
         variant="outline"
-        onClick={() => router.push('/admin/guild-settings')}
+        onClick={() => router.push('/guild-settings')}
       >
         <HugeiconsIcon icon={ArrowLeft01Icon} size={16} />
         Back

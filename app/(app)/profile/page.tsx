@@ -825,7 +825,7 @@ export default function ProfilePage() {
                               variant="link"
                               onClick={async () => {
                                 await switchGuild(membership.guild.id)
-                                router.push('/admin/guild-settings')
+                                router.push('/guild-settings')
                               }}
                               className="text-accent text-[13px] p-0 h-auto"
                             >

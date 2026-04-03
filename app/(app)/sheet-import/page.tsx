@@ -333,7 +333,7 @@ export default function SheetImportPage() {
           )}
 
           <div className="flex gap-3">
-            <Button variant="outline" onClick={() => router.push('/admin/guild-settings')}>
+            <Button variant="outline" onClick={() => router.push('/guild-settings')}>
               Go back
             </Button>
             <Button
