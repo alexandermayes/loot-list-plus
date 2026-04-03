@@ -15,12 +15,13 @@ const PRO_FEATURES: ProFeature[] = ['raid_teams']
 /**
  * Check if a guild has access to a Pro feature.
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function hasFeature(
-  guild: { subscription_tier?: string } | null | undefined,
+  guild: any,
   feature: ProFeature
 ): boolean {
   if (!guild) return false
-  const tier = (guild.subscription_tier || 'free') as SubscriptionTier
+  const tier = (String(guild.subscription_tier || 'free')) as SubscriptionTier
   if (tier === 'pro') return PRO_FEATURES.includes(feature)
   return false
 }
@@ -28,7 +29,8 @@ export function hasFeature(
 /**
  * Check if a guild is on the Pro tier.
  */
-export function isPro(guild: { subscription_tier?: string } | null | undefined): boolean {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function isPro(guild: any): boolean {
   if (!guild) return false
-  return (guild.subscription_tier || 'free') === 'pro'
+  return (String(guild.subscription_tier || 'free')) === 'pro'
 }
