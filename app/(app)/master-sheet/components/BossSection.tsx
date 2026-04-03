@@ -110,16 +110,20 @@ function ScoreBreakdownPopover({
     })
   }, [anchorRef])
 
-  // Close on click outside
+  // Close on click outside (but not when clicking the anchor itself — the anchor's onClick handles toggling)
   useEffect(() => {
     const handler = (e: MouseEvent) => {
-      if (popoverRef.current && !popoverRef.current.contains(e.target as Node)) {
+      const target = e.target as Node
+      if (
+        popoverRef.current && !popoverRef.current.contains(target) &&
+        (!anchorRef || !anchorRef.contains(target))
+      ) {
         onClose()
       }
     }
     document.addEventListener('mousedown', handler)
     return () => document.removeEventListener('mousedown', handler)
-  }, [onClose])
+  }, [onClose, anchorRef])
 
   if (!position) return null
 

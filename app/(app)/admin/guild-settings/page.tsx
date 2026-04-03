@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useGuildContext } from '@/app/contexts/GuildContext'
 import { useNotification } from '@/app/contexts/NotificationContext'
@@ -34,6 +34,8 @@ import { HugeiconsIcon } from '@hugeicons/react'
 export default function GuildSettingsPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const guildInfoRef = useRef<HTMLDivElement>(null)
+  const [guildInfoHeight, setGuildInfoHeight] = useState<number | undefined>(undefined)
 
   // Form state
   const [guildName, setGuildName] = useState('')
@@ -92,6 +94,17 @@ export default function GuildSettingsPage() {
   useEffect(() => {
     document.title = 'LootList+ • Guild Settings'
   }, [])
+
+  // Match members card height to guild info card
+  useEffect(() => {
+    const el = guildInfoRef.current
+    if (!el) return
+    const observer = new ResizeObserver(([entry]) => {
+      setGuildInfoHeight(entry.contentRect.height + /* border+padding */ (el.offsetHeight - el.clientHeight))
+    })
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [loading])
 
   useEffect(() => {
     const loadData = async () => {
@@ -410,9 +423,9 @@ export default function GuildSettingsPage() {
         ) : (
           <>
         {/* Guild Information and Members - Side by Side */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
           {/* Basic Information */}
-          <div className="bg-background-elevated border border-border rounded-xl overflow-hidden">
+          <div className="bg-background-elevated border border-border rounded-xl overflow-hidden" ref={guildInfoRef}>
             <div className="p-6 border-b border-border">
               <h2 className="text-[24px] font-semibold text-foreground">Guild information</h2>
               <p className="text-muted-foreground text-[13px] mt-1">
@@ -519,7 +532,7 @@ export default function GuildSettingsPage() {
           </div>
 
           {/* Current Members - with fixed scroll */}
-          <div className="bg-background-elevated border border-border rounded-xl overflow-auto flex flex-col max-h-[400px] sm:max-h-[600px]">
+          <div className="bg-background-elevated border border-border rounded-xl overflow-auto flex flex-col" style={guildInfoHeight ? { maxHeight: guildInfoHeight } : undefined}>
             <div className="p-6 border-b border-border flex-shrink-0">
               <div className="flex items-start justify-between">
                 <div>

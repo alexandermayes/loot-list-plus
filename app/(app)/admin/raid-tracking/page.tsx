@@ -59,6 +59,8 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { Search01Icon } from '@hugeicons/core-free-icons'
 import { trackClientEvent } from '@/utils/analytics/client'
 import { parseDate, toDateString } from '@/utils/date'
+import { useRaidTeam } from '@/app/hooks/useRaidTeam'
+import { TeamSelector } from '@/app/components/TeamSelector'
 
 interface Member {
   character_id: string
@@ -159,6 +161,7 @@ export default function RaidTrackingPage() {
   const { activeGuild, isOfficer, loading: guildLoading, currentExpansion, user } = useGuildContext()
   const { showNotification } = useNotification()
   const { confirm, ConfirmDialog } = useConfirm()
+  const { activeTeamId, teams, hasTeams, setTeam } = useRaidTeam()
 
   useEffect(() => {
     document.title = activeTab === 'tracking' ? 'LootList+ • Raid Tracking' : 'LootList+ • Loot History'
@@ -276,8 +279,22 @@ export default function RaidTrackingPage() {
               })
             }
           }
-          formattedMembers.sort((a: Member, b: Member) => a.character_name.localeCompare(b.character_name))
-          setMembers(formattedMembers)
+
+          // Filter roster to team members when a team is selected
+          let filteredMembers = formattedMembers
+          if (activeTeamId) {
+            const { data: teamMembers } = await supabase
+              .from('raid_team_members')
+              .select('character_id')
+              .eq('raid_team_id', activeTeamId)
+            if (teamMembers) {
+              const teamCharIds = new Set(teamMembers.map((m: { character_id: string }) => m.character_id))
+              filteredMembers = formattedMembers.filter(m => teamCharIds.has(m.character_id))
+            }
+          }
+
+          filteredMembers.sort((a: Member, b: Member) => a.character_name.localeCompare(b.character_name))
+          setMembers(filteredMembers)
         }
 
         // Load character aliases for this guild
@@ -310,7 +327,7 @@ export default function RaidTrackingPage() {
     }
 
     loadData().catch(console.error)
-  }, [guildLoading, activeGuild, isOfficer, currentExpansion])
+  }, [guildLoading, activeGuild, isOfficer, currentExpansion, activeTeamId])
 
   const generateRaidDates = async (guildId: string, settings: any, expansion: any) => {
     // Use expansion raid schedule if available, fall back to guild settings for backwards compatibility
@@ -355,6 +372,7 @@ export default function RaidTrackingPage() {
             guild_id: guildId,
             dates,
             expansion_id: expansion?.expansion_id,
+            raid_team_id: activeTeamId || undefined,
           })
         })
         if (res.ok) {
@@ -367,6 +385,11 @@ export default function RaidTrackingPage() {
       } catch (e) {
         console.error('Failed to ensure raid events:', e)
       }
+    }
+
+    // Filter events by team when a team is selected
+    if (activeTeamId) {
+      allEvents = (allEvents || []).filter((e: any) => e.raid_team_id === activeTeamId)
     }
 
     // Check which events have attendance records (needed for filtering + dedup)
@@ -623,7 +646,7 @@ export default function RaidTrackingPage() {
     switch (state) {
       case 'attended': return 'bg-background-elevated border border-border border-l-2 border-l-success'
       case 'late': return 'bg-background-elevated border border-border border-l-2 border-l-warning'
-      case 'standby': return 'bg-background-elevated border border-border border-l-2 border-l-warning'
+      case 'standby': return 'bg-background-elevated border border-border border-l-2 border-l-orange-500'
       case 'no-show': return 'bg-background-elevated border border-border border-l-2 border-l-destructive'
       case 'excused': return 'bg-background-elevated border border-border border-l-2 border-l-muted-foreground'
       default: return 'bg-background-elevated border border-border'
@@ -2260,7 +2283,16 @@ export default function RaidTrackingPage() {
           </p>
         </div>
 
-        {/* Tabs */}
+        {/* Team filter + Tabs */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+        {hasTeams && (
+          <TeamSelector
+            teams={teams}
+            activeTeamId={activeTeamId}
+            onTeamChange={setTeam}
+            className="w-40"
+          />
+        )}
         <SegmentedControl
           options={[
             { value: 'tracking', label: 'Tracking' },
@@ -2270,6 +2302,7 @@ export default function RaidTrackingPage() {
           onChange={setActiveTab}
           className="self-start"
         />
+        </div>
       </div>
 
       {/* Tracking Tab Content */}
@@ -2280,20 +2313,24 @@ export default function RaidTrackingPage() {
         <div className="flex items-center gap-3 sm:gap-4 text-[12px] sm:text-[13px] flex-wrap">
           <span className="text-muted-foreground">Status:</span>
           <div className="flex items-center gap-1">
-            <div className="w-5 h-5 rounded border bg-success/30 border-success"></div>
+            <div className="w-5 h-5 rounded bg-background-elevated border border-border border-l-2 border-l-success"></div>
             <span className="text-muted-foreground">Attended</span>
           </div>
           <div className="flex items-center gap-1">
-            <div className="w-5 h-5 rounded border bg-yellow-500/30 border-yellow-500"></div>
+            <div className="w-5 h-5 rounded bg-background-elevated border border-border border-l-2 border-l-warning"></div>
             <span className="text-muted-foreground">Late</span>
           </div>
           <div className="flex items-center gap-1">
-            <div className="w-5 h-5 rounded border bg-orange-500/30 border-orange-500"></div>
+            <div className="w-5 h-5 rounded bg-background-elevated border border-border border-l-2 border-l-orange-500"></div>
             <span className="text-muted-foreground">Standby</span>
           </div>
           <div className="flex items-center gap-1">
-            <div className="w-5 h-5 rounded border bg-destructive/30 border-destructive"></div>
-            <span className="text-muted-foreground">No Show</span>
+            <div className="w-5 h-5 rounded bg-background-elevated border border-border border-l-2 border-l-destructive"></div>
+            <span className="text-muted-foreground">No show</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <div className="w-5 h-5 rounded bg-background-elevated border border-border border-l-2 border-l-muted-foreground"></div>
+            <span className="text-muted-foreground">Excused</span>
           </div>
           {guildSettings?.use_signups && (
             <>
@@ -2607,7 +2644,7 @@ export default function RaidTrackingPage() {
                               {/* Status pill */}
                               {state === 'attended' && <span className="text-[11px] font-medium text-success bg-success/15 px-2 py-0.5 rounded-full flex-shrink-0">Attended</span>}
                               {state === 'late' && <span className="text-[11px] font-medium text-warning bg-warning/15 px-2 py-0.5 rounded-full flex-shrink-0">Late</span>}
-                              {state === 'standby' && <span className="text-[11px] font-medium text-warning bg-warning/15 px-2 py-0.5 rounded-full flex-shrink-0">Standby</span>}
+                              {state === 'standby' && <span className="text-[11px] font-medium text-orange-500 bg-orange-500/15 px-2 py-0.5 rounded-full flex-shrink-0">Standby</span>}
                               {state === 'no-show' && <span className="text-[11px] font-medium text-destructive bg-destructive/15 px-2 py-0.5 rounded-full flex-shrink-0">No Show</span>}
                               {state === 'excused' && <span className="text-[11px] font-medium text-muted-foreground bg-muted px-2 py-0.5 rounded-full flex-shrink-0">Excused</span>}
                               {isSignedUp && <span className="text-[11px] font-medium text-accent bg-accent/15 px-2 py-0.5 rounded-full flex-shrink-0">Signed up</span>}
@@ -2722,7 +2759,7 @@ export default function RaidTrackingPage() {
                             <span className="flex-1" />
                             {state === 'attended' && <span className="text-[11px] font-medium text-success bg-success/15 px-2 py-0.5 rounded-full flex-shrink-0">Attended</span>}
                             {state === 'late' && <span className="text-[11px] font-medium text-warning bg-warning/15 px-2 py-0.5 rounded-full flex-shrink-0">Late</span>}
-                            {state === 'standby' && <span className="text-[11px] font-medium text-warning bg-warning/15 px-2 py-0.5 rounded-full flex-shrink-0">Standby</span>}
+                            {state === 'standby' && <span className="text-[11px] font-medium text-orange-500 bg-orange-500/15 px-2 py-0.5 rounded-full flex-shrink-0">Standby</span>}
                             {state === 'no-show' && <span className="text-[11px] font-medium text-destructive bg-destructive/15 px-2 py-0.5 rounded-full flex-shrink-0">No Show</span>}
                             {state === 'excused' && <span className="text-[11px] font-medium text-muted-foreground bg-muted px-2 py-0.5 rounded-full flex-shrink-0">Excused</span>}
                           </div>
