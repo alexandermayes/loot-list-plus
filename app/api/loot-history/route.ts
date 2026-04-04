@@ -50,6 +50,7 @@ export async function GET(request: NextRequest) {
     const raidTierFilter = searchParams.get('raid_tier_id')
     const fromDate = searchParams.get('from')
     const toDate = searchParams.get('to')
+    const raidTeamId = searchParams.get('raid_team_id')
 
     if (!guildId) {
       return NextResponse.json({ error: 'guild_id is required' }, { status: 400 })
@@ -161,6 +162,21 @@ export async function GET(request: NextRequest) {
         query = query.in('loot_item_id', matchingIds)
       } else {
         // No items match, return empty
+        return NextResponse.json({ data: [], pagination: { total: 0, limit, offset, filtered_count: 0 } })
+      }
+    }
+
+    // Filter by raid team (resolve character IDs on the team)
+    if (raidTeamId) {
+      const { data: teamMembers } = await supabase
+        .from('raid_team_members')
+        .select('character_id')
+        .eq('raid_team_id', raidTeamId)
+
+      const teamCharIds = teamMembers?.map(m => m.character_id) || []
+      if (teamCharIds.length > 0) {
+        query = query.in('character_id', teamCharIds)
+      } else {
         return NextResponse.json({ data: [], pagination: { total: 0, limit, offset, filtered_count: 0 } })
       }
     }

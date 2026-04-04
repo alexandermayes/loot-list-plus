@@ -38,6 +38,8 @@ import { VirtualizedMasterSheet } from './components/VirtualizedMasterSheet'
 const ItemCandidateModal = dynamic(() => import('./components/ItemCandidateModal').then(mod => ({ default: mod.ItemCandidateModal })), { loading: () => null })
 import { RaidModeView } from './components/RaidModeView'
 import type { PlayerRanking, LootItem as BossLootItem } from './components/BossSection'
+import { useRaidTeam } from '@/app/hooks/useRaidTeam'
+import { TeamSelector } from '@/app/components/TeamSelector'
 
 interface LootItem {
   id: string
@@ -198,6 +200,7 @@ function MasterSheetContent() {
   const supabase = createClient()
   const searchParams = useSearchParams()
   const scrollPendingRef = useRef<string | null>(null)
+  const { activeTeamId, teams, hasTeams, setTeam } = useRaidTeam()
 
   // Set page title
   useEffect(() => {
@@ -320,13 +323,17 @@ function MasterSheetContent() {
     periodStart.setDate(periodStart.getDate() - daysAgo)
     const periodStartStr = toDateString(periodStart)
 
-    const { data: recentRaids } = await supabase
+    let raidEventsQuery = supabase
       .from('raid_events')
       .select('id, raid_date')
       .eq('guild_id', guildId)
       .eq('is_skipped', false)
       .gte('raid_date', periodStartStr)
       .lte('raid_date', todayStr)
+    if (activeTeamId) {
+      raidEventsQuery = raidEventsQuery.eq('raid_team_id', activeTeamId)
+    }
+    const { data: recentRaids } = await raidEventsQuery
 
     if (!recentRaids || recentRaids.length === 0) {
       return Object.fromEntries(characterIds.map(id => [id, { score: 0, raidsAttended: 0, raidsInWindow: 0, isEligible: true }]))
@@ -686,7 +693,19 @@ function MasterSheetContent() {
         }
 
         // Get all character info (filter out nulls)
-        const characterIds = [...new Set(subsData.map((s: { character_id: string | null }) => s.character_id).filter((id: string | null) => id !== null))]
+        let characterIds = [...new Set(subsData.map((s: { character_id: string | null }) => s.character_id).filter((id: string | null) => id !== null))]
+
+        // Filter to team members when a team is selected
+        if (activeTeamId && characterIds.length > 0) {
+          const { data: teamMembers } = await supabase
+            .from('raid_team_members')
+            .select('character_id')
+            .eq('raid_team_id', activeTeamId)
+          if (teamMembers) {
+            const teamCharIds = new Set(teamMembers.map((m: { character_id: string }) => m.character_id))
+            characterIds = characterIds.filter(id => teamCharIds.has(id as string))
+          }
+        }
 
         if (characterIds.length === 0) {
           setAllItemRankings(itemsData.map((item: LootItem) => ({ item, rankings: [] })))
@@ -827,7 +846,7 @@ function MasterSheetContent() {
     }
 
     loadAllRankings()
-  }, [selectedPhase, phaseTiers, guildId, guildSettings, masterSheetVisible, hasApprovedSubmission, isOfficer])
+  }, [selectedPhase, phaseTiers, guildId, guildSettings, masterSheetVisible, hasApprovedSubmission, isOfficer, activeTeamId])
 
   // Refresh Wowhead tooltips after items are loaded
   // Uses centralized debounced refresh to prevent excessive API calls
@@ -1306,7 +1325,20 @@ function MasterSheetContent() {
 
     // Get all character info
     type TierSubmissionData = { id: string; status: string; character_id: string | null }
-    const characterIds = [...new Set(subsData.map((s: TierSubmissionData) => s.character_id).filter((id: string | null) => id !== null))]
+    let characterIds = [...new Set(subsData.map((s: TierSubmissionData) => s.character_id).filter((id: string | null) => id !== null))]
+
+    // Filter to team members when a team is selected
+    if (activeTeamId && characterIds.length > 0) {
+      const { data: teamMembers } = await supabase
+        .from('raid_team_members')
+        .select('character_id')
+        .eq('raid_team_id', activeTeamId)
+      if (teamMembers) {
+        const teamCharIds = new Set(teamMembers.map((m: { character_id: string }) => m.character_id))
+        characterIds = characterIds.filter(id => teamCharIds.has(id as string))
+      }
+    }
+
     if (characterIds.length === 0) {
       return itemsData.map((item: TierLootItem) => ({ item, rankings: [] }))
     }
@@ -1502,6 +1534,14 @@ function MasterSheetContent() {
               </p>
             </div>
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+              {hasTeams && (
+                <TeamSelector
+                  teams={teams}
+                  activeTeamId={activeTeamId}
+                  onTeamChange={setTeam}
+                  className="w-40"
+                />
+              )}
               <Button
                 variant="outline"
                 onClick={() => { setShowScoreBreakdown(true); trackClientEvent('score_breakdown_viewed') }}

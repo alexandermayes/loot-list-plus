@@ -15,6 +15,9 @@ import { useGuildContext } from '@/app/contexts/GuildContext'
 import { getWclReportUrl } from '@/lib/warcraftlogs'
 import { InfoTooltip } from '@/components/ui/info-tooltip'
 import { parseDate, toDateString } from '@/utils/date'
+import { isDateScheduled } from '@/domain/raid-team/schedule-history'
+import { useRaidTeam } from '@/app/hooks/useRaidTeam'
+import { TeamSelector } from '@/app/components/TeamSelector'
 
 interface RaidEvent {
   id: string
@@ -96,6 +99,7 @@ export default function AttendancePage() {
 
   const supabase = createClient()
   const { showNotification } = useNotification()
+  const { activeTeamId, activeTeam, teams, hasTeams, setTeam, resolvedRaidDays, resolvedRollingWeeks } = useRaidTeam()
 
   // Set page title
   useEffect(() => {
@@ -268,6 +272,7 @@ export default function AttendancePage() {
   useEffect(() => {
     const loadData = async () => {
       if (!user) return
+      setLoading(true)
 
       try {
         // Get active character
@@ -383,7 +388,10 @@ export default function AttendancePage() {
 
         // Calculate rolling attendance window
         // Include current week + X previous weeks
-        const weeks = settingsData?.rolling_attendance_weeks || 4
+        // Team overrides take priority when a team is selected
+        const weeks = activeTeamId
+          ? resolvedRollingWeeks(settingsData?.rolling_attendance_weeks || 4)
+          : (settingsData?.rolling_attendance_weeks || 4)
         // Use expansion's first raid day, fallback to guild settings, then default to 0
         const firstRaidDay = expansionRaidDays?.first_raid_day ?? settingsData?.first_raid_day ?? 0
 
@@ -407,17 +415,30 @@ export default function AttendancePage() {
           ? new Date(Math.max(new Date(raidStartDate).getTime(), periodStart.getTime()))
           : periodStart
 
+        // Build guild raid day settings (used for both event creation and filtering)
+        const guildRaidDaySettings = {
+          raid_days_per_week: expansionRaidDays?.raid_days_per_week ?? settingsData?.raid_days_per_week ?? 2,
+          first_raid_day: expansionRaidDays?.first_raid_day ?? settingsData?.first_raid_day ?? null,
+          second_raid_day: expansionRaidDays?.second_raid_day ?? settingsData?.second_raid_day ?? null,
+          third_raid_day: expansionRaidDays?.third_raid_day ?? settingsData?.third_raid_day ?? null,
+          fourth_raid_day: expansionRaidDays?.fourth_raid_day ?? settingsData?.fourth_raid_day ?? null,
+          fifth_raid_day: expansionRaidDays?.fifth_raid_day ?? settingsData?.fifth_raid_day ?? null,
+        }
+
         // Auto-create missing raid events for scheduled dates in the window.
         // This ensures events exist even if the officer hasn't visited Raid Tracking yet.
+        // When a team is selected, use the team's resolved raid days (may be a subset).
         if (guildData?.active_expansion_id) {
-          const raidDaysForEnsure = [
-            expansionRaidDays?.first_raid_day ?? settingsData?.first_raid_day,
-            expansionRaidDays?.second_raid_day ?? settingsData?.second_raid_day,
-            expansionRaidDays?.third_raid_day ?? settingsData?.third_raid_day,
-            expansionRaidDays?.fourth_raid_day ?? settingsData?.fourth_raid_day,
-            expansionRaidDays?.fifth_raid_day ?? settingsData?.fifth_raid_day,
-          ].filter((d): d is number => d !== null && d !== undefined)
-            .slice(0, expansionRaidDays?.raid_days_per_week ?? settingsData?.raid_days_per_week ?? 2)
+          const raidDaysForEnsure = activeTeamId
+            ? resolvedRaidDays(guildRaidDaySettings)
+            : [
+                guildRaidDaySettings.first_raid_day,
+                guildRaidDaySettings.second_raid_day,
+                guildRaidDaySettings.third_raid_day,
+                guildRaidDaySettings.fourth_raid_day,
+                guildRaidDaySettings.fifth_raid_day,
+              ].filter((d): d is number => d !== null && d !== undefined)
+                .slice(0, guildRaidDaySettings.raid_days_per_week)
 
           if (raidDaysForEnsure.length > 0) {
             const scheduledDates: string[] = []
@@ -426,8 +447,9 @@ export default function AttendancePage() {
             const endDate = new Date(today)
             endDate.setHours(23, 59, 59, 999)
             while (cursor <= endDate) {
-              if (raidDaysForEnsure.includes(cursor.getDay())) {
-                scheduledDates.push(toDateString(cursor))
+              const cursorDateStr = toDateString(cursor)
+              if (isDateScheduled(cursorDateStr, cursor.getDay(), raidDaysForEnsure, activeTeam?.schedule_history ?? null)) {
+                scheduledDates.push(cursorDateStr)
               }
               cursor.setDate(cursor.getDate() + 1)
             }
@@ -440,6 +462,7 @@ export default function AttendancePage() {
                     guild_id: activeCharData.active_guild_id,
                     dates: scheduledDates,
                     expansion_id: guildData.active_expansion_id,
+                    raid_team_id: activeTeamId || undefined,
                   }),
                 })
               } catch {
@@ -450,7 +473,7 @@ export default function AttendancePage() {
         }
 
         // Get raid events in the rolling window (current week + previous X weeks)
-        const { data: raidEventsData } = await supabase
+        let raidEventsQuery = supabase
           .from('raid_events')
           .select('id, raid_date, is_skipped, notes, wcl_report_code')
           .eq('guild_id', activeCharData.active_guild_id)
@@ -458,18 +481,24 @@ export default function AttendancePage() {
           .lte('raid_date', toDateString(periodEnd))
           .eq('is_skipped', false)
           .order('raid_date', { ascending: true })
+        // Filter by team when a team is selected
+        if (activeTeamId) {
+          raidEventsQuery = raidEventsQuery.eq('raid_team_id', activeTeamId)
+        }
+        const { data: raidEventsData } = await raidEventsQuery
 
-        // Filter to only show raid days that match the expansion's configured schedule
-        // Use expansion raid days if available, otherwise fall back to guild settings
-        const raidDaysSource = expansionRaidDays || settingsData
-        const raidDays = [
-          raidDaysSource?.first_raid_day,
-          raidDaysSource?.second_raid_day,
-          raidDaysSource?.third_raid_day,
-          raidDaysSource?.fourth_raid_day,
-          raidDaysSource?.fifth_raid_day
-        ].filter(day => day !== null && day !== undefined)
-          .slice(0, raidDaysSource?.raid_days_per_week || 2)
+        // Filter to only show raid days that match the configured schedule
+        // When a team is selected, use team-resolved days (may be a subset of guild days)
+        const raidDays = activeTeamId
+          ? resolvedRaidDays(guildRaidDaySettings)
+          : [
+              guildRaidDaySettings.first_raid_day,
+              guildRaidDaySettings.second_raid_day,
+              guildRaidDaySettings.third_raid_day,
+              guildRaidDaySettings.fourth_raid_day,
+              guildRaidDaySettings.fifth_raid_day,
+            ].filter(day => day !== null && day !== undefined)
+              .slice(0, guildRaidDaySettings.raid_days_per_week)
 
         // Show ALL tracked raid events that have attendance data, regardless of schedule.
         // Only filter empty events (no attendance) to match the current configured schedule.
@@ -508,7 +537,7 @@ export default function AttendancePage() {
         const filteredRaidEvents = deduplicatedRaidEvents.filter(event => {
           if (raidIdsWithAttendance.has(event.id)) return true
           const eventDay = parseDate(event.raid_date).getDay()
-          return raidDaySet.has(eventDay)
+          return isDateScheduled(event.raid_date, eventDay, raidDays as number[], activeTeam?.schedule_history ?? null)
         })
 
         setGuildRaidEvents(filteredRaidEvents)
@@ -557,7 +586,7 @@ export default function AttendancePage() {
       setError("Couldn't load attendance data. Check your connection and try again.")
       setLoading(false)
     })
-  }, [user])
+  }, [user, activeTeamId])
 
   const loadGuildAttendance = async (guildId: string, raidEvents: RaidEvent[], settings: any, activeCharacterId?: string) => {
     try {
@@ -566,7 +595,7 @@ export default function AttendancePage() {
       // Build raider list from guild memberships (all active members).
       // Previously this used approved loot submissions, which meant characters
       // without an approved list were invisible in attendance tracking.
-      const [membersResponse, attendanceResult] = await Promise.all([
+      const [membersResponse, attendanceResult, teamMembersResult] = await Promise.all([
         // Query 1: Fetch guild members via API (uses service role to see all members)
         fetch(`/api/guild-members?guild_id=${guildId}`).then(r => r.ok ? r.json() : null),
 
@@ -574,8 +603,21 @@ export default function AttendancePage() {
         supabase
           .from('attendance_records')
           .select('raid_event_id, character_id, signed_up, attended, no_call_no_show, was_late, was_benched, is_excused, points_override')
-          .in('raid_event_id', raidEventIds)
+          .in('raid_event_id', raidEventIds),
+
+        // Query 3: If team selected, get team member character IDs for roster filtering
+        activeTeamId
+          ? supabase
+              .from('raid_team_members')
+              .select('character_id')
+              .eq('raid_team_id', activeTeamId)
+          : Promise.resolve({ data: null }),
       ])
+
+      // Build team member filter set (null = show all)
+      const teamCharacterIds: Set<string> | null = teamMembersResult.data
+        ? new Set(teamMembersResult.data.map((m: { character_id: string }) => m.character_id))
+        : null
 
       const allAttendance = attendanceResult.data
 
@@ -605,6 +647,11 @@ export default function AttendancePage() {
         }
       }
 
+      // Filter roster to team members when a team is selected
+      const filteredRaiders = teamCharacterIds
+        ? activeRaiders.filter(r => teamCharacterIds.has(r.character_id))
+        : activeRaiders
+
       // Build attendance map: characterId -> raidEventId -> status
       const attendanceByCharacter: Record<string, Map<string, AttendanceStatus>> = {}
       allAttendance?.forEach((record: { raid_event_id: string; character_id: string | null; signed_up: boolean; attended: boolean; no_call_no_show: boolean; was_late?: boolean; was_benched?: boolean; is_excused?: boolean; points_override?: number | null }) => {
@@ -627,7 +674,7 @@ export default function AttendancePage() {
       const newMemberMode = (settings?.new_member_mode || 'raw') as 'raw' | 'fair' | 'minimum_gate'
       const todayStr = toDateString(new Date())
 
-      const raiders: GuildRaider[] = activeRaiders.map((s: any) => {
+      const raiders: GuildRaider[] = filteredRaiders.map((s: any) => {
         const char = s.character as any
         const charAttendance = attendanceByCharacter[s.character_id] || new Map()
 
@@ -757,9 +804,19 @@ export default function AttendancePage() {
   return (
     <div className="p-4 sm:p-6 lg:p-8 space-y-6 font-poppins">
       {/* Header - Always visible */}
-      <div>
-        <Heading level={1}>Attendance</Heading>
-        <p className="text-muted-foreground mt-1 text-base">Track raid attendance and view attendance scores</p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <Heading level={1}>Attendance</Heading>
+          <p className="text-muted-foreground mt-1 text-base">Track raid attendance and view attendance scores</p>
+        </div>
+        {hasTeams && (
+          <TeamSelector
+            teams={teams}
+            activeTeamId={activeTeamId}
+            onTeamChange={setTeam}
+            className="w-40"
+          />
+        )}
       </div>
 
       {/* Show skeleton while loading */}

@@ -22,6 +22,7 @@ export interface Guild {
   require_discord_verification: boolean
   created_at: string
   active_expansion_id: string | null
+  subscription_tier?: string
 }
 
 export interface GuildMember {
@@ -275,7 +276,8 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
                 is_active,
                 require_discord_verification,
                 created_at,
-                active_expansion_id
+                active_expansion_id,
+                subscription_tier
               )
             `)
             .in('character_id', characterIds)

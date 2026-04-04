@@ -16,6 +16,7 @@ import { Select } from '@/components/ui/select'
 import { FileSearchIcon } from '@hugeicons/core-free-icons'
 import { refreshWowheadTooltips } from '@/lib/wowhead'
 import type { LootHistoryEntry } from '@/app/api/loot-history/route'
+import { useRaidTeam } from '@/app/hooks/useRaidTeam'
 
 interface RaidTier {
   id: string
@@ -46,6 +47,7 @@ export default function LootHistoryTab() {
   const supabase = createClient()
   const { activeGuild, isOfficer } = useGuildContext()
   const { showNotification } = useNotification()
+  const { activeTeamId } = useRaidTeam()
 
   const fetchHistory = useCallback(async (offset = 0, append = false) => {
     if (!activeGuild) return
@@ -77,6 +79,9 @@ export default function LootHistoryTab() {
       }
       if (toDate) {
         params.append('to', toDate)
+      }
+      if (activeTeamId) {
+        params.append('raid_team_id', activeTeamId)
       }
 
       const response = await fetch(`/api/loot-history?${params}`)
@@ -124,7 +129,7 @@ export default function LootHistoryTab() {
       setLoading(false)
       setLoadingMore(false)
     }
-  }, [activeGuild, filterTier, characterSearch, itemSearch, fromDate, toDate, showNotification])
+  }, [activeGuild, filterTier, characterSearch, itemSearch, fromDate, toDate, activeTeamId, showNotification])
 
   const loadRaidTiers = useCallback(async () => {
     if (!activeGuild?.active_expansion_id) return
@@ -153,7 +158,7 @@ export default function LootHistoryTab() {
       fetchHistory(0, false)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeGuild, isOfficer, filterTier, fromDate, toDate])
+  }, [activeGuild, isOfficer, filterTier, fromDate, toDate, activeTeamId])
 
   // Debounce search filters
   useEffect(() => {

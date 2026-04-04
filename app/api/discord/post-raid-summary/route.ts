@@ -80,7 +80,7 @@ export async function POST(request: NextRequest) {
         .single(),
       supabase
         .from('raid_events')
-        .select('id, raid_date, notes, wcl_report_code')
+        .select('id, raid_date, notes, wcl_report_code, raid_team_id')
         .eq('id', raid_event_id)
         .eq('guild_id', guild_id)
         .single(),
@@ -95,6 +95,17 @@ export async function POST(request: NextRequest) {
     const raidEvent = raidEventResult.data
     if (!raidEvent) {
       return NextResponse.json({ error: 'Raid event not found' }, { status: 404 })
+    }
+
+    // Get team name if event is assigned to a team
+    let teamName: string | null = null
+    if (raidEvent.raid_team_id) {
+      const { data: teamData } = await supabase
+        .from('raid_teams')
+        .select('name')
+        .eq('id', raidEvent.raid_team_id)
+        .single()
+      teamName = teamData?.name || null
     }
 
     // Get raid title from current phase tiers
@@ -326,7 +337,7 @@ export async function POST(request: NextRequest) {
 
     // Compose the embed
     const embed = {
-      title: `Raid Summary — ${raidTitle}`,
+      title: `Raid Summary — ${raidTitle}${teamName ? ` (${teamName})` : ''}`,
       description,
       color: 0xff8000,
       fields,

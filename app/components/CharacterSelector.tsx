@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 // Icons imported via Next.js Image component (SVG files)
 import { useGuildContext, Character } from '@/app/contexts/GuildContext'
 import { useRouter } from 'next/navigation'
@@ -9,6 +9,8 @@ import dynamic from 'next/dynamic'
 import { Spinner } from '@/components/ui/loading-spinner'
 import { Button } from '@/components/ui/button'
 import { useNotification } from '@/app/contexts/NotificationContext'
+import { createClient } from '@/utils/supabase/client'
+import { hasFeature } from '@/domain/guild/feature-flags'
 
 // Lazy load modal to reduce initial bundle size
 const CreateCharacterModal = dynamic(() => import('./CreateCharacterModal').then(mod => ({ default: mod.CreateCharacterModal })), {
@@ -83,6 +85,38 @@ export function CharacterSelector() {
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [addingToGuild, setAddingToGuild] = useState<string | null>(null)
   const router = useRouter()
+
+  // Team membership dots for Pro guilds
+  const [charTeamMap, setCharTeamMap] = useState<Record<string, { name: string; color_hex: string }[]>>({})
+  const teamFetchedGuildRef = useRef<string | null>(null)
+
+  // Fetch team memberships for all characters in this guild (once per guild)
+  useEffect(() => {
+    if (!activeGuild?.id || !hasFeature(activeGuild, 'raid_teams')) {
+      setCharTeamMap({})
+      teamFetchedGuildRef.current = null
+      return
+    }
+    if (teamFetchedGuildRef.current === activeGuild.id) return
+    teamFetchedGuildRef.current = activeGuild.id
+
+    const supabase = createClient()
+    supabase
+      .from('raid_team_members')
+      .select('character_id, raid_teams (name, color_hex)')
+      .eq('guild_id', activeGuild.id)
+      .then(({ data }: { data: any[] | null }) => {
+        if (!data) return
+        const map: Record<string, { name: string; color_hex: string }[]> = {}
+        for (const row of data) {
+          const team = row.raid_teams
+          if (!team) continue
+          if (!map[row.character_id]) map[row.character_id] = []
+          map[row.character_id].push({ name: team.name, color_hex: team.color_hex })
+        }
+        setCharTeamMap(map)
+      })
+  }, [activeGuild?.id, activeGuild?.subscription_tier])
 
   // Filter characters that are in the active guild
   const charactersInGuild = activeGuild
@@ -241,6 +275,9 @@ export function CharacterSelector() {
               {activeCharacter.spec?.name && activeCharacter.class?.name && activeCharacter.spec.name !== activeCharacter.class.name
                 ? `${activeCharacter.spec.name} ${activeCharacter.class.name}`
                 : activeCharacter.class?.name || activeCharacter.spec?.name}
+              {charTeamMap[activeCharacter.id]?.length > 0 && (
+                <> · {charTeamMap[activeCharacter.id].map(t => t.name).join(', ')}</>
+              )}
             </p>
           )}
         </div>
@@ -312,6 +349,9 @@ export function CharacterSelector() {
                             {char.spec?.name && char.class?.name && char.spec.name !== char.class.name
                               ? `${char.spec.name} ${char.class.name}`
                               : char.class?.name || char.spec?.name}
+                            {charTeamMap[char.id]?.length > 0 && (
+                              <> · {charTeamMap[char.id].map(t => t.name).join(', ')}</>
+                            )}
                           </p>
                         )}
                       </div>

@@ -10,6 +10,7 @@ interface RaidEventInput {
   notes: string | null
   is_skipped: boolean
   skip_reason: string | null
+  raid_team_id?: string | null
 }
 
 /**

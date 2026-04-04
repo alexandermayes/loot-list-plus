@@ -38,6 +38,8 @@ import { refreshWowheadTooltips } from '@/lib/wowhead'
 import { useNotification } from '@/app/contexts/NotificationContext'
 import { trackClientEvent } from '@/utils/analytics/client'
 import { SetupGuide } from './components/SetupGuide'
+import { hasFeature } from '@/domain/guild/feature-flags'
+import type { RaidTeam } from '@/domain/raid-team/types'
 
 // Get next N raid dates from configured raid days
 function getNextRaidDates(raidDays: number[], timezone: string, count = 2): Date[] {
@@ -409,6 +411,9 @@ function DashboardContent() {
     competitors: number
   }>>([])
 
+  // Team membership for the active character (Pro guilds only)
+  const [characterTeams, setCharacterTeams] = useState<Pick<RaidTeam, 'id' | 'name' | 'color_hex'>[]>([])
+
   const supabase = createClient()
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -417,6 +422,29 @@ function DashboardContent() {
   useEffect(() => {
     document.title = 'LootList+ • Overview'
   }, [])
+
+  // Fetch teams for the active character
+  useEffect(() => {
+    if (!activeCharacter?.id || !activeGuild?.id || !hasFeature(activeGuild, 'raid_teams')) {
+      setCharacterTeams([])
+      return
+    }
+    let cancelled = false
+    supabase
+      .from('raid_team_members')
+      .select('raid_team_id, raid_teams (id, name, color_hex)')
+      .eq('character_id', activeCharacter.id)
+      .eq('guild_id', activeGuild.id)
+      .then(({ data }: { data: any[] | null }) => {
+        if (!cancelled && data) {
+          const teams = data
+            .map(m => m.raid_teams)
+            .filter(Boolean) as Pick<RaidTeam, 'id' | 'name' | 'color_hex'>[]
+          setCharacterTeams(teams)
+        }
+      })
+    return () => { cancelled = true }
+  }, [activeCharacter?.id, activeGuild?.id, activeGuild?.subscription_tier, supabase])
 
   // Preload LCP image (class icon) as soon as character data is available
   useEffect(() => {
@@ -1624,6 +1652,24 @@ function DashboardContent() {
                 ? `Welcome back to ${activeGuild.name}`
                 : 'Loading your dashboard...'}
         </p>
+        {characterTeams.length > 0 && (
+          <div className="flex items-center gap-2 mt-2">
+            {characterTeams.map(team => (
+              <span
+                key={team.id}
+                className="inline-flex items-center gap-1.5 text-xs font-medium px-2 py-0.5 rounded-full border"
+                style={{
+                  backgroundColor: `${team.color_hex}20`,
+                  color: team.color_hex,
+                  borderColor: `${team.color_hex}40`,
+                }}
+              >
+                <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: team.color_hex }} />
+                {team.name}
+              </span>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Officer banner: unconverted Feral Druids in guild */}

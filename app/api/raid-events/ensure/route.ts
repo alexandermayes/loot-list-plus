@@ -20,10 +20,11 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { guild_id, dates, expansion_id } = body as {
+    const { guild_id, dates, expansion_id, raid_team_id } = body as {
       guild_id: string
       dates: string[]
       expansion_id: string
+      raid_team_id?: string | null
     }
 
     if (!guild_id || !dates || !Array.isArray(dates) || dates.length === 0) {
@@ -56,11 +57,16 @@ export async function POST(request: NextRequest) {
     }
 
     // 1. Check which events already exist (service role — no RLS concern)
-    const { data: existingEvents } = await serviceSupabase
+    // When a team is specified, only check for events on that team (not guild-wide)
+    let existingQuery = serviceSupabase
       .from('raid_events')
       .select('id, raid_date')
       .eq('guild_id', guild_id)
       .in('raid_date', dates)
+    if (raid_team_id) {
+      existingQuery = existingQuery.eq('raid_team_id', raid_team_id)
+    }
+    const { data: existingEvents } = await existingQuery
 
     const existingDates = new Set(existingEvents?.map(e => e.raid_date) || [])
     const newDates = dates.filter(d => !existingDates.has(d))
@@ -130,6 +136,7 @@ export async function POST(request: NextRequest) {
           notes: null,
           is_skipped: false,
           skip_reason: null,
+          raid_team_id: raid_team_id || null,
         }))
 
         const { error: insertError } = await serviceSupabase

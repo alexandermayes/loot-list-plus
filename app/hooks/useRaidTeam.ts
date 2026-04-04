@@ -86,6 +86,9 @@ export function useRaidTeam(): UseRaidTeamResult {
     [teams, teamIdParam]
   )
 
+  // Resolved team ID: null if the URL param points to a nonexistent team (deleted/stale)
+  const activeTeamId = activeTeam ? teamIdParam : (loading ? teamIdParam : null)
+
   const setTeam = useCallback((teamId: string | null) => {
     const params = new URLSearchParams(searchParams.toString())
     if (teamId) {
@@ -113,7 +116,7 @@ export function useRaidTeam(): UseRaidTeamResult {
   }, [activeTeam])
 
   return {
-    activeTeamId: teamIdParam,
+    activeTeamId,
     activeTeam,
     teams,
     hasTeams: guildIsPro && teams.length > 0,
