@@ -7,7 +7,7 @@ import { HugeiconsIcon } from '@hugeicons/react'
 import { ArrowDown01Icon, ArrowUp01Icon, Upload01Icon, Cancel01Icon, MoreVerticalIcon, DiscordIcon } from '@hugeicons/core-free-icons'
 import nextDynamic from 'next/dynamic'
 
-const LootHistoryTab = nextDynamic(() => import('../../raid-tracking/components/LootHistoryTab'), {
+const LootHistoryTab = nextDynamic(() => import('./components/LootHistoryTab'), {
   loading: () => (
     <div className="min-h-[400px] space-y-4 p-4">
       <div className="flex gap-3">
@@ -59,6 +59,9 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { Search01Icon } from '@hugeicons/core-free-icons'
 import { trackClientEvent } from '@/utils/analytics/client'
 import { parseDate, toDateString } from '@/utils/date'
+import { useRaidTeam } from '@/app/hooks/useRaidTeam'
+import { isDateScheduled } from '@/domain/raid-team/schedule-history'
+import { TeamSelector } from '@/app/components/TeamSelector'
 
 interface Member {
   character_id: string
@@ -159,6 +162,7 @@ export default function RaidTrackingPage() {
   const { activeGuild, isOfficer, loading: guildLoading, currentExpansion, user } = useGuildContext()
   const { showNotification } = useNotification()
   const { confirm, ConfirmDialog } = useConfirm()
+  const { activeTeamId, activeTeam, teams, hasTeams, setTeam } = useRaidTeam()
 
   useEffect(() => {
     document.title = activeTab === 'tracking' ? 'LootList+ • Raid Tracking' : 'LootList+ • Loot History'
@@ -277,7 +281,18 @@ export default function RaidTrackingPage() {
             }
           }
 
+          // Filter roster to team members when a team is selected
           let filteredMembers = formattedMembers
+          if (activeTeamId) {
+            const { data: teamMembers } = await supabase
+              .from('raid_team_members')
+              .select('character_id')
+              .eq('raid_team_id', activeTeamId)
+            if (teamMembers) {
+              const teamCharIds = new Set(teamMembers.map((m: { character_id: string }) => m.character_id))
+              filteredMembers = formattedMembers.filter(m => teamCharIds.has(m.character_id))
+            }
+          }
 
           filteredMembers.sort((a: Member, b: Member) => a.character_name.localeCompare(b.character_name))
           setMembers(filteredMembers)
@@ -313,7 +328,7 @@ export default function RaidTrackingPage() {
     }
 
     loadData().catch(console.error)
-  }, [guildLoading, activeGuild, isOfficer, currentExpansion])
+  }, [guildLoading, activeGuild, isOfficer, currentExpansion, activeTeamId])
 
   const generateRaidDates = async (guildId: string, settings: any, expansion: any) => {
     // Use expansion raid schedule if available, fall back to guild settings for backwards compatibility
@@ -339,8 +354,9 @@ export default function RaidTrackingPage() {
     let currentDate = new Date(startDate)
     currentDate.setHours(0, 0, 0, 0) // Normalize to start of day
     while (currentDate <= today) {
-      if (raidDays.includes(currentDate.getDay())) {
-        dates.push(toDateString(currentDate))
+      const dateStr = toDateString(currentDate)
+      if (isDateScheduled(dateStr, currentDate.getDay(), raidDays, activeTeam?.schedule_history ?? null)) {
+        dates.push(dateStr)
       }
       currentDate.setDate(currentDate.getDate() + 1)
     }
@@ -358,6 +374,7 @@ export default function RaidTrackingPage() {
             guild_id: guildId,
             dates,
             expansion_id: expansion?.expansion_id,
+            raid_team_id: activeTeamId || undefined,
           })
         })
         if (res.ok) {
@@ -370,6 +387,11 @@ export default function RaidTrackingPage() {
       } catch (e) {
         console.error('Failed to ensure raid events:', e)
       }
+    }
+
+    // Filter events by team when a team is selected
+    if (activeTeamId) {
+      allEvents = (allEvents || []).filter((e: any) => e.raid_team_id === activeTeamId)
     }
 
     // Check which events have attendance records (needed for filtering + dedup)
@@ -388,8 +410,7 @@ export default function RaidTrackingPage() {
     const filteredEvents = (allEvents || []).filter((event: RaidEvent) => {
       if (eventsWithAttendance.has(event.id)) return true
       const eventDate = parseDate(event.raid_date)
-      const eventDayOfWeek = eventDate.getDay()
-      return raidDays.includes(eventDayOfWeek)
+      return isDateScheduled(event.raid_date, eventDate.getDay(), raidDays, activeTeam?.schedule_history ?? null)
     })
 
     // Deduplicate by date - prefer events that already have attendance records
@@ -2263,8 +2284,16 @@ export default function RaidTrackingPage() {
           </p>
         </div>
 
-        {/* Tabs */}
+        {/* Team filter + Tabs */}
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+        {hasTeams && (
+          <TeamSelector
+            teams={teams}
+            activeTeamId={activeTeamId}
+            onTeamChange={setTeam}
+            className="w-40"
+          />
+        )}
         <SegmentedControl
           options={[
             { value: 'tracking', label: 'Tracking' },
