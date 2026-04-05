@@ -72,7 +72,7 @@ export default function LandingCompare() {
                     <tr key={f.name} className={`border-b border-[#383838]/50 ${i % 2 === 0 ? 'bg-[#0d0d0f]' : 'bg-[#121214]'}`}>
                       <td className="py-3 px-4 text-left text-white group relative cursor-default">
                         <span className="border-b border-dashed border-[#bababa]/30">{f.name}</span>
-                        <span className="absolute left-4 bottom-full mb-2 w-[260px] px-3 py-2 rounded-lg bg-[#1a1a2e]/95 border border-[#4a4a6a] text-[12px] text-[#bababa] leading-relaxed opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 backdrop-blur-sm shadow-xl">
+                        <span className="absolute left-4 top-full mt-2 w-[260px] px-3 py-2 rounded-lg bg-[#1a1a2e]/95 border border-[#4a4a6a] text-[12px] text-[#bababa] leading-relaxed opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 backdrop-blur-sm shadow-xl">
                           {f.tip}
                         </span>
                       </td>
