@@ -120,7 +120,7 @@ export function parseItemsTab(csv: string): SheetLootItem[] {
     if (!rawName) continue
 
     // Parse offspec suffix
-    const offspecMatch = rawName.match(/^(.+?)\s+Offspec\s*(\d+)$/i)
+    const offspecMatch = rawName.match(/^(.+?) Offspec\s?(\d+)$/i)
     const baseName = offspecMatch ? offspecMatch[1].trim() : rawName
     const isOffspec = !!offspecMatch
     const offspecNumber = offspecMatch ? parseInt(offspecMatch[2]) : null
@@ -328,7 +328,7 @@ function normalizeRaidName(name: string): string {
 
   // Strip difficulty suffixes like "Both", "Heroic", "Normal", "10", "25"
   normalized = normalized
-    .replace(/\s+(both|heroic|normal|10|25|10n|25n|10h|25h)\s*$/i, '')
+    .replace(/ (both|heroic|normal|10|25|10n|25n|10h|25h)$/i, '')
     .trim()
 
   return aliases[normalized.replace(/'/g, '')] || aliases[normalized] || normalized

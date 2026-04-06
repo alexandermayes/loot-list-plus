@@ -55,6 +55,10 @@ on:
   #   types: [completed]
   #   branches: [main]
 
+permissions:
+  contents: read
+  issues: write
+
 env:
   # Default target - override with secrets or inputs
   DEFAULT_URL: 'http://localhost:3000'

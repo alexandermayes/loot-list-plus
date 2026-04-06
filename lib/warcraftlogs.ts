@@ -100,7 +100,7 @@ export function parseWclGuildUrl(url: string): WclGuildRef | null {
     const parsed = new URL(url.trim())
     const hostname = parsed.hostname.toLowerCase()
 
-    if (!hostname.endsWith('warcraftlogs.com')) return null
+    if (hostname !== 'warcraftlogs.com' && !hostname.endsWith('.warcraftlogs.com')) return null
 
     const isClassic = hostname.startsWith('classic.') || hostname.startsWith('fresh.')
     // Preserve the original subdomain (e.g. "classic", "fresh", "www")

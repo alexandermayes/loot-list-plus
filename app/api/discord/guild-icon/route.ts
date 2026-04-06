@@ -11,8 +11,8 @@ export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams
   const serverId = searchParams.get('serverId')
 
-  if (!serverId) {
-    return NextResponse.json({ error: 'Server ID is required' }, { status: 400 })
+  if (!serverId || !/^\d+$/.test(serverId)) {
+    return NextResponse.json({ error: 'Valid Server ID is required' }, { status: 400 })
   }
 
   // Check if bot token is configured

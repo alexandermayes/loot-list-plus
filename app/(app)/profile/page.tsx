@@ -578,7 +578,7 @@ export default function ProfilePage() {
                       variant="primary"
                       size="sm"
                       onClick={() => {
-                        window.location.href = `/api/auth/battlenet?region=${battlenetRegion}`
+                        window.location.href = `/api/auth/battlenet?region=${encodeURIComponent(battlenetRegion)}`
                       }}
                     >
                       <Image src="/icons/battlenet.svg" alt="" width={16} height={16} className="w-4 h-4 brightness-0" />
