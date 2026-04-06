@@ -5,6 +5,7 @@ import { Skeleton } from '@/components/ui/skeletons'
 import { Heading, Text } from '@/components/ui/typography'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { trackClientEvent } from '@/utils/analytics/client'
 
 interface GuildMetric {
   guild_id: string
@@ -32,6 +33,15 @@ interface GuildMetric {
   } | null
 }
 
+interface WeekBucket {
+  key: string
+  label: string
+  guilds_created: number
+  raids_logged: number
+  submissions_created: number
+  loot_awarded: number
+}
+
 interface AnalyticsData {
   summary: {
     total_guilds: number
@@ -55,6 +65,35 @@ interface AnalyticsData {
     customized_settings: number
     total_guilds_with_activity: number
   } | null
+  weekly_timeline: WeekBucket[]
+  engagement_funnel: {
+    total_guilds: number
+    with_members: number
+    with_raids: number
+    with_submissions: number
+    with_loot: number
+    with_3plus_features: number
+  }
+  expansion_breakdown: { name: string; count: number }[]
+  retention: {
+    active: number
+    churned: number
+    new_guilds: number
+    dormant: number
+  }
+  submission_pipeline: {
+    total: number
+    draft: number
+    pending: number
+    approved: number
+    needs_revision: number
+    rejected: number
+  }
+  settings_distribution: {
+    attendance_type: Record<string, number>
+    new_member_mode: Record<string, number>
+    rolling_weeks: Record<string, number>
+  }
   guilds: GuildMetric[]
 }
 
@@ -106,6 +145,137 @@ function SizeBar({ label, count, total }: { label: string; count: number; total:
   )
 }
 
+function MiniBarChart({ data, dataKey, color, label }: { data: WeekBucket[]; dataKey: keyof WeekBucket; color: string; label: string }) {
+  const values = data.map(d => d[dataKey] as number)
+  const max = Math.max(...values, 1)
+  const total = values.reduce((a, b) => a + b, 0)
+
+  return (
+    <div>
+      <div className="flex items-baseline justify-between mb-2">
+        <Text size="sm" className="font-medium">{label}</Text>
+        <Text size="xs" color="muted">{total} total</Text>
+      </div>
+      <div className="flex items-end gap-[3px] h-16">
+        {data.map((d, i) => {
+          const val = d[dataKey] as number
+          const height = max > 0 ? Math.max((val / max) * 100, val > 0 ? 4 : 0) : 0
+          return (
+            <div key={i} className="flex-1 flex flex-col items-center gap-1">
+              <div className="w-full relative group">
+                <div
+                  className="w-full rounded-sm transition-all"
+                  style={{ height: `${height}%`, minHeight: height > 0 ? '2px' : '0', backgroundColor: color }}
+                />
+                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-1.5 py-0.5 bg-background-elevated border border-border rounded text-[10px] text-foreground opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-10">
+                  {val} &middot; {d.label}
+                </div>
+              </div>
+            </div>
+          )
+        })}
+      </div>
+      <div className="flex gap-[3px] mt-1">
+        {data.map((d, i) => (
+          <div key={i} className="flex-1 text-center">
+            {i === 0 || i === data.length - 1 ? (
+              <Text size="xs" color="muted" className="text-[9px]">{d.label}</Text>
+            ) : null}
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function FunnelStep({ label, count, total, isFirst }: { label: string; count: number; total: number; isFirst?: boolean }) {
+  const pct = total > 0 ? Math.round((count / total) * 100) : 0
+  const width = total > 0 ? Math.max((count / total) * 100, 8) : 8
+  return (
+    <div className="flex items-center gap-3">
+      <Text size="sm" className="w-44 shrink-0">{label}</Text>
+      <div className="flex-1 flex items-center gap-2">
+        <div
+          className="h-7 rounded-md transition-all flex items-center justify-end pr-2"
+          style={{
+            width: `${width}%`,
+            backgroundColor: isFirst ? 'hsl(var(--accent))' : `hsl(var(--accent) / ${0.3 + (pct / 100) * 0.5})`,
+          }}
+        >
+          <span className="text-[11px] font-medium text-accent-foreground">{count}</span>
+        </div>
+        {!isFirst && (
+          <Text size="xs" color="muted">{pct}%</Text>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function PipelineSegment({ label, count, total, color }: { label: string; count: number; total: number; color: string }) {
+  const pct = total > 0 ? Math.round((count / total) * 100) : 0
+  return (
+    <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2 w-36 shrink-0">
+        <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: color }} />
+        <Text size="sm">{label}</Text>
+      </div>
+      <div className="flex-1 h-5 bg-background-subtle rounded-md overflow-hidden">
+        <div
+          className="h-full rounded-md transition-all"
+          style={{ width: `${Math.max(pct, count > 0 ? 2 : 0)}%`, backgroundColor: color }}
+        />
+      </div>
+      <Text size="sm" color="secondary" className="w-20 text-right shrink-0">
+        {count} ({pct}%)
+      </Text>
+    </div>
+  )
+}
+
+function DistributionRow({ label, entries }: { label: string; entries: Record<string, number> }) {
+  const total = Object.values(entries).reduce((a, b) => a + b, 0)
+  if (total === 0) return null
+  const sorted = Object.entries(entries).sort((a, b) => b[1] - a[1])
+
+  return (
+    <div>
+      <Text size="sm" className="font-medium mb-2">{label}</Text>
+      <div className="flex h-6 rounded-md overflow-hidden">
+        {sorted.map(([name, count], i) => {
+          const pct = (count / total) * 100
+          const colors = ['hsl(var(--accent))', 'hsl(var(--accent) / 0.6)', 'hsl(var(--accent) / 0.35)', 'hsl(var(--accent) / 0.2)']
+          return (
+            <div
+              key={name}
+              className="h-full relative group"
+              style={{
+                width: `${Math.max(pct, 3)}%`,
+                backgroundColor: colors[i] || colors[colors.length - 1],
+              }}
+            >
+              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-1.5 py-0.5 bg-background-elevated border border-border rounded text-[10px] text-foreground opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-10">
+                {name}: {count} ({Math.round(pct)}%)
+              </div>
+            </div>
+          )
+        })}
+      </div>
+      <div className="flex flex-wrap gap-3 mt-1.5">
+        {sorted.map(([name, count], i) => {
+          const colors = ['hsl(var(--accent))', 'hsl(var(--accent) / 0.6)', 'hsl(var(--accent) / 0.35)', 'hsl(var(--accent) / 0.2)']
+          return (
+            <div key={name} className="flex items-center gap-1.5">
+              <div className="w-2 h-2 rounded-full" style={{ backgroundColor: colors[i] || colors[colors.length - 1] }} />
+              <Text size="xs" color="secondary">{name}: {count}</Text>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
 function daysAgo(dateStr: string): string {
   const d = new Date(dateStr)
   const now = new Date()
@@ -120,10 +290,41 @@ function featureCount(g: GuildMetric): number {
   return Object.values(g.features_used).filter(Boolean).length
 }
 
+function LoadingSkeleton() {
+  return (
+    <div className="p-8 max-w-7xl mx-auto space-y-8">
+      <div>
+        <Skeleton className="h-8 w-48" />
+        <Skeleton className="h-5 w-72 mt-1" />
+      </div>
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <div key={i} className="bg-background-elevated border border-border rounded-xl p-4">
+            <Skeleton className="h-4 w-16" />
+            <Skeleton className="h-7 w-10 mt-1" />
+          </div>
+        ))}
+      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={i} className="bg-background-elevated border border-border rounded-xl p-6 space-y-3">
+            <Skeleton className="h-6 w-44" />
+            <Skeleton className="h-16 w-full rounded" />
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 export default function AnalyticsPage() {
   const [data, setData] = useState<AnalyticsData | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    trackClientEvent('admin_analytics_page_viewed')
+  }, [])
 
   useEffect(() => {
     fetch('/api/admin/analytics')
@@ -139,39 +340,7 @@ export default function AnalyticsPage() {
       .finally(() => setLoading(false))
   }, [])
 
-  if (loading) {
-    return (
-      <div className="p-8 max-w-6xl mx-auto space-y-8">
-        <div>
-          <Skeleton className="h-8 w-48" />
-          <Skeleton className="h-5 w-72 mt-1" />
-        </div>
-        {/* Summary cards skeleton */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="bg-background-elevated border border-border rounded-xl p-4">
-              <Skeleton className="h-4 w-16" />
-              <Skeleton className="h-7 w-10 mt-1" />
-            </div>
-          ))}
-        </div>
-        {/* Size distribution skeleton */}
-        <div className="bg-background-elevated border border-border rounded-xl p-6 space-y-3">
-          <Skeleton className="h-6 w-44" />
-          {Array.from({ length: 5 }).map((_, i) => (
-            <Skeleton key={i} className="h-8 w-full rounded" />
-          ))}
-        </div>
-        {/* Feature adoption skeleton */}
-        <div className="bg-background-elevated border border-border rounded-xl p-6 space-y-3">
-          <Skeleton className="h-6 w-40" />
-          {Array.from({ length: 4 }).map((_, i) => (
-            <Skeleton key={i} className="h-8 w-full rounded" />
-          ))}
-        </div>
-      </div>
-    )
-  }
+  if (loading) return <LoadingSkeleton />
 
   if (error) {
     return (
@@ -183,56 +352,178 @@ export default function AnalyticsPage() {
 
   if (!data) return null
 
-  const { summary, size_distribution, feature_adoption, guilds } = data
+  const { summary, size_distribution, feature_adoption, weekly_timeline, engagement_funnel, expansion_breakdown, retention, submission_pipeline, settings_distribution, guilds } = data
+
+  const retentionTotal = retention.active + retention.churned + retention.dormant
 
   return (
-    <div className="p-8 max-w-6xl mx-auto space-y-8">
+    <div className="p-8 max-w-7xl mx-auto space-y-8">
       <div>
         <Heading level={1}>Platform analytics</Heading>
-        <Text color="secondary">Usage metrics for monetization planning</Text>
+        <Text color="secondary">Usage metrics across all guilds</Text>
       </div>
 
       {/* Summary cards */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-        <StatCard label="Guilds" value={summary.total_guilds} />
-        <StatCard label="Active (30d)" value={summary.active_guilds_30d} />
-        <StatCard label="Members" value={summary.total_members} />
-        <StatCard label="Submissions" value={summary.total_submissions} />
+        <StatCard label="Guilds" value={summary.total_guilds} sub={`${retention.new_guilds} new (30d)`} />
+        <StatCard label="Active (30d)" value={summary.active_guilds_30d} sub={`${retentionTotal > 0 ? Math.round((retention.active / retentionTotal) * 100) : 0}% of all`} />
+        <StatCard label="Members" value={summary.total_members} sub={`~${summary.total_guilds > 0 ? Math.round(summary.total_members / summary.total_guilds) : 0} avg/guild`} />
+        <StatCard label="Submissions" value={summary.total_submissions} sub={`${submission_pipeline.approved} approved`} />
         <StatCard label="Raids logged" value={summary.total_raids} />
         <StatCard label="Loot distributed" value={summary.total_loot_distributed} />
       </div>
 
-      {/* Size distribution */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Guild size distribution</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-2">
-          <SizeBar label="Solo (1)" count={size_distribution.solo} total={summary.total_guilds} />
-          <SizeBar label="Small (2-10)" count={size_distribution.small} total={summary.total_guilds} />
-          <SizeBar label="Medium (11-25)" count={size_distribution.medium} total={summary.total_guilds} />
-          <SizeBar label="Large (26-40)" count={size_distribution.large} total={summary.total_guilds} />
-          <SizeBar label="XL (40+)" count={size_distribution.extra_large} total={summary.total_guilds} />
-        </CardContent>
-      </Card>
-
-      {/* Feature adoption */}
-      {feature_adoption && (
+      {/* Activity timeline */}
+      {weekly_timeline.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle>Feature adoption</CardTitle>
-            <Text size="sm" color="secondary">
-              Across {feature_adoption.total_guilds_with_activity} guilds with 2+ members
-            </Text>
+            <CardTitle>Weekly activity (12 weeks)</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3">
-            <FeatureBar label="Attendance tracking" count={feature_adoption.attendance} total={feature_adoption.total_guilds_with_activity} />
-            <FeatureBar label="Loot submissions" count={feature_adoption.submissions} total={feature_adoption.total_guilds_with_activity} />
-            <FeatureBar label="Loot distribution" count={feature_adoption.loot_tracking} total={feature_adoption.total_guilds_with_activity} />
-            <FeatureBar label="Custom settings" count={feature_adoption.customized_settings} total={feature_adoption.total_guilds_with_activity} />
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <MiniBarChart data={weekly_timeline} dataKey="guilds_created" color="hsl(var(--accent))" label="Guild signups" />
+              <MiniBarChart data={weekly_timeline} dataKey="raids_logged" color="hsl(142 71% 45%)" label="Raids logged" />
+              <MiniBarChart data={weekly_timeline} dataKey="submissions_created" color="hsl(217 91% 60%)" label="Submissions" />
+              <MiniBarChart data={weekly_timeline} dataKey="loot_awarded" color="hsl(280 68% 60%)" label="Loot awarded" />
+            </div>
           </CardContent>
         </Card>
       )}
+
+      {/* Engagement funnel + Retention side by side */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Engagement funnel</CardTitle>
+            <Text size="sm" color="secondary">How far guilds progress through the product</Text>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <FunnelStep label="Created guild" count={engagement_funnel.total_guilds} total={engagement_funnel.total_guilds} isFirst />
+            <FunnelStep label="Added members (2+)" count={engagement_funnel.with_members} total={engagement_funnel.total_guilds} />
+            <FunnelStep label="Logged raids" count={engagement_funnel.with_raids} total={engagement_funnel.total_guilds} />
+            <FunnelStep label="Used submissions" count={engagement_funnel.with_submissions} total={engagement_funnel.total_guilds} />
+            <FunnelStep label="Distributed loot" count={engagement_funnel.with_loot} total={engagement_funnel.total_guilds} />
+            <FunnelStep label="3+ features used" count={engagement_funnel.with_3plus_features} total={engagement_funnel.total_guilds} />
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Guild health</CardTitle>
+            <Text size="sm" color="secondary">Based on 30-day raid activity</Text>
+          </CardHeader>
+          <CardContent className="space-y-5">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="p-4 rounded-lg bg-success/10 border border-success/20">
+                <Text size="xs" color="muted" className="mb-1">Active</Text>
+                <p className="text-xl font-bold text-success">{retention.active}</p>
+                <Text size="xs" color="secondary">Raided in last 30d</Text>
+              </div>
+              <div className="p-4 rounded-lg bg-warning/10 border border-warning/20">
+                <Text size="xs" color="muted" className="mb-1">Churned</Text>
+                <p className="text-xl font-bold text-warning">{retention.churned}</p>
+                <Text size="xs" color="secondary">Had raids, now inactive</Text>
+              </div>
+              <div className="p-4 rounded-lg bg-accent/10 border border-accent/20">
+                <Text size="xs" color="muted" className="mb-1">New (30d)</Text>
+                <p className="text-xl font-bold text-accent">{retention.new_guilds}</p>
+                <Text size="xs" color="secondary">Created recently</Text>
+              </div>
+              <div className="p-4 rounded-lg bg-muted/30 border border-border">
+                <Text size="xs" color="muted" className="mb-1">Dormant</Text>
+                <p className="text-xl font-bold text-muted-foreground">{retention.dormant}</p>
+                <Text size="xs" color="secondary">Solo, never raided</Text>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Submission pipeline + Expansion breakdown */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Submission pipeline</CardTitle>
+            <Text size="sm" color="secondary">{submission_pipeline.total} total submissions</Text>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <PipelineSegment label="Draft" count={submission_pipeline.draft} total={submission_pipeline.total} color="hsl(var(--muted-foreground))" />
+            <PipelineSegment label="Pending" count={submission_pipeline.pending} total={submission_pipeline.total} color="hsl(45 93% 47%)" />
+            <PipelineSegment label="Approved" count={submission_pipeline.approved} total={submission_pipeline.total} color="hsl(142 71% 45%)" />
+            <PipelineSegment label="Needs revision" count={submission_pipeline.needs_revision} total={submission_pipeline.total} color="hsl(25 95% 53%)" />
+            <PipelineSegment label="Rejected" count={submission_pipeline.rejected} total={submission_pipeline.total} color="hsl(0 84% 60%)" />
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Expansion breakdown</CardTitle>
+            <Text size="sm" color="secondary">Active expansion per guild</Text>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {expansion_breakdown.map(exp => (
+              <div key={exp.name} className="flex items-center gap-3">
+                <Text size="sm" className="w-44 shrink-0">{exp.name}</Text>
+                <div className="flex-1 h-5 bg-background-subtle rounded-md overflow-hidden">
+                  <div
+                    className="h-full bg-accent/60 rounded-md transition-all"
+                    style={{ width: `${Math.max((exp.count / summary.total_guilds) * 100, 3)}%` }}
+                  />
+                </div>
+                <Text size="sm" color="secondary" className="w-16 text-right shrink-0">
+                  {exp.count} ({Math.round((exp.count / summary.total_guilds) * 100)}%)
+                </Text>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Size distribution + Feature adoption */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Guild size distribution</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <SizeBar label="Solo (1)" count={size_distribution.solo} total={summary.total_guilds} />
+            <SizeBar label="Small (2-10)" count={size_distribution.small} total={summary.total_guilds} />
+            <SizeBar label="Medium (11-25)" count={size_distribution.medium} total={summary.total_guilds} />
+            <SizeBar label="Large (26-40)" count={size_distribution.large} total={summary.total_guilds} />
+            <SizeBar label="XL (40+)" count={size_distribution.extra_large} total={summary.total_guilds} />
+          </CardContent>
+        </Card>
+
+        {feature_adoption && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Feature adoption</CardTitle>
+              <Text size="sm" color="secondary">
+                Across {feature_adoption.total_guilds_with_activity} guilds with 2+ members
+              </Text>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <FeatureBar label="Attendance tracking" count={feature_adoption.attendance} total={feature_adoption.total_guilds_with_activity} />
+              <FeatureBar label="Loot submissions" count={feature_adoption.submissions} total={feature_adoption.total_guilds_with_activity} />
+              <FeatureBar label="Loot distribution" count={feature_adoption.loot_tracking} total={feature_adoption.total_guilds_with_activity} />
+              <FeatureBar label="Custom settings" count={feature_adoption.customized_settings} total={feature_adoption.total_guilds_with_activity} />
+            </CardContent>
+          </Card>
+        )}
+      </div>
+
+      {/* Settings distribution */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Settings distribution</CardTitle>
+          <Text size="sm" color="secondary">How guilds configure their scoring</Text>
+        </CardHeader>
+        <CardContent className="space-y-5">
+          <DistributionRow label="Attendance type" entries={settings_distribution.attendance_type} />
+          <DistributionRow label="New member mode" entries={settings_distribution.new_member_mode} />
+          <DistributionRow label="Rolling weeks" entries={settings_distribution.rolling_weeks} />
+        </CardContent>
+      </Card>
 
       {/* Per-guild table */}
       <Card>
