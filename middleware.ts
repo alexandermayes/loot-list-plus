@@ -187,7 +187,7 @@ export async function middleware(request: NextRequest) {
 
     // Protect app routes: redirect unauthenticated users to login
     // Public routes (/, /login, /guild-select, /updates, /legal/*, /dev-login) are excluded
-    const isPublicRoute = ['/', '/login', '/guild-select', '/updates', '/dev-login'].includes(pathname)
+    const isPublicRoute = ['/', '/login', '/guild-select', '/updates', '/dev-login', '/compare'].includes(pathname)
       || pathname.startsWith('/legal/')
       || pathname.startsWith('/guild-select/')
       || pathname.startsWith('/blog')
