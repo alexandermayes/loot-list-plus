@@ -364,6 +364,7 @@ export default function AnalyticsPage() {
   const [data, setData] = useState<AnalyticsData | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+  const [sort, setSort] = useState<{ key: SortKey; dir: SortDir }>({ key: 'raids', dir: 'desc' })
 
   useEffect(() => {
     trackClientEvent('admin_analytics_page_viewed')
@@ -383,6 +384,22 @@ export default function AnalyticsPage() {
       .finally(() => setLoading(false))
   }, [])
 
+  const handleSort = (key: SortKey) => {
+    setSort(prev => prev.key === key ? { key, dir: prev.dir === 'desc' ? 'asc' : 'desc' } : { key, dir: 'desc' })
+  }
+
+  const sortedGuilds = useMemo(() => {
+    if (!data) return []
+    return [...data.guilds].sort((a, b) => {
+      const aVal = getGuildSortValue(a, sort.key)
+      const bVal = getGuildSortValue(b, sort.key)
+      const cmp = typeof aVal === 'number' && typeof bVal === 'number'
+        ? aVal - bVal
+        : String(aVal).localeCompare(String(bVal))
+      return sort.dir === 'asc' ? cmp : -cmp
+    })
+  }, [data, sort])
+
   if (loading) return <LoadingSkeleton />
 
   if (error) {
@@ -395,26 +412,9 @@ export default function AnalyticsPage() {
 
   if (!data) return null
 
-  const { summary, size_distribution, feature_adoption, weekly_timeline, engagement_funnel, expansion_breakdown, retention, submission_pipeline, settings_distribution, guilds } = data
+  const { summary, size_distribution, feature_adoption, weekly_timeline, engagement_funnel, expansion_breakdown, retention, submission_pipeline, settings_distribution } = data
 
   const retentionTotal = retention.active + retention.churned + retention.dormant
-
-  const [sort, setSort] = useState<{ key: SortKey; dir: SortDir }>({ key: 'raids', dir: 'desc' })
-
-  const handleSort = (key: SortKey) => {
-    setSort(prev => prev.key === key ? { key, dir: prev.dir === 'desc' ? 'asc' : 'desc' } : { key, dir: 'desc' })
-  }
-
-  const sortedGuilds = useMemo(() => {
-    return [...guilds].sort((a, b) => {
-      const aVal = getGuildSortValue(a, sort.key)
-      const bVal = getGuildSortValue(b, sort.key)
-      const cmp = typeof aVal === 'number' && typeof bVal === 'number'
-        ? aVal - bVal
-        : String(aVal).localeCompare(String(bVal))
-      return sort.dir === 'asc' ? cmp : -cmp
-    })
-  }, [guilds, sort])
 
   return (
     <div className="p-8 max-w-7xl mx-auto space-y-8">
