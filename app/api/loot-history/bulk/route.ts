@@ -3,7 +3,7 @@ import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { verifyOfficerPermissions } from '@/utils/server-roles'
 import { logAudit } from '@/utils/audit/log'
-import { trackEvent } from '@/utils/analytics/server'
+import { trackEvent, setUserMilestone } from '@/utils/analytics/server'
 
 /**
  * POST /api/loot-history/bulk
@@ -128,6 +128,7 @@ export async function POST(request: NextRequest) {
         userId: user.id,
         properties: { guild_id, success_count: successCount, failed_count: failedCount },
       })
+      setUserMilestone(user.id, 'first_loot_awarded_at')
     }
 
     return NextResponse.json({ results, successCount, failedCount })

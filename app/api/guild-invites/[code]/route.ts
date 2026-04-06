@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient, getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
+import { setUserMilestone } from '@/utils/analytics/server'
 
 // GET - Validate invite code and get guild info (works without auth for invite preview)
 export async function GET(
@@ -271,6 +272,8 @@ export async function POST(
         active_guild_id: guildId,
         updated_at: new Date().toISOString()
       })
+
+    setUserMilestone(user.id, 'first_guild_joined_at')
 
     return NextResponse.json({
       success: true,

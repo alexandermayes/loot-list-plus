@@ -118,6 +118,31 @@ export async function identifyUser(
 }
 
 /**
+ * Set user properties that only write once (activation milestones).
+ * Subsequent calls with the same key are ignored by PostHog.
+ */
+export async function setUserMilestone(
+  userId: string,
+  milestone: string,
+): Promise<void> {
+  const client = getPostHogClient()
+  if (!client) return
+
+  try {
+    client.capture({
+      distinctId: userId,
+      event: '$identify',
+      properties: {
+        $set_once: { [milestone]: new Date().toISOString() },
+      },
+    })
+    await client.shutdown()
+  } catch (error) {
+    console.error('[Analytics] Failed to set milestone:', error)
+  }
+}
+
+/**
  * Track an API error for monitoring
  */
 export async function trackApiError(

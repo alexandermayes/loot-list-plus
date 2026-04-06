@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useState, useEffect, useRef, useCallback, useMemo, ReactNode } from 'react'
 import { createClient } from '@/utils/supabase/client'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 import { useNotification } from '@/app/contexts/NotificationContext'
 import posthog from 'posthog-js'
 import type { User, AuthChangeEvent, Session } from '@supabase/supabase-js'
@@ -146,6 +146,7 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
 
   const supabase = createClient()
   const router = useRouter()
+  const pathname = usePathname()
   const { showNotification } = useNotification()
 
   // Track if initial data load has completed to distinguish fresh login from token refresh
@@ -689,21 +690,6 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
   }, [user])
 
-  // Associate user with their active guild in PostHog (group analytics)
-  useEffect(() => {
-    if (activeGuild?.id) {
-      try {
-        posthog.group('guild', activeGuild.id, {
-          name: activeGuild.name,
-          realm: activeGuild.realm,
-          faction: activeGuild.faction,
-        })
-      } catch {
-        // PostHog not initialized
-      }
-    }
-  }, [activeGuild?.id, activeGuild?.name, activeGuild?.realm, activeGuild?.faction])
-
   // Derived state — officer check using cached role positions (zero DB queries)
   const defaultPositions = useMemo(() => new Map([['Guild Master', 100], ['Officer', 50], ['Member', 0]]), [])
 
@@ -736,6 +722,59 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
 
   const hasMultipleGuilds = userGuilds.length > 1
   const hasMultipleCharacters = userCharacters.length > 1
+
+  // PostHog: group analytics, super properties, enriched identity, and session recording
+  useEffect(() => {
+    if (!activeGuild?.id) return
+    try {
+      // Group analytics — analyze metrics per-guild in PostHog
+      posthog.group('guild', activeGuild.id, {
+        name: activeGuild.name,
+        realm: activeGuild.realm,
+        faction: activeGuild.faction,
+      })
+
+      // Super properties — automatically attached to every event
+      const role = isOfficer ? 'officer' : 'member'
+      posthog.register({
+        guild_id: activeGuild.id,
+        guild_name: activeGuild.name,
+        guild_role: role,
+        expansion_id: activeGuild.active_expansion_id,
+        guild_count: userGuilds.length,
+        character_count: userCharacters.length,
+      })
+
+      // Enriched user identity — enables cohorts and segments
+      if (user) {
+        posthog.identify(user.id, {
+          guild_count: userGuilds.length,
+          character_count: userCharacters.length,
+          primary_role: role,
+          current_guild: activeGuild.name,
+          current_expansion_id: activeGuild.active_expansion_id,
+        })
+      }
+    } catch {
+      // PostHog not initialized
+    }
+  }, [activeGuild?.id, activeGuild?.name, activeGuild?.realm, activeGuild?.faction,
+      activeGuild?.active_expansion_id, isOfficer, userGuilds.length, userCharacters.length, user])
+
+  // Session recording targeting — only record high-value flows to save quota
+  useEffect(() => {
+    try {
+      const highValuePaths = ['/loot-list', '/loot-submissions', '/master-sheet', '/overview']
+      const isOnboarding = !activeGuild?.id && !loading
+      const isHighValueFlow = highValuePaths.some(p => pathname?.startsWith(p))
+
+      if (isOnboarding || isHighValueFlow) {
+        posthog.startSessionRecording()
+      }
+    } catch {
+      // PostHog not initialized
+    }
+  }, [pathname, activeGuild?.id, loading])
 
   // Memoize data value to prevent unnecessary re-renders
   // This object changes when data state changes

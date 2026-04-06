@@ -25,7 +25,7 @@ import { useLootList, type LootItem } from '@/app/contexts/LootListContext'
 import { getPhaseGroupShortLabel } from '@/domain/expansion/phase-groups'
 import { isTokenSlot } from '@/data/token-class-mapping'
 import { useNotification } from '@/app/contexts/NotificationContext'
-import { trackClientEvent } from '@/utils/analytics/client'
+import { trackClientEvent, usePagePerf } from '@/utils/analytics/client'
 import { ClassificationBadge } from '@/components/ui/classification-badge'
 import { InfoTooltip } from '@/components/ui/info-tooltip'
 import { BisImportModal } from '@/app/components/BisImportModal'
@@ -687,10 +687,11 @@ export default function LootList() {
     }
   }, [isLoading, isContentLoading])
 
-  // Track page view
+  // Track page view and load performance
   useEffect(() => {
     if (activeGuild?.id) trackClientEvent('loot_list_page_viewed', { guild_id: activeGuild.id })
   }, [activeGuild?.id])
+  usePagePerf('loot_list', isLoading || isContentLoading)
 
   // Close More menu when clicking outside
   useEffect(() => {

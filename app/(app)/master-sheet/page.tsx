@@ -32,7 +32,7 @@ const ScoreBreakdownModal = dynamic(() => import('@/app/components/ScoreBreakdow
 const ScoreComparisonModal = dynamic(() => import('@/app/components/ScoreComparisonModal'), { loading: () => null })
 const LootListSummaryView = dynamic(() => import('@/app/components/LootListSummaryView'), { loading: () => null })
 import { refreshWowheadTooltips } from '@/lib/wowhead'
-import { trackClientEvent } from '@/utils/analytics/client'
+import { trackClientEvent, usePagePerf } from '@/utils/analytics/client'
 import { InfoTooltip } from '@/components/ui/info-tooltip'
 import { VirtualizedMasterSheet } from './components/VirtualizedMasterSheet'
 const ItemCandidateModal = dynamic(() => import('./components/ItemCandidateModal').then(mod => ({ default: mod.ItemCandidateModal })), { loading: () => null })
@@ -207,6 +207,7 @@ function MasterSheetContent() {
     document.title = 'LootList+ • Loot Rankings'
     trackClientEvent('master_sheet_viewed')
   }, [])
+  usePagePerf('master_sheet', !contentReady)
 
   // Fade in content after loading to avoid wowhead tooltip flash
   useEffect(() => {

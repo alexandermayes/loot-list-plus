@@ -3,7 +3,7 @@ import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { validateBracketRules, type BracketItem } from '@/domain/loot/bracket-validation'
 import { logStatusChange } from '@/utils/audit/log'
-import { trackEvent } from '@/utils/analytics/server'
+import { trackEvent, setUserMilestone } from '@/utils/analytics/server'
 
 /**
  * POST /api/loot-submissions/submit
@@ -154,6 +154,7 @@ export async function POST(request: NextRequest) {
         is_resubmission: !!submission.submitted_at,
       },
     })
+    setUserMilestone(user.id, 'first_list_submitted_at')
 
     return NextResponse.json({ success: true })
   } catch (error) {

@@ -36,7 +36,7 @@ import { computeScore, computeAttendance, explainScore, getRoleModifierWithLabel
 import { getSpecRoles, getRoleDisplayName, type Role } from '@/domain/loot/spec-role-mapping'
 import { refreshWowheadTooltips } from '@/lib/wowhead'
 import { useNotification } from '@/app/contexts/NotificationContext'
-import { trackClientEvent } from '@/utils/analytics/client'
+import { trackClientEvent, usePagePerf } from '@/utils/analytics/client'
 import { SetupGuide } from './components/SetupGuide'
 import { hasFeature } from '@/domain/guild/feature-flags'
 import type { RaidTeam } from '@/domain/raid-team/types'
@@ -464,10 +464,11 @@ function DashboardContent() {
     return () => { link.remove() }
   }, [activeCharacter?.class?.name])
 
-  // Track page view
+  // Track page view and load performance
   useEffect(() => {
     if (activeGuild?.id) trackClientEvent('overview_page_viewed', { guild_id: activeGuild.id })
   }, [activeGuild?.id])
+  usePagePerf('overview', loading)
 
   // Check for create_character query param (from guild join flow)
   useEffect(() => {

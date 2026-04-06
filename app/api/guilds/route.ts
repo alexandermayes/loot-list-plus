@@ -3,7 +3,7 @@ import { createClient, getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { seedExpansionForGuild } from '@/app/services/expansionSeeder'
 import { getCached, invalidateCache, cacheKeys } from '@/utils/cache'
-import { trackApiError, trackEvent } from '@/utils/analytics/server'
+import { trackApiError, trackEvent, setUserMilestone } from '@/utils/analytics/server'
 
 // POST - Create a new guild
 export async function POST(request: NextRequest) {
@@ -242,6 +242,7 @@ export async function POST(request: NextRequest) {
     await invalidateCache(cacheKeys.userGuilds(user.id))
 
     trackEvent({ event: 'guild_created', userId: user.id, properties: { guild_id: guild.id, guild_name: guild.name } })
+    setUserMilestone(user.id, 'first_guild_created_at')
 
     return NextResponse.json({
       success: true,

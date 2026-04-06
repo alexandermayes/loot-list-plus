@@ -1,4 +1,5 @@
 import posthog from 'posthog-js'
+import { useRef, useEffect } from 'react'
 
 /**
  * Client-side analytics events for feature adoption and activation tracking.
@@ -74,4 +75,28 @@ export function trackClientEvent(event: ClientEvent, properties?: Record<string,
   } catch {
     // Don't let analytics break the app
   }
+}
+
+/**
+ * Track page load performance. Measures time from component mount to when
+ * loading completes (loading transitions from true to false).
+ *
+ * Usage in a page component:
+ *   usePagePerf('master_sheet', loading)
+ */
+export function usePagePerf(page: string, loading: boolean): void {
+  const startRef = useRef(performance.now())
+  const trackedRef = useRef(false)
+
+  useEffect(() => {
+    if (!loading && !trackedRef.current) {
+      trackedRef.current = true
+      const duration = Math.round(performance.now() - startRef.current)
+      try {
+        posthog.capture('page_load_time', { page, duration_ms: duration })
+      } catch {
+        // PostHog not initialized
+      }
+    }
+  }, [loading, page])
 }
