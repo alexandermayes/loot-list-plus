@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Skeleton } from '@/components/ui/skeletons'
 import { Heading, Text } from '@/components/ui/typography'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -276,6 +276,49 @@ function DistributionRow({ label, entries }: { label: string; entries: Record<st
   )
 }
 
+type SortKey = 'guild' | 'members' | 'raids' | 'submissions' | 'loot' | 'last_raid' | 'features'
+type SortDir = 'asc' | 'desc'
+
+function SortHeader({ label, sortKey, currentSort, onSort, align }: {
+  label: string
+  sortKey: SortKey
+  currentSort: { key: SortKey; dir: SortDir }
+  onSort: (key: SortKey) => void
+  align?: 'left' | 'right'
+}) {
+  const active = currentSort.key === sortKey
+  return (
+    <th
+      className={`pb-3 pr-4 font-medium text-foreground-secondary cursor-pointer select-none hover:text-foreground transition-colors ${align === 'right' ? 'text-right' : 'text-left'}`}
+      onClick={() => onSort(sortKey)}
+    >
+      <span className="inline-flex items-center gap-1">
+        {label}
+        <svg className={`w-3 h-3 shrink-0 ${active ? 'text-accent' : 'text-muted-foreground/40'}`} viewBox="0 0 12 16" fill="currentColor">
+          <path d={active && currentSort.dir === 'asc'
+            ? 'M6 2L1 8h10L6 2z'
+            : active && currentSort.dir === 'desc'
+            ? 'M6 14L1 8h10L6 14z'
+            : 'M6 2L1 7h10L6 2zM6 14L1 9h10L6 14z'
+          } />
+        </svg>
+      </span>
+    </th>
+  )
+}
+
+function getGuildSortValue(g: GuildMetric, key: SortKey): string | number {
+  switch (key) {
+    case 'guild': return g.guild_name.toLowerCase()
+    case 'members': return g.members.total
+    case 'raids': return g.raids.total
+    case 'submissions': return g.submissions.total
+    case 'loot': return g.loot.items_distributed
+    case 'last_raid': return g.activity.last_raid_date || ''
+    case 'features': return Object.values(g.features_used).filter(Boolean).length
+  }
+}
+
 function daysAgo(dateStr: string): string {
   const d = new Date(dateStr)
   const now = new Date()
@@ -355,6 +398,23 @@ export default function AnalyticsPage() {
   const { summary, size_distribution, feature_adoption, weekly_timeline, engagement_funnel, expansion_breakdown, retention, submission_pipeline, settings_distribution, guilds } = data
 
   const retentionTotal = retention.active + retention.churned + retention.dormant
+
+  const [sort, setSort] = useState<{ key: SortKey; dir: SortDir }>({ key: 'raids', dir: 'desc' })
+
+  const handleSort = (key: SortKey) => {
+    setSort(prev => prev.key === key ? { key, dir: prev.dir === 'desc' ? 'asc' : 'desc' } : { key, dir: 'desc' })
+  }
+
+  const sortedGuilds = useMemo(() => {
+    return [...guilds].sort((a, b) => {
+      const aVal = getGuildSortValue(a, sort.key)
+      const bVal = getGuildSortValue(b, sort.key)
+      const cmp = typeof aVal === 'number' && typeof bVal === 'number'
+        ? aVal - bVal
+        : String(aVal).localeCompare(String(bVal))
+      return sort.dir === 'asc' ? cmp : -cmp
+    })
+  }, [guilds, sort])
 
   return (
     <div className="p-8 max-w-7xl mx-auto space-y-8">
@@ -529,23 +589,23 @@ export default function AnalyticsPage() {
       <Card>
         <CardHeader>
           <CardTitle>Guild breakdown</CardTitle>
-          <Text size="sm" color="secondary">Sorted by total raids logged</Text>
+          <Text size="sm" color="secondary">Click column headers to sort</Text>
         </CardHeader>
         <CardContent className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-border text-left">
-                <th className="pb-3 pr-4 font-medium text-foreground-secondary">Guild</th>
-                <th className="pb-3 pr-4 font-medium text-foreground-secondary text-right">Members</th>
-                <th className="pb-3 pr-4 font-medium text-foreground-secondary text-right">Raids</th>
-                <th className="pb-3 pr-4 font-medium text-foreground-secondary text-right">Submissions</th>
-                <th className="pb-3 pr-4 font-medium text-foreground-secondary text-right">Loot</th>
-                <th className="pb-3 pr-4 font-medium text-foreground-secondary">Last raid</th>
-                <th className="pb-3 font-medium text-foreground-secondary">Features</th>
+              <tr className="border-b border-border">
+                <SortHeader label="Guild" sortKey="guild" currentSort={sort} onSort={handleSort} />
+                <SortHeader label="Members" sortKey="members" currentSort={sort} onSort={handleSort} align="right" />
+                <SortHeader label="Raids" sortKey="raids" currentSort={sort} onSort={handleSort} align="right" />
+                <SortHeader label="Submissions" sortKey="submissions" currentSort={sort} onSort={handleSort} align="right" />
+                <SortHeader label="Loot" sortKey="loot" currentSort={sort} onSort={handleSort} align="right" />
+                <SortHeader label="Last raid" sortKey="last_raid" currentSort={sort} onSort={handleSort} />
+                <SortHeader label="Features" sortKey="features" currentSort={sort} onSort={handleSort} />
               </tr>
             </thead>
             <tbody className="divide-y divide-border/50">
-              {guilds.map(g => (
+              {sortedGuilds.map(g => (
                 <tr key={g.guild_id} className="hover:bg-background-subtle/50">
                   <td className="py-3 pr-4">
                     <Text size="sm" className="font-medium">{g.guild_name}</Text>
