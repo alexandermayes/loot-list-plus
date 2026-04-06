@@ -89,6 +89,7 @@ export default function ProfilePage() {
   const searchParams = useSearchParams()
 
   useEffect(() => {
+    trackClientEvent('profile_page_viewed')
     document.title = 'LootList+ • Profile'
 
     // Handle Battle.net OAuth callback status

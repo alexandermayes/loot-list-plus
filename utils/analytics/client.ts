@@ -27,9 +27,14 @@ type ClientEvent =
   | 'account_deleted'
   | 'guild_creation_started'
   | 'guild_creation_completed'
+  | 'guild_switched'
   // Growth & conversion
   | 'sign_in_clicked'
   | 'invite_code_created'
+  | 'invite_code_copied'
+  // Monetization
+  | 'pro_upgrade_clicked'
+  | 'pro_modal_viewed'
   // Landing page
   | 'landing_cta_clicked'
   | 'landing_nav_clicked'
@@ -43,6 +48,15 @@ type ClientEvent =
   | 'admin_pending_submissions_viewed'
   | 'admin_raid_tracking_viewed'
   | 'settings_page_viewed'
+  | 'guild_settings_page_viewed'
+  | 'profile_page_viewed'
+  | 'raid_teams_page_viewed'
+  | 'loot_management_page_viewed'
+  | 'updates_page_viewed'
+  | 'audit_log_page_viewed'
+  | 'sheet_import_page_viewed'
+  | 'expansion_settings_page_viewed'
+  | 'admin_analytics_page_viewed'
   // Officer actions
   | 'submission_reviewed'
   | 'pending_submission_approved'

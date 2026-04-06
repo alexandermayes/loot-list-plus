@@ -16,6 +16,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { Cancel01Icon, Settings01Icon, Notification03Icon } from '@hugeicons/core-free-icons'
 import { usePendingSubmissionCount } from '../hooks/usePendingSubmissionCount'
+import { trackClientEvent } from '@/utils/analytics/client'
 
 // Lazy load modal to reduce initial bundle size
 const CreateGuildModal = dynamic(() => import('./CreateGuildModal').then(mod => ({ default: mod.CreateGuildModal })), {
@@ -131,6 +132,7 @@ export default function Sidebar({ currentView = 'overview', onViewChange, isMobi
 
   const handleSwitchGuild = async (guildId: string) => {
     setGuildDropdownOpen(false)
+    trackClientEvent('guild_switched', { guild_id: guildId })
     await switchGuild(guildId)
     router.refresh()
   }

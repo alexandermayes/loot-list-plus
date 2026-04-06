@@ -4,6 +4,7 @@ import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { verifyOfficerPermissions } from '@/utils/server-roles'
 import { logAudit } from '@/utils/audit/log'
 import { resolveStatus } from '@/domain/scoring'
+import { trackEvent } from '@/utils/analytics/server'
 
 interface AttendanceRecord {
   raid_event_id: string
@@ -81,6 +82,12 @@ export async function POST(request: NextRequest) {
         newData: { action: 'upsert', record_count: count, raid_event_id: raidEventId },
       })
 
+      trackEvent({
+        event: 'attendance_bulk_recorded',
+        userId: user.id,
+        properties: { guild_id, record_count: count, raid_event_id: raidEventId, action: 'upsert' },
+      })
+
       return NextResponse.json({ success: true, count })
     } else {
       const { data, error } = await serviceSupabase
@@ -102,6 +109,12 @@ export async function POST(request: NextRequest) {
         action: 'INSERT',
         userId: user.id,
         newData: { action: 'insert', record_count: count, raid_event_id: raidEventId },
+      })
+
+      trackEvent({
+        event: 'attendance_bulk_recorded',
+        userId: user.id,
+        properties: { guild_id, record_count: count, raid_event_id: raidEventId, action: 'insert' },
       })
 
       return NextResponse.json({ success: true, count })

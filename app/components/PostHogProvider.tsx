@@ -85,9 +85,20 @@ function PostHogIdentify() {
     identifyUser()
 
     // Re-identify on auth state changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event: string, session: { user?: { id: string } } | null) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event: string, session: { user?: { id: string; created_at?: string } } | null) => {
       if (event === 'SIGNED_IN' && session?.user) {
         identifyUser()
+
+        // Distinguish signup from returning sign-in
+        // If the account was created within the last 60 seconds, it's a new signup
+        if (session.user.created_at) {
+          const createdAt = new Date(session.user.created_at).getTime()
+          const now = Date.now()
+          const isNewUser = now - createdAt < 60_000
+          posthog.capture(isNewUser ? 'user_signed_up' : 'user_signed_in', {
+            auth_provider: 'discord',
+          })
+        }
       } else if (event === 'SIGNED_OUT') {
         posthog?.reset()
       }

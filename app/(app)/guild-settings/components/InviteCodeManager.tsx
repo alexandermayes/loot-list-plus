@@ -133,6 +133,7 @@ export default function InviteCodeManager() {
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text)
+    trackClientEvent('invite_code_copied')
     showNotification('success', 'Copied to clipboard', 2000)
   }
 

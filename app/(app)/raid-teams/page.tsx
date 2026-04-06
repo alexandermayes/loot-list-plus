@@ -17,6 +17,7 @@ import { Skeleton } from '@/components/ui/skeletons'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { Delete02Icon, PencilEdit01Icon, UserAdd01Icon, Calendar01Icon, StarIcon } from '@hugeicons/core-free-icons'
 import type { RaidTeam, RaidDaysOverride } from '@/domain/raid-team/types'
+import { trackClientEvent } from '@/utils/analytics/client'
 
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
 
@@ -70,7 +71,8 @@ export default function RaidTeamsPage() {
 
   useEffect(() => {
     document.title = 'LootList+ \u2022 Raid Teams'
-  }, [])
+    if (activeGuild?.id) trackClientEvent('raid_teams_page_viewed', { guild_id: activeGuild.id })
+  }, [activeGuild?.id])
 
   // Redirect non-officers or non-Pro guilds
   useEffect(() => {

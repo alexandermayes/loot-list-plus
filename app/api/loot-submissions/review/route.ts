@@ -3,6 +3,7 @@ import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { verifyOfficerPermissions } from '@/utils/server-roles'
 import { logStatusChange } from '@/utils/audit/log'
+import { trackEvent } from '@/utils/analytics/server'
 
 /**
  * POST /api/loot-submissions/review
@@ -115,6 +116,18 @@ export async function POST(request: NextRequest) {
       oldStatus: 'pending',
       newStatus: status,
       additionalData: { review_notes: review_notes || null, character_id: submission.character_id },
+    })
+
+    // Analytics
+    trackEvent({
+      event: 'loot_submission_status_changed',
+      userId: user.id,
+      properties: {
+        guild_id: submission.guild_id,
+        submission_id,
+        old_status: 'pending',
+        new_status: status,
+      },
     })
 
     return NextResponse.json({ success: true, submission: data[0] })

@@ -9,6 +9,7 @@ import { Select } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { Heading } from '@/components/ui/typography'
 import { Search01Icon } from '@hugeicons/core-free-icons'
+import { trackClientEvent } from '@/utils/analytics/client'
 
 interface AuditLog {
   id: string
@@ -179,6 +180,11 @@ export default function AuditLogPage() {
   const [search, setSearch] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
   const [searchExhausted, setSearchExhausted] = useState(true)
+
+  // Track page view
+  useEffect(() => {
+    if (activeGuild?.id) trackClientEvent('audit_log_page_viewed', { guild_id: activeGuild.id })
+  }, [activeGuild?.id])
 
   const fetchLogs = useCallback(async () => {
     if (!activeGuild?.id) return

@@ -20,6 +20,7 @@ import { refreshWowheadTooltips } from '@/lib/wowhead'
 import { getRaidIcon } from '@/utils/raidIcons'
 import { getBossImage } from '@/utils/bossImages'
 import { Checkbox } from '@/components/ui/checkbox'
+import { trackClientEvent } from '@/utils/analytics/client'
 
 interface LootItem {
   id: string
@@ -232,10 +233,11 @@ export default function AdminLootItems() {
     }
   }
 
-  // Set page title
+  // Set page title and track view
   useEffect(() => {
     document.title = 'LootList+ • Manage Loot'
-  }, [])
+    if (activeGuild?.id) trackClientEvent('loot_management_page_viewed', { guild_id: activeGuild.id })
+  }, [activeGuild?.id])
 
   useEffect(() => {
     if (!guildLoading) {

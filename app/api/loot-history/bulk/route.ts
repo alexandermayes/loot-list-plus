@@ -3,6 +3,7 @@ import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { verifyOfficerPermissions } from '@/utils/server-roles'
 import { logAudit } from '@/utils/audit/log'
+import { trackEvent } from '@/utils/analytics/server'
 
 /**
  * POST /api/loot-history/bulk
@@ -119,6 +120,14 @@ export async function POST(request: NextRequest) {
             .catch(err => console.error('BLP update failed:', err))
         }
       }
+    }
+
+    if (successCount > 0) {
+      trackEvent({
+        event: 'loot_awarded_bulk',
+        userId: user.id,
+        properties: { guild_id, success_count: successCount, failed_count: failedCount },
+      })
     }
 
     return NextResponse.json({ results, successCount, failedCount })

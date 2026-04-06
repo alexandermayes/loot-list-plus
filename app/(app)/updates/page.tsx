@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect } from 'react'
 import { HugeiconsIcon } from '@hugeicons/react'
 import {
   Notification03Icon,
@@ -9,6 +10,7 @@ import {
 } from '@hugeicons/core-free-icons'
 import { Heading, Text } from '@/components/ui/typography'
 import { updates, type UpdateCategory, type UpdateItem, type UpdateEntry } from '@/lib/updates-data'
+import { trackClientEvent } from '@/utils/analytics/client'
 
 // Category styling
 const categoryConfig: Record<UpdateCategory, { label: string; icon: typeof SparklesIcon; color: string }> = {
@@ -81,6 +83,10 @@ function UpdateEntryCard({ entry }: { entry: UpdateEntry }) {
 }
 
 export default function UpdatesPage() {
+  useEffect(() => {
+    trackClientEvent('updates_page_viewed')
+  }, [])
+
   return (
     <div className="p-4 sm:p-6 lg:p-8">
       <div className="max-w-2xl mx-auto">

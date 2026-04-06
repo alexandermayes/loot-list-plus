@@ -15,6 +15,7 @@ import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeletons'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { ClassificationBadge } from '@/components/ui/classification-badge'
+import { trackClientEvent } from '@/utils/analytics/client'
 
 type Step = 'upload' | 'preview' | 'result'
 
@@ -66,7 +67,8 @@ export default function SheetImportPage() {
 
   useEffect(() => {
     document.title = 'LootList+ \u2022 Import from spreadsheet'
-  }, [])
+    if (activeGuild?.id) trackClientEvent('sheet_import_page_viewed', { guild_id: activeGuild.id })
+  }, [activeGuild?.id])
 
   useEffect(() => {
     if (guildLoading) return

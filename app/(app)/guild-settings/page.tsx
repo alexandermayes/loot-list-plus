@@ -30,6 +30,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { SecurityLockIcon, RotateClockwiseIcon } from '@hugeicons/core-free-icons'
 import { HugeiconsIcon } from '@hugeicons/react'
+import { trackClientEvent } from '@/utils/analytics/client'
 
 export default function GuildSettingsPage() {
   const [loading, setLoading] = useState(true)
@@ -94,6 +95,11 @@ export default function GuildSettingsPage() {
   useEffect(() => {
     document.title = 'LootList+ • Guild Settings'
   }, [])
+
+  // Track page view
+  useEffect(() => {
+    if (activeGuild?.id) trackClientEvent('guild_settings_page_viewed', { guild_id: activeGuild.id })
+  }, [activeGuild?.id])
 
   // Match members card height to guild info card
   useEffect(() => {

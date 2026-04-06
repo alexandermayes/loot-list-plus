@@ -4,6 +4,7 @@ import { createContext, useContext, useState, useEffect, useRef, useCallback, us
 import { createClient } from '@/utils/supabase/client'
 import { useRouter } from 'next/navigation'
 import { useNotification } from '@/app/contexts/NotificationContext'
+import posthog from 'posthog-js'
 import type { User, AuthChangeEvent, Session } from '@supabase/supabase-js'
 
 // Re-export expansion types for backward compatibility
@@ -687,6 +688,21 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
     document.addEventListener('visibilitychange', handleVisibilityChange)
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
   }, [user])
+
+  // Associate user with their active guild in PostHog (group analytics)
+  useEffect(() => {
+    if (activeGuild?.id) {
+      try {
+        posthog.group('guild', activeGuild.id, {
+          name: activeGuild.name,
+          realm: activeGuild.realm,
+          faction: activeGuild.faction,
+        })
+      } catch {
+        // PostHog not initialized
+      }
+    }
+  }, [activeGuild?.id, activeGuild?.name, activeGuild?.realm, activeGuild?.faction])
 
   // Derived state — officer check using cached role positions (zero DB queries)
   const defaultPositions = useMemo(() => new Map([['Guild Master', 100], ['Officer', 50], ['Member', 0]]), [])
