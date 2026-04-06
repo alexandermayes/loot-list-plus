@@ -1,6 +1,7 @@
 'use client'
 
-import { useRef } from 'react'
+import { useRef, useState, useCallback } from 'react'
+import { createPortal } from 'react-dom'
 import { motion, useInView } from 'framer-motion'
 import Image from 'next/image'
 import { fadeInUp, staggerContainerSlow } from '@/lib/animations'
@@ -20,6 +21,41 @@ function Check() {
 }
 function Cross() {
   return <span className="text-red-400/50">&#10005;</span>
+}
+
+function FeatureTip({ name, tip }: { name: string; tip: string }) {
+  const [pos, setPos] = useState<{ x: number; y: number } | null>(null)
+  const spanRef = useRef<HTMLSpanElement>(null)
+
+  const show = useCallback(() => {
+    if (!spanRef.current) return
+    const rect = spanRef.current.getBoundingClientRect()
+    setPos({ x: rect.left, y: rect.bottom + 8 })
+  }, [])
+
+  const hide = useCallback(() => setPos(null), [])
+
+  return (
+    <>
+      <span
+        ref={spanRef}
+        className="border-b border-dashed border-[#bababa]/30 cursor-default"
+        onMouseEnter={show}
+        onMouseLeave={hide}
+      >
+        {name}
+      </span>
+      {pos && createPortal(
+        <span
+          className="fixed w-[260px] px-3 py-2 rounded-lg bg-[#1a1a2e]/95 border border-[#4a4a6a] text-[12px] text-[#bababa] leading-relaxed pointer-events-none z-[9999] backdrop-blur-sm shadow-xl font-poppins"
+          style={{ left: pos.x, top: pos.y }}
+        >
+          {tip}
+        </span>,
+        document.body
+      )}
+    </>
+  )
 }
 
 export default function LandingCompare() {
@@ -70,11 +106,8 @@ export default function LandingCompare() {
                 <tbody>
                   {features.map((f, i) => (
                     <tr key={f.name} className={`border-b border-[#383838]/50 ${i % 2 === 0 ? 'bg-[#0d0d0f]' : 'bg-[#121214]'}`}>
-                      <td className="py-3 px-4 text-left text-white group relative cursor-default">
-                        <span className="border-b border-dashed border-[#bababa]/30">{f.name}</span>
-                        <span className="absolute left-4 top-full mt-2 w-[260px] px-3 py-2 rounded-lg bg-[#1a1a2e]/95 border border-[#4a4a6a] text-[12px] text-[#bababa] leading-relaxed opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 backdrop-blur-sm shadow-xl">
-                          {f.tip}
-                        </span>
+                      <td className="py-3 px-4 text-left text-white">
+                        <FeatureTip name={f.name} tip={f.tip} />
                       </td>
                       <td className="py-3 px-3 text-center">{f.lootlist ? <Check /> : <Cross />}</td>
                       <td className="py-3 px-3 text-center">{f.tmb ? <Check /> : <Cross />}</td>
