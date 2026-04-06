@@ -42,7 +42,7 @@ export async function GET() {
       // All guilds with creation date and expansion name
       supabase
         .from('guilds')
-        .select('id, name, created_at, is_active, active_expansion_id, expansions(name)'),
+        .select('id, name, created_at, is_active, active_expansion_id, expansions!active_expansion_id(name)'),
 
       // All active memberships grouped by guild
       supabase

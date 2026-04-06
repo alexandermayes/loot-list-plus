@@ -159,13 +159,13 @@ function MiniBarChart({ data, dataKey, color, label }: { data: WeekBucket[]; dat
       <div className="flex items-end gap-[3px] h-16">
         {data.map((d, i) => {
           const val = d[dataKey] as number
-          const height = max > 0 ? Math.max((val / max) * 100, val > 0 ? 4 : 0) : 0
+          const height = max > 0 ? Math.max((val / max) * 100, val > 0 ? 6 : 0) : 0
           return (
-            <div key={i} className="flex-1 flex flex-col items-center gap-1">
-              <div className="w-full relative group">
+            <div key={i} className="flex-1 h-full flex items-end">
+              <div className="w-full relative group flex items-end h-full">
                 <div
                   className="w-full rounded-sm transition-all"
-                  style={{ height: `${height}%`, minHeight: height > 0 ? '2px' : '0', backgroundColor: color }}
+                  style={{ height: `${height}%`, minHeight: height > 0 ? '4px' : '0', backgroundColor: color }}
                 />
                 <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-1.5 py-0.5 bg-background-elevated border border-border rounded text-[10px] text-foreground opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-10">
                   {val} &middot; {d.label}
