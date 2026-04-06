@@ -283,6 +283,7 @@ export default function Sidebar({ currentView = 'overview', onViewChange, isMobi
         'loot-submissions': '/loot-submissions',
         'loot-settings': '/loot-settings',
         'raid-tracking': '/raid-tracking',
+        'raid-teams': '/raid-teams',
         'audit-log': '/audit-log',
       }
       router.push(routeMap[view] || '/overview')
