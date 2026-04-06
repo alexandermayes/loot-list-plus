@@ -28,7 +28,7 @@ export const metadata: Metadata = {
   },
 }
 
-const APP_URL = 'https://www.lootlistplus.com'
+const APP_URL = 'https://www.getlootlist.com'
 
 const jsonLd = {
   '@context': 'https://schema.org',
