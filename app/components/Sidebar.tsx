@@ -17,6 +17,7 @@ import { HugeiconsIcon } from '@hugeicons/react'
 import { Cancel01Icon, Settings01Icon, Notification03Icon } from '@hugeicons/core-free-icons'
 import { usePendingSubmissionCount } from '../hooks/usePendingSubmissionCount'
 import { trackClientEvent } from '@/utils/analytics/client'
+import { hasFeature } from '@/domain/guild/feature-flags'
 
 // Lazy load modal to reduce initial bundle size
 const CreateGuildModal = dynamic(() => import('./CreateGuildModal').then(mod => ({ default: mod.CreateGuildModal })), {
@@ -302,6 +303,7 @@ export default function Sidebar({ currentView = 'overview', onViewChange, isMobi
     { name: 'Raid Tracking', view: 'raid-tracking', icon: '/icons/raid-tracking.svg' },
     { name: 'Loot Submissions', view: 'loot-submissions', icon: '/icons/master-loot.svg' },
     { name: 'Loot Management', view: 'loot-settings', icon: '/icons/guild-settings.svg' },
+    ...(hasFeature(activeGuild, 'raid_teams') ? [{ name: 'Raid Teams', view: 'raid-teams', icon: '/icons/user-multiple.svg' }] : []),
     { name: 'Audit Log', view: 'audit-log', icon: '/icons/monitor.svg' },
   ] : []
 
