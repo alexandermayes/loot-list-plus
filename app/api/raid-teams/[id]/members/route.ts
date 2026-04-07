@@ -156,7 +156,16 @@ export async function POST(
       }, { status: 400 })
     }
 
-    // Insert members (ignore conflicts for idempotency)
+    // Remove characters from any existing team in this guild first
+    // (one character per team per guild constraint)
+    await serviceSupabase
+      .from('raid_team_members')
+      .delete()
+      .eq('guild_id', team.guild_id)
+      .in('character_id', character_ids)
+      .neq('raid_team_id', teamId)
+
+    // Insert members (ignore conflicts for idempotency on same team)
     const rows = character_ids.map(characterId => ({
       raid_team_id: teamId,
       character_id: characterId,
