@@ -335,7 +335,7 @@ export const ItemCandidateModal = memo(function ItemCandidateModal({
                   return (
                     <tr
                       key={r.character_id}
-                      className={`transition-colors hover:bg-muted ${
+                      className={`group transition-colors hover:bg-muted ${
                         !r.is_eligible ? 'opacity-50' : ''
                       } ${hasReceived ? 'bg-success/5' : ''} ${isConfirming ? 'bg-accent/10' : ''}`}
                     >
@@ -407,9 +407,9 @@ export const ItemCandidateModal = memo(function ItemCandidateModal({
                       {isOfficer && (
                         <td className="px-4 py-2 text-right">
                           <Button
-                            variant="ghost"
+                            variant={isConfirming ? 'outline' : 'primary'}
                             size="sm"
-                            className="text-[11px] h-7 px-2"
+                            className={`text-[11px] h-7 px-3 ${isConfirming ? '' : 'opacity-0 group-hover:opacity-100 transition-opacity'}`}
                             onClick={() => setAwardingCandidate(isConfirming ? null : r)}
                           >
                             {isConfirming ? 'Cancel' : 'Award'}
