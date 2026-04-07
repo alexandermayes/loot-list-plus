@@ -235,28 +235,38 @@ export const ItemCandidateModal = memo(function ItemCandidateModal({
     return map
   }, [sortedRankings, guildSettings])
 
-  // Top-2 comparison: highlight the key differentiator when scores are close
-  const closeComparison = useMemo(() => {
+  // Close-score analysis: group tied candidates and identify close contests
+  const contestInfo = useMemo(() => {
     if (sortedRankings.length < 2) return null
-    const first = sortedRankings[0]
-    const second = sortedRankings[1]
-    const gap = first.loot_score - second.loot_score
-    if (gap > 3) return null // not close enough to warrant comparison
+    const threshold = Math.max(1, sortedRankings[0].loot_score * 0.1)
 
-    const firstExp = topExplanations.get(first.character_id)
-    const secondExp = topExplanations.get(second.character_id)
-    if (!firstExp || !secondExp) return null
+    // Find all candidates tied at #1
+    const topScore = sortedRankings[0].loot_score
+    const tiedAtTop = sortedRankings.filter(r => Math.abs(r.loot_score - topScore) < 0.01)
 
-    // Find the component with the biggest difference
-    const diffs = firstExp.lines.map(line => {
-      const otherLine = secondExp.lines.find(l => l.key === line.key)
-      return { key: line.key, label: line.label, diff: line.value - (otherLine?.value ?? 0) }
-    }).filter(d => d.diff !== 0).sort((a, b) => Math.abs(b.diff) - Math.abs(a.diff))
+    // Find the next candidate after the tied group
+    const nextAfterTied = sortedRankings[tiedAtTop.length]
+    const gapToNext = nextAfterTied ? topScore - nextAfterTied.loot_score : Infinity
 
-    const keyDiff = diffs[0] || null
-    const isTied = gap < 0.01
+    // Get key differences between #1 and the closest non-tied candidate
+    let keyDiffs: { key: string; label: string; diff: number }[] = []
+    if (tiedAtTop.length === 1 && nextAfterTied) {
+      const firstExp = topExplanations.get(sortedRankings[0].character_id)
+      const secondExp = topExplanations.get(nextAfterTied.character_id)
+      if (firstExp && secondExp) {
+        keyDiffs = firstExp.lines.map(line => {
+          const otherLine = secondExp.lines.find(l => l.key === line.key)
+          return { key: line.key || '', label: line.label, diff: line.value - (otherLine?.value ?? 0) }
+        }).filter(d => Math.abs(d.diff) > 0.001).sort((a, b) => Math.abs(b.diff) - Math.abs(a.diff))
+      }
+    }
 
-    return { first, second, gap, isTied, keyDiff, diffs }
+    const isTied = tiedAtTop.length > 1
+    const isClose = !isTied && gapToNext <= threshold
+
+    if (!isTied && !isClose) return null
+
+    return { tiedAtTop, nextAfterTied, gapToNext, isTied, isClose, keyDiffs }
   }, [sortedRankings, topExplanations])
 
   // Determine which score components are non-zero for any candidate to hide empty columns
@@ -328,47 +338,65 @@ export const ItemCandidateModal = memo(function ItemCandidateModal({
           )}
         </div>
 
-        {/* Close-score comparison card */}
-        {closeComparison && (
+        {/* Contest indicator */}
+        {contestInfo && (
           <div className="px-6 py-3 border-b border-border bg-warning/5">
-            <div className="flex items-center gap-2 mb-2">
-              <span className="text-[11px] font-medium uppercase tracking-wider text-warning">
-                {closeComparison.isTied ? 'Tied scores' : `Within ${closeComparison.gap.toFixed(decimalPlaces)} pts`}
-              </span>
-            </div>
-            <div className="flex items-center gap-4 text-[13px]">
-              <div className="flex items-center gap-2">
-                <span className="text-[11px] text-muted-foreground">#1</span>
-                <span className="font-semibold" style={{ color: closeComparison.first.class_color }}>
-                  {closeComparison.first.player_name}
-                </span>
-                <span className="font-bold tabular-nums">{closeComparison.first.loot_score.toFixed(decimalPlaces)}</span>
-              </div>
-              <span className="text-muted-foreground">vs</span>
-              <div className="flex items-center gap-2">
-                <span className="text-[11px] text-muted-foreground">#2</span>
-                <span className="font-semibold" style={{ color: closeComparison.second.class_color }}>
-                  {closeComparison.second.player_name}
-                </span>
-                <span className="font-bold tabular-nums">{closeComparison.second.loot_score.toFixed(decimalPlaces)}</span>
-              </div>
-            </div>
-            {closeComparison.keyDiff && (
-              <Text size="xs" color="muted" className="mt-1.5">
-                Key difference: <span className="text-foreground-secondary font-medium">{closeComparison.keyDiff.label}</span>
-                {' '}({closeComparison.keyDiff.diff > 0 ? '+' : ''}{closeComparison.keyDiff.diff.toFixed(decimalPlaces)} for #1)
-                {closeComparison.diffs.length > 1 && (
-                  <span className="ml-1">
-                    &middot; also: {closeComparison.diffs.slice(1, 3).map(d => d.label).join(', ')}
+            {contestInfo.isTied ? (
+              <>
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-[11px] font-medium uppercase tracking-wider text-warning">
+                    {contestInfo.tiedAtTop.length}-way tie at {contestInfo.tiedAtTop[0].loot_score.toFixed(decimalPlaces)} pts
                   </span>
+                </div>
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px]">
+                  {contestInfo.tiedAtTop.map((r, i) => (
+                    <span key={r.character_id} className="flex items-center gap-1">
+                      {i > 0 && <span className="text-muted-foreground mr-1">&middot;</span>}
+                      <span className="font-semibold" style={{ color: r.class_color }}>{r.player_name}</span>
+                    </span>
+                  ))}
+                </div>
+                <Text size="xs" color="muted" className="mt-1.5 text-warning">
+                  Scores are identical. Consider a roll or loot council decision.
+                </Text>
+              </>
+            ) : contestInfo.isClose && contestInfo.nextAfterTied ? (
+              <>
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-[11px] font-medium uppercase tracking-wider text-warning">
+                    Close contest, {contestInfo.gapToNext.toFixed(decimalPlaces)} pts apart
+                  </span>
+                </div>
+                <div className="flex items-center gap-4 text-[13px]">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[11px] text-muted-foreground">#1</span>
+                    <span className="font-semibold" style={{ color: sortedRankings[0].class_color }}>
+                      {sortedRankings[0].player_name}
+                    </span>
+                    <span className="font-bold tabular-nums">{sortedRankings[0].loot_score.toFixed(decimalPlaces)}</span>
+                  </div>
+                  <span className="text-muted-foreground">vs</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[11px] text-muted-foreground">#2</span>
+                    <span className="font-semibold" style={{ color: contestInfo.nextAfterTied.class_color }}>
+                      {contestInfo.nextAfterTied.player_name}
+                    </span>
+                    <span className="font-bold tabular-nums">{contestInfo.nextAfterTied.loot_score.toFixed(decimalPlaces)}</span>
+                  </div>
+                </div>
+                {contestInfo.keyDiffs.length > 0 && (
+                  <Text size="xs" color="muted" className="mt-1.5">
+                    Key difference: <span className="text-foreground-secondary font-medium">{contestInfo.keyDiffs[0].label}</span>
+                    {' '}({contestInfo.keyDiffs[0].diff > 0 ? '+' : ''}{contestInfo.keyDiffs[0].diff.toFixed(decimalPlaces)} for #1)
+                    {contestInfo.keyDiffs.length > 1 && (
+                      <span className="ml-1">
+                        &middot; also: {contestInfo.keyDiffs.slice(1, 3).map(d => d.label).join(', ')}
+                      </span>
+                    )}
+                  </Text>
                 )}
-              </Text>
-            )}
-            {closeComparison.isTied && (
-              <Text size="xs" color="muted" className="mt-1 text-warning">
-                Scores are identical. Consider a roll or loot council decision.
-              </Text>
-            )}
+              </>
+            ) : null}
           </div>
         )}
 

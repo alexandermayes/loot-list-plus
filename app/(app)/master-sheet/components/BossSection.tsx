@@ -65,21 +65,22 @@ function rankingToScoreResult(r: PlayerRanking): ScoreResult {
   return { total: r.loot_score, components }
 }
 
-/** Officer-only score breakdown popover — shows explainScore() lines on click */
+/** Officer-only score breakdown popover — shows explainScore() lines on hover */
 function ScoreBreakdownPopover({
   ranking,
   config,
   decimalPlaces,
-  onClose,
+  onMouseEnter,
+  onMouseLeave,
   anchorRef,
 }: {
   ranking: PlayerRanking
   config: Partial<ScoringConfig>
   decimalPlaces: number
-  onClose: () => void
+  onMouseEnter: () => void
+  onMouseLeave: () => void
   anchorRef: HTMLElement | null
 }) {
-  const popoverRef = useRef<HTMLDivElement>(null)
   const [position, setPosition] = useState<{ top: number; left: number } | null>(null)
 
   useEffect(() => {
@@ -91,21 +92,6 @@ function ScoreBreakdownPopover({
     })
   }, [anchorRef])
 
-  // Close on click outside (but not when clicking the anchor itself — the anchor's onClick handles toggling)
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      const target = e.target as Node
-      if (
-        popoverRef.current && !popoverRef.current.contains(target) &&
-        (!anchorRef || !anchorRef.contains(target))
-      ) {
-        onClose()
-      }
-    }
-    document.addEventListener('mousedown', handler)
-    return () => document.removeEventListener('mousedown', handler)
-  }, [onClose, anchorRef])
-
   if (!position) return null
 
   const result = rankingToScoreResult(ranking)
@@ -113,7 +99,8 @@ function ScoreBreakdownPopover({
 
   return createPortal(
     <div
-      ref={popoverRef}
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
       className="fixed z-[9999] bg-background-elevated border border-border rounded-lg shadow-lg p-3 w-56"
       style={{ top: position.top, left: position.left, transform: 'translateX(-50%)' }}
     >
@@ -352,9 +339,22 @@ const ItemRow = memo(function ItemRow({
   columnCount,
 }: ItemRowProps) {
   const columnIndices = Array.from({ length: columnCount }, (_, i) => i)
-  // Officer score popover state
-  const [activePopover, setActivePopover] = useState<{ index: number; anchor: HTMLElement } | null>(null)
-  const closePopover = useCallback(() => setActivePopover(null), [])
+  // Officer score popover state — hover-based, per-cell
+  const [hoveredPopover, setHoveredPopover] = useState<{ index: number; anchor: HTMLElement } | null>(null)
+  const hideTimeout = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const showPopover = useCallback((index: number, anchor: HTMLElement) => {
+    if (hideTimeout.current) { clearTimeout(hideTimeout.current); hideTimeout.current = null }
+    setHoveredPopover({ index, anchor })
+  }, [])
+
+  const scheduleHide = useCallback(() => {
+    hideTimeout.current = setTimeout(() => setHoveredPopover(null), 150)
+  }, [])
+
+  const cancelHide = useCallback(() => {
+    if (hideTimeout.current) { clearTimeout(hideTimeout.current); hideTimeout.current = null }
+  }, [])
 
   return (
     <tr
@@ -421,30 +421,34 @@ const ItemRow = memo(function ItemRow({
                     )}
                   </span>
                   <span
-                    className={`text-[11px] text-foreground-muted inline-flex items-center gap-0.5 ${isOfficer ? 'cursor-pointer hover:text-accent transition-colors' : ''}`}
-                    onClick={isOfficer ? (e) => {
-                      e.stopPropagation()
-                      setActivePopover(prev =>
-                        prev?.index === index ? null : { index, anchor: e.currentTarget as HTMLElement }
-                      )
-                    } : undefined}
+                    className={`text-[11px] text-foreground-muted inline-flex items-center gap-0.5 ${isOfficer ? 'cursor-default hover:text-accent transition-colors' : ''}`}
+                    onMouseEnter={isOfficer ? (e) => showPopover(index, e.currentTarget as HTMLElement) : undefined}
+                    onMouseLeave={isOfficer ? scheduleHide : undefined}
                   >
                     {ranking.loot_score.toFixed(decimalPlaces)}
-                    {/* Show gap indicator when #1 and #2 are close */}
-                    {index === 0 && ir.rankings[1] && (() => {
-                      const gap = ranking.loot_score - ir.rankings[1].loot_score
-                      if (gap < 0.01) return <span className="ml-0.5 text-[9px] text-warning" title="Tied with #2">⚡</span>
-                      if (gap <= 2) return <span className="ml-0.5 text-[9px] text-warning/60" title={`${gap.toFixed(decimalPlaces)} ahead of #2`}>~</span>
+                    {/* Tied badge on all candidates sharing #1 score, close-gap on #1 only */}
+                    {(() => {
+                      const topScore = ir.rankings[0]?.loot_score ?? 0
+                      const isTiedAtTop = ir.rankings.length > 1
+                        && Math.abs(ranking.loot_score - topScore) < 0.01
+                        && Math.abs(ir.rankings[1].loot_score - topScore) < 0.01
+                      if (isTiedAtTop) return <span className="ml-1 text-[9px] font-medium text-warning px-1 py-px rounded bg-warning/15">tied</span>
+                      if (index === 0 && ir.rankings[1]) {
+                        const gap = ranking.loot_score - ir.rankings[1].loot_score
+                        const threshold = Math.max(1, topScore * 0.1)
+                        if (gap > 0.01 && gap <= threshold) return <span className="ml-1 text-[9px] text-muted-foreground/70">+{gap.toFixed(decimalPlaces)}</span>
+                      }
                       return null
                     })()}
                   </span>
-                  {activePopover?.index === index && isOfficer && guildSettings && (
+                  {hoveredPopover?.index === index && isOfficer && guildSettings && (
                     <ScoreBreakdownPopover
                       ranking={ranking}
                       config={guildSettings}
                       decimalPlaces={decimalPlaces}
-                      onClose={closePopover}
-                      anchorRef={activePopover.anchor}
+                      onMouseEnter={cancelHide}
+                      onMouseLeave={scheduleHide}
+                      anchorRef={hoveredPopover.anchor}
                     />
                   )}
                   {canCompare && (
