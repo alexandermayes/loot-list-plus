@@ -475,17 +475,18 @@ export default function AttendancePage() {
         }
 
         // Get raid events in the rolling window (current week + previous X weeks)
+        // For team view: fetch team events + unassigned (for denominator)
+        // Display grid still filters by team, but scoring uses team+unassigned
         let raidEventsQuery = supabase
           .from('raid_events')
-          .select('id, raid_date, is_skipped, notes, wcl_report_code')
+          .select('id, raid_date, is_skipped, notes, wcl_report_code, raid_team_id')
           .eq('guild_id', activeCharData.active_guild_id)
           .gte('raid_date', toDateString(lowerBound))
           .lte('raid_date', toDateString(periodEnd))
           .eq('is_skipped', false)
           .order('raid_date', { ascending: true })
-        // Filter by team when a team is selected
         if (activeTeamId) {
-          raidEventsQuery = raidEventsQuery.eq('raid_team_id', activeTeamId)
+          raidEventsQuery = raidEventsQuery.or(`raid_team_id.eq.${activeTeamId},raid_team_id.is.null`)
         }
         const { data: raidEventsData } = await raidEventsQuery
 
@@ -574,7 +575,7 @@ export default function AttendancePage() {
 
         // Load guild-wide attendance data (includes score for all characters)
         // Pass filteredRaidEvents (schedule-filtered) so computeAttendance matches the overview
-        await loadGuildAttendance(activeCharData.active_guild_id, filteredRaidEvents, settingsData, characterData.id)
+        await loadGuildAttendance(activeCharData.active_guild_id, filteredRaidEvents, settingsData, characterData.id, raidDays as number[])
       } catch (error) {
         console.error('Failed to load attendance data:', error)
         setError("Couldn't load attendance data. Check your connection and try again.")
@@ -591,18 +592,17 @@ export default function AttendancePage() {
     })
   }, [user, activeTeamId])
 
-  const loadGuildAttendance = async (guildId: string, raidEvents: RaidEvent[], settings: any, activeCharacterId?: string) => {
+  const loadGuildAttendance = async (guildId: string, raidEvents: RaidEvent[], settings: any, activeCharacterId?: string, raidDays: number[] = []) => {
     try {
       const raidEventIds = raidEvents.map(r => r.id)
+      const raidDaysPerWeek = raidDays.length || settings?.raid_days_per_week || 2
 
       // Build raider list from guild memberships (all active members).
-      // Previously this used approved loot submissions, which meant characters
-      // without an approved list were invisible in attendance tracking.
-      const [membersResponse, attendanceResult, teamMembersResult] = await Promise.all([
+      const [membersResponse, attendanceResult, teamMembersResult, allGuildAttendanceResult] = await Promise.all([
         // Query 1: Fetch guild members via API (uses service role to see all members)
         fetch(`/api/guild-members?guild_id=${guildId}`).then(r => r.ok ? r.json() : null),
 
-        // Query 2: Get all attendance records for these raid events
+        // Query 2: Get attendance records for team events
         supabase
           .from('attendance_records')
           .select('raid_event_id, character_id, signed_up, attended, no_call_no_show, was_late, was_benched, is_excused, points_override')
@@ -614,6 +614,14 @@ export default function AttendancePage() {
               .from('raid_team_members')
               .select('character_id')
               .eq('raid_team_id', activeTeamId)
+          : Promise.resolve({ data: null }),
+
+        // Query 4: If team selected, also get ALL guild attendance (for fill-in credit detection)
+        activeTeamId
+          ? supabase
+              .from('attendance_records')
+              .select('raid_event_id, character_id, attended')
+              .eq('attended', true)
           : Promise.resolve({ data: null }),
       ])
 
@@ -673,6 +681,34 @@ export default function AttendancePage() {
         })
       })
 
+      // Build fill-in data: attendance records on events NOT in the team event set
+      // This enables cross-team fill-in credit
+      let fillInEventMap = new Map<string, { id: string; raid_date: string }>()
+      let fillInRecordsByCharacter: Record<string, { raid_event_id: string; attended: boolean }[]> = {}
+      if (activeTeamId && allGuildAttendanceResult.data) {
+        // Find all raid_event_ids that are NOT in the team events
+        const teamEventIdSet = new Set(raidEventIds)
+        const otherEventIds = new Set<string>()
+        for (const rec of allGuildAttendanceResult.data) {
+          if (rec.attended && rec.character_id && !teamEventIdSet.has(rec.raid_event_id)) {
+            otherEventIds.add(rec.raid_event_id)
+            if (!fillInRecordsByCharacter[rec.character_id]) fillInRecordsByCharacter[rec.character_id] = []
+            fillInRecordsByCharacter[rec.character_id].push({ raid_event_id: rec.raid_event_id, attended: true })
+          }
+        }
+        // Fetch event dates for the fill-in events
+        if (otherEventIds.size > 0) {
+          const { data: fillInEventData } = await supabase
+            .from('raid_events')
+            .select('id, raid_date')
+            .in('id', Array.from(otherEventIds))
+            .eq('is_skipped', false)
+          for (const e of (fillInEventData || [])) {
+            fillInEventMap.set(e.id, e)
+          }
+        }
+      }
+
       // Calculate attendance score for each raider using the engine
       const newMemberMode = (settings?.new_member_mode || 'raw') as 'raw' | 'fair' | 'minimum_gate'
       const todayStr = toDateString(new Date())
@@ -693,6 +729,12 @@ export default function AttendancePage() {
           points_override: status.points_override,
         }))
 
+        // Get fill-in data for this character
+        const charFillInRecords = fillInRecordsByCharacter[s.character_id] || []
+        const charFillInEvents = charFillInRecords
+          .map(r => fillInEventMap.get(r.raid_event_id))
+          .filter(Boolean) as { id: string; raid_date: string }[]
+
         const joinedAt = joinDateByCharacterId[s.character_id]
         const result = computeAttendance({
           records: charRecords,
@@ -702,6 +744,9 @@ export default function AttendancePage() {
           memberJoinedAt: joinedAt ? toDateString(new Date(joinedAt)) : undefined,
           newMemberMode,
           asOfDate: todayStr,
+          fillInEvents: charFillInEvents.length > 0 ? charFillInEvents : undefined,
+          fillInRecords: charFillInRecords.length > 0 ? charFillInRecords : undefined,
+          weeklyAttendanceCap: activeTeamId ? raidDaysPerWeek : undefined,
         })
 
         return {
@@ -737,6 +782,10 @@ export default function AttendancePage() {
               no_call_no_show: status.no_call_no_show,
             }))
             const joinedAt = joinDateByCharacterId[activeCharacterId]
+            const myFillInRecords = fillInRecordsByCharacter[activeCharacterId] || []
+            const myFillInEvents = myFillInRecords
+              .map(r => fillInEventMap.get(r.raid_event_id))
+              .filter(Boolean) as { id: string; raid_date: string }[]
             const result = computeAttendance({
               records: charRecords,
               raidEvents,
@@ -745,6 +794,9 @@ export default function AttendancePage() {
               memberJoinedAt: joinedAt ? toDateString(new Date(joinedAt)) : undefined,
               newMemberMode,
               asOfDate: todayStr,
+              fillInEvents: myFillInEvents.length > 0 ? myFillInEvents : undefined,
+              fillInRecords: myFillInRecords.length > 0 ? myFillInRecords : undefined,
+              weeklyAttendanceCap: activeTeamId ? raidDaysPerWeek : undefined,
             })
             setAttendanceScore(result.score)
             setTrackedRaidCount(result.raidsInWindow)
