@@ -3,30 +3,17 @@
 import { useRef, useEffect, useState } from 'react'
 import { motion, useInView, useScroll, useTransform } from 'framer-motion'
 import Image from 'next/image'
+import dynamic from 'next/dynamic'
 import { scaleUp, scrollToSection } from '@/lib/animations'
 import { trackClientEvent } from '@/utils/analytics/client'
-import ParallaxItem from './ParallaxItem'
 import MagneticButton from './MagneticButton'
 import CountUp from './CountUp'
-import { updates } from '@/lib/updates-data'
 
-function getRecentFeatures() {
-  const features: string[] = []
-  for (const entry of updates) {
-    for (const item of entry.items) {
-      if (item.category === 'feature') {
-        features.push(item.title.replace(/^New blog post: /, ''))
-        if (features.length >= 3) return `${features[0]}, ${features[1]}, and more`
-      }
-    }
-  }
-  if (features.length === 0) return 'See what\'s new'
-  return features.join(', ')
-}
+const ParallaxItem = dynamic(() => import('./ParallaxItem'), { ssr: false })
 
 const APP_URL = 'https://www.lootlistplus.com'
 
-export default function LandingHero() {
+export default function LandingHero({ recentFeatures = 'See what\'s new' }: { recentFeatures?: string }) {
   const previewRef = useRef(null)
   const videoRef = useRef<HTMLVideoElement>(null)
   const isPreviewInView = useInView(previewRef, { once: true, margin: '-100px' })
@@ -133,7 +120,7 @@ export default function LandingHero() {
                 NEW
               </span>
               <span className="font-poppins text-[14px] text-white whitespace-nowrap">
-                {getRecentFeatures()}
+                {recentFeatures}
               </span>
               <Image src="/images/landing/icons/arrow-right-02.svg" alt="" width={16} height={16} />
             </a>
