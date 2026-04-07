@@ -542,13 +542,18 @@ export default function AttendancePage() {
           }, new Map<string, RaidEvent>()).values()
         )
 
-        // Filter out empty events that don't match the current raid schedule.
-        // Events WITH attendance always show (officer tracked an off-schedule day).
-        // Events WITHOUT attendance only show if they match a configured raid day.
-        const raidDaySet = new Set(raidDays as number[])
+        // Filter out events that don't match the current raid schedule.
+        // When a team is selected: strictly filter to team's raid days only.
+        // When "All teams": events WITH attendance always show (officer tracked an off-schedule day),
+        // events WITHOUT attendance only show if they match a configured raid day.
         const filteredRaidEvents = deduplicatedRaidEvents.filter(event => {
-          if (raidIdsWithAttendance.has(event.id)) return true
           const eventDay = parseDate(event.raid_date).getDay()
+          if (activeTeamId) {
+            // Team view: only show the team's scheduled raid days
+            return isDateScheduled(event.raid_date, eventDay, raidDays as number[], activeTeam?.schedule_history ?? null)
+          }
+          // All teams: keep events with attendance + scheduled events
+          if (raidIdsWithAttendance.has(event.id)) return true
           return isDateScheduled(event.raid_date, eventDay, raidDays as number[], activeTeam?.schedule_history ?? null)
         })
 

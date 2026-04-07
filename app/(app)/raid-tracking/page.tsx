@@ -62,6 +62,7 @@ import { trackClientEvent } from '@/utils/analytics/client'
 import { parseDate, toDateString } from '@/utils/date'
 import { useRaidTeam } from '@/app/hooks/useRaidTeam'
 import { isDateScheduled } from '@/domain/raid-team/schedule-history'
+import { resolveRaidDays } from '@/domain/raid-team/settings'
 import { TeamSelector } from '@/app/components/TeamSelector'
 
 interface Member {
@@ -336,9 +337,20 @@ export default function RaidTrackingPage() {
     const raidScheduleSource = expansion?.raid_days_per_week != null ? expansion : settings
     const { raid_days_per_week, first_raid_day, second_raid_day, third_raid_day, fourth_raid_day, fifth_raid_day } = raidScheduleSource
 
-    const raidDays = [first_raid_day, second_raid_day, third_raid_day, fourth_raid_day, fifth_raid_day]
+    const baseRaidDays = [first_raid_day, second_raid_day, third_raid_day, fourth_raid_day, fifth_raid_day]
       .filter(day => day !== null && day !== undefined)
       .slice(0, raid_days_per_week)
+    // Apply team raid day overrides if a team is selected
+    const raidDays = activeTeam?.raid_days_override
+      ? resolveRaidDays({
+          raid_days_per_week: raid_days_per_week || 2,
+          first_raid_day: first_raid_day ?? null,
+          second_raid_day: second_raid_day ?? null,
+          third_raid_day: third_raid_day ?? null,
+          fourth_raid_day: fourth_raid_day ?? null,
+          fifth_raid_day: fifth_raid_day ?? null,
+        }, activeTeam.raid_days_override)
+      : baseRaidDays
 
     // Generate dates: from expansion raid_start_date to today only
     const dates: string[] = []
@@ -406,11 +418,15 @@ export default function RaidTrackingPage() {
       eventsWithAttendance = new Set(attendanceCheck?.map((r: { raid_event_id: string }) => r.raid_event_id) || [])
     }
 
-    // Filter events: show scheduled raid days + any off-schedule events that have attendance data
-    // This handles makeup raids, off-schedule tracked days, and imported data
+    // Filter events: show scheduled raid days only.
+    // When a team is selected: strictly filter to team's raid days.
+    // When "All teams": also include off-schedule events that have attendance data.
     const filteredEvents = (allEvents || []).filter((event: RaidEvent) => {
-      if (eventsWithAttendance.has(event.id)) return true
       const eventDate = parseDate(event.raid_date)
+      if (activeTeamId) {
+        return isDateScheduled(event.raid_date, eventDate.getDay(), raidDays, activeTeam?.schedule_history ?? null)
+      }
+      if (eventsWithAttendance.has(event.id)) return true
       return isDateScheduled(event.raid_date, eventDate.getDay(), raidDays, activeTeam?.schedule_history ?? null)
     })
 
