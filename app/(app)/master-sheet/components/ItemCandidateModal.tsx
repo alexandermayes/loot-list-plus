@@ -321,9 +321,9 @@ export const ItemCandidateModal = memo(function ItemCandidateModal({
           <div className="px-6 py-3 border-b border-border bg-background-subtle space-y-1.5">
             <PrioritySummary priority={priority} />
             {priority.notes && (
-              <p className="text-[12px] text-muted-foreground italic">
+              <Text size="sm" color="muted" className="italic">
                 {priority.notes}
-              </p>
+              </Text>
             )}
           </div>
         )}
@@ -571,11 +571,11 @@ export const ItemCandidateModal = memo(function ItemCandidateModal({
 
         {/* Recent awards (audit receipt) */}
         <div className="px-6 py-4 border-t border-border bg-background-subtle">
-          <p className="text-[12px] font-medium text-foreground-secondary uppercase tracking-wider mb-2">Recent awards</p>
+          <Text size="sm" color="secondary" className="font-medium uppercase tracking-wider mb-2">Recent awards</Text>
           {awardsLoading ? (
-            <p className="text-[12px] text-muted-foreground">Loading...</p>
+            <Text size="sm" color="muted">Loading...</Text>
           ) : recentAwards.length === 0 ? (
-            <p className="text-[12px] text-muted-foreground">This item hasn't been awarded yet.</p>
+            <Text size="sm" color="muted">This item hasn't been awarded yet.</Text>
           ) : (
             <div className="space-y-1">
               {recentAwards.map((award, i) => (
