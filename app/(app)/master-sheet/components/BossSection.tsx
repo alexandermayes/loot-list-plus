@@ -16,25 +16,6 @@ async function loadBossQuote(boss: string): Promise<string | null> {
 import type { ScoreResult, ScoreComponents, ScoringConfig } from '@/domain/types'
 import { explainScore } from '@/domain/scoring/explain'
 
-/** Tiny dice icon that spins on click — shows when players are tied */
-function TieDice() {
-  const [spinning, setSpinning] = useState(false)
-
-  return (
-    <span
-      className={`cursor-pointer select-none inline-block ${spinning ? 'animate-spin' : ''}`}
-      style={{ animationDuration: '0.4s', animationIterationCount: 1 }}
-      onClick={(e) => {
-        e.stopPropagation()
-        setSpinning(true)
-        setTimeout(() => setSpinning(false), 400)
-      }}
-      title="Tied! Click to roll"
-    >
-      🎲
-    </span>
-  )
-}
 
 interface LootItem {
   id: string
@@ -449,10 +430,13 @@ const ItemRow = memo(function ItemRow({
                     } : undefined}
                   >
                     {ranking.loot_score.toFixed(decimalPlaces)}
-                    {index > 0 && ir.rankings[index - 1] &&
-                      ranking.loot_score === ir.rankings[index - 1].loot_score && (
-                      <TieDice />
-                    )}
+                    {/* Show gap indicator when #1 and #2 are close */}
+                    {index === 0 && ir.rankings[1] && (() => {
+                      const gap = ranking.loot_score - ir.rankings[1].loot_score
+                      if (gap < 0.01) return <span className="ml-0.5 text-[9px] text-warning" title="Tied with #2">⚡</span>
+                      if (gap <= 2) return <span className="ml-0.5 text-[9px] text-warning/60" title={`${gap.toFixed(decimalPlaces)} ahead of #2`}>~</span>
+                      return null
+                    })()}
                   </span>
                   {activePopover?.index === index && isOfficer && guildSettings && (
                     <ScoreBreakdownPopover
