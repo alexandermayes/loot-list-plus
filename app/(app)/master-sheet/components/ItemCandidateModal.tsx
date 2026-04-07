@@ -524,12 +524,22 @@ export const ItemCandidateModal = memo(function ItemCandidateModal({
         {/* Award confirmation panel */}
         {awardingCandidate && (
           <div className="px-6 py-4 border-t border-accent/30 bg-accent/5">
-            <div className="flex items-center gap-3 mb-3">
+            <div className="flex items-center gap-3 mb-2">
               <Text size="sm" className="font-medium">
                 Award <ItemLink name={item.name} wowheadId={item.wowhead_id} className="text-sm" /> to{' '}
                 <span style={{ color: awardingCandidate.class_color }}>{awardingCandidate.player_name}</span>
               </Text>
             </div>
+            {/* BLP status */}
+            {(guildSettings as any)?.blp_enabled && (
+              <Text size="xs" color="muted" className="mb-2">
+                {awardingCandidate.bad_luck_bonus > 0
+                  ? `${awardingCandidate.player_name}'s BLP (+${awardingCandidate.bad_luck_bonus.toFixed(decimalPlaces)}) will reset.`
+                  : `${awardingCandidate.player_name} has no BLP on this item.`
+                }
+                {' '}Other candidates' BLP will increase.
+              </Text>
+            )}
             <div className="flex flex-wrap items-end gap-3">
               <div className="w-52">
                 <Text size="xs" color="muted" className="mb-1">Reason</Text>
