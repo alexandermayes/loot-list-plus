@@ -182,6 +182,7 @@ function MasterSheetContent() {
   const [itemPriorities, setItemPriorities] = useState<Record<string, ItemPriority>>({})
   const [collapsedBosses, setCollapsedBosses] = useState<Set<string>>(new Set())
   const [collapsedRaidTiers, setCollapsedRaidTiers] = useState<Set<string>>(new Set())
+  const [mostRecentRaidEventId, setMostRecentRaidEventId] = useState<string | null>(null)
   const [isExporting, setIsExporting] = useState(false)
   const [showScoreBreakdown, setShowScoreBreakdown] = useState(false)
   const [showScoreComparison, setShowScoreComparison] = useState(false)
@@ -328,6 +329,10 @@ function MasterSheetContent() {
     if (!recentRaids || recentRaids.length === 0) {
       return Object.fromEntries(characterIds.map(id => [id, { score: 0, raidsAttended: 0, raidsInWindow: 0, isEligible: true }]))
     }
+
+    // Track most recent raid event for award attribution
+    const sorted = [...recentRaids].sort((a: { raid_date: string }, b: { raid_date: string }) => b.raid_date.localeCompare(a.raid_date))
+    if (sorted.length > 0) setMostRecentRaidEventId(sorted[0].id)
 
     const raidIds = recentRaids.map((r: { id: string }) => r.id)
 
@@ -1977,6 +1982,9 @@ function MasterSheetContent() {
             receivedCharacterIds={candidateReceivedIds}
             guildSettings={guildSettings ?? {}}
             guildId={guildId}
+            isOfficer={isOfficer}
+            raidTierId={candidateModalData?.item?.raid_tier_id}
+            mostRecentRaidEventId={mostRecentRaidEventId}
           />
         )}
         </div>

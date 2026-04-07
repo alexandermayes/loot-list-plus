@@ -1,11 +1,16 @@
 'use client'
 
-import { memo, useMemo, useState, useEffect } from 'react'
+import { memo, useMemo, useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
-import { Modal, ModalHeader, ModalTitle, ModalDescription, ModalBody } from '@/components/ui/modal'
+import { Modal, ModalHeader, ModalTitle, ModalDescription, ModalBody, ModalFooter } from '@/components/ui/modal'
 import { Button } from '@/components/ui/button'
+import { Select } from '@/components/ui/select'
+import { Input } from '@/components/ui/input'
+import { Text } from '@/components/ui/typography'
 import ItemLink from '@/app/components/ItemLink'
-import type { ScoringConfig } from '@/domain/types'
+import { useNotification } from '@/app/contexts/NotificationContext'
+import { explainScore } from '@/domain/scoring/explain'
+import type { ScoringConfig, ScoreComponents } from '@/domain/types'
 import type { PlayerRanking, LootItem } from './BossSection'
 
 interface ItemPriority {
@@ -23,6 +28,15 @@ interface LootAward {
   awarded_by_name: string | null
 }
 
+const AWARD_REASONS = [
+  { value: '', label: 'No reason (score winner)' },
+  { value: 'score', label: 'Score winner' },
+  { value: 'loot_council', label: 'Loot council decision' },
+  { value: 'override', label: 'Override (explain below)' },
+  { value: 'offspec', label: 'Offspec / no contest' },
+  { value: 'roll', label: 'Won roll (tied scores)' },
+]
+
 interface ItemCandidateModalProps {
   open: boolean
   onClose: () => void
@@ -32,6 +46,10 @@ interface ItemCandidateModalProps {
   receivedCharacterIds: Set<string>
   guildSettings: Partial<ScoringConfig> & { decimal_places?: number; minimum_raid_days?: number }
   guildId: string | null
+  isOfficer?: boolean
+  raidTierId?: string | null
+  mostRecentRaidEventId?: string | null
+  onAwardComplete?: () => void
 }
 
 function PrioritySummary({ priority }: { priority: ItemPriority }) {
@@ -76,6 +94,20 @@ function formatDate(dateStr: string): string {
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 }
 
+/** Reconstruct ScoreResult from flat PlayerRanking for explainScore() */
+function rankingToExplanation(r: PlayerRanking, config?: Partial<ScoringConfig>) {
+  const components: ScoreComponents = {
+    itemRank: r.loot_score - r.attendance_score - r.role_modifier - r.role_bonus - r.priority_bonus - r.bad_luck_bonus - r.trial_penalty,
+    attendanceScore: r.attendance_score,
+    rankModifier: r.role_modifier,
+    roleBonus: r.role_bonus,
+    priorityBonus: r.priority_bonus,
+    trialPenalty: r.trial_penalty,
+    badLuckBonus: r.bad_luck_bonus,
+  }
+  return explainScore({ total: r.loot_score, components }, config)
+}
+
 export const ItemCandidateModal = memo(function ItemCandidateModal({
   open,
   onClose,
@@ -85,10 +117,22 @@ export const ItemCandidateModal = memo(function ItemCandidateModal({
   receivedCharacterIds,
   guildSettings,
   guildId,
+  isOfficer,
+  raidTierId,
+  mostRecentRaidEventId,
+  onAwardComplete,
 }: ItemCandidateModalProps) {
   const decimalPlaces = guildSettings?.decimal_places ?? 2
   const [recentAwards, setRecentAwards] = useState<LootAward[]>([])
   const [awardsLoading, setAwardsLoading] = useState(false)
+
+  // Award UI state
+  const [awardingCandidate, setAwardingCandidate] = useState<PlayerRanking | null>(null)
+  const [awardReason, setAwardReason] = useState('')
+  const [awardNote, setAwardNote] = useState('')
+  const [awarding, setAwarding] = useState(false)
+
+  const { showNotification } = useNotification()
 
   // Fetch recent loot history for this item when modal opens
   useEffect(() => {
@@ -116,10 +160,79 @@ export const ItemCandidateModal = memo(function ItemCandidateModal({
     return () => { cancelled = true }
   }, [open, item?.id, guildId])
 
+  // Reset award state when modal closes
+  useEffect(() => {
+    if (!open) {
+      setAwardingCandidate(null)
+      setAwardReason('')
+      setAwardNote('')
+    }
+  }, [open])
+
+  const handleAward = useCallback(async () => {
+    if (!awardingCandidate || !item || !guildId) return
+    setAwarding(true)
+
+    const notes = [
+      awardReason && awardReason !== '' ? AWARD_REASONS.find(r => r.value === awardReason)?.label : null,
+      awardNote.trim() || null,
+    ].filter(Boolean).join(': ')
+
+    try {
+      const res = await fetch('/api/loot-history/bulk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          guild_id: guildId,
+          items: [{
+            loot_item_id: item.id,
+            raid_tier_id: raidTierId || null,
+            raid_event_id: mostRecentRaidEventId || null,
+            awarded_date: new Date().toISOString().split('T')[0],
+            character_id: awardingCandidate.character_id,
+            notes: notes || null,
+          }],
+        }),
+      })
+
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        throw new Error(body.error || `HTTP ${res.status}`)
+      }
+
+      showNotification('success', `${item.name} awarded to ${awardingCandidate.player_name}`)
+      setAwardingCandidate(null)
+      setAwardReason('')
+      setAwardNote('')
+
+      // Refresh recent awards
+      const refreshRes = await fetch(`/api/loot-history?guild_id=${guildId}&loot_item_id=${item.id}&limit=5`)
+      if (refreshRes.ok) {
+        const data = await refreshRes.json()
+        setRecentAwards(data?.data || [])
+      }
+
+      onAwardComplete?.()
+    } catch (err) {
+      showNotification('error', `Failed to award: ${err instanceof Error ? err.message : 'Unknown error'}`)
+    } finally {
+      setAwarding(false)
+    }
+  }, [awardingCandidate, item, guildId, raidTierId, mostRecentRaidEventId, awardReason, awardNote, showNotification, onAwardComplete])
+
   const sortedRankings = useMemo(
     () => [...rankings].sort((a, b) => b.loot_score - a.loot_score),
     [rankings]
   )
+
+  // Generate inline explanations for top 3 candidates
+  const topExplanations = useMemo(() => {
+    const map = new Map<string, ReturnType<typeof rankingToExplanation>>()
+    for (let i = 0; i < Math.min(3, sortedRankings.length); i++) {
+      map.set(sortedRankings[i].character_id, rankingToExplanation(sortedRankings[i], guildSettings))
+    }
+    return map
+  }, [sortedRankings, guildSettings])
 
   // Determine which score components are non-zero for any candidate to hide empty columns
   const visibleComponents = useMemo(() => {
@@ -152,6 +265,9 @@ export const ItemCandidateModal = memo(function ItemCandidateModal({
             </ModalTitle>
             <ModalDescription>
               {item.boss_name} &middot; {item.item_slot}
+              {item.classification && (
+                <span className="ml-2 text-[12px] text-muted-foreground">({item.classification})</span>
+              )}
               {priority && (
                 <span className="ml-2 text-accent text-[12px]">Has priority rules</span>
               )}
@@ -208,17 +324,20 @@ export const ItemCandidateModal = memo(function ItemCandidateModal({
                   {visibleComponents.blp && <th className="px-4 py-2 text-right" title="Bad luck protection">BLP</th>}
                   {visibleComponents.trialPen && <th className="px-4 py-2 text-right" title="Trial penalty">Trial</th>}
                   <th className="px-4 py-2 text-right" title="Raids attended / total in window">Raids</th>
+                  {isOfficer && <th className="px-4 py-2 text-right w-20"></th>}
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
                 {sortedRankings.map((r, i) => {
                   const hasReceived = receivedCharacterIds.has(r.character_id)
+                  const explanation = topExplanations.get(r.character_id)
+                  const isConfirming = awardingCandidate?.character_id === r.character_id
                   return (
                     <tr
                       key={r.character_id}
                       className={`transition-colors hover:bg-muted ${
                         !r.is_eligible ? 'opacity-50' : ''
-                      } ${hasReceived ? 'bg-success/5' : ''}`}
+                      } ${hasReceived ? 'bg-success/5' : ''} ${isConfirming ? 'bg-accent/10' : ''}`}
                     >
                       <td className="px-4 py-2 text-muted-foreground text-[12px]">{i + 1}</td>
                       <td className="px-4 py-2">
@@ -236,6 +355,19 @@ export const ItemCandidateModal = memo(function ItemCandidateModal({
                             <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-success/20 text-success">Has item</span>
                           )}
                         </div>
+                        {/* Inline score explanation for top 3 */}
+                        {explanation && (
+                          <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-1">
+                            {explanation.lines.map(line => (
+                              <span key={line.key} className="text-[10px] text-muted-foreground">
+                                {line.label}: <span className={`font-medium ${line.value > 0 ? 'text-foreground-secondary' : line.value < 0 ? 'text-destructive' : ''}`}>
+                                  {line.value > 0 ? '+' : ''}{line.value.toFixed(decimalPlaces)}
+                                </span>
+                                {line.context ? ` (${line.context})` : ''}
+                              </span>
+                            ))}
+                          </div>
+                        )}
                       </td>
                       <td className="px-4 py-2 text-right font-semibold tabular-nums">
                         {r.loot_score.toFixed(decimalPlaces)}
@@ -272,11 +404,71 @@ export const ItemCandidateModal = memo(function ItemCandidateModal({
                       <td className="px-4 py-2 text-right tabular-nums text-muted-foreground">
                         {r.raids_attended}
                       </td>
+                      {isOfficer && (
+                        <td className="px-4 py-2 text-right">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-[11px] h-7 px-2"
+                            onClick={() => setAwardingCandidate(isConfirming ? null : r)}
+                          >
+                            {isConfirming ? 'Cancel' : 'Award'}
+                          </Button>
+                        </td>
+                      )}
                     </tr>
                   )
                 })}
               </tbody>
             </table>
+          </div>
+        )}
+
+        {/* Award confirmation panel */}
+        {awardingCandidate && (
+          <div className="px-6 py-4 border-t border-accent/30 bg-accent/5">
+            <div className="flex items-center gap-3 mb-3">
+              <Text size="sm" className="font-medium">
+                Award <ItemLink name={item.name} wowheadId={item.wowhead_id} className="text-sm" /> to{' '}
+                <span style={{ color: awardingCandidate.class_color }}>{awardingCandidate.player_name}</span>
+              </Text>
+            </div>
+            <div className="flex flex-wrap items-end gap-3">
+              <div className="w-52">
+                <Text size="xs" color="muted" className="mb-1">Reason</Text>
+                <Select
+                  variant="rounded"
+                  size="sm"
+                  value={awardReason}
+                  onChange={(e) => setAwardReason(e.target.value)}
+                >
+                  {AWARD_REASONS.map(r => (
+                    <option key={r.value} value={r.value}>{r.label}</option>
+                  ))}
+                </Select>
+              </div>
+              {(awardReason === 'override' || awardReason === 'loot_council') && (
+                <div className="flex-1 min-w-[200px]">
+                  <Text size="xs" color="muted" className="mb-1">Note</Text>
+                  <Input
+                    size="sm"
+                    variant="rounded"
+                    placeholder="Explain the decision..."
+                    value={awardNote}
+                    onChange={(e) => setAwardNote(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter') handleAward() }}
+                  />
+                </div>
+              )}
+              <Button
+                variant="primary"
+                size="sm"
+                loading={awarding}
+                onClick={handleAward}
+              >
+                Confirm award
+              </Button>
+            </div>
           </div>
         )}
 
