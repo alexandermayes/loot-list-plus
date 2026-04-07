@@ -263,14 +263,29 @@ export const BossSection = memo(function BossSection({
                             {ranking.is_trial && <span className="text-warning text-[9px] ml-0.5">(T)</span>}
                             {!ranking.is_eligible && <span className="text-destructive text-[9px] ml-0.5">⊘</span>}
                           </span>
-                          <span className="text-[10px] text-foreground-muted">{ranking.loot_score.toFixed(decimalPlaces)}</span>
+                          <span className="text-[10px] text-foreground-muted inline-flex items-center gap-0.5">
+                            {ranking.loot_score.toFixed(decimalPlaces)}
+                            {(() => {
+                              const topScore = ir.rankings[0]?.loot_score ?? 0
+                              const isTiedAtTop = ir.rankings.length > 1
+                                && Math.abs(ranking.loot_score - topScore) < 0.01
+                                && Math.abs(ir.rankings[1].loot_score - topScore) < 0.01
+                              if (isTiedAtTop) return <span className="text-[8px] font-medium text-warning px-0.5 rounded bg-warning/15">tied</span>
+                              if (index === 0 && ir.rankings[1]) {
+                                const gap = ranking.loot_score - ir.rankings[1].loot_score
+                                const threshold = Math.max(1, topScore * 0.1)
+                                if (gap > 0.01 && gap <= threshold) return <span className="text-[8px] text-muted-foreground/70">+{gap.toFixed(decimalPlaces)}</span>
+                              }
+                              return null
+                            })()}
+                          </span>
                           {canCompare && <span className="text-[9px] text-accent">Why?</span>}
                         </div>
                       )
                     })}
                   </div>
                 ) : (
-                  <p className="text-[11px] text-muted-foreground">No one has ranked this item</p>
+                  <span className="text-[11px] text-muted-foreground">No one has ranked this item</span>
                 )}
               </div>
             ))}
@@ -359,7 +374,8 @@ const ItemRow = memo(function ItemRow({
   return (
     <tr
       id={`item-${ir.item.id}`}
-      className={`transition-colors hover:bg-muted ${!ir.item.is_loot_council && ir.rankings.length === 0 ? 'bg-destructive/10' : ''}`}
+      className={`transition-colors hover:bg-muted ${!ir.item.is_loot_council && ir.rankings.length === 0 ? 'bg-destructive/10' : ''} ${isOfficer && onItemClick ? 'cursor-pointer' : ''}`}
+      onClick={isOfficer && onItemClick ? () => onItemClick(ir.item, ir.rankings) : undefined}
     >
       <td className="px-5 py-2.5">
         <ItemLink
@@ -368,6 +384,7 @@ const ItemRow = memo(function ItemRow({
           className={`font-medium text-[13px] ${isOfficer && onItemClick ? 'cursor-pointer' : ''}`}
           onClick={isOfficer && onItemClick ? (e: React.MouseEvent) => {
             e.preventDefault()
+            e.stopPropagation()
             onItemClick(ir.item, ir.rankings)
           } : undefined}
         />
@@ -404,9 +421,12 @@ const ItemRow = memo(function ItemRow({
                       ? 'Tied score — /roll to decide!'
                       : undefined
                   }
-                  onClick={canCompare && onCompare ? () => {
+                  onClick={canCompare && onCompare ? (e: React.MouseEvent) => {
+                    e.stopPropagation()
                     onCompare(ir.item.name, ranking, ir.rankings[0])
                   } : undefined}
+                  onMouseEnter={isOfficer ? (e) => showPopover(index, e.currentTarget as HTMLElement) : undefined}
+                  onMouseLeave={isOfficer ? scheduleHide : undefined}
                 >
                   <span
                     className={`text-[13px] font-medium ${isCurrentUser ? 'underline decoration-dotted underline-offset-2' : ''}`}
@@ -420,11 +440,7 @@ const ItemRow = memo(function ItemRow({
                       <span className="text-destructive text-[10px] ml-0.5" title={`Ineligible: ${ranking.raids_attended}/${minimumRaidDays} raids attended`}>⊘</span>
                     )}
                   </span>
-                  <span
-                    className={`text-[11px] text-foreground-muted inline-flex items-center gap-0.5 ${isOfficer ? 'cursor-default hover:text-accent transition-colors' : ''}`}
-                    onMouseEnter={isOfficer ? (e) => showPopover(index, e.currentTarget as HTMLElement) : undefined}
-                    onMouseLeave={isOfficer ? scheduleHide : undefined}
-                  >
+                  <span className="text-[11px] text-foreground-muted inline-flex items-center gap-0.5">
                     {ranking.loot_score.toFixed(decimalPlaces)}
                     {/* Tied badge on all candidates sharing #1 score, close-gap on #1 only */}
                     {(() => {
