@@ -28,7 +28,8 @@ const LootHistoryTab = nextDynamic(() => import('./components/LootHistoryTab'), 
   )
 })
 import { RaidTrackingPageSkeleton } from '@/components/ui/skeletons'
-import { Heading } from '@/components/ui/typography'
+import { Heading, Text } from '@/components/ui/typography'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 import { useGuildContext } from '@/app/contexts/GuildContext'
 import { useNotification } from '@/app/contexts/NotificationContext'
 import ItemLink from '@/app/components/ItemLink'
@@ -2305,6 +2306,15 @@ export default function RaidTrackingPage() {
         />
         </div>
       </div>
+
+      {/* Warning: no team selected in a team-enabled guild */}
+      {hasTeams && !activeTeamId && activeTab === 'tracking' && (
+        <Alert variant="warning">
+          <AlertDescription>
+            No team selected. New raid events will be unassigned. Select a team above to track team-specific attendance.
+          </AlertDescription>
+        </Alert>
+      )}
 
       {/* Tracking Tab Content */}
       {activeTab === 'tracking' && (
