@@ -25,6 +25,7 @@ interface RaidEvent {
   is_skipped: boolean
   notes: string | null
   wcl_report_code: string | null
+  raid_team_id?: string | null
 }
 
 interface AttendanceRecord {
@@ -1028,19 +1029,25 @@ export default function AttendancePage() {
                               : 'bg-accent/5 text-accent/50'
                         }`}
                       >
-                        {raid.wcl_report_code ? (
-                          <a
-                            href={getWclReportUrl(raid.wcl_report_code, guildSettings?.wcl_guild_url)}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="hover:underline text-[#e35e15]"
-                            title="View WCL report"
-                          >
-                            {formatShortDate(raid.raid_date)}
-                          </a>
-                        ) : (
-                          formatShortDate(raid.raid_date)
-                        )}
+                        <span className="inline-flex items-center gap-0.5 justify-center">
+                          {!activeTeamId && raid.raid_team_id && (() => {
+                            const t = teams.find(tm => tm.id === raid.raid_team_id)
+                            return t ? <span className="inline-block w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: t.color_hex }} title={t.name} /> : null
+                          })()}
+                          {raid.wcl_report_code ? (
+                            <a
+                              href={getWclReportUrl(raid.wcl_report_code, guildSettings?.wcl_guild_url)}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="hover:underline text-[#e35e15]"
+                              title="View WCL report"
+                            >
+                              {formatShortDate(raid.raid_date)}
+                            </a>
+                          ) : (
+                            formatShortDate(raid.raid_date)
+                          )}
+                        </span>
                       </th>
                     ))
                   )}
