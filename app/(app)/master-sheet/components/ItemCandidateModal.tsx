@@ -26,6 +26,7 @@ interface LootAward {
   character_class_color: string | null
   awarded_date: string
   awarded_by_name: string | null
+  notes: string | null
 }
 
 const AWARD_REASONS = [
@@ -234,6 +235,30 @@ export const ItemCandidateModal = memo(function ItemCandidateModal({
     return map
   }, [sortedRankings, guildSettings])
 
+  // Top-2 comparison: highlight the key differentiator when scores are close
+  const closeComparison = useMemo(() => {
+    if (sortedRankings.length < 2) return null
+    const first = sortedRankings[0]
+    const second = sortedRankings[1]
+    const gap = first.loot_score - second.loot_score
+    if (gap > 3) return null // not close enough to warrant comparison
+
+    const firstExp = topExplanations.get(first.character_id)
+    const secondExp = topExplanations.get(second.character_id)
+    if (!firstExp || !secondExp) return null
+
+    // Find the component with the biggest difference
+    const diffs = firstExp.lines.map(line => {
+      const otherLine = secondExp.lines.find(l => l.key === line.key)
+      return { key: line.key, label: line.label, diff: line.value - (otherLine?.value ?? 0) }
+    }).filter(d => d.diff !== 0).sort((a, b) => Math.abs(b.diff) - Math.abs(a.diff))
+
+    const keyDiff = diffs[0] || null
+    const isTied = gap < 0.01
+
+    return { first, second, gap, isTied, keyDiff, diffs }
+  }, [sortedRankings, topExplanations])
+
   // Determine which score components are non-zero for any candidate to hide empty columns
   const visibleComponents = useMemo(() => {
     const has = {
@@ -302,6 +327,50 @@ export const ItemCandidateModal = memo(function ItemCandidateModal({
             </span>
           )}
         </div>
+
+        {/* Close-score comparison card */}
+        {closeComparison && (
+          <div className="px-6 py-3 border-b border-border bg-warning/5">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-[11px] font-medium uppercase tracking-wider text-warning">
+                {closeComparison.isTied ? 'Tied scores' : `Within ${closeComparison.gap.toFixed(decimalPlaces)} pts`}
+              </span>
+            </div>
+            <div className="flex items-center gap-4 text-[13px]">
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] text-muted-foreground">#1</span>
+                <span className="font-semibold" style={{ color: closeComparison.first.class_color }}>
+                  {closeComparison.first.player_name}
+                </span>
+                <span className="font-bold tabular-nums">{closeComparison.first.loot_score.toFixed(decimalPlaces)}</span>
+              </div>
+              <span className="text-muted-foreground">vs</span>
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] text-muted-foreground">#2</span>
+                <span className="font-semibold" style={{ color: closeComparison.second.class_color }}>
+                  {closeComparison.second.player_name}
+                </span>
+                <span className="font-bold tabular-nums">{closeComparison.second.loot_score.toFixed(decimalPlaces)}</span>
+              </div>
+            </div>
+            {closeComparison.keyDiff && (
+              <Text size="xs" color="muted" className="mt-1.5">
+                Key difference: <span className="text-foreground-secondary font-medium">{closeComparison.keyDiff.label}</span>
+                {' '}({closeComparison.keyDiff.diff > 0 ? '+' : ''}{closeComparison.keyDiff.diff.toFixed(decimalPlaces)} for #1)
+                {closeComparison.diffs.length > 1 && (
+                  <span className="ml-1">
+                    &middot; also: {closeComparison.diffs.slice(1, 3).map(d => d.label).join(', ')}
+                  </span>
+                )}
+              </Text>
+            )}
+            {closeComparison.isTied && (
+              <Text size="xs" color="muted" className="mt-1 text-warning">
+                Scores are identical. Consider a roll or loot council decision.
+              </Text>
+            )}
+          </div>
+        )}
 
         {/* Candidate table */}
         {sortedRankings.length === 0 ? (
@@ -490,6 +559,9 @@ export const ItemCandidateModal = memo(function ItemCandidateModal({
                   </span>
                   {award.awarded_by_name && (
                     <span className="text-muted-foreground">by {award.awarded_by_name}</span>
+                  )}
+                  {award.notes && (
+                    <span className="text-muted-foreground/70 italic">&middot; {award.notes}</span>
                   )}
                 </div>
               ))}
