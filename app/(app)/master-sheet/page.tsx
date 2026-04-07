@@ -39,6 +39,7 @@ const ItemCandidateModal = dynamic(() => import('./components/ItemCandidateModal
 import { RaidModeView } from './components/RaidModeView'
 import type { PlayerRanking, LootItem as BossLootItem } from './components/BossSection'
 import { useRaidTeam } from '@/app/hooks/useRaidTeam'
+import { resolveRaidDays, resolveRollingWeeks } from '@/domain/raid-team/settings'
 import { TeamSelector } from '@/app/components/TeamSelector'
 
 interface LootItem {
@@ -200,7 +201,7 @@ function MasterSheetContent() {
   const supabase = createClient()
   const searchParams = useSearchParams()
   const scrollPendingRef = useRef<string | null>(null)
-  const { activeTeamId, teams, hasTeams, setTeam } = useRaidTeam()
+  const { activeTeamId, activeTeam, teams, hasTeams, setTeam } = useRaidTeam()
 
   // Set page title
   useEffect(() => {
@@ -283,42 +284,30 @@ function MasterSheetContent() {
       }
     }
 
-    // Query 2: Fetch expansion raid day config ONCE
-    let raidDays: number[] = []
-    if (activeGuild?.active_expansion_id) {
-      const { data: expansionData } = await supabase
-        .from('expansions')
-        .select('raid_days_per_week, first_raid_day, second_raid_day, third_raid_day, fourth_raid_day, fifth_raid_day')
-        .eq('id', activeGuild.active_expansion_id)
-        .single()
+    // Query 2: Fetch expansion raid day config ONCE, resolve with team overrides
+    const raidDaySource = activeGuild?.active_expansion_id
+      ? (await supabase
+          .from('expansions')
+          .select('raid_days_per_week, first_raid_day, second_raid_day, third_raid_day, fourth_raid_day, fifth_raid_day')
+          .eq('id', activeGuild.active_expansion_id)
+          .single()).data
+      : null
 
-      if (expansionData) {
-        raidDays = [
-          expansionData.first_raid_day,
-          expansionData.second_raid_day,
-          expansionData.third_raid_day,
-          expansionData.fourth_raid_day,
-          expansionData.fifth_raid_day
-        ].filter((day): day is number => day !== null && day !== undefined)
-          .slice(0, expansionData.raid_days_per_week || 2)
-      }
+    const baseSettings = {
+      raid_days_per_week: (raidDaySource || guildSettings).raid_days_per_week || 2,
+      first_raid_day: (raidDaySource || guildSettings).first_raid_day ?? null,
+      second_raid_day: (raidDaySource || guildSettings).second_raid_day ?? null,
+      third_raid_day: (raidDaySource || guildSettings).third_raid_day ?? null,
+      fourth_raid_day: (raidDaySource || guildSettings).fourth_raid_day ?? null,
+      fifth_raid_day: (raidDaySource || guildSettings).fifth_raid_day ?? null,
     }
+    // Apply team raid day overrides if a team is selected
+    const raidDays = resolveRaidDays(baseSettings, activeTeam?.raid_days_override)
+    const raidDaysPerWeek = raidDays.length || baseSettings.raid_days_per_week
 
-    // Fall back to guild settings if no expansion raid days
-    if (raidDays.length === 0) {
-      raidDays = [
-        guildSettings.first_raid_day,
-        guildSettings.second_raid_day,
-        guildSettings.third_raid_day,
-        guildSettings.fourth_raid_day,
-        guildSettings.fifth_raid_day
-      ].filter((day): day is number => day !== null && day !== undefined)
-        .slice(0, guildSettings.raid_days_per_week || 2)
-    }
-
-    // Query 3: Fetch ALL raid events ONCE
+    // Query 3: Fetch raid events — team+unassigned for denominator
     const todayStr = toDateString(new Date())
-    const weeks = guildSettings.rolling_attendance_weeks || 4
+    const weeks = resolveRollingWeeks(guildSettings.rolling_attendance_weeks || 4, activeTeam?.rolling_weeks_override)
     const daysAgo = weeks * 7
     const periodStart = new Date()
     periodStart.setDate(periodStart.getDate() - daysAgo)
@@ -332,7 +321,7 @@ function MasterSheetContent() {
       .gte('raid_date', periodStartStr)
       .lte('raid_date', todayStr)
     if (activeTeamId) {
-      raidEventsQuery = raidEventsQuery.eq('raid_team_id', activeTeamId)
+      raidEventsQuery = raidEventsQuery.or(`raid_team_id.eq.${activeTeamId},raid_team_id.is.null`)
     }
     const { data: recentRaids } = await raidEventsQuery
 
@@ -365,12 +354,47 @@ function MasterSheetContent() {
       attendanceByCharacter.get(record.character_id)!.push(record)
     }
 
+    // Fill-in credit: fetch all guild attendance for fill-in detection (team mode only)
+    let fillInEventMap = new Map<string, { id: string; raid_date: string }>()
+    let fillInRecordsByChar: Record<string, { raid_event_id: string; attended: boolean }[]> = {}
+    if (activeTeamId) {
+      const { data: allGuildAtt } = await supabase
+        .from('attendance_records')
+        .select('raid_event_id, character_id, attended')
+        .in('character_id', characterIds)
+        .eq('attended', true)
+      const teamEventIdSet = new Set(raidIds)
+      const otherEventIds = new Set<string>()
+      for (const rec of (allGuildAtt || [])) {
+        if (rec.character_id && !teamEventIdSet.has(rec.raid_event_id)) {
+          otherEventIds.add(rec.raid_event_id)
+          if (!fillInRecordsByChar[rec.character_id]) fillInRecordsByChar[rec.character_id] = []
+          fillInRecordsByChar[rec.character_id].push({ raid_event_id: rec.raid_event_id, attended: true })
+        }
+      }
+      if (otherEventIds.size > 0) {
+        const { data: fillInEventData } = await supabase
+          .from('raid_events')
+          .select('id, raid_date')
+          .in('id', Array.from(otherEventIds))
+          .eq('is_skipped', false)
+        for (const e of (fillInEventData || [])) {
+          fillInEventMap.set(e.id, e)
+        }
+      }
+    }
+
     // Compute attendance per character using the engine
     const results: Record<string, AttendanceResult> = {}
 
     for (const character of characters) {
       const membership = membershipsByCharacter.get(character.id)
       const characterRecords = attendanceByCharacter.get(character.id) || []
+
+      const charFillInRecords = fillInRecordsByChar[character.id] || []
+      const charFillInEvents = charFillInRecords
+        .map(r => fillInEventMap.get(r.raid_event_id))
+        .filter(Boolean) as { id: string; raid_date: string }[]
 
       const result = computeAttendance({
         records: characterRecords,
@@ -380,6 +404,9 @@ function MasterSheetContent() {
         memberJoinedAt: membership?.joined_at ? toDateString(new Date(membership.joined_at)) : undefined,
         newMemberMode,
         asOfDate: todayStr,
+        fillInEvents: charFillInEvents.length > 0 ? charFillInEvents : undefined,
+        fillInRecords: charFillInRecords.length > 0 ? charFillInRecords : undefined,
+        weeklyAttendanceCap: activeTeamId ? raidDaysPerWeek : undefined,
       })
 
       results[character.id] = result
