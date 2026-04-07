@@ -183,6 +183,16 @@ export default function LandingHero() {
             style={{ scale: dashboardScale }}
           >
             <div className="relative rounded-[16px] border border-[#383838] shadow-[0px_-4px_40px_0px_rgba(255,255,255,0.05)] overflow-hidden">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/images/landing/dashboard-preview.webp"
+                alt="LootList+ dashboard preview"
+                width={1998}
+                height={1151}
+                className="w-full h-auto"
+                style={{ filter: 'brightness(1.5) contrast(1.05) saturate(1.1)' }}
+                fetchPriority="high"
+              />
               <video
                 ref={videoRef}
                 autoPlay
@@ -190,9 +200,8 @@ export default function LandingHero() {
                 muted
                 playsInline
                 preload="none"
-                className="w-full h-auto"
+                className="absolute inset-0 w-full h-full"
                 style={{ filter: 'brightness(1.5) contrast(1.05) saturate(1.1)' }}
-                poster="/images/landing/dashboard-preview.png"
                 onCanPlay={() => videoRef.current?.play().catch(() => {})}
               >
                 <source src="/images/landing/hero-demo.mp4" type="video/mp4" />

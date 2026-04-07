@@ -86,6 +86,8 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ n
   // Show marketing landing page on getlootlist.com
   if (isLandingHost(host)) {
     return (
+      <>
+      <link rel="preload" href="/images/landing/dashboard-preview.webp" as="image" type="image/webp" />
       <main className="relative bg-[#080808] overflow-x-hidden">
         <FloatingParticles />
         <LandingNav />
@@ -98,6 +100,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ n
         <LandingCTA />
         <LandingFooter />
       </main>
+      </>
     )
   }
 
