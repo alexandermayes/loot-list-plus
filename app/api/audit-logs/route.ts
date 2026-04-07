@@ -44,8 +44,9 @@ export async function GET(request: NextRequest) {
     }
 
     // When searching, fetch a large window and filter post-query.
-    // 2000 covers most guilds. Results beyond this are invisible to search.
-    const fetchLimit = searchTerm ? 2000 : limit
+    // Search is limited to the most recent records. The UI communicates this.
+    const SEARCH_WINDOW = 5000
+    const fetchLimit = searchTerm ? SEARCH_WINDOW : limit
     const fetchOffset = searchTerm ? 0 : offset
 
     let query = serviceSupabase
@@ -155,8 +156,11 @@ export async function GET(request: NextRequest) {
       })
     }
 
+    // For search: total is matches within the search window (not all-time).
+    // search_exhausted indicates whether we searched all available logs.
     const totalFiltered = searchTerm ? enrichedLogs.length : (count || 0)
-    const searchExhausted = searchTerm ? (logs || []).length < fetchLimit : true
+    const rawFetched = (logs || []).length
+    const searchExhausted = searchTerm ? rawFetched < SEARCH_WINDOW : true
 
     // Apply pagination after search filtering
     if (searchTerm) {

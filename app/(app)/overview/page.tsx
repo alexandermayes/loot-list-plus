@@ -45,11 +45,22 @@ import { resolveRaidDays, resolveRollingWeeks } from '@/domain/raid-team/setting
 // Get next N raid dates from configured raid days
 function getNextRaidDates(raidDays: number[], timezone: string, count = 2): Date[] {
   const dates: Date[] = []
-  const now = new Date()
-  // Iterate forward from today up to 14 days to find next raid dates
+
+  // Determine "today" in the guild's timezone so we pick the correct day-of-week
+  let todayInTz: Date
+  try {
+    const fmt = new Intl.DateTimeFormat('en-CA', { timeZone: timezone, year: 'numeric', month: '2-digit', day: '2-digit' })
+    const [y, m, d] = fmt.format(new Date()).split('-').map(Number)
+    todayInTz = new Date(y, m - 1, d)
+  } catch {
+    // Invalid timezone — fall back to browser local time
+    todayInTz = new Date()
+    todayInTz.setHours(0, 0, 0, 0)
+  }
+
   for (let i = 0; i < 14 && dates.length < count; i++) {
-    const candidate = new Date(now)
-    candidate.setDate(candidate.getDate() + i)
+    const candidate = new Date(todayInTz)
+    candidate.setDate(todayInTz.getDate() + i)
     if (raidDays.includes(candidate.getDay())) {
       dates.push(candidate)
     }
