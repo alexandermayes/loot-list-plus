@@ -67,6 +67,7 @@ interface WeekGroup {
   label: string
   isMostRecent: boolean
   isUpcoming: boolean
+  isOutsideWindow: boolean
   raids: RaidEvent[]
 }
 
@@ -247,6 +248,12 @@ export default function AttendancePage() {
 
     // Sort weeks descending (most recent first) and raids within each week ascending
     const todayStr = toDateString(new Date())
+    // Compute the scoring window start for visual distinction
+    const rollingWeeks = guildSettings?.rolling_attendance_weeks || 4
+    const windowStart = new Date()
+    windowStart.setDate(windowStart.getDate() - (rollingWeeks * 7))
+    const windowStartStr = toDateString(windowStart)
+
     return Object.entries(grouped)
       .sort(([a], [b]) => b.localeCompare(a))
       .map(([weekStart, raids]) => ({
@@ -254,6 +261,7 @@ export default function AttendancePage() {
         label: parseDate(weekStart).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
         isMostRecent: weekStart === mostRecentTrackedWeek,
         isUpcoming: raids.every(r => r.raid_date > todayStr),
+        isOutsideWindow: raids.every(r => r.raid_date < windowStartStr),
         raids: raids.sort((a, b) => a.raid_date.localeCompare(b.raid_date))
       }))
   }, [guildRaidEvents, expansionRaidSchedule, guildSettings, mostRecentTrackedWeek, configuredRaidDays])
@@ -1001,11 +1009,13 @@ export default function AttendancePage() {
                       key={week.weekStart}
                       colSpan={week.raids.length}
                       className={`px-2 py-2 text-center text-[11px] font-medium border-l border-border ${
-                        week.isUpcoming
-                          ? 'bg-muted text-muted-foreground'
-                          : week.isMostRecent
-                            ? 'bg-success/10 text-success'
-                            : 'bg-accent/10 text-accent'
+                        week.isOutsideWindow
+                          ? 'bg-muted/50 text-muted-foreground/50'
+                          : week.isUpcoming
+                            ? 'bg-muted text-muted-foreground'
+                            : week.isMostRecent
+                              ? 'bg-success/10 text-success'
+                              : 'bg-accent/10 text-accent'
                       }`}
                     >
                       Week of {week.label}
@@ -1022,11 +1032,13 @@ export default function AttendancePage() {
                       <th
                         key={raid.id}
                         className={`px-2 py-1.5 text-center text-[10px] font-normal min-w-[50px] border-l border-border ${
-                          week.isUpcoming
-                            ? 'bg-muted/50 text-muted-foreground/50'
-                            : week.isMostRecent
-                              ? 'bg-success/5 text-success/70'
-                              : 'bg-accent/5 text-accent/50'
+                          week.isOutsideWindow
+                            ? 'bg-muted/30 text-muted-foreground/30'
+                            : week.isUpcoming
+                              ? 'bg-muted/50 text-muted-foreground/50'
+                              : week.isMostRecent
+                                ? 'bg-success/5 text-success/70'
+                                : 'bg-accent/5 text-accent/50'
                         }`}
                       >
                         <span className="inline-flex items-center gap-0.5 justify-center">
@@ -1093,12 +1105,16 @@ export default function AttendancePage() {
                           <td
                             key={raid.id}
                             className={`px-2 py-2.5 text-center border-l border-border ${
-                              week.isMostRecent ? 'bg-success/5' : 'bg-accent/5'
+                              week.isOutsideWindow
+                                ? 'bg-muted/20'
+                                : week.isMostRecent ? 'bg-success/5' : 'bg-accent/5'
                             }`}
                           >
                             <span
-                              className={`inline-flex items-center justify-center w-6 h-6 rounded text-[11px] font-medium ${getCellStyle(state)}`}
-                              title={state === 'empty' ? 'No record' : state.replace('-', ' ')}
+                              className={`inline-flex items-center justify-center w-6 h-6 rounded text-[11px] font-medium ${
+                                week.isOutsideWindow ? 'opacity-30 ' + getCellStyle(state) : getCellStyle(state)
+                              }`}
+                              title={week.isOutsideWindow ? 'Outside scoring window' : state === 'empty' ? 'No record' : state.replace('-', ' ')}
                             >
                               {getCellLabel(state)}
                             </span>
