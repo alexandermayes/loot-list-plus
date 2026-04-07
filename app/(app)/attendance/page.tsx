@@ -573,7 +573,8 @@ export default function AttendancePage() {
         }
 
         // Load guild-wide attendance data (includes score for all characters)
-        await loadGuildAttendance(activeCharData.active_guild_id, deduplicatedRaidEvents, settingsData, characterData.id)
+        // Pass filteredRaidEvents (schedule-filtered) so computeAttendance matches the overview
+        await loadGuildAttendance(activeCharData.active_guild_id, filteredRaidEvents, settingsData, characterData.id)
       } catch (error) {
         console.error('Failed to load attendance data:', error)
         setError("Couldn't load attendance data. Check your connection and try again.")
