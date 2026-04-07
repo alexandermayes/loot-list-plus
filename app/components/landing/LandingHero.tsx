@@ -71,7 +71,7 @@ export default function LandingHero() {
         clickEffect="lightning"
         tooltip={{ name: "Thunderfury, Blessed Blade of the Windseeker", quality: "legendary", type: "One-Hand Sword", flavor: "Forged from the shattered remnants of Thunderaan's prison." }}
       >
-        <Image src="/images/landing/items/thunderfury.png" alt="" fill sizes="600px" priority className="object-contain" style={{ transform: 'rotate(158deg) scaleY(-1)' }} />
+        <Image src="/images/landing/items/thunderfury.png" alt="" fill sizes="600px" loading="lazy" className="object-contain" style={{ transform: 'rotate(158deg) scaleY(-1)' }} />
       </ParallaxItem>
 
       {/* 2. Hand of Rag - top right */}
@@ -86,7 +86,7 @@ export default function LandingHero() {
         style={{ '--glow-color': 'rgba(241,131,24,0.5)', '--glow-duration': '3.8s', '--glow-delay': '1s' } as React.CSSProperties}
         tooltip={{ name: "Sulfuras, Hand of Ragnaros", quality: "legendary", type: "Two-Hand Mace", flavor: "Too hot to handle." }}
       >
-        <Image src="/images/landing/items/hand-of-rag.png" alt="" fill sizes="600px" priority className="object-contain" style={{ transform: 'rotate(50deg)' }} />
+        <Image src="/images/landing/items/hand-of-rag.png" alt="" fill sizes="600px" loading="lazy" className="object-contain" style={{ transform: 'rotate(50deg)' }} />
       </ParallaxItem>
 
       {/* 3. Warglaives - bottom left */}
@@ -100,7 +100,7 @@ export default function LandingHero() {
         style={{ '--glow-color': 'rgba(141,244,31,0.25)', '--glow-duration': '5s', '--glow-delay': '0.5s' } as React.CSSProperties}
         tooltip={{ name: "Warglaive of Azzinoth", quality: "legendary", type: "One-Hand Sword", flavor: "Wielded by the Betrayer himself." }}
       >
-        <Image src="/images/landing/items/warglaives.png" alt="" fill sizes="600px" priority className="object-contain" style={{ transform: 'rotate(41deg)' }} />
+        <Image src="/images/landing/items/warglaives.png" alt="" fill sizes="600px" loading="lazy" className="object-contain" style={{ transform: 'rotate(41deg)' }} />
       </ParallaxItem>
 
       {/* 4. Cursed Vision of Sargeras - bottom right */}
@@ -138,7 +138,7 @@ export default function LandingHero() {
               <span className="flex items-center justify-center px-2 py-1 bg-[#9940ec] rounded-[60px] font-poppins font-semibold text-[10px] text-white">
                 NEW
               </span>
-              <span className="font-poppins text-[14px] text-white">
+              <span className="font-poppins text-[14px] text-white whitespace-nowrap">
                 {getRecentFeatures()}
               </span>
               <Image src="/images/landing/icons/arrow-right-02.svg" alt="" width={16} height={16} />
@@ -195,7 +195,7 @@ export default function LandingHero() {
                 loop
                 muted
                 playsInline
-                preload="auto"
+                preload="none"
                 className="w-full h-auto"
                 style={{ filter: 'brightness(1.5) contrast(1.05) saturate(1.1)' }}
                 poster="/images/landing/dashboard-preview.png"
