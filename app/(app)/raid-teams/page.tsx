@@ -13,9 +13,10 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Heading, Text, LabelText } from '@/components/ui/typography'
 import { Modal, ModalHeader, ModalTitle, ModalDescription, ModalBody, ModalFooter } from '@/components/ui/modal'
 import { EmptyState } from '@/components/ui/empty-state'
+import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeletons'
 import { HugeiconsIcon } from '@hugeicons/react'
-import { Delete02Icon, PencilEdit01Icon, UserAdd01Icon, Calendar01Icon, StarIcon } from '@hugeicons/core-free-icons'
+import { Delete02Icon, PencilEdit01Icon, UserAdd01Icon, Calendar01Icon, StarIcon, UserMultipleIcon } from '@hugeicons/core-free-icons'
 import type { RaidTeam, RaidDaysOverride } from '@/domain/raid-team/types'
 import { trackClientEvent } from '@/utils/analytics/client'
 
@@ -362,7 +363,7 @@ export default function RaidTeamsPage() {
 
   if (guildLoading || loading) {
     return (
-      <div className="p-4 sm:p-6 lg:p-8 space-y-6 font-poppins">
+      <div className="p-8 space-y-6">
         <Skeleton className="h-8 w-48" />
         <Skeleton className="h-4 w-72" />
         <div className="space-y-3">
@@ -374,7 +375,7 @@ export default function RaidTeamsPage() {
   }
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 space-y-6 font-poppins">
+    <div className="p-8 space-y-6">
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div>
@@ -389,6 +390,7 @@ export default function RaidTeamsPage() {
       {/* Team list */}
       {teams.length === 0 ? (
         <EmptyState
+          icon={UserMultipleIcon}
           title="No raid teams yet"
           description="Create your first team and assign guild members to it."
           size="default"
@@ -400,14 +402,14 @@ export default function RaidTeamsPage() {
           {teams.map(team => {
             const members = teamMembers[team.id] || []
             return (
-              <div key={team.id} className="bg-background-elevated border border-border rounded-xl p-5">
+              <div key={team.id} className="bg-background-elevated border border-border rounded-xl p-6">
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-3">
                     <div className="w-3 h-3 rounded-full" style={{ backgroundColor: team.color_hex }} />
-                    <span className="text-[15px] font-semibold text-foreground">{team.name}</span>
-                    <span className="text-[12px] text-muted-foreground">{members.length} members</span>
+                    <Text size="md" className="font-semibold">{team.name}</Text>
+                    <Text size="sm" color="muted">{members.length} members</Text>
                     {team.is_default && (
-                      <span className="text-xs text-accent font-medium px-2 py-0.5 rounded-full bg-accent/10">Default</span>
+                      <Badge variant="secondary" className="text-accent bg-accent/10 border-accent/20">Default</Badge>
                     )}
                   </div>
                   <div className="flex items-center gap-1">
@@ -458,17 +460,18 @@ export default function RaidTeamsPage() {
                 {members.length > 0 ? (
                   <div className="flex flex-wrap gap-2">
                     {members.map(member => (
-                      <span
+                      <Text
                         key={member.id}
-                        className="text-[13px] font-medium px-2 py-0.5 rounded-md bg-background-subtle"
+                        size="base"
+                        className="font-medium px-2 py-0.5 rounded-md bg-background-subtle"
                         style={{ color: member.character?.class?.color_hex || '#ffffff' }}
                       >
                         {member.character?.name || 'Unknown'}
-                      </span>
+                      </Text>
                     ))}
                   </div>
                 ) : (
-                  <p className="text-[13px] text-muted-foreground">No members assigned yet</p>
+                  <Text size="base" color="muted">No members assigned yet</Text>
                 )}
               </div>
             )
@@ -520,12 +523,15 @@ export default function RaidTeamsPage() {
               <div>
                 <LabelText size="xs">Color</LabelText>
                 <div className="flex items-center gap-2 mt-1.5">
-                  <input
-                    type="color"
-                    value={editColor}
-                    onChange={(e) => setEditColor(e.target.value)}
-                    className="w-10 h-10 rounded-lg border border-border cursor-pointer"
-                  />
+                  <label className="relative w-10 h-10 rounded-lg border border-border cursor-pointer overflow-hidden hover:border-foreground/30 transition-colors">
+                    <input
+                      type="color"
+                      value={editColor}
+                      onChange={(e) => setEditColor(e.target.value)}
+                      className="absolute inset-0 w-full h-full cursor-pointer opacity-0"
+                    />
+                    <div className="w-full h-full rounded-lg" style={{ backgroundColor: editColor }} />
+                  </label>
                 </div>
               </div>
             </div>
@@ -533,9 +539,9 @@ export default function RaidTeamsPage() {
             {/* Schedule Overrides */}
             <div className="border-t border-border pt-4">
               <LabelText size="xs">Schedule overrides</LabelText>
-              <p className="text-[12px] text-muted-foreground mt-0.5 mb-3">
+              <Text size="sm" color="muted" className="mt-0.5 mb-3">
                 Leave empty to inherit from guild settings
-              </p>
+              </Text>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
@@ -632,12 +638,13 @@ export default function RaidTeamsPage() {
                       variant="accent"
                       size="sm"
                     />
-                    <span
-                      className="text-[13px] font-medium"
+                    <Text
+                      size="base"
+                      className="font-medium"
                       style={{ color: char.class?.color_hex || '#ffffff' }}
                     >
                       {char.name}
-                    </span>
+                    </Text>
                     {char.class && (
                       <Text size="xs" color="muted">{char.class.name}</Text>
                     )}
