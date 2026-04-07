@@ -272,10 +272,14 @@ export function computeAttendance(input: AttendanceInput): AttendanceResult {
     ? calculateAttendanceScore(allRecords, totalRaids, config)
     : 0
 
-  // Count attended (excluding NCNS)
+  // Count attended (excluding NCNS), capped at denominator
   let raidsAttended = 0
   for (const r of allRecords) {
     if (!r.no_call_no_show && r.attended) raidsAttended++
+  }
+  // Never exceed the denominator (handles edge cases with fill-ins or overlapping windows)
+  if (totalRaids > 0) {
+    raidsAttended = Math.min(raidsAttended, totalRaids)
   }
 
   // 7. Eligibility check (minimum_gate mode)
