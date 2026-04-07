@@ -40,6 +40,7 @@ import { trackClientEvent, usePagePerf } from '@/utils/analytics/client'
 import { SetupGuide } from './components/SetupGuide'
 import { hasFeature } from '@/domain/guild/feature-flags'
 import type { RaidTeam } from '@/domain/raid-team/types'
+import { resolveRaidDays, resolveRollingWeeks } from '@/domain/raid-team/settings'
 
 // Get next N raid dates from configured raid days
 function getNextRaidDates(raidDays: number[], timezone: string, count = 2): Date[] {
@@ -412,7 +413,7 @@ function DashboardContent() {
   }>>([])
 
   // Team membership for the active character (Pro guilds only)
-  const [characterTeams, setCharacterTeams] = useState<Pick<RaidTeam, 'id' | 'name' | 'color_hex'>[]>([])
+  const [characterTeams, setCharacterTeams] = useState<Pick<RaidTeam, 'id' | 'name' | 'color_hex' | 'raid_days_override' | 'rolling_weeks_override'>[]>([])
 
   const supabase = createClient()
   const router = useRouter()
@@ -432,14 +433,14 @@ function DashboardContent() {
     let cancelled = false
     supabase
       .from('raid_team_members')
-      .select('raid_team_id, raid_teams (id, name, color_hex)')
+      .select('raid_team_id, raid_teams (id, name, color_hex, raid_days_override, rolling_weeks_override)')
       .eq('character_id', activeCharacter.id)
       .eq('guild_id', activeGuild.id)
       .then(({ data }: { data: any[] | null }) => {
         if (!cancelled && data) {
           const teams = data
             .map(m => m.raid_teams)
-            .filter(Boolean) as Pick<RaidTeam, 'id' | 'name' | 'color_hex'>[]
+            .filter(Boolean) as Pick<RaidTeam, 'id' | 'name' | 'color_hex' | 'raid_days_override' | 'rolling_weeks_override'>[]
           setCharacterTeams(teams)
         }
       })
@@ -660,7 +661,7 @@ function DashboardContent() {
     }
 
     loadData().catch(console.error)
-  }, [user, guildLoading, activeGuild, activeCharacter, currentExpansion])
+  }, [user, guildLoading, activeGuild, activeCharacter, currentExpansion, characterTeams])
 
   // Function to load all dashboard data for current character
   const loadDashboardData = async (userId: string, guildId: string, currentExpansionTiers: RaidTier[], expansionId: string) => {
@@ -831,13 +832,19 @@ function DashboardContent() {
       eagerPeriodStart.setDate(eagerPeriodStart.getDate() - (maxRollingWeeks * 7))
       const todayStr = toDateString(new Date())
 
-      const raidEventsPromise = supabase
+      // If character is on a team, filter raid events by team
+      const activeTeam = characterTeams.length > 0 ? characterTeams[0] : null
+      let raidEventsQuery = supabase
         .from('raid_events')
         .select('id, raid_date')
         .eq('guild_id', activeGuild.id)
         .eq('is_skipped', false)
         .gte('raid_date', toDateString(eagerPeriodStart))
         .lte('raid_date', todayStr)
+      if (activeTeam) {
+        raidEventsQuery = raidEventsQuery.eq('raid_team_id', activeTeam.id)
+      }
+      const raidEventsPromise = raidEventsQuery
 
       // Await all independent fetches in parallel (5 queries instead of 3 + 1 sequential)
       const [settingsResult, membershipResult, expansionDataResult, raidEventsResult] = await Promise.all([
@@ -866,33 +873,30 @@ function DashboardContent() {
           // Get expansion's raid day configuration
           let raidDays: number[] = []
           const expansionData = expansionDataResult.data
-          if (expansionData) {
-            raidDays = [
-              expansionData.first_raid_day,
-              expansionData.second_raid_day,
-              expansionData.third_raid_day,
-              expansionData.fourth_raid_day,
-              expansionData.fifth_raid_day
-            ].filter((day): day is number => day !== null && day !== undefined)
-              .slice(0, expansionData.raid_days_per_week || 2)
-            savedTimezone = (expansionData as any).timezone || 'UTC'
-          }
-
-          // Fall back to guild settings if no expansion raid days
-          if (raidDays.length === 0) {
-            raidDays = [
-              (guildSettings as any).first_raid_day,
-              (guildSettings as any).second_raid_day,
-              (guildSettings as any).third_raid_day,
-              (guildSettings as any).fourth_raid_day,
-              (guildSettings as any).fifth_raid_day
-            ].filter((day): day is number => day !== null && day !== undefined)
-              .slice(0, (guildSettings as any).raid_days_per_week || 2)
+          const raidDaySource = expansionData || guildSettings
+          if (raidDaySource) {
+            const baseSettings = {
+              raid_days_per_week: (raidDaySource as any).raid_days_per_week || 2,
+              first_raid_day: (raidDaySource as any).first_raid_day ?? null,
+              second_raid_day: (raidDaySource as any).second_raid_day ?? null,
+              third_raid_day: (raidDaySource as any).third_raid_day ?? null,
+              fourth_raid_day: (raidDaySource as any).fourth_raid_day ?? null,
+              fifth_raid_day: (raidDaySource as any).fifth_raid_day ?? null,
+            }
+            // Apply team raid day overrides if character is on a team
+            raidDays = activeTeam?.raid_days_override
+              ? resolveRaidDays(baseSettings, activeTeam.raid_days_override)
+              : resolveRaidDays(baseSettings, null)
+            if (expansionData) {
+              savedTimezone = (expansionData as any).timezone || 'UTC'
+            }
           }
           savedRaidDays = raidDays
 
-          // Filter the eagerly-fetched raid events to the actual rolling window
-          const rollingWeeks = guildSettings.rolling_attendance_weeks || 4
+          // Apply team rolling weeks override if applicable
+          const rollingWeeks = activeTeam?.rolling_weeks_override != null
+            ? resolveRollingWeeks(guildSettings.rolling_attendance_weeks || 4, activeTeam.rolling_weeks_override)
+            : guildSettings.rolling_attendance_weeks || 4
           const actualPeriodStart = new Date()
           actualPeriodStart.setDate(actualPeriodStart.getDate() - (rollingWeeks * 7))
           const actualPeriodStartStr = toDateString(actualPeriodStart)
