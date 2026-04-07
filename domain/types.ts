@@ -112,6 +112,17 @@ export interface AttendanceInput {
   asOfDate?: string  // YYYY-MM-DD
   /** New member mode: 'raw' | 'fair' | 'minimum_gate'. Defaults to 'raw'. */
   newMemberMode?: 'raw' | 'fair' | 'minimum_gate'
+  /**
+   * Fill-in credit: additional guild events (from other teams) where
+   * the character has attendance. These contribute to the numerator
+   * (raids attended) but NOT the denominator (expected raids).
+   * Capped per week at the team's raids_per_week.
+   */
+  fillInEvents?: RaidEvent[]
+  /** Attendance records for fill-in events. Only needs raid_event_id + attended. */
+  fillInRecords?: { raid_event_id: string; attended: boolean }[]
+  /** Max attendance credits per week (typically raids_per_week). Enables per-week capping. */
+  weeklyAttendanceCap?: number
 }
 
 /** Result from computeAttendance() */

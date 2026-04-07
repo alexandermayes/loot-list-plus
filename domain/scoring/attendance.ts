@@ -169,6 +169,83 @@ export function computeAttendance(input: AttendanceInput): AttendanceResult {
   const dedupedEvents = Array.from(byDate.values())
   const dedupedIds = new Set(dedupedEvents.map(e => e.id))
 
+  let totalRaids = dedupedEvents.length
+
+  // 5a. Fill-in credit: check for cross-team attendance on weeks where team raids were missed
+  let fillInCredits = 0
+  if (input.fillInEvents?.length && input.fillInRecords?.length && input.weeklyAttendanceCap) {
+    const cap = input.weeklyAttendanceCap
+    const fillInRecordIds = new Set(
+      input.fillInRecords.filter(r => r.attended).map(r => r.raid_event_id)
+    )
+    // Filter fill-in events to window (same window as team events)
+    const fillInsInWindow = input.fillInEvents.filter(e =>
+      e.raid_date >= windowStartStr && e.raid_date <= asOfStr
+    )
+    // Only consider fill-in events on dates WITHOUT a team event (avoid double-counting)
+    const teamDates = new Set(dedupedEvents.map(e => e.raid_date))
+    const extraFillIns = fillInsInWindow.filter(e =>
+      !teamDates.has(e.raid_date) && fillInRecordIds.has(e.id)
+    )
+
+    if (extraFillIns.length > 0) {
+      // Group team events + fill-ins by week to apply per-week cap
+      const getWeekKey = (dateStr: string): string => {
+        const d = parseDateLocal(dateStr)
+        // Week starts on the first configured raid day, or Sunday
+        const day = d.getDay()
+        const startOfWeek = new Date(d)
+        startOfWeek.setDate(d.getDate() - day)
+        return formatDate(startOfWeek)
+      }
+
+      // Count attended team events per week
+      const teamAttendedPerWeek = new Map<string, number>()
+      for (const event of dedupedEvents) {
+        const week = getWeekKey(event.raid_date)
+        if (recordEventIds.has(event.id)) {
+          // Check if actually attended (not just has a record)
+          const rec = input.records.find(r => r.raid_event_id === event.id)
+          if (rec && rec.attended && !rec.no_call_no_show) {
+            teamAttendedPerWeek.set(week, (teamAttendedPerWeek.get(week) || 0) + 1)
+          }
+        }
+      }
+
+      // For each fill-in event, give credit if the week isn't already at cap
+      for (const fillIn of extraFillIns) {
+        const week = getWeekKey(fillIn.raid_date)
+        const attended = teamAttendedPerWeek.get(week) || 0
+        if (attended < cap) {
+          fillInCredits++
+          teamAttendedPerWeek.set(week, attended + 1)
+        }
+      }
+    }
+  }
+
+  // 5b. Apply per-week cap to denominator if configured
+  if (input.weeklyAttendanceCap) {
+    const cap = input.weeklyAttendanceCap
+    const getWeekKey = (dateStr: string): string => {
+      const d = parseDateLocal(dateStr)
+      const startOfWeek = new Date(d)
+      startOfWeek.setDate(d.getDate() - d.getDay())
+      return formatDate(startOfWeek)
+    }
+    const eventsPerWeek = new Map<string, number>()
+    for (const event of dedupedEvents) {
+      const week = getWeekKey(event.raid_date)
+      eventsPerWeek.set(week, (eventsPerWeek.get(week) || 0) + 1)
+    }
+    // Cap each week's contribution to the denominator
+    let cappedTotal = 0
+    for (const count of eventsPerWeek.values()) {
+      cappedTotal += Math.min(count, cap)
+    }
+    totalRaids = cappedTotal
+  }
+
   // Filter records to only deduplicated events
   const relevantRecords: AttendanceRecord[] = input.records
     .filter(r => dedupedIds.has(r.raid_event_id))
@@ -182,20 +259,26 @@ export function computeAttendance(input: AttendanceInput): AttendanceResult {
       points_override: r.points_override,
     }))
 
-  const totalRaids = dedupedEvents.length
+  // Add synthetic records for fill-in credits (plain attended, no modifiers)
+  const fillInSyntheticRecords: AttendanceRecord[] = Array.from({ length: fillInCredits }, () => ({
+    signed_up: false,
+    attended: true,
+    no_call_no_show: false,
+  }))
+  const allRecords = [...relevantRecords, ...fillInSyntheticRecords]
 
-  // 5. Score
-  const score = relevantRecords.length > 0
-    ? calculateAttendanceScore(relevantRecords, totalRaids, config)
+  // 6. Score
+  const score = allRecords.length > 0
+    ? calculateAttendanceScore(allRecords, totalRaids, config)
     : 0
 
   // Count attended (excluding NCNS)
   let raidsAttended = 0
-  for (const r of relevantRecords) {
+  for (const r of allRecords) {
     if (!r.no_call_no_show && r.attended) raidsAttended++
   }
 
-  // 6. Eligibility check (minimum_gate mode)
+  // 7. Eligibility check (minimum_gate mode)
   const isEligible = newMemberMode !== 'minimum_gate'
     || !config.minimum_raid_days_enabled
     || raidsAttended >= config.minimum_raid_days
