@@ -250,6 +250,7 @@ export default function RaidTrackingPage() {
         return
       }
 
+      setLoading(true)
       try {
         // Load guild settings (with cache busting)
         const response = await fetch(`/api/guild-settings?guild_id=${activeGuild.id}&t=${Date.now()}`, {
