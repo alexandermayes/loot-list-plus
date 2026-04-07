@@ -47,6 +47,7 @@ interface GuildRaider {
   className: string
   classColor: string
   attendanceScore: number
+  raidsInWindow: number
   attendance: Map<string, AttendanceStatus>
 }
 
@@ -77,6 +78,7 @@ export default function AttendancePage() {
   const [activeCharacter, setActiveCharacter] = useState<any>(null)
   const [guildId, setGuildId] = useState<string | null>(null)
   const [attendanceScore, setAttendanceScore] = useState(0)
+  const [trackedRaidCount, setTrackedRaidCount] = useState<number | null>(null)
   const [roleModifier, setRoleModifier] = useState(0)
   const [memberRole, setMemberRole] = useState('')
   const [guildSettings, setGuildSettings] = useState<any>(null)
@@ -708,6 +710,7 @@ export default function AttendancePage() {
           className: char.class?.name || 'Unknown',
           classColor: char.class?.color_hex || '#ffffff',
           attendanceScore: result.score,
+          raidsInWindow: result.raidsInWindow,
           attendance: charAttendance
         }
       })
@@ -720,6 +723,7 @@ export default function AttendancePage() {
         const myRaider = raiders.find(r => r.id === activeCharacterId)
         if (myRaider) {
           setAttendanceScore(myRaider.attendanceScore)
+          setTrackedRaidCount(myRaider.raidsInWindow)
         } else {
           // Active character not in guild member list (e.g. left guild) but may
           // have attendance records. Fall back to computing from raw data.
@@ -742,6 +746,7 @@ export default function AttendancePage() {
               asOfDate: todayStr,
             })
             setAttendanceScore(result.score)
+            setTrackedRaidCount(result.raidsInWindow)
           }
         }
       }
@@ -870,7 +875,7 @@ export default function AttendancePage() {
             <div className="bg-background-elevated border border-border rounded-xl p-3 sm:p-6">
               <p className="text-muted-foreground text-xs sm:text-sm mb-1 inline-flex items-center gap-1">Tracked raids <InfoTooltip content="Total raids logged within the rolling attendance window. Your attendance rate is based on how many of these you attended." iconSize={12} /></p>
               <p className="text-[28px] sm:text-[42px] font-bold text-foreground leading-none">
-                {guildRaidEvents.length}
+                {trackedRaidCount ?? guildRaidEvents.length}
               </p>
               <p className="text-muted-foreground text-xs sm:text-sm mt-2"><span className="hidden sm:inline">Current + previous {guildSettings?.rolling_attendance_weeks || 4} weeks</span><span className="sm:hidden">{guildSettings?.rolling_attendance_weeks || 4}wk window</span></p>
             </div>
