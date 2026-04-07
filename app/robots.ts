@@ -28,6 +28,7 @@ export default function robots(): MetadataRoute.Robots {
           '/sheet-import',
           '/guild-select',
           '/dev-login',
+          '/landing',
           '/help',
           '/updates',
         ],

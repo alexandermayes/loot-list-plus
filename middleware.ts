@@ -180,6 +180,15 @@ async function refreshSupabaseSession(request: NextRequest): Promise<{ response:
 export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname
 
+  // Rewrite getlootlist.com/ to the static landing page
+  const host = request.headers.get('host')?.split(':')[0] || ''
+  const isLandingHost = ['getlootlist.com', 'www.getlootlist.com'].includes(host)
+  if (isLandingHost && pathname === '/') {
+    const url = request.nextUrl.clone()
+    url.pathname = '/landing'
+    return NextResponse.rewrite(url)
+  }
+
   // Refresh Supabase auth cookies on page navigations (not API/auth routes,
   // those are handled by their own auth checks)
   if (!pathname.startsWith('/api') && !pathname.startsWith('/auth')) {
@@ -187,7 +196,7 @@ export async function middleware(request: NextRequest) {
 
     // Protect app routes: redirect unauthenticated users to login
     // Public routes (/, /login, /guild-select, /updates, /legal/*, /dev-login) are excluded
-    const isPublicRoute = ['/', '/login', '/guild-select', '/updates', '/dev-login', '/compare', '/about', '/sitemap.xml', '/robots.txt'].includes(pathname)
+    const isPublicRoute = ['/', '/login', '/guild-select', '/updates', '/dev-login', '/compare', '/about', '/sitemap.xml', '/robots.txt', '/landing'].includes(pathname)
       || pathname.startsWith('/legal/')
       || pathname.startsWith('/guild-select/')
       || pathname.startsWith('/blog')
