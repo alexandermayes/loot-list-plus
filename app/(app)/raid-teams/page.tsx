@@ -69,6 +69,7 @@ export default function RaidTeamsPage() {
   // Assign events
   const [assigningEvents, setAssigningEvents] = useState<string | null>(null)
   const [reassignModal, setReassignModal] = useState<RaidTeam | null>(null)
+  const [reassignDays, setReassignDays] = useState<Set<number>>(new Set())
 
   useEffect(() => {
     document.title = 'LootList+ \u2022 Raid Teams'
@@ -245,9 +246,12 @@ export default function RaidTeamsPage() {
   const handleAssignEvents = async (targetTeam: RaidTeam, source: 'unassigned' | string) => {
     setAssigningEvents(targetTeam.id)
     try {
-      const body = source === 'unassigned'
-        ? { mode: 'all_unassigned' }
-        : { mode: 'from_team', from_team_id: source }
+      const baseBody = source === 'unassigned'
+        ? { mode: 'all_unassigned' as const }
+        : { mode: 'from_team' as const, from_team_id: source }
+      const body = reassignDays.size > 0
+        ? { ...baseBody, days: Array.from(reassignDays) }
+        : baseBody
 
       const res = await fetch(`/api/raid-teams/${targetTeam.id}/assign-events`, {
         method: 'POST',
@@ -663,14 +667,49 @@ export default function RaidTeamsPage() {
       </Modal>
 
       {/* Reassign Events Modal */}
-      <Modal open={!!reassignModal} onClose={() => setReassignModal(null)} size="sm">
-        <ModalHeader onClose={() => setReassignModal(null)}>
+      <Modal open={!!reassignModal} onClose={() => { setReassignModal(null); setReassignDays(new Set()) }} size="sm">
+        <ModalHeader onClose={() => { setReassignModal(null); setReassignDays(new Set()) }}>
           <ModalTitle>Assign events to {reassignModal?.name}</ModalTitle>
         </ModalHeader>
         <ModalBody>
           <Text color="secondary" className="mb-4">
-            Move raid events to this team. Attendance history moves with the events.
+            Move raid events to this team. Attendance and loot history move with the events.
           </Text>
+
+          {/* Day filter */}
+          <div className="mb-4">
+            <Text size="sm" className="font-medium mb-2">Filter by day (optional)</Text>
+            <div className="flex flex-wrap gap-2">
+              {DAY_NAMES.map((name, idx) => {
+                const active = reassignDays.has(idx)
+                return (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => setReassignDays(prev => {
+                      const next = new Set(prev)
+                      if (next.has(idx)) next.delete(idx)
+                      else next.add(idx)
+                      return next
+                    })}
+                    className={`px-2.5 py-1 rounded-md text-xs font-medium border transition-colors ${
+                      active
+                        ? 'bg-accent/20 text-accent border-accent/40'
+                        : 'bg-background-subtle text-muted-foreground border-border hover:bg-muted'
+                    }`}
+                  >
+                    {name.slice(0, 3)}
+                  </button>
+                )
+              })}
+            </div>
+            {reassignDays.size > 0 && (
+              <Text size="xs" color="muted" className="mt-1.5">
+                Only {Array.from(reassignDays).map(d => DAY_NAMES[d]).join(', ')} events will be moved
+              </Text>
+            )}
+          </div>
+
           <div className="space-y-2">
             <Button
               variant="outline"
@@ -678,7 +717,7 @@ export default function RaidTeamsPage() {
               onClick={() => reassignModal && handleAssignEvents(reassignModal, 'unassigned')}
               loading={assigningEvents === reassignModal?.id}
             >
-              Move all unassigned events
+              Move {reassignDays.size > 0 ? 'filtered' : 'all'} unassigned events
             </Button>
             {teams.filter(t => t.id !== reassignModal?.id).map(otherTeam => (
               <Button
@@ -688,13 +727,13 @@ export default function RaidTeamsPage() {
                 onClick={() => reassignModal && handleAssignEvents(reassignModal, otherTeam.id)}
                 loading={assigningEvents === reassignModal?.id}
               >
-                Move all events from {otherTeam.name}
+                Move {reassignDays.size > 0 ? 'filtered' : 'all'} events from {otherTeam.name}
               </Button>
             ))}
           </div>
         </ModalBody>
         <ModalFooter>
-          <Button variant="outline" onClick={() => setReassignModal(null)}>Close</Button>
+          <Button variant="outline" onClick={() => { setReassignModal(null); setReassignDays(new Set()) }}>Close</Button>
         </ModalFooter>
       </Modal>
 
