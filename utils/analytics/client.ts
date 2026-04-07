@@ -58,6 +58,11 @@ type ClientEvent =
   | 'sheet_import_page_viewed'
   | 'expansion_settings_page_viewed'
   | 'admin_analytics_page_viewed'
+  // Reserve
+  | 'reserve_page_viewed'
+  | 'reserve_run_created'
+  | 'reserve_run_viewed'
+  | 'reserve_share_link_copied'
   // Officer actions
   | 'submission_reviewed'
   | 'pending_submission_approved'

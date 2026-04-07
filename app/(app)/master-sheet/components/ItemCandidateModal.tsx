@@ -22,6 +22,7 @@ interface ItemPriority {
 }
 
 interface LootAward {
+  id: string
   character_name: string
   character_class_color: string | null
   awarded_date: string
@@ -132,6 +133,7 @@ export const ItemCandidateModal = memo(function ItemCandidateModal({
   const [awardReason, setAwardReason] = useState('')
   const [awardNote, setAwardNote] = useState('')
   const [awarding, setAwarding] = useState(false)
+  const [undoingAwardId, setUndoingAwardId] = useState<string | null>(null)
 
   const { showNotification } = useNotification()
 
@@ -220,6 +222,34 @@ export const ItemCandidateModal = memo(function ItemCandidateModal({
       setAwarding(false)
     }
   }, [awardingCandidate, item, guildId, raidTierId, mostRecentRaidEventId, awardReason, awardNote, showNotification, onAwardComplete])
+
+  const handleUndoAward = useCallback(async (award: LootAward) => {
+    if (!guildId) return
+    setUndoingAwardId(award.id)
+    try {
+      const res = await fetch('/api/loot-history/bulk', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ guild_id: guildId, ids: [award.id] }),
+      })
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        throw new Error(body.error || `HTTP ${res.status}`)
+      }
+      showNotification('success', `Award to ${award.character_name} removed`)
+      // Refresh recent awards
+      const refreshRes = await fetch(`/api/loot-history?guild_id=${guildId}&loot_item_id=${item?.id}&limit=5`)
+      if (refreshRes.ok) {
+        const data = await refreshRes.json()
+        setRecentAwards(data?.data || [])
+      }
+      onAwardComplete?.()
+    } catch (err) {
+      showNotification('error', `Failed to undo: ${err instanceof Error ? err.message : 'Unknown error'}`)
+    } finally {
+      setUndoingAwardId(null)
+    }
+  }, [guildId, item?.id, showNotification, onAwardComplete])
 
   const sortedRankings = useMemo(
     () => [...rankings].sort((a, b) => b.loot_score - a.loot_score),
@@ -588,8 +618,8 @@ export const ItemCandidateModal = memo(function ItemCandidateModal({
             <Text size="sm" color="muted">This item hasn't been awarded yet.</Text>
           ) : (
             <div className="space-y-1">
-              {recentAwards.map((award, i) => (
-                <div key={i} className="flex items-center gap-2 text-[12px]">
+              {recentAwards.map((award) => (
+                <div key={award.id} className="group flex items-center gap-2 text-[12px]">
                   <span className="text-muted-foreground tabular-nums">{formatDate(award.awarded_date)}</span>
                   <span className="text-muted-foreground">&rarr;</span>
                   <span className="font-medium" style={{ color: award.character_class_color || undefined }}>
@@ -600,6 +630,15 @@ export const ItemCandidateModal = memo(function ItemCandidateModal({
                   )}
                   {award.notes && (
                     <span className="text-muted-foreground/70 italic">&middot; {award.notes}</span>
+                  )}
+                  {isOfficer && (
+                    <button
+                      onClick={() => handleUndoAward(award)}
+                      disabled={undoingAwardId === award.id}
+                      className="ml-auto text-[11px] text-destructive/70 hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-50"
+                    >
+                      {undoingAwardId === award.id ? 'Removing...' : 'Undo'}
+                    </button>
                   )}
                 </div>
               ))}
