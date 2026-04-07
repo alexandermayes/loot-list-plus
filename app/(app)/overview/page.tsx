@@ -832,19 +832,25 @@ function DashboardContent() {
       eagerPeriodStart.setDate(eagerPeriodStart.getDate() - (maxRollingWeeks * 7))
       const todayStr = toDateString(new Date())
 
-      // If character is on a team, filter raid events by team
+      // Fetch team events + unassigned events for denominator.
+      // Fill-in credit is handled separately via all guild events.
       const activeTeam = characterTeams.length > 0 ? characterTeams[0] : null
-      let raidEventsQuery = supabase
-        .from('raid_events')
-        .select('id, raid_date')
-        .eq('guild_id', activeGuild.id)
-        .eq('is_skipped', false)
-        .gte('raid_date', toDateString(eagerPeriodStart))
-        .lte('raid_date', todayStr)
-      if (activeTeam) {
-        raidEventsQuery = raidEventsQuery.eq('raid_team_id', activeTeam.id)
-      }
-      const raidEventsPromise = raidEventsQuery
+      const raidEventsPromise = activeTeam
+        ? supabase
+            .from('raid_events')
+            .select('id, raid_date, raid_team_id')
+            .eq('guild_id', activeGuild.id)
+            .eq('is_skipped', false)
+            .gte('raid_date', toDateString(eagerPeriodStart))
+            .lte('raid_date', todayStr)
+            .or(`raid_team_id.eq.${activeTeam.id},raid_team_id.is.null`)
+        : supabase
+            .from('raid_events')
+            .select('id, raid_date, raid_team_id')
+            .eq('guild_id', activeGuild.id)
+            .eq('is_skipped', false)
+            .gte('raid_date', toDateString(eagerPeriodStart))
+            .lte('raid_date', todayStr)
 
       // Await all independent fetches in parallel (5 queries instead of 3 + 1 sequential)
       const [settingsResult, membershipResult, expansionDataResult, raidEventsResult] = await Promise.all([
@@ -905,25 +911,53 @@ function DashboardContent() {
             (e: { raid_date: string }) => e.raid_date >= actualPeriodStartStr
           )
 
-          const raidEventIds = raidEventsData.map((r: { id: string }) => r.id)
-          const { data: allAttendanceRecords } = raidEventIds.length > 0
-            ? await supabase
-                .from('attendance_records')
-                .select('raid_event_id, signed_up, attended, no_call_no_show, was_late, was_benched, is_excused, points_override')
-                .eq('character_id', characterId)
-                .in('raid_event_id', raidEventIds)
-            : { data: [] }
+          // Fetch ALL character attendance records (guild-wide, not just team events)
+          // so we can detect fill-in attendance on other teams' events
+          const { data: allCharRecords } = await supabase
+            .from('attendance_records')
+            .select('raid_event_id, signed_up, attended, no_call_no_show, was_late, was_benched, is_excused, points_override')
+            .eq('character_id', characterId)
 
-          // Compute attendance via engine (handles windowing, dedup, new member mode)
+          type AttRecord = { raid_event_id: string; signed_up: boolean; attended: boolean; no_call_no_show: boolean; was_late?: boolean; was_benched?: boolean; is_excused?: boolean; points_override?: number | null }
+          const charRecords: AttRecord[] = allCharRecords || []
+          const teamEventIds = new Set(raidEventsData.map((r: { id: string }) => r.id))
+
+          // Records on team events (for primary scoring)
+          const teamRecords = charRecords.filter((r: AttRecord) => teamEventIds.has(r.raid_event_id))
+
+          // Fill-in: records on events NOT in team events (other teams' events)
+          let fillInEvents: { id: string; raid_date: string }[] = []
+          let fillInRecords: { raid_event_id: string; attended: boolean }[] = []
+          const raidDaysPerWeek = raidDays.length || (raidDaySource as any)?.raid_days_per_week || 2
+
+          if (activeTeam) {
+            const fillInRecordCandidates = charRecords.filter((r: AttRecord) => !teamEventIds.has(r.raid_event_id) && r.attended)
+            if (fillInRecordCandidates.length > 0) {
+              // Fetch the events for these fill-in records to get dates
+              const fillInEventIds = fillInRecordCandidates.map(r => r.raid_event_id)
+              const { data: fillInEventData } = await supabase
+                .from('raid_events')
+                .select('id, raid_date')
+                .in('id', fillInEventIds)
+                .eq('is_skipped', false)
+              fillInEvents = fillInEventData || []
+              fillInRecords = fillInRecordCandidates.map(r => ({ raid_event_id: r.raid_event_id, attended: r.attended }))
+            }
+          }
+
+          // Compute attendance via engine (handles windowing, dedup, new member mode, fill-in credit)
           const newMemberMode = (guildSettings.new_member_mode || 'raw') as 'raw' | 'fair' | 'minimum_gate'
           const attendanceResult = computeAttendance({
-            records: allAttendanceRecords || [],
+            records: teamRecords,
             raidEvents: raidEventsData || [],
             config: guildSettings,
             raidDays,
             memberJoinedAt: membership?.joined_at ? toDateString(new Date(membership.joined_at)) : undefined,
             newMemberMode,
             asOfDate: todayStr,
+            fillInEvents: fillInEvents.length > 0 ? fillInEvents : undefined,
+            fillInRecords: fillInRecords.length > 0 ? fillInRecords : undefined,
+            weeklyAttendanceCap: activeTeam ? raidDaysPerWeek : undefined,
           })
 
           attendanceScore = attendanceResult.score
