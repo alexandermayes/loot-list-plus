@@ -3,7 +3,7 @@
 import { useRef, useEffect, useState } from 'react'
 import { motion, useInView, useScroll, useTransform } from 'framer-motion'
 import Image from 'next/image'
-import { heroFadeIn, staggerContainer, scaleUp, scrollToSection } from '@/lib/animations'
+import { scaleUp, scrollToSection } from '@/lib/animations'
 import { trackClientEvent } from '@/utils/analytics/client'
 import ParallaxItem from './ParallaxItem'
 import MagneticButton from './MagneticButton'
@@ -121,18 +121,12 @@ export default function LandingHero() {
 
       {/* Hero Content + Dashboard Preview */}
       <div className="relative z-20">
-        {/* Hero text content */}
-        <motion.div
-          className="flex flex-col items-center pt-[100px] md:pt-[148px] px-6"
-          initial="hidden"
-          animate="visible"
-          variants={staggerContainer}
-        >
+        {/* Hero text content — no motion wrapper so content is visible in SSR HTML */}
+        <div className="flex flex-col items-center pt-[100px] md:pt-[148px] px-6 animate-hero-fade-in">
           <div className="max-w-[900px] w-full flex flex-col items-center gap-6 md:gap-9">
             {/* NEW badge */}
-            <motion.a
+            <a
               href="/changelog"
-              variants={heroFadeIn}
               className="flex items-center gap-2 bg-[#17151b] rounded-[60px] pl-1 pr-3 py-1 no-underline hover:bg-[#1f1d25] transition-colors"
             >
               <span className="flex items-center justify-center px-2 py-1 bg-[#9940ec] rounded-[60px] font-poppins font-semibold text-[10px] text-white">
@@ -142,10 +136,10 @@ export default function LandingHero() {
                 {getRecentFeatures()}
               </span>
               <Image src="/images/landing/icons/arrow-right-02.svg" alt="" width={16} height={16} />
-            </motion.a>
+            </a>
 
             {/* Headline */}
-            <motion.div variants={heroFadeIn} className="text-center w-full max-w-[696px]">
+            <div className="text-center w-full max-w-[696px]">
               <h1 className="font-poppins font-bold text-[40px] md:text-[56px] lg:text-[72px] leading-[0.92] text-white mb-6">
                 <span className="font-wow text-shimmer-purple text-[48px] md:text-[64px] lg:text-[80px] leading-[0.82]">Epic loot</span>
                 {' '}deserves an epic system.
@@ -153,10 +147,10 @@ export default function LandingHero() {
               <p className="font-poppins font-medium text-[16px] text-[#bababa] leading-normal">
                 LootList+ is a transparent loot management system for WoW guilds. Includes loot submissions, attendance, tracking, and more!
               </p>
-            </motion.div>
+            </div>
 
             {/* CTA Buttons - Magnetic */}
-            <motion.div variants={heroFadeIn} className="flex items-center gap-[18px]">
+            <div className="flex items-center gap-[18px]">
               <MagneticButton
                 as="button"
                 onClick={() => {
@@ -175,9 +169,9 @@ export default function LandingHero() {
               >
                 Start for free
               </MagneticButton>
-            </motion.div>
+            </div>
           </div>
-        </motion.div>
+        </div>
 
         {/* Dashboard Preview with zoom-out on scroll */}
         <div ref={previewRef} className="relative max-w-[1165px] mx-auto px-6 md:px-12 mt-12 md:mt-16">
