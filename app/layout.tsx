@@ -16,6 +16,7 @@ const poppins = Poppins({
   variable: "--font-poppins",
   subsets: ["latin", "latin-ext"],
   weight: ["400", "500", "600", "700"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -134,7 +135,7 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
         {/* Wowhead Tooltip Configuration */}
-        <Script id="wowhead-config" strategy="beforeInteractive">
+        <Script id="wowhead-config" strategy="afterInteractive">
           {`
             var wowhead_tooltips = {
               colorlinks: false,
@@ -146,7 +147,7 @@ export default function RootLayout({
         {/* Wowhead Tooltip Script */}
         <Script
           src="https://wow.zamimg.com/widgets/power.js"
-          strategy="afterInteractive"
+          strategy="lazyOnload"
         />
       </head>
       <body
