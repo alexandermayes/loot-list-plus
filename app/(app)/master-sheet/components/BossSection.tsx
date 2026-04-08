@@ -145,7 +145,6 @@ interface BossSectionProps {
   onCompare?: (itemName: string, userRanking: PlayerRanking, winnerRanking: PlayerRanking) => void
   onItemClick?: (item: LootItem, rankings: PlayerRanking[]) => void
   maxRankingsCount?: number
-  compact?: boolean
 }
 
 /**
@@ -163,7 +162,6 @@ export const BossSection = memo(function BossSection({
   onCompare,
   onItemClick,
   maxRankingsCount = 5,
-  compact = false,
 }: BossSectionProps) {
   const bossImage = getBossImage(boss)
   const [bossQuote, setBossQuote] = useState<string | null>(null)
@@ -176,7 +174,7 @@ export const BossSection = memo(function BossSection({
     }
   }, [isCollapsed, boss])
   const minimumRaidDays = guildSettings?.minimum_raid_days || 2
-  const columnCount = compact ? Math.min(maxRankingsCount || 5, 3) : (maxRankingsCount || 5)
+  const columnCount = maxRankingsCount || 5
   const columnIndices = Array.from({ length: columnCount }, (_, i) => i)
 
   return (
@@ -298,8 +296,8 @@ export const BossSection = memo(function BossSection({
             <table className="w-full" style={{ minWidth: `${380 + columnCount * 120}px` }}>
               <thead className="sticky top-0 z-10">
                 <tr className="bg-background-subtle">
-                  <th className={`${compact ? 'px-3 py-1.5' : 'px-5 py-2.5'} text-left text-[12px] font-medium text-foreground-muted w-[280px] bg-background-subtle`}>Item</th>
-                  {!compact && <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted w-[100px] bg-background-subtle">Slot</th>}
+                  <th className="px-5 py-2.5 text-left text-[12px] font-medium text-foreground-muted w-[280px] bg-background-subtle">Item</th>
+                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted w-[100px] bg-background-subtle">Slot</th>
                   {columnIndices.map((i) => (
                     <th key={i} className="px-3 py-2.5 text-center text-[12px] font-medium text-foreground-muted w-[120px] bg-background-subtle">#{i + 1}</th>
                   ))}
@@ -318,7 +316,7 @@ export const BossSection = memo(function BossSection({
                     onCompare={onCompare}
                     onItemClick={onItemClick}
                     columnCount={columnCount}
-                    compact={compact}
+
                   />
                 ))}
               </tbody>
@@ -340,7 +338,6 @@ interface ItemRowProps {
   onCompare?: (itemName: string, userRanking: PlayerRanking, winnerRanking: PlayerRanking) => void
   onItemClick?: (item: LootItem, rankings: PlayerRanking[]) => void
   columnCount: number
-  compact?: boolean
 }
 
 /**
@@ -356,7 +353,6 @@ const ItemRow = memo(function ItemRow({
   onCompare,
   onItemClick,
   columnCount,
-  compact = false,
 }: ItemRowProps) {
   const columnIndices = Array.from({ length: columnCount }, (_, i) => i)
   // Officer score popover state — hover-based, per-cell
@@ -382,7 +378,7 @@ const ItemRow = memo(function ItemRow({
       className={`transition-colors hover:bg-muted ${!ir.item.is_loot_council && ir.rankings.length === 0 ? 'bg-destructive/10' : ''} ${isOfficer && onItemClick ? 'cursor-pointer' : ''}`}
       onClick={isOfficer && onItemClick ? () => onItemClick(ir.item, ir.rankings) : undefined}
     >
-      <td className={compact ? 'px-3 py-1.5' : 'px-5 py-2.5'}>
+      <td className="px-5 py-2.5">
         <ItemLink
           name={ir.item.name}
           wowheadId={ir.item.wowhead_id}
@@ -394,11 +390,9 @@ const ItemRow = memo(function ItemRow({
           } : undefined}
         />
       </td>
-      {!compact && (
-        <td className="px-3 py-2.5 text-[12px] text-foreground-muted">
-          {ir.item.item_slot}
-        </td>
-      )}
+      <td className="px-3 py-2.5 text-[12px] text-foreground-muted">
+        {ir.item.item_slot}
+      </td>
       {ir.item.is_loot_council ? (
         <>
           <td className="px-3 py-2.5">

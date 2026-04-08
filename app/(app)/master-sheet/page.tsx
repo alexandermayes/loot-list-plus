@@ -183,7 +183,6 @@ function MasterSheetContent() {
   const [collapsedBosses, setCollapsedBosses] = useState<Set<string>>(new Set())
   const [collapsedRaidTiers, setCollapsedRaidTiers] = useState<Set<string>>(new Set())
   const [mostRecentRaidEventId, setMostRecentRaidEventId] = useState<string | null>(null)
-  const [compactMode, setCompactMode] = useState(false)
   const [isExporting, setIsExporting] = useState(false)
   const [showScoreBreakdown, setShowScoreBreakdown] = useState(false)
   const [showScoreComparison, setShowScoreComparison] = useState(false)
@@ -1576,15 +1575,6 @@ function MasterSheetContent() {
                   className="w-40"
                 />
               )}
-              {isOfficer && (
-                <Button
-                  variant={compactMode ? 'accent-subtle' : 'outline'}
-                  onClick={() => setCompactMode(!compactMode)}
-                  title={compactMode ? 'Switch to full view' : 'Switch to compact raid-night view'}
-                >
-                  <span className="text-[12px]">{compactMode ? 'Full view' : 'Raid night'}</span>
-                </Button>
-              )}
               <Button
                 variant="outline"
                 onClick={() => { setShowScoreBreakdown(true); trackClientEvent('score_breakdown_viewed') }}
@@ -1940,7 +1930,6 @@ function MasterSheetContent() {
                 onCompare={handleCompare}
                 onItemClick={isOfficer ? handleItemClick : undefined}
                 maxRankingsCount={maxRankingsCount}
-                compact={compactMode}
               />
             )}
             </>

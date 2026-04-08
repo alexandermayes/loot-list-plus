@@ -38,7 +38,6 @@ interface VirtualizedMasterSheetProps {
   onCompare?: (itemName: string, userRanking: PlayerRanking, winnerRanking: PlayerRanking) => void
   onItemClick?: (item: LootItem, rankings: PlayerRanking[]) => void
   maxRankingsCount?: number
-  compact?: boolean
 }
 
 /**
@@ -57,7 +56,6 @@ export function VirtualizedMasterSheet({
   onCompare,
   onItemClick,
   maxRankingsCount,
-  compact,
 }: VirtualizedMasterSheetProps) {
   const listRef = useRef<HTMLDivElement>(null)
 
@@ -163,7 +161,6 @@ export function VirtualizedMasterSheet({
               onCompare={onCompare}
               onItemClick={onItemClick}
               maxRankingsCount={maxRankingsCount}
-              compact={compact}
             />
           )
         )}
@@ -220,8 +217,7 @@ export function VirtualizedMasterSheet({
                   onCompare={onCompare}
                   onItemClick={onItemClick}
                   maxRankingsCount={maxRankingsCount}
-                  compact={compact}
-                />
+                    />
               )}
             </div>
           )

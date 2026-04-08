@@ -63,6 +63,7 @@ type ClientEvent =
   | 'reserve_run_created'
   | 'reserve_run_viewed'
   | 'reserve_share_link_copied'
+  | 'reserve_gargul_exported'
   // Officer actions
   | 'submission_reviewed'
   | 'pending_submission_approved'
