@@ -127,6 +127,8 @@ export default function MasterLootPage() {
   const [contentLoading, setContentLoading] = useState(false)
   const [reviewing, setReviewing] = useState<string | null>(null)
   const [reviewNotes, setReviewNotes] = useState('')
+  const [undoAction, setUndoAction] = useState<{ submissionId: string; previousStatus: string; characterName: string; newStatus: string } | null>(null)
+  const [undoTimer, setUndoTimer] = useState<ReturnType<typeof setTimeout> | null>(null)
   const [filter, setFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all')
   const [guildId, setGuildId] = useState<string | null>(null)
     const [viewingSubmission, setViewingSubmission] = useState<string | null>(null)
@@ -395,12 +397,14 @@ export default function MasterLootPage() {
         character_name: submission?.member?.character_name,
       })
 
-      const statusMessages: Record<string, string> = {
-        approved: 'Submission approved. Rankings will update.',
-        needs_revision: 'Sent back for revision.',
-        pending: 'Submission set to pending.',
-      }
-      showNotification('success', statusMessages[status] || `Submission ${status}`)
+      // Show undo toast instead of regular notification
+      const previousStatus = submission?.status || 'pending'
+      const characterName = submission?.member?.character_name || 'Unknown'
+      if (undoTimer) clearTimeout(undoTimer)
+      setUndoAction({ submissionId, previousStatus, characterName, newStatus: status })
+      const timer = setTimeout(() => setUndoAction(null), 8000)
+      setUndoTimer(timer)
+
       setReviewNotes('')
       setReviewing(null)
 
@@ -413,6 +417,30 @@ export default function MasterLootPage() {
     } catch (error: any) {
       showNotification('error', error.message || 'Couldn\'t update submission. Try again.')
       setReviewing(null)
+    }
+  }
+
+  const handleUndoReview = async () => {
+    if (!undoAction) return
+    try {
+      const res = await fetch('/api/loot-submissions/review', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          submission_id: undoAction.submissionId,
+          status: undoAction.previousStatus,
+        }),
+      })
+      if (!res.ok) throw new Error('Failed to undo')
+      showNotification('success', `Reverted ${undoAction.characterName}'s submission`)
+      if (undoTimer) clearTimeout(undoTimer)
+      setUndoAction(null)
+      notifySubmissionChanged()
+      if (guildId && activePhase !== null && activeGuild?.active_expansion_id) {
+        await loadSubmissions(guildId, activePhase, activeGuild.active_expansion_id)
+      }
+    } catch {
+      showNotification('error', "Couldn't undo. Try manually from the submission list.")
     }
   }
 
@@ -1390,6 +1418,27 @@ export default function MasterLootPage() {
         </>
       )}
       {ConfirmDialog}
+
+      {/* Undo toast */}
+      {undoAction && (
+        <div className="fixed bottom-6 right-6 z-50 bg-background-elevated border border-border rounded-xl shadow-lg px-4 py-3 flex items-center gap-3 animate-in slide-in-from-bottom-4 duration-200">
+          <span className="text-[13px] text-foreground">
+            {undoAction.newStatus === 'approved' ? 'Approved' : 'Rejected'} {undoAction.characterName}&apos;s submission
+          </span>
+          <button
+            onClick={handleUndoReview}
+            className="text-[13px] font-medium text-accent hover:text-accent/80 transition-colors"
+          >
+            Undo
+          </button>
+          <button
+            onClick={() => { if (undoTimer) clearTimeout(undoTimer); setUndoAction(null) }}
+            className="text-muted-foreground hover:text-foreground transition-colors ml-1"
+          >
+            <span className="text-[16px]">&times;</span>
+          </button>
+        </div>
+      )}
       </div>
     </div>
   )

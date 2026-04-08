@@ -25,8 +25,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'submission_id is required' }, { status: 400 })
     }
 
-    if (status !== 'approved' && status !== 'rejected') {
-      return NextResponse.json({ error: 'status must be approved or rejected' }, { status: 400 })
+    if (status !== 'approved' && status !== 'rejected' && status !== 'pending') {
+      return NextResponse.json({ error: 'status must be approved, rejected, or pending' }, { status: 400 })
     }
 
     const serviceSupabase = createServiceRoleClient()
@@ -122,6 +122,7 @@ export async function POST(request: NextRequest) {
     trackEvent({
       event: 'loot_submission_status_changed',
       userId: user.id,
+      guildId: submission.guild_id,
       properties: {
         guild_id: submission.guild_id,
         submission_id,
