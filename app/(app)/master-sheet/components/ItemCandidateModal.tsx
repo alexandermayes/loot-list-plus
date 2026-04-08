@@ -172,6 +172,7 @@ export const ItemCandidateModal = memo(function ItemCandidateModal({
     }
   }, [open])
 
+
   const handleAward = useCallback(async () => {
     if (!awardingCandidate || !item || !guildId) return
     setAwarding(true)
@@ -222,6 +223,23 @@ export const ItemCandidateModal = memo(function ItemCandidateModal({
       setAwarding(false)
     }
   }, [awardingCandidate, item, guildId, raidTierId, mostRecentRaidEventId, awardReason, awardNote, showNotification, onAwardComplete])
+
+  // Keyboard shortcuts: Enter to confirm award, Escape to cancel
+  useEffect(() => {
+    if (!awardingCandidate || !open) return
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Enter' && !e.shiftKey && !awarding) {
+        e.preventDefault()
+        handleAward()
+      } else if (e.key === 'Escape') {
+        e.preventDefault()
+        e.stopPropagation()
+        setAwardingCandidate(null)
+      }
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [awardingCandidate, open, awarding, handleAward])
 
   const handleUndoAward = useCallback(async (award: LootAward) => {
     if (!guildId) return
@@ -605,6 +623,7 @@ export const ItemCandidateModal = memo(function ItemCandidateModal({
               >
                 Confirm award
               </Button>
+              <Text size="xs" color="muted" className="hidden sm:block">Enter to confirm, Esc to cancel</Text>
             </div>
           </div>
         )}
