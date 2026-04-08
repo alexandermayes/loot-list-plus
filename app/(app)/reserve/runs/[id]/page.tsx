@@ -24,6 +24,7 @@ import {
 } from '@hugeicons/core-free-icons'
 import { trackClientEvent } from '@/utils/analytics/client'
 import { refreshWowheadTooltips } from '@/lib/wowhead'
+import { getRaidIcon } from '@/utils/raidIcons'
 
 // Hardcoded WoW class colors for display
 const CLASS_COLORS: Record<string, string> = {
@@ -174,18 +175,8 @@ export default function ReserveRunPage() {
       .slice(0, 20)
   }, [run, eligibilitySearch, itemMap])
 
-  const handleAction = async (action: string) => {
+  const executeAction = async (action: string) => {
     if (!run) return
-
-    if (action === 'lock') {
-      const yes = await confirm({
-        title: 'Lock reserves?',
-        description: 'Players will no longer be able to submit or edit reserves.',
-        confirmLabel: 'Lock run',
-      })
-      if (!yes) return
-    }
-
     setActionLoading(true)
     try {
       const res = await fetch(`/api/reserve-runs/${run.id}`, {
@@ -206,6 +197,15 @@ export default function ReserveRunPage() {
     } finally {
       setActionLoading(false)
     }
+  }
+
+  const handleLock = () => {
+    confirm({
+      title: 'Lock reserves?',
+      description: 'Players will no longer be able to submit or edit reserves.',
+      confirmLabel: 'Lock run',
+      onConfirm: () => executeAction('lock'),
+    })
   }
 
   const handleAward = async (itemId: string, characterName: string, submissionId?: string) => {
@@ -251,6 +251,23 @@ export default function ReserveRunPage() {
     }
   }
 
+  const exportGargul = () => {
+    if (!run) return
+    // Gargul CSV format: ItemId,Name,Class,Note,Plus
+    const lines = ['ItemId,Name,Class,Note,Plus']
+    for (const sub of run.submissions) {
+      const className = sub.character_class.toLowerCase().replace(' ', '')
+      for (const itemId of sub.items) {
+        const item = itemMap.get(itemId)
+        if (!item) continue
+        lines.push(`${item.wowhead_id},${sub.character_name},${className},,0`)
+      }
+    }
+    navigator.clipboard.writeText(lines.join('\n'))
+    showNotification('success', 'Gargul data copied. Paste in-game with /gl sr')
+    trackClientEvent('reserve_gargul_exported', { run_id: run.id })
+  }
+
   const copyShareLink = () => {
     if (!run) return
     navigator.clipboard.writeText(`${window.location.origin}/reserve/join/${run.share_token}`)
@@ -282,7 +299,7 @@ export default function ReserveRunPage() {
 
   return (
     <>
-      <ConfirmDialog />
+      {ConfirmDialog}
       <div className="p-4 sm:p-6 lg:p-8 max-w-5xl mx-auto space-y-6">
 
         {/* Back button */}
@@ -299,15 +316,23 @@ export default function ReserveRunPage() {
         {/* Header */}
         <div className="bg-background-elevated border border-border rounded-xl p-5">
           <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
-            <div>
-              <div className="flex items-center gap-3 mb-2">
-                <Heading level={2}>{run.title}</Heading>
-                <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-semibold uppercase tracking-wide ${statusStyle.bg} ${statusStyle.text}`}>
-                  {statusStyle.label}
-                </span>
-              </div>
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[13px] text-muted-foreground">
-                {run.raid_tier_name && <span>{run.raid_tier_name}</span>}
+            <div className="flex items-start gap-4">
+              {run.raid_tier_name && (
+                <img
+                  src={getRaidIcon(run.raid_tier_name)}
+                  alt=""
+                  className="w-12 h-12 rounded-lg border border-border/50 flex-shrink-0 hidden sm:block"
+                />
+              )}
+              <div>
+                <div className="flex items-center gap-3 mb-2">
+                  <Heading level={2}>{run.title}</Heading>
+                  <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-semibold uppercase tracking-wide ${statusStyle.bg} ${statusStyle.text}`}>
+                    {statusStyle.label}
+                  </span>
+                </div>
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[13px] text-muted-foreground">
+                  {run.raid_tier_name && <span>{run.raid_tier_name}</span>}
                 <span className="flex items-center gap-1.5">
                   <HugeiconsIcon icon={Calendar03Icon} size={14} />
                   {formatDate(run.raid_at)}
@@ -318,6 +343,7 @@ export default function ReserveRunPage() {
                 </span>
                 <span>{run.max_reserves} reserve{run.max_reserves !== 1 ? 's' : ''} / player</span>
               </div>
+              </div>
             </div>
 
             {/* Actions */}
@@ -327,7 +353,7 @@ export default function ReserveRunPage() {
                   <Button
                     variant="primary"
                     size="sm"
-                    onClick={() => handleAction('lock')}
+                    onClick={handleLock}
                     loading={actionLoading}
                   >
                     <HugeiconsIcon icon={LockIcon} size={16} />
@@ -339,7 +365,7 @@ export default function ReserveRunPage() {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => handleAction('unlock')}
+                      onClick={() => executeAction('unlock')}
                       loading={actionLoading}
                     >
                       <HugeiconsIcon icon={LockIcon} size={16} />
@@ -348,7 +374,7 @@ export default function ReserveRunPage() {
                     <Button
                       variant="primary"
                       size="sm"
-                      onClick={() => handleAction('complete')}
+                      onClick={() => executeAction('complete')}
                       loading={actionLoading}
                     >
                       <HugeiconsIcon icon={CheckmarkCircle01Icon} size={16} />
@@ -361,10 +387,10 @@ export default function ReserveRunPage() {
           </div>
         </div>
 
-        {/* Share link */}
+        {/* Share link + Export */}
         <div className="bg-background-elevated border border-border rounded-xl p-5">
           <Text size="sm" className="font-semibold mb-3">Share link</Text>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 mb-3">
             <Input
               variant="rounded"
               readOnly
@@ -377,6 +403,15 @@ export default function ReserveRunPage() {
               Copy
             </Button>
           </div>
+          {(run.status === 'locked' || run.status === 'completed') && run.submissions.length > 0 && (
+            <div className="flex items-center gap-2 pt-3 border-t border-border">
+              <Button variant="outline" size="sm" onClick={exportGargul}>
+                <HugeiconsIcon icon={Copy01Icon} size={14} />
+                Export for Gargul
+              </Button>
+              <Text color="muted" size="xs">Paste in-game with /gl sr</Text>
+            </div>
+          )}
         </div>
 
         {/* Rules */}
@@ -398,7 +433,7 @@ export default function ReserveRunPage() {
                       const item = itemMap.get(hr.loot_item_id)
                       return item ? (
                         <span key={hr.loot_item_id} className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-destructive/10 text-destructive text-[12px] font-medium rounded-full border border-destructive/20">
-                          <ItemLink name={item.name} wowheadId={item.wowhead_id} clickable={false} size="small" />
+                          <ItemLink name={item.name} wowheadId={item.wowhead_id} clickable={false} />
                           {hr.reserved_for && <span className="text-muted-foreground">({hr.reserved_for})</span>}
                         </span>
                       ) : null
@@ -439,7 +474,7 @@ export default function ReserveRunPage() {
                         const item = itemMap.get(itemId)
                         return item ? (
                           <span key={itemId} className="inline-flex items-center px-2 py-0.5 bg-background-subtle rounded text-[12px]">
-                            <ItemLink name={item.name} wowheadId={item.wowhead_id} clickable={false} size="small" />
+                            <ItemLink name={item.name} wowheadId={item.wowhead_id} clickable={false} />
                           </span>
                         ) : null
                       })
@@ -467,7 +502,7 @@ export default function ReserveRunPage() {
               {contestedItems.map(({ item, reservers }) => (
                 <div key={item.id} className="px-5 py-3">
                   <div className="flex items-center justify-between mb-1.5">
-                    <ItemLink name={item.name} wowheadId={item.wowhead_id} size="small" />
+                    <ItemLink name={item.name} wowheadId={item.wowhead_id} />
                     <span className="text-[12px] text-warning font-medium">{reservers.length} reservers</span>
                   </div>
                   <div className="flex flex-wrap gap-2">
@@ -516,7 +551,7 @@ export default function ReserveRunPage() {
                   <div key={item.id} className="border border-border rounded-lg p-3">
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-2">
-                        <ItemLink name={item.name} wowheadId={item.wowhead_id} size="small" />
+                        <ItemLink name={item.name} wowheadId={item.wowhead_id} />
                         {isHardReserved && (
                           <span className="text-[10px] font-semibold uppercase text-destructive bg-destructive/10 px-1.5 py-0.5 rounded">HR</span>
                         )}
@@ -593,7 +628,7 @@ export default function ReserveRunPage() {
                 return (
                   <div key={award.id} className="px-5 py-3 flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      {item && <ItemLink name={item.name} wowheadId={item.wowhead_id} clickable={false} size="small" />}
+                      {item && <ItemLink name={item.name} wowheadId={item.wowhead_id} clickable={false} />}
                       <span className="text-[13px] text-muted-foreground">\u2192</span>
                       <span className="text-[13px] font-medium text-foreground">{award.character_name}</span>
                     </div>

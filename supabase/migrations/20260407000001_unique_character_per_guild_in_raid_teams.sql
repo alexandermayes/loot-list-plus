@@ -14,11 +14,19 @@ ALTER TABLE raid_team_members
   DROP CONSTRAINT IF EXISTS raid_team_members_raid_team_id_character_id_key;
 
 -- Add new unique constraint: one team per character per guild
-ALTER TABLE raid_team_members
-  ADD CONSTRAINT raid_team_members_guild_character_unique
-  UNIQUE (guild_id, character_id);
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'raid_team_members_guild_character_unique') THEN
+    ALTER TABLE raid_team_members
+      ADD CONSTRAINT raid_team_members_guild_character_unique
+      UNIQUE (guild_id, character_id);
+  END IF;
+END $$;
 
 -- Re-add the per-team uniqueness too (no duplicate entries within the same team)
-ALTER TABLE raid_team_members
-  ADD CONSTRAINT raid_team_members_team_character_unique
-  UNIQUE (raid_team_id, character_id);
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'raid_team_members_team_character_unique') THEN
+    ALTER TABLE raid_team_members
+      ADD CONSTRAINT raid_team_members_team_character_unique
+      UNIQUE (raid_team_id, character_id);
+  END IF;
+END $$;

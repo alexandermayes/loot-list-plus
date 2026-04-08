@@ -71,3 +71,4 @@ discord-bot/*.md
 # Claude config (keep commands/ tracked)
 .claude/*
 !.claude/commands/
+.mcp.json

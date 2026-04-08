@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input'
 import { Heading } from '@/components/ui/typography'
 import { Search01Icon } from '@hugeicons/core-free-icons'
 import { trackClientEvent } from '@/utils/analytics/client'
+import { hasFeature } from '@/domain/guild/feature-flags'
 
 interface AuditLog {
   id: string
@@ -230,13 +231,13 @@ export default function AuditLogPage() {
     setOffset(0)
   }, [tableFilter, actionFilter, debouncedSearch])
 
-  if (!isOfficer) {
+  if (!isOfficer || !hasFeature(activeGuild, 'audit_log')) {
     return (
       <div className="p-8">
         <EmptyState
           icon={Search01Icon}
-          title="Officers only"
-          description="You need officer permissions to view audit logs."
+          title={!isOfficer ? "Officers only" : "Pro feature"}
+          description={!isOfficer ? "You need officer permissions to view audit logs." : "Audit log is available on the Pro plan."}
         />
       </div>
     )

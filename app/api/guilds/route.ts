@@ -241,7 +241,7 @@ export async function POST(request: NextRequest) {
     // Invalidate guilds cache after creating
     await invalidateCache(cacheKeys.userGuilds(user.id))
 
-    trackEvent({ event: 'guild_created', userId: user.id, properties: { guild_id: guild.id, guild_name: guild.name } })
+    trackEvent({ event: 'guild_created', userId: user.id, guildId: guild.id, properties: { guild_id: guild.id, guild_name: guild.name } })
     setUserMilestone(user.id, 'first_guild_created_at')
 
     return NextResponse.json({

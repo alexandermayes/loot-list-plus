@@ -147,6 +147,7 @@ export async function POST(request: NextRequest) {
     trackEvent({
       event: 'loot_submission_submitted',
       userId: user.id,
+      guildId: submission.guild_id,
       properties: {
         guild_id: submission.guild_id,
         submission_id,

@@ -126,6 +126,7 @@ export async function POST(request: NextRequest) {
       trackEvent({
         event: 'loot_awarded_bulk',
         userId: user.id,
+        guildId: guild_id,
         properties: { guild_id, success_count: successCount, failed_count: failedCount },
       })
       setUserMilestone(user.id, 'first_loot_awarded_at')

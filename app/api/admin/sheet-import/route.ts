@@ -272,6 +272,7 @@ export async function POST(request: Request) {
         await trackEvent({
           event: 'sheet_import_completed',
           userId: user.id,
+          guildId: guildId,
           properties: {
             guild_id: guildId,
             expansion_id: expansionId,

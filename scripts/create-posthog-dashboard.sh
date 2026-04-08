@@ -17,7 +17,7 @@
 
 set -euo pipefail
 
-API_KEY="${POSTHOG_PERSONAL_API_KEY:-phx_ozxpdPLGY0NfcO74mBjqpbnQN4tbMm1Jofwd2sOj37Wu4iv}"
+API_KEY="${POSTHOG_PERSONAL_API_KEY:?Set POSTHOG_PERSONAL_API_KEY before running this script}"
 HOST="https://us.i.posthog.com"
 PROJECT_ID="310668"
 BASE_URL="${HOST}/api/projects/${PROJECT_ID}"
@@ -223,6 +223,215 @@ echo "   ID: $(echo "$INSIGHT_5" | json_field id), short_id: $(echo "$INSIGHT_5"
 echo ""
 
 # ---------------------------------------------------------------
+# Step 7: Retention (week-over-week)
+# ---------------------------------------------------------------
+echo "7. Creating insight: Weekly Retention..."
+INSIGHT_6=$(api_post "/insights/" "{
+  \"name\": \"Weekly Retention\",
+  \"description\": \"Week-over-week retention: users who return after first activity. 8-week window.\",
+  \"dashboards\": [$DASHBOARD_ID],
+  \"query\": {
+    \"kind\": \"InsightVizNode\",
+    \"source\": {
+      \"kind\": \"RetentionQuery\",
+      \"dateRange\": {\"date_from\": \"-8w\"},
+      \"filterTestAccounts\": true,
+      \"retentionFilter\": {
+        \"retentionType\": \"retention_first_time\",
+        \"totalIntervals\": 8,
+        \"period\": \"Week\",
+        \"targetEntity\": {\"id\": null, \"type\": \"events\", \"name\": \"All events\"},
+        \"returningEntity\": {\"id\": null, \"type\": \"events\", \"name\": \"All events\"}
+      }
+    }
+  }
+}")
+echo "   ID: $(echo "$INSIGHT_6" | json_field id), short_id: $(echo "$INSIGHT_6" | json_field short_id)"
+echo ""
+
+# ---------------------------------------------------------------
+# Step 8: Guild Health (events per guild group)
+# ---------------------------------------------------------------
+echo "8. Creating insight: Active Guilds..."
+INSIGHT_7=$(api_post "/insights/" "{
+  \"name\": \"Active Guilds (weekly)\",
+  \"description\": \"Number of guilds with at least one event per week. Uses guild group analytics.\",
+  \"dashboards\": [$DASHBOARD_ID],
+  \"query\": {
+    \"kind\": \"InsightVizNode\",
+    \"source\": {
+      \"kind\": \"TrendsQuery\",
+      \"series\": [
+        {\"kind\": \"EventsNode\", \"event\": null, \"name\": \"Active guilds\", \"math\": \"unique_group\", \"math_group_type_index\": 0}
+      ],
+      \"interval\": \"week\",
+      \"dateRange\": {\"date_from\": \"-90d\"},
+      \"filterTestAccounts\": true,
+      \"trendsFilter\": {
+        \"display\": \"ActionsLineGraph\"
+      }
+    }
+  }
+}")
+echo "   ID: $(echo "$INSIGHT_7" | json_field id), short_id: $(echo "$INSIGHT_7" | json_field short_id)"
+echo ""
+
+# ---------------------------------------------------------------
+# Step 9: Error Monitoring
+# ---------------------------------------------------------------
+echo "9. Creating insight: API Errors by Endpoint..."
+INSIGHT_8=$(api_post "/insights/" "{
+  \"name\": \"API Errors by Endpoint\",
+  \"description\": \"Weekly api_error events broken down by endpoint. Spot regressions fast.\",
+  \"dashboards\": [$DASHBOARD_ID],
+  \"query\": {
+    \"kind\": \"InsightVizNode\",
+    \"source\": {
+      \"kind\": \"TrendsQuery\",
+      \"series\": [
+        {\"kind\": \"EventsNode\", \"event\": \"api_error\", \"name\": \"API errors\", \"math\": \"total\"}
+      ],
+      \"interval\": \"week\",
+      \"dateRange\": {\"date_from\": \"-30d\"},
+      \"filterTestAccounts\": true,
+      \"breakdownFilter\": {
+        \"breakdown\": \"endpoint\",
+        \"breakdown_type\": \"event\"
+      },
+      \"trendsFilter\": {
+        \"display\": \"ActionsTable\"
+      }
+    }
+  }
+}")
+echo "   ID: $(echo "$INSIGHT_8" | json_field id), short_id: $(echo "$INSIGHT_8" | json_field short_id)"
+echo ""
+
+# ---------------------------------------------------------------
+# Step 10: Page Load Performance (p50/p95)
+# ---------------------------------------------------------------
+echo "10. Creating insight: Page Load Performance..."
+INSIGHT_9=$(api_post "/insights/" "{
+  \"name\": \"Page Load Time by Page (p95)\",
+  \"description\": \"95th percentile page load times from usePagePerf hook. Broken down by page name.\",
+  \"dashboards\": [$DASHBOARD_ID],
+  \"query\": {
+    \"kind\": \"InsightVizNode\",
+    \"source\": {
+      \"kind\": \"TrendsQuery\",
+      \"series\": [
+        {\"kind\": \"EventsNode\", \"event\": \"page_load_time\", \"name\": \"p95 load time (ms)\", \"math\": \"p95\", \"math_property\": \"duration_ms\"}
+      ],
+      \"interval\": \"week\",
+      \"dateRange\": {\"date_from\": \"-30d\"},
+      \"filterTestAccounts\": true,
+      \"breakdownFilter\": {
+        \"breakdown\": \"page\",
+        \"breakdown_type\": \"event\"
+      },
+      \"trendsFilter\": {
+        \"display\": \"ActionsTable\"
+      }
+    }
+  }
+}")
+echo "   ID: $(echo "$INSIGHT_9" | json_field id), short_id: $(echo "$INSIGHT_9" | json_field short_id)"
+echo ""
+
+# ---------------------------------------------------------------
+# Step 11: Landing Page Conversion
+# ---------------------------------------------------------------
+echo "11. Creating insight: Landing Page Funnel..."
+INSIGHT_10=$(api_post "/insights/" "{
+  \"name\": \"Landing Page Funnel\",
+  \"description\": \"Landing page visitors through CTA click to sign-in. 7-day window.\",
+  \"dashboards\": [$DASHBOARD_ID],
+  \"query\": {
+    \"kind\": \"InsightVizNode\",
+    \"source\": {
+      \"kind\": \"FunnelsQuery\",
+      \"series\": [
+        {\"kind\": \"EventsNode\", \"event\": \"\$pageview\", \"name\": \"Landing page view\", \"properties\": [{\"key\": \"\$pathname\", \"value\": \"/\", \"type\": \"event\", \"operator\": \"exact\"}]},
+        {\"kind\": \"EventsNode\", \"event\": \"landing_cta_clicked\", \"name\": \"CTA clicked\"},
+        {\"kind\": \"EventsNode\", \"event\": \"sign_in_clicked\", \"name\": \"Sign in clicked\"},
+        {\"kind\": \"EventsNode\", \"event\": \"user_signed_up\", \"name\": \"Account created\"}
+      ],
+      \"dateRange\": {\"date_from\": \"-30d\"},
+      \"filterTestAccounts\": true,
+      \"funnelsFilter\": {
+        \"funnelWindowInterval\": 7,
+        \"funnelWindowIntervalUnit\": \"day\",
+        \"funnelVizType\": \"steps\",
+        \"layout\": \"horizontal\"
+      }
+    }
+  }
+}")
+echo "   ID: $(echo "$INSIGHT_10" | json_field id), short_id: $(echo "$INSIGHT_10" | json_field short_id)"
+echo ""
+
+# ---------------------------------------------------------------
+# Step 12: Monetization Funnel
+# ---------------------------------------------------------------
+echo "12. Creating insight: Pro Upgrade Funnel..."
+INSIGHT_11=$(api_post "/insights/" "{
+  \"name\": \"Pro Upgrade Funnel\",
+  \"description\": \"Pro modal views to upgrade clicks. Tracks monetization intent.\",
+  \"dashboards\": [$DASHBOARD_ID],
+  \"query\": {
+    \"kind\": \"InsightVizNode\",
+    \"source\": {
+      \"kind\": \"FunnelsQuery\",
+      \"series\": [
+        {\"kind\": \"EventsNode\", \"event\": \"pro_modal_viewed\", \"name\": \"Pro modal viewed\"},
+        {\"kind\": \"EventsNode\", \"event\": \"pro_upgrade_clicked\", \"name\": \"Upgrade clicked\"}
+      ],
+      \"dateRange\": {\"date_from\": \"-30d\"},
+      \"filterTestAccounts\": true,
+      \"funnelsFilter\": {
+        \"funnelWindowInterval\": 7,
+        \"funnelWindowIntervalUnit\": \"day\",
+        \"funnelVizType\": \"steps\",
+        \"layout\": \"horizontal\"
+      }
+    }
+  }
+}")
+echo "   ID: $(echo "$INSIGHT_11" | json_field id), short_id: $(echo "$INSIGHT_11" | json_field short_id)"
+echo ""
+
+# ---------------------------------------------------------------
+# Step 13: Officer vs Member Activity
+# ---------------------------------------------------------------
+echo "13. Creating insight: Officer vs Member Activity..."
+INSIGHT_12=$(api_post "/insights/" "{
+  \"name\": \"Officer vs Member Activity\",
+  \"description\": \"Weekly active users broken down by guild_role super property.\",
+  \"dashboards\": [$DASHBOARD_ID],
+  \"query\": {
+    \"kind\": \"InsightVizNode\",
+    \"source\": {
+      \"kind\": \"TrendsQuery\",
+      \"series\": [
+        {\"kind\": \"EventsNode\", \"event\": null, \"name\": \"Active users by role\", \"math\": \"dau\"}
+      ],
+      \"interval\": \"week\",
+      \"dateRange\": {\"date_from\": \"-90d\"},
+      \"filterTestAccounts\": true,
+      \"breakdownFilter\": {
+        \"breakdown\": \"guild_role\",
+        \"breakdown_type\": \"event\"
+      },
+      \"trendsFilter\": {
+        \"display\": \"ActionsLineGraph\"
+      }
+    }
+  }
+}")
+echo "   ID: $(echo "$INSIGHT_12" | json_field id), short_id: $(echo "$INSIGHT_12" | json_field short_id)"
+echo ""
+
+# ---------------------------------------------------------------
 # Done!
 # ---------------------------------------------------------------
 echo "=== All done! ==="
@@ -230,8 +439,15 @@ echo ""
 echo "Dashboard URL: https://us.posthog.com/project/${PROJECT_ID}/dashboard/${DASHBOARD_ID}"
 echo ""
 echo "Insights created:"
-echo "  1. Activation Funnel (sign_in_clicked -> loot_list_submitted)"
-echo "  2. Feature Adoption (weekly unique users per feature)"
-echo "  3. Engagement Events (weekly event counts)"
-echo "  4. DAU/WAU Trends (daily)"
-echo "  5. Top Pages by Unique Visitors (table)"
+echo "  1.  Activation Funnel (sign_in → loot_list_submitted)"
+echo "  2.  Feature Adoption (weekly unique users per feature)"
+echo "  3.  Engagement Events (weekly event counts)"
+echo "  4.  DAU/WAU Trends (daily)"
+echo "  5.  Top Pages by Unique Visitors (table)"
+echo "  6.  Weekly Retention (8-week cohort)"
+echo "  7.  Active Guilds (weekly, group analytics)"
+echo "  8.  API Errors by Endpoint (table)"
+echo "  9.  Page Load Time by Page (p95)"
+echo "  10. Landing Page Funnel (visit → signup)"
+echo "  11. Pro Upgrade Funnel (modal → click)"
+echo "  12. Officer vs Member Activity (role breakdown)"

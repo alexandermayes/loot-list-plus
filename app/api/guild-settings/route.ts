@@ -344,6 +344,7 @@ export async function PUT(request: Request) {
       await trackEvent({
         event: 'guild_settings_updated',
         userId: user.id,
+        guildId: guild_id,
         properties: {
           guild_id,
           is_new_settings: !existingSettings,

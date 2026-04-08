@@ -42,6 +42,7 @@ function AppLayoutContent({
     if (pathname === '/loot-submissions') return 'loot-submissions'
     if (pathname === '/loot-settings') return 'loot-settings'
     if (pathname === '/raid-tracking') return 'raid-tracking'
+    if (pathname.startsWith('/reserve')) return 'reserve'
     if (pathname === '/updates') return 'updates'
     // Return empty string for profile and other pages that shouldn't highlight nav items
     return ''
@@ -300,16 +301,16 @@ function AppLayoutContent({
         </div>
       </main>
 
-      {/* Floating Bug Report Button */}
+      {/* Floating Feedback Button */}
       <Button
         variant="primary"
-        size="icon"
+        size="sm"
         onClick={() => setShowFeedbackModal(true)}
-        className="fixed bottom-6 right-6 w-14 h-14 rounded-full shadow-lg z-40"
-        title="Report a bug"
-        aria-label="Report a bug"
+        className="fixed bottom-6 right-6 rounded-full shadow-lg z-40 gap-1.5 px-3"
+        aria-label="Give feedback"
       >
-        <HugeiconsIcon icon={Bug01Icon} size={24} />
+        <HugeiconsIcon icon={Bug01Icon} size={16} />
+        <span className="text-[12px]">Give feedback</span>
       </Button>
 
       {/* Feedback Modal */}

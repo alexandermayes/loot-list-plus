@@ -122,7 +122,7 @@ export async function POST(request: NextRequest) {
         .eq('user_id', user.id)
     }
 
-    trackEvent({ event: 'guild_left', userId: user.id, properties: { guild_id } })
+    trackEvent({ event: 'guild_left', userId: user.id, guildId: guild_id, properties: { guild_id } })
 
     return NextResponse.json({
       success: true,

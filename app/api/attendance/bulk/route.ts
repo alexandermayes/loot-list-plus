@@ -85,6 +85,7 @@ export async function POST(request: NextRequest) {
       trackEvent({
         event: 'attendance_bulk_recorded',
         userId: user.id,
+        guildId: guild_id,
         properties: { guild_id, record_count: count, raid_event_id: raidEventId, action: 'upsert' },
       })
 
@@ -114,6 +115,7 @@ export async function POST(request: NextRequest) {
       trackEvent({
         event: 'attendance_bulk_recorded',
         userId: user.id,
+        guildId: guild_id,
         properties: { guild_id, record_count: count, raid_event_id: raidEventId, action: 'insert' },
       })
 

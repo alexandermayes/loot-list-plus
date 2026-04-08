@@ -29,6 +29,7 @@ export type Database = {
           points_override: number | null
           raid_event_id: string | null
           signed_up: boolean | null
+          status: string | null
           updated_at: string | null
           user_id: string | null
           was_benched: boolean | null
@@ -48,6 +49,7 @@ export type Database = {
           points_override?: number | null
           raid_event_id?: string | null
           signed_up?: boolean | null
+          status?: string | null
           updated_at?: string | null
           user_id?: string | null
           was_benched?: boolean | null
@@ -67,6 +69,7 @@ export type Database = {
           points_override?: number | null
           raid_event_id?: string | null
           signed_up?: boolean | null
+          status?: string | null
           updated_at?: string | null
           user_id?: string | null
           was_benched?: boolean | null
@@ -929,6 +932,7 @@ export type Database = {
           name: string
           realm: string | null
           require_discord_verification: boolean | null
+          subscription_tier: string
         }
         Insert: {
           active_expansion_id?: string | null
@@ -942,6 +946,7 @@ export type Database = {
           name: string
           realm?: string | null
           require_discord_verification?: boolean | null
+          subscription_tier?: string
         }
         Update: {
           active_expansion_id?: string | null
@@ -955,6 +960,7 @@ export type Database = {
           name?: string
           realm?: string | null
           require_discord_verification?: boolean | null
+          subscription_tier?: string
         }
         Relationships: [
           {
@@ -1419,6 +1425,7 @@ export type Database = {
           is_skipped: boolean | null
           notes: string | null
           raid_date: string
+          raid_team_id: string | null
           raid_tier_id: string | null
           skip_reason: string | null
           wcl_report_code: string | null
@@ -1430,6 +1437,7 @@ export type Database = {
           is_skipped?: boolean | null
           notes?: string | null
           raid_date: string
+          raid_team_id?: string | null
           raid_tier_id?: string | null
           skip_reason?: string | null
           wcl_report_code?: string | null
@@ -1441,6 +1449,7 @@ export type Database = {
           is_skipped?: boolean | null
           notes?: string | null
           raid_date?: string
+          raid_team_id?: string | null
           raid_tier_id?: string | null
           skip_reason?: string | null
           wcl_report_code?: string | null
@@ -1454,10 +1463,116 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "raid_events_raid_team_id_fkey"
+            columns: ["raid_team_id"]
+            isOneToOne: false
+            referencedRelation: "raid_teams"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "raid_events_raid_tier_id_fkey"
             columns: ["raid_tier_id"]
             isOneToOne: false
             referencedRelation: "raid_tiers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      raid_team_members: {
+        Row: {
+          character_id: string
+          guild_id: string
+          id: string
+          joined_at: string | null
+          raid_team_id: string
+          role: string | null
+        }
+        Insert: {
+          character_id: string
+          guild_id: string
+          id?: string
+          joined_at?: string | null
+          raid_team_id: string
+          role?: string | null
+        }
+        Update: {
+          character_id?: string
+          guild_id?: string
+          id?: string
+          joined_at?: string | null
+          raid_team_id?: string
+          role?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "raid_team_members_character_id_fkey"
+            columns: ["character_id"]
+            isOneToOne: false
+            referencedRelation: "characters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "raid_team_members_guild_id_fkey"
+            columns: ["guild_id"]
+            isOneToOne: false
+            referencedRelation: "guilds"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "raid_team_members_raid_team_id_fkey"
+            columns: ["raid_team_id"]
+            isOneToOne: false
+            referencedRelation: "raid_teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      raid_teams: {
+        Row: {
+          color_hex: string | null
+          created_at: string | null
+          guild_id: string
+          id: string
+          is_default: boolean
+          name: string
+          raid_days_override: Json | null
+          rolling_weeks_override: number | null
+          schedule_history: Json | null
+          sort_order: number
+          updated_at: string | null
+        }
+        Insert: {
+          color_hex?: string | null
+          created_at?: string | null
+          guild_id: string
+          id?: string
+          is_default?: boolean
+          name: string
+          raid_days_override?: Json | null
+          rolling_weeks_override?: number | null
+          schedule_history?: Json | null
+          sort_order?: number
+          updated_at?: string | null
+        }
+        Update: {
+          color_hex?: string | null
+          created_at?: string | null
+          guild_id?: string
+          id?: string
+          is_default?: boolean
+          name?: string
+          raid_days_override?: Json | null
+          rolling_weeks_override?: number | null
+          schedule_history?: Json | null
+          sort_order?: number
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "raid_teams_guild_id_fkey"
+            columns: ["guild_id"]
+            isOneToOne: false
+            referencedRelation: "guilds"
             referencedColumns: ["id"]
           },
         ]
@@ -1502,6 +1617,206 @@ export type Database = {
             columns: ["expansion_id"]
             isOneToOne: false
             referencedRelation: "expansions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      reserve_awards: {
+        Row: {
+          awarded_at: string
+          awarded_by: string
+          character_name: string
+          id: string
+          loot_item_id: string
+          notes: string | null
+          reserve_run_id: string
+          submission_id: string | null
+        }
+        Insert: {
+          awarded_at?: string
+          awarded_by: string
+          character_name: string
+          id?: string
+          loot_item_id: string
+          notes?: string | null
+          reserve_run_id: string
+          submission_id?: string | null
+        }
+        Update: {
+          awarded_at?: string
+          awarded_by?: string
+          character_name?: string
+          id?: string
+          loot_item_id?: string
+          notes?: string | null
+          reserve_run_id?: string
+          submission_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reserve_awards_loot_item_id_fkey"
+            columns: ["loot_item_id"]
+            isOneToOne: false
+            referencedRelation: "loot_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reserve_awards_reserve_run_id_fkey"
+            columns: ["reserve_run_id"]
+            isOneToOne: false
+            referencedRelation: "reserve_runs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reserve_awards_submission_id_fkey"
+            columns: ["submission_id"]
+            isOneToOne: false
+            referencedRelation: "reserve_submissions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      reserve_runs: {
+        Row: {
+          allow_duplicates: boolean
+          created_at: string
+          created_by: string
+          expansion_id: string | null
+          guild_id: string | null
+          hard_reserves: Json
+          id: string
+          lock_at: string
+          locked_at: string | null
+          max_reserves: number
+          raid_at: string
+          raid_team_id: string | null
+          raid_tier_id: string
+          rule_snapshot: Json
+          rules_note: string | null
+          share_token: string
+          status: string
+          title: string
+          updated_at: string
+          visibility: string
+        }
+        Insert: {
+          allow_duplicates?: boolean
+          created_at?: string
+          created_by: string
+          expansion_id?: string | null
+          guild_id?: string | null
+          hard_reserves?: Json
+          id?: string
+          lock_at: string
+          locked_at?: string | null
+          max_reserves?: number
+          raid_at: string
+          raid_team_id?: string | null
+          raid_tier_id: string
+          rule_snapshot?: Json
+          rules_note?: string | null
+          share_token?: string
+          status?: string
+          title: string
+          updated_at?: string
+          visibility?: string
+        }
+        Update: {
+          allow_duplicates?: boolean
+          created_at?: string
+          created_by?: string
+          expansion_id?: string | null
+          guild_id?: string | null
+          hard_reserves?: Json
+          id?: string
+          lock_at?: string
+          locked_at?: string | null
+          max_reserves?: number
+          raid_at?: string
+          raid_team_id?: string | null
+          raid_tier_id?: string
+          rule_snapshot?: Json
+          rules_note?: string | null
+          share_token?: string
+          status?: string
+          title?: string
+          updated_at?: string
+          visibility?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reserve_runs_expansion_id_fkey"
+            columns: ["expansion_id"]
+            isOneToOne: false
+            referencedRelation: "expansions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reserve_runs_guild_id_fkey"
+            columns: ["guild_id"]
+            isOneToOne: false
+            referencedRelation: "guilds"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reserve_runs_raid_team_id_fkey"
+            columns: ["raid_team_id"]
+            isOneToOne: false
+            referencedRelation: "raid_teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reserve_runs_raid_tier_id_fkey"
+            columns: ["raid_tier_id"]
+            isOneToOne: false
+            referencedRelation: "raid_tiers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      reserve_submissions: {
+        Row: {
+          character_class: string
+          character_name: string
+          character_spec: string | null
+          created_at: string
+          id: string
+          items: Json
+          reserve_run_id: string
+          status: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          character_class: string
+          character_name: string
+          character_spec?: string | null
+          created_at?: string
+          id?: string
+          items?: Json
+          reserve_run_id: string
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          character_class?: string
+          character_name?: string
+          character_spec?: string | null
+          created_at?: string
+          id?: string
+          items?: Json
+          reserve_run_id?: string
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reserve_submissions_reserve_run_id_fkey"
+            columns: ["reserve_run_id"]
+            isOneToOne: false
+            referencedRelation: "reserve_runs"
             referencedColumns: ["id"]
           },
         ]
@@ -1672,6 +1987,7 @@ export type Database = {
       }
       delete_guild: { Args: { p_guild_id: string }; Returns: undefined }
       generate_invite_code: { Args: never; Returns: string }
+      generate_reserve_token: { Args: never; Returns: string }
       get_character_guilds: {
         Args: { p_character_id: string }
         Returns: {
@@ -1772,6 +2088,10 @@ export type Database = {
           invite_is_active: boolean
           invite_max_uses: number
         }[]
+      }
+      refresh_guild_member_from_cgm: {
+        Args: { p_guild_id: string; p_user_id: string }
+        Returns: undefined
       }
       reset_blp: {
         Args: {

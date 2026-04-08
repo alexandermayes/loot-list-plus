@@ -54,7 +54,7 @@ export function RaidModeView({ sortedRaidTiers, onItemClick, decimalPlaces = 2 }
   return (
     <div className="space-y-3">
       {/* Search */}
-      <div className="sticky top-[116px] sm:top-[60px] z-10 bg-background py-2">
+      <div className="sticky top-[112px] sm:top-[56px] z-10 bg-background py-2">
         <Input
           type="text"
           placeholder="Search items, bosses, or slots..."

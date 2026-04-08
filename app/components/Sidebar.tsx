@@ -285,6 +285,7 @@ export default function Sidebar({ currentView = 'overview', onViewChange, isMobi
         'raid-tracking': '/raid-tracking',
         'raid-teams': '/raid-teams',
         'audit-log': '/audit-log',
+        'reserve': '/reserve',
       }
       router.push(routeMap[view] || '/overview')
     }
@@ -298,6 +299,7 @@ export default function Sidebar({ currentView = 'overview', onViewChange, isMobi
     { name: 'Master Sheet', view: 'master-sheet', icon: '/icons/master-sheet.svg' },
     { name: 'Loot Lists', view: 'loot-list', icon: '/icons/loot-lists.svg' },
     { name: 'Attendance', view: 'attendance', icon: '/icons/attendance.svg' },
+    { name: 'Reserve', view: 'reserve', icon: '/icons/reserve.svg' },
   ]
 
   const adminItems = isOfficer ? [
@@ -305,7 +307,7 @@ export default function Sidebar({ currentView = 'overview', onViewChange, isMobi
     { name: 'Loot Submissions', view: 'loot-submissions', icon: '/icons/master-loot.svg' },
     { name: 'Loot Management', view: 'loot-settings', icon: '/icons/guild-settings.svg' },
     ...(hasFeature(activeGuild, 'raid_teams') ? [{ name: 'Raid Teams', view: 'raid-teams', icon: '/icons/user-multiple.svg' }] : []),
-    { name: 'Audit Log', view: 'audit-log', icon: '/icons/monitor.svg' },
+    ...(hasFeature(activeGuild, 'audit_log') ? [{ name: 'Audit Log', view: 'audit-log', icon: '/icons/monitor.svg' }] : []),
   ] : []
 
   const isActive = (view: string) => {
@@ -324,8 +326,9 @@ export default function Sidebar({ currentView = 'overview', onViewChange, isMobi
       'raid-tracking': '/raid-tracking',
       'raid-teams': '/raid-teams',
       'audit-log': '/audit-log',
+      'reserve': '/reserve',
     }
-    return pathname === routeMap[view]
+    return pathname === routeMap[view] || (view === 'reserve' && pathname.startsWith('/reserve'))
   }
 
   const currentMembership = userGuilds.find(g => g.guild.id === activeGuild?.id)

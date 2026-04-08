@@ -201,6 +201,7 @@ export async function POST(request: Request) {
     await trackEvent({
       event: 'loot_item_removed_from_list',
       userId: user.id,
+      guildId: guild_id,
       properties: {
         guild_id,
         submission_id,

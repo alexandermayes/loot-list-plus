@@ -8,9 +8,9 @@
 
 export type SubscriptionTier = 'free' | 'pro'
 
-export type ProFeature = 'raid_teams'
+export type ProFeature = 'raid_teams' | 'audit_log'
 
-const PRO_FEATURES: ProFeature[] = ['raid_teams']
+const PRO_FEATURES: ProFeature[] = ['raid_teams', 'audit_log']
 
 /**
  * Check if a guild has access to a Pro feature.

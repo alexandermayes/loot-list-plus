@@ -3,6 +3,7 @@ import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { verifyOfficerPermissions } from '@/utils/server-roles'
 import { batchGetDisplayNames } from '@/utils/batch-display-names'
+import { requirePro } from '@/utils/feature-gate'
 
 /**
  * GET /api/audit-logs
@@ -42,6 +43,9 @@ export async function GET(request: NextRequest) {
     if (!hasPermission) {
       return NextResponse.json({ error: 'Only officers can view audit logs' }, { status: 403 })
     }
+
+    const proCheck = await requirePro(serviceSupabase, guildId)
+    if (!proCheck.isPro) return proCheck.error
 
     // When searching, fetch a large window and filter post-query.
     // Search is limited to the most recent records. The UI communicates this.
