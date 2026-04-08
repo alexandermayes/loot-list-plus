@@ -183,6 +183,7 @@ function MasterSheetContent() {
   const [collapsedBosses, setCollapsedBosses] = useState<Set<string>>(new Set())
   const [collapsedRaidTiers, setCollapsedRaidTiers] = useState<Set<string>>(new Set())
   const [mostRecentRaidEventId, setMostRecentRaidEventId] = useState<string | null>(null)
+  const [compactMode, setCompactMode] = useState(false)
   const [isExporting, setIsExporting] = useState(false)
   const [showScoreBreakdown, setShowScoreBreakdown] = useState(false)
   const [showScoreComparison, setShowScoreComparison] = useState(false)
@@ -1575,6 +1576,15 @@ function MasterSheetContent() {
                   className="w-40"
                 />
               )}
+              {isOfficer && (
+                <Button
+                  variant={compactMode ? 'accent-subtle' : 'outline'}
+                  onClick={() => setCompactMode(!compactMode)}
+                  title={compactMode ? 'Switch to full view' : 'Switch to compact raid-night view'}
+                >
+                  <span className="text-[12px]">{compactMode ? 'Full view' : 'Raid night'}</span>
+                </Button>
+              )}
               <Button
                 variant="outline"
                 onClick={() => { setShowScoreBreakdown(true); trackClientEvent('score_breakdown_viewed') }}
@@ -1603,11 +1613,11 @@ function MasterSheetContent() {
 
         {/* Phase Tabs - Sticky */}
         {initialLoading ? (
-          <div className="sticky top-14 sm:top-0 z-20 px-4 sm:px-6 lg:px-8 py-2.5 bg-background">
+          <div className="sticky top-14 sm:top-0 z-20 px-4 sm:px-6 lg:px-8 py-2.5 bg-background border-b border-border">
             <TierTabsSkeleton />
           </div>
         ) : phases.length > 0 && (
-          <div className="sticky top-14 sm:top-0 z-20 px-4 sm:px-6 lg:px-8 py-2.5 bg-background">
+          <div className="sticky top-14 sm:top-0 z-20 px-4 sm:px-6 lg:px-8 py-2.5 bg-background border-b border-border">
             <div className="flex items-center gap-3">
               {/* Mobile: Dropdown selector */}
               <div className="sm:hidden flex-1">
@@ -1726,7 +1736,7 @@ function MasterSheetContent() {
         {/* Boss Quick Navigation - Sticky below tier tabs (rankings view only) */}
         {/* Skeleton placeholder during loading to prevent CLS */}
         {(initialLoading || contentLoading) && viewMode === 'rankings' && (
-          <div className="sticky top-[116px] sm:top-[60px] z-10 px-4 sm:px-6 lg:px-8 py-2.5 bg-background">
+          <div className="sticky top-[112px] sm:top-[56px] z-10 px-4 sm:px-6 lg:px-8 py-2.5 bg-background border-b border-border">
             <div className="hidden sm:flex gap-2">
               {Array.from({ length: 6 }).map((_, i) => (
                 <Skeleton key={i} className="h-9 w-28 rounded-[40px] flex-shrink-0" />
@@ -1740,7 +1750,7 @@ function MasterSheetContent() {
           </div>
         )}
         {!initialLoading && !contentLoading && bossNames.length > 0 && viewMode === 'rankings' && (
-          <div className="sticky top-[116px] sm:top-[60px] z-10 px-4 sm:px-6 lg:px-8 py-2.5 bg-background">
+          <div className="sticky top-[112px] sm:top-[56px] z-10 px-4 sm:px-6 lg:px-8 py-2.5 bg-background border-b border-border">
             {/* Mobile: Dropdown + Expand/Collapse */}
             <div className="sm:hidden flex gap-2">
               <Select
@@ -1930,6 +1940,7 @@ function MasterSheetContent() {
                 onCompare={handleCompare}
                 onItemClick={isOfficer ? handleItemClick : undefined}
                 maxRankingsCount={maxRankingsCount}
+                compact={compactMode}
               />
             )}
             </>
