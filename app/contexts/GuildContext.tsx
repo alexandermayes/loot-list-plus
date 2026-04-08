@@ -225,82 +225,67 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
       if (characters && characters.length > 0) {
         type CharacterData = { id: string; spec_id: string | null; name: string; [key: string]: unknown }
         const characterIds = characters.map((c: CharacterData) => c.id)
-        const specIds = characters
-          .map((c: CharacterData) => c.spec_id)
-          .filter(Boolean) as string[]
 
-        // Run specs and memberships queries in parallel
-        const [specsResult, membershipsResult] = await Promise.all([
-          specIds.length > 0
-            ? supabase.from('class_specs').select('id, name').in('id', specIds)
-            : Promise.resolve({ data: null, error: null }),
-          supabase
-            .from('character_guild_memberships')
-            .select(`
-              id,
-              character_id,
-              guild_id,
-              role,
-              is_active,
-              joined_at,
-              joined_via,
-              character:characters (
-                id,
-                user_id,
-                name,
-                realm,
-                class_id,
-                spec_id,
-                level,
-                is_main,
-                battle_net_id,
-                region,
-                created_at,
-                updated_at,
-                class:wow_classes (
-                  id,
-                  name,
-                  color_hex
-                ),
-                spec:class_specs (
-                  id,
-                  name
-                )
-              ),
-              guild:guilds (
-                id,
-                name,
-                realm,
-                faction,
-                discord_server_id,
-                icon_url,
-                created_by,
-                is_active,
-                require_discord_verification,
-                created_at,
-                active_expansion_id,
-                subscription_tier
-              )
-            `)
-            .in('character_id', characterIds)
-            .eq('is_active', true)
-        ])
-
-        const { data: specs } = specsResult
-        const { data: memberships, error: membershipsError } = membershipsResult
-
-        // Attach specs to characters
-        type SpecData = { id: string; name: string }
-        if (specs && specs.length > 0) {
-          enrichedCharacters = characters.map((char: { id: string; spec_id: string | null; [key: string]: unknown }) => ({
-            ...char,
-            spec: specs.find((s: SpecData) => s.id === char.spec_id) || null
-          }))
-        } else {
-          enrichedCharacters = characters
-        }
-
+        // Characters query already joins specs, so no separate specs query needed
+        enrichedCharacters = characters
         setUserCharacters(enrichedCharacters)
+
+        // Fetch memberships with guild_roles embedded in the guild join
+        // (eliminates a separate sequential guild_roles query)
+        const { data: memberships, error: membershipsError } = await supabase
+          .from('character_guild_memberships')
+          .select(`
+            id,
+            character_id,
+            guild_id,
+            role,
+            is_active,
+            joined_at,
+            joined_via,
+            character:characters (
+              id,
+              user_id,
+              name,
+              realm,
+              class_id,
+              spec_id,
+              level,
+              is_main,
+              battle_net_id,
+              region,
+              created_at,
+              updated_at,
+              class:wow_classes (
+                id,
+                name,
+                color_hex
+              ),
+              spec:class_specs (
+                id,
+                name
+              )
+            ),
+            guild:guilds (
+              id,
+              name,
+              realm,
+              faction,
+              discord_server_id,
+              icon_url,
+              created_by,
+              is_active,
+              require_discord_verification,
+              created_at,
+              active_expansion_id,
+              subscription_tier,
+              guild_roles (
+                name,
+                position
+              )
+            )
+          `)
+          .in('character_id', characterIds)
+          .eq('is_active', true)
 
         if (membershipsError) {
           console.error('Error loading character memberships:', membershipsError)
@@ -310,8 +295,27 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
           setCharacterMemberships([])
         } else {
           // Transform the data to handle arrays from Supabase joins
-          transformedMemberships = (memberships || []).map((m: { character: unknown; [key: string]: unknown }) => {
+          // Also extract guild_roles from the embedded join and build the role position cache
+          const guildRolePositions = new Map<string, Map<string, number>>()
+
+          transformedMemberships = (memberships || []).map((m: { character: unknown; guild: unknown; [key: string]: unknown }) => {
             const char = Array.isArray(m.character) ? m.character[0] : m.character
+            const rawGuild: any = Array.isArray(m.guild) ? m.guild[0] : m.guild
+
+            // Extract guild_roles from the guild join and cache them
+            if (rawGuild?.id && rawGuild.guild_roles) {
+              if (!guildRolePositions.has(rawGuild.id)) {
+                const posMap = new Map<string, number>()
+                for (const role of rawGuild.guild_roles) {
+                  posMap.set(role.name, role.position)
+                }
+                guildRolePositions.set(rawGuild.id, posMap)
+              }
+            }
+
+            // Strip guild_roles from the guild object before storing
+            const { guild_roles: _, ...guild } = rawGuild || {}
+
             return {
               ...m,
               character: char ? {
@@ -319,31 +323,10 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
                 class: Array.isArray(char.class) ? char.class[0] : char.class,
                 spec: Array.isArray(char.spec) ? char.spec[0] : char.spec
               } : char,
-              guild: Array.isArray(m.guild) ? m.guild[0] : m.guild
+              guild
             }
           })
           setCharacterMemberships(transformedMemberships)
-
-          // Derive userGuilds from character memberships (new system)
-          // First, fetch guild_roles for position-based role comparison
-          const uniqueGuildIds = [...new Set(transformedMemberships.map(m => m.guild?.id).filter(Boolean))]
-          const guildRolePositions = new Map<string, Map<string, number>>()
-
-          if (uniqueGuildIds.length > 0) {
-            const { data: allGuildRoles } = await supabase
-              .from('guild_roles')
-              .select('guild_id, name, position')
-              .in('guild_id', uniqueGuildIds)
-
-            if (allGuildRoles) {
-              for (const role of allGuildRoles) {
-                if (!guildRolePositions.has(role.guild_id)) {
-                  guildRolePositions.set(role.guild_id, new Map())
-                }
-                guildRolePositions.get(role.guild_id)!.set(role.name, role.position)
-              }
-            }
-          }
 
           // Default positions for guilds without custom roles
           const defaultPositions = new Map([['Guild Master', 100], ['Officer', 50], ['Member', 0]])
@@ -732,6 +715,9 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
         name: activeGuild.name,
         realm: activeGuild.realm,
         faction: activeGuild.faction,
+        subscription_tier: activeGuild.subscription_tier || 'free',
+        expansion_id: activeGuild.active_expansion_id,
+        created_at: activeGuild.created_at,
       })
 
       // Super properties — automatically attached to every event
@@ -759,7 +745,8 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
       // PostHog not initialized
     }
   }, [activeGuild?.id, activeGuild?.name, activeGuild?.realm, activeGuild?.faction,
-      activeGuild?.active_expansion_id, isOfficer, userGuilds.length, userCharacters.length, user])
+      activeGuild?.active_expansion_id, activeGuild?.subscription_tier, activeGuild?.created_at,
+      isOfficer, userGuilds.length, userCharacters.length, user])
 
   // Session recording targeting — only record high-value flows to save quota
   useEffect(() => {

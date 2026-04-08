@@ -189,13 +189,8 @@ export async function middleware(request: NextRequest) {
     return NextResponse.rewrite(url)
   }
 
-  // Refresh Supabase auth cookies on page navigations (not API/auth routes,
-  // those are handled by their own auth checks)
+  // Page navigations (not API/auth routes — those have their own auth checks)
   if (!pathname.startsWith('/api') && !pathname.startsWith('/auth')) {
-    const { response, user } = await refreshSupabaseSession(request)
-
-    // Protect app routes: redirect unauthenticated users to login
-    // Public routes (/, /login, /guild-select, /updates, /legal/*, /dev-login) are excluded
     const isPublicRoute = ['/', '/login', '/guild-select', '/updates', '/dev-login', '/compare', '/about', '/sitemap.xml', '/robots.txt', '/landing'].includes(pathname)
       || pathname.startsWith('/legal/')
       || pathname.startsWith('/guild-select/')
@@ -203,8 +198,17 @@ export async function middleware(request: NextRequest) {
       || pathname.startsWith('/changelog')
       || pathname.startsWith('/terms')
       || pathname.startsWith('/privacy')
+      || pathname.startsWith('/reserve/')
 
-    if (!isPublicRoute && !user) {
+    // Public routes: skip the getUser() call entirely to reduce TTFB.
+    // The client-side GuildContext will handle session state independently.
+    if (isPublicRoute) {
+      return NextResponse.next({ request })
+    }
+
+    // Protected routes: refresh session cookies and gate on auth
+    const { response, user } = await refreshSupabaseSession(request)
+    if (!user) {
       const loginUrl = new URL('/', request.url)
       loginUrl.searchParams.set('next', pathname)
       return NextResponse.redirect(loginUrl)
