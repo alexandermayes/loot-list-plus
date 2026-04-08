@@ -374,6 +374,7 @@ export default function DashboardContent() {
 
   // Loot list deadline for empty state messaging
   const [lootListDeadline, setLootListDeadline] = useState<string | null>(null)
+  const [phaseDeadlines, setPhaseDeadlines] = useState<Record<string, string | null>>({})
 
   // Guild settings for display formatting
   const [decimalPlaces, setDecimalPlaces] = useState<number>(2)
@@ -644,14 +645,17 @@ export default function DashboardContent() {
 
         const { data: expansionDeadlineData } = deadlineResult
         if (expansionDeadlineData?.phase_deadlines) {
+          const allPhaseDeadlines = expansionDeadlineData.phase_deadlines as Record<string, string | null>
+          setPhaseDeadlines(allPhaseDeadlines)
           // Find the nearest future deadline across all phases
-          const deadlines = Object.values(expansionDeadlineData.phase_deadlines as Record<string, string | null>)
+          const deadlines = Object.values(allPhaseDeadlines)
             .filter((d): d is string => d !== null)
             .sort()
           const now = new Date().toISOString()
           const nextDeadline = deadlines.find(d => d > now) || deadlines[deadlines.length - 1] || null
           setLootListDeadline(nextDeadline)
         } else {
+          setPhaseDeadlines({})
           setLootListDeadline(null)
         }
 
@@ -1778,17 +1782,70 @@ export default function DashboardContent() {
           )}
 
 
-          {/* Actions needed alert banner */}
-          {activeCharacter && visibleActionsCount > 0 && (
-            <Alert variant="warning" className="flex items-center justify-between">
-              <AlertDescription className="flex items-center gap-2">
-                <span>You have {visibleActionsCount} {visibleActionsCount === 1 ? 'list' : 'lists'} that {visibleActionsCount === 1 ? 'needs' : 'need'} attention</span>
-              </AlertDescription>
-              <Button variant="link" size="sm" className="text-yellow-500 shrink-0" onClick={() => router.push('/loot-list')}>
-                View lists
-              </Button>
-            </Alert>
-          )}
+          {/* List status tracker — compact per-phase status */}
+          {activeCharacter && raidTiers.length > 0 && (() => {
+            // Dedupe phases from active tiers
+            const phases = [...new Set(raidTiers.map(t => t.phase).filter((p): p is number => p != null))].sort((a, b) => a - b)
+            if (phases.length === 0) return null
+
+            // Build phase → tier names map
+            const phaseTierNames: Record<number, string[]> = {}
+            for (const tier of raidTiers) {
+              if (tier.phase != null) {
+                if (!phaseTierNames[tier.phase]) phaseTierNames[tier.phase] = []
+                if (!phaseTierNames[tier.phase].includes(tier.name)) phaseTierNames[tier.phase].push(tier.name)
+              }
+            }
+
+            // Build phase → submission status
+            const phaseStatus: Record<number, LootSubmission | undefined> = {}
+            for (const sub of allSubmissions) {
+              if (sub.phase != null) phaseStatus[sub.phase] = sub
+            }
+
+            return (
+              <div className="bg-background-elevated border border-border rounded-xl p-4 sm:p-5">
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-sm font-medium text-foreground">Loot list status</p>
+                  <Button variant="link" size="sm" className="text-accent shrink-0 h-auto p-0" onClick={() => router.push('/loot-list')}>
+                    View lists
+                  </Button>
+                </div>
+                <div className="space-y-2">
+                  {phases.map(phase => {
+                    const sub = phaseStatus[phase]
+                    const tierNames = phaseTierNames[phase]?.join(', ') || `Phase ${phase}`
+                    const deadline = phaseDeadlines[phase.toString()]
+                    const deadlinePassed = deadline ? new Date(deadline) < new Date() : false
+                    const deadlineStr = deadline
+                      ? new Date(deadline).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+                      : null
+
+                    return (
+                      <div key={phase} className="flex items-center justify-between gap-3 py-1">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className="text-xs text-muted-foreground shrink-0">P{phase}</span>
+                          <span className="text-sm text-foreground truncate">{tierNames}</span>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          {deadlineStr && !sub?.status?.match(/approved/) && (
+                            <span className={`text-xs ${deadlinePassed ? 'text-destructive' : 'text-muted-foreground'}`}>
+                              {deadlinePassed ? 'Overdue' : `Due ${deadlineStr}`}
+                            </span>
+                          )}
+                          {sub ? (
+                            <StatusBadge status={sub.status as SubmissionStatus} />
+                          ) : (
+                            <span className="text-xs text-muted-foreground">Not started</span>
+                          )}
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )
+          })()}
 
           {/* Insights: load progressively (don't block stats above) */}
           {insightsLoading ? (
