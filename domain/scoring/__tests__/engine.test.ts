@@ -75,7 +75,7 @@ describe('computeScore', () => {
 
   it('computes priority bonus', () => {
     const priority: ItemPriority = {
-      role_priorities: { tank: 1 },
+      role_priorities: { tank: 5 },
       class_priorities: {},
       character_priorities: {},
       priority_bonuses: { role: 5, class: 3, character: 2 },
@@ -99,8 +99,8 @@ describe('computeScore', () => {
 
   it('stacks all components correctly', () => {
     const priority: ItemPriority = {
-      role_priorities: { tank: 1 },
-      class_priorities: { 'spec-1': 1 },
+      role_priorities: { tank: 5 },
+      class_priorities: { 'spec-1': 3 },
       character_priorities: {},
       priority_bonuses: { role: 5, class: 3, character: 2 },
     }

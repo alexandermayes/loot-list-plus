@@ -6,10 +6,9 @@ export type { ItemPriority }
 /**
  * Calculate priority bonus for a character on a specific item.
  *
- * Priority 1 gets the full bonus, priority 2 gets half, priority 3 gets a third, etc.
- * Role, class/spec, and character bonuses stack additively.
- *
- * Default bonus values: role=5, class=3, character=2
+ * Role, class/spec, and character priorities are stored as direct point values
+ * and stack additively. For example, a character priority of +1 adds exactly
+ * +1 to the score.
  */
 export function calculatePriorityBonus(
   priority: ItemPriority | null | undefined,
@@ -20,24 +19,20 @@ export function calculatePriorityBonus(
   if (!priority) return 0
 
   let bonus = 0
-  const bonuses = priority.priority_bonuses || { role: 5, class: 3, character: 2 }
 
-  // Check role priority
+  // Role priority
   if (role && priority.role_priorities && priority.role_priorities[role] != null) {
-    const rolePriority = priority.role_priorities[role] as number
-    bonus += bonuses.role / rolePriority
+    bonus += Number(priority.role_priorities[role]) || 0
   }
 
-  // Check class/spec priority
+  // Class/spec priority
   if (specId && priority.class_priorities && priority.class_priorities[specId] != null) {
-    const classPriority = priority.class_priorities[specId] as number
-    bonus += bonuses.class / classPriority
+    bonus += Number(priority.class_priorities[specId]) || 0
   }
 
-  // Check individual character priority
+  // Individual character priority
   if (characterId && priority.character_priorities && priority.character_priorities[characterId] != null) {
-    const charPriority = priority.character_priorities[characterId] as number
-    bonus += bonuses.character / charPriority
+    bonus += Number(priority.character_priorities[characterId]) || 0
   }
 
   return bonus

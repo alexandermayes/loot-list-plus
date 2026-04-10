@@ -210,29 +210,28 @@ function SE:CalculatePriorityBonus(priority, characterId, specId, role)
     if not priority then return 0 end
 
     local bonus = 0
-    local bonuses = priority.priority_bonuses or { role = 5, class = 3, character = 2 }
 
-    -- Check role priority
+    -- Role priority (direct point value)
     if role and priority.role_priorities and priority.role_priorities[role] ~= nil then
-        local rolePriority = priority.role_priorities[role]
-        if rolePriority and rolePriority > 0 then
-            bonus = bonus + (bonuses.role / rolePriority)
+        local rolePriority = tonumber(priority.role_priorities[role])
+        if rolePriority then
+            bonus = bonus + rolePriority
         end
     end
 
-    -- Check class/spec priority
+    -- Class/spec priority (direct point value)
     if specId and priority.class_priorities and priority.class_priorities[specId] ~= nil then
-        local classPriority = priority.class_priorities[specId]
-        if classPriority and classPriority > 0 then
-            bonus = bonus + (bonuses.class / classPriority)
+        local classPriority = tonumber(priority.class_priorities[specId])
+        if classPriority then
+            bonus = bonus + classPriority
         end
     end
 
-    -- Check individual character priority
+    -- Individual character priority (direct point value)
     if characterId and priority.character_priorities and priority.character_priorities[characterId] ~= nil then
-        local charPriority = priority.character_priorities[characterId]
-        if charPriority and charPriority > 0 then
-            bonus = bonus + (bonuses.character / charPriority)
+        local charPriority = tonumber(priority.character_priorities[characterId])
+        if charPriority then
+            bonus = bonus + charPriority
         end
     end
 

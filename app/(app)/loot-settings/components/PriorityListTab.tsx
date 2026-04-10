@@ -897,7 +897,7 @@ export default function PriorityListTab() {
           <div className="bg-background-elevated border border-border rounded-xl p-4">
             <div className="flex items-center justify-between">
               <p className="text-foreground-muted text-[12px]">
-                Priority 1 = highest. Bonuses are added to loot scores on the master sheet.
+                Priority values add directly to loot scores on the master sheet. A +1 adds 1 point.
               </p>
               <p className="text-foreground-muted text-[12px]">
                 {Object.keys(priorities).length} items with priorities

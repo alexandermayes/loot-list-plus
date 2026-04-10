@@ -126,7 +126,7 @@ describe('tie cases', () => {
 
   it('priority bonus breaks ties for designated roles', () => {
     const priority: ItemPriority = {
-      role_priorities: { tank: 1 },
+      role_priorities: { tank: 5 },
       class_priorities: {},
       character_priorities: {},
       priority_bonuses: { role: 5, class: 3, character: 2 },
@@ -213,7 +213,7 @@ describe('explainScore payload contract', () => {
         raid_roles_overall_bonus_priority: true, role_modifiers: { tank: 2 },
       },
       itemPriority: {
-        role_priorities: { tank: 1 }, class_priorities: {}, character_priorities: {},
+        role_priorities: { tank: 5 }, class_priorities: {}, character_priorities: {},
         priority_bonuses: { role: 5, class: 3, character: 2 },
       },
       timesPassed: 3,
@@ -296,9 +296,9 @@ describe('manual modifiers', () => {
 
   it('priority stacks role + class + character bonuses', () => {
     const priority: ItemPriority = {
-      role_priorities: { tank: 1 },
-      class_priorities: { 'spec-1': 1 },
-      character_priorities: { 'char-1': 1 },
+      role_priorities: { tank: 5 },
+      class_priorities: { 'spec-1': 3 },
+      character_priorities: { 'char-1': 2 },
       priority_bonuses: { role: 5, class: 3, character: 2 },
     }
     const result = computeScore(makeInput({
@@ -308,9 +308,9 @@ describe('manual modifiers', () => {
     expect(result.components.priorityBonus).toBe(10) // 5 + 3 + 2
   })
 
-  it('priority with rank 2 gives half bonus', () => {
+  it('fractional priority values add directly to the score', () => {
     const priority: ItemPriority = {
-      role_priorities: { tank: 2 },
+      role_priorities: { tank: 2.5 },
       class_priorities: {},
       character_priorities: {},
       priority_bonuses: { role: 5, class: 3, character: 2 },
@@ -319,7 +319,7 @@ describe('manual modifiers', () => {
       character: { characterId: 'c', specId: null, specRoles: ['tank'], guildRank: 'Member', membershipStatus: 'full' },
       itemPriority: priority,
     }))
-    expect(result.components.priorityBonus).toBe(2.5) // 5/2
+    expect(result.components.priorityBonus).toBe(2.5)
   })
 
   it('points_override replaces attendance scoring in PPR mode', () => {
@@ -718,16 +718,18 @@ describe('priority bonus contracts', () => {
     priority_bonuses: { role: 5, class: 3, character: 2 },
   })
 
-  it('higher priority rank (lower number) produces higher or equal score', () => {
-    const scoreR1 = computeScore(makeInput({
+  it('larger priority value produces larger score', () => {
+    const scoreHigh = computeScore(makeInput({
+      character: { characterId: 'c', specId: null, specRoles: ['tank'], guildRank: 'Member', membershipStatus: 'full' },
+      itemPriority: makePriority(5),
+    }))
+    const scoreLow = computeScore(makeInput({
       character: { characterId: 'c', specId: null, specRoles: ['tank'], guildRank: 'Member', membershipStatus: 'full' },
       itemPriority: makePriority(1),
     }))
-    const scoreR3 = computeScore(makeInput({
-      character: { characterId: 'c', specId: null, specRoles: ['tank'], guildRank: 'Member', membershipStatus: 'full' },
-      itemPriority: makePriority(3),
-    }))
-    expect(scoreR1.components.priorityBonus).toBeGreaterThanOrEqual(scoreR3.components.priorityBonus)
+    expect(scoreHigh.components.priorityBonus).toBeGreaterThan(scoreLow.components.priorityBonus)
+    expect(scoreHigh.components.priorityBonus).toBe(5)
+    expect(scoreLow.components.priorityBonus).toBe(1)
   })
 
   it('null priority produces zero bonus', () => {
@@ -740,7 +742,7 @@ describe('priority bonus contracts', () => {
   it('no matching role produces zero role bonus', () => {
     const result = computeScore(makeInput({
       character: { characterId: 'c', specId: null, specRoles: ['healer'], guildRank: 'Member', membershipStatus: 'full' },
-      itemPriority: makePriority(1), // tank priority, but character is healer
+      itemPriority: makePriority(5), // tank priority, but character is healer
     }))
     // Should get 0 for role bonus since healer doesn't match tank priority
     expect(result.components.priorityBonus).toBe(0)

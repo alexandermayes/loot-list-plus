@@ -498,7 +498,7 @@ Switch to the **Priorities** tab to set score bonuses on specific items:
 - **Individual priority** - Give bonus points to specific raiders (rarely used, for edge cases)
 - **Officer notes** - Explain why the priority is set this way. Notes are visible in the item candidate comparison on the Master Sheet.
 
-Priority 1 gets the full bonus, Priority 2 gets half, Priority 3 gets a third, etc. Multiple priorities stack.
+Priority values are added directly to the score. A +1 priority adds exactly 1 point. Role, class/spec, and character priorities stack.
 
 ## Disabling items
 

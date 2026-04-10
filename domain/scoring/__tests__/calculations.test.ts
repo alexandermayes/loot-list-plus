@@ -402,9 +402,9 @@ describe('calculatePriorityBonus', () => {
     expect(calculatePriorityBonus(undefined, 'char1', 'spec1', 'tank')).toBe(0)
   })
 
-  it('gives full role bonus for priority 1', () => {
+  it('adds role priority as direct points', () => {
     const priority = {
-      role_priorities: { tank: 1 },
+      role_priorities: { tank: 5 },
       class_priorities: {},
       character_priorities: {},
       priority_bonuses: { role: 5, class: 3, character: 2 },
@@ -412,9 +412,9 @@ describe('calculatePriorityBonus', () => {
     expect(calculatePriorityBonus(priority, 'char1', null, 'tank')).toBe(5)
   })
 
-  it('gives half role bonus for priority 2', () => {
+  it('supports fractional role priority values', () => {
     const priority = {
-      role_priorities: { tank: 2 },
+      role_priorities: { tank: 2.5 },
       class_priorities: {},
       character_priorities: {},
       priority_bonuses: { role: 5, class: 3, character: 2 },
@@ -422,46 +422,45 @@ describe('calculatePriorityBonus', () => {
     expect(calculatePriorityBonus(priority, 'char1', null, 'tank')).toBe(2.5)
   })
 
-  it('gives full class bonus for priority 1', () => {
+  it('adds class/spec priority as direct points', () => {
     const priority = {
       role_priorities: {},
-      class_priorities: { 'spec-uuid': 1 },
+      class_priorities: { 'spec-uuid': 3 },
       character_priorities: {},
       priority_bonuses: { role: 5, class: 3, character: 2 },
     }
     expect(calculatePriorityBonus(priority, 'char1', 'spec-uuid', null)).toBe(3)
   })
 
-  it('gives full character bonus for priority 1', () => {
+  it('adds character priority as direct points', () => {
     const priority = {
       role_priorities: {},
       class_priorities: {},
       character_priorities: { 'char1': 1 },
       priority_bonuses: { role: 5, class: 3, character: 2 },
     }
-    expect(calculatePriorityBonus(priority, 'char1', null, null)).toBe(2)
+    expect(calculatePriorityBonus(priority, 'char1', null, null)).toBe(1)
   })
 
-  it('stacks role + class + character bonuses', () => {
+  it('stacks role + class + character bonuses additively', () => {
     const priority = {
-      role_priorities: { tank: 1 },
-      class_priorities: { 'spec-uuid': 1 },
-      character_priorities: { 'char1': 1 },
+      role_priorities: { tank: 5 },
+      class_priorities: { 'spec-uuid': 3 },
+      character_priorities: { 'char1': 2 },
       priority_bonuses: { role: 5, class: 3, character: 2 },
     }
-    // 5/1 + 3/1 + 2/1 = 10
+    // 5 + 3 + 2 = 10
     expect(calculatePriorityBonus(priority, 'char1', 'spec-uuid', 'tank')).toBe(10)
   })
 
-  it('uses default bonuses when priority_bonuses missing', () => {
+  it('supports negative priority values as penalties', () => {
     const priority = {
-      role_priorities: { tank: 1 },
+      role_priorities: { tank: -1 },
       class_priorities: {},
       character_priorities: {},
-      priority_bonuses: undefined as unknown as { role: number; class: number; character: number },
+      priority_bonuses: { role: 5, class: 3, character: 2 },
     }
-    // Falls back to { role: 5, class: 3, character: 2 }
-    expect(calculatePriorityBonus(priority, 'char1', null, 'tank')).toBe(5)
+    expect(calculatePriorityBonus(priority, 'char1', null, 'tank')).toBe(-1)
   })
 
   it('returns 0 when role not in role_priorities', () => {

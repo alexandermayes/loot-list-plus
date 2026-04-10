@@ -104,9 +104,9 @@ describe('domain/scoring (parity with utils/calculations)', () => {
   describe('calculatePriorityBonus', () => {
     it('stacks role + class + character', () => {
       const priority: ItemPriority = {
-        role_priorities: { tank: 1 },
-        class_priorities: { 'spec-uuid': 1 },
-        character_priorities: { 'char1': 1 },
+        role_priorities: { tank: 5 },
+        class_priorities: { 'spec-uuid': 3 },
+        character_priorities: { 'char1': 2 },
         priority_bonuses: { role: 5, class: 3, character: 2 },
       }
       expect(calculatePriorityBonus(priority, 'char1', 'spec-uuid', 'tank')).toBe(10)
