@@ -6,12 +6,14 @@ import { useGuildContext } from '@/app/contexts/GuildContext'
 import { useNotification } from '@/app/contexts/NotificationContext'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Card } from '@/components/ui/card'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Heading, Text } from '@/components/ui/typography'
 import { Skeleton } from '@/components/ui/skeletons'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { Add01Icon, Copy01Icon, Calendar03Icon, UserMultiple02Icon } from '@hugeicons/core-free-icons'
 import { trackClientEvent } from '@/utils/analytics/client'
+import { CreateReserveRunModal } from './components/CreateReserveRunModal'
 
 type ReserveRun = {
   id: string
@@ -30,19 +32,20 @@ type ReserveRun = {
 
 type StatusFilter = 'all' | 'open' | 'locked' | 'completed'
 
-const STATUS_COLORS: Record<string, { bg: string; text: string }> = {
-  open: { bg: 'bg-success/15', text: 'text-success' },
-  locked: { bg: 'bg-warning/15', text: 'text-warning' },
-  completed: { bg: 'bg-muted/30', text: 'text-muted-foreground' },
+const STATUS_BADGE: Record<ReserveRun['status'], { label: string; className: string }> = {
+  open: { label: 'Open', className: 'bg-success/10 text-success border-success/20' },
+  locked: { label: 'Locked', className: 'bg-warning/10 text-warning border-warning/20' },
+  completed: { label: 'Completed', className: 'bg-muted text-muted-foreground border-border' },
 }
 
 export default function ReservePage() {
   const router = useRouter()
-  const { activeGuild, isOfficer } = useGuildContext()
+  const { activeGuild } = useGuildContext()
   const { showNotification } = useNotification()
   const [runs, setRuns] = useState<ReserveRun[]>([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<StatusFilter>('all')
+  const [createOpen, setCreateOpen] = useState(false)
 
   const loadRuns = useCallback(async () => {
     if (!activeGuild) return
@@ -87,7 +90,7 @@ export default function ReservePage() {
         </div>
         <Button
           variant="primary"
-          onClick={() => router.push('/reserve/create')}
+          onClick={() => setCreateOpen(true)}
         >
           <HugeiconsIcon icon={Add01Icon} size={16} />
           Create run
@@ -102,7 +105,7 @@ export default function ReservePage() {
             variant={filter === s ? 'accent-subtle' : 'outline'}
             size="sm"
             onClick={() => setFilter(s)}
-            className="rounded-[40px] capitalize"
+            className="capitalize"
           >
             {s}
           </Button>
@@ -113,7 +116,7 @@ export default function ReservePage() {
       {loading && (
         <div className="space-y-3">
           {Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="bg-background-elevated border border-border rounded-xl p-5">
+            <Card key={i} variant="unified">
               <div className="flex items-center justify-between">
                 <div className="space-y-2">
                   <Skeleton className="h-5 w-56" />
@@ -121,7 +124,7 @@ export default function ReservePage() {
                 </div>
                 <Skeleton className="h-6 w-16 rounded-full" />
               </div>
-            </div>
+            </Card>
           ))}
         </div>
       )}
@@ -135,7 +138,7 @@ export default function ReservePage() {
           variant="card"
           action={{
             label: 'Create run',
-            onClick: () => router.push('/reserve/create'),
+            onClick: () => setCreateOpen(true),
             variant: 'primary',
           }}
         />
@@ -150,20 +153,21 @@ export default function ReservePage() {
       {!loading && filteredRuns.length > 0 && (
         <div className="space-y-3">
           {filteredRuns.map((run) => {
-            const statusStyle = STATUS_COLORS[run.status] || STATUS_COLORS.open
+            const badge = STATUS_BADGE[run.status]
             return (
-              <div
+              <Card
                 key={run.id}
+                variant="unified"
                 onClick={() => router.push(`/reserve/runs/${run.id}`)}
-                className="bg-background-elevated border border-border rounded-xl p-5 hover:border-accent/30 transition-colors cursor-pointer"
+                className="hover:border-accent/30 transition-colors cursor-pointer"
               >
                 <div className="flex items-center justify-between gap-4">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-3 mb-1.5">
-                      <span className="text-[15px] font-semibold text-foreground truncate">{run.title}</span>
-                      <span className={`px-2 py-0.5 rounded-full text-[11px] font-semibold uppercase tracking-wide ${statusStyle.bg} ${statusStyle.text}`}>
-                        {run.status}
-                      </span>
+                      <Text size="md" className="font-semibold truncate">{run.title}</Text>
+                      <Badge variant="outline" className={badge.className}>
+                        {badge.label}
+                      </Badge>
                     </div>
                     <div className="flex items-center gap-4 text-[12px] text-muted-foreground">
                       <span className="flex items-center gap-1.5">
@@ -190,11 +194,13 @@ export default function ReservePage() {
                     <HugeiconsIcon icon={Copy01Icon} size={16} />
                   </Button>
                 </div>
-              </div>
+              </Card>
             )
           })}
         </div>
       )}
+
+      <CreateReserveRunModal open={createOpen} onClose={() => setCreateOpen(false)} />
     </div>
   )
 }

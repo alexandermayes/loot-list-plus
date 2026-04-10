@@ -8,8 +8,9 @@ import { useConfirm } from '@/components/ui/confirm-modal'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
+import { Card } from '@/components/ui/card'
 import { EmptyState } from '@/components/ui/empty-state'
-import { Heading, Text } from '@/components/ui/typography'
+import { Heading, Text, LabelText } from '@/components/ui/typography'
 import ItemLink from '@/app/components/ItemLink'
 import { HugeiconsIcon } from '@hugeicons/react'
 import {
@@ -91,10 +92,10 @@ type ReserveRun = {
   items: LootItem[]
 }
 
-const STATUS_STYLES: Record<string, { bg: string; text: string; label: string }> = {
-  open: { bg: 'bg-success/15', text: 'text-success', label: 'Open' },
-  locked: { bg: 'bg-warning/15', text: 'text-warning', label: 'Locked' },
-  completed: { bg: 'bg-muted/30', text: 'text-muted-foreground', label: 'Completed' },
+const STATUS_STYLES: Record<string, { className: string; label: string }> = {
+  open: { className: 'bg-success/10 text-success border-success/20', label: 'Open' },
+  locked: { className: 'bg-warning/10 text-warning border-warning/20', label: 'Locked' },
+  completed: { className: 'bg-muted text-muted-foreground border-border', label: 'Completed' },
 }
 
 export default function ReserveRunPage() {
@@ -314,7 +315,7 @@ export default function ReserveRunPage() {
         </Button>
 
         {/* Header */}
-        <div className="bg-background-elevated border border-border rounded-xl p-5">
+        <Card variant="unified">
           <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
             <div className="flex items-start gap-4">
               {run.raid_tier_name && (
@@ -327,9 +328,9 @@ export default function ReserveRunPage() {
               <div>
                 <div className="flex items-center gap-3 mb-2">
                   <Heading level={2}>{run.title}</Heading>
-                  <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-semibold uppercase tracking-wide ${statusStyle.bg} ${statusStyle.text}`}>
+                  <Badge variant="outline" className={statusStyle.className}>
                     {statusStyle.label}
-                  </span>
+                  </Badge>
                 </div>
                 <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[13px] text-muted-foreground">
                   {run.raid_tier_name && <span>{run.raid_tier_name}</span>}
@@ -385,11 +386,11 @@ export default function ReserveRunPage() {
               </div>
             )}
           </div>
-        </div>
+        </Card>
 
         {/* Share link + Export */}
-        <div className="bg-background-elevated border border-border rounded-xl p-5">
-          <Text size="sm" className="font-semibold mb-3">Share link</Text>
+        <Card variant="unified">
+          <LabelText size="sm" className="mb-3">Share link</LabelText>
           <div className="flex items-center gap-2 mb-3">
             <Input
               variant="rounded"
@@ -412,12 +413,12 @@ export default function ReserveRunPage() {
               <Text color="muted" size="xs">Paste in-game with /gl sr</Text>
             </div>
           )}
-        </div>
+        </Card>
 
         {/* Rules */}
         {(run.rules_note || run.hard_reserves.length > 0) && (
-          <div className="bg-background-elevated border border-border rounded-xl p-5">
-            <Text size="sm" className="font-semibold mb-3">Rules</Text>
+          <Card variant="unified">
+            <LabelText size="sm" className="mb-3">Rules</LabelText>
             <div className="space-y-2 text-[13px] text-foreground-secondary">
               <div className="flex flex-wrap gap-x-6 gap-y-1">
                 <span>{run.max_reserves} reserve{run.max_reserves !== 1 ? 's' : ''} per player</span>
@@ -427,30 +428,34 @@ export default function ReserveRunPage() {
               {run.rules_note && <p className="text-muted-foreground">{run.rules_note}</p>}
               {run.hard_reserves.length > 0 && (
                 <div className="mt-3">
-                  <Text size="xs" color="muted" className="font-semibold uppercase tracking-wide mb-2">Hard reserves</Text>
+                  <LabelText size="xs" className="mb-2">Hard reserves</LabelText>
                   <div className="flex flex-wrap gap-2">
                     {run.hard_reserves.map((hr) => {
                       const item = itemMap.get(hr.loot_item_id)
                       return item ? (
-                        <span key={hr.loot_item_id} className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-destructive/10 text-destructive text-[12px] font-medium rounded-full border border-destructive/20">
+                        <Badge
+                          key={hr.loot_item_id}
+                          variant="outline"
+                          className="bg-destructive/10 text-destructive border-destructive/20 gap-1.5"
+                        >
                           <ItemLink name={item.name} wowheadId={item.wowhead_id} clickable={false} />
                           {hr.reserved_for && <span className="text-muted-foreground">({hr.reserved_for})</span>}
-                        </span>
+                        </Badge>
                       ) : null
                     })}
                   </div>
                 </div>
               )}
             </div>
-          </div>
+          </Card>
         )}
 
         {/* Participants */}
-        <div className="bg-background-elevated border border-border rounded-xl overflow-hidden">
+        <Card className="overflow-hidden">
           <div className="px-5 py-4 border-b border-border">
-            <Text size="sm" className="font-semibold">
+            <LabelText size="sm">
               Participants ({run.submissions.length})
-            </Text>
+            </LabelText>
           </div>
           {run.submissions.length === 0 ? (
             <div className="p-5">
@@ -488,15 +493,15 @@ export default function ReserveRunPage() {
               ))}
             </div>
           )}
-        </div>
+        </Card>
 
         {/* Contested items */}
         {contestedItems.length > 0 && (run.status !== 'open' || run.visibility === 'public_live') && (
-          <div className="bg-background-elevated border border-border rounded-xl overflow-hidden">
+          <Card className="overflow-hidden">
             <div className="px-5 py-4 border-b border-border">
-              <Text size="sm" className="font-semibold">
+              <LabelText size="sm">
                 Contested items ({contestedItems.length})
-              </Text>
+              </LabelText>
             </div>
             <div className="divide-y divide-border">
               {contestedItems.map(({ item, reservers }) => (
@@ -519,13 +524,13 @@ export default function ReserveRunPage() {
                 </div>
               ))}
             </div>
-          </div>
+          </Card>
         )}
 
         {/* Eligibility lookup */}
         {(run.status === 'locked' || run.status === 'completed') && (
-          <div className="bg-background-elevated border border-border rounded-xl p-5">
-            <Text size="sm" className="font-semibold mb-3">Item eligibility</Text>
+          <Card variant="unified">
+            <LabelText size="sm" className="mb-3">Item eligibility</LabelText>
             <div className="relative mb-4">
               <HugeiconsIcon
                 icon={Search01Icon}
@@ -611,16 +616,16 @@ export default function ReserveRunPage() {
                 ))}
               </div>
             )}
-          </div>
+          </Card>
         )}
 
         {/* Winner log */}
         {run.awards.length > 0 && (
-          <div className="bg-background-elevated border border-border rounded-xl overflow-hidden">
+          <Card className="overflow-hidden">
             <div className="px-5 py-4 border-b border-border">
-              <Text size="sm" className="font-semibold">
+              <LabelText size="sm">
                 Winner log ({run.awards.length})
-              </Text>
+              </LabelText>
             </div>
             <div className="divide-y divide-border">
               {run.awards.map((award) => {
@@ -629,7 +634,7 @@ export default function ReserveRunPage() {
                   <div key={award.id} className="px-5 py-3 flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       {item && <ItemLink name={item.name} wowheadId={item.wowhead_id} clickable={false} />}
-                      <span className="text-[13px] text-muted-foreground">\u2192</span>
+                      <span className="text-[13px] text-muted-foreground">→</span>
                       <span className="text-[13px] font-medium text-foreground">{award.character_name}</span>
                     </div>
                     <div className="flex items-center gap-2">
@@ -650,7 +655,7 @@ export default function ReserveRunPage() {
                 )
               })}
             </div>
-          </div>
+          </Card>
         )}
       </div>
     </>
