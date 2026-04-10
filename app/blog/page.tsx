@@ -15,6 +15,15 @@ export const metadata: Metadata = {
 
 const posts = [
   {
+    slug: 'how-to-onboard-new-raiders-without-killing-morale',
+    title: 'How to Onboard New Raiders Without Killing Morale',
+    description:
+      'New raiders quit in the first two weeks more than at any other point. Here\'s how to run a guild onboarding process that keeps them excited instead of overwhelmed.',
+    date: 'April 10, 2026',
+    readTime: '8 min read',
+    tag: 'Guide',
+  },
+  {
     slug: 'dkp-is-dead-what-classic-guilds-use-in-2026',
     title: 'DKP Is Dead: What Classic Guilds Use in 2026',
     description:

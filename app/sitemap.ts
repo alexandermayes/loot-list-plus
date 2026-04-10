@@ -27,6 +27,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.8,
     },
     {
+      url: 'https://www.getlootlist.com/blog/how-to-onboard-new-raiders-without-killing-morale',
+      lastModified: new Date(2026, 3, 10),
+      changeFrequency: 'monthly',
+      priority: 0.9,
+    },
+    {
       url: 'https://www.getlootlist.com/blog/how-to-set-up-a-fair-loot-system-for-your-wow-guild',
       lastModified: new Date(2026, 2, 23),
       changeFrequency: 'monthly',

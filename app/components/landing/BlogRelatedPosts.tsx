@@ -8,6 +8,14 @@ type RelatedPost = {
 
 const ALL_POSTS: RelatedPost[] = [
   {
+    slug: 'how-to-onboard-new-raiders-without-killing-morale',
+    title: 'How to Onboard New Raiders Without Killing Morale',
+    description:
+      'New raiders quit in the first two weeks more than any other time. Here\'s how to onboard them without overwhelming them.',
+    readTime: '8 min read',
+    tag: 'Guide',
+  },
+  {
     slug: 'dkp-is-dead-what-classic-guilds-use-in-2026',
     title: 'DKP Is Dead: What Classic Guilds Use in 2026',
     description:
