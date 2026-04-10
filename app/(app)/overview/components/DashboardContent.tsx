@@ -315,6 +315,7 @@ interface LootSubmission {
 }
 
 interface TiedCharacter {
+  character_id: string
   name: string
   class_color: string
 }
@@ -420,6 +421,7 @@ export default function DashboardContent() {
 
   // Team membership for the active character (Pro guilds only)
   const [characterTeams, setCharacterTeams] = useState<Pick<RaidTeam, 'id' | 'name' | 'color_hex' | 'raid_days_override' | 'rolling_weeks_override'>[]>([])
+  const [teamCharacterIds, setTeamCharacterIds] = useState<Set<string> | null>(null)
 
   const supabase = createClient()
   const router = useRouter()
@@ -434,6 +436,7 @@ export default function DashboardContent() {
   useEffect(() => {
     if (!activeCharacter?.id || !activeGuild?.id || !hasFeature(activeGuild, 'raid_teams')) {
       setCharacterTeams([])
+      setTeamCharacterIds(null)
       return
     }
     let cancelled = false
@@ -452,6 +455,26 @@ export default function DashboardContent() {
       })
     return () => { cancelled = true }
   }, [activeCharacter?.id, activeGuild?.id, activeGuild?.subscription_tier, supabase])
+
+  // Fetch character IDs of all members on the active character's raid teams
+  useEffect(() => {
+    if (characterTeams.length === 0 || !activeGuild?.id) {
+      setTeamCharacterIds(null)
+      return
+    }
+    let cancelled = false
+    const teamIds = characterTeams.map(t => t.id)
+    supabase
+      .from('raid_team_members')
+      .select('character_id')
+      .eq('guild_id', activeGuild.id)
+      .in('raid_team_id', teamIds)
+      .then(({ data }: { data: Array<{ character_id: string }> | null }) => {
+        if (cancelled) return
+        setTeamCharacterIds(new Set((data || []).map(m => m.character_id)))
+      })
+    return () => { cancelled = true }
+  }, [characterTeams, activeGuild?.id, supabase])
 
   // Preload LCP image (class icon) as soon as character data is available
   useEffect(() => {
@@ -1308,7 +1331,9 @@ export default function DashboardContent() {
           // Get same-rank submissions from our batched results
           const sameRankSubmissions = submissionsByItem.get(item.id) || []
 
-          // Filter out current character and build tied characters list
+          // Filter out current character and build tied characters list.
+          // Team filtering is applied at render time so it responds to
+          // teamCharacterIds loading without re-running this query.
           const tiedCharacters: TiedCharacter[] = sameRankSubmissions
             .filter(sub => {
               const submission = Array.isArray(sub.submission) ? sub.submission[0] : sub.submission
@@ -1322,6 +1347,7 @@ export default function DashboardContent() {
               const classInfo = Array.isArray(char?.class) ? char.class[0] : char?.class
 
               return {
+                character_id: submission?.character_id || '',
                 name: char?.name || 'Unknown',
                 class_color: classInfo?.color_hex || '#ffffff'
               }
@@ -2062,31 +2088,39 @@ export default function DashboardContent() {
                                 </span>
                               </>
                             )}
-                            {!item.is_loot_council && competitionData[item.item_id] && competitionData[item.item_id].totalWanting > 0 && (
-                              <>
-                                <span>•</span>
-                                <span className={competitionData[item.item_id].userRank === 1 ? 'text-success font-medium' : ''}>
-                                  you&apos;re #{competitionData[item.item_id].userRank}
-                                </span>
-                              </>
-                            )}
                           </div>
-                          {!item.is_loot_council && item.tied_characters.length > 0 && (() => {
-                            const shown = item.tied_characters.slice(0, 2)
-                            const remaining = item.tied_characters.length - shown.length
+                          {!item.is_loot_council && (() => {
+                            // If the user is on a raid team, filter tied chars to team members only
+                            const teamFilteredTied = teamCharacterIds
+                              ? item.tied_characters.filter(c => teamCharacterIds.has(c.character_id))
+                              : item.tied_characters
+                            const shown = teamFilteredTied.slice(0, 2)
+                            const remaining = teamFilteredTied.length - shown.length
+                            const rank = competitionData[item.item_id]?.userRank
+                            if (rank == null && teamFilteredTied.length === 0) return null
                             return (
                               <div className="flex items-center gap-1.5 text-[11px] sm:text-xs text-muted-foreground flex-wrap mt-1">
-                                <span className="text-warning">Tied with:</span>
-                                {shown.map((char, idx) => (
-                                  <span key={idx} className="flex items-center gap-1">
-                                    <span style={{ color: char.class_color }} className="font-semibold">
-                                      {char.name}
-                                    </span>
-                                    {idx < shown.length - 1 && <span className="text-muted-foreground">,</span>}
+                                {rank != null && (
+                                  <span className={rank === 1 ? 'text-success font-medium' : ''}>
+                                    you&apos;re #{rank}
                                   </span>
-                                ))}
-                                {remaining > 0 && (
-                                  <span className="text-muted-foreground">+{remaining} other{remaining !== 1 ? 's' : ''}</span>
+                                )}
+                                {rank != null && teamFilteredTied.length > 0 && <span>•</span>}
+                                {teamFilteredTied.length > 0 && (
+                                  <>
+                                    <span className="text-warning">Tied with:</span>
+                                    {shown.map((char, idx) => (
+                                      <span key={idx} className="flex items-center gap-1">
+                                        <span style={{ color: char.class_color }} className="font-semibold">
+                                          {char.name}
+                                        </span>
+                                        {idx < shown.length - 1 && <span className="text-muted-foreground">,</span>}
+                                      </span>
+                                    ))}
+                                    {remaining > 0 && (
+                                      <span className="text-muted-foreground">+{remaining} other{remaining !== 1 ? 's' : ''}</span>
+                                    )}
+                                  </>
                                 )}
                               </div>
                             )
