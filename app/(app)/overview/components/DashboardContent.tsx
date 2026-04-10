@@ -28,6 +28,7 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { DashboardContentSkeleton, DashboardDataSkeleton } from '@/components/ui/skeletons'
 import { ScrollIcon, StarIcon } from '@hugeicons/core-free-icons'
 import { StatusBadge, type SubmissionStatus } from '@/components/ui/status-badge'
+import { getRaidIcon } from '@/utils/raidIcons'
 import { Heading } from '@/components/ui/typography'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { InfoTooltip } from '@/components/ui/info-tooltip'
@@ -1589,54 +1590,46 @@ export default function DashboardContent() {
   }
 
   // Dynamic contextual subtitle for the overview greeting
-  const getContextualSubtitle = () => {
-    const lines: string[] = []
+  // Memoized, deterministic subtitle — avoids flicker as data loads in.
+  // Picks the highest-priority contextual line rather than rolling randomly.
+  const contextualSubtitle = useMemo(() => {
     const charName = activeCharacter?.name || 'adventurer'
 
-    // Raid timing
+    // Priority 1: Raid night imminent
     if (nextRaidDates.length > 0) {
       const next = nextRaidDates[0]
       const now = new Date()
-      const diffMs = next.getTime() - now.getTime()
-      const diffHours = diffMs / (1000 * 60 * 60)
-      if (diffHours > 0 && diffHours <= 24) {
-        lines.push('Raid night is today. Flasks ready?')
-      } else if (diffHours > 24 && diffHours <= 48) {
-        lines.push('Raid night is tomorrow.')
-      }
+      const diffHours = (next.getTime() - now.getTime()) / (1000 * 60 * 60)
+      if (diffHours > 0 && diffHours <= 24) return 'Raid night is today. Flasks ready?'
+      if (diffHours > 24 && diffHours <= 48) return 'Raid night is tomorrow.'
     }
 
-    // Deadline approaching
+    // Priority 2: Deadline approaching
     if (lootListDeadline) {
       const deadline = new Date(lootListDeadline)
-      const now = new Date()
-      const diffDays = Math.ceil((deadline.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+      const diffDays = Math.ceil((deadline.getTime() - Date.now()) / (1000 * 60 * 60 * 24))
       if (diffDays > 0 && diffDays <= 3) {
-        lines.push(`Loot List deadline in ${diffDays} day${diffDays === 1 ? '' : 's'}.`)
+        return `Loot List deadline in ${diffDays} day${diffDays === 1 ? '' : 's'}.`
       }
     }
 
-    // Actions needed (officer)
+    // Priority 3: Officer actions waiting
     if (isOfficer && actionsNeeded.length > 0) {
-      lines.push(`${actionsNeeded.length} submission${actionsNeeded.length === 1 ? '' : 's'} waiting for review.`)
+      return `${actionsNeeded.length} submission${actionsNeeded.length === 1 ? '' : 's'} waiting for review.`
     }
 
-    // Received items
-    if (receivedItems.length > 0) {
-      lines.push(`${receivedItems.length} item${receivedItems.length === 1 ? '' : 's'} received this tier. Keep it up.`)
-    }
-
-    // Priority count
+    // Priority 4: #1 priority item
     if (lootPriority.length > 0) {
-      lines.push(`#1 priority: ${lootPriority[0].item_name}`)
+      return `#1 priority: ${lootPriority[0].item_name}`
     }
 
-    // Pick a contextual line if available, otherwise fallback
-    if (lines.length > 0) {
-      return lines[Math.floor(Math.random() * lines.length)]
+    // Priority 5: Items received
+    if (receivedItems.length > 0) {
+      return `${receivedItems.length} item${receivedItems.length === 1 ? '' : 's'} received this tier. Keep it up.`
     }
+
     return `Viewing loot for ${charName}`
-  }
+  }, [activeCharacter?.name, nextRaidDates, lootListDeadline, isOfficer, actionsNeeded.length, lootPriority, receivedItems.length])
 
   // Hero section (greeting + character card) can render as soon as guild context is ready.
   // Dashboard data sections below the hero wait for the full data load.
@@ -1691,30 +1684,90 @@ export default function DashboardContent() {
           }
         </Heading>
         <p className="text-muted-foreground mt-1 text-base">
-          {!heroReady
+          {!heroReady || (activeCharacter && insightsLoading)
             ? 'Loading your dashboard...'
             : activeCharacter
-              ? getContextualSubtitle()
+              ? contextualSubtitle
               : activeGuild
                 ? `Welcome back to ${activeGuild.name}`
                 : 'Loading your dashboard...'}
         </p>
-        {characterTeams.length > 0 && (
-          <div className="flex items-center gap-2 mt-2">
+        {(characterTeams.length > 0 || (activeCharacter && raidTiers.length > 0)) && (
+          <div className="flex items-center gap-2 flex-wrap mt-4">
             {characterTeams.map(team => (
               <span
                 key={team.id}
-                className="inline-flex items-center gap-1.5 text-xs font-medium px-2 py-0.5 rounded-full border"
-                style={{
-                  backgroundColor: `${team.color_hex}20`,
-                  color: team.color_hex,
-                  borderColor: `${team.color_hex}40`,
-                }}
+                className="inline-flex items-center gap-2 h-7 px-3 rounded-full border border-border bg-background-elevated"
               >
-                <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: team.color_hex }} />
-                {team.name}
+                <span
+                  className="w-2.5 h-2.5 rounded-full border border-border/50 shrink-0"
+                  style={{ backgroundColor: team.color_hex }}
+                />
+                <span className="text-xs text-foreground">{team.name}</span>
               </span>
             ))}
+            {activeCharacter && raidTiers.length > 0 && (() => {
+              const phases = [...new Set(raidTiers.map(t => t.phase).filter((p): p is number => p != null))].sort((a, b) => a - b)
+              if (phases.length === 0) return null
+
+              const phaseStatus: Record<number, string | undefined> = {}
+              for (const sub of allSubmissions) {
+                if (sub.phase != null) phaseStatus[sub.phase] = sub.status
+              }
+
+              const statusTextColor = (status?: string) => {
+                if (status === 'approved') return 'text-success'
+                if (status === 'pending') return 'text-yellow-500'
+                if (status === 'needs_revision') return 'text-destructive'
+                return 'text-muted-foreground'
+              }
+
+              const statusLabel = (status?: string) => {
+                if (status === 'approved') return 'Approved'
+                if (status === 'pending') return 'Pending'
+                if (status === 'needs_revision') return 'Revise'
+                if (status === 'draft') return 'Draft'
+                return 'Not started'
+              }
+
+              return (
+                <>
+                  {phases.map(phase => {
+                    const tiersInPhase = raidTiers.filter(t => t.phase === phase)
+                    const iconTier = tiersInPhase[0]
+                    const tierNames = tiersInPhase.map(t => t.name).join(', ')
+                    const status = phaseStatus[phase]
+
+                    return (
+                      <div
+                        key={phase}
+                        className="inline-flex items-center gap-2 h-7 pl-1.5 pr-3 rounded-full border border-border bg-background-elevated"
+                      >
+                        <span className="px-1.5 py-0.5 rounded bg-accent/20 text-accent text-[10px] font-bold">P{phase}</span>
+                        {iconTier && (
+                          <img
+                            src={getRaidIcon(iconTier.name)}
+                            alt=""
+                            className="w-4 h-4 rounded border border-border/50"
+                          />
+                        )}
+                        <span className="text-xs text-foreground">{tierNames}</span>
+                        <span className="text-xs text-muted-foreground/60" aria-hidden="true">·</span>
+                        <span className={`text-xs ${statusTextColor(status)}`}>{statusLabel(status)}</span>
+                      </div>
+                    )
+                  })}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => router.push('/loot-list')}
+                    className="h-7 px-3 text-xs rounded-full"
+                  >
+                    View all lists
+                  </Button>
+                </>
+              )
+            })()}
           </div>
         )}
       </div>
@@ -1781,71 +1834,6 @@ export default function DashboardContent() {
             </div>
           )}
 
-
-          {/* List status tracker — compact per-phase status */}
-          {activeCharacter && raidTiers.length > 0 && (() => {
-            // Dedupe phases from active tiers
-            const phases = [...new Set(raidTiers.map(t => t.phase).filter((p): p is number => p != null))].sort((a, b) => a - b)
-            if (phases.length === 0) return null
-
-            // Build phase → tier names map
-            const phaseTierNames: Record<number, string[]> = {}
-            for (const tier of raidTiers) {
-              if (tier.phase != null) {
-                if (!phaseTierNames[tier.phase]) phaseTierNames[tier.phase] = []
-                if (!phaseTierNames[tier.phase].includes(tier.name)) phaseTierNames[tier.phase].push(tier.name)
-              }
-            }
-
-            // Build phase → submission status
-            const phaseStatus: Record<number, LootSubmission | undefined> = {}
-            for (const sub of allSubmissions) {
-              if (sub.phase != null) phaseStatus[sub.phase] = sub
-            }
-
-            return (
-              <div className="bg-background-elevated border border-border rounded-xl p-4 sm:p-5">
-                <div className="flex items-center justify-between mb-3">
-                  <p className="text-sm font-medium text-foreground">Loot list status</p>
-                  <Button variant="link" size="sm" className="text-accent shrink-0 h-auto p-0" onClick={() => router.push('/loot-list')}>
-                    View lists
-                  </Button>
-                </div>
-                <div className="space-y-2">
-                  {phases.map(phase => {
-                    const sub = phaseStatus[phase]
-                    const tierNames = phaseTierNames[phase]?.join(', ') || `Phase ${phase}`
-                    const deadline = phaseDeadlines[phase.toString()]
-                    const deadlinePassed = deadline ? new Date(deadline) < new Date() : false
-                    const deadlineStr = deadline
-                      ? new Date(deadline).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
-                      : null
-
-                    return (
-                      <div key={phase} className="flex items-center justify-between gap-3 py-1">
-                        <div className="flex items-center gap-2 min-w-0">
-                          <span className="text-xs text-muted-foreground shrink-0">P{phase}</span>
-                          <span className="text-sm text-foreground truncate">{tierNames}</span>
-                        </div>
-                        <div className="flex items-center gap-2 shrink-0">
-                          {deadlineStr && !sub?.status?.match(/approved/) && (
-                            <span className={`text-xs ${deadlinePassed ? 'text-destructive' : 'text-muted-foreground'}`}>
-                              {deadlinePassed ? 'Overdue' : `Due ${deadlineStr}`}
-                            </span>
-                          )}
-                          {sub ? (
-                            <StatusBadge status={sub.status as SubmissionStatus} />
-                          ) : (
-                            <span className="text-xs text-muted-foreground">Not started</span>
-                          )}
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
-              </div>
-            )
-          })()}
 
           {/* Insights: load progressively (don't block stats above) */}
           {insightsLoading ? (

@@ -215,18 +215,24 @@ export function BossSectionSkeleton() {
 }
 
 /**
- * Full dashboard content skeleton
+ * Full dashboard content skeleton.
+ * Dimensions match DashboardContent.tsx exactly to avoid layout shift on swap.
  */
 export function DashboardContentSkeleton() {
   return (
-    <div className="space-y-6">
-      {/* Character Card and Stats Row */}
-      <div className="flex flex-col lg:flex-row gap-6">
-        <CharacterCardSkeleton />
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:flex-1">
-          <StatCardSkeleton />
-          <StatCardSkeleton />
-          <StatCardSkeleton />
+    <div className="p-4 sm:p-6 lg:p-8 space-y-6 font-poppins">
+      {/* Header block — matches Heading + subtitle + metadata strip */}
+      <div>
+        {/* Heading level={1}: text-5xl (42px) font-bold leading-tight => ~52px */}
+        <Skeleton className="h-[52px] w-[55%] max-w-2xl rounded-md" />
+        {/* Subtitle: text-base (16px) with mt-1 */}
+        <Skeleton className="h-5 w-[42%] max-w-md mt-2 rounded-md" />
+        {/* Metadata strip: flex gap-2 mt-4, h-7 pills */}
+        <div className="flex items-center gap-2 flex-wrap mt-4">
+          <Skeleton className="h-7 w-28 rounded-full" />
+          <Skeleton className="h-7 w-64 rounded-full" />
+          <Skeleton className="h-7 w-64 rounded-full" />
+          <Skeleton className="h-7 w-20 rounded-full" />
         </div>
       </div>
 
