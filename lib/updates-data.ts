@@ -14,6 +14,66 @@ export interface UpdateEntry {
 
 export const updates: UpdateEntry[] = [
   {
+    date: 'April 9, 2026',
+    items: [
+      {
+        category: 'feature',
+        title: 'Reserve runs',
+        description: 'Create soft reserve runs for any raid, share a public link, and players reserve items without needing a LootList+ account. Includes per-item caps, class restrictions, hard reserves, Gargul and WeakAura exports, CSV, audit log, and a raid leader token so co-leaders can lock and award without full officer access.',
+      },
+      {
+        category: 'feature',
+        title: 'Logged-in users auto-fill their reserves',
+        description: 'If you have a character in the run\'s guild, the reserve form pre-selects it with class color and spec. Pick "+ Use a different character" in the dropdown to submit as a guest alt that isn\'t tracked in LootList+.',
+      },
+      {
+        category: 'feature',
+        title: 'Reserve links unfurl in Discord',
+        description: 'Pasting a reserve share link in Discord now shows the raid icon, guild name, raid time, and lock status as a link preview.',
+      },
+      {
+        category: 'feature',
+        title: 'Locked reserve board',
+        description: 'When a run locks, the public page pivots to a reserve board grouped by item and sorted by most contested, with awards rendered inline. A "By player" toggle keeps the old view, and your own submission is highlighted in both.',
+      },
+      {
+        category: 'improvement',
+        title: 'Award flow upgrades',
+        description: 'The Item Candidate modal now has keyboard shortcuts, a top-2 comparison card, inline score explanations, award notes, and BLP status. Recent awards can be undone from a toast, and the award button is now primary and visible on hover.',
+      },
+      {
+        category: 'improvement',
+        title: 'Master Sheet tied and gap indicators',
+        description: 'Tied scores show a dice badge on every tied candidate, and the table now shows how far each player is from the next one above them. Both work on the mobile card view too.',
+      },
+      {
+        category: 'improvement',
+        title: 'Overview page redesign',
+        description: 'The overview now leads with the info a raider actually cares about: their next-in-line item, current Loot Score, and upcoming raid night, with a tighter meta line.',
+      },
+      {
+        category: 'improvement',
+        title: 'Item priorities now add points directly',
+        description: 'Guild item priorities are treated as direct point bonuses on Loot Score instead of a separate tiebreaker, so officers can see the weight they\'re applying in real numbers.',
+      },
+      {
+        category: 'improvement',
+        title: 'Faster landing page on mobile',
+        description: 'Landing page LCP is down significantly on mobile. Static rewrite via middleware, WebP poster, lazy-loaded below-fold sections, and CSS animations in place of framer-motion on the hero.',
+      },
+      {
+        category: 'improvement',
+        title: 'Next.js 16 and security hardening',
+        description: 'Upgraded to Next.js 16.1.7, closed 12 CodeQL alerts, added a responsible disclosure policy, and fixed all dependency vulnerabilities.',
+      },
+      {
+        category: 'fix',
+        title: 'Attendance correctness fixes',
+        description: 'Capped attendance at 100% so fill-ins can\'t push a player over the denominator, fixed timezone drift on raid event dates, and corrected the tracked raids count so it matches the overview.',
+      },
+    ],
+  },
+  {
     date: 'April 3, 2026',
     items: [
       {
