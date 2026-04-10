@@ -538,21 +538,92 @@ export default function ReserveRunPage() {
     }
   }
 
-  const exportGargul = () => {
+  const exportGargul = async () => {
     if (!run) return
-    // Gargul CSV format: ItemId,Name,Class,Note,Plus
-    const lines = ['ItemId,Name,Class,Note,Plus']
-    for (const sub of run.submissions) {
-      const className = sub.character_class.toLowerCase().replace(' ', '')
-      for (const itemId of sub.items) {
-        const item = itemMap.get(itemId)
-        if (!item) continue
-        lines.push(`${item.wowhead_id},${sub.character_name},${className},,0`)
-      }
+    // Gargul's current SoftRes importer expects a base64-encoded, zlib-compressed
+    // JSON payload shaped exactly like softres.it's "Gargul Export" output.
+    // Source: Classes/SoftRes.lua, SoftRes:importGargulData — it base64 decodes,
+    // zlib decompresses, JSON decodes, then reads data.metadata.id, data.softreserves[],
+    // and data.hardreserves[]. The older CSV format still parses but Gargul warns it is
+    // deprecated, so we emit the canonical format.
+
+    // Normalize class to the exact strings Gargul's Constants.Classes accepts.
+    // "deathknight"/"demonhunter" must be space-separated.
+    const normalizeClass = (raw: string): string => {
+      const lower = (raw || '').toLowerCase().trim()
+      if (lower === 'deathknight' || lower === 'death-knight') return 'death knight'
+      if (lower === 'demonhunter' || lower === 'demon-hunter') return 'demon hunter'
+      return lower
     }
-    navigator.clipboard.writeText(lines.join('\n'))
-    showNotification('success', 'Gargul data copied. Paste in-game with /gl sr')
-    trackClientEvent('reserve_gargul_exported', { run_id: run.id })
+
+    const toUnixSeconds = (iso?: string | null) =>
+      iso ? Math.floor(new Date(iso).getTime() / 1000) : 0
+
+    const softreserves = run.submissions.flatMap((sub) => {
+      const items = sub.items
+        .map((id) => itemMap.get(id)?.wowhead_id)
+        .filter((n): n is number => typeof n === 'number' && n > 0)
+        .map((id) => ({ id }))
+      if (items.length === 0) return []
+      return [{
+        name: sub.character_name,
+        class: normalizeClass(sub.character_class),
+        note: '',
+        plusOnes: 0,
+        items,
+      }]
+    })
+
+    const hardreserves = run.hard_reserves
+      .map((hr) => {
+        const item = itemMap.get(hr.loot_item_id)
+        if (!item?.wowhead_id) return null
+        return {
+          id: item.wowhead_id,
+          for: hr.reserved_for || '',
+          note: '',
+        }
+      })
+      .filter((x): x is { id: number; for: string; note: string } => x !== null)
+
+    const payload = {
+      metadata: {
+        id: run.share_token,
+        // createdAt/updatedAt are stored by Gargul but not validated — use raid_at so
+        // the imported metadata is at least meaningful in Gargul's overview.
+        createdAt: toUnixSeconds(run.raid_at),
+        updatedAt: toUnixSeconds(run.raid_at),
+        discordUrl: run.discord_invite_url || '',
+        hidden: run.visibility === 'hidden_until_lock',
+        url: `${window.location.origin}/reserve/join/${run.share_token}`,
+        raidStartsAt: toUnixSeconds(run.raid_at),
+      },
+      softreserves,
+      hardreserves,
+      instances: [],
+    }
+
+    try {
+      const json = JSON.stringify(payload)
+      // zlib-compress via the browser's CompressionStream. 'deflate' emits the
+      // zlib wrapper format (RFC 1950), which matches LibDeflate:DecompressZlib.
+      const stream = new Blob([json]).stream().pipeThrough(new CompressionStream('deflate'))
+      const compressed = new Uint8Array(await new Response(stream).arrayBuffer())
+      // Base64 encode. btoa wants a binary string, so walk the byte array in chunks
+      // to stay clear of argument-length limits on large payloads.
+      let binary = ''
+      const chunk = 0x8000
+      for (let i = 0; i < compressed.length; i += chunk) {
+        binary += String.fromCharCode.apply(null, Array.from(compressed.subarray(i, i + chunk)))
+      }
+      const base64 = btoa(binary)
+      await navigator.clipboard.writeText(base64)
+      showNotification('success', 'Gargul data copied. In-game: /gl sr, then paste and Import')
+      trackClientEvent('reserve_gargul_exported', { run_id: run.id })
+    } catch (err) {
+      console.error('exportGargul failed', err)
+      showNotification('error', "Couldn't build the Gargul export. Try again.")
+    }
   }
 
   const copyShareLink = () => {
@@ -728,7 +799,7 @@ export default function ReserveRunPage() {
                   CSV
                 </Button>
               </div>
-              <Text color="muted" size="xs">Gargul: paste in-game with /gl sr. WeakAura: import into your reserve WA. CSV: paste into a spreadsheet.</Text>
+              <Text color="muted" size="xs">Gargul: in-game, type /gl sr, click Import, then paste. WeakAura: import into your reserve WA. CSV: paste into a spreadsheet.</Text>
             </div>
           )}
         </Card>
