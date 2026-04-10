@@ -1,32 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
-import { verifyOfficerPermissions } from '@/utils/server-roles'
 import { logReserveAudit } from '@/utils/reserve-audit'
+import { verifyReserveRunAccess } from '@/utils/reserve-access'
 
 interface RouteParams {
   params: Promise<{ id: string; subId: string }>
 }
 
-async function loadRunAndSubmission(id: string, subId: string) {
-  const serviceSupabase = createServiceRoleClient()
-
-  const { data: run, error: runError } = await serviceSupabase
-    .from('reserve_runs')
-    .select('id, guild_id, status')
-    .eq('id', id)
-    .single()
-  if (runError || !run) return { error: 'Run not found' as const, status: 404 }
-
+async function loadSubmission(
+  serviceSupabase: ReturnType<typeof createServiceRoleClient>,
+  runId: string,
+  subId: string
+) {
   const { data: submission, error: subError } = await serviceSupabase
     .from('reserve_submissions')
     .select('*')
     .eq('id', subId)
-    .eq('reserve_run_id', id)
+    .eq('reserve_run_id', runId)
     .single()
-  if (subError || !submission) return { error: 'Submission not found' as const, status: 404 }
-
-  return { serviceSupabase, run, submission }
+  if (subError || !submission) return null
+  return submission
 }
 
 /**
@@ -37,23 +31,24 @@ async function loadRunAndSubmission(id: string, subId: string) {
  */
 export async function PATCH(request: NextRequest, { params }: RouteParams) {
   try {
-    const { user, error: authError } = await getAuthenticatedUser()
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
+    const { user } = await getAuthenticatedUser()
     const { id, subId } = await params
     const body = await request.json()
 
-    const loaded = await loadRunAndSubmission(id, subId)
-    if ('error' in loaded) {
-      return NextResponse.json({ error: loaded.error }, { status: loaded.status })
+    const serviceSupabase = createServiceRoleClient()
+    const access = await verifyReserveRunAccess({
+      serviceSupabase,
+      runId: id,
+      request,
+      userId: user?.id ?? null,
+    })
+    if (!access.allowed) {
+      const status = access.reason === 'Run not found' ? 404 : access.reason === 'Unauthorized' ? 401 : 403
+      return NextResponse.json({ error: access.reason ?? 'Forbidden' }, { status })
     }
-    const { serviceSupabase, run, submission } = loaded
-
-    const verification = await verifyOfficerPermissions(serviceSupabase, user.id, run.guild_id)
-    if (!verification.hasPermission) {
-      return NextResponse.json({ error: 'Only officers can edit submissions' }, { status: 403 })
+    const submission = await loadSubmission(serviceSupabase, id, subId)
+    if (!submission) {
+      return NextResponse.json({ error: 'Submission not found' }, { status: 404 })
     }
 
     const updateData: Record<string, unknown> = {}
@@ -89,13 +84,14 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     await logReserveAudit({
       supabase: serviceSupabase,
       reserveRunId: id,
-      actorUserId: user.id,
-      actorLabel: user.email ?? null,
+      actorUserId: user?.id ?? null,
+      actorLabel: user?.email ?? (access.actor === 'leader_token' ? 'Raid leader token' : null),
       action: 'submission_officer_edited',
       details: {
         submission_id: subId,
         character_name: updated.character_name,
         fields: Object.keys(updateData),
+        actor: access.actor,
       },
     })
 
@@ -109,26 +105,27 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 /**
  * DELETE /api/reserve-runs/[id]/submissions/[subId]
  *
- * Officer-only removal of a single submission.
+ * Officer (or raid leader token) removal of a single submission.
  */
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
   try {
-    const { user, error: authError } = await getAuthenticatedUser()
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
+    const { user } = await getAuthenticatedUser()
     const { id, subId } = await params
+    const serviceSupabase = createServiceRoleClient()
 
-    const loaded = await loadRunAndSubmission(id, subId)
-    if ('error' in loaded) {
-      return NextResponse.json({ error: loaded.error }, { status: loaded.status })
+    const access = await verifyReserveRunAccess({
+      serviceSupabase,
+      runId: id,
+      request,
+      userId: user?.id ?? null,
+    })
+    if (!access.allowed) {
+      const status = access.reason === 'Run not found' ? 404 : access.reason === 'Unauthorized' ? 401 : 403
+      return NextResponse.json({ error: access.reason ?? 'Forbidden' }, { status })
     }
-    const { serviceSupabase, run, submission } = loaded
-
-    const verification = await verifyOfficerPermissions(serviceSupabase, user.id, run.guild_id)
-    if (!verification.hasPermission) {
-      return NextResponse.json({ error: 'Only officers can delete submissions' }, { status: 403 })
+    const submission = await loadSubmission(serviceSupabase, id, subId)
+    if (!submission) {
+      return NextResponse.json({ error: 'Submission not found' }, { status: 404 })
     }
 
     const { error: deleteError } = await serviceSupabase
@@ -144,12 +141,13 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     await logReserveAudit({
       supabase: serviceSupabase,
       reserveRunId: id,
-      actorUserId: user.id,
-      actorLabel: user.email ?? null,
+      actorUserId: user?.id ?? null,
+      actorLabel: user?.email ?? (access.actor === 'leader_token' ? 'Raid leader token' : null),
       action: 'submission_officer_deleted',
       details: {
         submission_id: subId,
         character_name: submission.character_name,
+        actor: access.actor,
       },
     })
 

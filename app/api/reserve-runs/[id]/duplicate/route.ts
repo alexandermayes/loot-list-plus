@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
-import { verifyOfficerPermissions } from '@/utils/server-roles'
 import { logReserveAudit } from '@/utils/reserve-audit'
 import { trackEvent } from '@/utils/analytics/server'
+import { verifyReserveRunAccess } from '@/utils/reserve-access'
 
 /**
  * POST /api/reserve-runs/[id]/duplicate
@@ -17,13 +17,28 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // Duplicating a run creates a new row owned by the caller. That means
+    // we still require the caller to be authenticated — a raid leader
+    // token alone is not enough, because the new run needs a `created_by`
+    // FK to auth.users.
     const { user, error: authError } = await getAuthenticatedUser()
     if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: 'Sign in to duplicate a run' }, { status: 401 })
     }
 
     const { id } = await params
     const serviceSupabase = createServiceRoleClient()
+
+    const access = await verifyReserveRunAccess({
+      serviceSupabase,
+      runId: id,
+      request,
+      userId: user.id,
+    })
+    if (!access.allowed) {
+      const status = access.reason === 'Run not found' ? 404 : 403
+      return NextResponse.json({ error: access.reason ?? 'Forbidden' }, { status })
+    }
 
     const { data: source, error: fetchError } = await serviceSupabase
       .from('reserve_runs')
@@ -33,11 +48,6 @@ export async function POST(
 
     if (fetchError || !source) {
       return NextResponse.json({ error: 'Run not found' }, { status: 404 })
-    }
-
-    const verification = await verifyOfficerPermissions(serviceSupabase, user.id, source.guild_id)
-    if (!verification.hasPermission) {
-      return NextResponse.json({ error: 'Only officers can duplicate reserve runs' }, { status: 403 })
     }
 
     // Shift raid_at one week forward as a sensible default; officer can adjust later.

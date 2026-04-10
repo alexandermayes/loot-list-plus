@@ -333,7 +333,7 @@ export function CreateReserveRunModal({ open, onClose }: CreateReserveRunModalPr
                   variant="rounded"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  placeholder="e.g. Gruul/Mag — Apr 7"
+                  placeholder="e.g. Gruul/Mag, Apr 7"
                 />
               </div>
 

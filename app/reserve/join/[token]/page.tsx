@@ -83,9 +83,9 @@ type RunData = {
 }
 
 const STATUS_LABELS: Record<string, { text: string; className: string }> = {
-  open: { text: 'Open for reserves', className: 'text-success bg-success/15' },
-  locked: { text: 'Reserves locked', className: 'text-warning bg-warning/15' },
-  completed: { text: 'Completed', className: 'text-muted-foreground bg-muted/30' },
+  open: { text: 'Open for reserves', className: 'bg-success/10 text-success border-success/20' },
+  locked: { text: 'Reserves locked', className: 'bg-warning/10 text-warning border-warning/20' },
+  completed: { text: 'Completed', className: 'bg-muted text-muted-foreground border-border' },
 }
 
 export default function ReserveJoinPage() {
@@ -291,7 +291,7 @@ export default function ReserveJoinPage() {
 
       <div className="max-w-xl mx-auto p-4 sm:p-6 space-y-5">
         {/* Run info card */}
-        <div className="bg-background-elevated border border-border rounded-xl p-5">
+        <Card variant="unified">
           <div className="flex items-start gap-4">
             {run.raid_tier_name && (
               <img
@@ -317,9 +317,9 @@ export default function ReserveJoinPage() {
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            <span className={`px-2.5 py-1 rounded-full text-[11px] font-semibold uppercase tracking-wide ${statusInfo.className}`}>
+            <Badge variant="outline" className={statusInfo.className}>
               {statusInfo.text}
-            </span>
+            </Badge>
             <span className="text-[12px] text-muted-foreground">
               {run.max_reserves} reserve{run.max_reserves !== 1 ? 's' : ''} / player
             </span>
@@ -357,14 +357,18 @@ export default function ReserveJoinPage() {
               )}
               {run.hard_reserves.length > 0 && (
                 <div>
-                  <Text size="xs" color="muted" className="font-semibold uppercase tracking-wide mb-1.5">Hard reserves</Text>
+                  <LabelText size="xs" className="mb-1.5">Hard reserves</LabelText>
                   <div className="flex flex-wrap gap-1.5">
                     {run.hard_reserves.map((hr) => {
                       const item = itemMap.get(hr.loot_item_id)
                       return item ? (
-                        <span key={hr.loot_item_id} className="inline-flex items-center px-2 py-0.5 bg-destructive/10 text-[12px] rounded border border-destructive/20">
+                        <Badge
+                          key={hr.loot_item_id}
+                          variant="outline"
+                          className="bg-destructive/10 text-destructive border-destructive/20 gap-1.5"
+                        >
                           <ItemLink name={item.name} wowheadId={item.wowhead_id} clickable={false} />
-                        </span>
+                        </Badge>
                       ) : null
                     })}
                   </div>
@@ -372,11 +376,11 @@ export default function ReserveJoinPage() {
               )}
             </div>
           )}
-        </div>
+        </Card>
 
         {/* Submission form (only when open) */}
         {isOpen && (
-          <div className="bg-background-elevated border border-border rounded-xl p-5">
+          <Card variant="unified">
             <Heading level={3} className="mb-4">
               {submitted ? 'Edit your reserves' : 'Submit your reserves'}
             </Heading>
@@ -453,26 +457,26 @@ export default function ReserveJoinPage() {
                 {submitted ? 'Update reserves' : 'Submit reserves'}
               </Button>
             </div>
-          </div>
+          </Card>
         )}
 
         {/* Locked / read-only message */}
         {!isOpen && !submitted && (
-          <div className="bg-background-elevated border border-border rounded-xl p-5 text-center">
+          <Card variant="unified" className="text-center">
             <HugeiconsIcon icon={LockIcon} size={24} className="text-warning mx-auto mb-2" />
             <Text className="font-semibold mb-1">
               {run.status === 'locked' ? 'Reserves are locked' : 'This run is completed'}
             </Text>
             <Text color="muted" size="sm">Submissions are no longer accepted.</Text>
-          </div>
+          </Card>
         )}
 
         {/* Submissions list (visible based on rules) */}
         {showSubmissions && submissions.length > 0 && (
-          <div className="bg-background-elevated border border-border rounded-xl overflow-hidden">
+          <Card className="overflow-hidden">
             <div className="px-5 py-3 border-b border-border flex items-center gap-2">
               <HugeiconsIcon icon={UserMultiple02Icon} size={16} className="text-muted-foreground" />
-              <Text size="sm" className="font-semibold">Reserves ({submissions.length})</Text>
+              <LabelText size="sm">Reserves ({submissions.length})</LabelText>
             </div>
             <div className="divide-y divide-border">
               {submissions.map((sub) => {
@@ -501,15 +505,15 @@ export default function ReserveJoinPage() {
                 )
               })}
             </div>
-          </div>
+          </Card>
         )}
 
         {/* Awards */}
         {awards.length > 0 && (
-          <div className="bg-background-elevated border border-border rounded-xl overflow-hidden">
+          <Card className="overflow-hidden">
             <div className="px-5 py-3 border-b border-border flex items-center gap-2">
               <HugeiconsIcon icon={CheckmarkCircle01Icon} size={16} className="text-success" />
-              <Text size="sm" className="font-semibold">Awards</Text>
+              <LabelText size="sm">Awards</LabelText>
             </div>
             <div className="divide-y divide-border">
               {awards.map((award) => {
@@ -517,17 +521,17 @@ export default function ReserveJoinPage() {
                 return (
                   <div key={award.id} className="px-5 py-3 flex items-center gap-3">
                     {item && <ItemLink name={item.name} wowheadId={item.wowhead_id} clickable={false} />}
-                    <span className="text-[13px] text-muted-foreground">{'\u2192'}</span>
+                    <span className="text-[13px] text-muted-foreground">→</span>
                     <span className="text-[13px] font-medium">{award.character_name}</span>
                   </div>
                 )
               })}
             </div>
-          </div>
+          </Card>
         )}
 
         {/* CTA */}
-        <div className="bg-background-elevated border border-accent/20 rounded-xl p-5 text-center">
+        <Card variant="unified" className="border-accent/20 text-center">
           <Image src="/logo.svg" alt="" width={28} height={28} className="mx-auto mb-2" />
           <Text className="font-semibold mb-1">Run your own guild loot with LootList+</Text>
           <Text color="muted" size="sm" className="mb-3">
@@ -538,7 +542,7 @@ export default function ReserveJoinPage() {
               Learn more
             </Button>
           </Link>
-        </div>
+        </Card>
 
         {/* Footer */}
         <div className="text-center pt-4 pb-8">

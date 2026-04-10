@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
+import { extractLeaderToken } from '@/utils/reserve-access'
 
 /**
  * GET /api/reserve-runs/[id]/audit
@@ -12,33 +13,41 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { user, error: authError } = await getAuthenticatedUser()
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
+    const { user } = await getAuthenticatedUser()
     const { id } = await params
     const serviceSupabase = createServiceRoleClient()
 
-    // Verify the caller is a member of the run's guild
     const { data: run, error: runError } = await serviceSupabase
       .from('reserve_runs')
-      .select('guild_id')
+      .select('guild_id, created_by, raid_leader_token')
       .eq('id', id)
       .single()
     if (runError || !run) {
       return NextResponse.json({ error: 'Run not found' }, { status: 404 })
     }
 
-    const { data: membership } = await serviceSupabase
-      .from('character_guild_memberships')
-      .select('id, characters!inner(user_id)')
-      .eq('guild_id', run.guild_id)
-      .eq('is_active', true)
-      .eq('characters.user_id', user.id)
-      .limit(1)
+    // Any of: leader token, creator, or guild member grants read access
+    const token = extractLeaderToken(request)
+    let allowed = token === run.raid_leader_token
+    if (!allowed && user) {
+      if (run.created_by === user.id) {
+        allowed = true
+      } else if (run.guild_id) {
+        const { data: membership } = await serviceSupabase
+          .from('character_guild_memberships')
+          .select('id, characters!inner(user_id)')
+          .eq('guild_id', run.guild_id)
+          .eq('is_active', true)
+          .eq('characters.user_id', user.id)
+          .limit(1)
+        if (membership && membership.length > 0) allowed = true
+      } else {
+        // Public run, no guild — any authed user with the run id can view audit
+        allowed = true
+      }
+    }
 
-    if (!membership || membership.length === 0) {
+    if (!allowed) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 

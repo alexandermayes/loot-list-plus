@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback, useMemo } from 'react'
-import { useParams, useRouter } from 'next/navigation'
+import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { useGuildContext } from '@/app/contexts/GuildContext'
 import { useNotification } from '@/app/contexts/NotificationContext'
 import { useConfirm } from '@/components/ui/confirm-modal'
@@ -95,7 +95,8 @@ type ReserveRun = {
   discord_invite_url: string | null
   hard_reserves: Array<{ loot_item_id: string; reserved_for?: string }>
   share_token: string
-  guild_id: string
+  raid_leader_token?: string
+  guild_id: string | null
   raid_tier_name: string | null
   submissions: Submission[]
   awards: Award[]
@@ -122,10 +123,11 @@ const STATUS_STYLES: Record<string, { className: string; label: string }> = {
 export default function ReserveRunPage() {
   const { id } = useParams<{ id: string }>()
   const router = useRouter()
-  const { isOfficer } = useGuildContext()
+  const searchParams = useSearchParams()
   const { showNotification } = useNotification()
   const { confirm, ConfirmDialog } = useConfirm()
   const [run, setRun] = useState<ReserveRun | null>(null)
+  const [canManage, setCanManage] = useState(false)
   const [loading, setLoading] = useState(true)
   const [actionLoading, setActionLoading] = useState(false)
   const [eligibilitySearch, setEligibilitySearch] = useState('')
@@ -139,19 +141,54 @@ export default function ReserveRunPage() {
   const [auditOpen, setAuditOpen] = useState(false)
   const [auditLoading, setAuditLoading] = useState(false)
 
+  // Raid leader token: query param wins on initial load, then we persist it
+  // in localStorage so a page refresh keeps manager access without needing
+  // to re-paste the token URL.
+  const [leaderToken, setLeaderToken] = useState<string | null>(null)
+  useEffect(() => {
+    const fromUrl = searchParams.get('leader_token')
+    const storageKey = `reserve_leader_token_${id}`
+    if (fromUrl) {
+      setLeaderToken(fromUrl)
+      try { localStorage.setItem(storageKey, fromUrl) } catch {}
+      return
+    }
+    try {
+      const stored = localStorage.getItem(storageKey)
+      if (stored) setLeaderToken(stored)
+    } catch {}
+  }, [id, searchParams])
+
+  // Centralized fetch that automatically attaches the leader token header
+  const authedFetch = useCallback(
+    (input: string, init: RequestInit = {}) => {
+      const headers = new Headers(init.headers)
+      if (leaderToken) headers.set('x-reserve-leader-token', leaderToken)
+      return fetch(input, { ...init, headers })
+    },
+    [leaderToken]
+  )
+
   const loadRun = useCallback(async () => {
     try {
-      const res = await fetch(`/api/reserve-runs/${id}`)
+      const res = await authedFetch(`/api/reserve-runs/${id}`)
       const data = await res.json()
       if (data.success) {
         setRun(data.run)
+        setCanManage(!!data.can_manage)
       }
     } catch (err) {
       console.error('Failed to load run:', err)
     } finally {
       setLoading(false)
     }
-  }, [id])
+  }, [id, authedFetch])
+
+  const clearLeaderToken = () => {
+    setLeaderToken(null)
+    try { localStorage.removeItem(`reserve_leader_token_${id}`) } catch {}
+    showNotification('info', 'Raid leader access cleared')
+  }
 
   useEffect(() => {
     trackClientEvent('reserve_run_viewed', { run_id: id })
@@ -247,7 +284,7 @@ export default function ReserveRunPage() {
     if (!run) return
     setActionLoading(true)
     try {
-      const res = await fetch(`/api/reserve-runs/${run.id}`, {
+      const res = await authedFetch(`/api/reserve-runs/${run.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action }),
@@ -280,7 +317,7 @@ export default function ReserveRunPage() {
     if (!run) return
     setActionLoading(true)
     try {
-      const res = await fetch(`/api/reserve-runs/${run.id}/awards`, {
+      const res = await authedFetch(`/api/reserve-runs/${run.id}/awards`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -306,7 +343,7 @@ export default function ReserveRunPage() {
   const handleRemoveAward = async (awardId: string) => {
     if (!run) return
     try {
-      const res = await fetch(`/api/reserve-runs/${run.id}/awards?award_id=${awardId}`, {
+      const res = await authedFetch(`/api/reserve-runs/${run.id}/awards?award_id=${awardId}`, {
         method: 'DELETE',
       })
       const data = await res.json()
@@ -322,7 +359,7 @@ export default function ReserveRunPage() {
   const saveNote = async () => {
     if (!run) return
     try {
-      const res = await fetch(`/api/reserve-runs/${run.id}`, {
+      const res = await authedFetch(`/api/reserve-runs/${run.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ rules_note: noteDraft.trim() || null }),
@@ -343,7 +380,7 @@ export default function ReserveRunPage() {
   const saveDiscord = async () => {
     if (!run) return
     try {
-      const res = await fetch(`/api/reserve-runs/${run.id}`, {
+      const res = await authedFetch(`/api/reserve-runs/${run.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ discord_invite_url: discordDraft.trim() || null }),
@@ -370,7 +407,7 @@ export default function ReserveRunPage() {
       variant: 'danger',
       onConfirm: async () => {
         try {
-          const res = await fetch(
+          const res = await authedFetch(
             `/api/reserve-runs/${run.id}/submissions/${submission.id}`,
             { method: 'DELETE' }
           )
@@ -392,7 +429,7 @@ export default function ReserveRunPage() {
     if (!run) return
     setActionLoading(true)
     try {
-      const res = await fetch(`/api/reserve-runs/${run.id}/duplicate`, { method: 'POST' })
+      const res = await authedFetch(`/api/reserve-runs/${run.id}/duplicate`, { method: 'POST' })
       const data = await res.json()
       if (data.success) {
         showNotification('success', 'Run duplicated')
@@ -456,7 +493,7 @@ export default function ReserveRunPage() {
     if (!run) return
     setAuditLoading(true)
     try {
-      const res = await fetch(`/api/reserve-runs/${run.id}/audit`)
+      const res = await authedFetch(`/api/reserve-runs/${run.id}/audit`)
       const data = await res.json()
       if (data.success) {
         setAuditEntries(data.entries || [])
@@ -572,7 +609,7 @@ export default function ReserveRunPage() {
             </div>
 
             {/* Actions */}
-            {isOfficer && (
+            {canManage && (
               <div className="flex flex-wrap items-center gap-2 flex-shrink-0">
                 <Button
                   variant="outline"
@@ -660,11 +697,52 @@ export default function ReserveRunPage() {
           )}
         </Card>
 
+        {/* Raid leader access (visible to managers only, and only when we know the token) */}
+        {canManage && run.raid_leader_token && (
+          <Card variant="unified">
+            <div className="flex items-center justify-between mb-3">
+              <LabelText size="sm">Raid leader access</LabelText>
+              {leaderToken && (
+                <Button variant="ghost" size="sm" onClick={clearLeaderToken}>
+                  Sign out of leader access
+                </Button>
+              )}
+            </div>
+            <Text color="muted" size="xs" className="mb-3">
+              Share this link with co-leaders so they can lock, edit, and award without a LootList+ account. Treat it like a password.
+            </Text>
+            <div className="flex items-center gap-2 mb-3">
+              <Input
+                variant="rounded"
+                readOnly
+                value={`${typeof window !== 'undefined' ? window.location.origin : ''}/reserve/runs/${run.id}?leader_token=${run.raid_leader_token}`}
+                className="text-[13px] text-muted-foreground"
+                onFocus={(e) => e.currentTarget.select()}
+              />
+              <Button
+                variant="outline"
+                onClick={() => {
+                  const url = `${window.location.origin}/reserve/runs/${run.id}?leader_token=${run.raid_leader_token}`
+                  navigator.clipboard.writeText(url)
+                  showNotification('success', 'Leader link copied')
+                }}
+                className="flex-shrink-0"
+              >
+                <HugeiconsIcon icon={CopyLinkIcon} size={16} />
+                Copy
+              </Button>
+            </div>
+            <Text color="muted" size="xs">
+              Token: <span className="font-mono text-foreground-secondary">{run.raid_leader_token}</span>
+            </Text>
+          </Card>
+        )}
+
         {/* Rules */}
         <Card variant="unified">
           <div className="flex items-center justify-between mb-3">
             <LabelText size="sm">Rules</LabelText>
-            {isOfficer && !editingNote && (
+            {canManage && !editingNote && (
               <Button
                 variant="ghost"
                 size="sm"
@@ -707,7 +785,7 @@ export default function ReserveRunPage() {
               </div>
             ) : run.rules_note ? (
               <p className="text-muted-foreground whitespace-pre-wrap">{run.rules_note}</p>
-            ) : isOfficer ? (
+            ) : canManage ? (
               <p className="text-muted-foreground italic">No rules note. Click Edit to add one.</p>
             ) : null}
 
@@ -735,11 +813,11 @@ export default function ReserveRunPage() {
         </Card>
 
         {/* Discord invite link */}
-        {(run.discord_invite_url || isOfficer) && (
+        {(run.discord_invite_url || canManage) && (
           <Card variant="unified">
             <div className="flex items-center justify-between mb-3">
               <LabelText size="sm">Discord</LabelText>
-              {isOfficer && !editingDiscord && (
+              {canManage && !editingDiscord && (
                 <Button
                   variant="ghost"
                   size="sm"
@@ -859,7 +937,7 @@ export default function ReserveRunPage() {
                       </span>
                     )}
                   </div>
-                  {isOfficer && (
+                  {canManage && (
                     <button
                       onClick={() => deleteSubmission(sub)}
                       className="text-muted-foreground hover:text-destructive transition-colors sm:opacity-0 sm:group-hover:opacity-100"
@@ -950,7 +1028,7 @@ export default function ReserveRunPage() {
                           <div key={a.id} className="flex items-center gap-2 text-[12px]">
                             <HugeiconsIcon icon={CheckmarkCircle01Icon} size={14} className="text-success" />
                             <span className="text-success font-medium">Awarded to {a.character_name}</span>
-                            {isOfficer && (
+                            {canManage && (
                               <button
                                 onClick={() => handleRemoveAward(a.id)}
                                 className="text-muted-foreground hover:text-destructive transition-colors ml-1"
@@ -972,16 +1050,16 @@ export default function ReserveRunPage() {
                           return (
                             <button
                               key={sub.id}
-                              onClick={() => isOfficer && !alreadyAwarded && handleAward(item.id, sub.character_name, sub.id)}
-                              disabled={!isOfficer || alreadyAwarded || actionLoading}
+                              onClick={() => canManage && !alreadyAwarded && handleAward(item.id, sub.character_name, sub.id)}
+                              disabled={!canManage || alreadyAwarded || actionLoading}
                               className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[12px] font-medium border transition-colors ${
                                 alreadyAwarded
                                   ? 'bg-success/10 border-success/20 text-success cursor-default'
-                                  : isOfficer
+                                  : canManage
                                     ? 'bg-background-subtle border-border hover:bg-accent/10 hover:border-accent/30 hover:text-accent cursor-pointer'
                                     : 'bg-background-subtle border-border cursor-default'
                               }`}
-                              title={isOfficer && !alreadyAwarded ? `Award to ${sub.character_name}` : undefined}
+                              title={canManage && !alreadyAwarded ? `Award to ${sub.character_name}` : undefined}
                             >
                               <span style={{ color: alreadyAwarded ? undefined : getClassColor(sub.character_class) }}>
                                 {sub.character_name}
@@ -1021,7 +1099,7 @@ export default function ReserveRunPage() {
                       <span className="text-[11px] text-muted-foreground">
                         {new Date(award.awarded_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
                       </span>
-                      {isOfficer && (
+                      {canManage && (
                         <button
                           onClick={() => handleRemoveAward(award.id)}
                           className="text-muted-foreground hover:text-destructive transition-colors"

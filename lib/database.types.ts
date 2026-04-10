@@ -1730,6 +1730,7 @@ export type Database = {
           max_reserves: number
           max_reserves_per_item: number | null
           raid_at: string
+          raid_leader_token: string
           raid_team_id: string | null
           raid_tier_id: string
           rule_snapshot: Json
@@ -1755,6 +1756,7 @@ export type Database = {
           max_reserves?: number
           max_reserves_per_item?: number | null
           raid_at: string
+          raid_leader_token?: string
           raid_team_id?: string | null
           raid_tier_id: string
           rule_snapshot?: Json
@@ -1780,6 +1782,7 @@ export type Database = {
           max_reserves?: number
           max_reserves_per_item?: number | null
           raid_at?: string
+          raid_leader_token?: string
           raid_team_id?: string | null
           raid_tier_id?: string
           rule_snapshot?: Json
@@ -2034,6 +2037,7 @@ export type Database = {
       }
       delete_guild: { Args: { p_guild_id: string }; Returns: undefined }
       generate_invite_code: { Args: never; Returns: string }
+      generate_reserve_leader_token: { Args: never; Returns: string }
       generate_reserve_token: { Args: never; Returns: string }
       get_character_guilds: {
         Args: { p_character_id: string }
