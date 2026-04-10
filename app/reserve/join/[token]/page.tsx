@@ -1,10 +1,10 @@
 'use client'
 
-import { useEffect, useState, useMemo } from 'react'
+import { useEffect, useState, useMemo, useRef } from 'react'
 import { useParams } from 'next/navigation'
+import { createClient } from '@/utils/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Select } from '@/components/ui/select'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { Card } from '@/components/ui/card'
@@ -14,7 +14,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import ReserveItemPicker from '@/app/components/ReserveItemPicker'
 import ItemLink from '@/app/components/ItemLink'
 import { HugeiconsIcon } from '@hugeicons/react'
-import { Calendar03Icon, LockIcon, CheckmarkCircle01Icon, UserMultiple02Icon, DiscordIcon } from '@hugeicons/core-free-icons'
+import { Calendar03Icon, LockIcon, CheckmarkCircle01Icon, UserMultiple02Icon, DiscordIcon, Copy01Icon } from '@hugeicons/core-free-icons'
 import { refreshWowheadTooltips } from '@/lib/wowhead'
 import { getRaidIcon } from '@/utils/raidIcons'
 import { canClassReserveItem } from '@/utils/wowClassRestrictions'
@@ -32,8 +32,61 @@ const WOW_CLASSES = [
   { name: 'Shaman', color: '#0070DE' },
   { name: 'Mage', color: '#69CCF0' },
   { name: 'Warlock', color: '#9482C9' },
+  { name: 'Monk', color: '#00FF96' },
   { name: 'Druid', color: '#FF7D0A' },
 ]
+
+// Which classes are available in which expansion. Used to filter the
+// class picker on the join page so a TBC raid doesn't show Death Knight.
+const CLASSIC_CLASSES = [
+  'Druid', 'Hunter', 'Mage', 'Paladin', 'Priest', 'Rogue', 'Shaman', 'Warlock', 'Warrior',
+]
+const WRATH_CLASSES = [...CLASSIC_CLASSES, 'Death Knight']
+const MOP_CLASSES = [...WRATH_CLASSES, 'Monk']
+
+const EXPANSION_CLASSES: Record<string, string[]> = {
+  'Classic': CLASSIC_CLASSES,
+  'Classic WoW': CLASSIC_CLASSES,
+  'The Burning Crusade': CLASSIC_CLASSES,
+  'Wrath of the Lich King': WRATH_CLASSES,
+  'Cataclysm': WRATH_CLASSES,
+  'Mists of Pandaria': MOP_CLASSES,
+}
+
+const EXPANSION_SHORT_NAME: Record<string, string> = {
+  'Classic': 'Classic',
+  'Classic WoW': 'Classic',
+  'The Burning Crusade': 'TBC',
+  'Wrath of the Lich King': 'Wrath',
+  'Cataclysm': 'Cata',
+  'Mists of Pandaria': 'MoP',
+}
+
+// Supported specs per class, spanning Classic through Mists of Pandaria.
+// A run can be for any of those expansions so we err on the side of
+// including every spec that was available at some point.
+const CLASS_SPECS: Record<string, string[]> = {
+  Warrior: ['Arms', 'Fury', 'Protection'],
+  Paladin: ['Holy', 'Protection', 'Retribution'],
+  Hunter: ['Beast Mastery', 'Marksmanship', 'Survival'],
+  Rogue: ['Assassination', 'Combat', 'Subtlety'],
+  Priest: ['Discipline', 'Holy', 'Shadow'],
+  'Death Knight': ['Blood', 'Frost', 'Unholy'],
+  Shaman: ['Elemental', 'Enhancement', 'Restoration'],
+  Mage: ['Arcane', 'Fire', 'Frost'],
+  Warlock: ['Affliction', 'Demonology', 'Destruction'],
+  Monk: ['Brewmaster', 'Mistweaver', 'Windwalker'],
+  Druid: ['Balance', 'Feral', 'Guardian', 'Restoration'],
+}
+
+type UserCharacter = {
+  id: string
+  name: string
+  class_name: string | null
+  class_color: string | null
+  spec_name: string | null
+  is_main: boolean
+}
 
 type LootItem = {
   id: string
@@ -79,6 +132,7 @@ type RunData = {
   discord_invite_url: string | null
   hard_reserves: Array<{ loot_item_id: string; reserved_for?: string }>
   raid_tier_name: string | null
+  expansion_name: string | null
   guild_name: string | null
 }
 
@@ -86,6 +140,110 @@ const STATUS_LABELS: Record<string, { text: string; className: string }> = {
   open: { text: 'Open for reserves', className: 'bg-success/10 text-success border-success/20' },
   locked: { text: 'Reserves locked', className: 'bg-warning/10 text-warning border-warning/20' },
   completed: { text: 'Completed', className: 'bg-muted text-muted-foreground border-border' },
+}
+
+interface PickerOption {
+  value: string
+  label: string
+  color?: string
+}
+
+/**
+ * Minimal custom dropdown that supports per-option colors. Native
+ * <select> ignores CSS on <option>, so we roll our own just for
+ * class/spec pickers where we want WoW class colors to come through.
+ */
+function ColoredPicker({
+  options,
+  value,
+  onChange,
+  placeholder,
+  disabled = false,
+}: {
+  options: PickerOption[]
+  value: string
+  onChange: (value: string) => void
+  placeholder: string
+  disabled?: boolean
+}) {
+  const [open, setOpen] = useState(false)
+  const rootRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!open) return
+    const handleClickOutside = (e: MouseEvent) => {
+      if (rootRef.current && !rootRef.current.contains(e.target as Node)) {
+        setOpen(false)
+      }
+    }
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpen(false)
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    document.addEventListener('keydown', handleEscape)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+      document.removeEventListener('keydown', handleEscape)
+    }
+  }, [open])
+
+  const selected = options.find((o) => o.value === value)
+
+  return (
+    <div ref={rootRef} className="relative">
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={() => setOpen((v) => !v)}
+        className="w-full flex items-center justify-between gap-2 h-11 px-4 rounded-xl border border-border-strong bg-background-elevated text-[13px] text-foreground hover:border-border hover:bg-muted focus:outline-none focus:border-accent transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+      >
+        {selected ? (
+          <span
+            className="font-medium truncate"
+            style={selected.color ? { color: selected.color } : undefined}
+          >
+            {selected.label}
+          </span>
+        ) : (
+          <span className="text-muted-foreground">{placeholder}</span>
+        )}
+        <svg
+          className={`w-4 h-4 text-muted-foreground flex-shrink-0 transition-transform ${open ? 'rotate-180' : ''}`}
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+      {open && (
+        <div className="absolute top-full left-0 right-0 mt-1 z-30 bg-background-elevated border border-border-strong rounded-xl shadow-lg overflow-hidden max-h-72 overflow-y-auto">
+          {options.map((opt) => {
+            const isSelected = opt.value === value
+            return (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => {
+                  onChange(opt.value)
+                  setOpen(false)
+                }}
+                className={`w-full flex items-center gap-2 px-4 py-2.5 text-left text-[13px] hover:bg-muted transition-colors ${isSelected ? 'bg-muted' : ''}`}
+                style={opt.color ? { color: opt.color } : undefined}
+              >
+                <span className="font-medium flex-1 truncate">{opt.label}</span>
+                {isSelected && (
+                  <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                )}
+              </button>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
 }
 
 export default function ReserveJoinPage() {
@@ -99,14 +257,81 @@ export default function ReserveJoinPage() {
   const [notFound, setNotFound] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
+  // Snapshot of what was actually persisted on the server, so the
+  // confirmation card doesn't drift when the user starts editing.
+  const [submittedItemIds, setSubmittedItemIds] = useState<string[]>([])
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+  const [copied, setCopied] = useState(false)
+
+  // Reserve board view toggle. Defaults to item-grouped when the run
+  // is locked (contested items are the point), player-grouped otherwise.
+  const [boardView, setBoardView] = useState<'item' | 'player'>('item')
 
   // Form state
   const [characterName, setCharacterName] = useState('')
   const [characterClass, setCharacterClass] = useState('')
   const [characterSpec, setCharacterSpec] = useState('')
   const [selectedItemIds, setSelectedItemIds] = useState<string[]>([])
+
+  // Logged-in users get their characters for this guild pre-fetched
+  // from the API. When this list is non-empty we show a character picker
+  // and submit with character_id instead of freeform name/class/spec.
+  const [userCharacters, setUserCharacters] = useState<UserCharacter[]>([])
+  const [selectedCharacterId, setSelectedCharacterId] = useState<string>('')
+  // Escape hatch: lets a logged-in user submit as a raid alt that isn't
+  // tracked in LootList+. Clears selectedCharacterId so POST treats it
+  // as a guest submission (no character_id link).
+  const [useGuestCharacter, setUseGuestCharacter] = useState(false)
+
+  // Auth-aware header: logged-in users get a mini profile card that links
+  // to the app's reserve page, anonymous visitors get a login button.
+  const [homeHref, setHomeHref] = useState('/')
+  const [authUser, setAuthUser] = useState<{
+    displayName: string
+    avatarUrl: string | null
+  } | null>(null)
+  useEffect(() => {
+    const supabase = createClient()
+    // client.js is untyped so we get `any` here — fine for this lookup
+    type AuthResult = {
+      data: {
+        user: {
+          email?: string | null
+          user_metadata?: {
+            custom_claims?: { global_name?: string }
+            full_name?: string
+            avatar_url?: string
+            provider_id?: string
+          } | null
+        } | null
+      }
+    }
+    supabase.auth.getUser().then((result: AuthResult) => {
+      const user = result.data.user
+      if (!user) {
+        setHomeHref('/')
+        setAuthUser(null)
+        return
+      }
+      const meta = user.user_metadata || {}
+      const displayName =
+        meta.custom_claims?.global_name ||
+        meta.full_name ||
+        user.email ||
+        'Account'
+      let avatarUrl: string | null = null
+      if (meta.avatar_url) {
+        avatarUrl = meta.avatar_url.startsWith('http')
+          ? meta.avatar_url
+          : `https://cdn.discordapp.com/avatars/${meta.provider_id}/${meta.avatar_url}.png`
+      }
+      setHomeHref('/reserve')
+      setAuthUser({ displayName, avatarUrl })
+    })
+  }, [])
+
+  const loginHref = `/?next=${encodeURIComponent(`/reserve/join/${token}`)}`
 
   // Load saved character from localStorage
   useEffect(() => {
@@ -131,23 +356,57 @@ export default function ReserveJoinPage() {
           setItems(data.items || [])
           setSubmissions(data.submissions || [])
           setAwards(data.awards || [])
+          const chars: UserCharacter[] = data.user_characters || []
+          setUserCharacters(chars)
 
-          // Check if user already submitted (by character name)
-          const savedName = localStorage.getItem('lootlist_reserve_character')
-          if (savedName) {
-            try {
-              const { name } = JSON.parse(savedName)
-              const existing = (data.submissions || []).find(
-                (s: Submission) => s.character_name.toLowerCase() === name?.toLowerCase()
+          // If the user has characters in this guild, default to their main
+          // (first in the list, since the API sorts mains first).
+          if (chars.length > 0) {
+            const main = chars[0]
+            setSelectedCharacterId(main.id)
+            setCharacterName(main.name)
+            if (main.class_name) setCharacterClass(main.class_name)
+            if (main.spec_name) setCharacterSpec(main.spec_name)
+          }
+
+          // Check if user already submitted. Prefer matching against their
+          // linked characters (logged-in case), then fall back to the
+          // localStorage character name (anonymous case).
+          const subs: Submission[] = data.submissions || []
+          let existing: Submission | undefined
+
+          if (chars.length > 0) {
+            const charNames = new Set(chars.map((c) => c.name.toLowerCase()))
+            existing = subs.find((s) =>
+              charNames.has(s.character_name.toLowerCase())
+            )
+            if (existing) {
+              const matched = chars.find(
+                (c) => c.name.toLowerCase() === existing!.character_name.toLowerCase()
               )
-              if (existing) {
-                setCharacterName(existing.character_name)
-                setCharacterClass(existing.character_class)
-                setCharacterSpec(existing.character_spec || '')
-                setSelectedItemIds(existing.items || [])
-                setSubmitted(true)
-              }
-            } catch {}
+              if (matched) setSelectedCharacterId(matched.id)
+            }
+          }
+
+          if (!existing) {
+            const savedName = localStorage.getItem('lootlist_reserve_character')
+            if (savedName) {
+              try {
+                const { name } = JSON.parse(savedName)
+                existing = subs.find(
+                  (s) => s.character_name.toLowerCase() === name?.toLowerCase()
+                )
+              } catch {}
+            }
+          }
+
+          if (existing) {
+            setCharacterName(existing.character_name)
+            setCharacterClass(existing.character_class)
+            setCharacterSpec(existing.character_spec || '')
+            setSelectedItemIds(existing.items || [])
+            setSubmittedItemIds(existing.items || [])
+            setSubmitted(true)
           }
         } else {
           setNotFound(true)
@@ -163,12 +422,77 @@ export default function ReserveJoinPage() {
 
   useEffect(() => {
     if (run) {
-      document.title = `${run.title} \u2014 LootList+ Reserve`
+      document.title = `${run.title} • LootList+ Reserve`
       refreshWowheadTooltips()
     }
   }, [run])
 
+  // Re-scan wowhead links whenever the confirmation snapshot changes,
+  // so the tooltips register on newly-rendered items.
+  useEffect(() => {
+    if (submittedItemIds.length > 0) refreshWowheadTooltips()
+  }, [submittedItemIds])
+
+  // Re-scan wowhead links whenever the reserve board rerenders. The
+  // board pulls in a bunch of new <a> tags when toggling views or when
+  // submissions arrive, so power.js needs another pass.
+  useEffect(() => {
+    refreshWowheadTooltips()
+  }, [boardView, submissions])
+
   const itemMap = useMemo(() => new Map(items.map(i => [i.id, i])), [items])
+
+  // Submissions grouped by loot item (one entry per reserver per item).
+  const reservesByItem = useMemo(() => {
+    const map = new Map<string, Submission[]>()
+    submissions.forEach((sub) => {
+      sub.items.forEach((itemId) => {
+        if (!map.has(itemId)) map.set(itemId, [])
+        map.get(itemId)!.push(sub)
+      })
+    })
+    return map
+  }, [submissions])
+
+  // Awards grouped by loot item so the board can show winners inline.
+  const awardsByItem = useMemo(() => {
+    const map = new Map<string, Award[]>()
+    awards.forEach((a) => {
+      if (!map.has(a.loot_item_id)) map.set(a.loot_item_id, [])
+      map.get(a.loot_item_id)!.push(a)
+    })
+    return map
+  }, [awards])
+
+  // Reserved items grouped by boss, with bosses in raid order and items
+  // sorted by most contested first.
+  const boardByBoss = useMemo(() => {
+    const grouped = new Map<string, LootItem[]>()
+    for (const [itemId] of reservesByItem) {
+      const item = itemMap.get(itemId)
+      if (!item) continue
+      const boss = item.boss_name || 'Unknown'
+      if (!grouped.has(boss)) grouped.set(boss, [])
+      grouped.get(boss)!.push(item)
+    }
+    grouped.forEach((arr) =>
+      arr.sort(
+        (a, b) =>
+          (reservesByItem.get(b.id)?.length || 0) -
+          (reservesByItem.get(a.id)?.length || 0)
+      )
+    )
+    return grouped
+  }, [reservesByItem, itemMap])
+
+  // Clear spec when class changes if the current spec isn't valid for the new class
+  useEffect(() => {
+    if (!characterClass) return
+    const validSpecs = CLASS_SPECS[characterClass] || []
+    if (characterSpec && !validSpecs.includes(characterSpec)) {
+      setCharacterSpec('')
+    }
+  }, [characterClass])
 
   // Drop selected items that become disabled when class changes
   useEffect(() => {
@@ -183,6 +507,26 @@ export default function ReserveJoinPage() {
       return filtered.length === prev.length ? prev : filtered
     })
   }, [characterClass, run?.enforce_class_restrictions, items])
+
+  // Classes available for the run's expansion. Defaults to all classes
+  // if the expansion isn't recognized (safer than hiding everything).
+  const availableClasses = useMemo(() => {
+    if (!run?.expansion_name) return WOW_CLASSES
+    const allowed = EXPANSION_CLASSES[run.expansion_name]
+    if (!allowed) return WOW_CLASSES
+    return WOW_CLASSES.filter((c) => allowed.includes(c.name))
+  }, [run?.expansion_name])
+
+  // Clear the character class if it isn't valid for the run's expansion
+  // (e.g. a WotLK Death Knight selected from localStorage viewing a TBC run)
+  useEffect(() => {
+    if (!run?.expansion_name || !characterClass) return
+    const allowed = EXPANSION_CLASSES[run.expansion_name]
+    if (allowed && !allowed.includes(characterClass)) {
+      setCharacterClass('')
+      setCharacterSpec('')
+    }
+  }, [run?.expansion_name, characterClass])
 
   const disabledItemIds = useMemo(() => {
     const set = new Set<string>()
@@ -203,6 +547,10 @@ export default function ReserveJoinPage() {
       setError('Enter your character name and select a class')
       return
     }
+    if (!characterSpec) {
+      setError('Select your spec')
+      return
+    }
     if (selectedItemIds.length === 0) {
       setError('Select at least one item to reserve')
       return
@@ -218,12 +566,14 @@ export default function ReserveJoinPage() {
           character_name: characterName.trim(),
           character_class: characterClass,
           character_spec: characterSpec.trim() || null,
+          character_id: selectedCharacterId || null,
           items: selectedItemIds,
         }),
       })
       const data = await res.json()
       if (data.success) {
         setSubmitted(true)
+        setSubmittedItemIds([...selectedItemIds])
         setSuccess(data.updated ? 'Reserves updated.' : 'Reserves submitted.')
         // Save character for next time
         localStorage.setItem('lootlist_reserve_character', JSON.stringify({
@@ -240,16 +590,93 @@ export default function ReserveJoinPage() {
     }
   }
 
+  // Items the player has actually submitted (snapshot from the last
+  // successful save, so the confirmation card doesn't drift while they
+  // start editing their selections).
+  const reservedItems = useMemo(
+    () =>
+      submittedItemIds
+        .map((id) => itemMap.get(id))
+        .filter((i): i is LootItem => !!i),
+    [submittedItemIds, itemMap]
+  )
+
+  const handleCharacterPick = (charId: string) => {
+    // Sentinel option at the bottom of the picker — flips into the
+    // freeform guest flow so raiders can reserve as an alt they don't
+    // track in LootList+.
+    if (charId === '__guest__') {
+      setUseGuestCharacter(true)
+      setSelectedCharacterId('')
+      setCharacterName('')
+      setCharacterClass('')
+      setCharacterSpec('')
+      return
+    }
+    setSelectedCharacterId(charId)
+    const char = userCharacters.find((c) => c.id === charId)
+    if (!char) return
+    setCharacterName(char.name)
+    setCharacterClass(char.class_name || '')
+    setCharacterSpec(char.spec_name || '')
+  }
+
+  const handleCopyForDiscord = async () => {
+    if (!run) return
+    const header = characterSpec
+      ? `${characterName} (${characterSpec} ${characterClass}) reserved for ${run.title}:`
+      : `${characterName} (${characterClass}) reserved for ${run.title}:`
+    const lines = reservedItems.map(
+      (item) => `- ${item.name} — https://www.wowhead.com/item=${item.wowhead_id}`
+    )
+    const text = [header, ...lines].join('\n')
+    try {
+      await navigator.clipboard.writeText(text)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch {
+      setError('Could not copy to clipboard')
+    }
+  }
+
   const formatDate = (dateStr: string) => {
     return new Date(dateStr).toLocaleString('en-US', {
       weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit',
     })
   }
 
+  // "in 2h 30m", "in 45m", "3h ago", "tomorrow at 8 PM" — used by the
+  // locked state banner to give players a sense of when the raid starts.
+  const formatRelative = (dateStr: string): string => {
+    const target = new Date(dateStr).getTime()
+    const now = Date.now()
+    const diffMs = target - now
+    const absMs = Math.abs(diffMs)
+    const mins = Math.round(absMs / 60000)
+    const hours = Math.floor(mins / 60)
+    const days = Math.floor(hours / 24)
+    const future = diffMs > 0
+    const prefix = future ? 'in ' : ''
+    const suffix = future ? '' : ' ago'
+    if (mins < 1) return 'now'
+    if (mins < 60) return `${prefix}${mins}m${suffix}`
+    if (hours < 24) {
+      const remMins = mins % 60
+      return remMins > 0
+        ? `${prefix}${hours}h ${remMins}m${suffix}`
+        : `${prefix}${hours}h${suffix}`
+    }
+    if (days < 7) return `${prefix}${days}d${suffix}`
+    return new Date(dateStr).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+    })
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background">
-        <div className="max-w-xl mx-auto p-4 sm:p-6 pt-8 space-y-6">
+        <div className="p-4 sm:p-6 lg:p-8 pt-8 space-y-6">
           <Skeleton className="h-8 w-48 mx-auto" />
           <Skeleton className="h-40 w-full rounded-xl" />
           <Skeleton className="h-60 w-full rounded-xl" />
@@ -278,18 +705,59 @@ export default function ReserveJoinPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Minimal header */}
-      <div className="border-b border-border bg-background-elevated">
-        <div className="max-w-xl mx-auto px-4 py-3 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2">
-            <Image src="/logo.svg" alt="LootList+" width={20} height={20} />
-            <span className="text-[14px] font-bold text-foreground">LootList+</span>
+      {/* Minimal header — pinned. Matches the landing nav wordmark */}
+      <div className="sticky top-0 z-40 border-b border-border bg-background-elevated/95 backdrop-blur-sm">
+        <div className="px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between gap-4">
+          <Link href={homeHref} className="flex items-center gap-3" aria-label="LootList+ home">
+            <Image
+              src="/images/landing/logo-landing.svg"
+              alt="LootList+"
+              width={88}
+              height={14}
+              className="h-3.5 w-auto"
+              priority
+            />
+            <span className="text-muted-foreground/60 text-[14px] font-light" aria-hidden="true">|</span>
+            <span className="text-[14px] font-semibold text-muted-foreground">Reserve</span>
           </Link>
-          <span className="text-[11px] text-muted-foreground">Reserve</span>
+
+          {authUser ? (
+            <Link
+              href="/reserve"
+              className="flex items-center gap-2.5 rounded-full border border-border bg-background-elevated pl-1.5 pr-3.5 py-1 hover:bg-muted transition-colors group"
+              title="Manage your runs in LootList+"
+            >
+              {authUser.avatarUrl ? (
+                <Image
+                  src={authUser.avatarUrl}
+                  alt=""
+                  width={24}
+                  height={24}
+                  className="w-6 h-6 rounded-full border border-border"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement
+                    target.src = 'https://cdn.discordapp.com/embed/avatars/0.png'
+                  }}
+                />
+              ) : (
+                <div className="w-6 h-6 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 border border-border" />
+              )}
+              <span className="text-[13px] font-medium text-foreground group-hover:text-accent transition-colors truncate max-w-[140px]">
+                {authUser.displayName}
+              </span>
+            </Link>
+          ) : (
+            <Link
+              href={loginHref}
+              className="inline-flex items-center justify-center h-8 px-4 rounded-full bg-white text-[13px] font-semibold text-black hover:bg-white/90 transition-colors"
+            >
+              Log in
+            </Link>
+          )}
         </div>
       </div>
 
-      <div className="max-w-xl mx-auto p-4 sm:p-6 space-y-5">
+      <div className="p-4 sm:p-6 lg:p-8 space-y-5">
         {/* Run info card */}
         <Card variant="unified">
           <div className="flex items-start gap-4">
@@ -309,6 +777,9 @@ export default function ReserveJoinPage() {
           </div>
 
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[13px] text-muted-foreground mb-3 mt-3">
+            {run.expansion_name && (
+              <span>{EXPANSION_SHORT_NAME[run.expansion_name] || run.expansion_name}</span>
+            )}
             {run.raid_tier_name && <span>{run.raid_tier_name}</span>}
             <span className="flex items-center gap-1.5">
               <HugeiconsIcon icon={Calendar03Icon} size={14} />
@@ -378,6 +849,79 @@ export default function ReserveJoinPage() {
           )}
         </Card>
 
+        {/* Confirmation card — shown once the player has submitted. Gives
+            them a clear "you're in" signal, wowhead-styled list of what they
+            reserved, and a copy-to-Discord button. Edits still happen in the
+            form below. */}
+        {submitted && reservedItems.length > 0 && (
+          <Card variant="unified" className="border-success/40 bg-success/[0.04]">
+            <div className="flex items-start gap-3 mb-3">
+              <div className="w-9 h-9 rounded-full bg-success/15 flex items-center justify-center flex-shrink-0">
+                <HugeiconsIcon icon={CheckmarkCircle01Icon} size={18} className="text-success" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <Heading level={3} className="mb-0.5">You're in</Heading>
+                <Text size="sm" color="muted">
+                  {isOpen
+                    ? 'You can edit your reserves anytime before the run locks.'
+                    : 'This run is no longer accepting changes.'}
+                </Text>
+              </div>
+            </div>
+
+            <div className="rounded-xl border border-border bg-background-subtle px-4 py-3 mb-3">
+              <div className="flex items-center gap-2 mb-2">
+                <span
+                  className="text-[14px] font-semibold"
+                  style={{
+                    color:
+                      WOW_CLASSES.find((c) => c.name === characterClass)?.color ||
+                      '#FFFFFF',
+                  }}
+                >
+                  {characterName}
+                </span>
+                {characterSpec && (
+                  <span className="text-[12px] text-muted-foreground">
+                    {characterSpec} {characterClass}
+                  </span>
+                )}
+              </div>
+              <ul className="space-y-1">
+                {reservedItems.map((item) => (
+                  <li key={item.id} className="text-[13px] flex items-center gap-2">
+                    <span className="text-muted-foreground">•</span>
+                    <ItemLink name={item.name} wowheadId={item.wowhead_id} clickable={false} />
+                    <span className="text-[11px] text-muted-foreground">{item.item_slot}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleCopyForDiscord}
+              >
+                <HugeiconsIcon icon={Copy01Icon} size={14} />
+                {copied ? 'Copied' : 'Copy for Discord'}
+              </Button>
+              {run.discord_invite_url && (
+                <a
+                  href={run.discord_invite_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 h-8 px-3 rounded-full border border-border text-[13px] font-medium hover:bg-muted transition-colors"
+                >
+                  <HugeiconsIcon icon={DiscordIcon} size={14} />
+                  Open guild Discord
+                </a>
+              )}
+            </div>
+          </Card>
+        )}
+
         {/* Submission form (only when open) */}
         {isOpen && (
           <Card variant="unified">
@@ -398,41 +942,105 @@ export default function ReserveJoinPage() {
             )}
 
             <div className="space-y-4">
-              {/* Character info */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {/* Character info — use a picker when the logged-in user has
+                  characters in this guild, otherwise fall back to the
+                  freeform anonymous form. */}
+              {userCharacters.length > 0 && !useGuestCharacter ? (
                 <div className="space-y-1.5">
-                  <Label>Character name</Label>
-                  <Input
-                    variant="rounded"
-                    value={characterName}
-                    onChange={(e) => setCharacterName(e.target.value)}
-                    placeholder="e.g. Legolas"
+                  <Label>Submitting as</Label>
+                  <ColoredPicker
+                    placeholder="Select your character"
+                    value={selectedCharacterId}
+                    onChange={handleCharacterPick}
+                    options={[
+                      ...userCharacters.map((c) => ({
+                        value: c.id,
+                        label: c.spec_name
+                          ? `${c.name} — ${c.spec_name} ${c.class_name}${c.is_main ? ' (Main)' : ''}`
+                          : `${c.name} — ${c.class_name}${c.is_main ? ' (Main)' : ''}`,
+                        color: c.class_color || undefined,
+                      })),
+                      { value: '__guest__', label: '+ Use a different character' },
+                    ]}
                   />
+                  <Text size="xs" color="muted">
+                    Linked to your LootList+ character.
+                  </Text>
                 </div>
-                <div className="space-y-1.5">
-                  <Label>Class</Label>
-                  <Select
-                    variant="rounded"
-                    value={characterClass}
-                    onChange={(e) => setCharacterClass(e.target.value)}
-                  >
-                    <option value="" disabled>Select class</option>
-                    {WOW_CLASSES.map(c => (
-                      <option key={c.name} value={c.name}>{c.name}</option>
-                    ))}
-                  </Select>
-                </div>
-              </div>
+              ) : (
+                <>
+                  {authUser && run.guild_name && userCharacters.length === 0 && (
+                    <Alert className="border-accent/30 bg-accent/5">
+                      <AlertDescription className="text-[12px]">
+                        You're logged in but don't have a character in{' '}
+                        <span className="font-semibold">{run.guild_name}</span>. You can still submit as a guest below.
+                      </AlertDescription>
+                    </Alert>
+                  )}
+                  {userCharacters.length > 0 && useGuestCharacter && (
+                    <div className="flex items-center justify-between gap-2 flex-wrap">
+                      <Text size="xs" color="muted">
+                        Submitting as a guest (not linked to your LootList+ roster).
+                      </Text>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setUseGuestCharacter(false)
+                          const main = userCharacters[0]
+                          if (main) {
+                            setSelectedCharacterId(main.id)
+                            setCharacterName(main.name)
+                            setCharacterClass(main.class_name || '')
+                            setCharacterSpec(main.spec_name || '')
+                          }
+                        }}
+                        className="text-[12px] text-accent hover:underline"
+                      >
+                        Use my linked character
+                      </button>
+                    </div>
+                  )}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <Label>Character name</Label>
+                      <Input
+                        variant="rounded"
+                        value={characterName}
+                        onChange={(e) => setCharacterName(e.target.value)}
+                        placeholder="e.g. Zevinall"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>Class</Label>
+                      <ColoredPicker
+                        placeholder="Select class"
+                        value={characterClass}
+                        onChange={setCharacterClass}
+                        options={availableClasses.map((c) => ({
+                          value: c.name,
+                          label: c.name,
+                          color: c.color,
+                        }))}
+                      />
+                    </div>
+                  </div>
 
-              <div className="space-y-1.5">
-                <Label>Spec <span className="text-muted-foreground font-normal">(optional)</span></Label>
-                <Input
-                  variant="rounded"
-                  value={characterSpec}
-                  onChange={(e) => setCharacterSpec(e.target.value)}
-                  placeholder="e.g. Fury, Holy, Balance"
-                />
-              </div>
+                  <div className="space-y-1.5">
+                    <Label>Spec</Label>
+                    <ColoredPicker
+                      placeholder={characterClass ? 'Select spec' : 'Select a class first'}
+                      value={characterSpec}
+                      onChange={setCharacterSpec}
+                      disabled={!characterClass}
+                      options={(CLASS_SPECS[characterClass] || []).map((s) => ({
+                        value: s,
+                        label: s,
+                        color: WOW_CLASSES.find((c) => c.name === characterClass)?.color,
+                      }))}
+                    />
+                  </div>
+                </>
+              )}
 
               {/* Item picker */}
               <div className="space-y-1.5">
@@ -451,7 +1059,7 @@ export default function ReserveJoinPage() {
                 variant="primary"
                 onClick={handleSubmit}
                 loading={submitting}
-                disabled={selectedItemIds.length === 0 || !characterName.trim() || !characterClass}
+                disabled={selectedItemIds.length === 0 || !characterName.trim() || !characterClass || !characterSpec}
                 className="w-full"
               >
                 {submitted ? 'Update reserves' : 'Submit reserves'}
@@ -460,73 +1068,222 @@ export default function ReserveJoinPage() {
           </Card>
         )}
 
-        {/* Locked / read-only message */}
-        {!isOpen && !submitted && (
-          <Card variant="unified" className="text-center">
-            <HugeiconsIcon icon={LockIcon} size={24} className="text-warning mx-auto mb-2" />
-            <Text className="font-semibold mb-1">
-              {run.status === 'locked' ? 'Reserves are locked' : 'This run is completed'}
-            </Text>
-            <Text color="muted" size="sm">Submissions are no longer accepted.</Text>
+        {/* Locked / completed banner — only when the run isn't open. */}
+        {!isOpen && (
+          <Card
+            variant="unified"
+            className={
+              run.status === 'locked'
+                ? 'border-warning/40 bg-warning/[0.04]'
+                : 'border-border bg-background-subtle'
+            }
+          >
+            <div className="flex items-start gap-3">
+              <div
+                className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 ${
+                  run.status === 'locked' ? 'bg-warning/15' : 'bg-muted'
+                }`}
+              >
+                <HugeiconsIcon
+                  icon={run.status === 'locked' ? LockIcon : CheckmarkCircle01Icon}
+                  size={18}
+                  className={run.status === 'locked' ? 'text-warning' : 'text-muted-foreground'}
+                />
+              </div>
+              <div className="flex-1 min-w-0">
+                <Heading level={3} className="mb-0.5">
+                  {run.status === 'locked' ? 'Reserves locked' : 'Run completed'}
+                </Heading>
+                <Text size="sm" color="muted">
+                  {run.status === 'locked'
+                    ? `Raid ${formatRelative(run.raid_at)} · ${submissions.length} player${submissions.length === 1 ? '' : 's'} signed up`
+                    : `Completed · ${submissions.length} player${submissions.length === 1 ? '' : 's'} reserved · ${awards.length} award${awards.length === 1 ? '' : 's'}`}
+                </Text>
+              </div>
+            </div>
           </Card>
         )}
 
-        {/* Submissions list (visible based on rules) */}
+        {/* Reserve board — grouped by item or by player. Shown whenever
+            submissions are visible (public_live, locked, or completed). */}
         {showSubmissions && submissions.length > 0 && (
           <Card className="overflow-hidden">
-            <div className="px-5 py-3 border-b border-border flex items-center gap-2">
-              <HugeiconsIcon icon={UserMultiple02Icon} size={16} className="text-muted-foreground" />
-              <LabelText size="sm">Reserves ({submissions.length})</LabelText>
+            <div className="px-5 py-3 border-b border-border flex items-center justify-between gap-4 flex-wrap">
+              <div className="flex items-center gap-2">
+                <HugeiconsIcon icon={UserMultiple02Icon} size={16} className="text-muted-foreground" />
+                <LabelText size="sm">
+                  Reserve board ({submissions.length} player{submissions.length === 1 ? '' : 's'})
+                </LabelText>
+              </div>
+              <div className="flex items-center gap-1 p-0.5 rounded-full border border-border bg-background-subtle">
+                <button
+                  type="button"
+                  onClick={() => setBoardView('item')}
+                  className={`px-3 py-1 rounded-full text-[12px] font-medium transition-colors ${
+                    boardView === 'item'
+                      ? 'bg-background-elevated text-foreground'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  By item
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setBoardView('player')}
+                  className={`px-3 py-1 rounded-full text-[12px] font-medium transition-colors ${
+                    boardView === 'player'
+                      ? 'bg-background-elevated text-foreground'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  By player
+                </button>
+              </div>
             </div>
-            <div className="divide-y divide-border">
-              {submissions.map((sub) => {
-                const classInfo = WOW_CLASSES.find(c => c.name.toLowerCase() === sub.character_class.toLowerCase())
-                return (
-                  <div key={sub.id} className="px-5 py-3">
-                    <div className="flex items-center gap-2 mb-1.5">
-                      <span className="text-[14px] font-semibold" style={{ color: classInfo?.color || '#FFFFFF' }}>
-                        {sub.character_name}
-                      </span>
-                      {sub.character_spec && (
-                        <span className="text-[11px] text-muted-foreground">({sub.character_spec})</span>
-                      )}
+
+            {boardView === 'item' ? (
+              // Item-grouped: one row per reserved item, grouped by boss,
+              // sorted by contested count. Awards rendered inline.
+              <div>
+                {Array.from(boardByBoss.entries()).map(([boss, bossItems]) => (
+                  <div key={boss}>
+                    <div className="px-5 py-2 bg-background-subtle border-y border-border">
+                      <LabelText size="xs">{boss}</LabelText>
                     </div>
-                    <div className="flex flex-wrap gap-1.5">
-                      {sub.items.map((itemId) => {
-                        const item = itemMap.get(itemId)
-                        return item ? (
-                          <span key={itemId} className="inline-flex items-center px-2 py-0.5 bg-background-subtle rounded text-[12px]">
-                            <ItemLink name={item.name} wowheadId={item.wowhead_id} clickable={false} />
-                          </span>
-                        ) : null
+                    <div className="divide-y divide-border">
+                      {bossItems.map((item) => {
+                        const reservers = reservesByItem.get(item.id) || []
+                        const contested = reservers.length > 1
+                        const itemAwards = awardsByItem.get(item.id) || []
+                        return (
+                          <div key={item.id} className="px-5 py-3">
+                            <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+                              <ItemLink name={item.name} wowheadId={item.wowhead_id} clickable={false} />
+                              <span className="text-[11px] text-muted-foreground">{item.item_slot}</span>
+                              <span
+                                className={`text-[11px] px-1.5 py-0.5 rounded-full font-medium ${
+                                  contested
+                                    ? 'bg-warning/15 text-warning'
+                                    : 'bg-background-subtle text-muted-foreground'
+                                }`}
+                              >
+                                {reservers.length} reserve{reservers.length === 1 ? '' : 's'}
+                              </span>
+                              {itemAwards.length > 0 && (
+                                <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-success/15 text-success font-medium inline-flex items-center gap-1">
+                                  <HugeiconsIcon icon={CheckmarkCircle01Icon} size={11} />
+                                  Awarded to {itemAwards.map((a) => a.character_name).join(', ')}
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex flex-wrap gap-x-3 gap-y-1 pl-0.5">
+                              {reservers.map((sub) => {
+                                const classInfo = WOW_CLASSES.find(
+                                  (c) => c.name.toLowerCase() === sub.character_class.toLowerCase()
+                                )
+                                const isMine =
+                                  submitted &&
+                                  sub.character_name.toLowerCase() === characterName.toLowerCase()
+                                return (
+                                  <span
+                                    key={`${sub.id}-${item.id}`}
+                                    className={`text-[12px] inline-flex items-center gap-1 ${
+                                      isMine ? 'font-semibold' : ''
+                                    }`}
+                                  >
+                                    <span style={{ color: classInfo?.color || '#FFFFFF' }}>
+                                      {sub.character_name}
+                                    </span>
+                                    {sub.character_spec && (
+                                      <span className="text-muted-foreground">({sub.character_spec})</span>
+                                    )}
+                                    {isMine && (
+                                      <span className="text-[10px] uppercase tracking-wide text-accent">
+                                        You
+                                      </span>
+                                    )}
+                                  </span>
+                                )
+                              })}
+                            </div>
+                          </div>
+                        )
                       })}
                     </div>
                   </div>
-                )
-              })}
-            </div>
+                ))}
+              </div>
+            ) : (
+              // Player-grouped: one row per submitter, listing their items.
+              <div className="divide-y divide-border">
+                {submissions.map((sub) => {
+                  const classInfo = WOW_CLASSES.find(
+                    (c) => c.name.toLowerCase() === sub.character_class.toLowerCase()
+                  )
+                  const isMine =
+                    submitted &&
+                    sub.character_name.toLowerCase() === characterName.toLowerCase()
+                  return (
+                    <div
+                      key={sub.id}
+                      className={`px-5 py-3 ${isMine ? 'bg-accent/[0.04]' : ''}`}
+                    >
+                      <div className="flex items-center gap-2 mb-1.5">
+                        <span
+                          className="text-[14px] font-semibold"
+                          style={{ color: classInfo?.color || '#FFFFFF' }}
+                        >
+                          {sub.character_name}
+                        </span>
+                        {sub.character_spec && (
+                          <span className="text-[11px] text-muted-foreground">
+                            ({sub.character_spec} {sub.character_class})
+                          </span>
+                        )}
+                        {isMine && (
+                          <span className="text-[10px] uppercase tracking-wide text-accent font-semibold">
+                            You
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex flex-wrap gap-x-3 gap-y-1">
+                        {sub.items.map((itemId) => {
+                          const item = itemMap.get(itemId)
+                          if (!item) return null
+                          const itemAwards = awardsByItem.get(itemId) || []
+                          const wonByThisChar = itemAwards.some(
+                            (a) => a.character_name.toLowerCase() === sub.character_name.toLowerCase()
+                          )
+                          return (
+                            <span
+                              key={itemId}
+                              className="inline-flex items-center gap-1 text-[12px]"
+                            >
+                              <ItemLink name={item.name} wowheadId={item.wowhead_id} clickable={false} />
+                              {wonByThisChar && (
+                                <HugeiconsIcon
+                                  icon={CheckmarkCircle01Icon}
+                                  size={12}
+                                  className="text-success"
+                                />
+                              )}
+                            </span>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
           </Card>
         )}
 
-        {/* Awards */}
-        {awards.length > 0 && (
-          <Card className="overflow-hidden">
-            <div className="px-5 py-3 border-b border-border flex items-center gap-2">
-              <HugeiconsIcon icon={CheckmarkCircle01Icon} size={16} className="text-success" />
-              <LabelText size="sm">Awards</LabelText>
-            </div>
-            <div className="divide-y divide-border">
-              {awards.map((award) => {
-                const item = itemMap.get(award.loot_item_id)
-                return (
-                  <div key={award.id} className="px-5 py-3 flex items-center gap-3">
-                    {item && <ItemLink name={item.name} wowheadId={item.wowhead_id} clickable={false} />}
-                    <span className="text-[13px] text-muted-foreground">→</span>
-                    <span className="text-[13px] font-medium">{award.character_name}</span>
-                  </div>
-                )
-              })}
-            </div>
+        {/* Locked with no submissions visible (hidden_until_lock on an
+            empty run, for example) */}
+        {!isOpen && submissions.length === 0 && (
+          <Card variant="unified" className="text-center">
+            <Text color="muted" size="sm">No reserves were submitted for this run.</Text>
           </Card>
         )}
 

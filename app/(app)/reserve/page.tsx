@@ -11,8 +11,9 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { Heading, Text } from '@/components/ui/typography'
 import { Skeleton } from '@/components/ui/skeletons'
 import { HugeiconsIcon } from '@hugeicons/react'
-import { Add01Icon, Copy01Icon, Calendar03Icon, UserMultiple02Icon } from '@hugeicons/core-free-icons'
+import { Add01Icon, Copy01Icon, Calendar03Icon, UserMultiple02Icon, ArrowRight02Icon } from '@hugeicons/core-free-icons'
 import { trackClientEvent } from '@/utils/analytics/client'
+import { getRaidIcon } from '@/utils/raidIcons'
 import { CreateReserveRunModal } from './components/CreateReserveRunModal'
 
 type ReserveRun = {
@@ -27,6 +28,7 @@ type ReserveRun = {
   created_at: string
   submission_count: number
   raid_tier_id: string
+  raid_tier_name: string | null
   visibility: string
 }
 
@@ -81,7 +83,7 @@ export default function ReservePage() {
   }
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 max-w-5xl mx-auto">
+    <div className="p-4 sm:p-6 lg:p-8">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
@@ -154,6 +156,7 @@ export default function ReservePage() {
         <div className="space-y-3">
           {filteredRuns.map((run) => {
             const badge = STATUS_BADGE[run.status]
+            const raidIcon = run.raid_tier_name ? getRaidIcon(run.raid_tier_name) : null
             return (
               <Card
                 key={run.id}
@@ -161,7 +164,14 @@ export default function ReservePage() {
                 onClick={() => router.push(`/reserve/runs/${run.id}`)}
                 className="hover:border-accent/30 transition-colors cursor-pointer"
               >
-                <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center gap-4">
+                  {raidIcon && (
+                    <img
+                      src={raidIcon}
+                      alt=""
+                      className="w-12 h-12 rounded-lg border border-border/50 flex-shrink-0 hidden sm:block"
+                    />
+                  )}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-3 mb-1.5">
                       <Text size="md" className="font-semibold truncate">{run.title}</Text>
@@ -178,21 +188,35 @@ export default function ReservePage() {
                         <HugeiconsIcon icon={UserMultiple02Icon} size={14} />
                         {run.submission_count} signed up
                       </span>
-                      <span>{run.max_reserves} reserve{run.max_reserves !== 1 ? 's' : ''}</span>
+                      <span>
+                        {run.max_reserves} reserve{run.max_reserves !== 1 ? 's' : ''}
+                      </span>
                     </div>
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      copyShareLink(run.share_token)
-                    }}
-                    className="flex-shrink-0"
-                    title="Copy share link"
-                  >
-                    <HugeiconsIcon icon={Copy01Icon} size={16} />
-                  </Button>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        copyShareLink(run.share_token)
+                      }}
+                      title="Copy share link"
+                    >
+                      <HugeiconsIcon icon={Copy01Icon} size={16} />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        window.open(`/reserve/join/${run.share_token}`, '_blank', 'noopener,noreferrer')
+                      }}
+                    >
+                      View reserve page
+                      <HugeiconsIcon icon={ArrowRight02Icon} size={14} />
+                    </Button>
+                  </div>
                 </div>
               </Card>
             )

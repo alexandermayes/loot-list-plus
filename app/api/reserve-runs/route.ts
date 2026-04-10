@@ -27,7 +27,8 @@ export async function GET(request: NextRequest) {
       .from('reserve_runs')
       .select(`
         *,
-        reserve_submissions(count)
+        reserve_submissions(count),
+        raid_tiers(name)
       `)
       .eq('guild_id', guildId)
       .order('created_at', { ascending: false })
@@ -37,11 +38,13 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to fetch runs' }, { status: 500 })
     }
 
-    // Flatten submission count
+    // Flatten submission count and raid tier name
     const runsWithCounts = (runs || []).map((run: any) => ({
       ...run,
       submission_count: run.reserve_submissions?.[0]?.count ?? 0,
+      raid_tier_name: run.raid_tiers?.name ?? null,
       reserve_submissions: undefined,
+      raid_tiers: undefined,
     }))
 
     return NextResponse.json({ success: true, runs: runsWithCounts })

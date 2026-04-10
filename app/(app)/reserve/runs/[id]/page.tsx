@@ -24,6 +24,7 @@ import {
   Delete02Icon,
   UserMultiple02Icon,
   ArrowLeft02Icon,
+  ArrowRight02Icon,
   Edit02Icon,
   CopyLinkIcon,
   FileDownloadIcon,
@@ -444,6 +445,30 @@ export default function ReserveRunPage() {
     }
   }
 
+  const deleteRun = () => {
+    if (!run) return
+    confirm({
+      title: `Delete ${run.title}?`,
+      description: 'This removes the run, all reserves, and all awards. This cannot be undone.',
+      confirmLabel: 'Delete run',
+      variant: 'danger',
+      onConfirm: async () => {
+        try {
+          const res = await authedFetch(`/api/reserve-runs/${run.id}`, { method: 'DELETE' })
+          const data = await res.json()
+          if (data.success) {
+            showNotification('success', 'Run deleted')
+            router.push('/reserve')
+          } else {
+            showNotification('error', data.error || 'Failed to delete run')
+          }
+        } catch {
+          showNotification('error', 'Something went wrong')
+        }
+      },
+    })
+  }
+
   const exportCsv = () => {
     if (!run) return
     const header = ['Character', 'Class', 'Spec', 'Item', 'Wowhead ID', 'Boss']
@@ -551,7 +576,7 @@ export default function ReserveRunPage() {
 
   if (!run) {
     return (
-      <div className="p-4 sm:p-6 lg:p-8 max-w-5xl mx-auto">
+      <div className="p-4 sm:p-6 lg:p-8">
         <EmptyState title="Run not found" description="This reserve run doesn't exist or you don't have access." size="lg" />
       </div>
     )
@@ -562,18 +587,19 @@ export default function ReserveRunPage() {
   return (
     <>
       {ConfirmDialog}
-      <div className="p-4 sm:p-6 lg:p-8 max-w-5xl mx-auto space-y-6">
+      <div className="p-4 sm:p-6 lg:p-8 space-y-6">
 
         {/* Back button */}
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => router.push('/reserve')}
-          className="text-muted-foreground -ml-2"
-        >
-          <HugeiconsIcon icon={ArrowLeft02Icon} size={16} />
-          All runs
-        </Button>
+        <div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => router.push('/reserve')}
+          >
+            <HugeiconsIcon icon={ArrowLeft02Icon} size={16} />
+            All runs
+          </Button>
+        </div>
 
         {/* Header */}
         <Card variant="unified">
@@ -610,17 +636,7 @@ export default function ReserveRunPage() {
 
             {/* Actions */}
             {canManage && (
-              <div className="flex flex-wrap items-center gap-2 flex-shrink-0">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={duplicateRun}
-                  loading={actionLoading}
-                  title="Clone this run for next week"
-                >
-                  <HugeiconsIcon icon={CopyLinkIcon} size={16} />
-                  Duplicate
-                </Button>
+              <div className="flex flex-col items-stretch gap-2 flex-shrink-0 w-full sm:w-auto">
                 {run.status === 'open' && (
                   <Button
                     variant="primary"
@@ -635,15 +651,6 @@ export default function ReserveRunPage() {
                 {run.status === 'locked' && (
                   <>
                     <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => executeAction('unlock')}
-                      loading={actionLoading}
-                    >
-                      <HugeiconsIcon icon={LockIcon} size={16} />
-                      Unlock
-                    </Button>
-                    <Button
                       variant="primary"
                       size="sm"
                       onClick={() => executeAction('complete')}
@@ -652,8 +659,27 @@ export default function ReserveRunPage() {
                       <HugeiconsIcon icon={CheckmarkCircle01Icon} size={16} />
                       Complete
                     </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => executeAction('unlock')}
+                      loading={actionLoading}
+                    >
+                      <HugeiconsIcon icon={LockIcon} size={16} />
+                      Unlock
+                    </Button>
                   </>
                 )}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={duplicateRun}
+                  loading={actionLoading}
+                  title="Clone this run for next week"
+                >
+                  <HugeiconsIcon icon={CopyLinkIcon} size={16} />
+                  Duplicate
+                </Button>
               </div>
             )}
           </div>
@@ -663,16 +689,26 @@ export default function ReserveRunPage() {
         <Card variant="unified">
           <LabelText size="sm" className="mb-3">Share link</LabelText>
           <div className="flex items-center gap-2 mb-3">
-            <Input
-              variant="rounded"
-              readOnly
-              value={`${typeof window !== 'undefined' ? window.location.origin : ''}/reserve/join/${run.share_token}`}
-              className="text-[13px] text-muted-foreground"
-              onClick={copyShareLink}
-            />
+            <a
+              href={`/reserve/join/${run.share_token}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex-1 min-w-0 h-11 px-5 rounded-xl border border-border-strong bg-background-elevated flex items-center text-[13px] text-muted-foreground hover:text-accent hover:border-accent/40 transition-colors truncate"
+              title="Open join page in a new tab"
+            >
+              {typeof window !== 'undefined' ? `${window.location.origin}/reserve/join/${run.share_token}` : `/reserve/join/${run.share_token}`}
+            </a>
             <Button variant="outline" onClick={copyShareLink} className="flex-shrink-0">
               <HugeiconsIcon icon={Copy01Icon} size={16} />
-              Copy
+              Copy link
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => window.open(`/reserve/join/${run.share_token}`, '_blank', 'noopener,noreferrer')}
+              className="flex-shrink-0"
+            >
+              View reserve page
+              <HugeiconsIcon icon={ArrowRight02Icon} size={14} />
             </Button>
           </div>
           {(run.status === 'locked' || run.status === 'completed') && run.submissions.length > 0 && (
@@ -1178,6 +1214,32 @@ export default function ReserveRunPage() {
             </div>
           )}
         </Card>
+
+        {/* Danger zone — destructive actions kept away from the main flow */}
+        {canManage && (
+          <Card variant="unified" className="border-destructive/30">
+            <div className="flex items-center justify-between mb-3">
+              <LabelText size="sm" className="!text-destructive">Danger zone</LabelText>
+            </div>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="min-w-0">
+                <Text size="sm" className="font-semibold">Delete this run</Text>
+                <Text color="muted" size="xs">
+                  Permanently removes the run, all reserves, and all awards. This cannot be undone.
+                </Text>
+              </div>
+              <Button
+                variant="destructive-outline"
+                size="sm"
+                onClick={deleteRun}
+                className="flex-shrink-0"
+              >
+                <HugeiconsIcon icon={Delete02Icon} size={16} />
+                Delete run
+              </Button>
+            </div>
+          </Card>
+        )}
       </div>
     </>
   )

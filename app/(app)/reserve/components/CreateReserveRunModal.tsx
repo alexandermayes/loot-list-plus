@@ -162,7 +162,7 @@ export function CreateReserveRunModal({ open, onClose }: CreateReserveRunModalPr
     const tier = raidTiers.find(t => t.id === selectedTierId)
     if (tier) {
       const today = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-      setTitle(`${tier.name} \u2014 ${today}`)
+      setTitle(`${tier.name}, ${today}`)
     }
   }, [selectedTierId, raidTiers])
 

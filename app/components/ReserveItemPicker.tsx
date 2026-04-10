@@ -74,9 +74,13 @@ export default function ReserveItemPicker({
     [items, selectedSet]
   )
 
+  // Re-scan wowhead tooltips whenever the rendered item set changes.
+  // `items` is the main trigger — on initial mount the parent's fetch
+  // hasn't populated it yet, so without this dep the dropdown items
+  // never get registered with wowhead power.js.
   useEffect(() => {
     refreshWowheadTooltips()
-  }, [selectedIds, search])
+  }, [items, selectedIds, search])
 
   const handleToggle = useCallback(
     (itemId: string) => {
@@ -97,19 +101,23 @@ export default function ReserveItemPicker({
   )
 
   return (
-    <div className="bg-background-elevated border border-border rounded-xl overflow-hidden">
+    <div className="bg-background-subtle border border-border rounded-xl overflow-hidden">
       {selectedItems.length > 0 && (
-        <div className="px-3 pt-3 pb-1 flex flex-wrap gap-1.5">
+        <div className="px-3 pt-3 pb-1 flex flex-wrap gap-x-3 gap-y-1.5">
           {selectedItems.map((item) => (
             <span
               key={item.id}
-              className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-accent/15 text-accent text-[12px] font-medium rounded-full"
+              className="inline-flex items-center gap-1.5 text-[12px]"
             >
-              {item.name}
+              <ItemLink
+                name={item.name}
+                wowheadId={item.wowhead_id}
+                clickable={false}
+              />
               <button
                 type="button"
                 onClick={() => handleRemove(item.id)}
-                className="hover:text-accent-foreground transition-colors"
+                className="text-muted-foreground hover:text-foreground transition-colors"
                 aria-label={`Remove ${item.name}`}
               >
                 <svg
@@ -155,8 +163,8 @@ export default function ReserveItemPicker({
         ) : (
           bossNames.map((boss) => (
             <div key={boss}>
-              <div className="px-3 py-2 bg-background-subtle border-b border-border sticky top-0 z-10">
-                <p className="text-[13px] font-semibold text-foreground-secondary">
+              <div className="px-3 py-1.5 bg-background-subtle border-y border-border sticky top-0 z-10">
+                <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
                   {boss}
                 </p>
               </div>
@@ -166,57 +174,60 @@ export default function ReserveItemPicker({
                 const isDisabled = isHardReserved || (atMax && !isSelected)
 
                 return (
-                  <button
+                  <div
                     key={item.id}
-                    type="button"
+                    role="button"
+                    tabIndex={isDisabled ? -1 : 0}
+                    aria-disabled={isDisabled}
                     onClick={() => {
                       if (!isDisabled) handleToggle(item.id)
                     }}
-                    disabled={isDisabled}
-                    className={`w-full px-3 py-2 text-left flex items-center gap-2 min-w-0 transition-colors ${
+                    onKeyDown={(e) => {
+                      if (isDisabled) return
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault()
+                        handleToggle(item.id)
+                      }
+                    }}
+                    className={`w-full px-3 py-1.5 text-left flex items-center gap-2 min-w-0 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
                       isDisabled
                         ? 'opacity-50 cursor-not-allowed'
                         : 'hover:bg-muted cursor-pointer'
                     }`}
                   >
-                    <span className="flex-1 min-w-0">
-                      <span className="flex items-center gap-2">
-                        <span className="truncate">
-                          <ItemLink
-                            name={item.name}
-                            wowheadId={item.wowhead_id}
-                            clickable={false}
-                          />
-                        </span>
-                        <span className="text-[11px] text-muted-foreground flex-shrink-0">
-                          {item.item_slot}
-                        </span>
-                        {item.classification &&
-                          item.classification !== 'Unlimited' && (
-                            <span className="text-xs text-muted-foreground flex-shrink-0">
-                              [{item.classification}]
-                            </span>
-                          )}
-                        {isHardReserved && (
-                          <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-destructive/20 text-destructive flex-shrink-0">
-                            Hard reserved
+                    <span className="flex-1 min-w-0 flex items-center gap-2">
+                      <span className="truncate text-[12px]">
+                        <ItemLink
+                          name={item.name}
+                          wowheadId={item.wowhead_id}
+                          clickable={false}
+                        />
+                      </span>
+                      <span className="text-[11px] text-muted-foreground flex-shrink-0">
+                        {item.item_slot}
+                      </span>
+                      {item.classification &&
+                        item.classification !== 'Unlimited' && (
+                          <span className="text-[11px] text-muted-foreground flex-shrink-0">
+                            [{item.classification}]
                           </span>
                         )}
-                      </span>
-                      <span className="block text-[11px] text-muted-foreground mt-0.5">
-                        {item.boss_name}
-                      </span>
+                      {isHardReserved && (
+                        <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-destructive/20 text-destructive flex-shrink-0">
+                          Hard reserved
+                        </span>
+                      )}
                     </span>
                     {isSelected && (
                       <img
                         src="/icons/tick.svg"
                         alt="Selected"
-                        width={16}
-                        height={16}
-                        className="icon-adaptive w-4 h-4 shrink-0"
+                        width={14}
+                        height={14}
+                        className="icon-adaptive w-3.5 h-3.5 shrink-0"
                       />
                     )}
-                  </button>
+                  </div>
                 )
               })}
             </div>
