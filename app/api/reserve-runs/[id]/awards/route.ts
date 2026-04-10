@@ -3,6 +3,7 @@ import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { verifyOfficerPermissions } from '@/utils/server-roles'
 import { trackEvent } from '@/utils/analytics/server'
+import { logReserveAudit } from '@/utils/reserve-audit'
 
 /**
  * POST /api/reserve-runs/[id]/awards
@@ -78,6 +79,15 @@ export async function POST(
       properties: { run_id: id, loot_item_id, character_name },
     })
 
+    await logReserveAudit({
+      supabase: serviceSupabase,
+      reserveRunId: id,
+      actorUserId: user.id,
+      actorLabel: user.email ?? null,
+      action: 'award_created',
+      details: { loot_item_id, character_name, award_id: award.id },
+    })
+
     return NextResponse.json({ success: true, award })
   } catch (err) {
     console.error('Reserve award POST error:', err)
@@ -125,6 +135,14 @@ export async function DELETE(
       return NextResponse.json({ error: 'Only officers can remove awards' }, { status: 403 })
     }
 
+    // Fetch the award before deletion so we can log useful details
+    const { data: awardRow } = await serviceSupabase
+      .from('reserve_awards')
+      .select('loot_item_id, character_name')
+      .eq('id', awardId)
+      .eq('reserve_run_id', id)
+      .single()
+
     const { error: deleteError } = await serviceSupabase
       .from('reserve_awards')
       .delete()
@@ -135,6 +153,19 @@ export async function DELETE(
       console.error('Error deleting award:', deleteError)
       return NextResponse.json({ error: 'Failed to remove award' }, { status: 500 })
     }
+
+    await logReserveAudit({
+      supabase: serviceSupabase,
+      reserveRunId: id,
+      actorUserId: user.id,
+      actorLabel: user.email ?? null,
+      action: 'award_deleted',
+      details: {
+        award_id: awardId,
+        loot_item_id: awardRow?.loot_item_id ?? null,
+        character_name: awardRow?.character_name ?? null,
+      },
+    })
 
     return NextResponse.json({ success: true })
   } catch (err) {

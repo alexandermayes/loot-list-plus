@@ -3,6 +3,7 @@ import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { verifyOfficerPermissions } from '@/utils/server-roles'
 import { trackEvent } from '@/utils/analytics/server'
+import { logReserveAudit } from '@/utils/reserve-audit'
 
 /**
  * GET /api/reserve-runs/[id]
@@ -117,33 +118,70 @@ export async function PATCH(
     }
 
     let updateData: Record<string, any> = {}
+    let auditAction: string | null = null
+    const auditDetails: Record<string, unknown> = {}
 
     if (body.action === 'lock') {
       if (run.status !== 'open') {
         return NextResponse.json({ error: 'Can only lock an open run' }, { status: 400 })
       }
       updateData = { status: 'locked', locked_at: new Date().toISOString() }
+      auditAction = 'run_locked'
     } else if (body.action === 'unlock') {
       if (run.status !== 'locked') {
         return NextResponse.json({ error: 'Can only unlock a locked run' }, { status: 400 })
       }
       updateData = { status: 'open', locked_at: null }
+      auditAction = 'run_unlocked'
     } else if (body.action === 'complete') {
       if (run.status !== 'locked') {
         return NextResponse.json({ error: 'Can only complete a locked run' }, { status: 400 })
       }
       updateData = { status: 'completed' }
+      auditAction = 'run_completed'
     } else {
-      // General field updates (only when open)
-      if (run.status !== 'open') {
-        return NextResponse.json({ error: 'Cannot edit a locked or completed run' }, { status: 400 })
-      }
-      const allowed = ['title', 'raid_at', 'lock_at', 'rules_note', 'hard_reserves', 'max_reserves', 'allow_duplicates', 'visibility']
-      for (const key of allowed) {
+      // Field updates. Note + discord link can be edited at any status; structural
+      // fields are only editable while the run is still open.
+      const alwaysEditable = ['rules_note', 'discord_invite_url']
+      const openOnlyFields = [
+        'title',
+        'raid_at',
+        'lock_at',
+        'hard_reserves',
+        'max_reserves',
+        'max_reserves_per_item',
+        'allow_duplicates',
+        'visibility',
+        'enforce_class_restrictions',
+      ]
+
+      for (const key of alwaysEditable) {
         if (body[key] !== undefined) {
           updateData[key] = body[key]
         }
       }
+
+      const wantsStructuralEdit = openOnlyFields.some(k => body[k] !== undefined)
+      if (wantsStructuralEdit) {
+        if (run.status !== 'open') {
+          return NextResponse.json(
+            { error: 'Run settings can only be edited while the run is open' },
+            { status: 400 }
+          )
+        }
+        for (const key of openOnlyFields) {
+          if (body[key] !== undefined) {
+            updateData[key] = body[key]
+          }
+        }
+      }
+
+      if (Object.keys(updateData).length === 0) {
+        return NextResponse.json({ error: 'No fields to update' }, { status: 400 })
+      }
+
+      auditAction = 'run_edited'
+      auditDetails.fields = Object.keys(updateData)
     }
 
     const { data: updated, error: updateError } = await serviceSupabase
@@ -161,6 +199,17 @@ export async function PATCH(
     if (body.action) {
       const eventName = `reserve_run_${body.action}ed` as import('@/utils/analytics/server').AnalyticsEvent
       trackEvent({ event: eventName, userId: user.id, properties: { run_id: id } })
+    }
+
+    if (auditAction) {
+      await logReserveAudit({
+        supabase: serviceSupabase,
+        reserveRunId: id,
+        actorUserId: user.id,
+        actorLabel: user.email ?? null,
+        action: auditAction,
+        details: auditDetails,
+      })
     }
 
     return NextResponse.json({ success: true, run: updated })

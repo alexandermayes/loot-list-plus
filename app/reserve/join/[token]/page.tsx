@@ -6,15 +6,18 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
 import { Label } from '@/components/ui/label'
-import { Heading, Text } from '@/components/ui/typography'
+import { Badge } from '@/components/ui/badge'
+import { Card } from '@/components/ui/card'
+import { Heading, Text, LabelText } from '@/components/ui/typography'
 import { Skeleton } from '@/components/ui/skeletons'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import ReserveItemPicker from '@/app/components/ReserveItemPicker'
 import ItemLink from '@/app/components/ItemLink'
 import { HugeiconsIcon } from '@hugeicons/react'
-import { Calendar03Icon, LockIcon, CheckmarkCircle01Icon, UserMultiple02Icon } from '@hugeicons/core-free-icons'
+import { Calendar03Icon, LockIcon, CheckmarkCircle01Icon, UserMultiple02Icon, DiscordIcon } from '@hugeicons/core-free-icons'
 import { refreshWowheadTooltips } from '@/lib/wowhead'
 import { getRaidIcon } from '@/utils/raidIcons'
+import { canClassReserveItem } from '@/utils/wowClassRestrictions'
 import Image from 'next/image'
 import Link from 'next/link'
 
@@ -39,6 +42,8 @@ type LootItem = {
   item_slot: string
   wowhead_id: number
   classification?: string
+  armor_type?: string | null
+  weapon_type?: string | null
 }
 
 type Submission = {
@@ -66,9 +71,12 @@ type RunData = {
   lock_at: string
   locked_at: string | null
   max_reserves: number
+  max_reserves_per_item: number | null
   allow_duplicates: boolean
+  enforce_class_restrictions: boolean
   visibility: string
   rules_note: string | null
+  discord_invite_url: string | null
   hard_reserves: Array<{ loot_item_id: string; reserved_for?: string }>
   raid_tier_name: string | null
   guild_name: string | null
@@ -162,10 +170,33 @@ export default function ReserveJoinPage() {
 
   const itemMap = useMemo(() => new Map(items.map(i => [i.id, i])), [items])
 
-  const hardReservedIds = useMemo(() => {
-    if (!run) return new Set<string>()
-    return new Set((run.hard_reserves || []).map(hr => hr.loot_item_id))
-  }, [run?.hard_reserves])
+  // Drop selected items that become disabled when class changes
+  useEffect(() => {
+    if (!run?.enforce_class_restrictions || !characterClass) return
+    setSelectedItemIds((prev) => {
+      if (prev.length === 0) return prev
+      const filtered = prev.filter((id) => {
+        const item = items.find((i) => i.id === id)
+        if (!item) return true
+        return canClassReserveItem(characterClass, item)
+      })
+      return filtered.length === prev.length ? prev : filtered
+    })
+  }, [characterClass, run?.enforce_class_restrictions, items])
+
+  const disabledItemIds = useMemo(() => {
+    const set = new Set<string>()
+    if (!run) return set
+    for (const hr of run.hard_reserves || []) set.add(hr.loot_item_id)
+    if (run.enforce_class_restrictions && characterClass) {
+      for (const item of items) {
+        if (!canClassReserveItem(characterClass, item)) {
+          set.add(item.id)
+        }
+      }
+    }
+    return set
+  }, [run, items, characterClass])
 
   const handleSubmit = async () => {
     if (!characterName.trim() || !characterClass) {
@@ -285,14 +316,38 @@ export default function ReserveJoinPage() {
             </span>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2">
             <span className={`px-2.5 py-1 rounded-full text-[11px] font-semibold uppercase tracking-wide ${statusInfo.className}`}>
               {statusInfo.text}
             </span>
             <span className="text-[12px] text-muted-foreground">
               {run.max_reserves} reserve{run.max_reserves !== 1 ? 's' : ''} / player
             </span>
+            {run.max_reserves_per_item && (
+              <span className="text-[12px] text-muted-foreground">
+                Max {run.max_reserves_per_item} per item
+              </span>
+            )}
+            {run.enforce_class_restrictions && (
+              <span className="text-[12px] text-muted-foreground">
+                Class restrictions enforced
+              </span>
+            )}
           </div>
+
+          {run.discord_invite_url && (
+            <div className="mt-3 pt-3 border-t border-border">
+              <a
+                href={run.discord_invite_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 text-[13px] text-accent hover:underline"
+              >
+                <HugeiconsIcon icon={DiscordIcon} size={16} />
+                Join the guild Discord
+              </a>
+            </div>
+          )}
 
           {/* Rules */}
           {(run.rules_note || run.hard_reserves.length > 0) && (
@@ -383,7 +438,7 @@ export default function ReserveJoinPage() {
                   selectedIds={selectedItemIds}
                   onChange={setSelectedItemIds}
                   maxSelections={run.max_reserves}
-                  disabledIds={hardReservedIds}
+                  disabledIds={disabledItemIds}
                   placeholder="Search for items..."
                 />
               </div>

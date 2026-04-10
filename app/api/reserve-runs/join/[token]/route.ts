@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
+import { canClassReserveItem } from '@/utils/wowClassRestrictions'
+import { logReserveAudit } from '@/utils/reserve-audit'
 
 /**
  * GET /api/reserve-runs/join/[token]
@@ -43,7 +45,7 @@ export async function GET(
     // Fetch items for this raid tier
     const { data: items } = await serviceSupabase
       .from('loot_items')
-      .select('id, name, boss_name, item_slot, wowhead_id, classification')
+      .select('id, name, boss_name, item_slot, wowhead_id, classification, armor_type, weapon_type')
       .eq('raid_tier_id', run.raid_tier_id)
       .eq('is_available', true)
       .order('boss_name')
@@ -77,11 +79,14 @@ export async function GET(
         lock_at: run.lock_at,
         locked_at: run.locked_at,
         max_reserves: run.max_reserves,
+        max_reserves_per_item: run.max_reserves_per_item,
         allow_duplicates: run.allow_duplicates,
         visibility: run.visibility,
         rules_note: run.rules_note,
         hard_reserves: run.hard_reserves,
         rule_snapshot: run.rule_snapshot,
+        discord_invite_url: run.discord_invite_url,
+        enforce_class_restrictions: run.enforce_class_restrictions,
         raid_tier_name: raidTier?.name || null,
         guild_name: guild?.name || null,
       },
@@ -128,7 +133,7 @@ export async function POST(
     // Fetch run
     const { data: run, error: runError } = await serviceSupabase
       .from('reserve_runs')
-      .select('id, status, max_reserves, allow_duplicates, hard_reserves, raid_tier_id')
+      .select('id, status, max_reserves, max_reserves_per_item, allow_duplicates, hard_reserves, raid_tier_id, enforce_class_restrictions')
       .eq('share_token', token)
       .single()
 
@@ -156,7 +161,7 @@ export async function POST(
     // Validate items exist in the raid tier
     const { data: validItems } = await serviceSupabase
       .from('loot_items')
-      .select('id')
+      .select('id, name, armor_type')
       .eq('raid_tier_id', run.raid_tier_id)
       .eq('is_available', true)
       .in('id', items)
@@ -170,6 +175,50 @@ export async function POST(
     const reservingHardReserved = items.some((id: string) => hardReservedIds.includes(id))
     if (reservingHardReserved) {
       return NextResponse.json({ error: 'One or more items are hard-reserved' }, { status: 400 })
+    }
+
+    // Enforce class restrictions
+    if (run.enforce_class_restrictions) {
+      const blocked = validItems.find(
+        (item) => !canClassReserveItem(character_class, item as { armor_type?: string | null })
+      )
+      if (blocked) {
+        return NextResponse.json(
+          { error: `${blocked.name} cannot be reserved by a ${character_class}` },
+          { status: 400 }
+        )
+      }
+    }
+
+    // Enforce per-item reserve cap (max_reserves_per_item)
+    if (run.max_reserves_per_item) {
+      const { data: existingSubs } = await serviceSupabase
+        .from('reserve_submissions')
+        .select('items, character_name')
+        .eq('reserve_run_id', run.id)
+        .eq('status', 'submitted')
+
+      const trimmedName = character_name.trim().toLowerCase()
+      const counts: Record<string, number> = {}
+      for (const sub of existingSubs || []) {
+        if (sub.character_name.toLowerCase() === trimmedName) continue
+        const subItems = (sub.items as string[]) || []
+        for (const itemId of subItems) {
+          counts[itemId] = (counts[itemId] || 0) + 1
+        }
+      }
+      for (const itemId of items) {
+        const existingCount = counts[itemId] || 0
+        if (existingCount >= run.max_reserves_per_item) {
+          const blockedItem = validItems.find((i) => i.id === itemId)
+          return NextResponse.json(
+            {
+              error: `${blockedItem?.name ?? 'Item'} is already at the ${run.max_reserves_per_item}-reserve limit`,
+            },
+            { status: 400 }
+          )
+        }
+      }
     }
 
     // Upsert submission (character_name is unique per run)
@@ -220,6 +269,14 @@ export async function POST(
             return NextResponse.json({ error: 'Failed to update submission' }, { status: 500 })
           }
 
+          await logReserveAudit({
+            supabase: serviceSupabase,
+            reserveRunId: run.id,
+            actorLabel: character_name.trim(),
+            action: 'submission_updated',
+            details: { character_name: character_name.trim(), item_count: items.length },
+          })
+
           return NextResponse.json({ success: true, submission: updated, updated: true })
         }
       }
@@ -227,6 +284,14 @@ export async function POST(
       console.error('Error creating submission:', upsertError)
       return NextResponse.json({ error: 'Failed to submit reserves' }, { status: 500 })
     }
+
+    await logReserveAudit({
+      supabase: serviceSupabase,
+      reserveRunId: run.id,
+      actorLabel: character_name.trim(),
+      action: 'submission_created',
+      details: { character_name: character_name.trim(), item_count: items.length },
+    })
 
     return NextResponse.json({
       success: true,

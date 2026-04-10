@@ -65,9 +65,12 @@ export function CreateReserveRunModal({ open, onClose }: CreateReserveRunModalPr
   const [raidAt, setRaidAt] = useState('')
   const [lockAt, setLockAt] = useState('')
   const [maxReserves, setMaxReserves] = useState(2)
+  const [maxReservesPerItem, setMaxReservesPerItem] = useState<number | ''>('')
   const [visibility, setVisibility] = useState<'hidden_until_lock' | 'public_live'>('hidden_until_lock')
   const [allowDuplicates, setAllowDuplicates] = useState(false)
+  const [enforceClassRestrictions, setEnforceClassRestrictions] = useState(false)
   const [rulesNote, setRulesNote] = useState('')
+  const [discordInviteUrl, setDiscordInviteUrl] = useState('')
   const [hardReserveIds, setHardReserveIds] = useState<string[]>([])
 
   const isGuildMode = !!activeGuild && isOfficer
@@ -82,9 +85,12 @@ export function CreateReserveRunModal({ open, onClose }: CreateReserveRunModalPr
       setRaidAt('')
       setLockAt('')
       setMaxReserves(2)
+      setMaxReservesPerItem('')
       setVisibility('hidden_until_lock')
       setAllowDuplicates(false)
+      setEnforceClassRestrictions(false)
       setRulesNote('')
+      setDiscordInviteUrl('')
       setHardReserveIds([])
       setRaidTiers([])
       setItems([])
@@ -188,9 +194,12 @@ export function CreateReserveRunModal({ open, onClose }: CreateReserveRunModalPr
           raid_at: new Date(raidAt).toISOString(),
           lock_at: new Date(lockAt).toISOString(),
           max_reserves: maxReserves,
+          max_reserves_per_item: maxReservesPerItem === '' ? null : maxReservesPerItem,
           allow_duplicates: allowDuplicates,
+          enforce_class_restrictions: enforceClassRestrictions,
           visibility,
           rules_note: rulesNote.trim() || null,
+          discord_invite_url: discordInviteUrl.trim() || null,
           hard_reserves: hardReserves,
         }),
       })
@@ -376,12 +385,48 @@ export function CreateReserveRunModal({ open, onClose }: CreateReserveRunModalPr
                 </div>
               </div>
 
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Max reserves per item <span className="text-muted-foreground font-normal">(optional)</span></Label>
+                  <Input
+                    variant="rounded"
+                    type="number"
+                    min={1}
+                    value={maxReservesPerItem}
+                    onChange={(e) => {
+                      const val = e.target.value
+                      setMaxReservesPerItem(val === '' ? '' : Math.max(1, parseInt(val) || 1))
+                    }}
+                    placeholder="Unlimited"
+                  />
+                  <Text color="muted" size="xs">Cap how many players can reserve the same item. Leave empty for unlimited.</Text>
+                </div>
+                <div className="space-y-2">
+                  <Label>Discord invite link <span className="text-muted-foreground font-normal">(optional)</span></Label>
+                  <Input
+                    variant="rounded"
+                    type="url"
+                    value={discordInviteUrl}
+                    onChange={(e) => setDiscordInviteUrl(e.target.value)}
+                    placeholder="https://discord.gg/..."
+                  />
+                </div>
+              </div>
+
               <div className="flex items-center justify-between py-2">
                 <div>
                   <Label>Allow duplicate reserves</Label>
-                  <Text color="muted" size="xs">Let multiple players reserve the same item</Text>
+                  <Text color="muted" size="xs">Let a player reserve the same item multiple times</Text>
                 </div>
                 <Switch checked={allowDuplicates} onCheckedChange={setAllowDuplicates} />
+              </div>
+
+              <div className="flex items-center justify-between py-2">
+                <div>
+                  <Label>Enforce class restrictions</Label>
+                  <Text color="muted" size="xs">Cloth, leather, mail, and plate items can only be reserved by valid classes</Text>
+                </div>
+                <Switch checked={enforceClassRestrictions} onCheckedChange={setEnforceClassRestrictions} />
               </div>
 
               <div className="space-y-2">

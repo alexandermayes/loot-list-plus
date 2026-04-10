@@ -1621,6 +1621,44 @@ export type Database = {
           },
         ]
       }
+      reserve_audit_log: {
+        Row: {
+          action: string
+          actor_label: string | null
+          actor_user_id: string | null
+          created_at: string
+          details: Json
+          id: string
+          reserve_run_id: string
+        }
+        Insert: {
+          action: string
+          actor_label?: string | null
+          actor_user_id?: string | null
+          created_at?: string
+          details?: Json
+          id?: string
+          reserve_run_id: string
+        }
+        Update: {
+          action?: string
+          actor_label?: string | null
+          actor_user_id?: string | null
+          created_at?: string
+          details?: Json
+          id?: string
+          reserve_run_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reserve_audit_log_reserve_run_id_fkey"
+            columns: ["reserve_run_id"]
+            isOneToOne: false
+            referencedRelation: "reserve_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       reserve_awards: {
         Row: {
           awarded_at: string
@@ -1681,6 +1719,8 @@ export type Database = {
           allow_duplicates: boolean
           created_at: string
           created_by: string
+          discord_invite_url: string | null
+          enforce_class_restrictions: boolean
           expansion_id: string | null
           guild_id: string | null
           hard_reserves: Json
@@ -1688,6 +1728,7 @@ export type Database = {
           lock_at: string
           locked_at: string | null
           max_reserves: number
+          max_reserves_per_item: number | null
           raid_at: string
           raid_team_id: string | null
           raid_tier_id: string
@@ -1703,6 +1744,8 @@ export type Database = {
           allow_duplicates?: boolean
           created_at?: string
           created_by: string
+          discord_invite_url?: string | null
+          enforce_class_restrictions?: boolean
           expansion_id?: string | null
           guild_id?: string | null
           hard_reserves?: Json
@@ -1710,6 +1753,7 @@ export type Database = {
           lock_at: string
           locked_at?: string | null
           max_reserves?: number
+          max_reserves_per_item?: number | null
           raid_at: string
           raid_team_id?: string | null
           raid_tier_id: string
@@ -1725,6 +1769,8 @@ export type Database = {
           allow_duplicates?: boolean
           created_at?: string
           created_by?: string
+          discord_invite_url?: string | null
+          enforce_class_restrictions?: boolean
           expansion_id?: string | null
           guild_id?: string | null
           hard_reserves?: Json
@@ -1732,6 +1778,7 @@ export type Database = {
           lock_at?: string
           locked_at?: string | null
           max_reserves?: number
+          max_reserves_per_item?: number | null
           raid_at?: string
           raid_team_id?: string | null
           raid_tier_id?: string

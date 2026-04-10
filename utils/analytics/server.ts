@@ -27,6 +27,7 @@ export type AnalyticsEvent =
   | 'reserve_run_unlocked'
   | 'reserve_run_completed'
   | 'reserve_run_deleted'
+  | 'reserve_run_duplicated'
   | 'reserve_item_awarded'
 
 interface TrackEventParams {

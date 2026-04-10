@@ -78,9 +78,12 @@ export async function POST(request: NextRequest) {
       raid_at,
       lock_at,
       max_reserves = 2,
+      max_reserves_per_item = null,
       allow_duplicates = false,
+      enforce_class_restrictions = false,
       visibility = 'hidden_until_lock',
       rules_note,
+      discord_invite_url,
       hard_reserves = [],
       raid_team_id,
     } = body
@@ -97,6 +100,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'max_reserves must be between 1 and 10' }, { status: 400 })
     }
 
+    if (max_reserves_per_item !== null && max_reserves_per_item !== undefined && max_reserves_per_item < 1) {
+      return NextResponse.json({ error: 'max_reserves_per_item must be a positive integer' }, { status: 400 })
+    }
+
     const serviceSupabase = createServiceRoleClient()
 
     // If guild_id provided, verify officer permissions
@@ -110,7 +117,9 @@ export async function POST(request: NextRequest) {
     // Build rule snapshot
     const rule_snapshot = {
       max_reserves,
+      max_reserves_per_item,
       allow_duplicates,
+      enforce_class_restrictions,
       visibility,
       hard_reserves,
     }
@@ -126,9 +135,12 @@ export async function POST(request: NextRequest) {
         raid_at,
         lock_at,
         max_reserves,
+        max_reserves_per_item: max_reserves_per_item ?? null,
         allow_duplicates,
+        enforce_class_restrictions,
         visibility,
         rules_note: rules_note || null,
+        discord_invite_url: discord_invite_url || null,
         hard_reserves,
         raid_team_id: raid_team_id || null,
         rule_snapshot,
