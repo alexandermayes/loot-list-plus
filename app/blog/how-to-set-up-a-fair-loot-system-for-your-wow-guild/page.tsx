@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import LandingNav from '@/app/components/landing/LandingNav'
 import LandingCTA from '@/app/components/landing/LandingCTA'
 import LandingFooter from '@/app/components/landing/LandingFooter'
+import BlogRelatedPosts from '@/app/components/landing/BlogRelatedPosts'
 
 export const metadata: Metadata = {
   title: 'How to Set Up a Fair Loot System for Your WoW Guild | LootList+',
@@ -429,6 +430,7 @@ export default function BlogPost() {
         </div>
       </article>
 
+      <BlogRelatedPosts currentSlug="how-to-set-up-a-fair-loot-system-for-your-wow-guild" />
       <LandingCTA />
       <LandingFooter />
     </main>

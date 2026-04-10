@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import LandingNav from '@/app/components/landing/LandingNav'
 import LandingCTA from '@/app/components/landing/LandingCTA'
 import LandingFooter from '@/app/components/landing/LandingFooter'
+import BlogRelatedPosts from '@/app/components/landing/BlogRelatedPosts'
 
 export const metadata: Metadata = {
   title:
@@ -365,6 +366,7 @@ export default function BlogPost() {
         </div>
       </article>
 
+      <BlogRelatedPosts currentSlug="why-attendance-tracking-matters-more-than-loot-rules" />
       <LandingCTA />
       <LandingFooter />
     </main>

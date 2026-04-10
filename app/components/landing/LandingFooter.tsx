@@ -30,7 +30,31 @@ export default function LandingFooter() {
           </div>
 
           {/* Links */}
-          <div className="flex items-center gap-6">
+          <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2">
+            <a
+              href="/about"
+              className="text-sm text-[#bababa] hover:text-white transition-colors"
+            >
+              About
+            </a>
+            <a
+              href="/compare"
+              className="text-sm text-[#bababa] hover:text-white transition-colors"
+            >
+              Compare
+            </a>
+            <a
+              href="/blog"
+              className="text-sm text-[#bababa] hover:text-white transition-colors"
+            >
+              Blog
+            </a>
+            <a
+              href="/changelog"
+              className="text-sm text-[#bababa] hover:text-white transition-colors"
+            >
+              Changelog
+            </a>
             <a
               href="/terms"
               className="text-sm text-[#bababa] hover:text-white transition-colors"
@@ -42,12 +66,6 @@ export default function LandingFooter() {
               className="text-sm text-[#bababa] hover:text-white transition-colors"
             >
               Privacy Policy
-            </a>
-            <a
-              href="/blog"
-              className="text-sm text-[#bababa] hover:text-white transition-colors"
-            >
-              Blog
             </a>
           </div>
 
