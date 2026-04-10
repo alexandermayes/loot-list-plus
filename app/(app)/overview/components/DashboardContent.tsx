@@ -2062,30 +2062,35 @@ export default function DashboardContent() {
                                 </span>
                               </>
                             )}
-                            {!item.is_loot_council && item.tied_characters.length > 0 && (
+                            {!item.is_loot_council && competitionData[item.item_id] && competitionData[item.item_id].totalWanting > 0 && (
                               <>
                                 <span>•</span>
+                                <span className={competitionData[item.item_id].userRank === 1 ? 'text-success font-medium' : ''}>
+                                  you&apos;re #{competitionData[item.item_id].userRank}
+                                </span>
+                              </>
+                            )}
+                          </div>
+                          {!item.is_loot_council && item.tied_characters.length > 0 && (() => {
+                            const shown = item.tied_characters.slice(0, 2)
+                            const remaining = item.tied_characters.length - shown.length
+                            return (
+                              <div className="flex items-center gap-1.5 text-[11px] sm:text-xs text-muted-foreground flex-wrap mt-1">
                                 <span className="text-warning">Tied with:</span>
-                                {item.tied_characters.map((char, idx) => (
+                                {shown.map((char, idx) => (
                                   <span key={idx} className="flex items-center gap-1">
                                     <span style={{ color: char.class_color }} className="font-semibold">
                                       {char.name}
                                     </span>
-                                    {idx < item.tied_characters.length - 1 && <span className="text-muted-foreground">,</span>}
+                                    {idx < shown.length - 1 && <span className="text-muted-foreground">,</span>}
                                   </span>
                                 ))}
-                              </>
-                            )}
-                          </div>
-                          {!item.is_loot_council && competitionData[item.item_id] && competitionData[item.item_id].totalWanting > 0 && (
-                            <div className="flex items-center gap-1 text-[11px] text-muted-foreground mt-1">
-                              <span>{competitionData[item.item_id].totalWanting} other{competitionData[item.item_id].totalWanting !== 1 ? 's' : ''} want this</span>
-                              <span>·</span>
-                              <span className={competitionData[item.item_id].userRank === 1 ? 'text-success font-medium' : ''}>
-                                you&apos;re #{competitionData[item.item_id].userRank}
-                              </span>
-                            </div>
-                          )}
+                                {remaining > 0 && (
+                                  <span className="text-muted-foreground">+{remaining} other{remaining !== 1 ? 's' : ''}</span>
+                                )}
+                              </div>
+                            )
+                          })()}
                         </div>
                       </div>
                     </div>
