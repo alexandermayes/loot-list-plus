@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { mutate as swrMutate } from 'swr'
 import { createClient } from '@/utils/supabase/client'
 import { useGuildContext } from './GuildContext'
 import { useNotification } from './NotificationContext'
@@ -190,10 +191,117 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
   // Get expansion ID
   const targetExpansionId = viewingExpansionId || currentExpansion?.expansion_id
 
-  // SWR hooks for data fetching
+  // --- Bootstrap fast path ---
+  //
+  // On first mount we fetch a single `/api/loot-list/bootstrap` endpoint
+  // that returns tiers + items + submission + rankings in one round-trip,
+  // collapsing the previous 3-step waterfall (tiers → phase → items →
+  // submission). Until this fetch resolves, we gate the individual SWR
+  // hooks below with null keys so they don't duplicate the work. Once
+  // bootstrap finishes, we mutate the SWR cache with the returned data
+  // and flip `bootstrapReady`, which activates the hooks with real keys
+  // — they immediately hit cache and return the same data that the
+  // bootstrap request just fetched.
+  const [bootstrapReady, setBootstrapReady] = useState(false)
+  const bootstrapInFlightRef = useRef(false)
+  const bootstrapFiredForRef = useRef<string | null>(null)
+
+  useEffect(() => {
+    if (guildLoading) return
+    if (!targetExpansionId || !activeGuild?.id || !activeCharacter?.id) return
+
+    // Re-fire bootstrap when the guild/character/expansion combo
+    // changes — otherwise a guild switch would leave us showing stale
+    // cached data for the previous guild.
+    const scopeKey = `${targetExpansionId}:${activeGuild.id}:${activeCharacter.id}`
+    if (bootstrapFiredForRef.current === scopeKey) return
+    if (bootstrapInFlightRef.current) return
+
+    bootstrapInFlightRef.current = true
+    bootstrapFiredForRef.current = scopeKey
+
+    const phaseHint = (() => {
+      if (typeof window === 'undefined') return ''
+      const p = new URLSearchParams(window.location.search).get('phase')
+      return p ? `&phase=${encodeURIComponent(p)}` : ''
+    })()
+
+    const url = `/api/loot-list/bootstrap?expansion_id=${targetExpansionId}&guild_id=${activeGuild.id}&character_id=${activeCharacter.id}${phaseHint}`
+
+    fetch(url)
+      .then(async (res) => {
+        if (!res.ok) throw new Error(`Bootstrap failed: ${res.status}`)
+        return res.json()
+      })
+      .then((data: {
+        tiers: RaidTier[]
+        current_phase: number
+        phase_groups: number[][] | null
+        selected_phase: number | null
+        selected_phases: number[]
+        items: PhaseLootItem[]
+        submission: LootSubmission | null
+        rankings: Record<string, string>
+        removedItems: Array<{ loot_item_id: string; rank: number; slot: number }>
+      }) => {
+        // Seed the SWR cache for each of the three hooks with the shapes
+        // they expect. `revalidate: false` prevents SWR from immediately
+        // re-fetching the same data we just received.
+        const tiersKey = `/api/raid-tiers?expansion_id=${targetExpansionId}&guild_id=${activeGuild.id}`
+        swrMutate(
+          tiersKey,
+          {
+            tiers: data.tiers,
+            current_phase: data.current_phase,
+            phase_groups: data.phase_groups,
+          },
+          { revalidate: false }
+        )
+
+        if (data.selected_phase !== null && data.selected_phases.length > 0) {
+          const sortedPhases = [...data.selected_phases].sort((a, b) => a - b)
+          const phaseParam = sortedPhases.length === 1
+            ? `phase=${sortedPhases[0]}`
+            : `phases=${sortedPhases.join(',')}`
+          const itemsKey = `/api/loot-items?expansion_id=${targetExpansionId}&${phaseParam}&character_id=${activeCharacter.id}&guild_id=${activeGuild.id}`
+          swrMutate(itemsKey, { items: data.items }, { revalidate: false })
+
+          const submissionKey = `/api/loot-submissions?character_id=${activeCharacter.id}&expansion_id=${targetExpansionId}&phase=${data.selected_phase}&guild_id=${activeGuild.id}`
+          swrMutate(
+            submissionKey,
+            {
+              submission: data.submission,
+              rankings: data.rankings,
+              removedItems: data.removedItems,
+            },
+            { revalidate: false }
+          )
+
+          // Adopt the server-resolved phase if the client hasn't already
+          // picked one (e.g. first render, no URL hint).
+          setSelectedPhaseState((prev) => (prev === null ? data.selected_phase : prev))
+        }
+
+        setBootstrapReady(true)
+      })
+      .catch((err) => {
+        // If bootstrap fails, fall back to the individual SWR hooks by
+        // flipping the gate. This keeps the page working at the cost of
+        // the waterfall we were trying to avoid.
+        console.error('Loot list bootstrap failed, falling back to individual hooks:', err)
+        setBootstrapReady(true)
+      })
+      .finally(() => {
+        bootstrapInFlightRef.current = false
+      })
+  }, [guildLoading, targetExpansionId, activeGuild?.id, activeCharacter?.id])
+
+  // SWR hooks for data fetching. The args are gated on `bootstrapReady`
+  // so they return null keys on first render — this prevents duplicate
+  // fetches alongside the bootstrap request.
   const { data: tiersData, isLoading: tiersLoading } = useRaidTiers(
-    targetExpansionId || null,
-    activeGuild?.id || null
+    bootstrapReady ? (targetExpansionId || null) : null,
+    bootstrapReady ? (activeGuild?.id || null) : null
   )
 
   // Sort tiers by raid progression order
@@ -241,18 +349,18 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
 
   // Fetch loot items for the selected phase group (may span multiple phases)
   const { data: itemsData, isLoading: itemsLoading } = usePhaseLootItems(
-    targetExpansionId || null,
-    selectedPhases,
-    activeCharacter?.id || null,
-    activeGuild?.id || null
+    bootstrapReady ? (targetExpansionId || null) : null,
+    bootstrapReady ? selectedPhases : null,
+    bootstrapReady ? (activeCharacter?.id || null) : null,
+    bootstrapReady ? (activeGuild?.id || null) : null
   )
 
   // Fetch submission for the selected phase
   const { data: submissionData, isLoading: submissionLoading, mutate: mutateSubmission } = usePhaseSubmission(
-    activeCharacter?.id || null,
-    targetExpansionId || null,
-    selectedPhase,
-    activeGuild?.id || null
+    bootstrapReady ? (activeCharacter?.id || null) : null,
+    bootstrapReady ? (targetExpansionId || null) : null,
+    bootstrapReady ? selectedPhase : null,
+    bootstrapReady ? (activeGuild?.id || null) : null
   )
 
   // Fetch equipped items for the character (from WowSims import)
@@ -949,8 +1057,12 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
   }, [selectedPhase, expansionPhaseDeadlines, phaseTiers])
 
   // Loading states
-  const isLoading = guildLoading || tiersLoading
-  const isContentLoading = itemsLoading || submissionLoading
+  // We count bootstrap as "loading" until it resolves so the skeleton
+  // stays up during the single bootstrap round-trip. Once bootstrap
+  // finishes and seeds the SWR cache, the individual hooks return
+  // immediately and neither tiersLoading nor itemsLoading flips true.
+  const isLoading = guildLoading || !bootstrapReady || tiersLoading
+  const isContentLoading = !bootstrapReady || itemsLoading || submissionLoading
 
   // Filter loot items to only include those from active tiers
   // This is a client-side safety filter in case the API cache is stale
