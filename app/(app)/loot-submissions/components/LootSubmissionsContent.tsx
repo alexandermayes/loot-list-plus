@@ -176,6 +176,10 @@ export default function LootSubmissionsContent() {
     }
   }, [submissionDetails])
 
+  // Track whether we've done the initial parallel load so the "re-fetch on
+  // phase change" effect below doesn't double-fire for the first render.
+  const initialLoadRef = useRef(false)
+
   useEffect(() => {
     const loadData = async () => {
       // Wait for guild context to finish loading
@@ -197,17 +201,49 @@ export default function LootSubmissionsContent() {
         setGuildId(activeGuild.id)
 
         // Get expansion info, raid tiers, and phase groups
-        if (activeGuild.active_expansion_id) {
-          const [{ data: expansion }, { data: tiersData }] = await Promise.all([
+        const expansionId = activeGuild.active_expansion_id
+        if (expansionId) {
+          // Kick off expansion+tiers AND the initial submissions fetch
+          // in parallel so the submissions list doesn't wait for the
+          // metadata queries to finish before its own round-trip starts.
+          setContentLoading(true)
+          const [
+            { data: expansion },
+            { data: tiersData },
+            { data: submissionsData, error: submissionsError },
+          ] = await Promise.all([
             supabase
               .from('expansions')
               .select('id, name, phase_groups')
-              .eq('id', activeGuild.active_expansion_id)
+              .eq('id', expansionId)
               .single(),
             supabase
               .from('raid_tiers')
               .select('name, phase')
-              .eq('expansion_id', activeGuild.active_expansion_id)
+              .eq('expansion_id', expansionId),
+            supabase
+              .from('loot_submissions')
+              .select(`
+                id,
+                status,
+                submitted_at,
+                review_notes,
+                character_id,
+                expansion_id,
+                phase,
+                resubmission_count,
+                character:characters (
+                  name,
+                  class:wow_classes (
+                    name,
+                    color_hex
+                  )
+                )
+              `)
+              .eq('guild_id', activeGuild.id)
+              .neq('status', 'draft')
+              .eq('expansion_id', expansionId)
+              .order('submitted_at', { ascending: false }),
           ])
 
           if (expansion) {
@@ -227,6 +263,54 @@ export default function LootSubmissionsContent() {
             }))
             setPhases(phaseOptions)
             setActivePhase('all')
+
+            // Finish the submissions pipeline (item counts + formatting)
+            // now that we have phase groups available for tier labels.
+            if (!submissionsError && submissionsData) {
+              const submissionIds = submissionsData.map((s: { id: string }) => s.id)
+              let countMap: Record<string, number> = {}
+              if (submissionIds.length > 0) {
+                const { data: itemCounts } = await supabase
+                  .from('loot_submission_items')
+                  .select('submission_id')
+                  .in('submission_id', submissionIds)
+                  .is('removed_at', null)
+                itemCounts?.forEach((item: { submission_id: string }) => {
+                  countMap[item.submission_id] = (countMap[item.submission_id] || 0) + 1
+                })
+              }
+
+              const formattedSubmissions = submissionsData.map((sub: RawSubmission) => {
+                const character = Array.isArray(sub.character) ? sub.character[0] : sub.character
+                const charClass = Array.isArray(character?.class) ? character.class[0] : character?.class
+                return {
+                  id: sub.id,
+                  status: sub.status,
+                  submitted_at: sub.submitted_at,
+                  review_notes: sub.review_notes,
+                  character_id: sub.character_id,
+                  resubmission_count: sub.resubmission_count ?? 0,
+                  tier_name: (() => {
+                    const group = groups.find(g => g.phases.includes(sub.phase))
+                    return group ? getPhaseGroupLabel(group) : `Phase ${sub.phase}`
+                  })(),
+                  tier_id: sub.expansion_id,
+                  member: {
+                    character_name: character?.name || 'Unknown Character',
+                    role: 'Member',
+                    class: {
+                      name: charClass?.name || 'Unknown',
+                      color_hex: charClass?.color_hex || '#ffffff',
+                    },
+                  },
+                  item_count: countMap[sub.id] || 0,
+                  user: { id: '' },
+                }
+              })
+              setSubmissions(formattedSubmissions as unknown as Submission[])
+            }
+            setContentLoading(false)
+            initialLoadRef.current = true
           }
         }
       } catch (error) {
@@ -350,6 +434,10 @@ export default function LootSubmissionsContent() {
   }, [supabase])
 
   useEffect(() => {
+    // Skip the first run — loadData's parallel batch already fetched the
+    // initial submissions list for activePhase='all'. Only refetch when
+    // the user actually changes the phase or guild.
+    if (!initialLoadRef.current) return
     if (guildId && activePhase !== null && activeGuild?.active_expansion_id) {
       loadSubmissions(guildId, activePhase, activeGuild.active_expansion_id)
     }

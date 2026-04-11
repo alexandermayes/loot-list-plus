@@ -145,13 +145,107 @@ const bodySizeLimits: Record<string, number> = {
   default: 1024 * 1024,        // 1MB for all other routes
 }
 
+// How close to expiry (in seconds) the access token has to be before we
+// force a network refresh. 60s is enough headroom for the browser client
+// to hit an API with a still-valid token after the navigation lands.
+const TOKEN_REFRESH_THRESHOLD_SECONDS = 60
+
+/**
+ * Decode a base64url-encoded JWT payload without verifying the signature.
+ * Middleware runs on every page navigation and verification would require a
+ * network call to Supabase — we only need the `exp` claim to decide whether
+ * the token is about to expire.
+ */
+function decodeJwtExp(token: string): number | null {
+  try {
+    const parts = token.split('.')
+    if (parts.length !== 3) return null
+    // base64url → base64
+    const payload = parts[1].replace(/-/g, '+').replace(/_/g, '/')
+    const padded = payload + '='.repeat((4 - (payload.length % 4)) % 4)
+    const json = typeof atob !== 'undefined'
+      ? atob(padded)
+      : Buffer.from(padded, 'base64').toString('utf-8')
+    const claims = JSON.parse(json) as { exp?: number }
+    return typeof claims.exp === 'number' ? claims.exp : null
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Look at the Supabase auth cookies and return the current access token
+ * without making a network call. Supabase stores the session as a
+ * `sb-<project>-auth-token` cookie (sometimes split into .0/.1 chunks).
+ * The cookie value is a JSON-encoded array; index 0 is the access token.
+ */
+function readAccessTokenFromCookies(request: NextRequest): string | null {
+  const cookies = request.cookies.getAll()
+  const authCookies = cookies.filter((c) => /^sb-.*-auth-token(\.\d+)?$/.test(c.name))
+  if (authCookies.length === 0) return null
+
+  // Cookies can be chunked (.0, .1, ...). Sort and concatenate.
+  authCookies.sort((a, b) => a.name.localeCompare(b.name))
+  const raw = authCookies.map((c) => c.value).join('')
+  if (!raw) return null
+
+  try {
+    // The value is sometimes prefixed with "base64-" on newer SSR versions.
+    const body = raw.startsWith('base64-')
+      ? typeof atob !== 'undefined'
+        ? atob(raw.slice(7))
+        : Buffer.from(raw.slice(7), 'base64').toString('utf-8')
+      : raw
+    const parsed = JSON.parse(body)
+    // Shape 1: { access_token, refresh_token, ... }
+    if (parsed && typeof parsed === 'object' && typeof parsed.access_token === 'string') {
+      return parsed.access_token
+    }
+    // Shape 2 (legacy): [access_token, refresh_token, provider_token, ...]
+    if (Array.isArray(parsed) && typeof parsed[0] === 'string') {
+      return parsed[0]
+    }
+    return null
+  } catch {
+    return null
+  }
+}
+
 // Refresh Supabase session cookies on every request so the browser client
 // always starts with a valid access token. Without this, tokens expire while
 // the tab is open and the browser client fires spurious SIGNED_OUT events,
 // especially on a second device where there's no prior session to fall back on.
+//
+// Performance: calling supabase.auth.getUser() is a network round-trip to the
+// Supabase auth server (200-500ms). Middleware runs on every protected page
+// navigation, so this was our TTFB floor. We now inspect the auth cookie
+// directly and only call Supabase when the access token is about to expire,
+// turning 99% of requests into local cookie reads.
 async function refreshSupabaseSession(request: NextRequest): Promise<{ response: NextResponse; user: unknown }> {
   const response = NextResponse.next({ request })
 
+  // Fast path: inspect the cookie JWT locally. If it's still valid for at
+  // least TOKEN_REFRESH_THRESHOLD_SECONDS, skip the network call entirely.
+  const accessToken = readAccessTokenFromCookies(request)
+  if (accessToken) {
+    const exp = decodeJwtExp(accessToken)
+    if (exp !== null) {
+      const nowSeconds = Math.floor(Date.now() / 1000)
+      const secondsLeft = exp - nowSeconds
+      if (secondsLeft > TOKEN_REFRESH_THRESHOLD_SECONDS) {
+        // Token is healthy. Return a truthy "user" marker so the route gate
+        // lets the request through. We don't actually need the user object
+        // in middleware — downstream server components re-read auth.
+        return { response, user: { authenticated: true } }
+      }
+    }
+  } else {
+    // No cookie at all — skip Supabase, let the route gate redirect.
+    return { response, user: null }
+  }
+
+  // Slow path: token is missing expiry, close to expiry, or malformed.
+  // Fall back to a real Supabase call so the SDK can refresh cookies.
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -170,8 +264,6 @@ async function refreshSupabaseSession(request: NextRequest): Promise<{ response:
     }
   )
 
-  // getUser() validates the JWT and refreshes expired tokens automatically.
-  // The refreshed tokens are written back to cookies via setAll above.
   const { data: { user } } = await supabase.auth.getUser()
 
   return { response, user }

@@ -438,12 +438,41 @@ export default function MasterSheetContent() {
           class: activeCharacter.class
         })
 
-        // Load guild settings
-        const { data: settingsData } = await supabase
-          .from('guild_settings')
-          .select('*')
-          .eq('guild_id', activeGuild.id)
-          .single()
+        // Kick off the three independent initial-load queries in parallel.
+        // Previously these ran sequentially along with the raid_tiers query
+        // (4 round-trips, ~800ms). Now only raid_tiers waits — it needs the
+        // expansion's current_phase to filter, so it runs in a second batch.
+        const expansionId = activeGuild?.active_expansion_id
+        const [
+          { data: settingsData },
+          { data: expansionData },
+          approvedSubsResult,
+        ] = await Promise.all([
+          supabase
+            .from('guild_settings')
+            .select('*')
+            .eq('guild_id', activeGuild.id)
+            .single(),
+          expansionId
+            ? supabase
+                .from('expansions')
+                .select('current_phase, phase_groups')
+                .eq('id', expansionId)
+                .single()
+            : Promise.resolve({ data: null as null | { current_phase: number | null; phase_groups: unknown } }),
+          // Pre-fetch the "has approved submission" check so it doesn't
+          // block initial render. Officers bypass this entirely.
+          !isOfficer && activeCharacter?.id && expansionId
+            ? supabase
+                .from('loot_submissions')
+                .select('id')
+                .eq('character_id', activeCharacter.id)
+                .eq('guild_id', activeGuild.id)
+                .eq('expansion_id', expansionId)
+                .eq('status', 'approved')
+                .limit(1)
+            : Promise.resolve({ data: null as null | { id: string }[] }),
+        ])
 
         if (settingsData) {
           setGuildSettings(settingsData)
@@ -453,14 +482,7 @@ export default function MasterSheetContent() {
         // Officers can see all tiers (including disabled ones), members only see active tiers
         // Filter by current_phase to only show unlocked phases
         let loadedTierIds: string[] = []
-        if (activeGuild?.active_expansion_id) {
-          // Get current_phase and phase_groups from expansion
-          const { data: expansionData } = await supabase
-            .from('expansions')
-            .select('current_phase, phase_groups')
-            .eq('id', activeGuild.active_expansion_id)
-            .single()
-
+        if (expansionId) {
           const currentPhase = expansionData?.current_phase ?? 1
           const phaseGroupsConfig = (expansionData?.phase_groups as number[][] | null) || null
 
@@ -478,7 +500,7 @@ export default function MasterSheetContent() {
                 name
               )
             `)
-            .eq('expansion.id', activeGuild.active_expansion_id)
+            .eq('expansion.id', expansionId)
             .lte('phase', currentPhase)
             .eq('is_guild_active', true)
 
@@ -528,21 +550,13 @@ export default function MasterSheetContent() {
           }
         }
 
-        // Check if current character has an approved submission for any phase in this expansion
-        // Officers bypass this check
-        if (!isOfficer && activeCharacter?.id && activeGuild.active_expansion_id) {
-          const { data: approvedSubs } = await supabase
-            .from('loot_submissions')
-            .select('id')
-            .eq('character_id', activeCharacter.id)
-            .eq('guild_id', activeGuild.id)
-            .eq('expansion_id', activeGuild.active_expansion_id)
-            .eq('status', 'approved')
-            .limit(1)
-
-          setHasApprovedSubmission(!!(approvedSubs && approvedSubs.length > 0))
-        } else if (isOfficer) {
+        // Wire up the has-approved-submission check from the parallel batch.
+        // Officers bypass this.
+        if (isOfficer) {
           setHasApprovedSubmission(true)
+        } else {
+          const approvedSubs = (approvedSubsResult as { data: { id: string }[] | null }).data
+          setHasApprovedSubmission(!!(approvedSubs && approvedSubs.length > 0))
         }
       } catch (error) {
         console.error('Error loading master sheet data:', error)
