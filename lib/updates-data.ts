@@ -14,6 +14,566 @@ export interface UpdateEntry {
 
 export const updates: UpdateEntry[] = [
   {
+    date: 'April 9, 2026',
+    items: [
+      {
+        category: 'feature',
+        title: 'Reserve runs',
+        description: 'Create soft reserve runs for any raid, share a public link, and players reserve items without needing a LootList+ account. Includes per-item caps, class restrictions, hard reserves, Gargul and WeakAura exports, CSV, audit log, and a raid leader token so co-leaders can lock and award without full officer access.',
+      },
+      {
+        category: 'feature',
+        title: 'Logged-in users auto-fill their reserves',
+        description: 'If you have a character in the run\'s guild, the reserve form pre-selects it with class color and spec. Pick "+ Use a different character" in the dropdown to submit as a guest alt that isn\'t tracked in LootList+.',
+      },
+      {
+        category: 'feature',
+        title: 'Reserve links unfurl in Discord',
+        description: 'Pasting a reserve share link in Discord now shows the raid icon, guild name, raid time, and lock status as a link preview.',
+      },
+      {
+        category: 'feature',
+        title: 'Locked reserve board',
+        description: 'When a run locks, the public page pivots to a reserve board grouped by item and sorted by most contested, with awards rendered inline. A "By player" toggle keeps the old view, and your own submission is highlighted in both.',
+      },
+      {
+        category: 'improvement',
+        title: 'Award flow upgrades',
+        description: 'The Item Candidate modal now has keyboard shortcuts, a top-2 comparison card, inline score explanations, award notes, and BLP status. Recent awards can be undone from a toast, and the award button is now primary and visible on hover.',
+      },
+      {
+        category: 'improvement',
+        title: 'Master Sheet tied and gap indicators',
+        description: 'Tied scores show a dice badge on every tied candidate, and the table now shows how far each player is from the next one above them. Both work on the mobile card view too.',
+      },
+      {
+        category: 'improvement',
+        title: 'Overview page redesign',
+        description: 'The overview now leads with the info a raider actually cares about: their next-in-line item, current Loot Score, and upcoming raid night, with a tighter meta line.',
+      },
+      {
+        category: 'improvement',
+        title: 'Item priorities now add points directly',
+        description: 'Guild item priorities are treated as direct point bonuses on Loot Score instead of a separate tiebreaker, so officers can see the weight they\'re applying in real numbers.',
+      },
+      {
+        category: 'improvement',
+        title: 'Faster landing page on mobile',
+        description: 'Landing page LCP is down significantly on mobile. Static rewrite via middleware, WebP poster, lazy-loaded below-fold sections, and CSS animations in place of framer-motion on the hero.',
+      },
+      {
+        category: 'improvement',
+        title: 'Next.js 16 and security hardening',
+        description: 'Upgraded to Next.js 16.1.7, closed 12 CodeQL alerts, added a responsible disclosure policy, and fixed all dependency vulnerabilities.',
+      },
+      {
+        category: 'fix',
+        title: 'Attendance correctness fixes',
+        description: 'Capped attendance at 100% so fill-ins can\'t push a player over the denominator, fixed timezone drift on raid event dates, and corrected the tracked raids count so it matches the overview.',
+      },
+    ],
+  },
+  {
+    date: 'April 3, 2026',
+    items: [
+      {
+        category: 'improvement',
+        title: 'Landing page polish',
+        description: 'Floating items now react to your mouse, click to interact with them, and stay contained on ultra-wide monitors. Items updated to iconic WoW legendaries.',
+      },
+      {
+        category: 'feature',
+        title: 'New blog post: DKP Is Dead',
+        description: 'A guide to what Classic guilds are running instead of DKP in 2026, and why priority lists are winning.',
+      },
+    ],
+  },
+  {
+    date: 'April 1, 2026',
+    items: [
+      {
+        category: 'feature',
+        title: 'Personalized greetings',
+        description: 'The overview greeting now adapts to your faction, class, and time of day. Horde players see Horde greetings, Alliance see Alliance, and your class gets its own lines too.',
+      },
+      {
+        category: 'feature',
+        title: 'Boss quotes on the Master Sheet',
+        description: 'Expanding a boss section now shows an iconic quote from that boss. Over 100 quotes from Classic through Mists of Pandaria.',
+      },
+      {
+        category: 'feature',
+        title: 'Loot award glow',
+        description: 'Newly awarded items in loot history now briefly glow when they first appear, so you can spot fresh awards at a glance.',
+      },
+      {
+        category: 'feature',
+        title: 'First loot celebration',
+        description: 'The first time a character receives an item, the overview page celebrates with a "Grats!" moment. One-time per character.',
+      },
+      {
+        category: 'feature',
+        title: 'Tied score indicator',
+        description: 'When players have the same Loot Score on the Master Sheet, a dice icon now appears next to their score.',
+      },
+      {
+        category: 'improvement',
+        title: 'Hearthstone logout',
+        description: 'Logging out now shows a hearthstone cast bar instead of a generic loading spinner.',
+      },
+      {
+        category: 'improvement',
+        title: 'Dynamic overview subtitle',
+        description: 'The overview subtitle now shows contextual info like upcoming raid nights, Loot List deadlines, pending reviews, or your #1 priority item.',
+      },
+      {
+        category: 'improvement',
+        title: 'Help page tips',
+        description: 'The help page now shows a random loading-screen-style tip about LootList+ features below the search bar.',
+      },
+      {
+        category: 'improvement',
+        title: 'Better empty states and toast messages',
+        description: 'Empty states and success notifications across the app now use clearer, more helpful copy that guides you to the next action.',
+      },
+      {
+        category: 'improvement',
+        title: 'Landing page redesign',
+        description: 'Completely redesigned landing page with new layout, animations, and interactive feature previews.',
+      },
+      {
+        category: 'improvement',
+        title: 'Faster page loading',
+        description: 'Replaced the fullscreen loading spinner with a skeleton app shell that renders instantly while data loads in the background.',
+      },
+      {
+        category: 'feature',
+        title: 'Hidden surprises',
+        description: 'We hid a few things around the app for you to find. Keep your eyes open.',
+      },
+      {
+        category: 'fix',
+        title: 'Multi-device logout fixed',
+        description: 'Logging out on one device no longer causes auth errors on other devices. Sessions are now properly cleaned up.',
+      },
+      {
+        category: 'fix',
+        title: 'Character switching fully reloads page data',
+        description: 'Switching characters now triggers a full page remount so all data refreshes correctly, matching guild switch behavior.',
+      },
+    ],
+  },
+  {
+    date: 'March 30, 2026',
+    items: [
+      {
+        category: 'fix',
+        title: 'Candidate comparison shows correct recent awards',
+        description: 'The "Recent awards" section in the item comparison modal was showing random recent loot instead of awards for the specific item. Now correctly filtered.',
+      },
+      {
+        category: 'fix',
+        title: 'Navigation stays fresh after updates',
+        description: 'Clicking between pages after a site update no longer shows stale or broken content. The app now detects new deployments and refreshes automatically.',
+      },
+    ],
+  },
+  {
+    date: 'March 29, 2026',
+    items: [
+      {
+        category: 'fix',
+        title: 'Bad luck protection now works',
+        description: 'BLP was only updating from one of seven loot award paths. Now handled server-side so every loot award correctly increments BLP for non-winners and resets for winners.',
+      },
+      {
+        category: 'improvement',
+        title: 'BLP display clarified',
+        description: 'BLP is no longer shown as a confusing global modifier in the score breakdown. It now appears per item in your "Next in line" section where it makes sense.',
+      },
+      {
+        category: 'improvement',
+        title: 'Help center updated',
+        description: 'New FAQ articles for "What is Bad Luck Protection?" and "Why can\'t I select an item?" plus updated articles covering Raid Mode, excused absences, priorities, and more.',
+      },
+      {
+        category: 'improvement',
+        title: 'Comma and semicolon attendance import',
+        description: 'Paste attendance names separated by commas, semicolons, or one per line. Previously only newlines worked despite the placeholder saying otherwise.',
+      },
+      {
+        category: 'fix',
+        title: 'Shamans blocked from Mail items',
+        description: 'Items with "gauntlets" in the name were incorrectly classified as Plate armor, preventing Mail-wearing classes from selecting them.',
+      },
+      {
+        category: 'fix',
+        title: 'Navigation breaking after overnight tab',
+        description: 'Leaving the app open in a background tab overnight no longer requires a hard refresh. The app now detects expired sessions and redirects to login automatically.',
+      },
+      {
+        category: 'fix',
+        title: 'Rejecting a never-approved resubmission',
+        description: 'Officers could not reject a list that was edited and resubmitted before first approval. Now falls back to a normal rejection instead of showing "No snapshot found."',
+      },
+      {
+        category: 'fix',
+        title: 'Wildfury Greatstaff boss fix',
+        description: 'Moved from Leotheras the Blind to Trash drops where it belongs.',
+      },
+      {
+        category: 'improvement',
+        title: 'Faster page loads',
+        description: 'Overview and Loot Management pages load faster. Stats and character card render immediately while score insights load in the background.',
+      },
+    ],
+  },
+  {
+    date: 'March 27, 2026',
+    items: [
+      {
+        category: 'feature',
+        title: 'Item candidate comparison',
+        description: 'Officers can click any item on the Master Sheet to see all ranked candidates with full score breakdowns, eligibility badges, priority rules, and recent award history.',
+      },
+      {
+        category: 'feature',
+        title: 'Raid mode',
+        description: 'New compact view on the Master Sheet for use during raids. Searchable item list with top 3 candidates per item. Click to open the full comparison.',
+      },
+      {
+        category: 'feature',
+        title: 'Setup guide for new guilds',
+        description: 'Officers see a 5-step progress tracker on the Overview page that auto-checks as you invite raiders, set raid days, get loot lists, and log your first raid.',
+      },
+      {
+        category: 'improvement',
+        title: 'Role-aware onboarding',
+        description: 'The welcome tutorial now shows different content for officers (admin checklist) and raiders (how to submit your first loot list).',
+      },
+      {
+        category: 'improvement',
+        title: 'Smarter empty states',
+        description: 'Empty Master Sheet and Loot List pages now show role-specific guidance. Officers see "check submissions," raiders see "create my loot list."',
+      },
+      {
+        category: 'fix',
+        title: 'Audit log search accuracy',
+        description: 'Search was matching unrelated logs when any character name appeared in results. Now matches only the specific log entry. Search window also increased from 200 to 2000 entries.',
+      },
+      {
+        category: 'fix',
+        title: 'Priority list showing only your own character',
+        description: 'The individual raiders dropdown in loot management only showed the current user. Now shows all guild members.',
+      },
+      {
+        category: 'fix',
+        title: 'Date handling corrections',
+        description: 'Fixed a timezone issue where loot award dates could shift by one day for users in US timezones.',
+      },
+    ],
+  },
+  {
+    date: 'March 25, 2026',
+    items: [
+      {
+        category: 'feature',
+        title: 'Officer diagnostic tool',
+        description: 'Officers can now check a raider\'s data integrity via /api/admin/diagnose. Returns character info, submission status, attendance records, and computed score to help troubleshoot issues.',
+      },
+      {
+        category: 'feature',
+        title: 'Score breakdown on Master Sheet',
+        description: 'Officers can click any raider on the Master Sheet to see a full breakdown of how their Loot Score was calculated, including ranking, attendance, and modifiers.',
+      },
+      {
+        category: 'improvement',
+        title: 'Priorities tab search',
+        description: 'The search bar on the Priorities tab no longer disappears, and now includes a clear button.',
+      },
+      {
+        category: 'fix',
+        title: 'Attendance score showing 0 for some raiders',
+        description: 'Personal attendance score could show 0 even when the guild table showed the correct value. Now uses the same computation path as the guild table.',
+      },
+      {
+        category: 'fix',
+        title: 'Attendance calculation for new members',
+        description: 'The "fair" new member mode wasn\'t using your join date, counting raids from before you joined against your attendance. Fixed.',
+      },
+      {
+        category: 'fix',
+        title: 'Loot settings not saving',
+        description: 'Phase deadlines, raid tier toggles, and loot item changes weren\'t persisting due to a permissions issue. All fixed.',
+      },
+      {
+        category: 'fix',
+        title: 'Guild owner role editing',
+        description: 'Guild owners couldn\'t edit their own role name or position. Now works correctly.',
+      },
+    ],
+  },
+  {
+    date: 'March 21, 2026',
+    items: [
+      {
+        category: 'feature',
+        title: 'Excused absences',
+        description: 'Officers can now mark raiders as excused for a raid. Excused raids are excluded from your attendance score denominator, so they won\'t hurt your Loot Score.',
+      },
+      {
+        category: 'feature',
+        title: 'Attendance points override',
+        description: 'Officers can set a manual points override on any attendance record, replacing the calculated value for that raid.',
+      },
+      {
+        category: 'feature',
+        title: 'Setup checklist for new guilds',
+        description: 'New guild officers see a progress checklist on the overview page showing what to set up: expansion, raid schedule, loot settings, roster, and first raid.',
+      },
+      {
+        category: 'feature',
+        title: 'First-time loot list guidance',
+        description: 'Raiders who haven\'t ranked any items yet see a helpful banner explaining how to get started with their loot list.',
+      },
+      {
+        category: 'improvement',
+        title: 'Class filtering by expansion',
+        description: 'Character creation now only shows classes available in your guild\'s active expansion. No more Death Knights in Classic.',
+      },
+      {
+        category: 'improvement',
+        title: 'Guild creation without leaving the page',
+        description: 'Creating a new guild now opens a modal instead of navigating to a separate page.',
+      },
+      {
+        category: 'improvement',
+        title: 'Faster page loads',
+        description: 'Reduced Largest Contentful Paint and layout shift across the app for snappier navigation.',
+      },
+      {
+        category: 'fix',
+        title: 'Master Sheet sorting',
+        description: 'Summary view now correctly sorts players by highest item rank, and collapsed groups show the right top entries.',
+      },
+      {
+        category: 'fix',
+        title: 'Sheet import column warnings',
+        description: 'Import now warns when Item #1 or Item #2 columns are completely empty, catching misconfigured spreadsheets before they cause blank lists.',
+      },
+      {
+        category: 'fix',
+        title: 'Submission diff accuracy',
+        description: 'The "what changed" comparison on resubmissions now correctly snapshots the list at approval time, not at resubmission time.',
+      },
+    ],
+  },
+  {
+    date: 'March 18, 2026',
+    items: [
+      {
+        category: 'feature',
+        title: 'Resubmission review for officers',
+        description: 'When a raider resubmits their loot list, officers now see "Approve changes" and "Reject changes" buttons. Rejecting reverts the list to its previously approved state.',
+      },
+      {
+        category: 'feature',
+        title: 'New help articles',
+        description: 'Added FAQs for how to record loot awards (Gargul or manual import) and how to create loot lists for new phases.',
+      },
+      {
+        category: 'fix',
+        title: 'Cleared loot list reappearing',
+        description: 'Fixed a bug where clearing all rankings from a loot list (especially after a WowSims import) would repopulate the deleted list on refresh.',
+      },
+      {
+        category: 'fix',
+        title: 'Tooltip positioning',
+        description: 'Info tooltips no longer appear offset from their icon when the page or table is scrolled.',
+      },
+      {
+        category: 'improvement',
+        title: 'Loot management pagination',
+        description: 'The item list now scrolls to the top when changing pages, and the pagination bar takes up less space.',
+      },
+      {
+        category: 'fix',
+        title: 'Guild creation and permissions',
+        description: 'Fixed guild creation failing when Discord auto-verification was missing, and fixed officer permissions when the membership record was out of sync.',
+      },
+    ],
+  },
+  {
+    date: 'March 15, 2026',
+    items: [
+      {
+        category: 'feature',
+        title: 'Remove items from approved loot lists',
+        description: 'Officers can now remove individual items from a raider\'s approved loot list without requiring a full resubmission.',
+      },
+      {
+        category: 'improvement',
+        title: 'Mobile layout fixes',
+        description: 'Fixed guild cards overlapping on the profile page, improved overview page for smaller screens, and prevented background scrolling when modals are open (including iOS).',
+      },
+      {
+        category: 'improvement',
+        title: 'Faster page loads',
+        description: 'Optimized Largest Contentful Paint and reduced layout shift across the app.',
+      },
+      {
+        category: 'improvement',
+        title: 'Cleaner Master Sheet ranks',
+        description: 'Simplified rank display in the Master Sheet summary view.',
+      },
+    ],
+  },
+  {
+    date: 'March 11, 2026',
+    items: [
+      {
+        category: 'fix',
+        title: 'Raid tracking reliability',
+        description: 'Fixed attendance entered on the raid tracking page not appearing on the attendance page. Resolved an issue where the first scheduled raid day of the week could disappear from both pages.',
+      },
+      {
+        category: 'improvement',
+        title: 'Guardian conversion banner',
+        description: 'The officer banner now lists unconverted Feral Druids by name with quick actions to convert or dismiss each one.',
+      },
+    ],
+  },
+  {
+    date: 'March 10, 2026',
+    items: [
+      {
+        category: 'feature',
+        title: 'Role-based score modifiers',
+        description: 'Officers can assign score bonuses or penalties by role (tank, healer, physical DPS, caster DPS). Useful for incentivizing underrepresented roles.',
+      },
+      {
+        category: 'feature',
+        title: 'Guardian Druid',
+        description: 'Guardian is now a separate spec from Feral. Existing Feral Druids are prompted to choose between DPS (Feral) and Tank (Guardian).',
+      },
+      {
+        category: 'feature',
+        title: 'Death Knight and Monk',
+        description: 'Full class and spec support for WotLK and MoP expansions.',
+      },
+      {
+        category: 'improvement',
+        title: 'Faster page loads',
+        description: 'Lazy-loaded item icon data and memoized expensive computations on the raid tracking page.',
+      },
+      {
+        category: 'improvement',
+        title: 'Full loot in Discord summaries',
+        description: 'Raid summaries posted to Discord now show all awarded items instead of truncating.',
+      },
+      {
+        category: 'fix',
+        title: 'Master Sheet accuracy',
+        description: 'Fixed awarded items not being removed from the sheet, and the wrong entry being removed when the same item appeared at multiple ranks.',
+      },
+      {
+        category: 'fix',
+        title: 'Guild settings region',
+        description: 'Fixed realm region reverting to US when saving other guild settings.',
+      },
+      {
+        category: 'fix',
+        title: 'Overview filtering',
+        description: 'Fixed awarded items still appearing in "Next in line" across tiers.',
+      },
+      {
+        category: 'fix',
+        title: 'Stale data on guild switch',
+        description: 'Switching between guilds no longer shows leftover data from the previous guild.',
+      },
+    ],
+  },
+  {
+    date: 'March 9, 2026',
+    items: [
+      {
+        category: 'feature',
+        title: 'Cataclysm and Mists of Pandaria',
+        description: 'Full loot data for both expansions. 978 items across 5 Cata raids and 1,705 items across 5 MoP raids.',
+      },
+      {
+        category: 'feature',
+        title: 'Character aliases',
+        description: 'Map alternate names (alts, name changes) so imported attendance and loot auto-resolves to the right member. Unmatched names trigger a step-through picker during import.',
+      },
+      {
+        category: 'improvement',
+        title: 'Boss and tier icons',
+        description: 'Added boss portraits and raid tier icons for WotLK, Cataclysm and Mists of Pandaria.',
+      },
+      {
+        category: 'improvement',
+        title: 'Karazhan loot data',
+        description: 'Added 19 missing items from Karazhan.',
+      },
+      {
+        category: 'fix',
+        title: 'Date handling overhaul',
+        description: 'Fixed 12 timezone bugs that caused dates to shift by a day in US timezones.',
+      },
+      {
+        category: 'fix',
+        title: 'Loot history reliability',
+        description: 'Fixed loot history and Master Sheet showing zero results for some guilds.',
+      },
+      {
+        category: 'fix',
+        title: 'Officer data writes',
+        description: 'Fixed attendance, signups and loot imports failing silently for officers.',
+      },
+      {
+        category: 'fix',
+        title: 'Onboarding modal in Firefox',
+        description: 'Fixed the close button being unclickable in Firefox.',
+      },
+    ],
+  },
+  {
+    date: 'March 8, 2026',
+    items: [
+      {
+        category: 'feature',
+        title: 'Wrath of the Lich King',
+        description: 'Full loot data for all 5 phases, from Naxxramas through Ruby Sanctum. 1,353 items across 8 raids.',
+      },
+      {
+        category: 'feature',
+        title: 'Submission diff tracking',
+        description: 'Officers can see exactly what changed when a raider resubmits their loot list. Added items, removed items and rank changes are highlighted.',
+      },
+      {
+        category: 'improvement',
+        title: 'Loot submissions grouped by phase',
+        description: 'Pending submissions are now organized by phase group with raid icons for easier review.',
+      },
+      {
+        category: 'fix',
+        title: 'Attendance scores for imported raids',
+        description: 'Members with retroactively imported attendance now get proper credit. Fair mode no longer ignores raids that happened before a member joined the app.',
+      },
+      {
+        category: 'fix',
+        title: 'Loot history loading',
+        description: 'Fixed an issue where the loot history tab showed zero results despite imported loot existing.',
+      },
+      {
+        category: 'fix',
+        title: 'Item slot swap on submissions',
+        description: 'Fixed items in the same rank appearing flip-flopped (Item #1 and #2 swapped) when officers reviewed a submission.',
+      },
+    ],
+  },
+  {
     date: 'February 28, 2026',
     items: [
       {

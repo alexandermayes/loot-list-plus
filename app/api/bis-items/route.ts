@@ -139,7 +139,7 @@ export async function GET(request: NextRequest) {
       .select('id, name')
       .eq('expansion_id', expansionId)
       .eq('phase', parseInt(phase, 10))
-      .or('is_guild_active.eq.true,is_guild_active.is.null')
+      .eq('is_guild_active', true)
 
     if (tierError) {
       console.error('Error fetching tiers:', tierError)
@@ -287,7 +287,7 @@ export async function GET(request: NextRequest) {
       },
       {
         headers: {
-          'Cache-Control': 'private, max-age=300, stale-while-revalidate=600'
+          'Cache-Control': 'private, max-age=60, stale-while-revalidate=120'
         }
       }
     )

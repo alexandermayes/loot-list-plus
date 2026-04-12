@@ -8,6 +8,7 @@
 'use client'
 
 import { useState, useRef, useEffect, useMemo, useCallback } from 'react'
+import { createPortal } from 'react-dom'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import ItemLink from './ItemLink'
@@ -46,6 +47,12 @@ interface SearchableItemSelectProps {
   hasError?: boolean
   /** Set of wowhead_ids that the user already owns (imported from WowSims) */
   ownedWowheadIds?: Set<number>
+  /** When true, dropdown is locked but X button still works (calls onRemove instead of onChange) */
+  readOnly?: boolean
+  /** Called when X is clicked in read-only mode. If not set, falls back to onChange('') */
+  onRemove?: () => void
+  /** When true, renders a full-screen modal instead of positioned dropdown (for mobile) */
+  mobile?: boolean
 }
 
 export default function SearchableItemSelect({
@@ -57,7 +64,10 @@ export default function SearchableItemSelect({
   currentValue,
   isSlotDisabled = false,
   hasError = false,
-  ownedWowheadIds = new Set()
+  ownedWowheadIds = new Set(),
+  readOnly = false,
+  onRemove,
+  mobile = false
 }: SearchableItemSelectProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [search, setSearch] = useState('')
@@ -69,13 +79,14 @@ export default function SearchableItemSelect({
 
   const selectedItem = useMemo(() => items.find(i => i.id === value), [items, value])
 
-  // Filter items by search (memoized to prevent re-filtering on every render)
-  const filteredItems = useMemo(() =>
-    items.filter(item =>
-      item.name.toLowerCase().includes(search.toLowerCase())
-    ),
-    [items, search]
-  )
+  // Filter items by search — matches item name or boss name
+  const filteredItems = useMemo(() => {
+    const q = search.toLowerCase()
+    return items.filter(item =>
+      item.name.toLowerCase().includes(q) ||
+      item.boss_name?.toLowerCase().includes(q)
+    )
+  }, [items, search])
 
   // Group items by boss and sort by Classic WoW encounter order (memoized)
   // Normalize boss names to merge multi-boss encounters (e.g., Opera Event)
@@ -160,7 +171,7 @@ export default function SearchableItemSelect({
 
   // Handle opening the dropdown with position calculation
   const handleOpen = () => {
-    if (isSlotDisabled) return
+    if (isSlotDisabled || readOnly) return
     if (buttonRef.current) {
       const rect = buttonRef.current.getBoundingClientRect()
       setDropdownPosition({
@@ -205,14 +216,14 @@ export default function SearchableItemSelect({
         role="combobox"
         aria-expanded={isOpen}
         aria-haspopup="listbox"
-        aria-disabled={isSlotDisabled}
-        tabIndex={isSlotDisabled ? -1 : 0}
+        aria-disabled={isSlotDisabled || readOnly}
+        tabIndex={isSlotDisabled || readOnly ? -1 : 0}
         onClick={() => {
-          if (isSlotDisabled) return
+          if (isSlotDisabled || readOnly) return
           isOpen ? setIsOpen(false) : handleOpen()
         }}
         onKeyDown={(e) => {
-          if (isSlotDisabled) return
+          if (isSlotDisabled || readOnly) return
           if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault()
             isOpen ? setIsOpen(false) : handleOpen()
@@ -221,9 +232,11 @@ export default function SearchableItemSelect({
         className={`w-full px-3 py-2 bg-background-elevated border rounded-[52px] text-left focus:outline-none flex items-center justify-between gap-2 ${
           isSlotDisabled
             ? 'opacity-50 cursor-not-allowed text-muted-foreground border-border-strong'
-            : hasError
-              ? 'text-foreground cursor-pointer border-destructive border-2 focus:border-destructive'
-              : 'text-foreground focus:border-accent cursor-pointer border-border-strong'
+            : readOnly
+              ? 'text-foreground border-border-strong'
+              : hasError
+                ? 'text-foreground cursor-pointer border-destructive border-2 focus:border-destructive'
+                : 'text-foreground focus:border-accent cursor-pointer border-border-strong'
         }`}
       >
         <span className="truncate flex items-center gap-2 min-w-0">
@@ -244,37 +257,44 @@ export default function SearchableItemSelect({
         </span>
         <div className="flex items-center gap-1 flex-shrink-0">
           {/* Clear button (X) - only show when item is selected */}
-          {selectedItem && (
+          {selectedItem && !isSlotDisabled && (
             <Button
               type="button"
               variant="ghost"
               size="icon"
               onClick={(e) => {
                 e.stopPropagation()
-                handleClear()
+                if (readOnly && onRemove) {
+                  onRemove()
+                } else {
+                  handleClear()
+                }
               }}
               className="w-6 h-6 min-h-0 rounded-full"
-              aria-label="Clear selection"
+              aria-label={readOnly ? 'Remove from list' : 'Clear selection'}
+              title={readOnly ? 'Remove from list' : undefined}
             >
-              <svg className="w-3.5 h-3.5 text-muted-foreground hover:text-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className={`w-3.5 h-3.5 ${readOnly ? 'text-muted-foreground hover:text-destructive' : 'text-muted-foreground hover:text-foreground'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </Button>
           )}
-          <svg
-            className="w-4 h-4 transition-transform"
-            style={{ transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-          </svg>
+          {!readOnly && (
+            <svg
+              className="w-4 h-4 transition-transform"
+              style={{ transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          )}
         </div>
       </div>
 
-      {/* Dropdown */}
-      {isOpen && dropdownPosition.width > 0 && (
+      {/* Desktop Dropdown */}
+      {isOpen && !mobile && dropdownPosition.width > 0 && (
         <div
           ref={dropdownContentRef}
           className="fixed z-[9999] bg-background-elevated border border-border-strong rounded-lg shadow-lg max-h-96 overflow-hidden"
@@ -383,6 +403,126 @@ export default function SearchableItemSelect({
             )}
           </div>
         </div>
+      )}
+
+      {/* Mobile Full-Screen Modal */}
+      {isOpen && mobile && createPortal(
+        <div
+          className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[9999] flex flex-col"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setIsOpen(false)
+              setSearch('')
+            }
+          }}
+        >
+          <div className="flex flex-col h-full bg-background-elevated">
+            {/* Header with search */}
+            <div className="flex items-center gap-2 p-3 border-b border-border shrink-0">
+              <Input
+                ref={searchInputRef}
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search items..."
+                variant="rounded"
+                className="flex-1"
+              />
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setIsOpen(false)
+                  setSearch('')
+                }}
+              >
+                Cancel
+              </Button>
+            </div>
+
+            {/* Items List */}
+            <div className="flex-1 overflow-y-auto overscroll-contain">
+              {filteredItems.length === 0 ? (
+                <div className="px-3 py-8 text-center text-muted-foreground text-[13px]">
+                  No items found
+                </div>
+              ) : (
+                bossNames.map(boss => (
+                  <div key={boss}>
+                    {/* Boss Header */}
+                    <div className="px-3 py-2.5 bg-muted border-b border-border sticky top-0 z-10">
+                      <p className="text-xs font-semibold text-foreground uppercase tracking-wide">
+                        {boss}
+                      </p>
+                    </div>
+                    {/* Boss Items */}
+                    {itemsByBoss[boss].map(item => {
+                      const isLc = item.is_loot_council === true
+                      const isDisabled = (disabled.has(item.id) && currentValue !== item.id) || isLc
+                      const isOwned = ownedWowheadIds.has(item.wowhead_id)
+                      return (
+                        <button
+                          key={item.id}
+                          onClick={() => {
+                            if (!isDisabled) {
+                              handleSelect(item.id)
+                            }
+                          }}
+                          disabled={isDisabled}
+                          className={`w-full px-3 py-3 text-left flex items-center gap-2 min-w-0 border-b border-border/30 active:bg-muted ${
+                            isDisabled ? 'opacity-50' : ''
+                          }`}
+                        >
+                          <span className="flex-1 min-w-0 whitespace-normal">
+                            <span className="flex items-center gap-2">
+                              <span className="truncate whitespace-nowrap">
+                                <ItemLink name={item.name} wowheadId={item.wowhead_id} clickable={false} />
+                              </span>
+                              {isLc ? (
+                                <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-accent/20 text-accent flex-shrink-0">
+                                  Loot Council
+                                </span>
+                              ) : (
+                                <>
+                                  {item.dps_gain && item.dps_gain > 0 && (
+                                    <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-accent/20 text-accent flex-shrink-0">
+                                      +{item.dps_gain.toLocaleString()} DPS
+                                    </span>
+                                  )}
+                                  {isOwned && (
+                                    <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-success/20 text-success flex-shrink-0">
+                                      Owned
+                                    </span>
+                                  )}
+                                  {item.classification && item.classification !== 'Unlimited' && (
+                                    <span className="text-xs text-muted-foreground flex-shrink-0">
+                                      [{item.classification}]
+                                    </span>
+                                  )}
+                                </>
+                              )}
+                            </span>
+                            {!isLc && <ClassPrioritySubline lootItemClasses={item.loot_item_classes} />}
+                          </span>
+                          {value === item.id && (
+                            <img
+                              src="/icons/tick.svg"
+                              alt="Selected"
+                              width={16}
+                              height={16}
+                              className="icon-adaptive w-4 h-4 shrink-0"
+                            />
+                          )}
+                        </button>
+                      )
+                    })}
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>,
+        document.body
       )}
     </div>
   )

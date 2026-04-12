@@ -68,24 +68,42 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Check if user has any other guilds
-    const { data: remainingMemberships } = await supabase
-      .from('guild_members')
-      .select('guild_id')
+    // Check if user has any other guilds via character memberships
+    const { data: userChars } = await supabase
+      .from('characters')
+      .select('id')
       .eq('user_id', user.id)
-      .limit(1)
 
-    // Clear active guild entry since it was deleted
-    await supabase
-      .from('user_active_guilds')
-      .delete()
+    let hasOtherGuilds = false
+    if (userChars && userChars.length > 0) {
+      const { data: remaining } = await supabase
+        .from('character_guild_memberships')
+        .select('guild_id')
+        .in('character_id', userChars.map(c => c.id))
+        .eq('is_active', true)
+        .limit(1)
+
+      hasOtherGuilds = !!(remaining && remaining.length > 0)
+    }
+
+    // Clear active guild if it was the deleted guild
+    const { data: activeChar } = await supabase
+      .from('user_active_characters')
+      .select('active_guild_id')
       .eq('user_id', user.id)
-      .eq('active_guild_id', guild_id)
+      .maybeSingle()
+
+    if (activeChar?.active_guild_id === guild_id) {
+      await supabase
+        .from('user_active_characters')
+        .update({ active_guild_id: null, updated_at: new Date().toISOString() })
+        .eq('user_id', user.id)
+    }
 
     return NextResponse.json({
       success: true,
       message: 'Guild deleted successfully',
-      has_other_guilds: remainingMemberships && remainingMemberships.length > 0
+      has_other_guilds: hasOtherGuilds
     })
   } catch (error) {
     console.error('Error in POST /api/guilds/delete:', error)

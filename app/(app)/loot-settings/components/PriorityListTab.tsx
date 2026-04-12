@@ -5,13 +5,13 @@ import { useState, useEffect, useMemo } from 'react'
 import dynamic from 'next/dynamic'
 import ItemLink from '@/app/components/ItemLink'
 import { useGuildContext } from '@/app/contexts/GuildContext'
-import { LoadingSpinner } from '@/components/ui/loading-spinner'
+import { Skeleton } from '@/components/ui/skeletons'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Search01Icon } from '@hugeicons/core-free-icons'
 import { Button } from '@/components/ui/button'
 import { Select } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
-import { allRoles, getRoleDisplayName, type Role } from '@/utils/spec-role-mapping'
+import { allRoles, getRoleDisplayName, type Role } from '@/domain/loot/spec-role-mapping'
 import { useNotification } from '@/app/contexts/NotificationContext'
 
 // Lazy load the modal to reduce initial bundle size
@@ -207,35 +207,23 @@ export default function PriorityListTab() {
         }
 
         // Load all characters in the guild (for individual priority)
-        const { data: memberships } = await supabase
-          .from('character_guild_memberships')
-          .select(`
-            character:characters(
-              id,
-              name,
-              class:wow_classes(name, color_hex)
-            )
-          `)
-          .eq('guild_id', activeGuild.id)
-          .eq('is_active', true)
-
-        if (memberships) {
-          const chars = memberships
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            .map((m: any) => {
-              const char = m.character as any
-              if (!char) return null
-              // Handle both array and single object returns from Supabase
-              const charData = Array.isArray(char) ? char[0] : char
-              if (!charData) return null
-              return {
-                id: charData.id,
-                name: charData.name,
-                class: Array.isArray(charData.class) ? charData.class[0] : charData.class
-              } as Character
-            })
-            .filter((c: Character | null): c is Character => c !== null)
-          setCharacters(chars.sort((a: Character, b: Character) => a.name.localeCompare(b.name)))
+        // Uses guild-members API with service role to bypass RLS on character_guild_memberships
+        const membersResponse = await fetch(`/api/guild-members?guild_id=${activeGuild.id}`)
+        if (membersResponse.ok) {
+          const membersData = await membersResponse.json()
+          if (membersData?.members) {
+            const chars: Character[] = []
+            for (const member of membersData.members) {
+              for (const char of member.characters || []) {
+                chars.push({
+                  id: char.id,
+                  name: char.name,
+                  class: char.class || null
+                })
+              }
+            }
+            setCharacters(chars.sort((a: Character, b: Character) => a.name.localeCompare(b.name)))
+          }
         }
 
       } catch (error) {
@@ -478,8 +466,46 @@ export default function PriorityListTab() {
 
   if (initialLoading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <LoadingSpinner />
+      <div className="space-y-6">
+        {/* Phase tabs skeleton */}
+        <div className="hidden sm:flex gap-2">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <Skeleton key={i} className="h-9 w-24 rounded-[40px]" />
+          ))}
+        </div>
+        {/* Stats grid skeleton */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="bg-background-elevated border border-border rounded-xl p-4">
+              <Skeleton className="h-4 w-20" />
+              <Skeleton className="h-7 w-12 mt-1" />
+            </div>
+          ))}
+        </div>
+        {/* Search + boss nav skeleton */}
+        <div className="hidden sm:flex gap-3">
+          <div className="flex-shrink-0 bg-background-elevated border border-border rounded-xl p-3">
+            <Skeleton className="h-9 w-[160px] rounded-[52px]" />
+          </div>
+          <div className="flex-1 bg-background-elevated border border-border rounded-xl p-3">
+            <div className="flex gap-2">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <Skeleton key={i} className="h-9 w-28 rounded-[40px] flex-shrink-0" />
+              ))}
+            </div>
+          </div>
+        </div>
+        {/* Boss section skeletons */}
+        {Array.from({ length: 3 }).map((_, i) => (
+          <div key={i} className="space-y-2">
+            <Skeleton className="h-12 w-full rounded-xl" />
+            <div className="space-y-1">
+              {Array.from({ length: 4 }).map((_, j) => (
+                <Skeleton key={j} className="h-11 w-full rounded-lg" />
+              ))}
+            </div>
+          </div>
+        ))}
       </div>
     )
   }
@@ -575,52 +601,81 @@ export default function PriorityListTab() {
       </div>
 
       {/* Boss Quick Navigation */}
-      {!contentLoading && bossNames.length > 0 && (
+      {!contentLoading && lootItems.length > 0 && (
         <div className="flex flex-col sm:flex-row gap-3">
           {/* Mobile: Search + Boss dropdown row */}
           <div className="sm:hidden flex gap-2">
             {/* Search input */}
             <div className="flex-1 bg-background-elevated border border-border rounded-xl p-2">
+              <div className="relative">
+                <Input
+                  variant="rounded"
+                  size="sm"
+                  type="text"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  placeholder="Search items..."
+                  className={searchTerm ? 'pr-7' : ''}
+                />
+                {searchTerm && (
+                  <button
+                    onClick={() => setSearchTerm('')}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                    aria-label="Clear search"
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                )}
+              </div>
+            </div>
+            {/* Boss dropdown */}
+            {bossNames.length > 0 && (
+              <div className="flex-1 bg-background-elevated border border-border rounded-xl p-2">
+                <Select
+                  variant="rounded"
+                  size="sm"
+                  onChange={(e) => {
+                    const element = document.getElementById(`prio-boss-${e.target.value.replace(/\s+/g, '-')}`)
+                    if (element) {
+                      element.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                    }
+                  }}
+                  defaultValue=""
+                >
+                  <option value="" disabled>Jump to boss...</option>
+                  {bossNames.map((boss) => (
+                    <option key={boss} value={boss}>{boss}</option>
+                  ))}
+                </Select>
+              </div>
+            )}
+          </div>
+          {/* Desktop: Search input */}
+          <div className="hidden sm:flex flex-shrink-0 bg-background-elevated border border-border rounded-xl p-3 items-center">
+            <div className="relative">
               <Input
                 variant="rounded"
                 size="sm"
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Search..."
+                placeholder="Search items..."
+                className={`w-full sm:w-[160px] ${searchTerm ? 'pr-7' : ''}`}
               />
+              {searchTerm && (
+                <button
+                  onClick={() => setSearchTerm('')}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  aria-label="Clear search"
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              )}
             </div>
-            {/* Boss dropdown */}
-            <div className="flex-1 bg-background-elevated border border-border rounded-xl p-2">
-              <Select
-                variant="rounded"
-                size="sm"
-                onChange={(e) => {
-                  const element = document.getElementById(`prio-boss-${e.target.value.replace(/\s+/g, '-')}`)
-                  if (element) {
-                    element.scrollIntoView({ behavior: 'smooth', block: 'start' })
-                  }
-                }}
-                defaultValue=""
-              >
-                <option value="" disabled>Jump to boss...</option>
-                {bossNames.map((boss) => (
-                  <option key={boss} value={boss}>{boss}</option>
-                ))}
-              </Select>
-            </div>
-          </div>
-          {/* Desktop: Search input */}
-          <div className="hidden sm:flex flex-shrink-0 bg-background-elevated border border-border rounded-xl p-3 items-center">
-            <Input
-              variant="rounded"
-              size="sm"
-              type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Search items..."
-              className="w-full sm:w-[160px]"
-            />
           </div>
           {/* Desktop: Boss chips container with horizontal scroll fade */}
           <div className="flex-1 min-w-0 bg-background-elevated border border-border rounded-xl p-3 overflow-hidden hidden sm:block">
@@ -667,11 +722,17 @@ export default function PriorityListTab() {
 
       {/* Content Loading State */}
       {contentLoading ? (
-        <div className="bg-background-elevated border border-border rounded-xl p-12">
-          <div className="flex flex-col items-center justify-center gap-4">
-            <LoadingSpinner />
-            <p className="text-muted-foreground text-sm">Loading items...</p>
-          </div>
+        <div className="space-y-2">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="space-y-2">
+              <Skeleton className="h-12 w-full rounded-xl" />
+              <div className="space-y-1">
+                {Array.from({ length: 4 }).map((_, j) => (
+                  <Skeleton key={j} className="h-11 w-full rounded-lg" />
+                ))}
+              </div>
+            </div>
+          ))}
         </div>
       ) : (
         <>
@@ -680,7 +741,7 @@ export default function PriorityListTab() {
             <EmptyState
               icon={Search01Icon}
               title="No items found"
-              description="No items found for this phase."
+              description={searchTerm ? `No items matching "${searchTerm}".` : "No items found for this phase."}
               size="default"
               variant="card"
             />
@@ -836,7 +897,7 @@ export default function PriorityListTab() {
           <div className="bg-background-elevated border border-border rounded-xl p-4">
             <div className="flex items-center justify-between">
               <p className="text-foreground-muted text-[12px]">
-                Priority 1 = highest. Bonuses are added to loot scores on the master sheet.
+                Priority values add directly to loot scores on the master sheet. A +1 adds 1 point.
               </p>
               <p className="text-foreground-muted text-[12px]">
                 {Object.keys(priorities).length} items with priorities

@@ -4,8 +4,7 @@ import { createClient } from '@/utils/supabase/client'
 import { useState, useEffect } from 'react'
 import { trackClientEvent } from '@/utils/analytics/client'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { LoadingSpinner } from '@/components/ui/loading-spinner'
-import { ProfileContentSkeleton } from '@/components/ui/skeletons'
+import { Skeleton } from '@/components/ui/skeletons'
 import { useGuildContext } from '@/app/contexts/GuildContext'
 import { useNotification } from '@/app/contexts/NotificationContext'
 import {
@@ -89,12 +88,13 @@ export default function ProfilePage() {
   const searchParams = useSearchParams()
 
   useEffect(() => {
+    trackClientEvent('profile_page_viewed')
     document.title = 'LootList+ • Profile'
 
     // Handle Battle.net OAuth callback status
     const battlenetStatus = searchParams.get('battlenet')
     if (battlenetStatus === 'connected') {
-      showNotification('success', 'Battle.net account connected')
+      showNotification('success', 'Battle.net linked. Your characters are syncing.')
       // Clean up URL params
       router.replace('/profile', { scroll: false })
     } else if (battlenetStatus === 'denied') {
@@ -113,13 +113,11 @@ export default function ProfilePage() {
     }
   }, [])
 
-  const loadBattlenetAccount = async () => {
-    if (!user) return
-
+  const loadBattlenetAccount = async (userId: string) => {
     const { data } = await supabase
       .from('battlenet_accounts')
       .select('battletag, region, updated_at')
-      .eq('user_id', user.id)
+      .eq('user_id', userId)
       .single()
 
     if (data) {
@@ -127,13 +125,11 @@ export default function ProfilePage() {
     }
   }
 
-  const loadNotificationPrefs = async () => {
-    if (!user) return
-
+  const loadNotificationPrefs = async (userId: string) => {
     const { data } = await supabase
       .from('user_preferences')
       .select('notify_submission_status')
-      .eq('user_id', user.id)
+      .eq('user_id', userId)
       .single()
 
     if (data) {
@@ -186,7 +182,14 @@ export default function ProfilePage() {
 
   const handleLogout = async () => {
     setLoggingOut(true)
-    await supabase.auth.signOut()
+    // Redirect after cast bar completes, even if signOut is slow
+    const redirectTimer = setTimeout(() => { window.location.href = '/' }, 1500)
+    try {
+      await supabase.auth.signOut()
+    } catch {
+      // Sign out may fail on network issues, redirect anyway
+    }
+    clearTimeout(redirectTimer)
     window.location.href = '/'
   }
 
@@ -278,68 +281,61 @@ export default function ProfilePage() {
     const loadProfile = async () => {
       if (!user) return
 
-      // Get all guild memberships from character-based system
-      const { data: userCharacters } = await supabase
-        .from('characters')
-        .select('id')
-        .eq('user_id', user.id)
+      // Single query: join through character_guild_memberships to get characters + guilds
+      // Avoids sequential characters -> memberships waterfall
+      const { data: charMemberships } = await supabase
+        .from('character_guild_memberships')
+        .select(`
+          id,
+          role,
+          joined_at,
+          character:characters!inner(id, name, is_main, user_id),
+          guild:guilds(id, name, realm, faction, created_by, icon_url)
+        `)
+        .eq('characters.user_id', user.id)
+        .eq('is_active', true)
 
       let derivedMemberships: any[] = []
 
-      if (userCharacters && userCharacters.length > 0) {
-        const characterIds = userCharacters.map((c: { id: string }) => c.id)
-        const { data: charMemberships } = await supabase
-          .from('character_guild_memberships')
-          .select(`
-            id,
-            role,
-            joined_at,
-            character:characters(id, name, is_main),
-            guild:guilds(id, name, realm, faction, created_by, icon_url)
-          `)
-          .in('character_id', characterIds)
-          .eq('is_active', true)
+      if (charMemberships && charMemberships.length > 0) {
+        // Group by guild and pick the main character for each
+        const guildMap = new Map<string, any>()
+        for (const m of charMemberships) {
+          const guild = Array.isArray(m.guild) ? m.guild[0] : m.guild
+          const char = Array.isArray(m.character) ? m.character[0] : m.character
+          if (!guild) continue
 
-        if (charMemberships && charMemberships.length > 0) {
-          // Group by guild and pick the main character for each
-          const guildMap = new Map<string, any>()
-          for (const m of charMemberships) {
-            const guild = Array.isArray(m.guild) ? m.guild[0] : m.guild
-            const char = Array.isArray(m.character) ? m.character[0] : m.character
-            if (!guild) continue
-
-            const existing = guildMap.get(guild.id)
-            if (!existing || (char?.is_main && !existing.character?.is_main)) {
-              guildMap.set(guild.id, {
-                ...m,
-                guild,
-                character: char,
-                guild_id: guild.id,
-                user_id: user.id
-              })
-            }
+          const existing = guildMap.get(guild.id)
+          if (!existing || (char?.is_main && !existing.character?.is_main)) {
+            guildMap.set(guild.id, {
+              ...m,
+              guild,
+              character: char,
+              guild_id: guild.id,
+              user_id: user.id
+            })
           }
-          derivedMemberships = Array.from(guildMap.values())
         }
+        derivedMemberships = Array.from(guildMap.values())
       }
 
       setAllGuilds(derivedMemberships)
+    }
+
+    // Load all data in parallel, then dismiss skeleton once everything is ready
+    // This prevents CLS from Battle.net/notification data arriving after the skeleton is removed
+    const loadAll = async () => {
+      if (!user) return
+      await Promise.all([
+        loadProfile(),
+        loadBattlenetAccount(user.id),
+        loadNotificationPrefs(user.id),
+      ])
       setLoading(false)
     }
 
-    loadProfile()
-    loadBattlenetAccount()
-    loadNotificationPrefs()
+    loadAll()
   }, [])
-
-  if (loading) {
-    return (
-      <div className="p-4 sm:p-6 lg:p-8 space-y-6 font-poppins">
-        {/* Header skeleton shown during load */}
-        <ProfileContentSkeleton />
-      </div>
-    )
-  }
 
   const avatarUrl = user?.user_metadata?.avatar_url
     ? (user.user_metadata.avatar_url.startsWith('http')
@@ -357,10 +353,31 @@ export default function ProfilePage() {
 
   return (
     <>
-      {/* Full-screen overlay during logout to prevent flash */}
+      {/* Hearthstone cast bar during logout */}
       {loggingOut && (
-        <div className="fixed inset-0 bg-background z-[9999] flex items-center justify-center">
-          <LoadingSpinner text="Logging out..." />
+        <div className="fixed inset-0 bg-background z-[9999] flex flex-col items-center justify-center gap-6">
+          <img
+            src="/images/hearthstone-icon.png"
+            alt=""
+            className="w-12 h-12 animate-pulse"
+          />
+          <div className="w-64 sm:w-80">
+            <p className="text-sm text-muted-foreground text-center mb-2">Hearthing...</p>
+            <div className="h-2.5 bg-muted rounded-full overflow-hidden border border-border">
+              <div
+                className="h-full bg-accent rounded-full"
+                style={{
+                  animation: 'cast-bar 1.2s ease-in-out forwards',
+                }}
+              />
+            </div>
+          </div>
+          <style>{`
+            @keyframes cast-bar {
+              0% { width: 0%; }
+              100% { width: 100%; }
+            }
+          `}</style>
         </div>
       )}
 
@@ -368,10 +385,13 @@ export default function ProfilePage() {
       {/* Header */}
       <div className="bg-background-elevated border border-border rounded-xl p-4 sm:p-6">
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6">
-          <img
+          <Image
             src={avatarUrl}
             alt="Avatar"
-            className="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-2 border-border/50 shadow-md"
+            width={80}
+            height={80}
+            priority
+            className="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-2 border-border shadow-md"
           />
           <div className="flex-1 min-w-0">
             <h1 className="text-xl sm:text-[28px] font-bold text-foreground">{displayName}</h1>
@@ -409,6 +429,47 @@ export default function ProfilePage() {
       </div>
 
       {/* Tab Content */}
+      {loading ? (
+        <div className="space-y-6">
+          <div className="bg-background-elevated border border-border rounded-xl overflow-hidden">
+            <div className="px-6 py-4 border-b border-border">
+              <Skeleton className="h-5 w-40" />
+              <Skeleton className="h-4 w-64 mt-2" />
+            </div>
+            <div className="p-4 sm:p-6 space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="space-y-1.5">
+                  <Skeleton className="h-4 w-40" />
+                  <Skeleton className="h-3.5 w-72" />
+                </div>
+                <Skeleton className="h-6 w-10 rounded-full" />
+              </div>
+              <div className="flex items-center justify-between">
+                <div className="space-y-1.5">
+                  <Skeleton className="h-4 w-36" />
+                  <Skeleton className="h-3.5 w-80" />
+                </div>
+                <Skeleton className="h-4 w-16" />
+              </div>
+            </div>
+          </div>
+          <div className="bg-background-elevated border border-border rounded-xl overflow-hidden">
+            <div className="px-6 py-4 border-b border-border">
+              <Skeleton className="h-5 w-36" />
+              <Skeleton className="h-4 w-56 mt-2" />
+            </div>
+            <div className="p-4 sm:p-6">
+              <Skeleton className="h-4 w-72 mb-4" />
+              <div className="flex items-center gap-3">
+                <Skeleton className="h-4 w-16" />
+                <Skeleton className="h-9 w-24 rounded-[52px]" />
+                <Skeleton className="h-9 w-36 rounded-[52px]" />
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : (
+      <>
       {activeTab === 'account' && (
         <div className="space-y-6">
           {/* Notifications */}
@@ -516,10 +577,10 @@ export default function ProfilePage() {
                       variant="primary"
                       size="sm"
                       onClick={() => {
-                        window.location.href = `/api/auth/battlenet?region=${battlenetRegion}`
+                        window.location.href = `/api/auth/battlenet?region=${encodeURIComponent(battlenetRegion)}`
                       }}
                     >
-                      <Image src="/icons/battlenet.svg" alt="" width={16} height={16} className="w-4 h-4 brightness-0 dark:invert" />
+                      <Image src="/icons/battlenet.svg" alt="" width={16} height={16} className="w-4 h-4 brightness-0" />
                       Connect Battle.net
                     </Button>
                   </div>
@@ -715,7 +776,7 @@ export default function ProfilePage() {
               <h2 className="text-[18px] font-semibold text-foreground">My guilds</h2>
               <p className="text-muted-foreground text-[13px] mt-1">Guilds you're a member of</p>
             </div>
-            <div className="p-6">
+            <div className="p-4 sm:p-6">
               {allGuilds.length > 0 ? (
                 <div className="space-y-3">
                   {allGuilds.map((membership) => {
@@ -724,28 +785,30 @@ export default function ProfilePage() {
                     return (
                       <div
                         key={membership.guild.id}
-                        className="flex items-center justify-between p-4 bg-background-inset border border-border rounded-lg"
+                        className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 bg-background-inset border border-border rounded-lg"
                       >
-                        <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-4 min-w-0">
                           {membership.guild.icon_url ? (
-                            <img
+                            <Image
                               src={membership.guild.icon_url}
                               alt={membership.guild.name}
-                              className="w-12 h-12 rounded-lg border border-border/50 shadow-sm"
+                              width={48}
+                              height={48}
+                              className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg border border-border/50 shadow-sm shrink-0"
                             />
                           ) : (
-                            <div className="w-12 h-12 bg-gradient-to-br from-accent/30 to-accent/10 rounded-lg flex items-center justify-center border border-border/50 shadow-sm">
-                              <span className="text-accent font-bold text-lg">{membership.guild.name.charAt(0)}</span>
+                            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-accent/30 to-accent/10 rounded-lg flex items-center justify-center border border-border/50 shadow-sm shrink-0">
+                              <span className="text-accent font-bold text-base sm:text-lg">{membership.guild.name.charAt(0)}</span>
                             </div>
                           )}
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <p className="font-medium text-foreground">{membership.guild.name}</p>
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <p className="font-medium text-foreground truncate">{membership.guild.name}</p>
                               {isCreator && (
-                                <span className="px-2 py-0.5 bg-accent/20 border border-accent/30 rounded text-accent text-xs">Creator</span>
+                                <span className="px-2 py-0.5 bg-accent/20 border border-accent/30 rounded text-accent text-xs shrink-0">Creator</span>
                               )}
                             </div>
-                            <p className="text-[13px] text-muted-foreground">
+                            <p className="text-[13px] text-muted-foreground truncate">
                               {membership.guild.realm} • {membership.guild.faction}
                             </p>
                             <span className="inline-block mt-1 px-2 py-0.5 bg-background-elevated border border-border rounded text-muted-foreground text-xs">
@@ -754,7 +817,7 @@ export default function ProfilePage() {
                           </div>
                         </div>
                         {isGuildMaster ? (
-                          <div className="text-right">
+                          <div className="sm:text-right shrink-0">
                             <p className="text-[13px] text-muted-foreground mb-1">
                               Guild Masters cannot leave
                             </p>
@@ -762,7 +825,7 @@ export default function ProfilePage() {
                               variant="link"
                               onClick={async () => {
                                 await switchGuild(membership.guild.id)
-                                router.push('/admin/guild-settings')
+                                router.push('/guild-settings')
                               }}
                               className="text-accent text-[13px] p-0 h-auto"
                             >
@@ -775,6 +838,7 @@ export default function ProfilePage() {
                             size="sm"
                             onClick={() => setLeaveGuildId(membership.guild.id)}
                             disabled={leaving}
+                            className="w-full sm:w-auto shrink-0"
                           >
                             <HugeiconsIcon icon={Logout01Icon} size={16} />
                             Leave guild
@@ -800,8 +864,9 @@ export default function ProfilePage() {
           </div>
         </div>
       )}
+      </>
+      )}
 
-      {/* Leave Guild Confirmation Modal */}
       {/* Leave Guild Confirmation Modal */}
       <Modal open={!!leaveGuildId} onClose={() => !leaving && setLeaveGuildId(null)} size="sm">
         <ModalHeader>

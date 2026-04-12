@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Heading, Text } from '@/components/ui/typography'
 import { useEffect } from 'react'
+import posthog from 'posthog-js'
 
 export default function AppError({
   error,
@@ -14,6 +15,16 @@ export default function AppError({
 }) {
   useEffect(() => {
     console.error('App error:', error)
+    try {
+      posthog.capture('client_error', {
+        error_message: error.message,
+        error_digest: error.digest,
+        error_boundary: 'app',
+        url: window.location.href,
+      })
+    } catch {
+      // PostHog not initialized
+    }
   }, [error])
 
   return (

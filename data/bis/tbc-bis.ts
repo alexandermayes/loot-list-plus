@@ -894,6 +894,111 @@ export const TBC_BIS: BisExpansionData = {
   },
 
   // ============================================================================
+  // GUARDIAN DRUID (tank gear overlaps with Feral in TBC)
+  // ============================================================================
+  'Guardian Druid': {
+    'Karazhan': {
+      'Head': [{ wowhead_id: 29761, priority: 'bis' }],  // Helm of the Fallen Defender (T4 token)
+      'Neck': [{ wowhead_id: 28674, priority: 'bis' }],  // Saberclaw Talisman
+      'Shoulder': [{ wowhead_id: 28631, priority: 'bis' }],  // Dragon-Quake Shoulderguards
+      'Back': [{ wowhead_id: 28672, priority: 'bis' }],  // Drape of the Dark Reavers
+      'Chest': [{ wowhead_id: 29753, priority: 'bis' }],  // Chestguard of the Fallen Defender (T4 token)
+      'Wrist': [{ wowhead_id: 28453, priority: 'bis' }],  // Bracers of the White Stag
+      'Hands': [{ wowhead_id: 28506, priority: 'bis' }],  // Gloves of Dexterous Manipulation
+      'Waist': [{ wowhead_id: 28656, priority: 'bis' }],  // Girdle of the Prowler
+      'Legs': [{ wowhead_id: 28741, priority: 'bis' }],  // Skulker's Greaves
+      'Feet': [{ wowhead_id: 28545, priority: 'bis' }],  // Edgewalker Longboots
+      'Finger': [
+        { wowhead_id: 28649, priority: 'bis' },  // Garona's Signet Ring
+        { wowhead_id: 28730, priority: 'alt' }   // Mithril Band of the Unscarred
+      ],
+      'Trinket': [
+        { wowhead_id: 28579, priority: 'bis' }   // Romulo's Poison Vial
+      ],
+      'Two-Hand': [{ wowhead_id: 28658, priority: 'bis' }],  // Terestian's Stranglestaff
+      'Relic': [{ wowhead_id: 28372, priority: 'bis' }]  // Idol of the Wild
+    },
+    "Gruul's Lair": {
+      'Shoulder': [{ wowhead_id: 29764, priority: 'bis' }],  // Pauldrons of the Fallen Defender (T4 token)
+      'Legs': [{ wowhead_id: 29767, priority: 'bis' }],  // Leggings of the Fallen Defender (T4 token)
+      'Neck': [{ wowhead_id: 28822, priority: 'bis' }],  // Teeth of Gruul
+      'Hands': [{ wowhead_id: 28827, priority: 'bis' }],  // Gauntlets of the Dragonslayer (leather)
+      'Trinket': [{ wowhead_id: 28830, priority: 'bis' }],  // Dragonspine Trophy
+      'Two-Hand': [{ wowhead_id: 28794, priority: 'bis' }]  // Axe of the Gronn Lords
+    },
+    "Magtheridon's Lair": {
+      'Chest': [{ wowhead_id: 29753, priority: 'bis' }],  // Chestguard of the Fallen Defender (T4 token)
+      'Back': [{ wowhead_id: 28797, priority: 'alt' }]  // Cloak of the Pit Stalker
+    },
+    'Serpentshrine Cavern': {
+      'Neck': [{ wowhead_id: 30017, priority: 'bis' }],  // Telonicus's Pendant of Mayhem
+      'Shoulder': [{ wowhead_id: 30055, priority: 'bis' }],  // Shoulderpads of the Stranger
+      'Back': [{ wowhead_id: 29994, priority: 'bis' }],  // Thalassian Wildercloak
+      'Chest': [{ wowhead_id: 30101, priority: 'bis' }],  // Bloodsea Brigand's Vest
+      'Wrist': [{ wowhead_id: 29966, priority: 'bis' }],  // Vambraces of Ending
+      'Hands': [{ wowhead_id: 30240, priority: 'bis' }],  // Gloves of the Vanquished Defender (T5 token)
+      'Waist': [{ wowhead_id: 30106, priority: 'bis' }],  // Belt of One-Hundred Deaths
+      'Legs': [{ wowhead_id: 29995, priority: 'bis' }],  // Leggings of Murderous Intent
+      'Feet': [{ wowhead_id: 30104, priority: 'bis' }],  // Cobra-Lash Boots
+      'Finger': [
+        { wowhead_id: 30052, priority: 'bis' },  // Ring of Lethality
+        { wowhead_id: 29997, priority: 'bis' }   // Band of the Ranger-General
+      ],
+      'Trinket': [
+        { wowhead_id: 28830, priority: 'bis' },  // Dragonspine Trophy
+        { wowhead_id: 29383, priority: 'alt' }   // Bloodlust Brooch
+      ],
+      'Two-Hand': [{ wowhead_id: 30020, priority: 'bis' }],  // Staff of the Leviathan
+      'Relic': [{ wowhead_id: 28372, priority: 'bis' }]  // Idol of the Wild
+    },
+    'Tempest Keep': {
+      'Head': [{ wowhead_id: 30243, priority: 'bis' }],  // Helm of the Vanquished Defender (T5 token)
+      'Shoulder': [{ wowhead_id: 30249, priority: 'bis' }],  // Pauldrons of the Vanquished Defender (T5 token)
+      'Chest': [{ wowhead_id: 30237, priority: 'bis' }],  // Chestguard of the Vanquished Defender (T5 token)
+      'Trinket': [{ wowhead_id: 30627, priority: 'bis' }],  // Tsunami Talisman
+      'Two-Hand': [{ wowhead_id: 30318, priority: 'bis' }]  // Netherstrand Longbow (for stat stick)
+    },
+    'Hyjal Summit': {
+      'Head': [{ wowhead_id: 31096, priority: 'bis' }],  // Helm of the Forgotten Vanquisher (T6)
+      'Hands': [{ wowhead_id: 31093, priority: 'bis' }],  // Gloves of the Forgotten Vanquisher (T6)
+      'Two-Hand': [{ wowhead_id: 30883, priority: 'bis' }],  // Pillar of Ferocity
+      'Shoulder': [{ wowhead_id: 30880, priority: 'alt' }]  // Razorfury Mantle
+    },
+    'Black Temple': {
+      'Head': [{ wowhead_id: 32235, priority: 'bis' }],  // Cursed Vision of Sargeras
+      'Neck': [{ wowhead_id: 32362, priority: 'bis' }],  // Pendant of the Titans
+      'Shoulder': [{ wowhead_id: 31102, priority: 'bis' }],  // Pauldrons of the Forgotten Vanquisher (T6 token)
+      'Back': [{ wowhead_id: 32323, priority: 'bis' }],  // Shadowmoon Destroyer's Drape
+      'Chest': [{ wowhead_id: 31090, priority: 'bis' }],  // Chestguard of the Forgotten Vanquisher (T6 token)
+      'Wrist': [{ wowhead_id: 32324, priority: 'bis' }],  // Insidious Bands
+      'Hands': [{ wowhead_id: 31034, priority: 'bis' }],  // Thunderheart Handguards (T6)
+      'Waist': [{ wowhead_id: 32256, priority: 'bis' }],  // Waistwrap of Infinity
+      'Legs': [{ wowhead_id: 31099, priority: 'bis' }],  // Leggings of the Forgotten Vanquisher (T6 token)
+      'Feet': [{ wowhead_id: 32510, priority: 'bis' }],  // Shadowmaster's Boots
+      'Finger': [
+        { wowhead_id: 32526, priority: 'bis' },  // Band of the Eternal Champion
+        { wowhead_id: 32261, priority: 'alt' }   // Ring of Deceitful Intent
+      ],
+      'Trinket': [
+        { wowhead_id: 32505, priority: 'bis' },  // Madness of the Betrayer
+        { wowhead_id: 28830, priority: 'bis' }   // Dragonspine Trophy
+      ],
+      'Two-Hand': [{ wowhead_id: 32332, priority: 'bis' }],  // Torch of the Damned
+      'Relic': [{ wowhead_id: 32387, priority: 'bis' }]  // Idol of the Raven Goddess
+    },
+    "Zul'Aman": {
+      'Two-Hand': [{ wowhead_id: 33491, priority: 'alt' }],  // Trollbane
+      'Waist': [{ wowhead_id: 33359, priority: 'alt' }],  // Wub's Cursed Hexblade
+      'Trinket': [{ wowhead_id: 33831, priority: 'alt' }]  // Berserker's Call
+    },
+    'Sunwell Plateau': {
+      'Two-Hand': [{ wowhead_id: 34247, priority: 'bis' }],  // Apolyon, the Soul-Render
+      'Trinket': [{ wowhead_id: 34427, priority: 'bis' }],  // Blackened Naaru Sliver
+      'Neck': [{ wowhead_id: 34186, priority: 'bis' }]  // Chain of Unleashed Rage
+    }
+  },
+
+  // ============================================================================
   // BALANCE DRUID
   // ============================================================================
   'Balance Druid': {

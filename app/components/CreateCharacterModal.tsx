@@ -22,6 +22,13 @@ import { Download04Icon, Link01Icon } from '@hugeicons/core-free-icons'
 import { BattlenetCharacterPickerModal } from '@/app/components/BattlenetCharacterPickerModal'
 import Image from 'next/image'
 import { trackClientEvent } from '@/utils/analytics/client'
+import { hasFeature } from '@/domain/guild/feature-flags'
+
+interface RaidTeamOption {
+  id: string
+  name: string
+  color_hex: string
+}
 
 interface WowClass {
   id: string
@@ -42,8 +49,38 @@ interface CreateCharacterModalProps {
   suggestedName?: string // Discord username to show as placeholder hint
 }
 
+// Classes gated by expansion - only show if guild's expansion is at or after the class's debut
+const EXPANSION_CLASS_GATES: Record<string, string> = {
+  'Death Knight': 'Wrath of the Lich King',
+  'Monk': 'Mists of Pandaria',
+}
+
+const EXPANSION_ORDER = [
+  'Classic', 'Classic WoW',
+  'The Burning Crusade',
+  'Wrath of the Lich King',
+  'Cataclysm',
+  'Mists of Pandaria',
+  'Warlords of Draenor',
+  'Legion',
+  'Battle for Azeroth',
+  'Shadowlands',
+  'Dragonflight',
+  'The War Within',
+]
+
+function isClassAvailableForExpansion(className: string, expansionName: string | undefined): boolean {
+  const gate = EXPANSION_CLASS_GATES[className]
+  if (!gate) return true // Most classes available everywhere
+  if (!expansionName) return true // No expansion set, show all
+  const gateIndex = EXPANSION_ORDER.indexOf(gate)
+  const currentIndex = EXPANSION_ORDER.indexOf(expansionName)
+  if (gateIndex === -1 || currentIndex === -1) return true
+  return currentIndex >= gateIndex
+}
+
 export function CreateCharacterModal({ isOpen, onClose, onSuccess, suggestedName }: CreateCharacterModalProps) {
-  const { activeGuild, userCharacters, refreshCharacters, switchCharacter } = useGuildContext()
+  const { activeGuild, userCharacters, refreshCharacters, switchCharacter, currentExpansion } = useGuildContext()
   const { showNotification } = useNotification()
   const supabase = createClient()
 
@@ -60,16 +97,21 @@ export function CreateCharacterModal({ isOpen, onClose, onSuccess, suggestedName
   const [hasBattlenet, setHasBattlenet] = useState(false)
   const [showBattlenetPicker, setShowBattlenetPicker] = useState(false)
 
+  const [raidTeams, setRaidTeams] = useState<RaidTeamOption[]>([])
+  const [selectedTeamId, setSelectedTeamId] = useState('')
+
   useEffect(() => {
     if (isOpen) {
       loadClasses()
       loadClassSpecs()
       checkBattlenetAccount()
+      loadRaidTeams()
       // Reset form when opening
       setName('')
       setClassId('')
       setSpecId('')
       setIsMain(true)
+      setSelectedTeamId('')
       setError('')
     }
   }, [isOpen])
@@ -106,6 +148,20 @@ export function CreateCharacterModal({ isOpen, onClose, onSuccess, suggestedName
 
     if (!error) {
       setClassSpecs(data || [])
+    }
+  }
+
+  const loadRaidTeams = async () => {
+    if (!activeGuild || !hasFeature(activeGuild, 'raid_teams')) {
+      setRaidTeams([])
+      return
+    }
+    try {
+      const res = await fetch(`/api/raid-teams?guild_id=${activeGuild.id}`)
+      const data = await res.json()
+      setRaidTeams(data.teams || [])
+    } catch {
+      setRaidTeams([])
     }
   }
 
@@ -223,6 +279,20 @@ export function CreateCharacterModal({ isOpen, onClose, onSuccess, suggestedName
         } catch (membershipErr) {
           console.error('Error adding character to guild:', membershipErr)
           showNotification('warning', 'Character created but couldn\'t add to guild. Try from the character settings.')
+        }
+      }
+
+      // Add to raid team if selected
+      if (selectedTeamId && data.character) {
+        try {
+          await fetch(`/api/raid-teams/${selectedTeamId}/members`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ character_ids: [data.character.id] }),
+          })
+        } catch (teamErr) {
+          console.error('Error adding character to raid team:', teamErr)
+          showNotification('warning', 'Character created but couldn\'t add to raid team.')
         }
       }
 
@@ -352,7 +422,9 @@ export function CreateCharacterModal({ isOpen, onClose, onSuccess, suggestedName
               style={selectedClass ? { color: selectedClass.color_hex } : undefined}
             >
               <option value="" className="text-foreground bg-background-elevated">Select a class</option>
-              {classes.map((cls) => (
+              {classes
+                .filter(cls => isClassAvailableForExpansion(cls.name, currentExpansion?.expansion_name))
+                .map((cls) => (
                 <option
                   key={cls.id}
                   value={cls.id}
@@ -399,6 +471,24 @@ export function CreateCharacterModal({ isOpen, onClose, onSuccess, suggestedName
               onChange={(value) => setIsMain(value === 'main')}
             />
           </div>
+
+          {/* Raid Team (optional, Pro guilds only) */}
+          {raidTeams.length > 0 && (
+            <div>
+              <Label className="mb-2">Raid team</Label>
+              <Select
+                value={selectedTeamId}
+                onChange={(e) => setSelectedTeamId(e.target.value)}
+              >
+                <option value="">No team</option>
+                {raidTeams.map((team) => (
+                  <option key={team.id} value={team.id}>
+                    {team.name}
+                  </option>
+                ))}
+              </Select>
+            </div>
+          )}
         </ModalBody>
 
         <ModalFooter>

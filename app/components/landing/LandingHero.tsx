@@ -1,133 +1,224 @@
 'use client'
 
-import { motion } from 'framer-motion'
+import { useRef, useEffect, useState } from 'react'
+import { motion, useInView, useScroll, useTransform } from 'framer-motion'
 import Image from 'next/image'
-import { heroFadeIn, staggerContainer, scrollToSection } from '@/lib/animations'
-import { ArrowDown01Icon } from '@hugeicons/core-free-icons'
-import { HugeiconsIcon } from '@hugeicons/react'
-import { Button } from '@/components/ui/button'
+import dynamic from 'next/dynamic'
+import { scaleUp, scrollToSection } from '@/lib/animations'
 import { trackClientEvent } from '@/utils/analytics/client'
+import MagneticButton from './MagneticButton'
+import CountUp from './CountUp'
+
+const ParallaxItem = dynamic(() => import('./ParallaxItem'), { ssr: false })
 
 const APP_URL = 'https://www.lootlistplus.com'
 
-export default function LandingHero() {
+export default function LandingHero({ recentFeatures = 'See what\'s new' }: { recentFeatures?: string }) {
+  const previewRef = useRef(null)
+  const videoRef = useRef<HTMLVideoElement>(null)
+  const isPreviewInView = useInView(previewRef, { once: true, margin: '-100px' })
+  const [stats, setStats] = useState<{ guilds: number; raiders: number; loot: number } | null>(null)
+
+  // Dashboard scale-up on scroll — uses page scroll so it always starts at 1 when at top
+  const dashboardRef = useRef(null)
+  const { scrollY } = useScroll()
+  const dashboardScale = useTransform(scrollY, [0, 250], [1, 1.15], { clamp: true })
+
+  useEffect(() => {
+    fetch('/api/guild-count')
+      .then(res => res.json())
+      .then(data => {
+        if (data.guilds) setStats(data)
+      })
+      .catch(() => {})
+  }, [])
 
   return (
-    <section id="hero" className="relative min-h-screen w-full overflow-hidden">
-      {/* Background Image */}
-      <div className="absolute inset-0 bg-background-elevated">
-        <picture>
-          <source
-            type="image/webp"
-            srcSet="/images/landing/landing-background-640w.webp 640w, /images/landing/landing-background-1024w.webp 1024w, /images/landing/landing-background-1920w.webp 1920w, /images/landing/landing-background-2560w.webp 2560w"
-            sizes="100vw"
-          />
-          <Image
-            src="/images/landing/landing-background-2560w.webp"
-            alt="Epic loot background"
-            fill
-            className="object-cover object-center"
-            priority
-            quality={82}
-          />
-        </picture>
-        {/* Gradient overlay for better text readability */}
-        <div className="absolute inset-0 bg-background/60" />
-        <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-background/50" />
-      </div>
+    <section id="hero" className="relative w-full bg-[#080808]">
+      {/* Background gradient SVG */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src="/images/landing/bg/hero-bg-gradient.svg"
+        alt=""
+        className="absolute left-0 top-0 w-full h-[1675px] pointer-events-none"
+        aria-hidden="true"
+      />
 
-      {/* Hero Content */}
-      <motion.div
-        className="relative z-20 min-h-screen flex items-center"
-        initial="hidden"
-        animate="visible"
-        variants={staggerContainer}
+      {/* Max-width wrapper for floating items so they don't drift too far on wide screens */}
+      <div className="absolute inset-0 max-w-[1440px] mx-auto overflow-visible">
+      {/* 1. Thunderfury - top left, angled with tip pointing up-right */}
+      <ParallaxItem
+        speed={-0.15}
+        slideFrom="left"
+        delay={0.6}
+        depth={1.2}
+        float={{ distance: 14, duration: 7, delay: 0 }}
+        className="absolute left-[-200px] top-[160px] w-[580px] h-[530px] hidden lg:block pointer-events-none breathing-glow z-30"
+        style={{ '--glow-color': 'rgba(24,110,238,0.25)', '--glow-duration': '4.5s', '--glow-delay': '0s' } as React.CSSProperties}
+        clickEffect="lightning"
+        tooltip={{ name: "Thunderfury, Blessed Blade of the Windseeker", quality: "legendary", type: "One-Hand Sword", flavor: "Forged from the shattered remnants of Thunderaan's prison." }}
       >
-        <div className="w-full max-w-7xl mx-auto px-6 md:px-12 lg:px-20">
-          <div className="max-w-3xl mx-auto text-center flex flex-col items-center">
-            {/* Icon */}
-            <motion.div variants={heroFadeIn} className="mb-6">
-              <Image
-                src="/lootlist-icon.svg"
-                alt="LootList+ Icon"
-                width={48}
-                height={64}
-                className="w-12 h-auto"
-              />
-            </motion.div>
+        <Image src="/images/landing/items/thunderfury.png" alt="" fill sizes="600px" loading="lazy" className="object-contain" style={{ transform: 'rotate(158deg) scaleY(-1)' }} />
+      </ParallaxItem>
+
+      {/* 2. Hand of Rag - top right */}
+      <ParallaxItem
+        speed={-0.2}
+        slideFrom="right"
+        delay={0.8}
+        depth={1.5}
+        float={{ distance: 10, duration: 5.5, delay: 1.2 }}
+        clickEffect="shockwave"
+        className="absolute right-[-250px] top-[190px] w-[550px] h-[500px] hidden lg:block pointer-events-none breathing-glow z-30"
+        style={{ '--glow-color': 'rgba(241,131,24,0.5)', '--glow-duration': '3.8s', '--glow-delay': '1s' } as React.CSSProperties}
+        tooltip={{ name: "Sulfuras, Hand of Ragnaros", quality: "legendary", type: "Two-Hand Mace", flavor: "Too hot to handle." }}
+      >
+        <Image src="/images/landing/items/hand-of-rag.png" alt="" fill sizes="600px" loading="lazy" className="object-contain" style={{ transform: 'rotate(50deg)' }} />
+      </ParallaxItem>
+
+      {/* 3. Warglaives - bottom left */}
+      <ParallaxItem
+        speed={0.15}
+        slideFrom="left"
+        depth={0.8}
+        float={{ distance: 16, duration: 8, delay: 2.5 }}
+        clickEffect="slash"
+        className="absolute left-[-280px] bottom-[-250px] w-[641px] h-[616px] hidden lg:block pointer-events-none z-30 breathing-glow"
+        style={{ '--glow-color': 'rgba(141,244,31,0.25)', '--glow-duration': '5s', '--glow-delay': '0.5s' } as React.CSSProperties}
+        tooltip={{ name: "Warglaive of Azzinoth", quality: "legendary", type: "One-Hand Sword", flavor: "Wielded by the Betrayer himself." }}
+      >
+        <Image src="/images/landing/items/warglaives.png" alt="" fill sizes="600px" loading="lazy" className="object-contain" style={{ transform: 'rotate(41deg)' }} />
+      </ParallaxItem>
+
+      {/* 4. Cursed Vision of Sargeras - bottom right */}
+      <ParallaxItem
+        speed={0.25}
+        slideFrom="right"
+        depth={2}
+        float={{ distance: 8, duration: 4.5, delay: 0.8 }}
+        clickEffect="eyeFlash"
+        className="absolute right-[-20px] bottom-[-100px] w-[208px] h-[199px] hidden lg:block pointer-events-none z-30 breathing-glow"
+        style={{ '--glow-color': 'rgba(208,37,19,0.25)', '--glow-duration': '3.5s', '--glow-delay': '1.8s' } as React.CSSProperties}
+        tooltip={{ name: "Cursed Vision of Sargeras", quality: "epic", type: "Leather Helmet", flavor: "His eyes see what yours cannot." }}
+      >
+        <Image src="/images/landing/items/cursed-vision.png" alt="" fill sizes="600px" className="object-contain" style={{ transform: 'rotate(14deg)' }} />
+      </ParallaxItem>
+
+      </div>{/* end max-width wrapper for floating items */}
+
+      {/* Hero Content + Dashboard Preview */}
+      <div className="relative z-20">
+        {/* Hero text content — no motion wrapper so content is visible in SSR HTML */}
+        <div className="flex flex-col items-center pt-[100px] md:pt-[148px] px-6 animate-hero-fade-in">
+          <div className="max-w-[900px] w-full flex flex-col items-center gap-6 md:gap-9">
+            {/* NEW badge */}
+            <a
+              href="/changelog"
+              className="flex items-center gap-2 bg-[#17151b] rounded-[60px] pl-1 pr-3 py-1 no-underline hover:bg-[#1f1d25] transition-colors"
+            >
+              <span className="flex items-center justify-center px-2 py-1 bg-[#9940ec] rounded-[60px] font-poppins font-semibold text-[10px] text-white">
+                NEW
+              </span>
+              <span className="font-poppins text-[14px] text-white whitespace-nowrap">
+                {recentFeatures}
+              </span>
+              <Image src="/images/landing/icons/arrow-right-02.svg" alt="" width={16} height={16} />
+            </a>
 
             {/* Headline */}
-            <motion.h1
-              variants={heroFadeIn}
-              className="font-poppins font-bold text-[32px] md:text-[42px] lg:text-[56px] leading-[1.05] text-foreground mb-6"
-            >
-              Epic loot deserves an epic system.
-            </motion.h1>
+            <div className="text-center w-full max-w-[696px]">
+              <h1 className="font-poppins font-bold text-[40px] md:text-[56px] lg:text-[72px] leading-[0.92] text-white mb-6">
+                <span className="font-wow text-shimmer-purple text-[48px] md:text-[64px] lg:text-[80px] leading-[0.82]">Epic loot</span>
+                {' '}deserves an epic system.
+              </h1>
+              <p className="font-poppins font-medium text-[16px] text-[#bababa] leading-normal">
+                LootList+ is a transparent loot management system for WoW guilds. Includes loot submissions, attendance, tracking, and more!
+              </p>
+            </div>
 
-            {/* Subheadline */}
-            <motion.p
-              variants={heroFadeIn}
-              className="font-poppins text-base md:text-lg text-foreground-secondary mb-10 max-w-2xl"
-            >
-              LootList+ is a transparent loot management system for WoW guilds.
-              Fair distribution, attendance tracking and complete visibility, all in one place.
-            </motion.p>
-
-            {/* CTA Buttons */}
-            <motion.div variants={heroFadeIn} className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button
-                variant="primary"
-                size="lg"
-                asChild
-                className="font-poppins font-semibold shadow-lg hover:shadow-xl"
-              >
-                <a href={APP_URL} onClick={() => trackClientEvent('landing_cta_clicked', { cta: 'hero_start_free' })}>Start for free</a>
-              </Button>
-              <Button
-                variant="outline"
-                size="lg"
+            {/* CTA Buttons - Magnetic */}
+            <div className="flex items-center gap-[18px]">
+              <MagneticButton
+                as="button"
                 onClick={() => {
                   trackClientEvent('landing_nav_clicked', { target: 'features', source: 'hero' })
                   scrollToSection('features')
                 }}
-                className="font-poppins font-medium bg-background-elevated/80 hover:bg-background-elevated backdrop-blur-sm"
+                className="flex items-center justify-center px-4 py-3 rounded-[60px] bg-[#121218] border border-[#383838] font-poppins font-semibold text-[16px] text-white cursor-pointer hover:bg-[#1a1a22] transition-colors"
               >
                 See features
-              </Button>
-            </motion.div>
-
-            {/* Privacy note */}
-            <motion.p variants={heroFadeIn} className="mt-4 text-xs text-foreground-muted">
-              Sign in with Discord. We only use it for identity, email is optional.
-            </motion.p>
+              </MagneticButton>
+              <MagneticButton
+                as="a"
+                href={APP_URL}
+                onClick={() => trackClientEvent('landing_cta_clicked', { cta: 'hero_start_free' })}
+                className="flex items-center justify-center px-4 py-3 rounded-[60px] bg-white font-poppins font-semibold text-[16px] text-black no-underline hover:bg-white/90 transition-colors"
+              >
+                Start for free
+              </MagneticButton>
+            </div>
           </div>
         </div>
-      </motion.div>
 
-      {/* Scroll Indicator */}
-      <motion.div
-        className="absolute bottom-8 inset-x-0 flex justify-center z-20"
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 1.2, duration: 0.6 }}
-      >
-        <motion.div
-          animate={{ y: [0, 8, 0] }}
-          transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
-        >
-          <Button
-            variant="ghost"
-            onClick={() => {
-              trackClientEvent('landing_nav_clicked', { target: 'features', source: 'hero_scroll' })
-              scrollToSection('features')
-            }}
-            className="flex flex-col items-center gap-2 h-auto p-2 text-foreground-muted hover:text-foreground hover:bg-transparent"
+        {/* Dashboard Preview with zoom-out on scroll */}
+        <div ref={previewRef} className="relative max-w-[1165px] mx-auto px-6 md:px-12 mt-12 md:mt-16">
+          <motion.div
+            ref={dashboardRef}
+            initial="hidden"
+            animate={isPreviewInView ? 'visible' : 'hidden'}
+            variants={scaleUp}
+            style={{ scale: dashboardScale }}
           >
-            <span className="text-xs font-medium uppercase tracking-wider">Scroll</span>
-            <HugeiconsIcon icon={ArrowDown01Icon} size={20} />
-          </Button>
-        </motion.div>
-      </motion.div>
+            <div className="relative rounded-[16px] border border-[#383838] shadow-[0px_-4px_40px_0px_rgba(255,255,255,0.05)] overflow-hidden">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/images/landing/dashboard-preview.webp"
+                alt="LootList+ dashboard preview"
+                width={1998}
+                height={1151}
+                className="w-full h-auto"
+                style={{ filter: 'brightness(1.5) contrast(1.05) saturate(1.1)' }}
+                fetchPriority="high"
+              />
+              <video
+                ref={videoRef}
+                autoPlay
+                loop
+                muted
+                playsInline
+                preload="none"
+                className="absolute inset-0 w-full h-full"
+                style={{ filter: 'brightness(1.5) contrast(1.05) saturate(1.1)' }}
+                onCanPlay={() => videoRef.current?.play().catch(() => {})}
+              >
+                <source src="/images/landing/hero-demo.mp4" type="video/mp4" />
+              </video>
+            </div>
+          </motion.div>
+
+          {/* Social proof counter with count-up */}
+          <motion.p
+            className="text-center mt-16 md:mt-20 font-poppins font-medium text-[16px] md:text-[20px] text-white pb-20 md:pb-32"
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+          >
+            <span className="text-[#ff6e08]">
+              {stats ? <CountUp end={stats.guilds} suffix="+ guilds" /> : '...'}
+            </span>
+            {', '}
+            <span className="text-[#ff6e08]">
+              {stats ? <CountUp end={stats.raiders} duration={2500} suffix="+ raiders" /> : '...'}
+            </span>
+            {', and '}
+            <span className="text-[#ff6e08]">
+              {stats ? <CountUp end={stats.loot} duration={3000} suffix="+ items distributed" /> : '...'}
+            </span>
+            {' '}through LootList+
+          </motion.p>
+        </div>
+      </div>
     </section>
   )
 }

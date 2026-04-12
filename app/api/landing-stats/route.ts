@@ -15,7 +15,8 @@ export async function GET() {
     const [guildsResult, membersResult, lootResult] = await Promise.all([
       supabase
         .from('guilds')
-        .select('*', { count: 'exact', head: true }),
+        .select('*', { count: 'exact', head: true })
+        .eq('is_active', true),
       supabase
         .from('character_guild_memberships')
         .select('*', { count: 'exact', head: true })

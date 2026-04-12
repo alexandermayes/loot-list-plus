@@ -31,6 +31,8 @@ export const RaidTierHeader = memo(function RaidTierHeader({
           <img
             src={getRaidIcon(tierName)}
             alt=""
+            width={24}
+            height={24}
             className="w-6 h-6 rounded border border-border/50"
           />
           <span className="text-[15px] font-semibold text-foreground">{tierName}</span>

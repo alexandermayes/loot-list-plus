@@ -60,25 +60,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Build the delete query for guild members
-    let membersQuery = supabase
-      .from('guild_members')
-      .delete()
-
-    if (keepGuildId) {
-      membersQuery = membersQuery.neq('guild_id', keepGuildId)
-    } else {
-      membersQuery = membersQuery.neq('id', '00000000-0000-0000-0000-000000000000')
-    }
-
-    const { error: membersError } = await membersQuery
-
-    if (membersError) {
-      console.error('Error deleting guild members:', membersError)
-      return NextResponse.json({ error: 'Couldn\'t delete guild members. Try again.' }, { status: 500 })
-    }
-
-    // Delete character guild memberships
+    // Delete character guild memberships (trigger syncs guild_members automatically)
     let charMembersQuery = supabase
       .from('character_guild_memberships')
       .delete()
@@ -114,21 +96,21 @@ export async function POST(request: NextRequest) {
       // Not critical, continue
     }
 
-    // Delete active guild entries
+    // Clear active guild references in user_active_characters
     let activeQuery = supabase
-      .from('user_active_guilds')
-      .delete()
+      .from('user_active_characters')
+      .update({ active_guild_id: null, updated_at: new Date().toISOString() })
 
     if (keepGuildId) {
       activeQuery = activeQuery.neq('active_guild_id', keepGuildId)
     } else {
-      activeQuery = activeQuery.neq('user_id', '00000000-0000-0000-0000-000000000000')
+      activeQuery = activeQuery.not('active_guild_id', 'is', null)
     }
 
     const { error: activeError } = await activeQuery
 
     if (activeError) {
-      console.error('Error deleting active guilds:', activeError)
+      console.error('Error clearing active guilds:', activeError)
       // Not critical, continue
     }
 

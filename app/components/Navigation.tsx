@@ -207,7 +207,7 @@ export default function Navigation({
             className="shrink-0"
           >
             <HugeiconsIcon icon={Logout01Icon} size={16} />
-            <span className="hidden sm:inline">Sign Out</span>
+            <span className="hidden sm:inline">Log Out</span>
           </Button>
         </div>
       </div>

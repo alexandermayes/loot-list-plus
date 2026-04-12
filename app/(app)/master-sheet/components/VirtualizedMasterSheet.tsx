@@ -2,7 +2,7 @@
 
 import { useMemo, useCallback, useRef } from 'react'
 import { useWindowVirtualizer } from '@tanstack/react-virtual'
-import { BossSection, type ItemRankings, type PlayerRanking } from './BossSection'
+import { BossSection, type ItemRankings, type PlayerRanking, type LootItem } from './BossSection'
 import { RaidTierHeader } from './RaidTierHeader'
 import { normalizeBossName } from '@/utils/bossOrder'
 import { getBossOrder } from '@/utils/bossOrder'
@@ -30,11 +30,13 @@ interface VirtualizedMasterSheetProps {
   onToggleRaidTierCollapse: (tierId: string) => void
   onToggleBossCollapse: (boss: string) => void
   activeCharacterId?: string
+  isOfficer?: boolean
   guildSettings?: {
     decimal_places?: number
     minimum_raid_days?: number
   }
   onCompare?: (itemName: string, userRanking: PlayerRanking, winnerRanking: PlayerRanking) => void
+  onItemClick?: (item: LootItem, rankings: PlayerRanking[]) => void
   maxRankingsCount?: number
 }
 
@@ -49,8 +51,10 @@ export function VirtualizedMasterSheet({
   onToggleRaidTierCollapse,
   onToggleBossCollapse,
   activeCharacterId,
+  isOfficer,
   guildSettings,
   onCompare,
+  onItemClick,
   maxRankingsCount,
 }: VirtualizedMasterSheetProps) {
   const listRef = useRef<HTMLDivElement>(null)
@@ -101,20 +105,22 @@ export function VirtualizedMasterSheet({
   }, [sortedRaidTiers, collapsedRaidTiers])
 
   // Estimate item heights based on type and collapse state
+  // Each virtual item wrapper has pb-3 (12px) padding, included in estimates
   const estimateSize = useCallback(
     (index: number) => {
+      const WRAPPER_PADDING = 12 // pb-3
       const item = flattenedItems[index]
       if (item.type === 'raid-tier-header') {
-        return 60 // Header height
+        return 52 + WRAPPER_PADDING // Header: py-3 (24px) + content (~28px) = ~52px
       }
-      // Boss section: header (56px) + table if not collapsed
+      // Boss section: header + table if not collapsed
       const isCollapsed = collapsedBosses.has(item.boss)
       if (isCollapsed) {
-        return 60 // Just the boss header
+        return 52 + WRAPPER_PADDING // Just the boss header button
       }
-      // Header + table header + rows (estimated 52px per row)
+      // Boss header (52px) + table header (37px) + rows (45px per row) + border (1px)
       const itemCount = item.items.length
-      return 60 + 44 + itemCount * 52
+      return 52 + 37 + itemCount * 45 + 1 + WRAPPER_PADDING
     },
     [flattenedItems, collapsedBosses]
   )
@@ -150,8 +156,10 @@ export function VirtualizedMasterSheet({
               isCollapsed={collapsedBosses.has(item.boss)}
               onToggleCollapse={onToggleBossCollapse}
               activeCharacterId={activeCharacterId}
+              isOfficer={isOfficer}
               guildSettings={guildSettings}
               onCompare={onCompare}
+              onItemClick={onItemClick}
               maxRankingsCount={maxRankingsCount}
             />
           )
@@ -207,7 +215,9 @@ export function VirtualizedMasterSheet({
                   activeCharacterId={activeCharacterId}
                   guildSettings={guildSettings}
                   onCompare={onCompare}
-                />
+                  onItemClick={onItemClick}
+                  maxRankingsCount={maxRankingsCount}
+                    />
               )}
             </div>
           )

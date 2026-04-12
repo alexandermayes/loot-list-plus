@@ -20,15 +20,6 @@ LootList+ helps guilds distribute raid loot fairly. Raiders submit ranked lists 
 - **Loot history** - Full audit trail of every item awarded
 - **Discord webhooks** - Notify channels on submissions, approvals, and awards
 
-### In-game addon
-- **Roll-off system** - Start rolls from the loot window, MS > OS priority with score tiebreakers
-- **Auto-trade** - Awarded items auto-placed in trade window
-- **Loot announcements** - Epic+ drops announced to raid chat with priority info
-- **PackMule** - Auto-distribute sub-epic items to your designated enchanter
-- **Attendance tracking** - Late joiner and early leaver detection, per-boss roster snapshots
-- **Score tooltips** - See LootList+ scores on item tooltips in-game
-- **Data sync** - Import/export compressed strings between web and addon
-
 ## Supported expansions
 
 | Expansion | Status | Raids | Items |
@@ -36,7 +27,9 @@ LootList+ helps guilds distribute raid loot fairly. Raiders submit ranked lists 
 | Classic | Full loot data | 6 phases (MC/Onyxia through Naxx) | 800+ |
 | The Burning Crusade | Full loot data | 5 phases (Kara through Sunwell) | 651 |
 | Wrath of the Lich King | Full loot data | 5 phases (Naxx/EoE through Ruby Sanctum) | 1,353 |
-| Cataclysm through The War Within | Phase definitions only | Coming soon | - |
+| Cataclysm | Full loot data | 5 phases (BWD/BoT through Dragon Soul) | 978 |
+| Mists of Pandaria | Full loot data | 5 phases (MSV through Siege of Orgrimmar) | 1,705 |
+| Warlords of Draenor through The War Within | Phase definitions only | Coming soon | - |
 
 ## Tech stack
 
@@ -73,4 +66,4 @@ supabase/migrations/ # Database migrations
 
 ## License
 
-Private and proprietary. All rights reserved.
+Proprietary. See [LICENSE](LICENSE) for details.

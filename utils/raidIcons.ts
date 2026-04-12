@@ -55,6 +55,31 @@ const raidIconMap: Record<string, string> = {
   'ICC': 'achievement_dungeon_inthenorthlichking_10man',
   'Ruby Sanctum': 'achievement_dungeon_inthenorthlichking_10man',
   'RS': 'achievement_dungeon_inthenorthlichking_10man',
+
+  // Cataclysm
+  'Blackwing Descent': 'achievement_boss_nefarion',
+  'BWD': 'achievement_boss_nefarion',
+  'The Bastion of Twilight': 'spell_shadow_shadowandflame',
+  'Bastion of Twilight': 'spell_shadow_shadowandflame',
+  'BoT': 'spell_shadow_shadowandflame',
+  'Throne of the Four Winds': 'spell_nature_stormreach',
+  'TotFW': 'spell_nature_stormreach',
+  'Firelands': 'achievement_boss_ragnaros',
+  'FL': 'achievement_boss_ragnaros',
+  'Dragon Soul': 'spell_deathknight_armyofthedead',
+  'DS': 'spell_deathknight_armyofthedead',
+
+  // Mists of Pandaria
+  'Mogu\'shan Vaults': 'ability_monk_jab',
+  'MSV': 'ability_monk_jab',
+  'Heart of Fear': 'sha_spell_shadow_shadesofdarkness',
+  'HoF': 'sha_spell_shadow_shadesofdarkness',
+  'Terrace of Endless Spring': 'sha_spell_fire_bluerainoffire',
+  'ToES': 'sha_spell_fire_bluerainoffire',
+  'Throne of Thunder': 'achievement_boss_leishen',
+  'ToT': 'achievement_boss_leishen',
+  'Siege of Orgrimmar': 'achievement_boss_garrosh',
+  'SoO': 'achievement_boss_garrosh',
 }
 
 export function getRaidIcon(raidName: string): string {
@@ -99,6 +124,19 @@ const raidShorthandMap: Record<string, string> = {
   'Trial of the Grand Crusader': 'ToGC',
   'Icecrown Citadel': 'ICC',
   'Ruby Sanctum': 'RS',
+  // Cataclysm
+  'Blackwing Descent': 'BWD',
+  'The Bastion of Twilight': 'BoT',
+  'Bastion of Twilight': 'BoT',
+  'Throne of the Four Winds': 'TotFW',
+  'Firelands': 'FL',
+  'Dragon Soul': 'DS',
+  // Mists of Pandaria
+  'Mogu\'shan Vaults': 'MSV',
+  'Heart of Fear': 'HoF',
+  'Terrace of Endless Spring': 'ToES',
+  'Throne of Thunder': 'ToT',
+  'Siege of Orgrimmar': 'SoO',
 }
 
 /**

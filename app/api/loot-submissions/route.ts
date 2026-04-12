@@ -65,10 +65,10 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ submission: null, rankings: {} })
     }
 
-    // Get rankings for this submission
+    // Get rankings for this submission (including removed items)
     const { data: rankingsData, error: rankingsError } = await supabase
       .from('loot_submission_items')
-      .select('loot_item_id, rank, slot')
+      .select('loot_item_id, rank, slot, removed_at')
       .eq('submission_id', submission.id)
 
     if (rankingsError) {
@@ -76,13 +76,18 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to fetch rankings' }, { status: 500 })
     }
 
-    // Convert to "rank-slot" -> item_id format
+    // Convert to "rank-slot" -> item_id format (active items only)
     const rankings: Record<string, string> = {}
+    const removedItems: Array<{ loot_item_id: string; rank: number; slot: number }> = []
     rankingsData?.forEach(r => {
-      rankings[`${r.rank}-${r.slot}`] = r.loot_item_id
+      if (r.removed_at) {
+        removedItems.push({ loot_item_id: r.loot_item_id, rank: r.rank, slot: r.slot })
+      } else {
+        rankings[`${r.rank}-${r.slot}`] = r.loot_item_id
+      }
     })
 
-    return NextResponse.json({ submission, rankings })
+    return NextResponse.json({ submission, rankings, removedItems })
   } catch (error) {
     console.error('Error in GET /api/loot-submissions:', error)
     trackApiError('unknown', 'GET /api/loot-submissions', error instanceof Error ? error : new Error(String(error)))

@@ -109,16 +109,16 @@ export function LootCardSkeleton() {
  */
 export function SubmissionCardSkeleton() {
   return (
-    <div className="bg-background-elevated border border-border rounded-xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-      <div className="flex items-center gap-3 flex-wrap">
-        <Skeleton className="h-5 w-24" />
-        <Skeleton className="h-6 w-16 rounded-full" />
-        <Skeleton className="h-5 w-20 rounded-full" />
-        <Skeleton className="h-4 w-32 hidden sm:block" />
+    <div className="bg-background-elevated border border-border rounded-xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
+      <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+        <Skeleton className="h-[19px] w-24" />
+        <Skeleton className="h-[13px] w-16" />
+        <Skeleton className="h-5 w-[68px] rounded-full" />
+        <Skeleton className="h-[13px] w-40 hidden sm:block" />
       </div>
-      <div className="flex gap-2">
-        <Skeleton className="h-10 w-28 rounded-[40px]" />
-        <Skeleton className="h-10 w-10 rounded-[40px]" />
+      <div className="flex gap-2 flex-shrink-0">
+        <Skeleton className="h-8 w-[52px] rounded-[40px]" />
+        <Skeleton className="h-8 w-8 rounded-[40px]" />
       </div>
     </div>
   )
@@ -149,11 +149,15 @@ export function GuildCardSkeleton() {
 export function TierTabsSkeleton() {
   return (
     <div className="flex items-center gap-3">
-      <Skeleton className="h-4 w-20" />
-      <div className="flex gap-2">
+      {/* Matches phase tab buttons: h-11 (default Button size) with pill shape */}
+      <div className="hidden sm:flex gap-2 flex-1 min-w-0">
         {Array.from({ length: 4 }).map((_, i) => (
-          <Skeleton key={i} className="h-10 w-24 rounded-[40px]" />
+          <Skeleton key={i} className="h-11 w-32 rounded-[40px] flex-shrink-0" />
         ))}
+      </div>
+      {/* Mobile: single dropdown */}
+      <div className="sm:hidden flex-1">
+        <Skeleton className="h-9 w-full rounded-lg" />
       </div>
     </div>
   )
@@ -211,21 +215,40 @@ export function BossSectionSkeleton() {
 }
 
 /**
- * Full dashboard content skeleton
+ * Full dashboard content skeleton.
+ * Dimensions match DashboardContent.tsx exactly to avoid layout shift on swap.
  */
 export function DashboardContentSkeleton() {
   return (
-    <div className="space-y-6">
-      {/* Character Card and Stats Row */}
-      <div className="flex flex-col lg:flex-row gap-6">
-        <CharacterCardSkeleton />
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:flex-1">
-          <StatCardSkeleton />
-          <StatCardSkeleton />
-          <StatCardSkeleton />
+    <div className="p-4 sm:p-6 lg:p-8 space-y-6 font-poppins">
+      {/* Header block — matches Heading + subtitle + metadata strip */}
+      <div>
+        {/* Heading level={1}: text-5xl (42px) font-bold leading-tight => ~52px */}
+        <Skeleton className="h-[52px] w-[55%] max-w-2xl rounded-md" />
+        {/* Subtitle: text-base (16px) with mt-1 */}
+        <Skeleton className="h-5 w-[42%] max-w-md mt-2 rounded-md" />
+        {/* Metadata strip: flex gap-2 mt-4, h-7 pills */}
+        <div className="flex items-center gap-2 flex-wrap mt-4">
+          <Skeleton className="h-7 w-28 rounded-full" />
+          <Skeleton className="h-7 w-64 rounded-full" />
+          <Skeleton className="h-7 w-64 rounded-full" />
+          <Skeleton className="h-7 w-20 rounded-full" />
         </div>
       </div>
 
+      <DashboardDataSkeleton />
+    </div>
+  )
+}
+
+/**
+ * Skeleton for dashboard data sections below the hero (insights + loot grids).
+ * Used when the hero/character card renders immediately from GuildContext
+ * while dashboard data is still loading.
+ */
+export function DashboardDataSkeleton() {
+  return (
+    <div className="space-y-6">
       {/* Insights Row */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {Array.from({ length: 3 }).map((_, i) => (
@@ -254,22 +277,24 @@ export function DashboardContentSkeleton() {
 
 /**
  * Profile content skeleton
+ * Matches the Account tab (default) layout of ProfilePage
  */
 export function ProfileContentSkeleton() {
   return (
     <div className="space-y-6">
-      {/* Header Card */}
+      {/* Header Card - matches flex-col sm:flex-row layout */}
       <div className="bg-background-elevated border border-border rounded-xl p-4 sm:p-6">
-        <div className="flex items-center gap-4 sm:gap-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6">
           <Skeleton className="w-16 h-16 sm:w-20 sm:h-20 rounded-full shrink-0" />
           <div className="flex-1 min-w-0 space-y-2">
             <Skeleton className="h-7 w-40" />
-            <div className="flex items-center gap-4">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4">
+              <Skeleton className="h-4 w-44" />
               <Skeleton className="h-4 w-32" />
-              <Skeleton className="h-4 w-28 hidden sm:block" />
             </div>
           </div>
-          <Skeleton className="h-12 w-28 rounded-[52px] hidden sm:block" />
+          {/* Logout button: full-width on mobile, auto on desktop */}
+          <Skeleton className="h-10 w-full sm:w-28 rounded-[52px]" />
         </div>
       </div>
 
@@ -280,15 +305,44 @@ export function ProfileContentSkeleton() {
         ))}
       </div>
 
-      {/* Content */}
-      <div className="bg-background-elevated border border-border rounded-xl overflow-hidden">
-        <div className="px-6 py-4 border-b border-border">
-          <Skeleton className="h-5 w-32" />
-          <Skeleton className="h-4 w-48 mt-1" />
+      {/* Content - matches Account tab (default) layout */}
+      <div className="space-y-6">
+        {/* Notifications section - 2 rows to match real content */}
+        <div className="bg-background-elevated border border-border rounded-xl overflow-hidden">
+          <div className="px-6 py-4 border-b border-border">
+            <Skeleton className="h-5 w-44" />
+            <Skeleton className="h-4 w-64 mt-1" />
+          </div>
+          <div className="p-4 sm:p-6 space-y-4">
+            <div className="flex items-center justify-between gap-4">
+              <div className="space-y-1">
+                <Skeleton className="h-4 w-40" />
+                <Skeleton className="h-3.5 w-64" />
+              </div>
+              <Skeleton className="h-6 w-11 rounded-full" />
+            </div>
+            <div className="flex items-center justify-between gap-4">
+              <div className="space-y-1">
+                <Skeleton className="h-4 w-36" />
+                <Skeleton className="h-3.5 w-72" />
+              </div>
+              <Skeleton className="h-4 w-16" />
+            </div>
+          </div>
         </div>
-        <div className="p-6 space-y-3">
-          <GuildCardSkeleton />
-          <GuildCardSkeleton />
+        {/* Battle.net section */}
+        <div className="bg-background-elevated border border-border rounded-xl overflow-hidden">
+          <div className="px-6 py-4 border-b border-border">
+            <Skeleton className="h-5 w-36" />
+            <Skeleton className="h-4 w-56 mt-1" />
+          </div>
+          <div className="p-4 sm:p-6">
+            <Skeleton className="h-4 w-72" />
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 mt-4">
+              <Skeleton className="h-9 w-24 rounded-[40px]" />
+              <Skeleton className="h-9 w-36 rounded-[40px]" />
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -436,14 +490,12 @@ export function LootListBracketSkeleton() {
       {/* Bracket rows */}
       <div className="divide-y divide-border">
         {Array.from({ length: 3 }).map((_, i) => (
-          <div key={i} className="flex items-center gap-4 px-4 py-3">
+          <div key={i} className="flex items-center gap-4 px-3 py-2.5">
             <Skeleton className="h-6 w-10 rounded" />
-            <Skeleton className="h-8 w-64 rounded-lg" />
-            <div className="flex gap-2 ml-auto">
-              <Skeleton className="h-8 w-16 rounded" />
-              <Skeleton className="h-8 w-16 rounded" />
-              <Skeleton className="h-8 w-16 rounded" />
-            </div>
+            <Skeleton className="h-10 w-64 rounded-[52px]" />
+            <Skeleton className="h-4 w-24 rounded" />
+            <Skeleton className="h-10 w-64 rounded-[52px]" />
+            <Skeleton className="h-4 w-24 rounded" />
           </div>
         ))}
       </div>
@@ -457,22 +509,7 @@ export function LootListBracketSkeleton() {
 export function LootListContentSkeleton() {
   return (
     <div className="space-y-6">
-      {/* Status Banner */}
-      <div className="bg-background-elevated border border-border rounded-xl p-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Skeleton className="w-10 h-10 rounded-lg" />
-            <div className="space-y-1">
-              <Skeleton className="h-5 w-32" />
-              <Skeleton className="h-4 w-48" />
-            </div>
-          </div>
-          <div className="flex gap-2">
-            <Skeleton className="h-10 w-24 rounded-[40px]" />
-            <Skeleton className="h-10 w-32 rounded-[40px]" />
-          </div>
-        </div>
-      </div>
+      {/* Note: Status banner skeleton is rendered in the sticky header section of loot-list/page.tsx */}
       {/* Brackets */}
       <LootListBracketSkeleton />
       <LootListBracketSkeleton />
@@ -485,23 +522,39 @@ export function LootListContentSkeleton() {
 /**
  * Master Sheet boss section skeleton
  */
-export function MasterSheetBossSkeleton() {
+export function MasterSheetBossSkeleton({ rows = 4 }: { rows?: number }) {
   return (
     <div className="bg-background-elevated border border-border rounded-xl overflow-hidden">
-      {/* Boss header */}
-      <div className="flex items-center gap-4 p-4 border-b border-border bg-background-subtle">
-        <Skeleton className="w-12 h-12 rounded-lg" />
-        <Skeleton className="h-6 w-40" />
-        <Skeleton className="h-6 w-6 rounded ml-auto" />
+      {/* Boss header - matches BossSection: px-5 py-3 with 24x24 icon */}
+      <div className="flex items-center justify-between px-5 py-3">
+        <div className="flex items-center gap-3">
+          <Skeleton className="w-6 h-6 rounded" />
+          <Skeleton className="h-[15px] w-36" />
+        </div>
+        <div className="flex items-center gap-3">
+          <Skeleton className="h-3 w-16" />
+          <Skeleton className="h-4 w-4 rounded" />
+        </div>
       </div>
-      {/* Rankings table */}
+      {/* Rankings table header */}
+      <div className="border-t border-border bg-background-subtle px-5 py-2.5">
+        <div className="flex items-center gap-4">
+          <Skeleton className="h-3 w-16" />
+          <Skeleton className="h-3 w-12" />
+          {Array.from({ length: 5 }).map((_, j) => (
+            <Skeleton key={j} className="h-3 w-8" />
+          ))}
+        </div>
+      </div>
+      {/* Rankings rows */}
       <div className="divide-y divide-border">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="flex items-center gap-4 px-4 py-3">
-            <Skeleton className="h-5 w-40" />
-            <div className="flex gap-2 ml-auto">
+        {Array.from({ length: rows }).map((_, i) => (
+          <div key={i} className="flex items-center gap-4 px-5 py-2.5">
+            <Skeleton className="h-4 w-40" />
+            <Skeleton className="h-3 w-16" />
+            <div className="flex gap-4 ml-auto">
               {Array.from({ length: 5 }).map((_, j) => (
-                <Skeleton key={j} className="h-6 w-20 rounded" />
+                <Skeleton key={j} className="h-8 w-20 rounded" />
               ))}
             </div>
           </div>
@@ -517,25 +570,12 @@ export function MasterSheetBossSkeleton() {
 export function MasterSheetContentSkeleton() {
   return (
     <div className="space-y-6">
-      {/* Boss Navigation */}
-      <div className="flex gap-3">
-        <div className="flex-1 bg-background-elevated border border-border rounded-xl p-3">
-          <div className="flex gap-2">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <Skeleton key={i} className="h-10 w-24 rounded-[40px] flex-shrink-0" />
-            ))}
-          </div>
-        </div>
-        <div className="bg-background-elevated border border-border rounded-xl p-3">
-          <div className="flex gap-2">
-            <Skeleton className="h-10 w-24 rounded-[40px]" />
-            <Skeleton className="h-10 w-28 rounded-[40px]" />
-          </div>
-        </div>
-      </div>
-      {/* Boss Sections */}
-      <MasterSheetBossSkeleton />
-      <MasterSheetBossSkeleton />
+      {/* Note: Boss navigation skeleton is rendered in the sticky header section of master-sheet/page.tsx */}
+      {/* Boss Sections - show 4 to better approximate typical raid tier height */}
+      <MasterSheetBossSkeleton rows={5} />
+      <MasterSheetBossSkeleton rows={4} />
+      <MasterSheetBossSkeleton rows={3} />
+      <MasterSheetBossSkeleton rows={4} />
     </div>
   )
 }
@@ -679,50 +719,79 @@ export function LootItemsPageSkeleton() {
 
 /**
  * Raid tracking page skeleton
+ * Matches: flex-col sm:flex-row header with Heading level={1} (42px) + SegmentedControl,
+ * status legend row, week accordion headers, and raid day cards.
  */
 export function RaidTrackingPageSkeleton() {
   return (
-    <div className="p-4 sm:p-6 lg:p-8 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
+    <div className="p-4 sm:p-6 lg:p-8 space-y-6 font-poppins">
+      {/* Header - matches flex-col sm:flex-row sm:items-start sm:justify-between gap-4 */}
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div>
-          <Skeleton className="h-8 w-36" />
-          <Skeleton className="h-5 w-64 mt-1" />
+          <Skeleton className="h-[42px] w-48" />
+          <Skeleton className="h-5 w-72 mt-1" />
         </div>
-        <div className="flex gap-2">
-          <Skeleton className="h-10 w-32 rounded-[40px]" />
-        </div>
+        {/* SegmentedControl: inline-flex rounded-[40px] with two options */}
+        <Skeleton className="h-10 w-56 rounded-[40px] self-start" />
       </div>
 
-      {/* Tabs */}
-      <Skeleton className="h-10 w-64 rounded-lg" />
-
-      {/* Calendar/Table View */}
-      <div className="bg-background-elevated border border-border rounded-xl overflow-hidden">
-        {/* Week Headers */}
-        <div className="px-4 py-3 border-b border-border bg-muted">
-          <div className="flex items-center gap-4">
-            <Skeleton className="h-5 w-28" />
-            {Array.from({ length: 4 }).map((_, i) => (
-              <Skeleton key={i} className="h-5 w-20" />
-            ))}
+      {/* Legend row - matches status legend with 4 colored squares + labels */}
+      <div className="flex items-center gap-3 sm:gap-4">
+        <Skeleton className="h-4 w-12" />
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={i} className="flex items-center gap-1">
+            <Skeleton className="w-5 h-5 rounded" />
+            <Skeleton className="h-4 w-14" />
           </div>
-        </div>
-        {/* Rows */}
-        <div className="divide-y divide-border">
-          {Array.from({ length: 10 }).map((_, i) => (
-            <div key={i} className="px-4 py-3">
-              <div className="flex items-center gap-4">
-                <div className="flex items-center gap-2 w-28">
-                  <Skeleton className="h-4 w-4 rounded-full" />
-                  <Skeleton className="h-4 w-20" />
+        ))}
+      </div>
+
+      {/* Week accordion sections */}
+      <div className="space-y-6">
+        {/* First week - expanded with raid day cards */}
+        <div className="space-y-3">
+          <div className="flex items-center gap-3">
+            <Skeleton className="w-6 h-6 rounded flex-shrink-0" />
+            <Skeleton className="h-[24px] w-72" />
+            <div className="flex-1 h-[1px] bg-foreground/10" />
+          </div>
+
+          {/* Raid day cards (2 per week) */}
+          {Array.from({ length: 2 }).map((_, i) => (
+            <div key={i} className="bg-background-elevated border border-border rounded-xl overflow-hidden">
+              <div className="px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
+                <div className="flex items-center gap-3 sm:gap-4">
+                  <Skeleton className="w-5 h-5 rounded flex-shrink-0" />
+                  <div>
+                    <Skeleton className="h-[18px] w-56" />
+                    <Skeleton className="h-4 w-40 mt-1" />
+                  </div>
                 </div>
-                {Array.from({ length: 4 }).map((_, j) => (
-                  <Skeleton key={j} className="h-8 w-20 rounded" />
-                ))}
+                <div className="flex gap-2 flex-shrink-0">
+                  <Skeleton className="h-9 w-28 rounded-[40px]" />
+                  <Skeleton className="h-9 w-20 rounded-[40px]" />
+                </div>
               </div>
             </div>
           ))}
+        </div>
+
+        {/* Second collapsed week */}
+        <div className="space-y-3">
+          <div className="flex items-center gap-3">
+            <Skeleton className="w-6 h-6 rounded flex-shrink-0" />
+            <Skeleton className="h-[24px] w-64" />
+            <div className="flex-1 h-[1px] bg-foreground/10" />
+          </div>
+        </div>
+
+        {/* Third collapsed week */}
+        <div className="space-y-3">
+          <div className="flex items-center gap-3">
+            <Skeleton className="w-6 h-6 rounded flex-shrink-0" />
+            <Skeleton className="h-[24px] w-60" />
+            <div className="flex-1 h-[1px] bg-foreground/10" />
+          </div>
         </div>
       </div>
     </div>
@@ -731,39 +800,54 @@ export function RaidTrackingPageSkeleton() {
 
 /**
  * Loot settings page skeleton
+ * Matches the Items tab (default) layout of AdminLootItems
  */
 export function LootSettingsPageSkeleton() {
   return (
-    <div className="p-4 sm:p-6 lg:p-8 space-y-6">
-      {/* Header */}
-      <div>
-        <Skeleton className="h-8 w-32" />
-        <Skeleton className="h-5 w-64 mt-1" />
+    <div className="p-4 sm:p-6 lg:p-8 space-y-6 font-poppins">
+      {/* Header with Tabs and Settings Button */}
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+        <div>
+          <Skeleton className="h-[42px] w-48" />
+          <Skeleton className="h-5 w-72 mt-1" />
+        </div>
+        <div className="flex items-center gap-3">
+          <Skeleton className="h-10 w-40 rounded-lg" />
+          <Skeleton className="h-10 w-48 rounded-[52px]" />
+          <Skeleton className="h-10 w-44 rounded-[52px]" />
+        </div>
       </div>
 
-      {/* Tabs */}
-      <Skeleton className="h-10 w-48 rounded-lg" />
-
-      {/* Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Settings Cards */}
+      {/* Stats Grid - 4 columns */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="bg-background-elevated border border-border rounded-xl overflow-hidden">
-            <div className="p-5 border-b border-border">
-              <div className="flex items-center gap-2">
-                <Skeleton className="h-5 w-5 rounded" />
-                <Skeleton className="h-5 w-36" />
-              </div>
-              <Skeleton className="h-4 w-48 mt-1" />
+          <div key={i} className="bg-background-elevated border border-border rounded-xl p-4">
+            <Skeleton className="h-4 w-20" />
+            <Skeleton className="h-7 w-12 mt-1" />
+          </div>
+        ))}
+      </div>
+
+      {/* Filters Bar */}
+      <div className="bg-background-elevated border border-border rounded-xl p-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="space-y-2">
+              <Skeleton className="h-3.5 w-20" />
+              <Skeleton className="h-9 w-full rounded-[52px]" />
             </div>
-            <div className="p-5 space-y-4">
-              {Array.from({ length: 3 }).map((_, j) => (
-                <div key={j} className="space-y-2">
-                  <Skeleton className="h-4 w-24" />
-                  <Skeleton className="h-10 w-full rounded-lg" />
-                </div>
-              ))}
-            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Item Table Rows */}
+      <div className="bg-background-elevated border border-border rounded-xl overflow-hidden">
+        {Array.from({ length: 8 }).map((_, i) => (
+          <div key={i} className="flex items-center gap-4 px-4 py-3 border-b border-border last:border-b-0">
+            <Skeleton className="w-8 h-8 rounded shrink-0" />
+            <Skeleton className="h-4 w-48 flex-1" />
+            <Skeleton className="h-4 w-24" />
+            <Skeleton className="h-6 w-20 rounded-full" />
           </div>
         ))}
       </div>

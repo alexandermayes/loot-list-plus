@@ -2,9 +2,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient, getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { verifyOfficerPermissions, verifyRoleChangePermissions, verifyMemberRemovalPermissions } from '@/utils/server-roles'
-import { ROLE_POSITIONS } from '@/utils/roles'
+import { ROLE_POSITIONS } from '@/domain/guild/roles'
 import { trackApiError } from '@/utils/analytics/server'
 import { batchGetDisplayNames } from '@/utils/batch-display-names'
+import { logAudit } from '@/utils/audit/log'
 
 // GET - List all members of a guild (uses service role to bypass RLS)
 export async function GET(request: NextRequest) {
@@ -261,12 +262,6 @@ export async function PUT(request: NextRequest) {
         .eq('role', 'Guild Master')
         .neq('character_id', character_ids[0])
 
-      await serviceSupabase
-        .from('guild_members')
-        .update({ role: 'Officer' })
-        .eq('guild_id', guild_id)
-        .eq('role', 'Guild Master')
-        .neq('user_id', target_user_id)
     }
 
     // Update character_guild_memberships
@@ -281,12 +276,16 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to update role' }, { status: 500 })
     }
 
-    // Also update guild_members for backwards compatibility
-    await serviceSupabase
-      .from('guild_members')
-      .update({ role: new_role })
-      .eq('guild_id', guild_id)
-      .eq('user_id', target_user_id)
+    logAudit({
+      supabase: serviceSupabase,
+      guildId: guild_id,
+      tableName: 'character_guild_memberships',
+      recordId: target_user_id,
+      action: 'UPDATE',
+      userId: user.id,
+      oldData: { action: 'role_change' },
+      newData: { new_role, target_user_id, character_ids },
+    })
 
     return NextResponse.json({ success: true })
   } catch (error) {
@@ -351,12 +350,15 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to remove member' }, { status: 500 })
     }
 
-    // Also update guild_members for backwards compatibility
-    await serviceSupabase
-      .from('guild_members')
-      .update({ is_active: false })
-      .eq('guild_id', guildId)
-      .eq('user_id', targetUserId)
+    logAudit({
+      supabase: serviceSupabase,
+      guildId: guildId,
+      tableName: 'character_guild_memberships',
+      recordId: targetUserId,
+      action: 'DELETE',
+      userId: user.id,
+      oldData: { target_user_id: targetUserId, character_ids: characterIds },
+    })
 
     return NextResponse.json({ success: true })
   } catch (error) {

@@ -111,6 +111,48 @@ export const TOKEN_CLASS_MAPPING: Record<string, WowClassName[]> = {
   'Conquerors Mark of Sanctification': ['Paladin', 'Priest', 'Warlock'],
   'Protectors Mark of Sanctification': ['Hunter', 'Shaman', 'Warrior'],
   'Vanquishers Mark of Sanctification': ['Mage', 'Druid', 'Rogue'],
+
+  // ============================================================================
+  // CATA TIER 11 TOKENS (Blackwing Descent, Bastion of Twilight, Throne of the Four Winds)
+  // ============================================================================
+  'of the Forlorn Conqueror': ['Paladin', 'Priest', 'Warlock'],
+  'of the Forlorn Protector': ['Hunter', 'Shaman', 'Warrior'],
+  'of the Forlorn Vanquisher': ['Death Knight', 'Mage', 'Druid', 'Rogue'],
+
+  // ============================================================================
+  // CATA TIER 12 TOKENS (Firelands)
+  // ============================================================================
+  'of the Fiery Conqueror': ['Paladin', 'Priest', 'Warlock'],
+  'of the Fiery Protector': ['Hunter', 'Shaman', 'Warrior'],
+  'of the Fiery Vanquisher': ['Death Knight', 'Mage', 'Druid', 'Rogue'],
+
+  // ============================================================================
+  // CATA TIER 13 TOKENS (Dragon Soul)
+  // ============================================================================
+  'of the Corrupted Conqueror': ['Paladin', 'Priest', 'Warlock'],
+  'of the Corrupted Protector': ['Hunter', 'Shaman', 'Warrior'],
+  'of the Corrupted Vanquisher': ['Death Knight', 'Mage', 'Druid', 'Rogue'],
+
+  // ============================================================================
+  // MOP TIER 14 TOKENS (Mogu'shan Vaults, Heart of Fear, Terrace of Endless Spring)
+  // ============================================================================
+  'of the Shadowy Conqueror': ['Paladin', 'Priest', 'Warlock'],
+  'of the Shadowy Protector': ['Hunter', 'Monk', 'Shaman', 'Warrior'],
+  'of the Shadowy Vanquisher': ['Death Knight', 'Mage', 'Druid', 'Rogue'],
+
+  // ============================================================================
+  // MOP TIER 15 TOKENS (Throne of Thunder)
+  // ============================================================================
+  'of the Crackling Conqueror': ['Paladin', 'Priest', 'Warlock'],
+  'of the Crackling Protector': ['Hunter', 'Monk', 'Shaman', 'Warrior'],
+  'of the Crackling Vanquisher': ['Death Knight', 'Mage', 'Druid', 'Rogue'],
+
+  // ============================================================================
+  // MOP TIER 16 TOKENS (Siege of Orgrimmar)
+  // ============================================================================
+  'of the Cursed Conqueror': ['Paladin', 'Priest', 'Warlock'],
+  'of the Cursed Protector': ['Hunter', 'Monk', 'Shaman', 'Warrior'],
+  'of the Cursed Vanquisher': ['Death Knight', 'Mage', 'Druid', 'Rogue'],
 }
 
 /**

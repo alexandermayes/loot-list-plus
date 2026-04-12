@@ -155,7 +155,7 @@ Access your profile by clicking your name at the bottom of the sidebar.
 ## Account tab
 
 - **Discord connection** - Shows your linked Discord account and verification status
-- **Sign out** - Log out of LootList+
+- **Log out** - Log out of LootList+
 - **Danger zone** - Disconnect Discord or permanently delete your account
 
 ## Preferences tab
@@ -291,9 +291,13 @@ If enabled, you gain extra points the longer you go without receiving loot. Rese
 
 Check your Loot Score in several places:
 
-- **Overview** - Score breakdown widget shows each component
-- **Master Sheet** - Click any item to see the full score breakdown for all players wanting it
-- **Next in line** - Your overview shows your top 5 priority items
+- **Overview** - Score breakdown widget shows each component. BLP is shown per item in your "Next in line" section.
+- **Master Sheet** - Officers can click any item name to see a full candidate comparison with score breakdowns for all players wanting it.
+- **Next in line** - Your overview shows your top 5 priority items with individual BLP values.
+
+## Bad luck protection details
+
+BLP is **per item**, not a global modifier. Each item you've been passed over for gets its own bonus. When loot is awarded through raid tracking and you don't win, your BLP for that specific item increases by the guild's configured increment. When you receive the item, your BLP for it resets to zero.
 
 ## Ties
 
@@ -303,7 +307,7 @@ When players have the same Loot Score, they're tied for the item. Ties are broke
 
 - **Show up to raids.** Attendance is the easiest way to boost your score.
 - **Rank items thoughtfully.** High ranks on fewer items beats spreading thin.
-- **Be patient.** Priority naturally improves as others receive items.
+- **Be patient.** Priority naturally improves as others receive items and your Bad Luck Protection builds up.
         `,
       },
     ],
@@ -323,33 +327,35 @@ When players have the same Loot Score, they're tied for the item. Ties are broke
 
 This guide is for guild officers setting up LootList+ for the first time.
 
+## Setup Guide
+
+When you create a guild, you'll see a **Setup Guide** on your Overview page. It tracks your progress through 5 steps and links directly to each action. The guide auto-hides once everything is done.
+
 ## Step 1: Create the guild
 
-1. On the welcome screen, click **Select guild** or use an invite code
-2. If creating a new guild, enter your guild name, realm and faction
+1. On the welcome screen, click **Create a guild**
+2. Enter your guild name, realm, faction and expansion
 3. You'll automatically become the Guild Master
+4. An **invite code** is auto-generated so you can share immediately
 
-## Step 2: Configure your expansion
+## Step 2: Invite members
+
+Your invite code was created automatically. Find it in **Guild Settings** (gear icon in the sidebar). Share it with your raiders, or set up **Discord integration** by adding your server ID so members join automatically.
+
+## Step 3: Configure your raid schedule
 
 1. Open **Guild Settings** (gear icon next to your guild name in the sidebar)
-2. In the Expansion section, select your current expansion
-3. Set your **raid start date** and **raid schedule** (days per week, specific days, timezone)
-4. Enable the raid tiers your guild is progressing through
-5. Toggle **Loot** to include a tier in Loot Lists and **Ranks** to show rankings on the Master Sheet
+2. Set your **raid schedule** (days per week, specific days)
+3. Enable the raid tiers your guild is progressing through
+4. Toggle **Loot** to include a tier in Loot Lists and **Ranks** to show rankings on the Master Sheet
 
-## Step 3: Configure loot items
+## Step 4: Configure loot items
 
 1. Go to **Loot Management** in the sidebar (officer-only section)
 2. Browse items by raid tier
 3. Set item classifications: Reserved, Limited or Unlimited
 4. Assign primary and secondary specs to items (controls which classes can rank them)
-
-## Step 4: Invite members
-
-1. Open **Guild Settings** (gear icon in the sidebar)
-2. Create invite codes with optional expiration and usage limits
-3. Share codes with your raiders
-4. Or set up **Discord integration** by adding your Discord server ID so members join automatically
+5. Use the **Priorities** tab to set role, class or individual priority bonuses on specific items
 
 ## Step 5: Review and approve
 
@@ -483,13 +489,28 @@ For each item, you can assign:
 
 Spec assignments help raiders know which items are relevant to them.
 
+## Priorities tab
+
+Switch to the **Priorities** tab to set score bonuses on specific items:
+
+- **Role priority** - Give bonus points to tanks, healers, or DPS for specific items
+- **Class/spec priority** - Give bonus points to specific specs (e.g., Restoration Shaman gets +3 for a healing mace)
+- **Individual priority** - Give bonus points to specific raiders (rarely used, for edge cases)
+- **Officer notes** - Explain why the priority is set this way. Notes are visible in the item candidate comparison on the Master Sheet.
+
+Priority values are added directly to the score. A +1 priority adds exactly 1 point. Role, class/spec, and character priorities stack.
+
+## Disabling items
+
+Toggle items off to prevent raiders from selecting them. Disabled items won't appear in anyone's loot list. Changes take effect when raiders refresh their page.
+
 ## Stats dashboard
 
 The top of the page shows:
 - Total items count
-- Available items
-- Reserved items
-- Limited items
+- Items with priorities
+- Items without priorities
+- Guild raiders count
 
 ## Filtering
 
@@ -521,11 +542,14 @@ Your guild tracks raid attendance over a **rolling window** (e.g., last 4 weeks)
 
 Officers mark each raider with one of these statuses per raid:
 
-- **Attended** - You were at the raid
-- **Late** - You showed up but arrived late
-- **Benched** - You were online but sat out (partial credit)
+- **Attended** - You were at the raid (full credit)
+- **Late** - You showed up but arrived late (reduced credit if late penalty is enabled)
+- **Benched** - You were online but sat out (full credit, same as attended)
+- **Excused** - Excused absence (excluded from your score entirely, doesn't count against you)
 - **Signed up** - You signed up but didn't attend
 - **No-show** - Missed without notice
+
+Officers can also set a **points override** on any individual attendance record, replacing the calculated value for that raid.
 
 ## Viewing your attendance
 
@@ -580,13 +604,18 @@ Log each raid night with:
 
 ## Recording attendance
 
+Import attendance by pasting character names into the import field. Supports **one per line**, **comma-separated**, or **semicolon-separated** formats. Names are auto-matched to guild members and aliases.
+
 For each raid event, mark every member's status:
 
 - **Signed up** - Member signed up for the raid
 - **Attended** - Member was present
 - **No-show** - Member didn't show without notice
-- **Late** - Member arrived late
-- **Benched** - Member was available but sat out
+- **Late** - Member arrived late (configurable penalty)
+- **Benched** - Member was available but sat out (counts as attended)
+- **Excused** - Excused absence (excluded from score calculation)
+
+You can also set a **points override** on individual records for special cases.
 
 ## Recording loot
 
@@ -595,6 +624,7 @@ When items drop, record who received them:
 - Select the character who received the item
 - Select the item from the loot table
 - Award date is tracked automatically
+- **Bad Luck Protection** updates automatically when loot is awarded (non-winners gain BLP, winner's BLP resets)
 
 ## Loot history
 
@@ -603,6 +633,7 @@ The loot history tab shows all awarded items with:
 - Character name (colored by class)
 - Item name with Wowhead tooltip
 - Award date
+- Who awarded the item
 
 ## Raid schedule
 
@@ -643,22 +674,37 @@ Click **Master Sheet** in the sidebar. It's available to all guild members (when
 
 Players are sorted by Loot Score, highest first.
 
+## Item candidate comparison (officers)
+
+Officers can click any **item name** on the Master Sheet to open a full candidate comparison. This shows:
+
+- **All ranked candidates** sorted by score (not just the top 5)
+- **Full score breakdown** per candidate (rank, attendance, role modifier, priority bonus, BLP, trial penalty)
+- **Eligibility badges** for trial members and ineligible players
+- **"Has item" indicators** for players who already received the item
+- **Priority summary** showing which roles, specs or characters have officer-set priority
+- **Recent awards** for the item (who got it last time, when, and who awarded it)
+- **"Edit priority"** link to adjust priority rules
+
+## Raid Mode (officers)
+
+Switch to **Raid Mode** using the view toggle at the top (Rankings / Summary / Raid mode). Designed for use during raids when 25 people are waiting:
+
+- **Searchable item list** so you can type the item name and find it instantly
+- **Top 3 candidates** per item with scores and class colors
+- **Click to expand** any item into the full candidate comparison
+- Minimal chrome, fast scan
+
 ## Score breakdown
 
-Click on any player's score to see the full breakdown: rank + attendance + role modifier + trial penalty + bad luck bonus.
+Officers can click on any player's score to see the component breakdown. Members can click **"Why?"** on items where they're not #1 to see a side-by-side comparison with the current leader.
 
-## During raids
+## Officer views
 
-When an item drops:
-
-1. Find the item on the Master Sheet (use the boss section to narrow it down)
-2. See who has it ranked and their Loot Scores
-3. Award to the highest priority player
-4. Ties are broken by /roll
-
-## Officer view
-
-Officers see an additional **aggregate view** that shows total demand for each item across all raiders, useful for understanding which items are most contested.
+Officers see additional views:
+- **Summary** view showing total demand for each item across all raiders
+- **Raid Mode** for fast loot decisions during raids
+- **Score popovers** on any player's score value
 
 ## Visibility
 
@@ -780,6 +826,151 @@ All Loot Scores are visible on the Master Sheet. Every player can see exactly wh
 If an item drops and nobody ranked it, it goes to free roll. /roll determines the winner, same as any other unlisted loot.
         `,
       },
+      {
+        slug: 'how-to-record-loot',
+        title: 'How do I award loot on the website?',
+        description: 'How loot distribution is recorded in LootList+',
+        content: `
+# How do I award loot on the website?
+
+Loot isn't awarded manually on the website. Instead, you **import loot data** into the Raid Tracking page after your raid.
+
+## Using Gargul (recommended)
+
+1. Use the [Gargul](https://www.curseforge.com/wow/addons/gargul) addon during your raid to handle loot distribution
+2. After the raid, export your loot history from Gargul
+3. Go to **Raid Tracking** in LootList+
+4. Paste the export into the loot import field
+
+Gargul tracks who received what automatically, so you don't have to remember anything after the raid.
+
+## Manual import
+
+If Gargul isn't an option, you can paste loot data manually using this format:
+
+\`\`\`
+DD/MM/YYYY;[itemId];CharacterName
+\`\`\`
+
+For example:
+\`\`\`
+15/03/2026;[29764];Memer
+15/03/2026;[29753];Jrocbaby
+15/03/2026;[28783];Bpie
+\`\`\`
+
+Find item IDs on [Wowhead](https://www.wowhead.com) (the number in the item's URL).
+
+## Why not manual awarding?
+
+Importing from your raid keeps records accurate and saves time. Instead of going back and forth between the game and the website, you handle all loot in one paste after the raid is done.
+        `,
+      },
+      {
+        slug: 'why-cant-i-select-item',
+        title: "Why can't I select an item on my Loot List?",
+        description: 'Common reasons an item might not appear in your item picker',
+        content: `
+# Why can't I select an item on my Loot List?
+
+If an item isn't showing up in your loot list item picker, here are the common reasons.
+
+## The item is disabled
+
+Officers can toggle items off in **Loot Management**. Disabled items won't appear in anyone's item picker. Ask your officer if the item should be available.
+
+## Armor type restriction
+
+You can only rank items your class can equip. For example, shamans can wear Mail but not Plate, so Plate items won't appear for them. This is enforced automatically based on WoW's armor proficiency rules.
+
+## The raid tier isn't enabled
+
+Items only appear from raid tiers that are enabled for loot lists. Check with your officers that the raid tier containing the item has "Loot" toggled on in Guild Settings.
+
+## You're on the wrong phase
+
+Each phase has its own loot list. Make sure you've selected the correct phase at the top of the Loot List page. For example, Black Temple items are in Phase 3, not Phase 2.
+
+## The item was recently disabled
+
+If an officer disabled the item while you had the page open, your browser may still show it. Refresh the page to pick up the latest changes.
+        `,
+      },
+      {
+        slug: 'what-is-blp',
+        title: 'What is Bad Luck Protection?',
+        description: 'How BLP works, when it triggers, and how to enable it',
+        content: `
+# What is Bad Luck Protection?
+
+Bad Luck Protection (BLP) is an optional per-item bonus that rewards raiders who consistently lose out on items they want.
+
+## How it works
+
+BLP is tracked **per item**, not globally. Each item you've been passed over for gets its own bonus that grows over time.
+
+When loot is awarded through **Raid Tracking** and you were in the running (had the item ranked + attended the raid) but didn't win, your BLP for that specific item increases by the guild's configured increment.
+
+When you finally receive the item, your BLP for it resets to zero.
+
+## Example
+
+With an increment of 0.5 and a max of 5:
+- You lose a roll on Warglaive → your BLP for Warglaive goes to +0.5
+- You lose again next week → your BLP goes to +1.0
+- You finally win the Warglaive → your BLP resets to 0
+
+Meanwhile, your BLP on other items is tracked separately.
+
+## Enabling BLP
+
+Officers enable BLP in **Guild Settings** under the scoring section:
+- **Increment** - How many points to add each time (e.g., 0.5)
+- **Maximum** - The cap on BLP bonus (e.g., 5)
+
+## Where to see BLP
+
+- **Overview** page - Your "Next in line" items show individual BLP values (e.g., "+1.50 BLP")
+- **Master Sheet** - The item candidate comparison shows BLP as part of each candidate's score breakdown
+
+## Important notes
+
+- BLP only triggers when loot is **awarded through Raid Tracking**, not when items drop in-game
+- You must have the item on your **approved** loot list and have **attended** the raid to be eligible
+- BLP is per item, so winning one item doesn't reset your BLP on other items
+        `,
+      },
+      {
+        slug: 'how-to-create-list-for-new-phase',
+        title: 'How do I make a Loot List for a new phase?',
+        description: 'How to enable new raid tiers and create lists for Phase 2 and beyond',
+        content: `
+# How do I make a Loot List for a new phase?
+
+If you only see Phase 1 items on your Loot List, your guild needs to **enable the raid tier** for the new phase first.
+
+## For officers
+
+1. Click the **gear icon** next to your guild name in the sidebar to open Guild Settings
+2. Find your expansion (e.g., Burning Crusade)
+3. Click the raid tier you want to enable (e.g., SSC / TK for Phase 2)
+4. Toggle **Loot** on to include those items in Loot Lists
+
+Once the tier is enabled, all raiders can see and rank items from that phase.
+
+## For raiders
+
+If you don't see items from a new phase, ask your officers to enable the raid tier in Guild Settings. You can't enable tiers yourself.
+
+Once the tier is active:
+
+1. Go to **Loot List** in the sidebar
+2. Select the new phase from the phase selector
+3. Rank items and submit for review
+
+You can have separate Loot Lists for each phase. Your Phase 1 list stays active while you work on Phase 2.
+        `,
+      },
     ],
   },
 ]
@@ -813,8 +1004,8 @@ export const glossaryTerms: GlossaryTerm[] = [
   {
     term: 'Bad luck protection',
     definition:
-      'Bonus points that grow the longer you go without receiving loot. Resets on your next item. Must be enabled by officers.',
-    articleSlug: 'understanding-priority',
+      'Per-item bonus that increases each time you lose out on a specific item. Resets when you receive it. Tracked separately for every item on your list. Must be enabled by officers.',
+    articleSlug: 'what-is-blp',
   },
   {
     term: 'Brackets',
@@ -869,6 +1060,24 @@ export const glossaryTerms: GlossaryTerm[] = [
     definition:
       'Score penalty applied to trial members, giving established raiders priority. Removed when promoted to full member.',
     articleSlug: 'understanding-priority',
+  },
+  {
+    term: 'Excused absence',
+    definition:
+      'Attendance status set by officers. Excluded from your score entirely, so it doesn\'t count against your attendance percentage.',
+    articleSlug: 'attendance-tracking',
+  },
+  {
+    term: 'Raid Mode',
+    definition:
+      'Compact Master Sheet view for officers during raids. Searchable item list with top 3 candidates per item. Click to expand full comparison.',
+    articleSlug: 'master-sheet',
+  },
+  {
+    term: 'Setup Guide',
+    definition:
+      'Progress tracker shown to officers on the Overview page for new guilds. Tracks 5 setup steps and auto-completes as you configure.',
+    articleSlug: 'guild-setup',
   },
 ]
 

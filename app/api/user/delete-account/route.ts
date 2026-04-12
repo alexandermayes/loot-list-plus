@@ -161,15 +161,7 @@ export async function POST() {
       }
     }
 
-    // 9. Delete legacy guild_members entries (if any)
-    const { error: legacyMembersError } = await serviceClient
-      .from('guild_members')
-      .delete()
-      .eq('user_id', userId)
-
-    if (legacyMembersError && !legacyMembersError.message.includes('does not exist')) {
-      console.error('Error deleting guild_members:', legacyMembersError)
-    }
+    // 9. (guild_members cleanup handled by trigger from character_guild_memberships delete)
 
     // 10. Delete user preferences
     const { error: prefsError } = await serviceClient

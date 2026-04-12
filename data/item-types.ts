@@ -870,9 +870,10 @@ export function inferArmorType(slot: string, name: string): ArmorType | undefine
   }
 
   // Plate indicators
+  // Note: "gauntlets" excluded — used across all armor types (Mail, Leather, Plate)
   if (nameLower.includes('plate') || nameLower.includes('breastplate') ||
-      nameLower.includes('gauntlets') || nameLower.includes('sabatons') ||
-      nameLower.includes('greaves') || nameLower.includes('vambraces')) {
+      nameLower.includes('sabatons') || nameLower.includes('greaves') ||
+      nameLower.includes('vambraces')) {
     return 'Plate'
   }
 

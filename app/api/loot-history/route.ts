@@ -46,9 +46,11 @@ export async function GET(request: NextRequest) {
     const offset = parseInt(searchParams.get('offset') || '0')
     const characterFilter = searchParams.get('character')
     const itemFilter = searchParams.get('item')
+    const lootItemId = searchParams.get('loot_item_id')
     const raidTierFilter = searchParams.get('raid_tier_id')
     const fromDate = searchParams.get('from')
     const toDate = searchParams.get('to')
+    const raidTeamId = searchParams.get('raid_team_id')
 
     if (!guildId) {
       return NextResponse.json({ error: 'guild_id is required' }, { status: 400 })
@@ -99,11 +101,11 @@ export async function GET(request: NextRequest) {
             color_hex
           )
         ),
-        loot_items!inner (
+        loot_items (
           name,
           wowhead_id,
           boss_name,
-          raid_tiers!inner (
+          raid_tiers (
             id,
             name
           )
@@ -115,7 +117,19 @@ export async function GET(request: NextRequest) {
 
     // Apply filters
     if (raidTierFilter && raidTierFilter !== 'all') {
-      query = query.eq('loot_items.raid_tier_id', raidTierFilter)
+      // Resolve item IDs for the raid tier, then filter on the main table.
+      // PostgREST .eq on a joined table only filters the join, not parent rows.
+      const { data: tierItems } = await supabase
+        .from('loot_items')
+        .select('id')
+        .eq('raid_tier_id', raidTierFilter)
+
+      const tierItemIds = tierItems?.map(i => i.id) || []
+      if (tierItemIds.length > 0) {
+        query = query.in('loot_item_id', tierItemIds)
+      } else {
+        return NextResponse.json({ data: [], pagination: { total: 0, limit, offset, filtered_count: 0 } })
+      }
     }
 
     if (fromDate) {
@@ -131,8 +145,40 @@ export async function GET(request: NextRequest) {
       query = query.ilike('character_name', `%${characterFilter}%`)
     }
 
-    if (itemFilter) {
-      query = query.ilike('loot_items.name', `%${itemFilter}%`)
+    if (lootItemId) {
+      query = query.eq('loot_item_id', lootItemId)
+    } else if (itemFilter) {
+      // Look up matching loot_item_ids first, then filter on the main table.
+      // Filtering via .ilike('loot_items.name', ...) only filters the join,
+      // not the parent rows, so we need to resolve IDs explicitly.
+      const { data: matchingItems } = await supabase
+        .from('loot_items')
+        .select('id')
+        .ilike('name', `%${itemFilter}%`)
+        .limit(100)
+
+      const matchingIds = matchingItems?.map(i => i.id) || []
+      if (matchingIds.length > 0) {
+        query = query.in('loot_item_id', matchingIds)
+      } else {
+        // No items match, return empty
+        return NextResponse.json({ data: [], pagination: { total: 0, limit, offset, filtered_count: 0 } })
+      }
+    }
+
+    // Filter by raid team (resolve character IDs on the team)
+    if (raidTeamId) {
+      const { data: teamMembers } = await supabase
+        .from('raid_team_members')
+        .select('character_id')
+        .eq('raid_team_id', raidTeamId)
+
+      const teamCharIds = teamMembers?.map(m => m.character_id) || []
+      if (teamCharIds.length > 0) {
+        query = query.in('character_id', teamCharIds)
+      } else {
+        return NextResponse.json({ data: [], pagination: { total: 0, limit, offset, filtered_count: 0 } })
+      }
     }
 
     // Apply pagination
@@ -140,12 +186,68 @@ export async function GET(request: NextRequest) {
 
     const { data: historyData, error: historyError, count } = await query
 
-    if (historyError) {
-      console.error('Error fetching loot history:', historyError)
-      return NextResponse.json({ error: 'Failed to fetch loot history' }, { status: 500 })
-    }
+    let filteredData = historyData || []
+    let totalCount = count || 0
 
-    const filteredData = historyData || []
+    if (historyError) {
+      console.error('Error fetching loot history (primary query):', JSON.stringify(historyError))
+      console.error('Guild ID:', guildId, 'Filters:', { raidTierFilter, characterFilter, itemFilter, fromDate, toDate })
+
+      // Fallback: simpler query without nested joins
+      let fallbackQuery = supabase
+        .from('loot_history')
+        .select(`
+          id,
+          awarded_date,
+          notes,
+          created_at,
+          awarded_by,
+          character_id,
+          character_name,
+          loot_item_id
+        `, { count: 'exact' })
+        .eq('guild_id', guildId)
+        .order('awarded_date', { ascending: false })
+        .order('created_at', { ascending: false })
+
+      if (lootItemId) fallbackQuery = fallbackQuery.eq('loot_item_id', lootItemId)
+      if (fromDate) fallbackQuery = fallbackQuery.gte('awarded_date', fromDate)
+      if (toDate) fallbackQuery = fallbackQuery.lte('awarded_date', toDate)
+      if (characterFilter) fallbackQuery = fallbackQuery.ilike('character_name', `%${characterFilter}%`)
+
+      fallbackQuery = fallbackQuery.range(offset, offset + limit - 1)
+
+      const { data: fallbackData, error: fallbackError, count: fallbackCount } = await fallbackQuery
+
+      if (fallbackError) {
+        console.error('Error fetching loot history (fallback):', JSON.stringify(fallbackError))
+        return NextResponse.json({ error: 'Failed to fetch loot history' }, { status: 500 })
+      }
+
+      // Batch fetch loot_items data for fallback records
+      const itemIds = [...new Set((fallbackData || []).map((h: any) => h.loot_item_id).filter(Boolean))]
+      const { data: itemsData } = itemIds.length > 0
+        ? await supabase.from('loot_items').select('id, name, wowhead_id, boss_name, raid_tiers(id, name)').in('id', itemIds)
+        : { data: [] }
+
+      const itemsMap = new Map((itemsData || []).map((i: any) => [i.id, i]))
+
+      // Batch fetch character data
+      const charIds = [...new Set((fallbackData || []).map((h: any) => h.character_id).filter(Boolean))]
+      const { data: charsData } = charIds.length > 0
+        ? await supabase.from('characters').select('id, name, wow_classes(color_hex)').in('id', charIds)
+        : { data: [] }
+
+      const charsMap = new Map((charsData || []).map((c: any) => [c.id, c]))
+
+      // Reassemble into the expected format
+      filteredData = (fallbackData || []).map((h: any) => ({
+        ...h,
+        characters: h.character_id ? charsMap.get(h.character_id) || null : null,
+        loot_items: itemsMap.get(h.loot_item_id) || null,
+      }))
+      totalCount = fallbackCount || 0
+    }
 
     // Batch fetch display names for officers who awarded items
     const awardedByIds: string[] = []
@@ -216,7 +318,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       data: entries,
       pagination: {
-        total: count || 0,
+        total: totalCount,
         limit,
         offset,
         filtered_count: entries.length

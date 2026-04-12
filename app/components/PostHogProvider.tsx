@@ -6,25 +6,26 @@ import { usePathname, useSearchParams } from 'next/navigation'
 import { useEffect, Suspense, ReactNode } from 'react'
 import { createClient } from '@/utils/supabase/client'
 
-// Initialize PostHog once
-if (typeof window !== 'undefined' && process.env.NEXT_PUBLIC_POSTHOG_KEY) {
+// Defer PostHog initialization until after hydration to avoid blocking FCP/LCP.
+// The init runs once on first call to getPostHogInstance().
+let posthogInitialized = false
+
+function ensurePostHogInitialized() {
+  if (posthogInitialized || typeof window === 'undefined' || !process.env.NEXT_PUBLIC_POSTHOG_KEY) return
+  posthogInitialized = true
   try {
     posthog.init(process.env.NEXT_PUBLIC_POSTHOG_KEY, {
-      // Use reverse proxy to bypass ad blockers
       api_host: '/a',
       ui_host: 'https://us.i.posthog.com',
       person_profiles: 'identified_only',
-      capture_pageview: false, // We manually capture pageviews
+      capture_pageview: false,
       capture_pageleave: true,
       persistence: 'localStorage+cookie',
       bootstrap: {
         featureFlags: {},
       },
-      // Start with recording disabled to prevent adblocker-induced flicker.
-      // Enable after confirming the recorder script can load.
       disable_session_recording: true,
       loaded: (ph) => {
-        // Test if the recorder script is accessible (not blocked by adblocker)
         fetch('/a/static/recorder.js?v=check', { method: 'HEAD' })
           .then((res) => {
             if (res.ok) (ph as any).set_config({ disable_session_recording: false })
@@ -85,9 +86,20 @@ function PostHogIdentify() {
     identifyUser()
 
     // Re-identify on auth state changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event: string, session: { user?: { id: string } } | null) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event: string, session: { user?: { id: string; created_at?: string } } | null) => {
       if (event === 'SIGNED_IN' && session?.user) {
         identifyUser()
+
+        // Distinguish signup from returning sign-in
+        // If the account was created within the last 60 seconds, it's a new signup
+        if (session.user.created_at) {
+          const createdAt = new Date(session.user.created_at).getTime()
+          const now = Date.now()
+          const isNewUser = now - createdAt < 60_000
+          posthog.capture(isNewUser ? 'user_signed_up' : 'user_signed_in', {
+            auth_provider: 'discord',
+          })
+        }
       } else if (event === 'SIGNED_OUT') {
         posthog?.reset()
       }
@@ -104,6 +116,11 @@ interface PostHogProviderProps {
 }
 
 export function PostHogProvider({ children }: PostHogProviderProps) {
+  // Defer PostHog init to after hydration (useEffect) instead of module load
+  useEffect(() => {
+    ensurePostHogInitialized()
+  }, [])
+
   // Skip PostHog in development or if key not configured
   if (!process.env.NEXT_PUBLIC_POSTHOG_KEY) {
     return <>{children}</>

@@ -3,9 +3,10 @@
 import { useRef, useEffect } from 'react'
 import { motion, useInView } from 'framer-motion'
 import { fadeInUp, staggerContainer } from '@/lib/animations'
-import Image from 'next/image'
-import { Button } from '@/components/ui/button'
 import { trackClientEvent } from '@/utils/analytics/client'
+import Image from 'next/image'
+import ParallaxItem from './ParallaxItem'
+import MagneticButton from './MagneticButton'
 
 const APP_URL = 'https://www.lootlistplus.com'
 
@@ -18,28 +19,36 @@ export default function LandingCTA() {
   }, [isInView])
 
   return (
-    <section id="cta" className="relative py-32 md:py-40 overflow-hidden">
-      {/* Background with image */}
-      <div className="absolute inset-0">
-        <picture>
-          <source
-            type="image/webp"
-            srcSet="/images/landing/landing-background-640w.webp 640w, /images/landing/landing-background-1024w.webp 1024w, /images/landing/landing-background-1920w.webp 1920w, /images/landing/landing-background-2560w.webp 2560w"
-            sizes="100vw"
-          />
-          <Image
-            src="/images/landing/landing-background-2560w.webp"
-            alt=""
-            fill
-            className="object-cover object-center opacity-30"
-            quality={82}
-          />
-        </picture>
-        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/95 to-background/80" />
-      </div>
+    <section id="cta" className="relative pt-16 md:pt-24 pb-32 md:pb-40 bg-[#080808]">
+      <div className="absolute inset-0 max-w-[1440px] mx-auto">
+        {/* 7. Tusks of Mannoroth - bottom left */}
+        <ParallaxItem
+          speed={0.1}
+          slideFrom="left"
+          depth={1.4}
+          float={{ distance: 9, duration: 6, delay: 0.3 }}
+          clickEffect="warCry"
+          className="absolute left-[-220px] top-[-10%] w-[600px] h-[600px] hidden md:block pointer-events-none breathing-glow"
+          style={{ transform: 'rotate(3deg)', '--glow-color': 'rgba(253,87,27,0.5)', '--glow-duration': '4s', '--glow-delay': '1.2s' } as React.CSSProperties}
+          tooltip={{ name: "Tusks of Mannoroth", quality: "epic", type: "Plate Shoulder", flavor: "The trophy of a lifetime." }}
+        >
+          <Image src="/images/landing/items/tusks-of-mannoroth.png" alt="" fill sizes="600px" className="object-contain" />
+        </ParallaxItem>
 
-      {/* Orange glow effect */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-accent/10 rounded-full blur-[120px]" />
+        {/* 8. Cursed Ashbringer - bottom right */}
+        <ParallaxItem
+          speed={-0.1}
+          slideFrom="right"
+          depth={1.1}
+          float={{ distance: 12, duration: 7, delay: 2.0 }}
+          clickEffect="shadowCleave"
+          className="absolute right-[-120px] top-[10%] w-[380px] h-[380px] hidden md:block pointer-events-none breathing-glow"
+          style={{ '--glow-color': 'rgba(100,200,100,0.25)', '--glow-duration': '4.8s', '--glow-delay': '0.6s' } as React.CSSProperties}
+          tooltip={{ name: "Corrupted Ashbringer", quality: "epic", type: "Two-Hand Sword", flavor: "Blade of the Scarlet Highlord." }}
+        >
+          <Image src="/images/landing/items/cursed-ashbringer.png" alt="" fill sizes="600px" className="object-contain" />
+        </ParallaxItem>
+      </div>
 
       <div className="relative z-10 max-w-4xl mx-auto px-6 md:px-12 lg:px-20">
         <motion.div
@@ -47,75 +56,36 @@ export default function LandingCTA() {
           initial="hidden"
           animate={isInView ? 'visible' : 'hidden'}
           variants={staggerContainer}
-          className="text-center"
+          className="flex flex-col items-center gap-6 text-center"
         >
-          {/* Icon */}
-          <motion.div variants={fadeInUp} className="flex justify-center mb-6">
-            <Image
-              src="/lootlist-icon.svg"
-              alt="LootList+ Icon"
-              width={48}
-              height={64}
-              className="w-12 h-auto"
-            />
-          </motion.div>
-
           {/* Headline */}
           <motion.h2
             variants={fadeInUp}
-            className="font-poppins font-bold text-[28px] md:text-[42px] leading-tight text-foreground mb-4"
+            className="font-poppins font-bold text-[40px] md:text-[72px] leading-[1.05] text-white max-w-[696px]"
           >
-            Ready to modernize your loot system?
+            A better way to run{' '}
+            <span className="font-wow text-shimmer-purple text-[48px] md:text-[80px]">loot</span>.
           </motion.h2>
 
           {/* Subheadline */}
           <motion.p
             variants={fadeInUp}
-            className="font-poppins text-base md:text-lg text-foreground-secondary mb-10 max-w-xl mx-auto"
+            className="font-poppins font-medium text-[16px] text-[#bababa] max-w-[696px]"
           >
-            Join guilds who have already made the switch. Set up in minutes, not hours.
+            Bring loot lists, attendance, and fair distribution into one system your whole guild can trust.
           </motion.p>
 
-          {/* CTA Buttons */}
-          <motion.div variants={fadeInUp} className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button
-              variant="primary"
-              size="lg"
-              asChild
-              className="gap-3 font-poppins font-semibold shadow-lg hover:shadow-xl"
+          {/* CTA Button - Magnetic */}
+          <motion.div variants={fadeInUp}>
+            <MagneticButton
+              as="a"
+              href={APP_URL}
+              onClick={() => trackClientEvent('landing_cta_clicked', { cta: 'bottom_get_started' })}
+              className="inline-flex items-center justify-center px-4 py-3 rounded-[60px] bg-white font-poppins font-semibold text-[16px] text-black no-underline hover:bg-white/90 transition-colors"
             >
-              <a href={APP_URL} onClick={() => trackClientEvent('landing_cta_clicked', { cta: 'bottom_get_started' })}>
-                <Image
-                  src="/discord-icon.svg"
-                  alt="Discord"
-                  width={24}
-                  height={24}
-                  className="w-6 h-6"
-                />
-                Get started free
-              </a>
-            </Button>
+              Get started for free
+            </MagneticButton>
           </motion.div>
-
-          {/* Secondary link */}
-          <motion.p variants={fadeInUp} className="mt-6 text-sm text-foreground-muted">
-            Already have an account?{' '}
-            <a href={APP_URL} onClick={() => trackClientEvent('landing_cta_clicked', { cta: 'bottom_login' })} className="text-foreground hover:text-accent transition-colors">
-              Log in
-            </a>
-          </motion.p>
-
-          {/* Terms */}
-          <motion.p variants={fadeInUp} className="mt-8 text-xs text-foreground-muted max-w-md mx-auto">
-            By continuing, you agree to our{' '}
-            <a href="/terms" className="text-foreground-secondary hover:text-foreground underline underline-offset-2 transition-colors">
-              Terms of Service
-            </a>
-            {' '}and{' '}
-            <a href="/privacy" className="text-foreground-secondary hover:text-foreground underline underline-offset-2 transition-colors">
-              Privacy Policy
-            </a>.
-          </motion.p>
         </motion.div>
       </div>
     </section>

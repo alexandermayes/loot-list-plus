@@ -1,8 +1,10 @@
 import { createClient, getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
+import { verifyOfficerPermissions } from '@/utils/server-roles'
 import { NextResponse } from 'next/server'
 import { logAudit } from '@/utils/audit/log'
 import { trackEvent, trackApiError } from '@/utils/analytics/server'
+import { toDateString } from '@/utils/date'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -52,6 +54,7 @@ const ALLOWED_SETTINGS_FIELDS = [
   'role_bonus_priority_single_item',
   'class_bonus_priority_single_item',
   'raid_roles_overall_bonus_priority',
+  'role_modifiers',
   'single_raider_overall_bonus',
   'single_raider_bonus_single_item',
 
@@ -165,7 +168,7 @@ export async function GET(request: Request) {
             first_raid_day: 2, // Tuesday
             second_raid_day: 1, // Monday
             third_raid_day: null,
-            reset_date: defaultResetDate.toISOString().split('T')[0],
+            reset_date: toDateString(defaultResetDate),
             decimal_places: 2,
 
             // Attendance Settings
@@ -267,64 +270,12 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: 'guild_id and settings are required' }, { status: 400 })
     }
 
-    // Check if user is guild creator (always has officer permissions)
-    const { data: guild } = await supabase
-      .from('guilds')
-      .select('created_by')
-      .eq('id', guild_id)
-      .single()
-
-    const isGuildCreator = guild?.created_by === user.id
-
-    // If not guild creator, verify user is an officer via character membership
-    if (!isGuildCreator) {
-      // Get user's characters
-      const { data: userCharacters } = await supabase
-        .from('characters')
-        .select('id')
-        .eq('user_id', user.id)
-
-      if (!userCharacters || userCharacters.length === 0) {
-        return NextResponse.json({ error: 'No characters found' }, { status: 403 })
-      }
-
-      const characterIds = userCharacters.map(c => c.id)
-
-      // Get user's membership in this guild
-      const { data: membership } = await supabase
-        .from('character_guild_memberships')
-        .select('role')
-        .eq('guild_id', guild_id)
-        .in('character_id', characterIds)
-        .eq('is_active', true)
-        .limit(1)
-        .single()
-
-      if (!membership) {
-        return NextResponse.json({ error: 'Not a member of this guild' }, { status: 403 })
-      }
-
-      // Check if user is an officer (position >= 50) using guild_roles
-      const { data: roleData } = await supabase
-        .from('guild_roles')
-        .select('position')
-        .eq('guild_id', guild_id)
-        .eq('name', membership.role)
-        .single()
-
-      // Fallback: if no guild_roles entry, check against default positions
-      const position = roleData?.position ?? (
-        membership.role === 'Guild Master' ? 100 :
-        membership.role === 'Officer' ? 50 : 0
-      )
-
-      if (position < 50) {
-        return NextResponse.json({ error: 'Only officers can update guild settings' }, { status: 403 })
-      }
-    }
-
-    // Use service role for writes to bypass RLS (permission already verified above)
     const serviceSupabase = createServiceRoleClient()
+
+    const { hasPermission } = await verifyOfficerPermissions(serviceSupabase, user.id, guild_id)
+    if (!hasPermission) {
+      return NextResponse.json({ error: 'Only officers can update guild settings' }, { status: 403 })
+    }
 
     // Check if settings exist and get current values for audit logging
     const { data: existingSettings } = await serviceSupabase
@@ -393,6 +344,7 @@ export async function PUT(request: Request) {
       await trackEvent({
         event: 'guild_settings_updated',
         userId: user.id,
+        guildId: guild_id,
         properties: {
           guild_id,
           is_new_settings: !existingSettings,

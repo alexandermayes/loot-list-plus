@@ -211,6 +211,7 @@ export default function MasterLootPage() {
           .from('loot_submission_items')
           .select('*', { count: 'exact', head: true })
           .eq('submission_id', sub.id)
+          .is('removed_at', null)
 
         return {
           ...sub,
@@ -241,17 +242,20 @@ export default function MasterLootPage() {
     setReviewing(submissionId)
 
     try {
-      const { data, error } = await supabase
-        .from('loot_submissions')
-        .update({
+      const response = await fetch('/api/loot-submissions/review', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          submission_id: submissionId,
           status,
-          review_notes: reviewNotes || null,
-          reviewed_at: new Date().toISOString()
+          review_notes: reviewNotes || null
         })
-        .eq('id', submissionId)
-        .select()
+      })
 
-      if (error) throw error
+      if (!response.ok) {
+        const data = await response.json()
+        throw new Error(data.error || 'Couldn\'t update submission')
+      }
 
       const submission = submissions.find(s => s.id === submissionId)
       trackClientEvent('master_loot_awarded', {
@@ -260,7 +264,12 @@ export default function MasterLootPage() {
         character_name: submission?.member?.character_name || 'Unknown'
       })
 
-      showNotification('success', `Submission ${status}`)
+      const statusMessages: Record<string, string> = {
+        approved: 'Submission approved. Rankings will update.',
+        needs_revision: 'Sent back for revision.',
+        pending: 'Submission set to pending.',
+      }
+      showNotification('success', statusMessages[status] || `Submission ${status}`)
       setReviewNotes('')
       setReviewing(null)
 
@@ -284,6 +293,7 @@ export default function MasterLootPage() {
         loot_item:loot_items(id, name, boss_name, item_slot, wowhead_id)
       `)
       .eq('submission_id', submissionId)
+      .is('removed_at', null)
       .order('rank', { ascending: false })
 
     if (itemsData) {

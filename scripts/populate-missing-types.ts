@@ -15,9 +15,13 @@ import { createClient } from '@supabase/supabase-js'
 
 // ── Config ──────────────────────────────────────────────────────────────────
 
-const SUPABASE_URL = 'https://zjnhjstbqekudlsozsvi.supabase.co'
-const SUPABASE_SERVICE_KEY =
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpqbmhqc3RicWVrdWRsc296c3ZpIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2Nzg2MzQ5NiwiZXhwIjoyMDgzNDM5NDk2fQ.WLhgHYY7VhgNrwG0dblXhyeQnvpszPd13uONqljtCG4'
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL
+const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
+  console.error('Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY env vars')
+  process.exit(1)
+}
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY)
 

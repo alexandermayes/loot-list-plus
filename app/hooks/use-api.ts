@@ -296,7 +296,8 @@ export function useTierSubmissionStatuses(
     fetcher,
     {
       ...swrConfig,
-      refreshInterval: 30000, // Refresh every 30 seconds to catch officer updates
+      revalidateOnFocus: true, // Refresh on tab focus to catch officer approvals/rejections
+      refreshInterval: 30000, // Also poll every 30 seconds as fallback
       ...options,
     }
   )
@@ -335,7 +336,7 @@ export function usePhaseLootItems(
     fetcher,
     {
       ...swrConfig,
-      revalidateOnFocus: false,
+      revalidateOnFocus: true, // Re-check item availability when raider tabs back
       dedupingInterval: 10000,
       ...options,
     }
@@ -356,14 +357,14 @@ export function usePhaseSubmission(
   guildId: string | null,
   options?: SWRConfiguration
 ) {
-  return useSWR<{ submission: LootSubmission | null; rankings: Record<string, string> }>(
+  return useSWR<{ submission: LootSubmission | null; rankings: Record<string, string>; removedItems?: Array<{ loot_item_id: string; rank: number; slot: number }> }>(
     characterId && expansionId && phase !== null && guildId
       ? `/api/loot-submissions?character_id=${characterId}&expansion_id=${expansionId}&phase=${phase}&guild_id=${guildId}`
       : null,
     fetcher,
     {
       ...swrConfig,
-      revalidateOnFocus: false,
+      revalidateOnFocus: true, // Refresh on tab focus to catch officer approvals/rejections
       revalidateIfStale: false,
       revalidateOnReconnect: false,
       dedupingInterval: 30000,
@@ -393,7 +394,8 @@ export function usePhaseSubmissionStatuses(
     fetcher,
     {
       ...swrConfig,
-      refreshInterval: 30000, // Refresh every 30 seconds to catch officer updates
+      revalidateOnFocus: true, // Refresh on tab focus to catch officer approvals/rejections
+      refreshInterval: 30000, // Also poll every 30 seconds as fallback
       ...options,
     }
   )
@@ -509,6 +511,7 @@ export function usePrioList(guildId: string | null, options?: SWRConfiguration) 
     fetcher,
     {
       ...swrConfig,
+      revalidateOnFocus: true,
       refreshInterval: 30000,
       ...options,
     }

@@ -21,6 +21,7 @@ module.exports = {
       fontFamily: {
         sans: ["var(--font-poppins)", "system-ui", "sans-serif"],
         poppins: ["var(--font-poppins)", "system-ui", "sans-serif"],
+        wow: ["'Friz Quadrata'", "Georgia", "Garamond", "serif"],
       },
 
       // Font sizes from design system
@@ -200,6 +201,14 @@ module.exports = {
             "background-position": "right center"
           },
         },
+        "loot-glow": {
+          "0%": {
+            "background-color": "hsl(var(--accent) / 0.15)",
+          },
+          "100%": {
+            "background-color": "transparent",
+          },
+        },
       },
 
       // Animations
@@ -215,6 +224,7 @@ module.exports = {
         "slide-in-top": "slide-in-from-top 0.2s ease-out",
         "slide-in-bottom": "slide-in-from-bottom 0.2s ease-out",
         "gradient-x": "gradient-x 3s ease infinite",
+        "loot-glow": "loot-glow 1.5s ease-out forwards",
       },
 
       // Accent color for form controls (checkboxes, radios, range inputs)

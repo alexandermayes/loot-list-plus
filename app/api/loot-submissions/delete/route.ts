@@ -74,6 +74,7 @@ export async function DELETE(request: Request) {
       await trackEvent({
         event: 'loot_submission_deleted',
         userId: user.id,
+        guildId: guild_id,
         properties: {
           guild_id,
           submission_id,
@@ -156,6 +157,7 @@ export async function DELETE(request: Request) {
       await trackEvent({
         event: 'loot_submission_deleted',
         userId: user.id,
+        guildId: guild_id,
         properties: {
           guild_id,
           target,

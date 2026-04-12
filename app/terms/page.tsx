@@ -1,6 +1,7 @@
 import { Heading, Text } from '@/components/ui/typography'
 import type { Metadata } from 'next'
-import LegalNav from '@/app/components/LegalNav'
+import LandingNav from '@/app/components/landing/LandingNav'
+import LandingFooter from '@/app/components/landing/LandingFooter'
 
 export const metadata: Metadata = {
   title: 'Terms of Service',
@@ -12,14 +13,14 @@ export const metadata: Metadata = {
 
 export default function TermsOfServicePage() {
   return (
-    <div className="min-h-screen bg-background">
-      <LegalNav />
-      <div className="mx-auto max-w-4xl px-6 py-12">
+    <div className="min-h-screen bg-[#080808]">
+      <LandingNav />
+      <div className="mx-auto max-w-4xl px-6 pt-32 pb-12">
         <Heading level={1} className="mb-2">
           Terms of Service
         </Heading>
         <Text color="secondary" className="mb-8">
-          Last updated: February 6, 2026
+          Last updated: March 15, 2026
         </Text>
 
         <div className="space-y-8 text-foreground">
@@ -58,6 +59,12 @@ export default function TermsOfServicePage() {
               <li>
                 <Text>Coordinate loot distribution with guild officers</Text>
               </li>
+              <li>
+                <Text>Import characters from Battle.net</Text>
+              </li>
+              <li>
+                <Text>Sync loot data with the optional LootList+ World of Warcraft addon</Text>
+              </li>
             </ul>
           </section>
 
@@ -67,6 +74,12 @@ export default function TermsOfServicePage() {
               To use LootList+, you must authenticate using Discord OAuth. By connecting your
               Discord account, you authorize us to access certain information from your Discord
               profile as described in our Privacy Policy.
+            </Text>
+            <Text>
+              You may also optionally connect your Battle.net account to import your World of
+              Warcraft characters. By connecting Battle.net, you authorize us to access your
+              character data as described in our Privacy Policy. You can disconnect Battle.net
+              at any time from your profile settings.
             </Text>
             <Text>You agree to:</Text>
             <ul className="ml-6 list-disc space-y-2">
@@ -289,6 +302,7 @@ export default function TermsOfServicePage() {
           </section>
         </div>
       </div>
+      <LandingFooter />
     </div>
   )
 }

@@ -5,6 +5,7 @@ import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import { Heading, Text } from '@/components/ui/typography'
 import { useEffect } from 'react'
+import posthog from 'posthog-js'
 
 export default function Error({
   error,
@@ -14,8 +15,17 @@ export default function Error({
   reset: () => void
 }) {
   useEffect(() => {
-    // Log the error to an error reporting service
     console.error('Application error:', error)
+    try {
+      posthog.capture('client_error', {
+        error_message: error.message,
+        error_digest: error.digest,
+        error_boundary: 'root',
+        url: window.location.href,
+      })
+    } catch {
+      // PostHog not initialized
+    }
   }, [error])
 
   return (

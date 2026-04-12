@@ -14,59 +14,53 @@ import * as path from 'path'
 import { moltenCore, blackwingLair, onyxiasLair, zulGurub, ruinsOfAhnQiraj, templeOfAhnQiraj, naxxramas } from '../data/classic-wow-raids'
 import { karazhan, gruulslair, magtheridonslair, serpentshrinecavern, tempestkeep, mounthyjal, blacktemple, sunwellplateau, zulaman } from '../data/tbc-raids'
 import { wrathRaids } from '../data/wrath-raids'
+import { cataRaids } from '../data/cata-raids'
+import { mopRaids } from '../data/mop-raids'
 
 interface IconMapping {
   [wowheadId: number]: string
 }
 
+type Expansion = 'classic' | 'tbc' | 'wrath' | 'cata' | 'mop'
+
 // Extract all unique wowhead_ids from raids
-function extractWowheadIds(): { id: number; name: string; expansion: 'classic' | 'tbc' | 'wrath' }[] {
-  const items: { id: number; name: string; expansion: 'classic' | 'tbc' | 'wrath' }[] = []
+function extractWowheadIds(): { id: number; name: string; expansion: Expansion }[] {
+  const items: { id: number; name: string; expansion: Expansion }[] = []
   const seenIds = new Set<number>()
 
-  // Classic raids
-  const classicRaids = [moltenCore, blackwingLair, onyxiasLair, zulGurub, ruinsOfAhnQiraj, templeOfAhnQiraj, naxxramas]
-  for (const raid of classicRaids) {
-    for (const boss of raid.bosses) {
-      for (const item of boss.items) {
-        if (!seenIds.has(item.wowhead_id)) {
-          seenIds.add(item.wowhead_id)
-          items.push({ id: item.wowhead_id, name: item.name, expansion: 'classic' })
+  function addRaids(raids: Array<{ bosses: Array<{ items: Array<{ wowhead_id: number; name: string }> }> }>, expansion: Expansion) {
+    for (const raid of raids) {
+      for (const boss of raid.bosses) {
+        for (const item of boss.items) {
+          if (!seenIds.has(item.wowhead_id)) {
+            seenIds.add(item.wowhead_id)
+            items.push({ id: item.wowhead_id, name: item.name, expansion })
+          }
         }
       }
     }
   }
+
+  // Classic raids
+  addRaids([moltenCore, blackwingLair, onyxiasLair, zulGurub, ruinsOfAhnQiraj, templeOfAhnQiraj, naxxramas], 'classic')
 
   // TBC raids
-  const tbcRaids = [karazhan, gruulslair, magtheridonslair, serpentshrinecavern, tempestkeep, mounthyjal, blacktemple, sunwellplateau, zulaman]
-  for (const raid of tbcRaids) {
-    for (const boss of raid.bosses) {
-      for (const item of boss.items) {
-        if (!seenIds.has(item.wowhead_id)) {
-          seenIds.add(item.wowhead_id)
-          items.push({ id: item.wowhead_id, name: item.name, expansion: 'tbc' })
-        }
-      }
-    }
-  }
+  addRaids([karazhan, gruulslair, magtheridonslair, serpentshrinecavern, tempestkeep, mounthyjal, blacktemple, sunwellplateau, zulaman], 'tbc')
 
   // WotLK raids
-  for (const raid of wrathRaids) {
-    for (const boss of raid.bosses) {
-      for (const item of boss.items) {
-        if (!seenIds.has(item.wowhead_id)) {
-          seenIds.add(item.wowhead_id)
-          items.push({ id: item.wowhead_id, name: item.name, expansion: 'wrath' })
-        }
-      }
-    }
-  }
+  addRaids(wrathRaids, 'wrath')
+
+  // Cata raids
+  addRaids(cataRaids, 'cata')
+
+  // MoP raids
+  addRaids(mopRaids, 'mop')
 
   return items
 }
 
 // Fetch icon name from Wowhead tooltip API
-async function fetchIconName(wowheadId: number, expansion: 'classic' | 'tbc' | 'wrath'): Promise<string | null> {
+async function fetchIconName(wowheadId: number, expansion: Expansion): Promise<string | null> {
   const url = `https://nether.wowhead.com/tooltip/item/${wowheadId}?dataEnv=1&locale=0`
 
   try {
@@ -91,7 +85,7 @@ async function fetchIconName(wowheadId: number, expansion: 'classic' | 'tbc' | '
 }
 
 // Rate-limited batch fetching
-async function fetchAllIcons(items: { id: number; name: string; expansion: 'classic' | 'tbc' | 'wrath' }[]): Promise<IconMapping> {
+async function fetchAllIcons(items: { id: number; name: string; expansion: Expansion }[]): Promise<IconMapping> {
   const mapping: IconMapping = {}
   const batchSize = 10
   const delayMs = 500 // 500ms between batches to be nice to Wowhead

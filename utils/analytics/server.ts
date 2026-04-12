@@ -1,28 +1,10 @@
-import { PostHog } from 'posthog-node'
-
-// Singleton PostHog client for server-side analytics
-let posthogClient: PostHog | null = null
-
-function getPostHogClient(): PostHog | null {
-  if (!process.env.NEXT_PUBLIC_POSTHOG_KEY) {
-    return null
-  }
-
-  if (!posthogClient) {
-    posthogClient = new PostHog(process.env.NEXT_PUBLIC_POSTHOG_KEY, {
-      host: process.env.NEXT_PUBLIC_POSTHOG_HOST || 'https://us.i.posthog.com',
-      flushAt: 1, // Flush immediately in serverless environment
-      flushInterval: 0,
-    })
-  }
-
-  return posthogClient
-}
+import { getPostHogServerClient } from './posthog-server'
 
 // Event types for type safety
 export type AnalyticsEvent =
   | 'loot_submission_created'
   | 'loot_submission_status_changed'
+  | 'loot_submission_submitted'
   | 'loot_submission_deleted'
   | 'guild_created'
   | 'guild_joined'
@@ -30,43 +12,40 @@ export type AnalyticsEvent =
   | 'character_created'
   | 'character_updated'
   | 'loot_item_awarded'
+  | 'loot_awarded_bulk'
   | 'guild_settings_updated'
   | 'member_role_changed'
   | 'attendance_recorded'
+  | 'attendance_bulk_recorded'
   | 'character_imported'
   | 'loot_item_imported'
+  | 'loot_item_removed_from_list'
+  | 'sheet_import_completed'
   | 'api_error'
+  | 'reserve_run_created'
+  | 'reserve_run_locked'
+  | 'reserve_run_unlocked'
+  | 'reserve_run_completed'
+  | 'reserve_run_deleted'
+  | 'reserve_run_duplicated'
+  | 'reserve_item_awarded'
 
 interface TrackEventParams {
   event: AnalyticsEvent
   userId: string
   properties?: Record<string, any>
+  guildId?: string
 }
 
 /**
- * Track a server-side analytics event
+ * Track a server-side analytics event.
  *
- * Usage:
- * ```
- * await trackEvent({
- *   event: 'loot_submission_status_changed',
- *   userId: user.id,
- *   properties: {
- *     submission_id: submission.id,
- *     old_status: 'pending',
- *     new_status: 'approved',
- *     guild_id: guildId,
- *   }
- * })
- * ```
+ * Pass guildId to associate the event with the guild group in PostHog,
+ * enabling per-guild breakdowns in dashboards.
  */
-export async function trackEvent({ event, userId, properties = {} }: TrackEventParams): Promise<void> {
-  const client = getPostHogClient()
-
-  if (!client) {
-    // PostHog not configured, skip silently
-    return
-  }
+export async function trackEvent({ event, userId, properties = {}, guildId }: TrackEventParams): Promise<void> {
+  const client = getPostHogServerClient()
+  if (!client) return
 
   try {
     client.capture({
@@ -77,12 +56,11 @@ export async function trackEvent({ event, userId, properties = {} }: TrackEventP
         $lib: 'posthog-node',
         environment: process.env.NODE_ENV,
       },
+      ...(guildId ? { groups: { guild: guildId } } : {}),
     })
 
-    // Ensure event is sent before serverless function ends
-    await client.shutdown()
+    await client.flush()
   } catch (error) {
-    // Don't let analytics errors break the application
     console.error('[Analytics] Failed to track event:', error)
   }
 }
@@ -94,11 +72,8 @@ export async function identifyUser(
   userId: string,
   properties: Record<string, any>
 ): Promise<void> {
-  const client = getPostHogClient()
-
-  if (!client) {
-    return
-  }
+  const client = getPostHogServerClient()
+  if (!client) return
 
   try {
     client.identify({
@@ -106,9 +81,34 @@ export async function identifyUser(
       properties,
     })
 
-    await client.shutdown()
+    await client.flush()
   } catch (error) {
     console.error('[Analytics] Failed to identify user:', error)
+  }
+}
+
+/**
+ * Set user properties that only write once (activation milestones).
+ * Subsequent calls with the same key are ignored by PostHog.
+ */
+export async function setUserMilestone(
+  userId: string,
+  milestone: string,
+): Promise<void> {
+  const client = getPostHogServerClient()
+  if (!client) return
+
+  try {
+    client.capture({
+      distinctId: userId,
+      event: '$identify',
+      properties: {
+        $set_once: { [milestone]: new Date().toISOString() },
+      },
+    })
+    await client.flush()
+  } catch (error) {
+    console.error('[Analytics] Failed to set milestone:', error)
   }
 }
 

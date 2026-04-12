@@ -2,10 +2,13 @@ import type { Metadata } from "next";
 import { Poppins } from "next/font/google";
 import Script from "next/script";
 import { GuildContextProvider } from "./contexts/GuildContext";
+import { ExpansionProvider } from "./contexts/ExpansionContext";
 import { NotificationProvider } from "./contexts/NotificationContext";
 import { ThemeProvider } from "./components/ThemeProvider";
 import { SWRProvider } from "./components/SWRProvider";
 import { PostHogProvider } from "./components/PostHogProvider";
+import { SpeedInsights } from "@vercel/speed-insights/next";
+import { Analytics } from "@vercel/analytics/next";
 import NotificationContainer from "./components/NotificationContainer";
 import "./globals.css";
 
@@ -13,6 +16,7 @@ const poppins = Poppins({
   variable: "--font-poppins",
   subsets: ["latin", "latin-ext"],
   weight: ["400", "500", "600", "700"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -98,7 +102,7 @@ const jsonLd = {
         "height": 512
       },
       "sameAs": [
-        "https://discord.gg/bigyikes"
+        "https://discord.gg/JNJewThYAB"
       ]
     },
     {
@@ -131,7 +135,7 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
         {/* Wowhead Tooltip Configuration */}
-        <Script id="wowhead-config" strategy="beforeInteractive">
+        <Script id="wowhead-config" strategy="afterInteractive">
           {`
             var wowhead_tooltips = {
               colorlinks: false,
@@ -143,7 +147,7 @@ export default function RootLayout({
         {/* Wowhead Tooltip Script */}
         <Script
           src="https://wow.zamimg.com/widgets/power.js"
-          strategy="afterInteractive"
+          strategy="lazyOnload"
         />
       </head>
       <body
@@ -158,10 +162,14 @@ export default function RootLayout({
           <SWRProvider>
             <NotificationProvider>
               <GuildContextProvider>
-                <PostHogProvider>
-                  <NotificationContainer />
-                  {children}
-                </PostHogProvider>
+                <ExpansionProvider>
+                  <PostHogProvider>
+                    <NotificationContainer />
+                    {children}
+                    <SpeedInsights />
+                    <Analytics />
+                  </PostHogProvider>
+                </ExpansionProvider>
               </GuildContextProvider>
             </NotificationProvider>
           </SWRProvider>

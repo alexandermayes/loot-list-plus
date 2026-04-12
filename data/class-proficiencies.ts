@@ -36,9 +36,11 @@ export type WowClassName =
   | 'Hunter'
   | 'Rogue'
   | 'Priest'
+  | 'Death Knight'
   | 'Shaman'
   | 'Mage'
   | 'Warlock'
+  | 'Monk'
   | 'Druid'
 
 export interface ClassProficiency {
@@ -145,6 +147,31 @@ export const CLASS_PROFICIENCIES: Record<WowClassName, ClassProficiency> = {
   Warlock: {
     weapons: ['Dagger', 'One-Handed Sword', 'Staff', 'Wand'],
     maxArmorType: 'Cloth',
+  },
+
+  'Death Knight': {
+    weapons: [
+      'One-Handed Axe',
+      'Two-Handed Axe',
+      'One-Handed Mace',
+      'Two-Handed Mace',
+      'One-Handed Sword',
+      'Two-Handed Sword',
+      'Polearm',
+    ],
+    maxArmorType: 'Plate',
+  },
+
+  Monk: {
+    weapons: [
+      'Fist Weapon',
+      'One-Handed Axe',
+      'One-Handed Mace',
+      'One-Handed Sword',
+      'Polearm',
+      'Staff',
+    ],
+    maxArmorType: 'Leather',
   },
 
   Druid: {

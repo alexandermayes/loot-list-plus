@@ -4,7 +4,7 @@
  */
 
 import { SupabaseClient } from '@supabase/supabase-js'
-import { ROLE_POSITIONS, DEFAULT_ROLES, isOfficerPosition, isGuildMasterPosition } from './roles'
+import { ROLE_POSITIONS, DEFAULT_ROLES, isOfficerPosition, isGuildMasterPosition } from '@/domain/guild/roles'
 
 interface GuildRole {
   name: string
@@ -70,6 +70,11 @@ export async function verifyOfficerPermissions(
     .eq('is_active', true)
 
   if (!memberships || memberships.length === 0) {
+    // Fallback: check if user is the guild creator (always has full permissions)
+    const creator = await isGuildCreator(serviceSupabase, userId, guildId)
+    if (creator) {
+      return { hasPermission: true, role: 'Guild Master', position: 100 }
+    }
     return { hasPermission: false, error: 'Not a member of this guild' }
   }
 
@@ -89,6 +94,11 @@ export async function verifyOfficerPermissions(
   }
 
   if (!isOfficerPosition(highestPosition)) {
+    // Fallback: check if user is the guild creator (always has full permissions)
+    const creator = await isGuildCreator(serviceSupabase, userId, guildId)
+    if (creator) {
+      return { hasPermission: true, role: 'Guild Master', position: 100 }
+    }
     return { hasPermission: false, role: highestRole, position: highestPosition, error: 'Insufficient permissions' }
   }
 
@@ -287,6 +297,11 @@ export async function getUserGuildRole(
     .eq('is_active', true)
 
   if (!memberships || memberships.length === 0) {
+    // Fallback: check if user is the guild creator (always has full permissions)
+    const creator = await isGuildCreator(serviceSupabase, userId, guildId)
+    if (creator) {
+      return { role: 'Guild Master', position: 100 }
+    }
     return null
   }
 

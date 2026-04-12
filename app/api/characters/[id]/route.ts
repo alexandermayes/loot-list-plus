@@ -144,7 +144,7 @@ export async function PUT(
 
     // Parse request body
     const body = await request.json()
-    const { name, realm, class_id, spec_id, level, is_main, region } = body
+    const { name, realm, class_id, spec_id, level, is_main, region, guardian_conversion_dismissed } = body
 
     // If setting as main, unset other mains
     if (is_main) {
@@ -165,6 +165,7 @@ export async function PUT(
       level?: number
       is_main?: boolean
       region?: string
+      guardian_conversion_dismissed?: boolean
     } = {
       updated_at: new Date().toISOString(),
     }
@@ -186,6 +187,7 @@ export async function PUT(
     if (level !== undefined) updateData.level = level
     if (is_main !== undefined) updateData.is_main = is_main
     if (region !== undefined) updateData.region = region
+    if (guardian_conversion_dismissed !== undefined) updateData.guardian_conversion_dismissed = guardian_conversion_dismissed
 
     const { data: character, error } = await supabase
       .from('characters')

@@ -130,23 +130,22 @@ export interface Raid {
     exportNames.push(varName);
 
     output += `// ============================================================================\n`;
-    output += `// ${raidName.toUpperCase().replace(/'/g, "\\'")} - ${data.tier}\n`;
+    output += `// ${raidName.toUpperCase()} - ${data.tier}\n`;
     output += `// ============================================================================\n\n`;
     output += `export const ${varName}: Raid = {\n`;
-    output += `  name: '${raidName.replace(/'/g, "\\'")}',\n`;
-    output += `  tier: '${data.tier}',\n`;
+    output += `  name: ${JSON.stringify(raidName)},\n`;
+    output += `  tier: ${JSON.stringify(data.tier)},\n`;
     output += `  bosses: [\n`;
 
     const bosses = Object.entries(data.bosses);
     for (let i = 0; i < bosses.length; i++) {
       const [bossName, items] = bosses[i];
       output += `    {\n`;
-      output += `      name: '${bossName.replace(/'/g, "\\'")}',\n`;
+      output += `      name: ${JSON.stringify(bossName)},\n`;
       output += `      items: [\n`;
 
       for (const item of items) {
-        const escapedName = item.name.replace(/'/g, "\\'");
-        output += `        { name: '${escapedName}', slot: '${item.slot}', wowhead_id: ${item.wowhead_id} },\n`;
+        output += `        { name: ${JSON.stringify(item.name)}, slot: ${JSON.stringify(item.slot)}, wowhead_id: ${item.wowhead_id} },\n`;
       }
 
       output += `      ],\n`;

@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
+import { verifyOfficerPermissions } from '@/utils/server-roles'
 import { trackApiError } from '@/utils/analytics/server'
 import { discordFetch } from '@/lib/discord'
 import { fetchWclReportForDate, getWclReportUrl } from '@/lib/warcraftlogs'
+import { parseDate } from '@/utils/date'
+import { resolveStatus } from '@/domain/scoring'
 
 const EMBED_FIELD_LIMIT = 1024
 
@@ -53,59 +56,19 @@ export async function POST(request: NextRequest) {
 
     const supabase = createServiceRoleClient()
 
-    // Verify caller is an officer
+    const { hasPermission } = await verifyOfficerPermissions(supabase, user.id, guild_id)
+    if (!hasPermission) {
+      return NextResponse.json({ error: 'Only officers can post raid summaries' }, { status: 403 })
+    }
+
     const { data: guild } = await supabase
       .from('guilds')
-      .select('created_by, name, discord_server_id, active_expansion_id')
+      .select('name, discord_server_id, active_expansion_id')
       .eq('id', guild_id)
       .single()
 
     if (!guild) {
       return NextResponse.json({ error: 'Guild not found' }, { status: 404 })
-    }
-
-    const isGuildCreator = guild.created_by === user.id
-
-    if (!isGuildCreator) {
-      const { data: callerCharacters } = await supabase
-        .from('characters')
-        .select('id')
-        .eq('user_id', user.id)
-
-      if (!callerCharacters || callerCharacters.length === 0) {
-        return NextResponse.json({ error: 'Not a member of this guild' }, { status: 403 })
-      }
-
-      const characterIds = callerCharacters.map((c: { id: string }) => c.id)
-
-      const { data: membership } = await supabase
-        .from('character_guild_memberships')
-        .select('role')
-        .eq('guild_id', guild_id)
-        .in('character_id', characterIds)
-        .eq('is_active', true)
-        .limit(1)
-        .single()
-
-      if (!membership) {
-        return NextResponse.json({ error: 'Not a member of this guild' }, { status: 403 })
-      }
-
-      const { data: roleData } = await supabase
-        .from('guild_roles')
-        .select('position')
-        .eq('guild_id', guild_id)
-        .eq('name', membership.role)
-        .single()
-
-      const position = roleData?.position ?? (
-        membership.role === 'Guild Master' ? 100 :
-        membership.role === 'Officer' ? 50 : 0
-      )
-
-      if (position < 50) {
-        return NextResponse.json({ error: 'Only officers can post raid summaries' }, { status: 403 })
-      }
     }
 
     // Parallelize independent queries: settings and raid event
@@ -117,7 +80,7 @@ export async function POST(request: NextRequest) {
         .single(),
       supabase
         .from('raid_events')
-        .select('id, raid_date, notes, wcl_report_code')
+        .select('id, raid_date, notes, wcl_report_code, raid_team_id')
         .eq('id', raid_event_id)
         .eq('guild_id', guild_id)
         .single(),
@@ -132,6 +95,17 @@ export async function POST(request: NextRequest) {
     const raidEvent = raidEventResult.data
     if (!raidEvent) {
       return NextResponse.json({ error: 'Raid event not found' }, { status: 404 })
+    }
+
+    // Get team name if event is assigned to a team
+    let teamName: string | null = null
+    if (raidEvent.raid_team_id) {
+      const { data: teamData } = await supabase
+        .from('raid_teams')
+        .select('name')
+        .eq('id', raidEvent.raid_team_id)
+        .single()
+      teamName = teamData?.name || null
     }
 
     // Get raid title from current phase tiers
@@ -151,7 +125,7 @@ export async function POST(request: NextRequest) {
         .select('name')
         .eq('expansion_id', guild.active_expansion_id)
         .eq('phase', currentPhase)
-        .or('is_guild_active.eq.true,is_guild_active.is.null')
+        .eq('is_guild_active', true)
         .order('id')
 
       if (phaseTiers && phaseTiers.length > 0) {
@@ -164,14 +138,14 @@ export async function POST(request: NextRequest) {
     const [attendanceResult, lootResult] = await Promise.all([
       supabase
         .from('attendance_records')
-        .select('character_name, character_id, signed_up, attended, no_call_no_show, was_late, was_benched')
+        .select('character_name, character_id, signed_up, attended, no_call_no_show, was_late, was_benched, is_excused')
         .eq('raid_event_id', raid_event_id),
       supabase
         .from('loot_history')
         .select(`
           character_name,
           character_id,
-          loot_items!inner (
+          loot_items (
             name,
             wowhead_id
           )
@@ -209,28 +183,26 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Categorize attendance
+    // Categorize attendance using engine's resolveStatus (single source of truth)
     const attended: string[] = []
     const late: string[] = []
     const benched: string[] = []
     const noShow: string[] = []
     const signedUp: string[] = []
+    const excused: string[] = []
 
     if (attendance) {
       for (const record of attendance) {
         const name = (record.character_id && charNameMap.get(record.character_id)) || record.character_name || 'Unknown'
-        if (record.no_call_no_show) {
-          noShow.push(name)
-        } else if (record.was_benched) {
-          benched.push(name)
-        } else if (record.attended) {
-          if (record.was_late) {
-            late.push(name)
-          } else {
-            attended.push(name)
-          }
-        } else if (record.signed_up) {
-          signedUp.push(name)
+        const status = resolveStatus(record)
+        switch (status) {
+          case 'attended': attended.push(name); break
+          case 'late': late.push(name); break
+          case 'benched': benched.push(name); break
+          case 'no_show': noShow.push(name); break
+          case 'excused': excused.push(name); break
+          case 'signed_up': signedUp.push(name); break
+          // 'absent' — no action (not in any list)
         }
       }
     }
@@ -238,7 +210,7 @@ export async function POST(request: NextRequest) {
     const totalRaiders = attended.length + late.length
 
     // Format raid date
-    const raidDate = new Date(raidEvent.raid_date + 'T00:00:00')
+    const raidDate = parseDate(raidEvent.raid_date)
     const formattedDate = raidDate.toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric',
@@ -284,6 +256,15 @@ export async function POST(request: NextRequest) {
       })
     }
 
+    // Excused section
+    if (excused.length > 0) {
+      fields.push({
+        name: `Excused (${excused.length})`,
+        value: truncateField(excused, ', ', '\n... and {n} more'),
+        inline: false,
+      })
+    }
+
     // Loot section
     interface LootRow {
       character_name: string | null
@@ -302,10 +283,25 @@ export async function POST(request: NextRequest) {
         return `${item?.name || 'Unknown Item'} → ${charName}`
       })
 
-      fields.push({
-        name: `Loot (${lootRows.length})`,
-        value: truncateField(lootLines, '\n', '\n... and {n} more'),
-        inline: false,
+      // Split loot into multiple fields if needed (Discord 1024 char limit per field)
+      const lootFields: string[][] = [[]]
+      let currentFieldLen = 0
+      for (const line of lootLines) {
+        const lineLen = line.length + 1 // +1 for newline separator
+        if (currentFieldLen + lineLen > EMBED_FIELD_LIMIT && lootFields[lootFields.length - 1].length > 0) {
+          lootFields.push([])
+          currentFieldLen = 0
+        }
+        lootFields[lootFields.length - 1].push(line)
+        currentFieldLen += lineLen
+      }
+
+      lootFields.forEach((chunk, i) => {
+        fields.push({
+          name: i === 0 ? `Loot (${lootRows.length})` : '\u200b', // invisible char for continuation fields
+          value: chunk.join('\n'),
+          inline: false,
+        })
       })
     }
 
@@ -341,7 +337,7 @@ export async function POST(request: NextRequest) {
 
     // Compose the embed
     const embed = {
-      title: `Raid Summary — ${raidTitle}`,
+      title: `Raid Summary — ${raidTitle}${teamName ? ` (${teamName})` : ''}`,
       description,
       color: 0xff8000,
       fields,

@@ -1,5 +1,6 @@
 import { createClient, getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
+import { verifyOfficerPermissions } from '@/utils/server-roles'
 import { NextRequest, NextResponse } from 'next/server'
 
 /**
@@ -32,59 +33,13 @@ export async function PATCH(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const supabase = await createClient()
-
-    // Check if user is guild creator
-    const { data: guild } = await supabase
-      .from('guilds')
-      .select('created_by')
-      .eq('id', guildId)
-      .single()
-
-    const isGuildCreator = guild?.created_by === user.id
-
-    // If not guild creator, verify user is an officer
-    if (!isGuildCreator) {
-      const { data: userCharacters } = await supabase
-        .from('characters')
-        .select('id')
-        .eq('user_id', user.id)
-
-      if (!userCharacters || userCharacters.length === 0) {
-        return NextResponse.json({ error: 'No characters found' }, { status: 403 })
-      }
-
-      const characterIds = userCharacters.map(c => c.id)
-
-      const { data: memberships } = await supabase
-        .from('character_guild_memberships')
-        .select('role')
-        .eq('guild_id', guildId)
-        .in('character_id', characterIds)
-        .eq('is_active', true)
-
-      if (!memberships || memberships.length === 0) {
-        return NextResponse.json({ error: 'Not a member of this guild' }, { status: 403 })
-      }
-
-      const membership = memberships[0]
-
-      const { data: roleData } = await supabase
-        .from('guild_roles')
-        .select('position')
-        .eq('guild_id', guildId)
-        .eq('name', membership.role)
-        .single()
-
-      const position = roleData?.position ?? (
-        membership.role === 'Guild Master' ? 100 :
-        membership.role === 'Officer' ? 50 : 0
-      )
-
-      if (position < 50) {
-        return NextResponse.json({ error: 'Officer permissions required' }, { status: 403 })
-      }
+    const serviceSupabase = createServiceRoleClient()
+    const { hasPermission } = await verifyOfficerPermissions(serviceSupabase, user.id, guildId)
+    if (!hasPermission) {
+      return NextResponse.json({ error: 'Officer permissions required' }, { status: 403 })
     }
+
+    const supabase = await createClient()
 
     // Verify expansion belongs to this guild
     const { data: expansion, error: expError } = await supabase
@@ -114,9 +69,6 @@ export async function PATCH(
     if (phaseTierIds.length === 0) {
       return NextResponse.json({ error: `No tiers found for phase ${phase}` }, { status: 404 })
     }
-
-    // Use service role client to bypass RLS
-    const serviceSupabase = createServiceRoleClient()
 
     // Step 1: Update current_phase on the expansion
     // This controls which phases are visible to raiders (all phases <= current_phase)

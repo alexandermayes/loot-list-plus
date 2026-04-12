@@ -55,7 +55,7 @@ export function ExpansionGuard({ children }: { children: React.ReactNode }) {
               </p>
               <div className="flex flex-col gap-2">
                 {isOfficer && (
-                  <Button onClick={() => router.push('/admin/expansions')}>
+                  <Button onClick={() => router.push('/expansions')}>
                     Go to manage expansions
                   </Button>
                 )}

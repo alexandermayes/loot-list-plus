@@ -3,7 +3,7 @@ import { createClient, getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { seedExpansionForGuild } from '@/app/services/expansionSeeder'
 import { getCached, invalidateCache, cacheKeys } from '@/utils/cache'
-import { trackApiError, trackEvent } from '@/utils/analytics/server'
+import { trackApiError, trackEvent, setUserMilestone } from '@/utils/analytics/server'
 
 // POST - Create a new guild
 export async function POST(request: NextRequest) {
@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
       .from('user_preferences')
       .select('discord_verified')
       .eq('user_id', user.id)
-      .single()
+      .maybeSingle()
 
     if (!prefs?.discord_verified) {
       return NextResponse.json(
@@ -167,6 +167,24 @@ export async function POST(request: NextRequest) {
       // Continue anyway - roles can be created later via trigger or manually
     }
 
+    // Auto-generate an invite code so the admin can share immediately
+    const inviteCode = Math.random().toString(36).substring(2, 10).toUpperCase()
+    const { error: inviteError } = await serviceSupabase
+      .from('guild_invite_codes')
+      .insert({
+        guild_id: guild.id,
+        code: inviteCode,
+        created_by: user.id,
+        is_active: true,
+        max_uses: null,
+        expires_at: null,
+      })
+
+    if (inviteError) {
+      console.error('Error creating invite code:', inviteError)
+      // Non-critical — admin can create one manually in settings
+    }
+
     // Check if user has a properly configured character (with class set)
     const { data: existingCharacters } = await serviceSupabase
       .from('characters')
@@ -204,16 +222,6 @@ export async function POST(request: NextRequest) {
         )
       }
 
-      // Also create legacy guild_members record for backwards compatibility
-      await serviceSupabase
-        .from('guild_members')
-        .upsert({
-          guild_id: guild.id,
-          user_id: user.id,
-          role: 'Guild Master',
-          is_active: true,
-          joined_via: 'manual'
-        }, { onConflict: 'guild_id,user_id' })
     } else {
       // No valid character - user will be prompted to create one
       // Guild Master role will be assigned when character is created (CreateCharacterModal checks created_by)
@@ -233,7 +241,8 @@ export async function POST(request: NextRequest) {
     // Invalidate guilds cache after creating
     await invalidateCache(cacheKeys.userGuilds(user.id))
 
-    trackEvent({ event: 'guild_created', userId: user.id, properties: { guild_id: guild.id, guild_name: guild.name } })
+    trackEvent({ event: 'guild_created', userId: user.id, guildId: guild.id, properties: { guild_id: guild.id, guild_name: guild.name } })
+    setUserMilestone(user.id, 'first_guild_created_at')
 
     return NextResponse.json({
       success: true,

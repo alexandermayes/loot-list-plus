@@ -14,6 +14,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { trackClientEvent } from '@/utils/analytics/client'
+import { CreateGuildModal } from '@/app/components/CreateGuildModal'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { Cancel01Icon, InformationCircleIcon } from '@hugeicons/core-free-icons'
 
@@ -28,6 +29,7 @@ export default function WelcomeScreen() {
   const [availableGuilds, setAvailableGuilds] = useState<any[]>([])
   const [discordError, setDiscordError] = useState('')
   const [joiningGuildId, setJoiningGuildId] = useState<string | null>(null)
+  const [showCreateGuild, setShowCreateGuild] = useState(false)
   const router = useRouter()
   const supabase = createClient()
 
@@ -310,22 +312,20 @@ export default function WelcomeScreen() {
               </div>
             </div>
 
-            {/* Help Section */}
-            <div className="flex flex-col gap-2.5 items-center p-4 sm:p-6 rounded-[24px] sm:rounded-[40px] w-full lg:w-[409px] mx-auto">
-              <div className="flex items-center justify-center gap-2.5">
-                <Image
-                  src="/icons/help.svg"
-                  alt="Help"
-                  width={20}
-                  height={20}
-                  className="w-5 h-5"
-                />
-                <p className="font-poppins font-bold text-lg text-foreground">
-                  Need help?
-                </p>
-              </div>
+            {/* Create Guild CTA */}
+            <div className="flex flex-col gap-3 items-center p-4 sm:p-6 rounded-[24px] sm:rounded-[40px] w-full lg:w-[409px] mx-auto">
               <p className="font-poppins font-normal text-sm text-muted-foreground text-center">
-                Ask your guild officer for an invite code or Discord link. Setting up a new guild? You'll become the first officer.
+                Setting up a new guild? Create one and become the first officer.
+              </p>
+              <Button
+                variant="outline"
+                onClick={() => setShowCreateGuild(true)}
+                className="w-full max-w-xs"
+              >
+                Create a guild
+              </Button>
+              <p className="font-poppins font-normal text-xs text-muted-foreground text-center">
+                Ask your guild officer for an invite code or Discord link.
               </p>
             </div>
           </div>
@@ -463,6 +463,16 @@ export default function WelcomeScreen() {
           </div>
         </div>
       </Modal>
+
+      {/* Create Guild Modal */}
+      <CreateGuildModal
+        isOpen={showCreateGuild}
+        onClose={() => setShowCreateGuild(false)}
+        onSuccess={() => {
+          setShowCreateGuild(false)
+          router.refresh()
+        }}
+      />
     </>
   )
 }

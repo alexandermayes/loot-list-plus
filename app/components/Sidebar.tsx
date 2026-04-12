@@ -16,6 +16,8 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { Cancel01Icon, Settings01Icon, Notification03Icon } from '@hugeicons/core-free-icons'
 import { usePendingSubmissionCount } from '../hooks/usePendingSubmissionCount'
+import { trackClientEvent } from '@/utils/analytics/client'
+import { hasFeature } from '@/domain/guild/feature-flags'
 
 // Lazy load modal to reduce initial bundle size
 const CreateGuildModal = dynamic(() => import('./CreateGuildModal').then(mod => ({ default: mod.CreateGuildModal })), {
@@ -131,6 +133,7 @@ export default function Sidebar({ currentView = 'overview', onViewChange, isMobi
 
   const handleSwitchGuild = async (guildId: string) => {
     setGuildDropdownOpen(false)
+    trackClientEvent('guild_switched', { guild_id: guildId })
     await switchGuild(guildId)
     router.refresh()
   }
@@ -276,12 +279,13 @@ export default function Sidebar({ currentView = 'overview', onViewChange, isMobi
         'master-sheet': '/master-sheet',
         'loot-list': '/loot-list',
         'attendance': '/attendance',
-        'guild-settings': '/admin/guild-settings',
+        'guild-settings': '/guild-settings',
         'loot-submissions': '/loot-submissions',
         'loot-settings': '/loot-settings',
-        'raid-tracking': '/admin/raid-tracking',
-        'prio-list': '/admin/prio-list',
-        'addon': '/admin/addon',
+        'raid-tracking': '/raid-tracking',
+        'raid-teams': '/raid-teams',
+        'audit-log': '/audit-log',
+        'reserve': '/reserve',
       }
       router.push(routeMap[view] || '/overview')
     }
@@ -295,13 +299,15 @@ export default function Sidebar({ currentView = 'overview', onViewChange, isMobi
     { name: 'Master Sheet', view: 'master-sheet', icon: '/icons/master-sheet.svg' },
     { name: 'Loot Lists', view: 'loot-list', icon: '/icons/loot-lists.svg' },
     { name: 'Attendance', view: 'attendance', icon: '/icons/attendance.svg' },
+    { name: 'Reserve', view: 'reserve', icon: '/icons/reserve.svg' },
   ]
 
   const adminItems = isOfficer ? [
     { name: 'Raid Tracking', view: 'raid-tracking', icon: '/icons/raid-tracking.svg' },
     { name: 'Loot Submissions', view: 'loot-submissions', icon: '/icons/master-loot.svg' },
     { name: 'Loot Management', view: 'loot-settings', icon: '/icons/guild-settings.svg' },
-    { name: 'WoW Addon', view: 'addon', icon: '/icons/raid-tracking.svg' },
+    ...(hasFeature(activeGuild, 'raid_teams') ? [{ name: 'Raid Teams', view: 'raid-teams', icon: '/icons/user-multiple.svg' }] : []),
+    ...(hasFeature(activeGuild, 'audit_log') ? [{ name: 'Audit Log', view: 'audit-log', icon: '/icons/monitor.svg' }] : []),
   ] : []
 
   const isActive = (view: string) => {
@@ -314,14 +320,15 @@ export default function Sidebar({ currentView = 'overview', onViewChange, isMobi
       'master-sheet': '/master-sheet',
       'loot-list': '/loot-list',
       'attendance': '/attendance',
-      'guild-settings': '/admin/guild-settings',
+      'guild-settings': '/guild-settings',
       'loot-submissions': '/loot-submissions',
       'loot-settings': '/loot-settings',
-      'raid-tracking': '/admin/raid-tracking',
-      'prio-list': '/admin/prio-list',
-      'addon': '/admin/addon',
+      'raid-tracking': '/raid-tracking',
+      'raid-teams': '/raid-teams',
+      'audit-log': '/audit-log',
+      'reserve': '/reserve',
     }
-    return pathname === routeMap[view]
+    return pathname === routeMap[view] || (view === 'reserve' && pathname.startsWith('/reserve'))
   }
 
   const currentMembership = userGuilds.find(g => g.guild.id === activeGuild?.id)
@@ -788,7 +795,7 @@ export default function Sidebar({ currentView = 'overview', onViewChange, isMobi
           </Button>
 
           <a
-            href="https://discord.gg/WWaUQZMz9M"
+            href="https://discord.gg/JNJewThYAB"
             target="_blank"
             rel="noopener noreferrer"
             className="w-full px-3.5 py-2 flex items-center gap-3 rounded-[40px] transition font-poppins font-medium text-[13px] text-foreground hover:bg-muted"
@@ -894,7 +901,7 @@ export default function Sidebar({ currentView = 'overview', onViewChange, isMobi
                 <img
                   src="https://wow.zamimg.com/images/wow/icons/large/inv_shirt_guildtabard_01.jpg"
                   alt="Guild Tabard"
-                  className="w-10 h-10 rounded-lg border-2 border-border/50 shadow-md"
+                  className="w-10 h-10 rounded-lg border-2 border-border shadow-md"
                 />
                 <div>
                   <h3 className="text-[20px] font-bold text-foreground">Join a guild</h3>
@@ -1107,7 +1114,7 @@ export default function Sidebar({ currentView = 'overview', onViewChange, isMobi
                             <img
                               src={`https://cdn.discordapp.com/icons/${guild.discord_server_id}/${guild.discord_icon}.png`}
                               alt={guild.discord_name || guild.name}
-                              className="w-10 h-10 rounded-full"
+                              className="w-10 h-10 rounded-full border border-border"
                             />
                           )}
                           <div className="flex-1 min-w-0">

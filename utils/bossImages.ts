@@ -234,7 +234,156 @@ const bossIconNames: Record<string, string> = {
   'Felmyst': 'spell_shadow_demonicfortitude',
   'Eredar Twins': 'spell_shadow_shadowfury',
   'M\'uru': 'spell_holy_circleofrenewal',
-  'Kil\'jaeden': 'achievement_boss_kiljaedan'
+  'Kil\'jaeden': 'achievement_boss_kiljaedan',
+
+  // ==================== WotLK ====================
+
+  // Naxxramas (Wrath) - Most shared with Classic, add WotLK-specific name variants
+  'Four Horsemen': 'inv_sword_39',
+
+  // Eye of Eternity
+  'Malygos': 'spell_arcane_mindmastery',
+
+  // Obsidian Sanctum
+  'Sartharion': 'inv_misc_head_dragon_01',
+
+  // Ulduar
+  'Flame Leviathan': 'ability_vehicle_demolisherflamecatapult',
+  'Ignis the Furnace Master': 'spell_fire_immolation',
+  'Razorscale': 'achievement_boss_razorscale',
+  'XT-002 Deconstructor': 'inv_misc_bomb_05',
+  'Assembly of Iron': 'spell_nature_lightningoverload',
+  'Kologarn': 'spell_nature_earthquake',
+  'Auriaya': 'ability_hunter_pet_cat',
+  'Hodir': 'spell_frost_icestorm',
+  'Thorim': 'achievement_boss_thorim',
+  'Freya': 'inv_misc_herb_frostlotus',
+  'Mimiron': 'spell_fire_selfdestruct',
+  'General Vezax': 'spell_shadow_shadesofdarkness',
+  'Yogg-Saron': 'spell_shadow_psychichorrors',
+  'Algalon the Observer': 'spell_arcane_starfire',
+
+  // Trial of the Crusader
+  'Northrend Beasts': 'ability_hunter_pet_devilsaur',
+  'Lord Jaraxxus': 'spell_fire_felimmolation',
+  'Faction Champions': 'achievement_arena_2v2_7',
+  'Twin Val\'kyr': 'spell_holy_divinepurpose',
+  'Anub\'arak': 'achievement_boss_anubarak',
+
+  // Onyxia's Lair (Wrath) - already have 'Onyxia' above
+
+  // Icecrown Citadel
+  'Lord Marrowgar': 'achievement_boss_lordmarrowgar',
+  'Lady Deathwhisper': 'achievement_boss_ladydeathwhisper',
+  'Gunship Battle': 'ability_vehicle_siegeenginecannon',
+  'Deathbringer Saurfang': 'achievement_boss_saurfang',
+  'Festergut': 'ability_creature_disease_02',
+  'Rotface': 'ability_creature_poison_02',
+  'Professor Putricide': 'spell_shadow_fumble',
+  'Blood Prince Council': 'achievement_boss_princekeleseth',
+  'Blood-Queen Lana\'thel': 'spell_shadow_lifedrain',
+  'Valithria Dreamwalker': 'spell_nature_healingtouch',
+  'Sindragosa': 'achievement_boss_sindragosa',
+  'The Lich King': 'achievement_boss_lichking',
+
+  // Ruby Sanctum
+  'Saviana Ragefire': 'spell_fire_burnout',
+  'Halion': 'spell_shadow_twilight',
+
+  // ==================== Cataclysm ====================
+
+  // Blackwing Descent
+  'Magmaw': 'ability_hunter_pet_worm',
+  'Omnotron Defense System': 'spell_fire_selfdestruct',
+  'Chimaeron': 'ability_hunter_pet_devilsaur',
+  'Atramedes': 'spell_shadow_detectinvisibility',
+  'Maloriak': 'spell_shadow_fumble',
+  // 'Nefarian' already defined in BWL section
+
+  // Bastion of Twilight
+  'Halfus Wyrmbreaker': 'ability_warrior_titansgrip',
+  'Theralion and Valiona': 'spell_shadow_twilight',
+  'Ascendant Council': 'spell_nature_elementalshields',
+  'Cho\'gall': 'spell_shadow_shadowandflame',
+  'Sinestra': 'inv_misc_head_dragon_01',
+
+  // Throne of the Four Winds
+  'Conclave of Wind': 'spell_nature_cyclone',
+  'Al\'Akir': 'spell_nature_stormreach',
+
+  // Firelands
+  'Beth\'tilac': 'ability_hunter_pet_spider',
+  'Lord Rhyolith': 'inv_misc_volatileearth',
+  'Alysrazor': 'inv_misc_birdbeck_02',
+  'Shannox': 'achievement_boss_shannox',
+  'Baleroc': 'spell_fire_fireball02',
+  'Majordomo Staghelm': 'ability_druid_catform',
+  // 'Ragnaros' already defined in MC section - Cata version uses same icon
+
+  // Dragon Soul
+  'Morchok': 'spell_nature_earthquake',
+  'Warlord Zon\'ozz': 'spell_shadow_shadowandflame',
+  'Yor\'sahj the Unsleeping': 'spell_shadow_psychicscream',
+  'Hagara the Stormbinder': 'spell_frost_arcticwinds',
+  'Ultraxion': 'spell_shadow_twilight',
+  'Warmaster Blackhorn': 'ability_vehicle_siegeenginecannon',
+  'Spine of Deathwing': 'inv_misc_monsterscales_07',
+  'Madness of Deathwing': 'spell_deathknight_armyofthedead',
+
+  // ==================== Mists of Pandaria ====================
+
+  // Mogu'shan Vaults
+  'The Stone Guard': 'spell_nature_shamanrage',
+  'Feng the Accursed': 'spell_arcane_arcaneresilience',
+  'Gara\'jal the Spiritbinder': 'spell_shadow_ritualofsacrifice',
+  'The Spirit Kings': 'ability_monk_roundhousekick',
+  'Elegon': 'spell_arcane_starfire',
+  'Will of the Emperor': 'ability_monk_jab',
+
+  // Heart of Fear
+  'Imperial Vizier Zor\'lok': 'spell_nature_wispsplode',
+  'Blade Lord Ta\'yak': 'spell_nature_cyclone',
+  'Garalon': 'ability_hunter_pet_silithid',
+  'Wind Lord Mel\'jarak': 'ability_hunter_pet_tallstrider',
+  'Amber-Shaper Un\'sok': 'ability_creature_poison_02',
+  'Grand Empress Shek\'zeer': 'sha_spell_shadow_shadesofdarkness',
+
+  // Terrace of Endless Spring
+  'Protectors of the Endless': 'spell_nature_healingtouch',
+  'Tsulong': 'inv_misc_head_dragon_green',
+  'Lei Shi': 'inv_misc_volatilewater',
+  'Sha of Fear': 'sha_spell_fire_bluerainoffire',
+
+  // Throne of Thunder
+  'Jin\'rokh the Breaker': 'achievement_boss_jinrokhthebreaker',
+  'Horridon': 'achievement_boss_horridon',
+  'Council of Elders': 'achievement_boss_councilofelders',
+  'Tortos': 'achievement_boss_tortos',
+  'Megaera': 'achievement_boss_megaera',
+  'Ji-Kun': 'ability_hunter_pet_tallstrider',
+  'Durumu the Forgotten': 'achievement_boss_durumu',
+  'Primordius': 'achievement_boss_primordius',
+  'Dark Animus': 'achievement_boss_darkanimus',
+  'Iron Qon': 'ability_monk_tigerslust',
+  'Twin Consorts': 'spell_arcane_arcane04',
+  'Lei Shen': 'achievement_boss_leishen',
+  'Ra-den': 'spell_nature_lightningoverload',
+
+  // Siege of Orgrimmar
+  'Immerseus': 'achievement_boss_immerseus',
+  'The Fallen Protectors': 'ability_monk_cranekick',
+  'Norushen': 'achievement_boss_norushen',
+  'Sha of Pride': 'inv_elemental_primal_shadow',
+  'Galakras': 'achievement_boss_galakras',
+  'Iron Juggernaut': 'achievement_boss_ironjuggernaut',
+  'Kor\'kron Dark Shaman': 'spell_nature_shamanrage',
+  'General Nazgrim': 'ability_warrior_shockwave',
+  'Malkorok': 'achievement_boss_malkorok',
+  'Spoils of Pandaria': 'inv_misc_treasurechest04a',
+  'Thok the Bloodthirsty': 'achievement_boss_thokthebloodthirsty',
+  'Siegecrafter Blackfuse': 'spell_fire_selfdestruct',
+  'Paragons of the Klaxxi': 'ability_hunter_pet_silithid',
+  'Garrosh Hellscream': 'achievement_boss_garrosh'
 }
 
 /**

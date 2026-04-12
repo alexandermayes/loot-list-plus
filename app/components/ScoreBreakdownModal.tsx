@@ -27,9 +27,6 @@ interface GuildSettings {
   rank_modifier_member?: number
   bad_luck_bonus_per_loss?: number
   bad_luck_bonus_max?: number
-  priority_bonus_role?: number
-  priority_bonus_class_spec?: number
-  priority_bonus_character?: number
   // Trial system
   trial_penalty_enabled?: boolean
   trial_penalty_value?: number
@@ -51,9 +48,6 @@ export default function ScoreBreakdownModal({ open, onClose, guildSettings }: Sc
   const memberModifier = guildSettings?.rank_modifier_member ?? 0
   const blbPerLoss = guildSettings?.bad_luck_bonus_per_loss ?? 1
   const blbMax = guildSettings?.bad_luck_bonus_max ?? 5
-  const priorityRole = guildSettings?.priority_bonus_role ?? 5
-  const priorityClassSpec = guildSettings?.priority_bonus_class_spec ?? 3
-  const priorityCharacter = guildSettings?.priority_bonus_character ?? 2
   const trialPenaltyEnabled = guildSettings?.trial_penalty_enabled ?? false
   const trialPenaltyValue = guildSettings?.trial_penalty_value ?? -2
 
@@ -174,21 +168,21 @@ export default function ScoreBreakdownModal({ open, onClose, guildSettings }: Sc
               </div>
               <div>
                 <h3 className="text-foreground font-medium text-[14px]">Priority bonus</h3>
-                <p className="text-muted-foreground text-[12px]">Stacking bonuses</p>
+                <p className="text-muted-foreground text-[12px]">Officer-set point adjustments</p>
               </div>
             </div>
             <p className="text-foreground-secondary text-[13px] mb-2">
-              Officers can set item priorities. Priority 1 gets full bonus, priority 2 gets half, etc.
+              Officers can set a priority on an item for a role, spec, or specific raider. Each priority is a direct point value and they stack.
             </p>
             <div className="bg-background-elevated rounded-md p-3 text-[12px] space-y-1">
               <p className="text-muted-foreground">
-                <span className="text-foreground">Role Priority:</span> up to +{priorityRole} points
+                <span className="text-foreground">Role priority:</span> adds its point value when your role matches
               </p>
               <p className="text-muted-foreground">
-                <span className="text-foreground">Class/Spec Priority:</span> up to +{priorityClassSpec} points
+                <span className="text-foreground">Class/spec priority:</span> adds its point value when your spec matches
               </p>
               <p className="text-muted-foreground">
-                <span className="text-foreground">Character Priority:</span> up to +{priorityCharacter} points
+                <span className="text-foreground">Character priority:</span> adds its point value when set on you specifically
               </p>
             </div>
           </div>

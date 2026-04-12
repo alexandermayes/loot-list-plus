@@ -8,7 +8,7 @@ import { HugeiconsIcon } from '@hugeicons/react'
 import { Add01Icon } from '@hugeicons/core-free-icons'
 import { Heading } from '@/components/ui/typography'
 import { Button } from '@/components/ui/button'
-import { LoadingSpinner } from '@/components/ui/loading-spinner'
+import { Skeleton } from '@/components/ui/skeletons'
 import { trackClientEvent } from '@/utils/analytics/client'
 
 // Lazy load modals to reduce initial bundle size
@@ -35,8 +35,32 @@ export default function ManageCharactersPage() {
 
   if (loading) {
     return (
-      <div className="p-8 flex items-center justify-center min-h-[40vh]">
-        <LoadingSpinner />
+      <div className="p-4 sm:p-6 lg:p-8 space-y-6">
+        {/* Header skeleton */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <Skeleton className="h-8 w-48" />
+            <Skeleton className="h-5 w-72 mt-1" />
+          </div>
+          <Skeleton className="h-12 w-48 rounded-[52px]" />
+        </div>
+        {/* Section label skeleton */}
+        <div>
+          <Skeleton className="h-6 w-36 mb-4 ml-2" />
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {Array.from({ length: 2 }).map((_, i) => (
+              <div key={i} className="bg-background-elevated border border-border rounded-xl p-5">
+                <div className="flex items-center gap-4">
+                  <Skeleton className="w-12 h-12 rounded-full" />
+                  <div className="flex-1 space-y-2">
+                    <Skeleton className="h-5 w-32" />
+                    <Skeleton className="h-4 w-24" />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     )
   }

@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient, getAuthenticatedUser } from '@/utils/supabase/server'
 
-// GET - Get user's active guild
+// GET - Get user's active guild (reads from user_active_characters, the source of truth)
 export async function GET() {
   try {
-    // Fast auth check using getSession (no network call)
     const { user, error: authError } = await getAuthenticatedUser()
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -12,36 +11,28 @@ export async function GET() {
 
     const supabase = await createClient()
 
-    // Get active guild
-    const { data: activeGuild, error: activeGuildError } = await supabase
-      .from('user_active_guilds')
-      .select(`
-        active_guild_id,
-        guild:guilds (
-          id,
-          name,
-          realm,
-          faction,
-          discord_server_id,
-          created_by,
-          is_active,
-          require_discord_verification,
-          created_at
-        )
-      `)
+    const { data: activeData } = await supabase
+      .from('user_active_characters')
+      .select('active_guild_id')
       .eq('user_id', user.id)
-      .single()
+      .maybeSingle()
 
-    if (activeGuildError || !activeGuild) {
+    if (!activeData?.active_guild_id) {
       return NextResponse.json(
         { error: 'No active guild found' },
         { status: 404 }
       )
     }
 
+    const { data: guild } = await supabase
+      .from('guilds')
+      .select('id, name, realm, faction, discord_server_id, created_by, is_active, require_discord_verification, created_at')
+      .eq('id', activeData.active_guild_id)
+      .single()
+
     return NextResponse.json({
-      active_guild_id: activeGuild.active_guild_id,
-      guild: activeGuild.guild
+      active_guild_id: activeData.active_guild_id,
+      guild
     })
   } catch (error) {
     console.error('Error in GET /api/user/active-guild:', error)
@@ -74,22 +65,13 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Verify user is a member of this guild (check both old and new systems)
-    // Check old system first
-    const { data: oldMembership } = await supabase
-      .from('guild_members')
-      .select('id')
-      .eq('user_id', user.id)
-      .eq('guild_id', guild_id)
-      .maybeSingle()
-
-    // Check new character-based system
-    let hasCharacterMembership = false
+    // Verify user is a member of this guild via character memberships
     const { data: userCharacters } = await supabase
       .from('characters')
       .select('id')
       .eq('user_id', user.id)
 
+    let isMember = false
     if (userCharacters && userCharacters.length > 0) {
       const characterIds = userCharacters.map(c => c.id)
       const { data: charMembership } = await supabase
@@ -100,19 +82,19 @@ export async function POST(request: NextRequest) {
         .eq('is_active', true)
         .limit(1)
 
-      hasCharacterMembership = !!(charMembership && charMembership.length > 0)
+      isMember = !!(charMembership && charMembership.length > 0)
     }
 
-    if (!oldMembership && !hasCharacterMembership) {
+    if (!isMember) {
       return NextResponse.json(
         { error: 'You are not a member of this guild' },
         { status: 403 }
       )
     }
 
-    // Upsert active guild
+    // Update active guild in user_active_characters (source of truth for GuildContext)
     const { error: upsertError } = await supabase
-      .from('user_active_guilds')
+      .from('user_active_characters')
       .upsert({
         user_id: user.id,
         active_guild_id: guild_id,

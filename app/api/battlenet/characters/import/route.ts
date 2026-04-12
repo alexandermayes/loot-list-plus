@@ -34,6 +34,7 @@ const BLIZZARD_CLASS_NAME_MAP: Record<string, string> = {
   Shaman: 'Shaman',
   Mage: 'Mage',
   Warlock: 'Warlock',
+  Monk: 'Monk',
   Druid: 'Druid',
 }
 
@@ -331,18 +332,6 @@ export async function POST(request: NextRequest) {
         // Non-critical, continue
       }
 
-      // Ensure guild_members record exists
-      await supabase
-        .from('guild_members')
-        .upsert(
-          {
-            guild_id: guildId,
-            user_id: user.id,
-            role: 'Member',
-            is_active: true,
-          },
-          { onConflict: 'guild_id,user_id' }
-        )
     }
 
     // Import gear if requested

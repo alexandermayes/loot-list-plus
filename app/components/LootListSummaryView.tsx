@@ -77,18 +77,39 @@ export default function LootListSummaryView({
 
   if (loading) {
     return (
-      <div className="space-y-3">
-        {[1, 2, 3, 4, 5].map(i => (
-          <div key={i} className="bg-background-elevated border border-border rounded-xl p-5 animate-pulse">
-            <div className="flex items-start justify-between">
-              <div className="space-y-2">
-                <div className="h-5 w-48 bg-muted rounded" />
-                <div className="h-4 w-32 bg-muted rounded" />
+      <div className="space-y-4">
+        {/* Boss filter skeleton */}
+        <div className="flex items-center gap-3">
+          <div className="h-4 w-20 bg-muted rounded animate-pulse" />
+          <div className="h-9 w-48 bg-muted rounded-[52px] animate-pulse" />
+        </div>
+        {/* Item card skeletons */}
+        <div className="space-y-3">
+          {[1, 2, 3, 4, 5].map(i => (
+            <div key={i} className="bg-background-elevated border border-border rounded-xl overflow-hidden animate-pulse">
+              <div className="p-4">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="space-y-2 flex-1">
+                    <div className="h-5 w-48 bg-muted rounded" />
+                    <div className="flex items-center gap-3">
+                      <div className="h-3 w-24 bg-muted rounded" />
+                      <div className="h-3 w-16 bg-muted rounded" />
+                    </div>
+                  </div>
+                  <div className="h-8 w-16 bg-muted rounded-full" />
+                </div>
+                {/* Player pills skeleton */}
+                <div className="mt-3 pt-3 border-t border-border/50">
+                  <div className="flex flex-wrap gap-2">
+                    {Array.from({ length: 3 }).map((_, j) => (
+                      <div key={j} className="h-7 w-24 bg-muted rounded-full" />
+                    ))}
+                  </div>
+                </div>
               </div>
-              <div className="h-8 w-24 bg-muted rounded-full" />
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
     )
   }
@@ -98,7 +119,7 @@ export default function LootListSummaryView({
       <EmptyState
         icon={ScrollIcon}
         title="No ranked items"
-        description="No approved loot lists found for this tier"
+        description="No approved Loot Lists for this tier yet."
         variant="card"
       />
     )
@@ -132,7 +153,11 @@ export default function LootListSummaryView({
       <div className="space-y-3">
         {sortedItems.map((item) => {
           const isExpanded = expandedItems.has(item.item_id)
-          const displayPlayers = isExpanded ? item.players : item.players.slice(0, 3)
+          const sortedPlayers = [...item.players].sort((a, b) => {
+            if (a.primary_rank !== b.primary_rank) return b.primary_rank - a.primary_rank
+            return b.item_rank - a.item_rank
+          })
+          const displayPlayers = isExpanded ? sortedPlayers : sortedPlayers.slice(0, 3)
           const hasMore = item.players.length > 3
 
           return (
@@ -174,15 +199,7 @@ export default function LootListSummaryView({
                 {/* Players List */}
                 <div className="mt-3 pt-3 border-t border-border/50">
                   <div className="flex flex-wrap gap-2">
-                    {displayPlayers
-                      .sort((a, b) => {
-                        // Sort by primary rank first, then by item rank
-                        if (a.primary_rank !== b.primary_rank) {
-                          return a.primary_rank - b.primary_rank
-                        }
-                        return a.item_rank - b.item_rank
-                      })
-                      .map((player) => (
+                    {displayPlayers.map((player) => (
                         <div
                           key={player.character_id}
                           className="flex items-center gap-1.5 px-2.5 py-1 bg-background-inset border border-border rounded-full"
@@ -194,7 +211,7 @@ export default function LootListSummaryView({
                             {player.character_name}
                           </span>
                           <span className="text-[10px] text-muted-foreground">
-                            #{player.primary_rank}-{player.item_rank}
+                            #{player.item_rank}
                           </span>
                         </div>
                       ))}
@@ -231,7 +248,7 @@ export default function LootListSummaryView({
       {/* Legend */}
       <div className="bg-background-elevated border border-border rounded-xl p-4">
         <p className="text-foreground-muted text-[12px]">
-          Player format: <span className="text-foreground">#Slot-Rank</span> (e.g., #1-3 = Priority slot 1, rank 3). Lower numbers = higher priority.
+          <span className="text-foreground">#N</span> = loot list rank (50 is highest priority, 1 is lowest). Sorted by priority within each item.
         </p>
       </div>
     </div>

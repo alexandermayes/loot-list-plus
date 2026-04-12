@@ -3,6 +3,7 @@ import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { verifyOfficerPermissions } from '@/utils/server-roles'
 import { trackApiError } from '@/utils/analytics/server'
+import { logAudit } from '@/utils/audit/log'
 
 interface UpdateBLPRequest {
   guild_id: string
@@ -51,9 +52,12 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (!settings?.blp_enabled) {
-      // BLP not enabled, skip silently
       return NextResponse.json({ data: { updated: 0, message: 'BLP not enabled for this guild' } })
     }
+
+    // Note: BLP double-increment is prevented by the loot_history unique constraint
+    // (issue 7). The client only calls BLP update after a successful loot_history insert.
+    // If the insert fails as duplicate (network retry), the BLP call never fires.
 
     // Find eligible characters: those who had the item ranked AND attended the raid
     const eligibleCharacters = await getEligibleCharacters(supabase, guild_id, loot_item_id, raid_event_id)
@@ -88,6 +92,22 @@ export async function POST(request: NextRequest) {
     if (resetError) {
       console.error('Failed to reset winner BLP:', resetError)
     }
+
+    logAudit({
+      supabase,
+      guildId: guild_id,
+      tableName: 'blp_tracking',
+      recordId: loot_item_id,
+      action: 'UPDATE',
+      userId: user.id,
+      newData: {
+        loot_item_id,
+        winner_character_id,
+        raid_event_id,
+        eligible_count: eligibleCharacters.length,
+        incremented_count: incrementedCount,
+      },
+    })
 
     return NextResponse.json({
       data: {
@@ -128,6 +148,7 @@ async function getEligibleCharacters(
     .eq('loot_item_id', lootItemId)
     .eq('loot_submissions.guild_id', guildId)
     .eq('loot_submissions.status', 'approved')
+    .is('removed_at', null)
 
   if (!submissionItems || submissionItems.length === 0) {
     return []

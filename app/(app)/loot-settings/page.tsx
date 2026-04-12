@@ -1,8 +1,9 @@
 'use client'
 
 import { createClient } from '@/utils/supabase/client'
-import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import ItemLink from '@/app/components/ItemLink'
 import { useGuildContext } from '@/app/contexts/GuildContext'
 import { useNotification } from '@/app/contexts/NotificationContext'
@@ -13,11 +14,12 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/com
 import { Button } from '@/components/ui/button'
 import { Heading } from '@/components/ui/typography'
 import { Select } from '@/components/ui/select'
+import { toDateString } from '@/utils/date'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import StyledSelect from '@/app/components/StyledSelect'
 import MultiSelectDropdown from '@/app/components/MultiSelectDropdown'
-import { specMapping } from '@/utils/spec-role-mapping'
+import { specMapping, allRoles, getRoleDisplayName } from '@/domain/loot/spec-role-mapping'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { ArrowDown01Icon, ArrowUp01Icon, Settings01Icon, Calendar03Icon, Settings02Icon, UserAdd01Icon, DiceIcon, Medal01Icon, Clock01Icon, GiftIcon, StickyNote01Icon, Search01Icon, Layers01Icon } from '@hugeicons/core-free-icons'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -67,6 +69,14 @@ interface ItemClassRelation {
   class_id: string
   spec_id: string | null
   spec_type: string // 'primary' or 'secondary'
+}
+
+// Classes that didn't exist in earlier expansions
+const EXPANSION_CLASS_EXCLUSIONS: Record<string, string[]> = {
+  'Classic': ['Death Knight', 'Monk'],
+  'The Burning Crusade': ['Death Knight', 'Monk'],
+  'Wrath of the Lich King': ['Monk'],
+  'Cataclysm': ['Monk'],
 }
 
 // Define raid tier progression order (Classic + TBC + WotLK)
@@ -122,6 +132,14 @@ export default function AdminLootItems() {
   const [raidTiers, setRaidTiers] = useState<any[]>([])
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage, setItemsPerPage] = useState(100)
+
+  const tableContainerRef = useRef<HTMLDivElement>(null)
+  const goToPage = useCallback((page: number | ((prev: number) => number)) => {
+    setCurrentPage(page)
+    requestAnimationFrame(() => {
+      tableContainerRef.current?.scrollTo(0, 0)
+    })
+  }, [])
   // Track specs for each item: { itemId: { primary: Set<specId>, secondary: Set<specId> } }
   const [itemSpecs, setItemSpecs] = useState<Record<string, { primary: Set<string>, secondary: Set<string> }>>({})
   // Track roles for each item: { itemId: Set<role> }
@@ -143,7 +161,7 @@ export default function AdminLootItems() {
   const getDefaultResetDate = () => {
     const today = new Date()
     today.setDate(today.getDate() - 28) // 4 weeks ago
-    return today.toISOString().split('T')[0]
+    return toDateString(today)
   }
 
   const [settings, setSettings] = useState({
@@ -189,6 +207,7 @@ export default function AdminLootItems() {
     role_bonus_priority_single_item: false,
     class_bonus_priority_single_item: false,
     raid_roles_overall_bonus_priority: false,
+    role_modifiers: {} as Record<string, number>,
     single_raider_overall_bonus: false,
     single_raider_bonus_single_item: false,
 
@@ -415,6 +434,7 @@ export default function AdminLootItems() {
         role_bonus_priority_single_item: settings.role_bonus_priority_single_item,
         class_bonus_priority_single_item: settings.class_bonus_priority_single_item,
         raid_roles_overall_bonus_priority: settings.raid_roles_overall_bonus_priority,
+        role_modifiers: settings.role_modifiers,
         single_raider_overall_bonus: settings.single_raider_overall_bonus,
         single_raider_bonus_single_item: settings.single_raider_bonus_single_item,
 
@@ -458,7 +478,7 @@ export default function AdminLootItems() {
       }
 
       setShowSettingsModal(false)
-      showNotification('success', 'Settings saved')
+      showNotification('success', 'Loot settings saved. Good to go.')
     } catch (error: any) {
       console.error('Error saving settings:', error)
       showNotification('error', error.message || 'Couldn\'t save settings. Try again.')
@@ -487,67 +507,71 @@ export default function AdminLootItems() {
     try {
       setMember(activeMember)
 
-      // Load guild settings (which also loads guild roles)
-      await loadSettings(activeGuild.id)
+      // Parallelize all independent data loads
+      const [, classesResult, specsResult, expansionResult, tiersResult] = await Promise.all([
+        // 1. Guild settings (also loads guild roles internally)
+        loadSettings(activeGuild.id),
 
-      // Load all WoW classes
-      const { data: classesData } = await supabase
-        .from('wow_classes')
-        .select('*')
-        .order('name')
+        // 2. WoW classes
+        supabase.from('wow_classes').select('*').order('name'),
 
-      if (classesData) {
-        setClasses(classesData)
-      }
+        // 3. Class specs with class info
+        supabase.from('class_specs').select('id, name, class_id, wow_classes!inner(name)').order('name'),
 
-      // Load all class specs with class information
-      const { data: specsData } = await supabase
-        .from('class_specs')
-        .select(`
-          id,
-          name,
-          class_id,
-          wow_classes!inner(name)
-        `)
-        .order('name')
+        // 4. Expansion name (for class filtering)
+        activeGuild.active_expansion_id
+          ? supabase.from('expansions').select('name').eq('id', activeGuild.active_expansion_id).single()
+          : Promise.resolve({ data: null }),
 
-      if (specsData) {
-        // Transform specs to include combined name for role mapping
-        const transformedSpecs = specsData.map((spec: any) => {
-          // The wow_classes join returns an object or array
+        // 5. Raid tiers
+        activeGuild.active_expansion_id
+          ? supabase.from('raid_tiers').select('id, name').eq('expansion_id', activeGuild.active_expansion_id).eq('is_guild_active', true)
+          : Promise.resolve({ data: null }),
+      ])
+
+      // Process classes
+      let classesData = classesResult.data || []
+      if (classesData.length > 0) setClasses(classesData)
+
+      // Process specs
+      let transformedSpecs: any[] = []
+      if (specsResult.data) {
+        transformedSpecs = specsResult.data.map((spec: any) => {
           const className = Array.isArray(spec.wow_classes)
             ? spec.wow_classes[0]?.name
             : spec.wow_classes?.name
-
           return {
             ...spec,
             class_name: className,
-            // Create combined name like "Holy Paladin" to match spec-role-mapping
             combined_name: spec.name === className
-              ? spec.name // Hunter, Mage, Warlock, Rogue
-              : `${spec.name} ${className}` // "Holy Paladin", "Protection Warrior"
+              ? spec.name
+              : `${spec.name} ${className}`
           }
         })
         setClassSpecs(transformedSpecs as any)
       }
 
-      // Load raid tiers for filtering (only for active expansion)
-      if (activeGuild.active_expansion_id) {
-        const { data: tiersData } = await supabase
-          .from('raid_tiers')
-          .select('id, name')
-          .eq('expansion_id', activeGuild.active_expansion_id)
-          .eq('is_guild_active', true)
-
-        if (tiersData) {
-          // Sort by progression order
-          const sortedTiers = tiersData.sort((a: { name: string }, b: { name: string }) =>
-            getRaidTierOrder(a.name) - getRaidTierOrder(b.name)
-          )
-          setRaidTiers(sortedTiers)
+      // Filter classes by expansion exclusions
+      if (expansionResult.data) {
+        const excluded = EXPANSION_CLASS_EXCLUSIONS[expansionResult.data.name] || []
+        if (excluded.length > 0) {
+          classesData = classesData.filter((c: any) => !excluded.includes(c.name))
+          setClasses(classesData)
+          transformedSpecs = transformedSpecs.filter((s: any) => !excluded.includes(s.class_name))
+          setClassSpecs(transformedSpecs as any)
         }
+      }
 
-        // Load all loot items
+      // Process raid tiers
+      if (tiersResult.data) {
+        const sortedTiers = tiersResult.data.sort((a: { name: string }, b: { name: string }) =>
+          getRaidTierOrder(a.name) - getRaidTierOrder(b.name)
+        )
+        setRaidTiers(sortedTiers)
+      }
+
+      // Load loot items (depends on expansion ID, not on above results)
+      if (activeGuild.active_expansion_id) {
         await loadLootItems(activeGuild.active_expansion_id)
       }
     } catch (error) {
@@ -652,16 +676,28 @@ export default function AdminLootItems() {
     }
   }
 
-  const toggleLootCouncil = async (itemId: string, currentStatus: boolean) => {
-    const { error } = await supabase
-      .from('loot_items')
-      .update({ is_loot_council: !currentStatus })
-      .eq('id', itemId)
+  /** Server-side loot item update — bypasses RLS via service role after officer permission check */
+  const updateLootItem = async (itemId: string, updates: Record<string, unknown>): Promise<boolean> => {
+    if (!activeGuild?.id) return false
 
-    if (error) {
-      showNotification('error', 'Failed to update. Try again.')
-      return
+    const res = await fetch('/api/loot-items', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ guild_id: activeGuild.id, item_id: itemId, updates }),
+    })
+
+    if (!res.ok) {
+      const errBody = await res.json().catch(() => ({}))
+      showNotification('error', errBody.error || 'Couldn\'t save changes. Try again.')
+      return false
     }
+
+    return true
+  }
+
+  const toggleLootCouncil = async (itemId: string, currentStatus: boolean) => {
+    const success = await updateLootItem(itemId, { is_loot_council: !currentStatus })
+    if (!success) return
 
     setLootItems(items => items.map(item =>
       item.id === itemId ? { ...item, is_loot_council: !currentStatus } : item
@@ -670,22 +706,8 @@ export default function AdminLootItems() {
   }
 
   const toggleAvailability = async (itemId: string, currentStatus: boolean) => {
-    const { data, error } = await supabase
-      .from('loot_items')
-      .update({ is_available: !currentStatus })
-      .eq('id', itemId)
-      .select()
-
-    if (error) {
-      console.error('Error toggling availability:', {
-        message: error.message,
-        details: error.details,
-        hint: error.hint,
-        code: error.code
-      })
-      showNotification('error', error.message || 'Couldn\'t update availability. Try again.')
-      return
-    }
+    const success = await updateLootItem(itemId, { is_available: !currentStatus })
+    if (!success) return
 
     setLootItems(items => items.map(item =>
       item.id === itemId ? { ...item, is_available: !currentStatus } : item
@@ -694,52 +716,17 @@ export default function AdminLootItems() {
 
   const updateClassification = async (itemId: string, classification: string) => {
     const allocationCost = (classification === 'Reserved' || classification === 'Limited') ? 1 : 0
-
-    const { data, error } = await supabase
-      .from('loot_items')
-      .update({
-        classification,
-        allocation_cost: allocationCost
-      })
-      .eq('id', itemId)
-      .select()
-
-    if (error) {
-      console.error('Error updating classification:', {
-        message: error.message,
-        details: error.details,
-        hint: error.hint,
-        code: error.code
-      })
-      showNotification('error', error.message || 'Couldn\'t update classification. Try again.')
-      return
-    }
+    const success = await updateLootItem(itemId, { classification, allocation_cost: allocationCost })
+    if (!success) return
 
     setLootItems(items => items.map(item =>
       item.id === itemId ? { ...item, classification, allocation_cost: allocationCost } : item
     ))
   }
 
-  // Update officer notes for an item
   const updateNotes = async (itemId: string, notes: string): Promise<boolean> => {
-    const { data, error } = await supabase
-      .from('loot_items')
-      .update({ officer_notes: notes || null })
-      .eq('id', itemId)
-      .select('id, officer_notes')
-
-    if (error) {
-      console.error('Error updating notes:', error)
-      showNotification('error', 'Couldn\'t save notes. Try again.')
-      return false
-    }
-
-    // Check if the update actually worked (RLS might silently block it)
-    if (!data || data.length === 0) {
-      console.error('Notes update failed - no rows updated (RLS may have blocked it)')
-      showNotification('error', 'You don\'t have permission to edit notes.')
-      return false
-    }
+    const success = await updateLootItem(itemId, { officer_notes: notes || null })
+    if (!success) return false
 
     setItemNotes(prev => ({ ...prev, [itemId]: notes }))
     setLootItems(items => items.map(item =>
@@ -846,7 +833,7 @@ export default function AdminLootItems() {
 
   // Add all specs of a role to an item
   const addRoleSpecs = async (itemId: string, role: 'tank' | 'healer' | 'physical' | 'caster', specType: 'primary' | 'secondary') => {
-    const { getSpecsForRole } = await import('@/utils/spec-role-mapping')
+    const { getSpecsForRole } = await import('@/domain/loot/spec-role-mapping')
     const roleSpecNames = getSpecsForRole(role)
 
     // Find the spec IDs that match these spec names (using combined_name)
@@ -1019,7 +1006,7 @@ export default function AdminLootItems() {
 
   // Remove all specs of a role from an item
   const removeRoleSpecs = async (itemId: string, role: 'tank' | 'healer' | 'physical' | 'caster', specType: 'primary' | 'secondary') => {
-    const { getSpecsForRole } = await import('@/utils/spec-role-mapping')
+    const { getSpecsForRole } = await import('@/domain/loot/spec-role-mapping')
     const roleSpecNames = getSpecsForRole(role)
 
     // Find the spec IDs that match these spec names
@@ -1111,26 +1098,18 @@ export default function AdminLootItems() {
       newRoles.add(role)
     }
 
-    // Update database
-    const { error } = await supabase
-      .from('loot_items')
-      .update({ roles: Array.from(newRoles) })
-      .eq('id', itemId)
-
-    if (!error) {
-      // Update local state
+    const success = await updateLootItem(itemId, { roles: Array.from(newRoles) })
+    if (success) {
       setItemRoles(prev => ({
         ...prev,
         [itemId]: newRoles
       }))
-    } else {
-      console.error('Error updating roles:', error)
     }
   }
 
   // Get role group specs - returns spec IDs for each role - MEMOIZED
   const getRoleGroupSpecs = useMemo(() => {
-    const { getSpecsForRole } = require('@/utils/spec-role-mapping')
+    const { getSpecsForRole } = require('@/domain/loot/spec-role-mapping')
 
     const roles = ['tank', 'healer', 'physical', 'caster'] as const
     const roleGroups: Record<string, Set<string>> = {}
@@ -1361,6 +1340,16 @@ export default function AdminLootItems() {
               onChange={setViewMode}
             />
 
+            {/* Import Button */}
+            <Link href="/sheet-import">
+              <Button variant="outline">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                </svg>
+                Import from spreadsheet
+              </Button>
+            </Link>
+
             {/* Settings Button */}
             <Button
               variant="outline"
@@ -1512,19 +1501,19 @@ export default function AdminLootItems() {
 
         {/* Items Table */}
         <div className="bg-background-elevated border border-border rounded-xl overflow-hidden">
-          <div className="-mx-4 sm:mx-0 overflow-x-auto max-h-[calc(100vh-300px)] overflow-y-auto">
-            <table className="w-full table-fixed">
+          <div ref={tableContainerRef} className="-mx-4 sm:mx-0 overflow-x-auto max-h-[calc(100vh-200px)] overflow-y-auto">
+            <table className="w-full table-fixed" style={{ minWidth: '1100px' }}>
               <colgroup>
-                <col style={{ width: '50px' }} />
-                <col style={{ width: '42px' }} />
-                <col style={{ width: '200px' }} />
-                <col style={{ width: '120px' }} />
-                <col style={{ width: '80px' }} />
-                <col style={{ width: '100px' }} />
-                <col style={{ width: '150px' }} />
-                <col style={{ width: '220px' }} />
-                <col style={{ width: '220px' }} />
-                <col style={{ width: '48px' }} />
+                <col className="w-[44px]" />
+                <col className="w-[40px]" />
+                <col className="w-[14%]" />
+                <col className="w-[9%]" />
+                <col className="w-[6%]" />
+                <col className="w-[8%]" />
+                <col className="w-[13%]" />
+                <col className="w-[18%]" />
+                <col className="w-[17%]" />
+                <col className="w-[44px]" />
               </colgroup>
               <thead className="sticky top-14 sm:top-0 z-10">
                 <tr className="bg-background-subtle border-b border-border">
@@ -1534,10 +1523,10 @@ export default function AdminLootItems() {
                   <th className="px-4 py-2.5 text-left text-[12px] font-medium text-foreground-muted bg-background-subtle">Boss</th>
                   <th className="px-4 py-2.5 text-left text-[12px] font-medium text-foreground-muted bg-background-subtle">Slot</th>
                   <th className="px-4 py-2.5 text-left text-[12px] font-medium text-foreground-muted bg-background-subtle">Raid</th>
-                  <th className="px-4 py-2.5 text-left text-[12px] font-medium text-foreground-muted bg-background-subtle"><span className="inline-flex items-center gap-1">Classification <InfoTooltip content="Item demand tier. Reserved and Limited cost 1 allocation point each. Unlimited costs 0 points." iconSize={11} /></span></th>
+                  <th className="px-4 py-2.5 text-left text-[12px] font-medium text-foreground-muted bg-background-subtle whitespace-nowrap"><span className="inline-flex items-center gap-1">Classification <InfoTooltip content="Item demand tier. Reserved and Limited cost 1 allocation point each. Unlimited costs 0 points." iconSize={11} /></span></th>
                   <th className="px-4 py-2.5 text-left text-[12px] font-medium text-foreground-muted bg-background-subtle">Primary</th>
                   <th className="px-4 py-2.5 text-left text-[12px] font-medium text-foreground-muted bg-background-subtle">Secondary</th>
-                  <th className="px-2 py-2.5 text-center text-[12px] font-medium text-foreground-muted w-12 sticky right-0 bg-background-subtle/80">Notes</th>
+                  <th className="px-2 py-2.5 text-center text-[12px] font-medium text-foreground-muted sm:static sticky right-0 z-20 bg-background-subtle shadow-[-4px_0_8px_-4px_rgba(0,0,0,0.3)] sm:shadow-none">Notes</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
@@ -1575,7 +1564,7 @@ export default function AdminLootItems() {
                     <td className="px-4 py-2.5 text-[12px] text-foreground-muted">
                       <div className="truncate">{(item.raid_tier as any)?.name}</div>
                     </td>
-                    <td className="px-4 py-2.5">
+                    <td className="px-2 py-2.5">
                       <Select
                         variant="pill"
                         size="sm"
@@ -1664,7 +1653,7 @@ export default function AdminLootItems() {
                         variant="secondary"
                       />
                     </td>
-                    <td className="px-2 py-2.5 text-center sticky right-0 bg-background-elevated/80">
+                    <td className="px-2 py-2.5 text-center sm:static sticky right-0 bg-background-elevated shadow-[-4px_0_8px_-4px_rgba(0,0,0,0.3)] sm:shadow-none">
                       <button
                         onClick={() => {
                           setNotesModalItem(item)
@@ -1688,7 +1677,7 @@ export default function AdminLootItems() {
 
           {/* Pagination Controls */}
           {filteredItems.length > 0 && (
-            <div className="flex items-center justify-between px-4 py-6 bg-background-subtle border-t border-border">
+            <div className="flex items-center justify-between px-4 py-3 bg-background-subtle border-t border-border">
               {/* Left: Results display */}
               <div className="text-[12px] text-foreground-muted">
                 Showing {startIndex + 1} to {Math.min(endIndex, filteredItems.length)} of {filteredItems.length} results
@@ -1701,7 +1690,7 @@ export default function AdminLootItems() {
                   <Button
                     variant="outline"
                     size="icon"
-                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                    onClick={() => goToPage(prev => Math.max(1, prev - 1))}
                     disabled={currentPage === 1}
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1722,7 +1711,7 @@ export default function AdminLootItems() {
                           key={1}
                           variant={currentPage === 1 ? 'accent-subtle' : 'outline'}
                           size="sm"
-                          onClick={() => setCurrentPage(1)}
+                          onClick={() => goToPage(1)}
                           className="min-w-[36px]"
                         >
                           1
@@ -1746,7 +1735,7 @@ export default function AdminLootItems() {
                             key={i}
                             variant={currentPage === i ? 'accent-subtle' : 'outline'}
                             size="sm"
-                            onClick={() => setCurrentPage(i)}
+                            onClick={() => goToPage(i)}
                             className="min-w-[36px]"
                           >
                             {i}
@@ -1768,7 +1757,7 @@ export default function AdminLootItems() {
                             key={totalPages}
                             variant={currentPage === totalPages ? 'accent-subtle' : 'outline'}
                             size="sm"
-                            onClick={() => setCurrentPage(totalPages)}
+                            onClick={() => goToPage(totalPages)}
                             className="min-w-[36px]"
                           >
                             {totalPages}
@@ -1784,7 +1773,7 @@ export default function AdminLootItems() {
                   <Button
                     variant="outline"
                     size="icon"
-                    onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                    onClick={() => goToPage(prev => Math.min(totalPages, prev + 1))}
                     disabled={currentPage === totalPages}
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -2495,6 +2484,7 @@ export default function AdminLootItems() {
 
                         <div>
                           <Label className="block mb-2">Single raider overall bonus</Label>
+
                           <Select
                             variant="pill"
                             value={settings.single_raider_overall_bonus ? 'yes' : 'no'}
@@ -2507,6 +2497,47 @@ export default function AdminLootItems() {
                           <p className="text-muted-foreground text-[11px] mt-1">Allow individual raiders to have custom score modifiers</p>
                         </div>
                       </div>
+
+                      {settings.raid_roles_overall_bonus_priority && (
+                        <div className="bg-background-elevated border border-border-strong p-4 rounded-xl space-y-3">
+                          <div className="flex items-center justify-between mb-2">
+                            <p className="text-[13px] font-medium text-foreground">Role bonuses</p>
+                            <p className="text-[11px] text-muted-foreground">Can be positive or negative. For negative, use - before number (e.g., -1)</p>
+                          </div>
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                            {allRoles.map((role) => (
+                              <div key={role}>
+                                <Label size="sm" className="block text-foreground-muted mb-1">{getRoleDisplayName(role)}</Label>
+                                <Input
+                                  variant="pill"
+                                  size="sm"
+                                  type="number"
+                                  inputMode="numeric"
+                                  step="0.1"
+                                  value={settings.role_modifiers[role] === 0 || settings.role_modifiers[role] === undefined ? '' : settings.role_modifiers[role]}
+                                  onChange={(e) => {
+                                    const newModifiers = { ...settings.role_modifiers }
+                                    if (e.target.value === '') {
+                                      newModifiers[role] = 0
+                                    } else {
+                                      newModifiers[role] = Number(e.target.value)
+                                    }
+                                    setSettings({
+                                      ...settings,
+                                      role_modifiers: newModifiers
+                                    })
+                                  }}
+                                  placeholder="0"
+                                  className="bg-background-elevated"
+                                />
+                              </div>
+                            ))}
+                          </div>
+                          <p className="text-[11px] text-accent mt-2">
+                            Roles are determined by each raider's spec. Make sure specs are set correctly.
+                          </p>
+                        </div>
+                      )}
 
                       <div>
                         <Label className="block mb-2">Single raider bonus on single item</Label>
