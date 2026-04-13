@@ -849,6 +849,178 @@ export default function ReserveJoinPage() {
           )}
         </Card>
 
+        {/* Reserve board — grouped by item or by player. Shown whenever
+            submissions are visible (public_live, locked, or completed). */}
+        {showSubmissions && submissions.length > 0 && (
+          <Card className="overflow-hidden">
+            <div className="px-5 py-3 border-b border-border flex items-center justify-between gap-4 flex-wrap">
+              <div className="flex items-center gap-2">
+                <HugeiconsIcon icon={UserMultiple02Icon} size={16} className="text-muted-foreground" />
+                <LabelText size="sm">
+                  Reserve board ({submissions.length} player{submissions.length === 1 ? '' : 's'})
+                </LabelText>
+              </div>
+              <div className="flex items-center gap-1 p-0.5 rounded-full border border-border bg-background-subtle">
+                <button
+                  type="button"
+                  onClick={() => setBoardView('item')}
+                  className={`px-3 py-1 rounded-full text-[12px] font-medium transition-colors ${
+                    boardView === 'item'
+                      ? 'bg-background-elevated text-foreground'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  By item
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setBoardView('player')}
+                  className={`px-3 py-1 rounded-full text-[12px] font-medium transition-colors ${
+                    boardView === 'player'
+                      ? 'bg-background-elevated text-foreground'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  By player
+                </button>
+              </div>
+            </div>
+
+            {boardView === 'item' ? (
+              <div>
+                {Array.from(boardByBoss.entries()).map(([boss, bossItems]) => (
+                  <div key={boss}>
+                    <div className="px-5 py-2 bg-background-subtle border-y border-border">
+                      <LabelText size="xs">{boss}</LabelText>
+                    </div>
+                    <div className="divide-y divide-border">
+                      {bossItems.map((item) => {
+                        const reservers = reservesByItem.get(item.id) || []
+                        const contested = reservers.length > 1
+                        const itemAwards = awardsByItem.get(item.id) || []
+                        return (
+                          <div key={item.id} className="px-5 py-3">
+                            <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+                              <ItemLink name={item.name} wowheadId={item.wowhead_id} clickable={false} />
+                              <span className="text-[11px] text-muted-foreground">{item.item_slot}</span>
+                              <span
+                                className={`text-[11px] px-1.5 py-0.5 rounded-full font-medium ${
+                                  contested
+                                    ? 'bg-warning/15 text-warning'
+                                    : 'bg-background-subtle text-muted-foreground'
+                                }`}
+                              >
+                                {reservers.length} reserve{reservers.length === 1 ? '' : 's'}
+                              </span>
+                              {itemAwards.length > 0 && (
+                                <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-success/15 text-success font-medium inline-flex items-center gap-1">
+                                  <HugeiconsIcon icon={CheckmarkCircle01Icon} size={11} />
+                                  Awarded to {itemAwards.map((a) => a.character_name).join(', ')}
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex flex-wrap gap-x-3 gap-y-1 pl-0.5">
+                              {reservers.map((sub) => {
+                                const classInfo = WOW_CLASSES.find(
+                                  (c) => c.name.toLowerCase() === sub.character_class.toLowerCase()
+                                )
+                                const isMine =
+                                  submitted &&
+                                  sub.character_name.toLowerCase() === characterName.toLowerCase()
+                                return (
+                                  <span
+                                    key={`${sub.id}-${item.id}`}
+                                    className={`text-[12px] inline-flex items-center gap-1 ${
+                                      isMine ? 'font-semibold' : ''
+                                    }`}
+                                  >
+                                    <span style={{ color: classInfo?.color || '#FFFFFF' }}>
+                                      {sub.character_name}
+                                    </span>
+                                    {sub.character_spec && (
+                                      <span className="text-muted-foreground">({sub.character_spec})</span>
+                                    )}
+                                    {isMine && (
+                                      <span className="text-[10px] uppercase tracking-wide text-accent">
+                                        You
+                                      </span>
+                                    )}
+                                  </span>
+                                )
+                              })}
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="divide-y divide-border">
+                {submissions.map((sub) => {
+                  const classInfo = WOW_CLASSES.find(
+                    (c) => c.name.toLowerCase() === sub.character_class.toLowerCase()
+                  )
+                  const isMine =
+                    submitted &&
+                    sub.character_name.toLowerCase() === characterName.toLowerCase()
+                  return (
+                    <div
+                      key={sub.id}
+                      className={`px-5 py-3 ${isMine ? 'bg-accent/[0.04]' : ''}`}
+                    >
+                      <div className="flex items-center gap-2 mb-1.5">
+                        <span
+                          className="text-[14px] font-semibold"
+                          style={{ color: classInfo?.color || '#FFFFFF' }}
+                        >
+                          {sub.character_name}
+                        </span>
+                        {sub.character_spec && (
+                          <span className="text-[11px] text-muted-foreground">
+                            ({sub.character_spec} {sub.character_class})
+                          </span>
+                        )}
+                        {isMine && (
+                          <span className="text-[10px] uppercase tracking-wide text-accent font-semibold">
+                            You
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex flex-wrap gap-x-3 gap-y-1">
+                        {sub.items.map((itemId) => {
+                          const item = itemMap.get(itemId)
+                          if (!item) return null
+                          const itemAwards = awardsByItem.get(itemId) || []
+                          const wonByThisChar = itemAwards.some(
+                            (a) => a.character_name.toLowerCase() === sub.character_name.toLowerCase()
+                          )
+                          return (
+                            <span
+                              key={itemId}
+                              className="inline-flex items-center gap-1 text-[12px]"
+                            >
+                              <ItemLink name={item.name} wowheadId={item.wowhead_id} clickable={false} />
+                              {wonByThisChar && (
+                                <HugeiconsIcon
+                                  icon={CheckmarkCircle01Icon}
+                                  size={12}
+                                  className="text-success"
+                                />
+                              )}
+                            </span>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </Card>
+        )}
+
         {/* Confirmation card — shown once the player has submitted. Gives
             them a clear "you're in" signal, wowhead-styled list of what they
             reserved, and a copy-to-Discord button. Edits still happen in the
@@ -1104,181 +1276,6 @@ export default function ReserveJoinPage() {
           </Card>
         )}
 
-        {/* Reserve board — grouped by item or by player. Shown whenever
-            submissions are visible (public_live, locked, or completed). */}
-        {showSubmissions && submissions.length > 0 && (
-          <Card className="overflow-hidden">
-            <div className="px-5 py-3 border-b border-border flex items-center justify-between gap-4 flex-wrap">
-              <div className="flex items-center gap-2">
-                <HugeiconsIcon icon={UserMultiple02Icon} size={16} className="text-muted-foreground" />
-                <LabelText size="sm">
-                  Reserve board ({submissions.length} player{submissions.length === 1 ? '' : 's'})
-                </LabelText>
-              </div>
-              <div className="flex items-center gap-1 p-0.5 rounded-full border border-border bg-background-subtle">
-                <button
-                  type="button"
-                  onClick={() => setBoardView('item')}
-                  className={`px-3 py-1 rounded-full text-[12px] font-medium transition-colors ${
-                    boardView === 'item'
-                      ? 'bg-background-elevated text-foreground'
-                      : 'text-muted-foreground hover:text-foreground'
-                  }`}
-                >
-                  By item
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setBoardView('player')}
-                  className={`px-3 py-1 rounded-full text-[12px] font-medium transition-colors ${
-                    boardView === 'player'
-                      ? 'bg-background-elevated text-foreground'
-                      : 'text-muted-foreground hover:text-foreground'
-                  }`}
-                >
-                  By player
-                </button>
-              </div>
-            </div>
-
-            {boardView === 'item' ? (
-              // Item-grouped: one row per reserved item, grouped by boss,
-              // sorted by contested count. Awards rendered inline.
-              <div>
-                {Array.from(boardByBoss.entries()).map(([boss, bossItems]) => (
-                  <div key={boss}>
-                    <div className="px-5 py-2 bg-background-subtle border-y border-border">
-                      <LabelText size="xs">{boss}</LabelText>
-                    </div>
-                    <div className="divide-y divide-border">
-                      {bossItems.map((item) => {
-                        const reservers = reservesByItem.get(item.id) || []
-                        const contested = reservers.length > 1
-                        const itemAwards = awardsByItem.get(item.id) || []
-                        return (
-                          <div key={item.id} className="px-5 py-3">
-                            <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-                              <ItemLink name={item.name} wowheadId={item.wowhead_id} clickable={false} />
-                              <span className="text-[11px] text-muted-foreground">{item.item_slot}</span>
-                              <span
-                                className={`text-[11px] px-1.5 py-0.5 rounded-full font-medium ${
-                                  contested
-                                    ? 'bg-warning/15 text-warning'
-                                    : 'bg-background-subtle text-muted-foreground'
-                                }`}
-                              >
-                                {reservers.length} reserve{reservers.length === 1 ? '' : 's'}
-                              </span>
-                              {itemAwards.length > 0 && (
-                                <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-success/15 text-success font-medium inline-flex items-center gap-1">
-                                  <HugeiconsIcon icon={CheckmarkCircle01Icon} size={11} />
-                                  Awarded to {itemAwards.map((a) => a.character_name).join(', ')}
-                                </span>
-                              )}
-                            </div>
-                            <div className="flex flex-wrap gap-x-3 gap-y-1 pl-0.5">
-                              {reservers.map((sub) => {
-                                const classInfo = WOW_CLASSES.find(
-                                  (c) => c.name.toLowerCase() === sub.character_class.toLowerCase()
-                                )
-                                const isMine =
-                                  submitted &&
-                                  sub.character_name.toLowerCase() === characterName.toLowerCase()
-                                return (
-                                  <span
-                                    key={`${sub.id}-${item.id}`}
-                                    className={`text-[12px] inline-flex items-center gap-1 ${
-                                      isMine ? 'font-semibold' : ''
-                                    }`}
-                                  >
-                                    <span style={{ color: classInfo?.color || '#FFFFFF' }}>
-                                      {sub.character_name}
-                                    </span>
-                                    {sub.character_spec && (
-                                      <span className="text-muted-foreground">({sub.character_spec})</span>
-                                    )}
-                                    {isMine && (
-                                      <span className="text-[10px] uppercase tracking-wide text-accent">
-                                        You
-                                      </span>
-                                    )}
-                                  </span>
-                                )
-                              })}
-                            </div>
-                          </div>
-                        )
-                      })}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              // Player-grouped: one row per submitter, listing their items.
-              <div className="divide-y divide-border">
-                {submissions.map((sub) => {
-                  const classInfo = WOW_CLASSES.find(
-                    (c) => c.name.toLowerCase() === sub.character_class.toLowerCase()
-                  )
-                  const isMine =
-                    submitted &&
-                    sub.character_name.toLowerCase() === characterName.toLowerCase()
-                  return (
-                    <div
-                      key={sub.id}
-                      className={`px-5 py-3 ${isMine ? 'bg-accent/[0.04]' : ''}`}
-                    >
-                      <div className="flex items-center gap-2 mb-1.5">
-                        <span
-                          className="text-[14px] font-semibold"
-                          style={{ color: classInfo?.color || '#FFFFFF' }}
-                        >
-                          {sub.character_name}
-                        </span>
-                        {sub.character_spec && (
-                          <span className="text-[11px] text-muted-foreground">
-                            ({sub.character_spec} {sub.character_class})
-                          </span>
-                        )}
-                        {isMine && (
-                          <span className="text-[10px] uppercase tracking-wide text-accent font-semibold">
-                            You
-                          </span>
-                        )}
-                      </div>
-                      <div className="flex flex-wrap gap-x-3 gap-y-1">
-                        {sub.items.map((itemId) => {
-                          const item = itemMap.get(itemId)
-                          if (!item) return null
-                          const itemAwards = awardsByItem.get(itemId) || []
-                          const wonByThisChar = itemAwards.some(
-                            (a) => a.character_name.toLowerCase() === sub.character_name.toLowerCase()
-                          )
-                          return (
-                            <span
-                              key={itemId}
-                              className="inline-flex items-center gap-1 text-[12px]"
-                            >
-                              <ItemLink name={item.name} wowheadId={item.wowhead_id} clickable={false} />
-                              {wonByThisChar && (
-                                <HugeiconsIcon
-                                  icon={CheckmarkCircle01Icon}
-                                  size={12}
-                                  className="text-success"
-                                />
-                              )}
-                            </span>
-                          )
-                        })}
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            )}
-          </Card>
-        )}
-
         {/* Locked with no submissions visible (hidden_until_lock on an
             empty run, for example) */}
         {!isOpen && submissions.length === 0 && (
@@ -1287,26 +1284,47 @@ export default function ReserveJoinPage() {
           </Card>
         )}
 
-        {/* CTA */}
-        <Card variant="unified" className="border-accent/20 text-center">
-          <Image src="/logo.svg" alt="" width={28} height={28} className="mx-auto mb-2" />
-          <Text className="font-semibold mb-1">Run your own guild loot with LootList+</Text>
-          <Text color="muted" size="sm" className="mb-3">
-            Loot lists, attendance, Master Sheet, and more. Free to start.
-          </Text>
-          <Link href="/about">
-            <Button variant="primary" size="sm">
-              Learn more
-            </Button>
-          </Link>
-        </Card>
-
         {/* Footer */}
-        <div className="text-center pt-4 pb-8">
-          <Link href="/" className="text-[12px] text-muted-foreground hover:text-accent transition-colors">
-            Powered by LootList+
-          </Link>
-        </div>
+        <footer className="pt-8 pb-6 border-t border-border/50 mt-4">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+            <div className="flex flex-col items-center md:items-start gap-3">
+              <Image
+                src="/images/landing/logo-landing.svg"
+                alt="LootList+"
+                width={120}
+                height={19}
+                className="h-5 w-auto opacity-70"
+              />
+              <p className="text-xs text-muted-foreground/50">
+                &copy; {new Date().getFullYear()} LootList+. All rights reserved.
+              </p>
+            </div>
+
+            <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2">
+              <Link href="/about" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                About
+              </Link>
+              <Link href="/terms" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                Terms of Service
+              </Link>
+              <Link href="/privacy" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                Privacy Policy
+              </Link>
+            </div>
+
+            <p className="text-xs text-muted-foreground/50 text-center md:text-right">
+              Made with love by{' '}
+              <a
+                href="https://discord.gg/JNJewThYAB"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-muted-foreground hover:text-foreground transition-colors"
+              >
+                Big Yikes
+              </a>
+            </p>
+          </div>
+        </footer>
       </div>
     </div>
   )
