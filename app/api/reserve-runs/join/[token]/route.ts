@@ -401,69 +401,64 @@ export async function POST(
       }
     }
 
-    // Upsert submission (character_name is unique per run)
-    const { data: submission, error: upsertError } = await serviceSupabase
+    // Check for an existing submission (the unique index uses lower(character_name)
+    // which Supabase upsert can't target, so we do an explicit check-then-insert/update)
+    const { data: existing } = await serviceSupabase
       .from('reserve_submissions')
-      .upsert(
-        {
-          reserve_run_id: run.id,
+      .select('id')
+      .eq('reserve_run_id', run.id)
+      .ilike('character_name', character_name.trim())
+      .eq('status', 'submitted')
+      .maybeSingle()
+
+    if (existing) {
+      // Update existing submission
+      const { data: updated, error: updateError } = await serviceSupabase
+        .from('reserve_submissions')
+        .update({
           character_id: linkedCharacterId,
-          character_name: character_name.trim(),
           character_class: character_class.trim(),
           character_spec: character_spec?.trim() || null,
           items,
           status: 'submitted',
-        },
-        {
-          onConflict: 'reserve_run_id,lower(character_name)',
-          ignoreDuplicates: false,
-        }
-      )
-      .select()
+        })
+        .eq('id', existing.id)
+        .select()
+        .single()
 
-    // Handle unique constraint via manual check if upsert doesn't work with expression index
-    if (upsertError) {
-      // Try update if insert failed due to duplicate
-      if (upsertError.code === '23505') {
-        const { data: existing } = await serviceSupabase
-          .from('reserve_submissions')
-          .select('id')
-          .eq('reserve_run_id', run.id)
-          .ilike('character_name', character_name.trim())
-          .single()
-
-        if (existing) {
-          const { data: updated, error: updateError } = await serviceSupabase
-            .from('reserve_submissions')
-            .update({
-              character_id: linkedCharacterId,
-              character_class: character_class.trim(),
-              character_spec: character_spec?.trim() || null,
-              items,
-              status: 'submitted',
-            })
-            .eq('id', existing.id)
-            .select()
-            .single()
-
-          if (updateError) {
-            console.error('Error updating submission:', updateError)
-            return NextResponse.json({ error: 'Failed to update submission' }, { status: 500 })
-          }
-
-          await logReserveAudit({
-            supabase: serviceSupabase,
-            reserveRunId: run.id,
-            actorLabel: character_name.trim(),
-            action: 'submission_updated',
-            details: { character_name: character_name.trim(), item_count: items.length },
-          })
-
-          return NextResponse.json({ success: true, submission: updated, updated: true })
-        }
+      if (updateError) {
+        console.error('Error updating submission:', updateError)
+        return NextResponse.json({ error: 'Failed to update submission' }, { status: 500 })
       }
 
-      console.error('Error creating submission:', upsertError)
+      await logReserveAudit({
+        supabase: serviceSupabase,
+        reserveRunId: run.id,
+        actorLabel: character_name.trim(),
+        action: 'submission_updated',
+        details: { character_name: character_name.trim(), item_count: items.length },
+      })
+
+      return NextResponse.json({ success: true, submission: updated, updated: true })
+    }
+
+    // Create new submission
+    const { data: submission, error: insertError } = await serviceSupabase
+      .from('reserve_submissions')
+      .insert({
+        reserve_run_id: run.id,
+        character_id: linkedCharacterId,
+        character_name: character_name.trim(),
+        character_class: character_class.trim(),
+        character_spec: character_spec?.trim() || null,
+        items,
+        status: 'submitted',
+      })
+      .select()
+      .single()
+
+    if (insertError) {
+      console.error('Error creating submission:', insertError)
       return NextResponse.json({ error: 'Failed to submit reserves' }, { status: 500 })
     }
 
@@ -477,7 +472,7 @@ export async function POST(
 
     return NextResponse.json({
       success: true,
-      submission: submission?.[0] || null,
+      submission,
       updated: false,
     })
   } catch (err) {
