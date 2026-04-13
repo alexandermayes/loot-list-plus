@@ -782,7 +782,7 @@ export default function ReserveRunPage() {
               <HugeiconsIcon icon={ArrowRight02Icon} size={14} />
             </Button>
           </div>
-          {(run.status === 'locked' || run.status === 'completed') && run.submissions.length > 0 && (
+          {run.submissions.length > 0 && (
             <div className="pt-3 border-t border-border space-y-2">
               <LabelText size="xs">Export reserves</LabelText>
               <div className="flex flex-wrap items-center gap-2">
