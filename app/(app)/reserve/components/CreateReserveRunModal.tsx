@@ -46,11 +46,34 @@ interface CreateReserveRunModalProps {
   onClose: () => void
 }
 
+/** Return a datetime-local string for today at 8 PM in the user's timezone. */
+function defaultRaidTime(): string {
+  const d = new Date()
+  d.setHours(20, 0, 0, 0)
+  // If it's already past 8 PM, default to tomorrow
+  if (d < new Date()) d.setDate(d.getDate() + 1)
+  // Format as datetime-local value
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+}
+
+/** Return lock time = 1 hour before raid time */
+function defaultLockTime(raidAt: string): string {
+  if (!raidAt) return ''
+  const d = new Date(raidAt)
+  d.setHours(d.getHours() - 1)
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+}
+
 export function CreateReserveRunModal({ open, onClose }: CreateReserveRunModalProps) {
   const router = useRouter()
   const supabase = createClient()
   const { activeGuild, isOfficer } = useGuildContext()
   const { showNotification } = useNotification()
+
+  // Wizard step: 1 = pick expansion + raid, 2 = configure details
+  const [step, setStep] = useState(1)
 
   const [raidTiers, setRaidTiers] = useState<RaidTier[]>([])
   const [items, setItems] = useState<LootItem[]>([])
@@ -73,11 +96,15 @@ export function CreateReserveRunModal({ open, onClose }: CreateReserveRunModalPr
   const [discordInviteUrl, setDiscordInviteUrl] = useState('')
   const [hardReserveIds, setHardReserveIds] = useState<string[]>([])
 
+  // Track whether the user has manually edited lock time
+  const [lockTimeManual, setLockTimeManual] = useState(false)
+
   const isGuildMode = !!activeGuild && isOfficer
 
   // Reset form whenever the modal closes
   useEffect(() => {
     if (!open) {
+      setStep(1)
       setSelectedExpansion('')
       setSelectedTierId('')
       setExpansionId(null)
@@ -94,6 +121,7 @@ export function CreateReserveRunModal({ open, onClose }: CreateReserveRunModalPr
       setHardReserveIds([])
       setRaidTiers([])
       setItems([])
+      setLockTimeManual(false)
     }
   }, [open])
 
@@ -166,12 +194,25 @@ export function CreateReserveRunModal({ open, onClose }: CreateReserveRunModalPr
     }
   }, [selectedTierId, raidTiers])
 
-  // Sync lockAt to raidAt
-  useEffect(() => {
-    if (raidAt && !lockAt) {
-      setLockAt(raidAt)
+  // Set smart defaults for raid/lock time when moving to step 2
+  const handleNext = () => {
+    if (!raidAt) {
+      const defaultRaid = defaultRaidTime()
+      setRaidAt(defaultRaid)
+      if (!lockTimeManual) {
+        setLockAt(defaultLockTime(defaultRaid))
+      }
     }
-  }, [raidAt])
+    setStep(2)
+  }
+
+  // Keep lock time in sync when raid time changes (unless manually edited)
+  const handleRaidAtChange = (value: string) => {
+    setRaidAt(value)
+    if (!lockTimeManual) {
+      setLockAt(defaultLockTime(value))
+    }
+  }
 
   const handleSubmit = async () => {
     if (!selectedTierId || !title.trim() || !raidAt || !lockAt) {
@@ -220,174 +261,239 @@ export function CreateReserveRunModal({ open, onClose }: CreateReserveRunModalPr
     }
   }
 
+  const canProceed = !!selectedTierId
   const canSubmit = !!selectedTierId && !!title.trim() && !!raidAt && !!lockAt
+
+  const selectedTier = raidTiers.find(t => t.id === selectedTierId)
+  const selectedTierIcon = selectedTier ? getRaidIcon(selectedTier.name) : null
 
   return (
     <Modal open={open} onClose={onClose} size="lg">
       <ModalHeader onClose={onClose}>
         <ModalTitle>Create reserve run</ModalTitle>
         <ModalDescription>
-          {isGuildMode ? 'Set up a reserve run for your guild' : 'Set up a quick reserve run for your raid'}
+          {step === 1
+            ? 'Pick an expansion and raid to get started'
+            : 'Review the defaults and tweak anything you need'}
         </ModalDescription>
       </ModalHeader>
 
       <ModalBody>
-        <div className="space-y-6">
-          {/* Expansion selector */}
-          <div className="space-y-3">
-            <Label>Expansion</Label>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-              {EXPANSIONS_WITH_DATA.map(exp => {
-                const visuals = getExpansionVisuals(exp)
-                const isSelected = selectedExpansion === exp
-                return (
-                  <button
-                    key={exp}
-                    type="button"
-                    onClick={() => setSelectedExpansion(exp)}
-                    className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl border text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
-                      isSelected
-                        ? 'border-accent bg-accent/10'
-                        : 'border-border bg-background-elevated hover:border-border-strong hover:bg-muted'
-                    }`}
-                  >
-                    {visuals && (
-                      <img
-                        src={visuals.logoUrl}
-                        alt=""
-                        className="w-8 h-8 rounded-lg border border-border/50 flex-shrink-0"
-                      />
-                    )}
-                    <span className={`text-[13px] font-medium leading-tight ${isSelected ? 'text-accent' : 'text-foreground'}`}>
-                      {visuals?.shortName || exp}
-                    </span>
-                  </button>
-                )
-              })}
-            </div>
+        {/* Step indicator */}
+        <div className="flex items-center gap-3 mb-6">
+          <div className="flex items-center gap-2">
+            <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold ${
+              step === 1 ? 'bg-accent text-accent-foreground' : 'bg-accent/20 text-accent'
+            }`}>1</div>
+            <span className={`text-[13px] font-medium ${step === 1 ? 'text-foreground' : 'text-muted-foreground'}`}>
+              Choose raid
+            </span>
           </div>
+          <div className="flex-1 h-px bg-border" />
+          <div className="flex items-center gap-2">
+            <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold ${
+              step === 2 ? 'bg-accent text-accent-foreground' : 'bg-muted text-muted-foreground'
+            }`}>2</div>
+            <span className={`text-[13px] font-medium ${step === 2 ? 'text-foreground' : 'text-muted-foreground'}`}>
+              Settings
+            </span>
+          </div>
+        </div>
 
-          {/* Raid tier selector */}
-          {selectedExpansion && (
-            <div className="space-y-2">
-              <Label>Raid</Label>
-              {loadingTiers ? (
-                <div className="space-y-2">
-                  {Array.from({ length: 3 }).map((_, i) => (
-                    <Skeleton key={i} className="h-12 w-full rounded-xl" />
-                  ))}
-                </div>
-              ) : raidTiers.length === 0 ? (
-                <Text color="muted" size="sm">No raid data available for this expansion yet.</Text>
-              ) : (
-                <div className="space-y-1.5">
-                  {raidTiers.map(tier => {
-                    const isSelected = selectedTierId === tier.id
-                    const iconUrl = getRaidIcon(tier.name)
-                    return (
-                      <button
-                        key={tier.id}
-                        type="button"
-                        onClick={() => {
-                          setSelectedTierId(tier.id)
-                          setHardReserveIds([])
-                        }}
-                        className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl border text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
-                          isSelected
-                            ? 'border-accent bg-accent/10'
-                            : 'border-border bg-background-elevated hover:border-border-strong hover:bg-muted'
-                        }`}
-                      >
-                        {iconUrl && (
-                          <img
-                            src={iconUrl}
-                            alt=""
-                            className="w-8 h-8 rounded-lg border border-border/50 flex-shrink-0"
-                          />
-                        )}
-                        <div className="flex-1 min-w-0">
-                          <span className={`text-[14px] font-medium ${isSelected ? 'text-accent' : 'text-foreground'}`}>
-                            {tier.name}
-                          </span>
-                          {tier.phase && (
-                            <span className="text-[11px] text-muted-foreground ml-2">Phase {tier.phase}</span>
-                          )}
-                        </div>
-                        {isSelected && items.length > 0 && (
-                          <span className="text-[11px] text-muted-foreground">{items.length} items</span>
-                        )}
-                      </button>
-                    )
-                  })}
-                </div>
-              )}
+        {step === 1 && (
+          <div className="space-y-6">
+            {/* Expansion selector */}
+            <div className="space-y-3">
+              <Label>Expansion</Label>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {EXPANSIONS_WITH_DATA.map(exp => {
+                  const visuals = getExpansionVisuals(exp)
+                  const isSelected = selectedExpansion === exp
+                  return (
+                    <button
+                      key={exp}
+                      type="button"
+                      onClick={() => setSelectedExpansion(exp)}
+                      className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl border text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                        isSelected
+                          ? 'border-accent bg-accent/10'
+                          : 'border-border bg-background-elevated hover:border-border-strong hover:bg-muted'
+                      }`}
+                    >
+                      {visuals && (
+                        <img
+                          src={visuals.logoUrl}
+                          alt=""
+                          className="w-8 h-8 rounded-lg border border-border/50 flex-shrink-0"
+                        />
+                      )}
+                      <span className={`text-[13px] font-medium leading-tight ${isSelected ? 'text-accent' : 'text-foreground'}`}>
+                        {visuals?.shortName || exp}
+                      </span>
+                    </button>
+                  )
+                })}
+              </div>
             </div>
-          )}
 
-          {/* Run details */}
-          {selectedTierId && (
-            <>
+            {/* Raid tier selector */}
+            {selectedExpansion && (
               <div className="space-y-2">
-                <Label>Run title</Label>
+                <Label>Raid</Label>
+                {loadingTiers ? (
+                  <div className="space-y-2">
+                    {Array.from({ length: 3 }).map((_, i) => (
+                      <Skeleton key={i} className="h-12 w-full rounded-xl" />
+                    ))}
+                  </div>
+                ) : raidTiers.length === 0 ? (
+                  <Text color="muted" size="sm">No raid data available for this expansion yet.</Text>
+                ) : (
+                  <div className="space-y-1.5">
+                    {raidTiers.map(tier => {
+                      const isSelected = selectedTierId === tier.id
+                      const iconUrl = getRaidIcon(tier.name)
+                      return (
+                        <button
+                          key={tier.id}
+                          type="button"
+                          onClick={() => {
+                            setSelectedTierId(tier.id)
+                            setHardReserveIds([])
+                          }}
+                          className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl border text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                            isSelected
+                              ? 'border-accent bg-accent/10'
+                              : 'border-border bg-background-elevated hover:border-border-strong hover:bg-muted'
+                          }`}
+                        >
+                          {iconUrl && (
+                            <img
+                              src={iconUrl}
+                              alt=""
+                              className="w-8 h-8 rounded-lg border border-border/50 flex-shrink-0"
+                            />
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <span className={`text-[14px] font-medium ${isSelected ? 'text-accent' : 'text-foreground'}`}>
+                              {tier.name}
+                            </span>
+                            {tier.phase && (
+                              <span className="text-[11px] text-muted-foreground ml-2">Phase {tier.phase}</span>
+                            )}
+                          </div>
+                          {isSelected && items.length > 0 && (
+                            <span className="text-[11px] text-muted-foreground">{items.length} items</span>
+                          )}
+                        </button>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {step === 2 && (
+          <div className="space-y-6">
+            {/* Selected raid summary */}
+            {selectedTier && (
+              <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-background-subtle border border-border">
+                {selectedTierIcon && (
+                  <img
+                    src={selectedTierIcon}
+                    alt=""
+                    className="w-8 h-8 rounded-lg border border-border/50 flex-shrink-0"
+                  />
+                )}
+                <div className="flex-1 min-w-0">
+                  <span className="text-[14px] font-medium text-foreground">{selectedTier.name}</span>
+                  {selectedTier.phase && (
+                    <span className="text-[11px] text-muted-foreground ml-2">Phase {selectedTier.phase}</span>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setStep(1)}
+                  className="text-[12px] text-accent hover:underline"
+                >
+                  Change
+                </button>
+              </div>
+            )}
+
+            {/* Run title */}
+            <div className="space-y-2">
+              <Label>Run title</Label>
+              <Input
+                variant="rounded"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="e.g. Gruul/Mag, Apr 7"
+              />
+            </div>
+
+            {/* Date/time row */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Raid date and time</Label>
                 <Input
                   variant="rounded"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  placeholder="e.g. Gruul/Mag, Apr 7"
+                  type="datetime-local"
+                  value={raidAt}
+                  onChange={(e) => handleRaidAtChange(e.target.value)}
                 />
               </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Raid date and time</Label>
-                  <Input
-                    variant="rounded"
-                    type="datetime-local"
-                    value={raidAt}
-                    onChange={(e) => setRaidAt(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Lock time</Label>
-                  <Input
-                    variant="rounded"
-                    type="datetime-local"
-                    value={lockAt}
-                    onChange={(e) => setLockAt(e.target.value)}
-                  />
-                  <Text color="muted" size="xs">Reserves lock manually. This is shown as guidance.</Text>
-                </div>
+              <div className="space-y-2">
+                <Label>Lock time</Label>
+                <Input
+                  variant="rounded"
+                  type="datetime-local"
+                  value={lockAt}
+                  onChange={(e) => {
+                    setLockAt(e.target.value)
+                    setLockTimeManual(true)
+                  }}
+                />
+                <Text color="muted" size="xs">Reserves lock manually. This is shown as guidance.</Text>
               </div>
+            </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Reserves per player</Label>
-                  <Select
-                    variant="rounded"
-                    value={maxReserves}
-                    onChange={(e) => setMaxReserves(parseInt(e.target.value))}
-                  >
-                    {Array.from({ length: 10 }, (_, i) => i + 1).map(n => (
-                      <option key={n} value={n}>{n}</option>
-                    ))}
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>Visibility</Label>
-                  <Select
-                    variant="rounded"
-                    value={visibility}
-                    onChange={(e) => setVisibility(e.target.value as 'hidden_until_lock' | 'public_live')}
-                  >
-                    <option value="hidden_until_lock">Hidden until locked</option>
-                    <option value="public_live">Visible immediately</option>
-                  </Select>
-                </div>
+            {/* Core settings */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Reserves per player</Label>
+                <Select
+                  variant="rounded"
+                  value={maxReserves}
+                  onChange={(e) => setMaxReserves(parseInt(e.target.value))}
+                >
+                  {Array.from({ length: 10 }, (_, i) => i + 1).map(n => (
+                    <option key={n} value={n}>{n}</option>
+                  ))}
+                </Select>
               </div>
+              <div className="space-y-2">
+                <Label>Visibility</Label>
+                <Select
+                  variant="rounded"
+                  value={visibility}
+                  onChange={(e) => setVisibility(e.target.value as 'hidden_until_lock' | 'public_live')}
+                >
+                  <option value="hidden_until_lock">Hidden until locked</option>
+                  <option value="public_live">Visible immediately</option>
+                </Select>
+              </div>
+            </div>
+
+            {/* Optional settings in a collapsible area */}
+            <div className="border-t border-border pt-5 space-y-5">
+              <Text size="xs" color="muted" className="uppercase tracking-wide font-semibold">Optional</Text>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Max reserves per item <span className="text-muted-foreground font-normal">(optional)</span></Label>
+                  <Label>Max reserves per item</Label>
                   <Input
                     variant="rounded"
                     type="number"
@@ -399,10 +505,10 @@ export function CreateReserveRunModal({ open, onClose }: CreateReserveRunModalPr
                     }}
                     placeholder="Unlimited"
                   />
-                  <Text color="muted" size="xs">Cap how many players can reserve the same item. Leave empty for unlimited.</Text>
+                  <Text color="muted" size="xs">Cap how many players can reserve the same item.</Text>
                 </div>
                 <div className="space-y-2">
-                  <Label>Discord invite link <span className="text-muted-foreground font-normal">(optional)</span></Label>
+                  <Label>Discord invite link</Label>
                   <Input
                     variant="rounded"
                     type="url"
@@ -430,7 +536,7 @@ export function CreateReserveRunModal({ open, onClose }: CreateReserveRunModalPr
               </div>
 
               <div className="space-y-2">
-                <Label>Rules note <span className="text-muted-foreground font-normal">(optional)</span></Label>
+                <Label>Rules note</Label>
                 <Input
                   variant="rounded"
                   value={rulesNote}
@@ -441,7 +547,7 @@ export function CreateReserveRunModal({ open, onClose }: CreateReserveRunModalPr
 
               {items.length > 0 && (
                 <div className="space-y-2">
-                  <Label>Hard reserves <span className="text-muted-foreground font-normal">(optional)</span></Label>
+                  <Label>Hard reserves</Label>
                   <Text color="muted" size="xs">Items reserved for specific players or the guild bank. Players cannot reserve these.</Text>
                   {loadingItems ? (
                     <Skeleton className="h-40 w-full rounded-xl" />
@@ -456,23 +562,40 @@ export function CreateReserveRunModal({ open, onClose }: CreateReserveRunModalPr
                   )}
                 </div>
               )}
-            </>
-          )}
-        </div>
+            </div>
+          </div>
+        )}
       </ModalBody>
 
       <ModalFooter>
-        <Button variant="outline" onClick={onClose}>
-          Cancel
-        </Button>
-        <Button
-          variant="primary"
-          onClick={handleSubmit}
-          loading={submitting}
-          disabled={!canSubmit}
-        >
-          Create run
-        </Button>
+        {step === 1 ? (
+          <>
+            <Button variant="outline" onClick={onClose}>
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              onClick={handleNext}
+              disabled={!canProceed}
+            >
+              Next
+            </Button>
+          </>
+        ) : (
+          <>
+            <Button variant="outline" onClick={() => setStep(1)}>
+              Back
+            </Button>
+            <Button
+              variant="primary"
+              onClick={handleSubmit}
+              loading={submitting}
+              disabled={!canSubmit}
+            >
+              Create run
+            </Button>
+          </>
+        )}
       </ModalFooter>
     </Modal>
   )

@@ -707,7 +707,7 @@ export default function ReserveJoinPage() {
     <div className="min-h-screen bg-background">
       {/* Minimal header — pinned. Matches the landing nav wordmark */}
       <div className="sticky top-0 z-40 border-b border-border bg-background-elevated/95 backdrop-blur-sm">
-        <div className="px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between gap-4">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between gap-4">
           <Link href={homeHref} className="flex items-center gap-3" aria-label="LootList+ home">
             <Image
               src="/images/landing/logo-landing.svg"
@@ -757,7 +757,7 @@ export default function ReserveJoinPage() {
         </div>
       </div>
 
-      <div className="p-4 sm:p-6 lg:p-8 space-y-5">
+      <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 space-y-5">
         {/* Run info card */}
         <Card variant="unified">
           <div className="flex items-start gap-4">
