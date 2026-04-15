@@ -34,8 +34,8 @@ export const metadata: Metadata = {
     type: 'website',
     images: [{
       url: 'https://www.getlootlist.com/og-image.png',
-      width: 1200,
-      height: 630,
+      width: 2400,
+      height: 1264,
       alt: 'LootList+ - Loot Management for WoW Classic Guilds',
     }],
   },

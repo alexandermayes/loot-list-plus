@@ -1,6 +1,5 @@
 import type { Metadata } from 'next'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
-import { getRaidIconLarge } from '@/utils/raidIcons'
 
 /**
  * Discord/Twitter/etc. link unfurl metadata for a reserve run.
@@ -39,7 +38,6 @@ export async function generateMetadata({
 
     const raidName = raidTier?.name || 'Raid'
     const guildName = guild?.name
-    const iconUrl = getRaidIconLarge(raidName)
 
     const raidDate = new Date(run.raid_at).toLocaleString('en-US', {
       weekday: 'short',
@@ -70,21 +68,12 @@ export async function generateMetadata({
         title,
         description,
         type: 'website',
-        siteName: 'LootList+',
-        images: [
-          {
-            url: iconUrl,
-            width: 256,
-            height: 256,
-            alt: raidName,
-          },
-        ],
+        siteName: 'LootList+ Reserve',
       },
       twitter: {
-        card: 'summary',
+        card: 'summary_large_image',
         title,
         description,
-        images: [iconUrl],
       },
     }
   } catch {
