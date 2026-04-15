@@ -1393,9 +1393,16 @@ export default function RaidTrackingPage() {
       signups: { success: 0, failed: 0 }
     }
 
-    // Import Attendance — only if attendance data was actually provided
-    // Don't mark anyone as No Show when only importing loot
-    if (attendanceData.trim()) {
+    // Import Attendance — only if attendance data was actually provided AND
+    // the user changed it from the pre-fill. In edit mode the text field is
+    // pre-populated with only "attended" names, which excludes no-show /
+    // benched / excused members. If we ran the import with unchanged
+    // pre-fill data, those non-attended statuses would be deleted (the
+    // import treats the paste as the authoritative list and removes
+    // everyone else). Skipping unchanged data fixes the "loot-only edit
+    // resets attendance" bug.
+    const attendanceChanged = !showImportModal.isEdit || attendanceData !== initialAttendanceData
+    if (attendanceData.trim() && attendanceChanged) {
       const names = parseMRTNames(attendanceData)
       const namesLower = names.map(n => n.toLowerCase())
 
@@ -1539,8 +1546,9 @@ export default function RaidTrackingPage() {
       }
     }
 
-    // Import Signups (if enabled and data provided)
-    if (guildSettings?.use_signups && signupsData.trim()) {
+    // Import Signups (if enabled and data provided, and changed from pre-fill)
+    const signupsChanged = !showImportModal.isEdit || signupsData !== initialSignupsData
+    if (guildSettings?.use_signups && signupsData.trim() && signupsChanged) {
       const names = parseMRTNames(signupsData)
       const signupCharacterIds: string[] = []
       const unlinkedSignupNames: string[] = []
