@@ -1310,6 +1310,12 @@ export const throneOfThunder: Raid = {
         { name: 'Worldbender Waistband', slot: 'Waist', wowhead_id: 94997 },
       ],
     },
+    {
+      name: 'Crafting Materials',
+      items: [
+        { name: 'Haunting Spirit', slot: 'Crafting', wowhead_id: 94289 },
+      ],
+    },
   ],
 }
 
@@ -1995,6 +2001,12 @@ export const siegeOfOrgrimmar: Raid = {
         { name: 'Cord of Black Dreams (Heroic)', slot: 'Waist', wowhead_id: 104639 },
         { name: 'Seal of Karmic Return', slot: 'Waist', wowhead_id: 103906 },
         { name: 'Seal of Karmic Return (Heroic)', slot: 'Waist', wowhead_id: 104655 },
+      ],
+    },
+    {
+      name: 'Crafting Materials',
+      items: [
+        { name: 'Spirit of War', slot: 'Crafting', wowhead_id: 98717 },
       ],
     },
   ],

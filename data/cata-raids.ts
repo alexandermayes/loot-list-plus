@@ -838,6 +838,12 @@ export const firelands: Raid = {
         { name: 'Majordomo\'s Chain of Office (Heroic)', slot: 'Waist', wowhead_id: 71613 },
       ],
     },
+    {
+      name: 'Crafting Materials',
+      items: [
+        { name: 'Living Ember', slot: 'Crafting', wowhead_id: 69237 },
+      ],
+    },
   ],
 }
 
@@ -1192,6 +1198,12 @@ export const dragonSoul: Raid = {
         { name: 'Kiril, Fury of Beasts (Heroic)', slot: 'Two-Hand', wowhead_id: 78473 },
         { name: 'Ti\'tahk, the Steps of Time', slot: 'Two-Hand', wowhead_id: 77190 },
         { name: 'Ti\'tahk, the Steps of Time (Heroic)', slot: 'Two-Hand', wowhead_id: 78477 },
+      ],
+    },
+    {
+      name: 'Crafting Materials',
+      items: [
+        { name: 'Essence of Destruction', slot: 'Crafting', wowhead_id: 71998 },
       ],
     },
   ],

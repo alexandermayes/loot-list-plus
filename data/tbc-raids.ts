@@ -497,6 +497,12 @@ export const serpentshrinecavern: Raid = {
         // Quest Item
         { name: 'Vashj\'s Vial Remnant', slot: 'Quest', wowhead_id: 29906 },
       ],
+    },
+    {
+      name: 'Crafting Materials',
+      items: [
+        { name: 'Nether Vortex', slot: 'Crafting', wowhead_id: 30183 },
+      ],
     }
   ],
 }
@@ -615,6 +621,12 @@ export const tempestkeep: Raid = {
         { name: 'Pattern: Boots of Blasting', slot: 'Recipe', wowhead_id: 30282 },
         { name: 'Pattern: Boots of the Long Road', slot: 'Recipe', wowhead_id: 30283 },
       ],
+    },
+    {
+      name: 'Crafting Materials',
+      items: [
+        { name: 'Nether Vortex', slot: 'Crafting', wowhead_id: 30183 },
+      ],
     }
   ],
 }
@@ -712,6 +724,12 @@ export const mounthyjal: Raid = {
         { name: 'Helm of the Forgotten Conqueror', slot: 'Token', wowhead_id: 31097 },
         { name: 'Helm of the Forgotten Protector', slot: 'Token', wowhead_id: 31095 },
         { name: 'Helm of the Forgotten Vanquisher', slot: 'Token', wowhead_id: 31096 },
+      ],
+    },
+    {
+      name: 'Crafting Materials',
+      items: [
+        { name: 'Heart of Darkness', slot: 'Crafting', wowhead_id: 32428 },
       ],
     }
   ],
@@ -886,6 +904,12 @@ export const blacktemple: Raid = {
         // Warglaives of Azzinoth (Legendary)
         { name: 'Warglaive of Azzinoth (Main Hand)', slot: 'Legendary', wowhead_id: 32837 },
         { name: 'Warglaive of Azzinoth (Off Hand)', slot: 'Legendary', wowhead_id: 32838 },
+      ],
+    },
+    {
+      name: 'Crafting Materials',
+      items: [
+        { name: 'Heart of Darkness', slot: 'Crafting', wowhead_id: 32428 },
       ],
     }
   ],
@@ -1102,6 +1126,12 @@ export const sunwellplateau: Raid = {
         { name: 'Crown of Anasterian', slot: 'Head', wowhead_id: 34345 },
         { name: 'Dark Conjuror\'s Collar', slot: 'Head', wowhead_id: 34340 },
         { name: 'Thori\'dal, the Stars\' Fury', slot: 'Ranged', wowhead_id: 34334 },
+      ],
+    },
+    {
+      name: 'Crafting Materials',
+      items: [
+        { name: 'Sunmote', slot: 'Crafting', wowhead_id: 34664 },
       ],
     }
   ],

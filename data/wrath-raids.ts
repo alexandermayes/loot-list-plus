@@ -875,6 +875,12 @@ export const ulduar: Raid = {
         { name: 'Solar Bindings', slot: 'Wrist', wowhead_id: 45611 },
       ],
     },
+    {
+      name: 'Crafting Materials',
+      items: [
+        { name: 'Runed Orb', slot: 'Crafting', wowhead_id: 45087 },
+      ],
+    },
   ],
 }
 
@@ -1234,6 +1240,12 @@ export const trialOfTheCrusader: Raid = {
         { name: 'Bindings of the Ashen Saint (Heroic)', slot: 'Wrist', wowhead_id: 47485 },
         { name: 'Bracers of Dark Determination', slot: 'Wrist', wowhead_id: 47151 },
         { name: 'Bracers of Dark Determination (Heroic)', slot: 'Wrist', wowhead_id: 47155 },
+      ],
+    },
+    {
+      name: 'Crafting Materials',
+      items: [
+        { name: 'Crusader Orb', slot: 'Crafting', wowhead_id: 47556 },
       ],
     },
   ],
@@ -1655,6 +1667,12 @@ export const icecrownCitadel: Raid = {
         { name: 'Glorenzelg, High-Blade of the Silver Hand (Heroic)', slot: 'Two-Hand', wowhead_id: 50730 },
         { name: 'Oathbinder, Charge of the Ranger-General', slot: 'Two-Hand', wowhead_id: 50425 },
         { name: 'Oathbinder, Charge of the Ranger-General (Heroic)', slot: 'Two-Hand', wowhead_id: 50735 },
+      ],
+    },
+    {
+      name: 'Crafting Materials',
+      items: [
+        { name: 'Primordial Saronite', slot: 'Crafting', wowhead_id: 49908 },
       ],
     },
   ],
