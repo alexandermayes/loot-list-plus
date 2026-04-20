@@ -15,6 +15,15 @@ export const metadata: Metadata = {
 
 const posts = [
   {
+    slug: 'the-officer-burnout-problem-and-how-to-fix-it',
+    title: 'The Officer Burnout Problem (and How to Fix It)',
+    description:
+      'Guild officers burn out quietly and take the guild down with them. Here\'s why it happens, what accelerates it, and how to build an officer structure that lasts.',
+    date: 'April 19, 2026',
+    readTime: '8 min read',
+    tag: 'Guide',
+  },
+  {
     slug: 'how-to-onboard-new-raiders-without-killing-morale',
     title: 'How to Onboard New Raiders Without Killing Morale',
     description:
