@@ -301,9 +301,20 @@ export async function middleware(request: NextRequest) {
     // Protected routes: refresh session cookies and gate on auth
     const { response, user } = await refreshSupabaseSession(request)
     if (!user) {
+      // Clear stale auth cookies that the middleware can't parse but the
+      // server-side Supabase client might partially accept, which would
+      // cause page.tsx to think the user is authenticated → redirect to
+      // /overview → middleware rejects again → infinite loop.
       const loginUrl = new URL('/', request.url)
       loginUrl.searchParams.set('next', pathname)
-      return NextResponse.redirect(loginUrl)
+      const redirectResponse = NextResponse.redirect(loginUrl)
+      const cookies = request.cookies.getAll()
+      for (const cookie of cookies) {
+        if (/^sb-.*-auth-token(\.\d+)?$/.test(cookie.name)) {
+          redirectResponse.cookies.delete(cookie.name)
+        }
+      }
+      return redirectResponse
     }
 
     return response
