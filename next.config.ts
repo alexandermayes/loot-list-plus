@@ -93,15 +93,21 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
-  // Redirect non-www getlootlist.com to www (canonical)
-  // The landing page is served on www.getlootlist.com via hostname-based routing in app/page.tsx
-  // App routes on getlootlist.com are behind auth so they naturally show login if accessed directly
+  // Redirect non-www to www on both domains (canonical).
+  // Without this, cookies set on lootlistplus.com aren't sent to
+  // www.lootlistplus.com, which breaks auth after the OAuth callback.
   async redirects() {
     return [
       {
         source: '/:path*',
         has: [{ type: 'host', value: 'getlootlist.com' }],
         destination: 'https://www.getlootlist.com/:path*',
+        permanent: true,
+      },
+      {
+        source: '/:path*',
+        has: [{ type: 'host', value: 'lootlistplus.com' }],
+        destination: 'https://www.lootlistplus.com/:path*',
         permanent: true,
       },
     ]
