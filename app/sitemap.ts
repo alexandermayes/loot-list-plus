@@ -46,13 +46,13 @@ export default function sitemap(): MetadataRoute.Sitemap {
     },
     {
       url: 'https://www.getlootlist.com/blog/dkp-is-dead-what-classic-guilds-use-in-2026',
-      lastModified: new Date(2026, 2, 23),
+      lastModified: new Date(2026, 3, 2),
       changeFrequency: 'monthly',
       priority: 0.9,
     },
     {
       url: 'https://www.getlootlist.com/blog/why-attendance-tracking-matters-more-than-loot-rules',
-      lastModified: new Date(2026, 2, 23),
+      lastModified: new Date(2026, 2, 26),
       changeFrequency: 'monthly',
       priority: 0.9,
     },

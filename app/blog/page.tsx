@@ -11,6 +11,31 @@ export const metadata: Metadata = {
   alternates: {
     canonical: 'https://www.getlootlist.com/blog',
   },
+  openGraph: {
+    title: 'Blog | LootList+',
+    description:
+      'Guides and tips for WoW guild management, loot systems, and raid organization.',
+    url: 'https://www.getlootlist.com/blog',
+    type: 'website',
+  },
+}
+
+const breadcrumbLd = {
+  '@context': 'https://schema.org',
+  '@type': 'BreadcrumbList',
+  itemListElement: [
+    {
+      '@type': 'ListItem',
+      position: 1,
+      name: 'Home',
+      item: 'https://www.getlootlist.com',
+    },
+    {
+      '@type': 'ListItem',
+      position: 2,
+      name: 'Blog',
+    },
+  ],
 }
 
 const posts = [
@@ -64,6 +89,10 @@ const posts = [
 export default function BlogIndex() {
   return (
     <main className="bg-background overflow-x-hidden" style={{ background: 'linear-gradient(180deg, #0f0e12 0%, #080808 40%)' }}>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }}
+      />
       <LandingNav />
 
       <section className="relative pt-32 pb-20 px-6 md:px-12 lg:px-20">
