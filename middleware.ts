@@ -299,8 +299,17 @@ export async function middleware(request: NextRequest) {
     }
 
     // Protected routes: refresh session cookies and gate on auth
+    const authCookieNames = request.cookies.getAll()
+      .filter(c => /^sb-.*-auth-token(\.\d+)?$/.test(c.name))
+      .map(c => c.name)
     const { response, user } = await refreshSupabaseSession(request)
     if (!user) {
+      console.log(`[middleware] auth failed`, JSON.stringify({
+        path: pathname,
+        hasAuthCookies: authCookieNames.length > 0,
+        cookieNames: authCookieNames,
+        userAgent: request.headers.get('user-agent')?.slice(0, 80),
+      }))
       // Clear stale auth cookies that the middleware can't parse but the
       // server-side Supabase client might partially accept, which would
       // cause page.tsx to think the user is authenticated → redirect to
