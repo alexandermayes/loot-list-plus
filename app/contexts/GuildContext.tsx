@@ -6,6 +6,7 @@ import { useRouter, usePathname } from 'next/navigation'
 import { useNotification } from '@/app/contexts/NotificationContext'
 import posthog from 'posthog-js'
 import type { User, AuthChangeEvent, Session } from '@supabase/supabase-js'
+import { usePrefetchedGuildData } from '@/app/(app)/PrefetchProvider'
 
 // Re-export expansion types for backward compatibility
 export type { GuildExpansion } from './ExpansionContext'
@@ -128,6 +129,15 @@ const GuildActionsContext = createContext<GuildActionsContextType | undefined>(u
 
 // Provider component
 export function GuildContextProvider({ children }: { children: ReactNode }) {
+  // Server-side prefetched data (available when rendering under (app)/ layout)
+  let prefetchedData: ReturnType<typeof usePrefetchedGuildData> = null
+  try {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    prefetchedData = usePrefetchedGuildData()
+  } catch {
+    // Not inside PrefetchProvider (e.g., guild-select, landing pages) — that's fine
+  }
+  const prefetchConsumed = useRef(false)
   // Existing State
   const [activeGuild, setActiveGuild] = useState<Guild | null>(null)
   const [activeMember, setActiveMember] = useState<GuildMember | null>(null)
@@ -161,8 +171,23 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
     try {
       setLoading(true)
 
-      // Authenticate first — this was previously in loadGuilds
-      const { data: { user: currentUser } } = await supabase.auth.getUser()
+      // Use server-prefetched data if available (eliminates 400-800ms of network calls)
+      const usePrefetch = prefetchedData?.user && !prefetchConsumed.current
+      if (usePrefetch) {
+        prefetchConsumed.current = true
+      }
+
+      // Authenticate first — skip network call if we have prefetched data
+      let currentUser: User | null = null
+      if (usePrefetch) {
+        // Trust the server-side auth check — construct a minimal user object
+        // The Supabase client will still have the session from cookies for subsequent calls
+        currentUser = { id: prefetchedData!.user!.id, email: prefetchedData!.user!.email } as User
+      } else {
+        const { data: { user: fetchedUser } } = await supabase.auth.getUser()
+        currentUser = fetchedUser
+      }
+
       if (!currentUser) {
         setActiveGuild(null)
         setActiveMember(null)
@@ -176,35 +201,46 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
       }
       setUser(currentUser)
 
-      // Fetch characters and active character preference in parallel
-      // (both only need currentUser.id, no interdependency)
-      const [charactersResult, activeCharResult] = await Promise.all([
-        supabase
-          .from('characters')
-          .select(`
-            *,
-            class:wow_classes (
-              id,
-              name,
-              color_hex
-            ),
-            spec:class_specs (
-              id,
-              name
-            )
-          `)
-          .eq('user_id', currentUser.id)
-          .order('is_main', { ascending: false })
-          .order('created_at', { ascending: true }),
-        supabase
-          .from('user_active_characters')
-          .select('active_character_id, active_guild_id')
-          .eq('user_id', currentUser.id)
-          .maybeSingle(),
-      ])
+      // Use prefetched data or fetch from client
+      let characters: any[] | null
+      let charactersError: any = null
+      let activeCharData: { active_character_id: string | null; active_guild_id: string | null } | null
 
-      const { data: characters, error: charactersError } = charactersResult
-      const { data: activeCharData } = activeCharResult
+      if (usePrefetch) {
+        characters = prefetchedData!.characters
+        activeCharData = prefetchedData!.activePreferences
+      } else {
+        // Fetch characters and active character preference in parallel
+        // (both only need currentUser.id, no interdependency)
+        const [charactersResult, activeCharResult] = await Promise.all([
+          supabase
+            .from('characters')
+            .select(`
+              *,
+              class:wow_classes (
+                id,
+                name,
+                color_hex
+              ),
+              spec:class_specs (
+                id,
+                name
+              )
+            `)
+            .eq('user_id', currentUser.id)
+            .order('is_main', { ascending: false })
+            .order('created_at', { ascending: true }),
+          supabase
+            .from('user_active_characters')
+            .select('active_character_id, active_guild_id')
+            .eq('user_id', currentUser.id)
+            .maybeSingle(),
+        ])
+
+        characters = charactersResult.data
+        charactersError = charactersResult.error
+        activeCharData = activeCharResult.data
+      }
 
       if (charactersError) {
         console.error('Error loading characters:', charactersError)
@@ -230,62 +266,70 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
         enrichedCharacters = characters
         setUserCharacters(enrichedCharacters)
 
-        // Fetch memberships with guild_roles embedded in the guild join
-        // (eliminates a separate sequential guild_roles query)
-        const { data: memberships, error: membershipsError } = await supabase
-          .from('character_guild_memberships')
-          .select(`
-            id,
-            character_id,
-            guild_id,
-            role,
-            is_active,
-            joined_at,
-            joined_via,
-            character:characters (
+        // Use prefetched memberships or fetch from client
+        let memberships: any[] | null
+        let membershipsError: any = null
+
+        if (usePrefetch && prefetchedData!.memberships) {
+          memberships = prefetchedData!.memberships
+        } else {
+          const membershipsResult = await supabase
+            .from('character_guild_memberships')
+            .select(`
               id,
-              user_id,
-              name,
-              realm,
-              class_id,
-              spec_id,
-              level,
-              is_main,
-              battle_net_id,
-              region,
-              created_at,
-              updated_at,
-              class:wow_classes (
-                id,
-                name,
-                color_hex
-              ),
-              spec:class_specs (
-                id,
-                name
-              )
-            ),
-            guild:guilds (
-              id,
-              name,
-              realm,
-              faction,
-              discord_server_id,
-              icon_url,
-              created_by,
+              character_id,
+              guild_id,
+              role,
               is_active,
-              require_discord_verification,
-              created_at,
-              active_expansion_id,
-              subscription_tier,
-              guild_roles (
+              joined_at,
+              joined_via,
+              character:characters (
+                id,
+                user_id,
                 name,
-                position
+                realm,
+                class_id,
+                spec_id,
+                level,
+                is_main,
+                battle_net_id,
+                region,
+                created_at,
+                updated_at,
+                class:wow_classes (
+                  id,
+                  name,
+                  color_hex
+                ),
+                spec:class_specs (
+                  id,
+                  name
+                )
+              ),
+              guild:guilds (
+                id,
+                name,
+                realm,
+                faction,
+                discord_server_id,
+                icon_url,
+                created_by,
+                is_active,
+                require_discord_verification,
+                created_at,
+                active_expansion_id,
+                subscription_tier,
+                guild_roles (
+                  name,
+                  position
+                )
               )
-            )
-          `)
-          .in('character_id', characterIds)
-          .eq('is_active', true)
+            `)
+            .in('character_id', characterIds)
+            .eq('is_active', true)
+          memberships = membershipsResult.data
+          membershipsError = membershipsResult.error
+        }
 
         if (membershipsError) {
           console.error('Error loading character memberships:', membershipsError)

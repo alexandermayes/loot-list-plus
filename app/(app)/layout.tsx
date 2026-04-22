@@ -1,7 +1,122 @@
 import AppLayout from './AppLayout.client'
+import { PrefetchProvider, type PrefetchedGuildData } from './PrefetchProvider'
+import { createClient } from '@/utils/supabase/server'
 
-export const dynamic = 'force-dynamic'
+export default async function Layout({ children }: { children: React.ReactNode }) {
+  let prefetchedData: PrefetchedGuildData | null = null
 
-export default function Layout({ children }: { children: React.ReactNode }) {
-  return <AppLayout>{children}</AppLayout>
+  try {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (user) {
+      // Run characters and active preferences queries in parallel
+      const [charactersResult, activeResult] = await Promise.all([
+        supabase
+          .from('characters')
+          .select(`
+            *,
+            class:wow_classes (
+              id,
+              name,
+              color_hex
+            ),
+            spec:class_specs (
+              id,
+              name
+            )
+          `)
+          .eq('user_id', user.id)
+          .order('is_main', { ascending: false })
+          .order('created_at', { ascending: true }),
+        supabase
+          .from('user_active_characters')
+          .select('active_character_id, active_guild_id')
+          .eq('user_id', user.id)
+          .maybeSingle(),
+      ])
+
+      const characters = charactersResult.data
+      const activePrefs = activeResult.data
+
+      // Fetch memberships if we have characters
+      let memberships = null
+      if (characters && characters.length > 0) {
+        const characterIds = characters.map((c: { id: string }) => c.id)
+        const { data: membershipsData } = await supabase
+          .from('character_guild_memberships')
+          .select(`
+            id,
+            character_id,
+            guild_id,
+            role,
+            is_active,
+            joined_at,
+            joined_via,
+            character:characters (
+              id,
+              user_id,
+              name,
+              realm,
+              class_id,
+              spec_id,
+              level,
+              is_main,
+              battle_net_id,
+              region,
+              created_at,
+              updated_at,
+              class:wow_classes (
+                id,
+                name,
+                color_hex
+              ),
+              spec:class_specs (
+                id,
+                name
+              )
+            ),
+            guild:guilds (
+              id,
+              name,
+              realm,
+              faction,
+              discord_server_id,
+              icon_url,
+              created_by,
+              is_active,
+              require_discord_verification,
+              created_at,
+              active_expansion_id,
+              subscription_tier,
+              guild_roles (
+                name,
+                position
+              )
+            )
+          `)
+          .in('character_id', characterIds)
+          .eq('is_active', true)
+        memberships = membershipsData
+      }
+
+      prefetchedData = {
+        user: { id: user.id, email: user.email },
+        characters,
+        activePreferences: activePrefs ? {
+          active_character_id: activePrefs.active_character_id,
+          active_guild_id: activePrefs.active_guild_id,
+        } : null,
+        memberships,
+      }
+    }
+  } catch {
+    // Prefetch failed — GuildContext will fall back to client-side fetching
+  }
+
+  return (
+    <PrefetchProvider data={prefetchedData}>
+      <AppLayout>{children}</AppLayout>
+    </PrefetchProvider>
+  )
 }
