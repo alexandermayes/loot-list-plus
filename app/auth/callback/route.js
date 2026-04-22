@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@/utils/supabase/server'
+import { createServerClient } from '@supabase/ssr'
+import { cookies } from 'next/headers'
 
 export async function GET(request) {
   const { searchParams, origin } = new URL(request.url)
@@ -11,14 +12,46 @@ export async function GET(request) {
   log('start', { hasCode: !!code, next, origin })
 
   if (code) {
-    const supabase = await createClient()
+    const cookieStore = await cookies()
+
+    // Build the Supabase client with cookie handling that works with
+    // NextResponse.redirect(). Using cookies() from next/headers alone
+    // does not reliably forward set-cookie headers through a redirect
+    // response. Instead, we track cookies ourselves and apply them to
+    // the final redirect response.
+    const cookiesToForward = []
+
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+      {
+        cookies: {
+          getAll() {
+            return cookieStore.getAll()
+          },
+          setAll(cookiesToSet) {
+            cookiesToSet.forEach(({ name, value, options }) => {
+              cookiesToForward.push({ name, value, options })
+              try {
+                cookieStore.set(name, value, options)
+              } catch {
+                // Ignore — we'll apply via response below
+              }
+            })
+          },
+        },
+      }
+    )
+
     const { error } = await supabase.auth.exchangeCodeForSession(code)
-    log('exchangeCode', { success: !error, error: error?.message || null })
+    log('exchangeCode', { success: !error, error: error?.message || null, cookiesSet: cookiesToForward.length })
 
     if (!error) {
       // Get the authenticated user
       const { data: { user } } = await supabase.auth.getUser()
       log('getUser', { userId: user?.id || null, email: user?.email || null, name: user?.user_metadata?.full_name || null })
+
+      let redirectPath = next || '/overview'
 
       if (user) {
         // Check if user has any guild memberships via character system
@@ -51,34 +84,39 @@ export async function GET(request) {
 
         // If user has no guilds, redirect to guild selection
         if (!hasMemberships) {
-          log('redirect', { to: '/guild-select', reason: 'no memberships' })
-          return NextResponse.redirect(`${origin}/guild-select`)
-        }
-
-        // If user has guilds, ensure they have an active guild set
-        const { data: existingActive } = await supabase
-          .from('user_active_characters')
-          .select('active_guild_id')
-          .eq('user_id', user.id)
-          .maybeSingle()
-
-        log('activeGuild', { existing: existingActive?.active_guild_id || null, firstGuildId })
-
-        if (!existingActive?.active_guild_id && firstGuildId) {
-          await supabase
+          redirectPath = '/guild-select'
+          log('redirect', { to: redirectPath, reason: 'no memberships' })
+        } else {
+          // If user has guilds, ensure they have an active guild set
+          const { data: existingActive } = await supabase
             .from('user_active_characters')
-            .upsert({
-              user_id: user.id,
-              active_guild_id: firstGuildId,
-              updated_at: new Date().toISOString()
-            })
+            .select('active_guild_id')
+            .eq('user_id', user.id)
+            .maybeSingle()
+
+          log('activeGuild', { existing: existingActive?.active_guild_id || null, firstGuildId })
+
+          if (!existingActive?.active_guild_id && firstGuildId) {
+            await supabase
+              .from('user_active_characters')
+              .upsert({
+                user_id: user.id,
+                active_guild_id: firstGuildId,
+                updated_at: new Date().toISOString()
+              })
+          }
         }
       }
 
-      // Redirect to specified next page or dashboard
-      const redirectTo = next || '/overview'
-      log('redirect', { to: redirectTo, reason: 'success' })
-      return NextResponse.redirect(`${origin}${redirectTo}`)
+      log('redirect', { to: redirectPath, reason: 'success', cookiesForwarded: cookiesToForward.length })
+
+      // Apply auth cookies to the redirect response so the browser
+      // receives the new session tokens alongside the 307.
+      const response = NextResponse.redirect(`${origin}${redirectPath}`)
+      for (const { name, value, options } of cookiesToForward) {
+        response.cookies.set(name, value, options)
+      }
+      return response
     }
   }
 
