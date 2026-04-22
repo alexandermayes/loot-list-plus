@@ -108,7 +108,20 @@ export async function GET(request) {
         }
       }
 
-      log('redirect', { to: redirectPath, reason: 'success', cookiesForwarded: cookiesToForward.length })
+      log('redirect', {
+        to: redirectPath,
+        reason: 'success',
+        cookiesForwarded: cookiesToForward.map(c => ({
+          name: c.name,
+          valueLen: c.value?.length,
+          httpOnly: c.options?.httpOnly,
+          secure: c.options?.secure,
+          sameSite: c.options?.sameSite,
+          path: c.options?.path,
+          domain: c.options?.domain,
+          maxAge: c.options?.maxAge,
+        })),
+      })
 
       // Apply auth cookies to the redirect response so the browser
       // receives the new session tokens alongside the 307.
