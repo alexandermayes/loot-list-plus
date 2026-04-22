@@ -73,6 +73,7 @@ function ScoreBreakdownPopover({
   onMouseEnter,
   onMouseLeave,
   anchorRef,
+  gapOverNext,
 }: {
   ranking: PlayerRanking
   config: Partial<ScoringConfig>
@@ -80,6 +81,7 @@ function ScoreBreakdownPopover({
   onMouseEnter: () => void
   onMouseLeave: () => void
   anchorRef: HTMLElement | null
+  gapOverNext?: number | null
 }) {
   const [position, setPosition] = useState<{ top: number; left: number } | null>(null)
 
@@ -125,6 +127,11 @@ function ScoreBreakdownPopover({
       )}
       {!ranking.is_eligible && (
         <p className="text-[10px] text-destructive mt-1.5 pt-1.5 border-t border-border">Ineligible (min raids not met)</p>
+      )}
+      {gapOverNext != null && gapOverNext > 0.01 && (
+        <p className="text-[10px] text-muted-foreground mt-1.5 pt-1.5 border-t border-border">
+          {gapOverNext.toFixed(decimalPlaces)} point lead over #2
+        </p>
       )}
     </div>,
     document.body
@@ -466,6 +473,11 @@ const ItemRow = memo(function ItemRow({
                       onMouseEnter={cancelHide}
                       onMouseLeave={scheduleHide}
                       anchorRef={hoveredPopover.anchor}
+                      gapOverNext={
+                        index === 0 && ir.rankings[1]
+                          ? ranking.loot_score - ir.rankings[1].loot_score
+                          : null
+                      }
                     />
                   )}
                   {canCompare && (
