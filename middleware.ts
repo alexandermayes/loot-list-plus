@@ -243,13 +243,16 @@ async function refreshSupabaseSession(request: NextRequest): Promise<{ response:
       // Token found but couldn't decode exp — fall through to slow path
     }
   } else {
-    // No cookie at all — skip Supabase, let the route gate redirect.
+    // Check if auth cookies exist but couldn't be parsed locally.
+    // If cookies exist, fall through to the slow path and let Supabase
+    // SDK parse them (it handles chunked/base64 formats we may not).
+    // Only bail early if there are truly no auth cookies at all.
     const cookies = request.cookies.getAll()
     const authCookies = cookies.filter((c) => /^sb-.*-auth-token(\.\d+)?$/.test(c.name))
-    const reason = authCookies.length === 0
-      ? 'no_auth_cookies'
-      : `parse_failed_${authCookies.length}chunks_${authCookies.map(c => `${c.name}:${c.value?.length}b`).join('+')}`
-    return { response, user: null, debugReason: reason }
+    if (authCookies.length === 0) {
+      return { response, user: null, debugReason: 'no_auth_cookies' }
+    }
+    // Fall through to slow path — cookies exist but local parse failed
   }
 
   // Slow path: token is missing expiry, close to expiry, or malformed.
