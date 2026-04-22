@@ -1609,11 +1609,11 @@ export default function MasterSheetContent() {
 
         {/* Phase Tabs - Sticky */}
         {initialLoading ? (
-          <div className="sticky top-14 sm:top-0 z-20 px-4 sm:px-6 lg:px-8 py-2.5 bg-background border-b border-border">
+          <div className="sticky top-14 sm:top-0 z-20 px-4 sm:px-6 lg:px-8 py-2.5 bg-background">
             <TierTabsSkeleton />
           </div>
         ) : phases.length > 0 && (
-          <div className="sticky top-14 sm:top-0 z-20 px-4 sm:px-6 lg:px-8 py-2.5 bg-background border-b border-border">
+          <div className="sticky top-14 sm:top-0 z-20 px-4 sm:px-6 lg:px-8 py-2.5 bg-background">
             <div className="flex items-center gap-3">
               {/* Mobile: Dropdown selector */}
               <div className="sm:hidden flex-1">
