@@ -221,10 +221,8 @@ function readAccessTokenFromCookies(request: NextRequest): string | null {
 // navigation, so this was our TTFB floor. We now inspect the auth cookie
 // directly and only call Supabase when the access token is about to expire,
 // turning 99% of requests into local cookie reads.
-async function refreshSupabaseSession(request: NextRequest): Promise<{ response: NextResponse; user: unknown }> {
+async function refreshSupabaseSession(request: NextRequest): Promise<{ response: NextResponse; user: unknown; debugReason?: string }> {
   const response = NextResponse.next({ request })
-  const pathname = request.nextUrl.pathname
-  const isDebug = pathname === '/overview'
 
   // Fast path: inspect the cookie JWT locally. If it's still valid for at
   // least TOKEN_REFRESH_THRESHOLD_SECONDS, skip the network call entirely.
@@ -234,39 +232,28 @@ async function refreshSupabaseSession(request: NextRequest): Promise<{ response:
     if (exp !== null) {
       const nowSeconds = Math.floor(Date.now() / 1000)
       const secondsLeft = exp - nowSeconds
-      if (isDebug) {
-        console.log(`[middleware:debug] fast-path`, JSON.stringify({ tokenLen: accessToken.length, exp, nowSeconds, secondsLeft, threshold: TOKEN_REFRESH_THRESHOLD_SECONDS }))
-      }
       if (secondsLeft > TOKEN_REFRESH_THRESHOLD_SECONDS) {
         // Token is healthy. Return a truthy "user" marker so the route gate
         // lets the request through. We don't actually need the user object
         // in middleware — downstream server components re-read auth.
         return { response, user: { authenticated: true } }
       }
-    } else if (isDebug) {
-      console.log(`[middleware:debug] token found but exp is null, tokenLen=${accessToken.length}`)
+      // Token near expiry — fall through to slow path
+    } else {
+      // Token found but couldn't decode exp — fall through to slow path
     }
   } else {
     // No cookie at all — skip Supabase, let the route gate redirect.
-    if (isDebug) {
-      const cookies = request.cookies.getAll()
-      const authCookies = cookies.filter((c) => /^sb-.*-auth-token(\.\d+)?$/.test(c.name))
-      console.log(`[middleware:debug] no access token parsed`, JSON.stringify({
-        totalCookies: cookies.length,
-        authCookieCount: authCookies.length,
-        authCookieNames: authCookies.map(c => c.name),
-        authCookieValueLens: authCookies.map(c => ({ name: c.name, len: c.value?.length })),
-        rawConcatenated: authCookies.sort((a, b) => a.name.localeCompare(b.name)).map(c => c.value).join('').slice(0, 50) + '...',
-      }))
-    }
-    return { response, user: null }
+    const cookies = request.cookies.getAll()
+    const authCookies = cookies.filter((c) => /^sb-.*-auth-token(\.\d+)?$/.test(c.name))
+    const reason = authCookies.length === 0
+      ? 'no_auth_cookies'
+      : `parse_failed_${authCookies.length}chunks_${authCookies.map(c => `${c.name}:${c.value?.length}b`).join('+')}`
+    return { response, user: null, debugReason: reason }
   }
 
   // Slow path: token is missing expiry, close to expiry, or malformed.
   // Fall back to a real Supabase call so the SDK can refresh cookies.
-  if (isDebug) {
-    console.log(`[middleware:debug] slow-path, calling getUser()`)
-  }
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -286,11 +273,8 @@ async function refreshSupabaseSession(request: NextRequest): Promise<{ response:
   )
 
   const { data: { user } } = await supabase.auth.getUser()
-  if (isDebug) {
-    console.log(`[middleware:debug] slow-path result`, JSON.stringify({ hasUser: !!user, userId: (user as { id?: string } | null)?.id || null }))
-  }
 
-  return { response, user }
+  return { response, user, debugReason: user ? undefined : 'getUser_null' }
 }
 
 export async function middleware(request: NextRequest) {
@@ -323,23 +307,17 @@ export async function middleware(request: NextRequest) {
     }
 
     // Protected routes: refresh session cookies and gate on auth
-    const authCookieNames = request.cookies.getAll()
-      .filter(c => /^sb-.*-auth-token(\.\d+)?$/.test(c.name))
-      .map(c => c.name)
-    const { response, user } = await refreshSupabaseSession(request)
+    const { response, user, debugReason } = await refreshSupabaseSession(request)
     if (!user) {
-      console.log(`[middleware] auth failed`, JSON.stringify({
-        path: pathname,
-        hasAuthCookies: authCookieNames.length > 0,
-        cookieNames: authCookieNames,
-        userAgent: request.headers.get('user-agent')?.slice(0, 80),
-      }))
       // Clear stale auth cookies that the middleware can't parse but the
       // server-side Supabase client might partially accept, which would
       // cause page.tsx to think the user is authenticated → redirect to
       // /overview → middleware rejects again → infinite loop.
       const loginUrl = new URL('/', request.url)
       loginUrl.searchParams.set('next', pathname)
+      if (debugReason) {
+        loginUrl.searchParams.set('_debug', debugReason)
+      }
       const redirectResponse = NextResponse.redirect(loginUrl)
       const cookies = request.cookies.getAll()
       for (const cookie of cookies) {
