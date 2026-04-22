@@ -1732,7 +1732,7 @@ export default function MasterSheetContent() {
         {/* Boss Quick Navigation - Sticky below tier tabs (rankings view only) */}
         {/* Skeleton placeholder during loading to prevent CLS */}
         {(initialLoading || contentLoading) && viewMode === 'rankings' && (
-          <div className="sticky top-[112px] sm:top-[56px] z-10 px-4 sm:px-6 lg:px-8 py-2.5 bg-background border-b border-border">
+          <div className="sticky top-[112px] sm:top-[56px] z-20 px-4 sm:px-6 lg:px-8 py-2.5 bg-background">
             <div className="hidden sm:flex gap-2">
               {Array.from({ length: 6 }).map((_, i) => (
                 <Skeleton key={i} className="h-9 w-28 rounded-[40px] flex-shrink-0" />
@@ -1746,7 +1746,7 @@ export default function MasterSheetContent() {
           </div>
         )}
         {!initialLoading && !contentLoading && bossNames.length > 0 && viewMode === 'rankings' && (
-          <div className="sticky top-[112px] sm:top-[56px] z-10 px-4 sm:px-6 lg:px-8 py-2.5 bg-background border-b border-border">
+          <div className="sticky top-[112px] sm:top-[56px] z-20 px-4 sm:px-6 lg:px-8 py-2.5 bg-background">
             {/* Mobile: Dropdown + Expand/Collapse */}
             <div className="sm:hidden flex gap-2">
               <Select
