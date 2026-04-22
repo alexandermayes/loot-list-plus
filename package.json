@@ -56,8 +56,7 @@
     "posthog-node": "^5.24.14",
     "react": "19.2.3",
     "react-dom": "19.2.3",
-    "swr": "^2.3.8",
-    "wow-classic-items": "^2.0.1"
+    "swr": "^2.3.8"
   },
   "devDependencies": {
     "@types/node": "^20",
@@ -75,6 +74,7 @@
     "tailwindcss-animate": "^1.0.7",
     "tsx": "^4.19.2",
     "typescript": "^5",
-    "vitest": "^4.1.0"
+    "vitest": "^4.1.0",
+    "wow-classic-items": "^2.0.1"
   }
 }
