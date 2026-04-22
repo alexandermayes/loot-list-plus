@@ -274,7 +274,7 @@ export const BossSection = memo(function BossSection({
                               if (index === 0 && ir.rankings[1]) {
                                 const gap = ranking.loot_score - ir.rankings[1].loot_score
                                 const threshold = Math.max(1, topScore * 0.1)
-                                if (gap > 0.01 && gap <= threshold) return <span className="text-[8px] text-muted-foreground/70">+{gap.toFixed(decimalPlaces)}</span>
+                                if (gap > 0.01 && gap <= threshold) return <span className="text-[8px] text-muted-foreground/70" title={`${gap.toFixed(decimalPlaces)} point lead over #2`}>+{gap.toFixed(decimalPlaces)}</span>
                               }
                               return null
                             })()}
@@ -426,8 +426,8 @@ const ItemRow = memo(function ItemRow({
                     e.stopPropagation()
                     onCompare(ir.item.name, ranking, ir.rankings[0])
                   } : undefined}
-                  onMouseEnter={isOfficer ? (e) => showPopover(index, e.currentTarget as HTMLElement) : undefined}
-                  onMouseLeave={isOfficer ? scheduleHide : undefined}
+                  onMouseEnter={(e) => showPopover(index, e.currentTarget as HTMLElement)}
+                  onMouseLeave={scheduleHide}
                 >
                   <span
                     className={`text-[13px] font-medium ${isCurrentUser ? 'underline decoration-dotted underline-offset-2' : ''}`}
@@ -453,12 +453,12 @@ const ItemRow = memo(function ItemRow({
                       if (index === 0 && ir.rankings[1]) {
                         const gap = ranking.loot_score - ir.rankings[1].loot_score
                         const threshold = Math.max(1, topScore * 0.1)
-                        if (gap > 0.01 && gap <= threshold) return <span className="ml-1 text-[9px] text-muted-foreground/70">+{gap.toFixed(decimalPlaces)}</span>
+                        if (gap > 0.01 && gap <= threshold) return <span className="ml-1 text-[9px] text-muted-foreground/70" title={`${gap.toFixed(decimalPlaces)} point lead over #2`}>+{gap.toFixed(decimalPlaces)}</span>
                       }
                       return null
                     })()}
                   </span>
-                  {hoveredPopover?.index === index && isOfficer && guildSettings && (
+                  {hoveredPopover?.index === index && guildSettings && (
                     <ScoreBreakdownPopover
                       ranking={ranking}
                       config={guildSettings}
