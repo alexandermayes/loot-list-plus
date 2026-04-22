@@ -223,6 +223,8 @@ function readAccessTokenFromCookies(request: NextRequest): string | null {
 // turning 99% of requests into local cookie reads.
 async function refreshSupabaseSession(request: NextRequest): Promise<{ response: NextResponse; user: unknown }> {
   const response = NextResponse.next({ request })
+  const pathname = request.nextUrl.pathname
+  const isDebug = pathname === '/overview'
 
   // Fast path: inspect the cookie JWT locally. If it's still valid for at
   // least TOKEN_REFRESH_THRESHOLD_SECONDS, skip the network call entirely.
@@ -232,20 +234,39 @@ async function refreshSupabaseSession(request: NextRequest): Promise<{ response:
     if (exp !== null) {
       const nowSeconds = Math.floor(Date.now() / 1000)
       const secondsLeft = exp - nowSeconds
+      if (isDebug) {
+        console.log(`[middleware:debug] fast-path`, JSON.stringify({ tokenLen: accessToken.length, exp, nowSeconds, secondsLeft, threshold: TOKEN_REFRESH_THRESHOLD_SECONDS }))
+      }
       if (secondsLeft > TOKEN_REFRESH_THRESHOLD_SECONDS) {
         // Token is healthy. Return a truthy "user" marker so the route gate
         // lets the request through. We don't actually need the user object
         // in middleware — downstream server components re-read auth.
         return { response, user: { authenticated: true } }
       }
+    } else if (isDebug) {
+      console.log(`[middleware:debug] token found but exp is null, tokenLen=${accessToken.length}`)
     }
   } else {
     // No cookie at all — skip Supabase, let the route gate redirect.
+    if (isDebug) {
+      const cookies = request.cookies.getAll()
+      const authCookies = cookies.filter((c) => /^sb-.*-auth-token(\.\d+)?$/.test(c.name))
+      console.log(`[middleware:debug] no access token parsed`, JSON.stringify({
+        totalCookies: cookies.length,
+        authCookieCount: authCookies.length,
+        authCookieNames: authCookies.map(c => c.name),
+        authCookieValueLens: authCookies.map(c => ({ name: c.name, len: c.value?.length })),
+        rawConcatenated: authCookies.sort((a, b) => a.name.localeCompare(b.name)).map(c => c.value).join('').slice(0, 50) + '...',
+      }))
+    }
     return { response, user: null }
   }
 
   // Slow path: token is missing expiry, close to expiry, or malformed.
   // Fall back to a real Supabase call so the SDK can refresh cookies.
+  if (isDebug) {
+    console.log(`[middleware:debug] slow-path, calling getUser()`)
+  }
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -265,6 +286,9 @@ async function refreshSupabaseSession(request: NextRequest): Promise<{ response:
   )
 
   const { data: { user } } = await supabase.auth.getUser()
+  if (isDebug) {
+    console.log(`[middleware:debug] slow-path result`, JSON.stringify({ hasUser: !!user, userId: (user as { id?: string } | null)?.id || null }))
+  }
 
   return { response, user }
 }
