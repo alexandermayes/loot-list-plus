@@ -2,15 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Friz Quadrata - WoW title font */
-@font-face {
-  font-family: 'Friz Quadrata';
-  src: url('/fonts/FrizQuadrata.woff') format('woff');
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-}
-
 /* Pulsing glow for floating items */
 .breathing-glow {
   animation: glowPulse var(--glow-duration, 4s) ease-in-out infinite;

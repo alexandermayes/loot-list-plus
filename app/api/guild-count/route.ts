@@ -1,8 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 
-export const dynamic = 'force-dynamic'
-export const revalidate = 3600 // Cache for 1 hour
+export const revalidate = 3600 // Cache for 1 hour (ISR)
 
 export async function GET() {
   const supabase = createServiceRoleClient()

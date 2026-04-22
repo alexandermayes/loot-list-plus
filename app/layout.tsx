@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Poppins } from "next/font/google";
+import localFont from "next/font/local";
 import Script from "next/script";
 import { GuildContextProvider } from "./contexts/GuildContext";
 import { ExpansionProvider } from "./contexts/ExpansionContext";
@@ -14,9 +15,16 @@ import "./globals.css";
 
 const poppins = Poppins({
   variable: "--font-poppins",
-  subsets: ["latin", "latin-ext"],
+  subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
   display: "swap",
+});
+
+const frizQuadrata = localFont({
+  src: "../public/fonts/FrizQuadrata.woff",
+  variable: "--font-wow",
+  display: "swap",
+  weight: "400",
 });
 
 export const metadata: Metadata = {
@@ -151,7 +159,7 @@ export default function RootLayout({
         />
       </head>
       <body
-        className={`${poppins.variable} antialiased font-sans`}
+        className={`${poppins.variable} ${frizQuadrata.variable} antialiased font-sans`}
       >
         <ThemeProvider
           attribute="class"

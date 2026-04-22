@@ -50,7 +50,6 @@ export const metadata: Metadata = {
 export default function LandingPage() {
   return (
     <>
-      <link rel="preload" href="/images/landing/dashboard-preview.webp" as="image" type="image/webp" />
       <main className="relative bg-[#080808] overflow-x-hidden">
         <FloatingParticles />
         <LandingNav />

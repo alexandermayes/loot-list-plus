@@ -21,7 +21,7 @@ module.exports = {
       fontFamily: {
         sans: ["var(--font-poppins)", "system-ui", "sans-serif"],
         poppins: ["var(--font-poppins)", "system-ui", "sans-serif"],
-        wow: ["'Friz Quadrata'", "Georgia", "Garamond", "serif"],
+        wow: ["var(--font-wow)", "Georgia", "Garamond", "serif"],
       },
 
       // Font sizes from design system

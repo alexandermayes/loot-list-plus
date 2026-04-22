@@ -168,6 +168,7 @@ const nextConfig: NextConfig = {
       '@hugeicons-pro/core-solid-rounded',
       '@hugeicons/react',
       'framer-motion',
+      'posthog-js',
     ],
   },
 };
