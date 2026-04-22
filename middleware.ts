@@ -221,7 +221,7 @@ function readAccessTokenFromCookies(request: NextRequest): string | null {
 // navigation, so this was our TTFB floor. We now inspect the auth cookie
 // directly and only call Supabase when the access token is about to expire,
 // turning 99% of requests into local cookie reads.
-async function refreshSupabaseSession(request: NextRequest): Promise<{ response: NextResponse; user: unknown; debugReason?: string }> {
+async function refreshSupabaseSession(request: NextRequest): Promise<{ response: NextResponse; user: unknown }> {
   const response = NextResponse.next({ request })
 
   // Fast path: inspect the cookie JWT locally. If it's still valid for at
@@ -250,7 +250,7 @@ async function refreshSupabaseSession(request: NextRequest): Promise<{ response:
     const cookies = request.cookies.getAll()
     const authCookies = cookies.filter((c) => /^sb-.*-auth-token(\.\d+)?$/.test(c.name))
     if (authCookies.length === 0) {
-      return { response, user: null, debugReason: 'no_auth_cookies' }
+      return { response, user: null }
     }
     // Fall through to slow path — cookies exist but local parse failed
   }
@@ -277,7 +277,7 @@ async function refreshSupabaseSession(request: NextRequest): Promise<{ response:
 
   const { data: { user } } = await supabase.auth.getUser()
 
-  return { response, user, debugReason: user ? undefined : 'getUser_null' }
+  return { response, user }
 }
 
 export async function middleware(request: NextRequest) {
@@ -310,7 +310,7 @@ export async function middleware(request: NextRequest) {
     }
 
     // Protected routes: refresh session cookies and gate on auth
-    const { response, user, debugReason } = await refreshSupabaseSession(request)
+    const { response, user } = await refreshSupabaseSession(request)
     if (!user) {
       // Clear stale auth cookies that the middleware can't parse but the
       // server-side Supabase client might partially accept, which would
@@ -318,9 +318,6 @@ export async function middleware(request: NextRequest) {
       // /overview → middleware rejects again → infinite loop.
       const loginUrl = new URL('/', request.url)
       loginUrl.searchParams.set('next', pathname)
-      if (debugReason) {
-        loginUrl.searchParams.set('_debug', debugReason)
-      }
       const redirectResponse = NextResponse.redirect(loginUrl)
       const cookies = request.cookies.getAll()
       for (const cookie of cookies) {
