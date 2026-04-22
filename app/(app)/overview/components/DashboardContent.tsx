@@ -646,6 +646,7 @@ export default function DashboardContent() {
       }
 
       try {
+        // Fire all independent queries in parallel: tiers, deadlines, and dashboard data
         const [tiersResult, deadlineResult] = await Promise.all([
           supabase
             .from('raid_tiers')
@@ -656,7 +657,10 @@ export default function DashboardContent() {
             .from('expansions')
             .select('phase_deadlines')
             .eq('id', expansionId)
-            .single()
+            .single(),
+          // Start dashboard data loading in parallel — it only needs
+          // activeCharacter, guildId, and expansionId (not tier results)
+          loadDashboardData(user.id, activeGuild.id, [], expansionId),
         ])
 
         const { data: tiersData, error: tiersError } = tiersResult
@@ -682,9 +686,6 @@ export default function DashboardContent() {
           setPhaseDeadlines({})
           setLootListDeadline(null)
         }
-
-        // Load all dashboard data (pass raid tiers and expansion to filter)
-        await loadDashboardData(user.id, activeGuild.id, tiersData || [], expansionId)
       } catch (error) {
         console.error('Error loading overview data:', error)
       } finally {
