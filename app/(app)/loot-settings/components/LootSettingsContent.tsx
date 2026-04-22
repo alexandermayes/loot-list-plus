@@ -507,6 +507,11 @@ export default function LootSettingsContent() {
     try {
       setMember(activeMember)
 
+      // Start loot items loading in parallel (only needs expansionId)
+      const lootItemsPromise = activeGuild.active_expansion_id
+        ? loadLootItems(activeGuild.active_expansion_id)
+        : Promise.resolve()
+
       // Parallelize all independent data loads
       const [, classesResult, specsResult, expansionResult, tiersResult] = await Promise.all([
         // 1. Guild settings (also loads guild roles internally)
@@ -570,10 +575,9 @@ export default function LootSettingsContent() {
         setRaidTiers(sortedTiers)
       }
 
-      // Load loot items (depends on expansion ID, not on above results)
-      if (activeGuild.active_expansion_id) {
-        await loadLootItems(activeGuild.active_expansion_id)
-      }
+      // Load loot items (runs in parallel with above via Promise.all)
+      // Already started above — await its result
+      await lootItemsPromise
     } catch (error) {
       console.error('Error loading loot settings data:', error)
       setError("Couldn't load loot settings. Check your connection and try again.")
@@ -594,7 +598,7 @@ export default function LootSettingsContent() {
 
     const tierIds = tiersData.map((t: any) => t.id)
 
-    // Load loot items
+    // Load loot items (uses tier IDs from above)
     const { data: itemsData } = await supabase
       .from('loot_items')
       .select(`
@@ -632,7 +636,8 @@ export default function LootSettingsContent() {
       })
       setItemNotes(notesState)
 
-      // Load all spec relations for all items (batch to avoid URL length issues)
+      // Load all spec relations for all items in a single query
+      // Supabase sends .in() filters via POST body, so URL length is not a concern
       const itemIds = itemsData.map((item: any) => item.id)
       const specs: Record<string, { primary: Set<string>, secondary: Set<string> }> = {}
 
@@ -641,35 +646,25 @@ export default function LootSettingsContent() {
         specs[id] = { primary: new Set(), secondary: new Set() }
       })
 
-      // Batch load specs in chunks of 100 to avoid URL length issues
-      const batchSize = 100
-      let totalRelations = 0
+      const { data: specRelations, error: specError } = await supabase
+        .from('loot_item_classes')
+        .select('loot_item_id, spec_id, spec_type')
+        .in('loot_item_id', itemIds)
 
-      for (let i = 0; i < itemIds.length; i += batchSize) {
-        const batchIds = itemIds.slice(i, i + batchSize)
+      if (specError) {
+        console.error('Error loading spec relations:', specError)
+      }
 
-        const { data: specRelations, error: specError } = await supabase
-          .from('loot_item_classes')
-          .select('loot_item_id, spec_id, spec_type')
-          .in('loot_item_id', batchIds)
-
-        if (specError) {
-          console.error('Error loading spec relations for batch:', specError)
-          continue
-        }
-
-        if (specRelations) {
-          totalRelations += specRelations.length
-          specRelations.forEach((rel: any) => {
-            if (rel.spec_id && rel.loot_item_id) {
-              if (rel.spec_type === 'primary') {
-                specs[rel.loot_item_id].primary.add(rel.spec_id)
-              } else if (rel.spec_type === 'secondary') {
-                specs[rel.loot_item_id].secondary.add(rel.spec_id)
-              }
+      if (specRelations) {
+        specRelations.forEach((rel: any) => {
+          if (rel.spec_id && rel.loot_item_id) {
+            if (rel.spec_type === 'primary') {
+              specs[rel.loot_item_id].primary.add(rel.spec_id)
+            } else if (rel.spec_type === 'secondary') {
+              specs[rel.loot_item_id].secondary.add(rel.spec_id)
             }
-          })
-        }
+          }
+        })
       }
 
       setItemSpecs(specs)
