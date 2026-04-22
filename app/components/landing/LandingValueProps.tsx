@@ -96,7 +96,7 @@ export default function LandingValueProps() {
           style={{ '--glow-color': 'rgba(72,205,244,0.25)', '--glow-duration': '5.5s', '--glow-delay': '0.8s' } as React.CSSProperties}
           tooltip={{ name: "Invincible's Reins", quality: "epic", type: "Mount", flavor: "Riding him will make you Invincible, not invisible." }}
         >
-          <Image src="/images/landing/items/invincibles-reins.png" alt="" fill sizes="640px" className="object-contain" style={{ transform: 'rotate(-6deg)' }} />
+          <Image src="/images/landing/items/invincibles-reins.webp" alt="" fill sizes="640px" className="object-contain" style={{ transform: 'rotate(-6deg)' }} />
         </ParallaxItem>
       </div>
 

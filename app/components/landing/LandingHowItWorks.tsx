@@ -12,19 +12,19 @@ const steps = [
     number: 1,
     title: 'Connect your guild',
     description: 'Link your WoW guild with Discord so members can join instantly.',
-    icon: '/images/landing/items/howit-icon-guild.png',
+    icon: '/images/landing/items/howit-icon-guild.webp',
   },
   {
     number: 2,
     title: 'Submit loot lists',
     description: 'Raiders rank their most wanted items with a simple 50-level system.',
-    icon: '/images/landing/items/item-submit-icon.png',
+    icon: '/images/landing/items/item-submit-icon.webp',
   },
   {
     number: 3,
     title: 'Distribute fairly',
     description: 'Officers assign loot using transparent, attendance-based priority.',
-    icon: '/images/landing/items/howit-icon-distribute.png',
+    icon: '/images/landing/items/howit-icon-distribute.webp',
   },
 ]
 
@@ -51,7 +51,7 @@ export default function LandingHowItWorks() {
           style={{ '--glow-color': 'rgba(72,205,244,0.25)', '--glow-duration': '4.2s', '--glow-delay': '0.3s' } as React.CSSProperties}
           tooltip={{ name: "Val'anyr, Hammer of Ancient Kings", quality: "legendary", type: "One-Hand Mace", flavor: "The power of creation courses through its crystal core." }}
         >
-          <Image src="/images/landing/items/valanyr.png" alt="" fill sizes="500px" className="object-contain" style={{ transform: 'rotate(73deg)' }} />
+          <Image src="/images/landing/items/valanyr.webp" alt="" fill sizes="500px" className="object-contain" style={{ transform: 'rotate(73deg)' }} />
         </ParallaxItem>
       </div>
 

@@ -58,7 +58,7 @@ export default function LandingHero({ recentFeatures = 'See what\'s new' }: { re
         clickEffect="lightning"
         tooltip={{ name: "Thunderfury, Blessed Blade of the Windseeker", quality: "legendary", type: "One-Hand Sword", flavor: "Forged from the shattered remnants of Thunderaan's prison." }}
       >
-        <Image src="/images/landing/items/thunderfury.png" alt="" fill sizes="600px" loading="lazy" className="object-contain" style={{ transform: 'rotate(158deg) scaleY(-1)' }} />
+        <Image src="/images/landing/items/thunderfury.webp" alt="" fill sizes="600px" loading="lazy" className="object-contain" style={{ transform: 'rotate(158deg) scaleY(-1)' }} />
       </ParallaxItem>
 
       {/* 2. Hand of Rag - top right */}
@@ -73,7 +73,7 @@ export default function LandingHero({ recentFeatures = 'See what\'s new' }: { re
         style={{ '--glow-color': 'rgba(241,131,24,0.5)', '--glow-duration': '3.8s', '--glow-delay': '1s' } as React.CSSProperties}
         tooltip={{ name: "Sulfuras, Hand of Ragnaros", quality: "legendary", type: "Two-Hand Mace", flavor: "Too hot to handle." }}
       >
-        <Image src="/images/landing/items/hand-of-rag.png" alt="" fill sizes="600px" loading="lazy" className="object-contain" style={{ transform: 'rotate(50deg)' }} />
+        <Image src="/images/landing/items/hand-of-rag.webp" alt="" fill sizes="600px" loading="lazy" className="object-contain" style={{ transform: 'rotate(50deg)' }} />
       </ParallaxItem>
 
       {/* 3. Warglaives - bottom left */}
@@ -87,7 +87,7 @@ export default function LandingHero({ recentFeatures = 'See what\'s new' }: { re
         style={{ '--glow-color': 'rgba(141,244,31,0.25)', '--glow-duration': '5s', '--glow-delay': '0.5s' } as React.CSSProperties}
         tooltip={{ name: "Warglaive of Azzinoth", quality: "legendary", type: "One-Hand Sword", flavor: "Wielded by the Betrayer himself." }}
       >
-        <Image src="/images/landing/items/warglaives.png" alt="" fill sizes="600px" loading="lazy" className="object-contain" style={{ transform: 'rotate(41deg)' }} />
+        <Image src="/images/landing/items/warglaives.webp" alt="" fill sizes="600px" loading="lazy" className="object-contain" style={{ transform: 'rotate(41deg)' }} />
       </ParallaxItem>
 
       {/* 4. Cursed Vision of Sargeras - bottom right */}
@@ -101,7 +101,7 @@ export default function LandingHero({ recentFeatures = 'See what\'s new' }: { re
         style={{ '--glow-color': 'rgba(208,37,19,0.25)', '--glow-duration': '3.5s', '--glow-delay': '1.8s' } as React.CSSProperties}
         tooltip={{ name: "Cursed Vision of Sargeras", quality: "epic", type: "Leather Helmet", flavor: "His eyes see what yours cannot." }}
       >
-        <Image src="/images/landing/items/cursed-vision.png" alt="" fill sizes="600px" className="object-contain" style={{ transform: 'rotate(14deg)' }} />
+        <Image src="/images/landing/items/cursed-vision.webp" alt="" fill sizes="600px" className="object-contain" style={{ transform: 'rotate(14deg)' }} />
       </ParallaxItem>
 
       </div>{/* end max-width wrapper for floating items */}

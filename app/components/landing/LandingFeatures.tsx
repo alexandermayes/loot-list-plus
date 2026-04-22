@@ -12,22 +12,22 @@ const leaderFeatures = [
   {
     icon: '/images/landing/icons/check-list.svg',
     text: 'Create clear, transparent loot priorities',
-    image: '/images/landing/features-leader-1.png',
+    image: '/images/landing/features-leader-1.webp',
   },
   {
     icon: '/images/landing/icons/calendar-03.svg',
     text: 'Track attendance and reward consistency',
-    image: '/images/landing/features-leader-2.png',
+    image: '/images/landing/features-leader-2.webp',
   },
   {
     icon: '/images/landing/icons/body-armor.svg',
     text: "See every raider's loot needs in one place",
-    image: '/images/landing/features-leader-3.png',
+    image: '/images/landing/features-leader-3.webp',
   },
   {
     icon: '/images/landing/icons/clipboard.svg',
     text: 'Manage loot across every raid and phase',
-    image: '/images/landing/features-leader-4.png',
+    image: '/images/landing/features-leader-4.webp',
   },
 ]
 
@@ -35,22 +35,22 @@ const raiderFeatures = [
   {
     icon: '/images/landing/icons/list-view.svg',
     text: 'Build your loot list in minutes',
-    image: '/images/landing/features-raider-1.png',
+    image: '/images/landing/features-raider-1.webp',
   },
   {
     icon: '/images/landing/icons/sword-01.svg',
     text: 'Get rewarded for showing up consistently',
-    image: '/images/landing/features-raider-2.png',
+    image: '/images/landing/features-raider-2.webp',
   },
   {
     icon: '/images/landing/icons/ranking.svg',
     text: 'See where you stand on every item',
-    image: '/images/landing/features-raider-3.png',
+    image: '/images/landing/features-raider-3.webp',
   },
   {
     icon: '/images/landing/icons/list-start.svg',
     text: 'Keep your priorities organized each phase',
-    image: '/images/landing/features-raider-4.png',
+    image: '/images/landing/features-raider-4.webp',
   },
 ]
 
