@@ -123,7 +123,7 @@ export default function LoginPage({ nextParam = null, isAuthenticated = false, a
           <Image src="/logo.svg" alt="LootList+" width={140} height={22} className="h-6 w-auto" />
         </div>
 
-        <div className="absolute top-[50px] right-[60px] hidden lg:block">
+        <div className="absolute top-4 right-4 lg:top-[50px] lg:right-[60px]">
           <Button
             onClick={handleDiscordLogin}
             variant="ghost"
