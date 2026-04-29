@@ -40,6 +40,15 @@ const breadcrumbLd = {
 
 const posts = [
   {
+    slug: 'loot-priority-lists-vs-loot-council',
+    title: 'Loot Priority Lists vs Loot Council: An Honest Comparison',
+    description:
+      'Two of the most popular loot systems in WoW, compared honestly. When priority lists win, when council wins, and when you should use both.',
+    date: 'April 28, 2026',
+    readTime: '9 min read',
+    tag: 'Guide',
+  },
+  {
     slug: 'the-officer-burnout-problem-and-how-to-fix-it',
     title: 'The Officer Burnout Problem (and How to Fix It)',
     description:

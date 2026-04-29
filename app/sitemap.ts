@@ -27,6 +27,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.8,
     },
     {
+      url: 'https://www.getlootlist.com/blog/loot-priority-lists-vs-loot-council',
+      lastModified: new Date(2026, 3, 28),
+      changeFrequency: 'monthly',
+      priority: 0.9,
+    },
+    {
       url: 'https://www.getlootlist.com/blog/the-officer-burnout-problem-and-how-to-fix-it',
       lastModified: new Date(2026, 3, 19),
       changeFrequency: 'monthly',

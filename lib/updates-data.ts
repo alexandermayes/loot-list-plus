@@ -14,6 +14,66 @@ export interface UpdateEntry {
 
 export const updates: UpdateEntry[] = [
   {
+    date: 'April 28, 2026',
+    items: [
+      {
+        category: 'feature',
+        title: 'Crafting materials in loot tables',
+        description: 'Raid loot tables now include crafting materials so you can rank them on your loot list alongside gear.',
+      },
+      {
+        category: 'feature',
+        title: 'Dual-wield weapon listing',
+        description: 'Classes that can dual-wield can now list the same one-handed weapon twice on their loot list.',
+      },
+      {
+        category: 'feature',
+        title: 'Score breakdown for all members',
+        description: 'Click any member\'s score on the Master Sheet to see a full breakdown, not just your own. Gap explanations show how far each player is from the one above.',
+      },
+      {
+        category: 'improvement',
+        title: 'Faster page loads across the app',
+        description: 'Server-side data prefetching, code-split settings pages, parallelized dashboard queries, and collapsed API waterfalls on loot list and loot settings pages.',
+      },
+      {
+        category: 'improvement',
+        title: 'Smaller landing page',
+        description: 'Converted landing images from PNG to WebP (21MB down to 3.7MB), optimized fonts, and improved caching for faster first load.',
+      },
+      {
+        category: 'improvement',
+        title: 'Reserve run creation wizard',
+        description: 'Creating a reserve run now uses a step-by-step wizard with smart defaults instead of a single long form.',
+      },
+      {
+        category: 'improvement',
+        title: 'Gargul SoftRes export',
+        description: 'Reserve run exports now use the real Gargul SoftRes format for direct addon import.',
+      },
+      {
+        category: 'fix',
+        title: 'Auth redirect loop resolved',
+        description: 'Fixed an issue where stale auth cookies could cause a login redirect loop. Sessions now clean up correctly across devices.',
+      },
+      {
+        category: 'fix',
+        title: 'Reserve submission reliability',
+        description: 'Fixed reserve submissions failing for some users due to a database index conflict.',
+      },
+      {
+        category: 'fix',
+        title: 'Attendance import no longer deletes no-shows',
+        description: 'Importing loot-only data for a raid no longer wipes existing no-show attendance records.',
+      },
+      {
+        category: 'fix',
+        title: 'Login button visible on mobile',
+        description: 'The login button on the landing page is now visible on small screens.',
+      },
+    ],
+  },
+  {
     date: 'April 9, 2026',
     items: [
       {

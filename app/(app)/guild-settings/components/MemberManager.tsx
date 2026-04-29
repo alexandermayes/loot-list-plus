@@ -407,18 +407,6 @@ export default function MemberManager() {
     return weeks === 1 ? '1 week' : `${weeks} weeks`
   }
 
-  const getJoinedViaText = (joinedVia: string) => {
-    switch (joinedVia) {
-      case 'invite_code':
-        return 'Invite Code'
-      case 'discord_verify':
-        return 'Discord'
-      case 'manual':
-        return 'Manual'
-      default:
-        return joinedVia
-    }
-  }
 
   return (
     <div className="p-4 space-y-3">
@@ -493,9 +481,6 @@ export default function MemberManager() {
                             +{member.characters.length - 1} alt{member.characters.length > 2 ? 's' : ''}
                           </span>
                         )}
-                        <span className="text-muted-foreground text-[11px]">
-                          • {getJoinedViaText(member.joined_via)}
-                        </span>
                       </div>
                     </div>
                   </div>
