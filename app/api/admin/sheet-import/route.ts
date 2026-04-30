@@ -1,7 +1,7 @@
 import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { NextResponse } from 'next/server'
-import { verifyOfficerPermissions } from '@/utils/server-roles'
+import { verifyPermission } from '@/utils/server-roles'
 import { parseInformationTab } from '@/lib/sheet-import/settings-parser'
 import { parseItemsTab, matchItemsToDb } from '@/lib/sheet-import/items-parser'
 import { trackEvent, trackApiError } from '@/utils/analytics/server'
@@ -42,7 +42,7 @@ export async function POST(request: Request) {
     }
 
     // Verify officer permissions
-    const { hasPermission, error: permError } = await verifyOfficerPermissions(serviceSupabase, user.id, guildId)
+    const { hasPermission, error: permError } = await verifyPermission(serviceSupabase, user.id, guildId, 'manage_settings')
     if (!hasPermission) {
       return NextResponse.json({ error: permError || 'Only officers can import data' }, { status: 403 })
     }

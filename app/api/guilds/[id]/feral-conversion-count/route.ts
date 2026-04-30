@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
-import { verifyOfficerPermissions } from '@/utils/server-roles'
+import { verifyPermission } from '@/utils/server-roles'
 
 /**
  * GET /api/guilds/[id]/feral-conversion-count
@@ -22,7 +22,7 @@ export async function GET(
     const serviceSupabase = createServiceRoleClient()
 
     // Verify officer permissions
-    const verification = await verifyOfficerPermissions(serviceSupabase, user.id, guildId)
+    const verification = await verifyPermission(serviceSupabase, user.id, guildId, 'manage_settings')
     if (!verification.hasPermission) {
       return NextResponse.json({ error: 'Officers only' }, { status: 403 })
     }
@@ -101,7 +101,7 @@ export async function POST(
     const serviceSupabase = createServiceRoleClient()
 
     // Verify officer permissions
-    const verification = await verifyOfficerPermissions(serviceSupabase, user.id, guildId)
+    const verification = await verifyPermission(serviceSupabase, user.id, guildId, 'manage_settings')
     if (!verification.hasPermission) {
       return NextResponse.json({ error: 'Officers only' }, { status: 403 })
     }

@@ -4,11 +4,12 @@
  */
 
 import { SupabaseClient } from '@supabase/supabase-js'
-import { ROLE_POSITIONS, DEFAULT_ROLES, isOfficerPosition, isGuildMasterPosition } from '@/domain/guild/roles'
+import { ROLE_POSITIONS, DEFAULT_ROLES, isOfficerPosition, isGuildMasterPosition, roleHasPermission, type PermissionCode } from '@/domain/guild/roles'
 
 interface GuildRole {
   name: string
   position: number
+  permissions?: string[]
 }
 
 /**
@@ -17,15 +18,14 @@ interface GuildRole {
 export async function getGuildRoles(supabase: SupabaseClient, guildId: string): Promise<GuildRole[]> {
   const { data: roles, error } = await supabase
     .from('guild_roles')
-    .select('name, position')
+    .select('name, position, permissions')
     .eq('guild_id', guildId)
 
   if (error || !roles || roles.length === 0) {
-    // Return default roles if guild_roles doesn't exist or is empty
-    return DEFAULT_ROLES.map(r => ({ name: r.name, position: r.position }))
+    return DEFAULT_ROLES.map(r => ({ name: r.name, position: r.position, permissions: [] }))
   }
 
-  return roles
+  return roles.map(r => ({ ...r, permissions: r.permissions || [] }))
 }
 
 /**
@@ -103,6 +103,82 @@ export async function verifyOfficerPermissions(
   }
 
   return { hasPermission: true, role: highestRole, position: highestPosition }
+}
+
+/**
+ * Check if user has a specific granular permission in a guild.
+ * Returns true if:
+ * - User's highest role position >= 50 (officer catch-all)
+ * - User is the guild creator
+ * - User's role has the specific permission in its permissions array
+ */
+export async function verifyPermission(
+  serviceSupabase: SupabaseClient,
+  userId: string,
+  guildId: string,
+  permission: PermissionCode
+): Promise<{ hasPermission: boolean; role?: string; position?: number; error?: string }> {
+  // Get user's characters
+  const { data: userCharacters } = await serviceSupabase
+    .from('characters')
+    .select('id')
+    .eq('user_id', userId)
+
+  if (!userCharacters || userCharacters.length === 0) {
+    return { hasPermission: false, error: 'No characters found' }
+  }
+
+  const characterIds = userCharacters.map((c: { id: string }) => c.id)
+
+  // Get ALL of user's memberships in this guild
+  const { data: memberships } = await serviceSupabase
+    .from('character_guild_memberships')
+    .select('role')
+    .eq('guild_id', guildId)
+    .in('character_id', characterIds)
+    .eq('is_active', true)
+
+  if (!memberships || memberships.length === 0) {
+    const creator = await isGuildCreator(serviceSupabase, userId, guildId)
+    if (creator) return { hasPermission: true, role: 'Guild Master', position: 100 }
+    return { hasPermission: false, error: 'Not a member of this guild' }
+  }
+
+  // Get guild roles with permissions
+  const roles = await getGuildRoles(serviceSupabase, guildId)
+
+  // Find the highest position and collect all permissions across the user's roles
+  let highestRole = memberships[0].role
+  let highestPosition = 0
+  const allPermissions: Set<string> = new Set()
+
+  for (const membership of memberships) {
+    const roleInfo = roles.find(r => r.name === membership.role)
+    const position = roleInfo?.position ?? 0
+    const perms = roleInfo?.permissions ?? []
+
+    if (position > highestPosition) {
+      highestPosition = position
+      highestRole = membership.role
+    }
+    for (const p of perms) allPermissions.add(p)
+  }
+
+  // Officer/GM catch-all
+  if (isOfficerPosition(highestPosition)) {
+    return { hasPermission: true, role: highestRole, position: highestPosition }
+  }
+
+  // Guild creator fallback
+  const creator = await isGuildCreator(serviceSupabase, userId, guildId)
+  if (creator) return { hasPermission: true, role: 'Guild Master', position: 100 }
+
+  // Check specific permission
+  if (allPermissions.has(permission)) {
+    return { hasPermission: true, role: highestRole, position: highestPosition }
+  }
+
+  return { hasPermission: false, role: highestRole, position: highestPosition, error: 'Insufficient permissions' }
 }
 
 /**

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
-import { verifyOfficerPermissions } from '@/utils/server-roles'
+import { verifyPermission } from '@/utils/server-roles'
 import { computeAttendance } from '@/domain/scoring/attendance'
 import { toDateString, parseDate } from '@/utils/date'
 
@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
 
     const serviceSupabase = createServiceRoleClient()
 
-    const { hasPermission, error: permError } = await verifyOfficerPermissions(serviceSupabase, user.id, guildId)
+    const { hasPermission, error: permError } = await verifyPermission(serviceSupabase, user.id, guildId, 'manage_settings')
     if (!hasPermission) {
       return NextResponse.json({ error: permError || 'Officer permissions required' }, { status: 403 })
     }

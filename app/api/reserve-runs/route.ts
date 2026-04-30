@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
-import { verifyOfficerPermissions } from '@/utils/server-roles'
+import { verifyPermission } from '@/utils/server-roles'
 import { trackEvent } from '@/utils/analytics/server'
 
 /**
@@ -111,7 +111,7 @@ export async function POST(request: NextRequest) {
 
     // If guild_id provided, verify officer permissions
     if (guild_id) {
-      const verification = await verifyOfficerPermissions(serviceSupabase, user.id, guild_id)
+      const verification = await verifyPermission(serviceSupabase, user.id, guild_id, 'manage_reserves')
       if (!verification.hasPermission) {
         return NextResponse.json({ error: 'Only officers can create guild reserve runs' }, { status: 403 })
       }

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
-import { verifyOfficerPermissions } from '@/utils/server-roles'
+import { verifyPermission } from '@/utils/server-roles'
 import { trackApiError } from '@/utils/analytics/server'
 import { fetchWclReportForDate, getWclReportUrl, isWclConfigured } from '@/lib/warcraftlogs'
 
@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
 
     const supabase = createServiceRoleClient()
 
-    const { hasPermission } = await verifyOfficerPermissions(supabase, user.id, guild_id)
+    const { hasPermission } = await verifyPermission(supabase, user.id, guild_id, 'manage_settings')
     if (!hasPermission) {
       return NextResponse.json({ error: 'Only officers can link WCL reports' }, { status: 403 })
     }

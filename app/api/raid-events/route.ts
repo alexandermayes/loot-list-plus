@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
-import { verifyOfficerPermissions } from '@/utils/server-roles'
+import { verifyPermission } from '@/utils/server-roles'
 
 interface RaidEventInput {
   guild_id: string
@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
 
     const serviceSupabase = createServiceRoleClient()
 
-    const { hasPermission } = await verifyOfficerPermissions(serviceSupabase, user.id, guild_id)
+    const { hasPermission } = await verifyPermission(serviceSupabase, user.id, guild_id, 'manage_attendance')
     if (!hasPermission) {
       return NextResponse.json({ error: 'Officers only' }, { status: 403 })
     }

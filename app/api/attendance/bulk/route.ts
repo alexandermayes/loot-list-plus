@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
-import { verifyOfficerPermissions } from '@/utils/server-roles'
+import { verifyPermission } from '@/utils/server-roles'
 import { logAudit } from '@/utils/audit/log'
 import { resolveStatus } from '@/domain/scoring'
 import { trackEvent } from '@/utils/analytics/server'
@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
 
     const serviceSupabase = createServiceRoleClient()
 
-    const { hasPermission, error: permError } = await verifyOfficerPermissions(serviceSupabase, user.id, guild_id)
+    const { hasPermission, error: permError } = await verifyPermission(serviceSupabase, user.id, guild_id, 'manage_attendance')
     if (!hasPermission) {
       return NextResponse.json({ error: permError || 'Insufficient permissions' }, { status: 403 })
     }
@@ -154,7 +154,7 @@ export async function PATCH(request: NextRequest) {
 
     const serviceSupabase = createServiceRoleClient()
 
-    const { hasPermission, error: permError } = await verifyOfficerPermissions(serviceSupabase, user.id, guild_id)
+    const { hasPermission, error: permError } = await verifyPermission(serviceSupabase, user.id, guild_id, 'manage_attendance')
     if (!hasPermission) {
       return NextResponse.json({ error: permError || 'Insufficient permissions' }, { status: 403 })
     }
@@ -264,7 +264,7 @@ export async function DELETE(request: NextRequest) {
 
     const serviceSupabase = createServiceRoleClient()
 
-    const { hasPermission, error: permError } = await verifyOfficerPermissions(serviceSupabase, user.id, guild_id)
+    const { hasPermission, error: permError } = await verifyPermission(serviceSupabase, user.id, guild_id, 'manage_attendance')
     if (!hasPermission) {
       return NextResponse.json({ error: permError || 'Insufficient permissions' }, { status: 403 })
     }

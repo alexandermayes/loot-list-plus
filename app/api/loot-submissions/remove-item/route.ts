@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
-import { verifyOfficerPermissions } from '@/utils/server-roles'
+import { verifyPermission } from '@/utils/server-roles'
 import { logAudit } from '@/utils/audit/log'
 import { trackEvent, trackApiError } from '@/utils/analytics/server'
 import { toDateString } from '@/utils/date'
@@ -73,7 +73,7 @@ export async function POST(request: Request) {
     }
 
     if (!isOwner) {
-      const { hasPermission } = await verifyOfficerPermissions(serviceSupabase, user.id, guild_id)
+      const { hasPermission } = await verifyPermission(serviceSupabase, user.id, guild_id, 'manage_loot')
       if (!hasPermission) {
         return NextResponse.json(
           { error: 'Only the list owner or officers can remove items' },

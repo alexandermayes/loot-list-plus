@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
-import { verifyOfficerPermissions } from '@/utils/server-roles'
+import { verifyPermission } from '@/utils/server-roles'
 import { requirePro } from '@/utils/feature-gate'
 import { logAudit } from '@/utils/audit/log'
 
@@ -134,7 +134,7 @@ export async function POST(
     if (!proCheck.isPro) return proCheck.error
 
     // Officer check
-    const { hasPermission } = await verifyOfficerPermissions(serviceSupabase, user.id, team.guild_id)
+    const { hasPermission } = await verifyPermission(serviceSupabase, user.id, team.guild_id, 'manage_roster')
     if (!hasPermission) {
       return NextResponse.json({ error: 'Officers only' }, { status: 403 })
     }
@@ -239,7 +239,7 @@ export async function DELETE(
     if (!proCheck.isPro) return proCheck.error
 
     // Officer check
-    const { hasPermission } = await verifyOfficerPermissions(serviceSupabase, user.id, team.guild_id)
+    const { hasPermission } = await verifyPermission(serviceSupabase, user.id, team.guild_id, 'manage_roster')
     if (!hasPermission) {
       return NextResponse.json({ error: 'Officers only' }, { status: 403 })
     }

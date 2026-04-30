@@ -1,7 +1,7 @@
 import { createClient, getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { NextResponse } from 'next/server'
-import { verifyOfficerPermissions } from '@/utils/server-roles'
+import { verifyPermission } from '@/utils/server-roles'
 import { logAudit } from '@/utils/audit/log'
 import { trackEvent, trackApiError } from '@/utils/analytics/server'
 
@@ -26,7 +26,7 @@ export async function DELETE(request: Request) {
     // Support single submission deletion via submission_id
     if (submission_id) {
       // Verify user has officer permissions
-      const verification = await verifyOfficerPermissions(serviceSupabase, user.id, guild_id)
+      const verification = await verifyPermission(serviceSupabase, user.id, guild_id, 'manage_loot')
       if (!verification.hasPermission) {
         return NextResponse.json({ error: 'Only officers can delete loot lists' }, { status: 403 })
       }
@@ -100,7 +100,7 @@ export async function DELETE(request: Request) {
     }
 
     // Verify user has officer permissions (position >= 50)
-    const verification = await verifyOfficerPermissions(serviceSupabase, user.id, guild_id)
+    const verification = await verifyPermission(serviceSupabase, user.id, guild_id, 'manage_loot')
     if (!verification.hasPermission) {
       return NextResponse.json({ error: 'Only officers can delete loot lists' }, { status: 403 })
     }

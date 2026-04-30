@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
-import { verifyOfficerPermissions } from '@/utils/server-roles'
+import { verifyPermission } from '@/utils/server-roles'
 import { logStatusChange } from '@/utils/audit/log'
 import { trackEvent } from '@/utils/analytics/server'
 
@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify officer permissions in the submission's guild
-    const verification = await verifyOfficerPermissions(serviceSupabase, user.id, submission.guild_id)
+    const verification = await verifyPermission(serviceSupabase, user.id, submission.guild_id, 'manage_loot')
     if (!verification.hasPermission) {
       return NextResponse.json({ error: 'Only officers can review submissions' }, { status: 403 })
     }

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
-import { verifyOfficerPermissions } from '@/utils/server-roles'
+import { verifyPermission } from '@/utils/server-roles'
 
 // GET - Fetch raid tiers for an expansion
 // By default, filters to only show phases <= current_phase (linear unlock)
@@ -105,7 +105,7 @@ export async function PATCH(request: NextRequest) {
 
     const serviceSupabase = createServiceRoleClient()
 
-    const { hasPermission } = await verifyOfficerPermissions(serviceSupabase, user.id, guild_id)
+    const { hasPermission } = await verifyPermission(serviceSupabase, user.id, guild_id, 'manage_settings')
     if (!hasPermission) {
       return NextResponse.json({ error: 'Officer permissions required' }, { status: 403 })
     }

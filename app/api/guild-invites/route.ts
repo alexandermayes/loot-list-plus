@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient, getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
-import { verifyOfficerPermissions } from '@/utils/server-roles'
+import { verifyPermission } from '@/utils/server-roles'
 import { trackApiError } from '@/utils/analytics/server'
 
 // POST - Generate a new invite code
@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify user has officer permissions (position >= 50)
-    const verification = await verifyOfficerPermissions(serviceSupabase, user.id, guild_id)
+    const verification = await verifyPermission(serviceSupabase, user.id, guild_id, 'manage_members')
     if (!verification.hasPermission) {
       return NextResponse.json(
         { error: 'Only officers can generate invite codes' },
@@ -122,7 +122,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Verify user has officer permissions (position >= 50)
-    const verification = await verifyOfficerPermissions(serviceSupabase, user.id, guild_id)
+    const verification = await verifyPermission(serviceSupabase, user.id, guild_id, 'manage_members')
     if (!verification.hasPermission) {
       return NextResponse.json(
         { error: 'Only officers can view invite codes' },
@@ -187,7 +187,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Verify officer permissions
-    const verification = await verifyOfficerPermissions(serviceSupabase, user.id, guildId)
+    const verification = await verifyPermission(serviceSupabase, user.id, guildId, 'manage_members')
     if (!verification.hasPermission) {
       return NextResponse.json({ error: 'Only officers can remove invite codes' }, { status: 403 })
     }

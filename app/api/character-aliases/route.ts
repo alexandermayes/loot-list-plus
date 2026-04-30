@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
-import { verifyOfficerPermissions } from '@/utils/server-roles'
+import { verifyPermission } from '@/utils/server-roles'
 
 // POST - Bulk upsert character aliases
 export async function POST(request: NextRequest) {
@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify officer permissions
-    const verification = await verifyOfficerPermissions(serviceSupabase, user.id, guild_id)
+    const verification = await verifyPermission(serviceSupabase, user.id, guild_id, 'manage_members')
     if (!verification.hasPermission) {
       return NextResponse.json({ error: 'Only officers can manage aliases' }, { status: 403 })
     }

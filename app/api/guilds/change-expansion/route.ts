@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient, getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { seedExpansionForGuild } from '@/app/services/expansionSeeder'
-import { verifyOfficerPermissions } from '@/utils/server-roles'
+import { verifyPermission } from '@/utils/server-roles'
 
 /**
  * POST - Change a guild's active expansion
@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify user has officer permissions (position >= 50)
-    const verification = await verifyOfficerPermissions(serviceSupabase, user.id, guild_id)
+    const verification = await verifyPermission(serviceSupabase, user.id, guild_id, 'manage_settings')
     if (!verification.hasPermission) {
       return NextResponse.json(
         { error: 'Only officers can change the guild expansion' },

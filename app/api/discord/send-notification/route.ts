@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient, getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
-import { verifyOfficerPermissions } from '@/utils/server-roles'
+import { verifyPermission } from '@/utils/server-roles'
 import { trackApiError } from '@/utils/analytics/server'
 import { discordFetch } from '@/lib/discord'
 
@@ -69,7 +69,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify the caller is an officer in the submission's guild
-    const verification = await verifyOfficerPermissions(serviceSupabase, user.id, submission.guild_id)
+    const verification = await verifyPermission(serviceSupabase, user.id, submission.guild_id, 'manage_loot')
     if (!verification.hasPermission) {
       return NextResponse.json({ error: 'Only officers can send submission notifications' }, { status: 403 })
     }

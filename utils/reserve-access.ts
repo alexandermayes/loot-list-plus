@@ -1,6 +1,6 @@
 import type { NextRequest } from 'next/server'
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { verifyOfficerPermissions } from '@/utils/server-roles'
+import { verifyPermission } from '@/utils/server-roles'
 
 /**
  * Reserve runs can be managed by three kinds of actors:
@@ -71,7 +71,7 @@ export async function verifyReserveRunAccess({
   }
 
   if (run.guild_id) {
-    const verification = await verifyOfficerPermissions(serviceSupabase, userId, run.guild_id)
+    const verification = await verifyPermission(serviceSupabase, userId, run.guild_id, 'manage_reserves')
     if (verification.hasPermission) {
       return { allowed: true, actor: 'officer', run }
     }

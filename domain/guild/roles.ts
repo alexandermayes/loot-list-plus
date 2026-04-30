@@ -66,3 +66,33 @@ export function hasOfficerPermissions(roleName: string, roles: { name: string; p
 export function hasGuildMasterPermissions(roleName: string, roles: { name: string; position: number }[]): boolean {
   return isGuildMasterPosition(getRolePosition(roleName, roles))
 }
+
+// ─── Granular Permissions ──────────────────────────────────
+
+export const PERMISSIONS = {
+  manage_loot: { label: 'Manage loot', description: 'Award loot, manage loot history and submissions' },
+  manage_attendance: { label: 'Manage attendance', description: 'Record attendance, manage raid events' },
+  manage_members: { label: 'Manage members', description: 'Change roles, set trial status, remove members' },
+  manage_settings: { label: 'Manage settings', description: 'Edit guild settings, loot rules, item priorities' },
+  manage_roster: { label: 'Manage roster', description: 'Create raid teams, assign members to teams' },
+  manage_reserves: { label: 'Manage reserves', description: 'Create and manage reserve runs' },
+  view_audit_log: { label: 'View audit log', description: 'Access the audit log' },
+} as const
+
+export type PermissionCode = keyof typeof PERMISSIONS
+
+export const ALL_PERMISSION_CODES = Object.keys(PERMISSIONS) as PermissionCode[]
+
+/**
+ * Check if a role has a specific permission.
+ * Officers (position >= 50) and Guild Master have all permissions implicitly.
+ * Custom roles below Officer can be granted specific permissions via the permissions array.
+ */
+export function roleHasPermission(
+  position: number,
+  permissions: string[],
+  requiredPermission: PermissionCode
+): boolean {
+  if (isOfficerPosition(position)) return true
+  return permissions.includes(requiredPermission)
+}

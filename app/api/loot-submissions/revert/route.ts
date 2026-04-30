@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
-import { verifyOfficerPermissions } from '@/utils/server-roles'
+import { verifyPermission } from '@/utils/server-roles'
 import { logStatusChange } from '@/utils/audit/log'
 
 // POST - Revert a resubmitted list to its previously approved snapshot
@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify officer permissions
-    const verification = await verifyOfficerPermissions(serviceSupabase, user.id, submission.guild_id)
+    const verification = await verifyPermission(serviceSupabase, user.id, submission.guild_id, 'manage_loot')
     if (!verification.hasPermission) {
       return NextResponse.json({ error: 'Only officers can revert submissions' }, { status: 403 })
     }

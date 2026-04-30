@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
-import { verifyOfficerPermissions } from '@/utils/server-roles'
+import { verifyPermission } from '@/utils/server-roles'
 import { trackApiError } from '@/utils/analytics/server'
 import { logAudit } from '@/utils/audit/log'
 
@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
     const supabase = createServiceRoleClient()
 
     // Verify user has officer permissions (uses character_guild_memberships)
-    const verification = await verifyOfficerPermissions(supabase, user.id, guild_id)
+    const verification = await verifyPermission(supabase, user.id, guild_id, 'manage_loot')
     if (!verification.hasPermission) {
       return NextResponse.json({ error: verification.error || 'Officer permissions required' }, { status: 403 })
     }

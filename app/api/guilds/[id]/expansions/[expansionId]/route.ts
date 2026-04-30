@@ -1,6 +1,6 @@
 import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
-import { verifyOfficerPermissions } from '@/utils/server-roles'
+import { verifyPermission } from '@/utils/server-roles'
 import { NextRequest, NextResponse } from 'next/server'
 
 /**
@@ -46,7 +46,7 @@ export async function PATCH(
     }
 
     const serviceSupabase = createServiceRoleClient()
-    const { hasPermission } = await verifyOfficerPermissions(serviceSupabase, user.id, guildId)
+    const { hasPermission } = await verifyPermission(serviceSupabase, user.id, guildId, 'manage_settings')
     if (!hasPermission) {
       return NextResponse.json({ error: 'Officer permissions required' }, { status: 403 })
     }

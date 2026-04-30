@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
-import { verifyOfficerPermissions } from '@/utils/server-roles'
+import { verifyPermission } from '@/utils/server-roles'
 import { batchGetDisplayNames } from '@/utils/batch-display-names'
 import { requirePro } from '@/utils/feature-gate'
 
@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
 
     const serviceSupabase = createServiceRoleClient()
 
-    const { hasPermission } = await verifyOfficerPermissions(serviceSupabase, user.id, guildId)
+    const { hasPermission } = await verifyPermission(serviceSupabase, user.id, guildId, 'view_audit_log')
     if (!hasPermission) {
       return NextResponse.json({ error: 'Only officers can view audit logs' }, { status: 403 })
     }
