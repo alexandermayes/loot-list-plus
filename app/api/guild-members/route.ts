@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient, getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
-import { verifyOfficerPermissions, verifyRoleChangePermissions, verifyMemberRemovalPermissions } from '@/utils/server-roles'
+import { verifyPermission, verifyRoleChangePermissions, verifyMemberRemovalPermissions } from '@/utils/server-roles'
 import { ROLE_POSITIONS } from '@/domain/guild/roles'
 import { trackApiError } from '@/utils/analytics/server'
 import { batchGetDisplayNames } from '@/utils/batch-display-names'
@@ -18,9 +18,10 @@ export async function GET(request: NextRequest) {
 
     const serviceSupabase = createServiceRoleClient()
 
-    // Get guild_id from query params
+    // Get guild_id and optional stats flag from query params
     const { searchParams } = new URL(request.url)
     const guildId = searchParams.get('guild_id')
+    const includeStats = searchParams.get('include_stats') === 'true'
 
     if (!guildId) {
       return NextResponse.json({ error: 'guild_id is required' }, { status: 400 })
@@ -201,11 +202,46 @@ export async function GET(request: NextRequest) {
       return aName.localeCompare(bName)
     })
 
+    // Optionally fetch raid team assignments
+    if (includeStats) {
+      const allCharIds = members.flatMap(m => m.characters.map((c: CharacterData) => c.id))
+
+      const { data: raidTeamMembers } = await serviceSupabase
+        .from('raid_team_members')
+        .select('character_id, raid_team:raid_teams(name, color_hex)')
+        .in('character_id', allCharIds)
+
+      if (raidTeamMembers) {
+        const charTeamMap = new Map<string, { name: string; color: string }>()
+        for (const rtm of raidTeamMembers) {
+          const team = Array.isArray(rtm.raid_team) ? rtm.raid_team[0] : rtm.raid_team
+          if (team) {
+            charTeamMap.set(rtm.character_id, { name: team.name, color: team.color_hex || '#808080' })
+          }
+        }
+
+        for (const member of members) {
+          const mainId = member.mainCharacter?.id
+          let raidTeam: { name: string; color: string } | null = null
+          if (mainId && charTeamMap.has(mainId)) {
+            raidTeam = charTeamMap.get(mainId)!
+          } else {
+            for (const c of member.characters) {
+              if (charTeamMap.has(c.id)) {
+                raidTeam = charTeamMap.get(c.id)!
+                break
+              }
+            }
+          }
+          ;(member as any).raid_team = raidTeam
+        }
+      }
+    }
+
     return NextResponse.json(
       { members },
       {
         headers: {
-          // Cache for 30 seconds, allow stale responses while revalidating
           'Cache-Control': 'private, max-age=30, stale-while-revalidate=60'
         }
       }
@@ -236,7 +272,7 @@ export async function PUT(request: NextRequest) {
     }
 
     // Verify user has officer permissions (position >= 50)
-    const verification = await verifyOfficerPermissions(serviceSupabase, user.id, guild_id)
+    const verification = await verifyPermission(serviceSupabase, user.id, guild_id, 'manage_members')
     if (!verification.hasPermission) {
       return NextResponse.json({ error: verification.error }, { status: 403 })
     }
@@ -322,7 +358,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Verify user has officer permissions (position >= 50)
-    const verification = await verifyOfficerPermissions(serviceSupabase, user.id, guildId)
+    const verification = await verifyPermission(serviceSupabase, user.id, guildId, 'manage_members')
     if (!verification.hasPermission) {
       return NextResponse.json({ error: verification.error }, { status: 403 })
     }

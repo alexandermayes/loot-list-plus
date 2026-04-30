@@ -10,6 +10,8 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { Add01Icon, Delete01Icon, Shield01Icon, UserIcon, Edit01Icon, Tick01Icon, Cancel01Icon, CrownIcon, ArrowUp01Icon, ArrowDown01Icon } from '@hugeicons/core-free-icons'
+import { Switch } from '@/components/ui/switch'
+import { PERMISSIONS, type PermissionCode, ALL_PERMISSION_CODES } from '@/domain/guild/roles'
 
 interface GuildRole {
   id: string
@@ -19,6 +21,7 @@ interface GuildRole {
   position: number
   is_default: boolean
   created_at: string
+  permissions: string[]
 }
 
 interface RoleManagerProps {
@@ -32,6 +35,7 @@ export default function RoleManager({ onRolesChanged }: RoleManagerProps) {
   const [isAddingRole, setIsAddingRole] = useState(false)
   const [editingRoleId, setEditingRoleId] = useState<string | null>(null)
   const [editingRoleName, setEditingRoleName] = useState('')
+  const [editingPermissions, setEditingPermissions] = useState<string[]>([])
 
   const supabase = createClient()
   const { activeGuild } = useGuildContext()
@@ -119,6 +123,7 @@ export default function RoleManager({ onRolesChanged }: RoleManagerProps) {
   const handleStartEditRole = (role: GuildRole) => {
     setEditingRoleId(role.id)
     setEditingRoleName(role.name)
+    setEditingPermissions(role.permissions || [])
   }
 
   const handleSaveEditRole = async (roleId: string) => {
@@ -131,7 +136,8 @@ export default function RoleManager({ onRolesChanged }: RoleManagerProps) {
       const { error } = await supabase
         .from('guild_roles')
         .update({
-          name: editingRoleName.trim()
+          name: editingRoleName.trim(),
+          permissions: editingPermissions,
         })
         .eq('id', roleId)
 
@@ -140,6 +146,7 @@ export default function RoleManager({ onRolesChanged }: RoleManagerProps) {
       showNotification('success', 'Role saved')
       setEditingRoleId(null)
       setEditingRoleName('')
+      setEditingPermissions([])
       await loadRoles()
       onRolesChanged?.()
     } catch (error: any) {
@@ -150,6 +157,13 @@ export default function RoleManager({ onRolesChanged }: RoleManagerProps) {
   const handleCancelEdit = () => {
     setEditingRoleId(null)
     setEditingRoleName('')
+    setEditingPermissions([])
+  }
+
+  const togglePermission = (perm: PermissionCode) => {
+    setEditingPermissions(prev =>
+      prev.includes(perm) ? prev.filter(p => p !== perm) : [...prev, perm]
+    )
   }
 
   const handleDeleteRole = (roleId: string, roleName: string) => {
@@ -247,6 +261,35 @@ export default function RoleManager({ onRolesChanged }: RoleManagerProps) {
                         variant="rounded"
                         size="sm"
                       />
+                      {/* Permission toggles */}
+                      <div className="space-y-1.5">
+                        <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Permissions</p>
+                        {ALL_PERMISSION_CODES.map(perm => {
+                          const isOfficerRole = role.position >= 50
+                          const checked = isOfficerRole || editingPermissions.includes(perm)
+                          return (
+                            <label
+                              key={perm}
+                              className={`flex items-center justify-between py-1.5 px-2 rounded-md ${isOfficerRole ? 'opacity-50' : 'hover:bg-muted/50 cursor-pointer'}`}
+                            >
+                              <div>
+                                <p className="text-[13px] text-foreground">{PERMISSIONS[perm].label}</p>
+                                <p className="text-[11px] text-muted-foreground">{PERMISSIONS[perm].description}</p>
+                              </div>
+                              <Switch
+                                checked={checked}
+                                onCheckedChange={() => !isOfficerRole && togglePermission(perm)}
+                                disabled={isOfficerRole}
+                              />
+                            </label>
+                          )
+                        })}
+                        {role.position >= 50 && (
+                          <p className="text-[10px] text-muted-foreground italic pt-1">
+                            Officers and Guild Master have all permissions by default.
+                          </p>
+                        )}
+                      </div>
                       <div className="flex gap-2">
                         <Button size="sm" onClick={() => handleSaveEditRole(role.id)} className="flex-1">
                           <HugeiconsIcon icon={Tick01Icon} size={16} />
@@ -272,6 +315,11 @@ export default function RoleManager({ onRolesChanged }: RoleManagerProps) {
                         </div>
                         <div>
                           <p className="text-foreground font-medium text-[14px]">{role.name}</p>
+                          {role.position < 50 && role.permissions && role.permissions.length > 0 && (
+                            <p className="text-[11px] text-muted-foreground">
+                              {role.permissions.map(p => PERMISSIONS[p as PermissionCode]?.label || p).join(', ')}
+                            </p>
+                          )}
                         </div>
                       </div>
 

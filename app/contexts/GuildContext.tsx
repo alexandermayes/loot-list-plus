@@ -103,6 +103,7 @@ export interface GuildDataContextType {
 
   // Derived state
   isOfficer: boolean
+  hasPermission: (permission: string) => boolean
   hasMultipleGuilds: boolean
   hasMultipleCharacters: boolean
 }
@@ -148,8 +149,9 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
   const [userCharacters, setUserCharacters] = useState<Character[]>([])
   const [characterMemberships, setCharacterMemberships] = useState<CharacterGuildMembership[]>([])
 
-  // Cached role positions — avoids re-querying guild_roles on every officer check
+  // Cached role positions and permissions — avoids re-querying guild_roles on every check
   const [rolePositionCache, setRolePositionCache] = useState<Map<string, Map<string, number>>>(new Map())
+  const [rolePermissionsCache, setRolePermissionsCache] = useState<Map<string, Map<string, string[]>>>(new Map())
 
   const [loading, setLoading] = useState(true)
   const [user, setUser] = useState<User | null>(null)
@@ -321,7 +323,8 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
                 subscription_tier,
                 guild_roles (
                   name,
-                  position
+                  position,
+                  permissions
                 )
               )
             `)
@@ -339,8 +342,9 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
           setCharacterMemberships([])
         } else {
           // Transform the data to handle arrays from Supabase joins
-          // Also extract guild_roles from the embedded join and build the role position cache
+          // Also extract guild_roles from the embedded join and build the role position + permissions cache
           const guildRolePositions = new Map<string, Map<string, number>>()
+          const guildRolePerms = new Map<string, Map<string, string[]>>()
 
           transformedMemberships = (memberships || []).map((m: { character: unknown; guild: unknown; [key: string]: unknown }) => {
             const char = Array.isArray(m.character) ? m.character[0] : m.character
@@ -350,10 +354,13 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
             if (rawGuild?.id && rawGuild.guild_roles) {
               if (!guildRolePositions.has(rawGuild.id)) {
                 const posMap = new Map<string, number>()
+                const permMap = new Map<string, string[]>()
                 for (const role of rawGuild.guild_roles) {
                   posMap.set(role.name, role.position)
+                  permMap.set(role.name, role.permissions || [])
                 }
                 guildRolePositions.set(rawGuild.id, posMap)
+                guildRolePerms.set(rawGuild.id, permMap)
               }
             }
 
@@ -415,6 +422,7 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
 
           setUserGuilds(derivedGuilds)
           setRolePositionCache(guildRolePositions)
+          setRolePermissionsCache(guildRolePerms)
         }
       } else {
         setUserCharacters([])
@@ -747,6 +755,29 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
     return false
   }, [activeCharacter, activeGuild, characterMemberships, activeMember, user, rolePositionCache, defaultPositions])
 
+  // Granular permission check — officers/GM get all permissions implicitly,
+  // custom roles below Officer get only their granted permissions
+  const hasPermission = useMemo(() => {
+    return (permission: string): boolean => {
+      // Officers already have all permissions
+      if (isOfficer) return true
+      if (!activeGuild) return false
+
+      // Get user's role name
+      const roleName = activeMember?.role
+        || characterMemberships.find(
+          m => activeCharacter && m.character_id === activeCharacter.id && m.guild_id === activeGuild.id
+        )?.role
+
+      if (!roleName) return false
+
+      // Check the permissions cache for this role
+      const guildPerms = rolePermissionsCache.get(activeGuild.id)
+      const rolePerms = guildPerms?.get(roleName) || []
+      return rolePerms.includes(permission)
+    }
+  }, [isOfficer, activeGuild, activeMember, activeCharacter, characterMemberships, rolePermissionsCache])
+
   const hasMultipleGuilds = userGuilds.length > 1
   const hasMultipleCharacters = userCharacters.length > 1
 
@@ -819,6 +850,7 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
     userCharacters,
     characterMemberships,
     isOfficer,
+    hasPermission,
     hasMultipleGuilds,
     hasMultipleCharacters
   }), [
@@ -831,6 +863,7 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
     userCharacters,
     characterMemberships,
     isOfficer,
+    hasPermission,
     hasMultipleGuilds,
     hasMultipleCharacters
   ])

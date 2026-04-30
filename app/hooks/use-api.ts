@@ -71,6 +71,8 @@ export interface GuildMember {
   role: string
   joined_at: string
   joined_via: string
+  membership_status?: 'trial' | 'full'
+  trial_started_at?: string | null
   characters: {
     id: string
     name: string
@@ -86,6 +88,9 @@ export interface GuildMember {
     spec?: { name: string } | null
   } | null
   discordName: string
+  attendance_pct?: number | null
+  submission_status?: string | null
+  raid_team?: { name: string; color: string } | null
 }
 
 // === Character Hooks ===
@@ -128,14 +133,16 @@ export function useGuilds(options?: SWRConfiguration) {
  * Fetch guild members with caching
  * @param guildId - The guild ID to fetch members for
  */
-export function useGuildMembers(guildId: string | null, options?: SWRConfiguration) {
+export function useGuildMembers(guildId: string | null, options?: SWRConfiguration & { includeStats?: boolean }) {
+  const { includeStats, ...swrOptions } = options || {}
+  const statsParam = includeStats ? '&include_stats=true' : ''
   return useSWR<{ members: GuildMember[] }>(
-    guildId ? `/api/guild-members?guild_id=${guildId}` : null,
+    guildId ? `/api/guild-members?guild_id=${guildId}${statsParam}` : null,
     fetcher,
     {
       ...swrConfig,
-      refreshInterval: 60000, // Revalidate every 60 seconds (member data changes less frequently)
-      ...options,
+      refreshInterval: 60000,
+      ...swrOptions,
     }
   )
 }
