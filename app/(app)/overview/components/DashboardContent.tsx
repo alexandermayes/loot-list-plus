@@ -390,6 +390,7 @@ export default function DashboardContent() {
     attended: number
     total: number
     tierInfo?: { current: string; nextTier: string; raidsNeeded: number; nextBonus: number }
+    missedRaids?: { date: string; status: string }[]
   } | null>(null)
 
   const [trialData, setTrialData] = useState<{
@@ -802,6 +803,7 @@ export default function DashboardContent() {
       let roleModifier = 0
       let roleBonus = 0
       let specRole: string | null = null
+      let missedRaids: { date: string; status: string }[] = []
       let trialPenaltyValue = 0
       let baseExplanation: ScoreExplanation | null = null
       let attendedRaidCount = 0
@@ -996,6 +998,54 @@ export default function DashboardContent() {
           attendanceScore = attendanceResult.score
           attendedRaidCount = attendanceResult.raidsAttended
           totalRaidCount = attendanceResult.raidsInWindow
+
+          // Build missed raids list — only events that count toward this character's attendance
+          if (totalRaidCount > 0) {
+            const recordByEvent = new Map<string, AttRecord>()
+            for (const r of teamRecords) recordByEvent.set(r.raid_event_id, r)
+
+            // Filter to configured raid days and deduplicate by date (same as attendance engine)
+            let relevantEvents = raidEventsData as { id: string; raid_date: string }[]
+            if (raidDays.length > 0) {
+              relevantEvents = relevantEvents.filter(e => {
+                const [y, m, d] = e.raid_date.split('-').map(Number)
+                return raidDays.includes(new Date(y, m - 1, d).getDay())
+              })
+            }
+            // Deduplicate by date — prefer events with attendance records
+            const byDate = new Map<string, { id: string; raid_date: string }>()
+            for (const e of relevantEvents) {
+              const existing = byDate.get(e.raid_date)
+              if (!existing) {
+                byDate.set(e.raid_date, e)
+              } else if (recordByEvent.has(e.id) && !recordByEvent.has(existing.id)) {
+                byDate.set(e.raid_date, e)
+              }
+            }
+
+            missedRaids = Array.from(byDate.values())
+              .filter(e => {
+                const rec = recordByEvent.get(e.id)
+                if (!rec) return true
+                if (rec.no_call_no_show) return true
+                if (rec.is_excused) return true
+                if (rec.was_late) return true
+                if (rec.was_benched) return true
+                if (!rec.attended) return true
+                return false
+              })
+              .map(e => {
+                const rec = recordByEvent.get(e.id)
+                let status = 'absent'
+                if (rec?.no_call_no_show) status = 'no_show'
+                else if (rec?.is_excused) status = 'excused'
+                else if (rec?.was_benched) status = 'benched'
+                else if (rec?.was_late) status = 'late'
+                return { date: e.raid_date, status }
+              })
+              .sort((a, b) => b.date.localeCompare(a.date))
+              .slice(0, 8)
+          }
 
           // Compute spec roles for role bonus display
           const specName = activeCharacter?.spec?.name || null
@@ -1447,7 +1497,8 @@ export default function DashboardContent() {
         percentage: Math.round(attPercentage * 100),
         attended: attendedRaidCount,
         total: totalRaidCount,
-        tierInfo
+        tierInfo,
+        missedRaids: missedRaids.length > 0 ? missedRaids : undefined,
       })
 
       // Trial progress
@@ -1958,6 +2009,34 @@ export default function DashboardContent() {
                         ? `${attendanceData.tierInfo.raidsNeeded} more raid${attendanceData.tierInfo.raidsNeeded !== 1 ? 's' : ''} to reach ${attendanceData.tierInfo.nextTier} tier (+${attendanceData.tierInfo.nextBonus.toFixed(decimalPlaces)})`
                         : `${attendanceData.tierInfo.current} tier`}
                     </p>
+                  )}
+                  {/* Missed raids breakdown */}
+                  {attendanceData.missedRaids && attendanceData.missedRaids.length > 0 && (
+                    <div className="mt-3 pt-3 border-t border-border">
+                      <p className="text-[11px] font-semibold text-muted-foreground mb-2">Missed raids</p>
+                      <div className="space-y-1">
+                        {attendanceData.missedRaids.map((r, i) => {
+                          const statusLabels: Record<string, { label: string; color: string }> = {
+                            absent: { label: 'Absent', color: 'text-destructive' },
+                            no_show: { label: 'No show', color: 'text-destructive' },
+                            late: { label: 'Late', color: 'text-warning' },
+                            benched: { label: 'Benched', color: 'text-muted-foreground' },
+                            excused: { label: 'Excused', color: 'text-muted-foreground' },
+                          }
+                          const info = statusLabels[r.status] || statusLabels.absent
+                          const [y, m, d] = r.date.split('-').map(Number)
+                          const date = new Date(y, m - 1, d)
+                          const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+                          const dayStr = date.toLocaleDateString('en-US', { weekday: 'short' })
+                          return (
+                            <div key={i} className="flex items-center justify-between text-[11px]">
+                              <span className="text-foreground-secondary">{dayStr} {dateStr}</span>
+                              <span className={info.color}>{info.label}</span>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </div>
                   )}
                   {attendanceData.total === 0 && (
                     <p className="text-[11px] text-muted-foreground mt-2">No raids logged yet</p>
