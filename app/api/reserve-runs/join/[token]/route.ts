@@ -3,7 +3,7 @@ import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { canClassReserveItem } from '@/utils/wowClassRestrictions'
 import { logReserveAudit } from '@/utils/reserve-audit'
-import { extractLeaderToken } from '@/utils/reserve-access'
+import { extractLeaderToken, verifyReserveRunAccess } from '@/utils/reserve-access'
 
 type UserCharacter = {
   id: string
@@ -135,10 +135,45 @@ export async function GET(
     const providedToken = extractLeaderToken(request)
     const isLeader = !!providedToken && providedToken === run.raid_leader_token
 
-    // Fetch submissions based on visibility (or unconditionally for leader)
+    // Determine management access: creator, leader token, or guild officer
+    let canManage = isLeader
+    let user: { id: string; email?: string | null } | null = null
+    let userCharacters: UserCharacter[] = []
+    try {
+      const auth = await getAuthenticatedUser()
+      user = auth.user
+      if (user) {
+        // Creator check
+        if (run.created_by === user.id) canManage = true
+
+        // Officer check (only if not already a manager)
+        if (!canManage && run.guild_id) {
+          const access = await verifyReserveRunAccess({
+            serviceSupabase,
+            runId: run.id,
+            request,
+            userId: user.id,
+          })
+          if (access.allowed) canManage = true
+        }
+
+        // Fetch user's guild characters for the form
+        if (run.guild_id) {
+          userCharacters = await fetchUserCharactersForGuild(
+            serviceSupabase,
+            user.id,
+            run.guild_id
+          )
+        }
+      }
+    } catch {
+      // Anonymous or auth failure — fall through with empty list.
+    }
+
+    // Fetch submissions based on visibility (or unconditionally for managers)
     let submissions: any[] = []
     if (
-      isLeader ||
+      canManage ||
       run.status === 'locked' ||
       run.status === 'completed' ||
       run.visibility === 'public_live'
@@ -159,24 +194,9 @@ export async function GET(
       .eq('reserve_run_id', run.id)
       .order('awarded_at', { ascending: true })
 
-    // If the requester is logged in and the run has a guild, return their
-    // characters in that guild so the join form can auto-fill.
-    let userCharacters: UserCharacter[] = []
-    try {
-      const { user } = await getAuthenticatedUser()
-      if (user && run.guild_id) {
-        userCharacters = await fetchUserCharactersForGuild(
-          serviceSupabase,
-          user.id,
-          run.guild_id
-        )
-      }
-    } catch {
-      // Anonymous or auth failure — fall through with empty list.
-    }
-
     return NextResponse.json({
       success: true,
+      can_manage: canManage,
       run: {
         id: run.id,
         title: run.title,
@@ -196,6 +216,7 @@ export async function GET(
         raid_tier_name: raidTier?.name || null,
         expansion_name: expansionName,
         guild_name: guild?.name || null,
+        created_by: canManage ? run.created_by : undefined,
       },
       items: items || [],
       submissions,

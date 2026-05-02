@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useMemo, useRef } from 'react'
+import { useEffect, useState, useMemo, useRef, useCallback } from 'react'
 import { useParams } from 'next/navigation'
 import { createClient } from '@/utils/supabase/client'
 import { Button } from '@/components/ui/button'
@@ -14,10 +14,14 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import ReserveItemPicker from '@/app/components/ReserveItemPicker'
 import ItemLink from '@/app/components/ItemLink'
 import { HugeiconsIcon } from '@hugeicons/react'
-import { Calendar03Icon, LockIcon, CheckmarkCircle01Icon, UserMultiple02Icon, DiscordIcon, Copy01Icon } from '@hugeicons/core-free-icons'
+import { Calendar03Icon, LockIcon, CheckmarkCircle01Icon, UserMultiple02Icon, DiscordIcon, Copy01Icon, Delete02Icon } from '@hugeicons/core-free-icons'
 import { refreshWowheadTooltips } from '@/lib/wowhead'
 import { getRaidIcon } from '@/utils/raidIcons'
 import { canClassReserveItem } from '@/utils/wowClassRestrictions'
+import { useNotification } from '@/app/contexts/NotificationContext'
+import { useConfirm } from '@/components/ui/confirm-modal'
+import ManagementToolbar from './components/ManagementToolbar'
+import InlineSettingsEditor from './components/InlineSettingsEditor'
 import Image from 'next/image'
 import Link from 'next/link'
 
@@ -248,6 +252,8 @@ function ColoredPicker({
 
 export default function ReserveJoinPage() {
   const { token } = useParams<{ token: string }>()
+  const { showNotification } = useNotification()
+  const { confirm, ConfirmDialog } = useConfirm()
 
   const [run, setRun] = useState<RunData | null>(null)
   const [items, setItems] = useState<LootItem[]>([])
@@ -263,6 +269,11 @@ export default function ReserveJoinPage() {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [copied, setCopied] = useState(false)
+
+  // Management state
+  const [canManage, setCanManage] = useState(false)
+  const [leaderToken, setLeaderToken] = useState<string | null>(null)
+  const [actionLoading, setActionLoading] = useState(false)
 
   // Reserve board view toggle. Defaults to item-grouped when the run
   // is locked (contested items are the point), player-grouped otherwise.
@@ -333,6 +344,36 @@ export default function ReserveJoinPage() {
 
   const loginHref = `/?next=${encodeURIComponent(`/reserve/join/${token}`)}`
 
+  // Leader token detection: from URL params or localStorage
+  useEffect(() => {
+    const storageKey = `reserve_leader_token_${token}`
+    try {
+      const params = new URLSearchParams(window.location.search)
+      const fromUrl = params.get('leader_token')
+      if (fromUrl) {
+        setLeaderToken(fromUrl)
+        localStorage.setItem(storageKey, fromUrl)
+        // Clean the URL
+        const url = new URL(window.location.href)
+        url.searchParams.delete('leader_token')
+        window.history.replaceState({}, '', url.toString())
+        return
+      }
+      const stored = localStorage.getItem(storageKey)
+      if (stored) setLeaderToken(stored)
+    } catch {}
+  }, [token])
+
+  // Centralized fetch that attaches the leader token header
+  const authedFetch = useCallback(
+    (input: string, init: RequestInit = {}) => {
+      const headers = new Headers(init.headers)
+      if (leaderToken) headers.set('x-reserve-leader-token', leaderToken)
+      return fetch(input, { ...init, headers })
+    },
+    [leaderToken]
+  )
+
   // Load saved character from localStorage
   useEffect(() => {
     const saved = localStorage.getItem('lootlist_reserve_character')
@@ -346,16 +387,31 @@ export default function ReserveJoinPage() {
   }, [])
 
   // Fetch run data
+  const reloadRun = useCallback(async () => {
+    try {
+      const res = await authedFetch(`/api/reserve-runs/join/${token}`)
+      const data = await res.json()
+      if (data.success) {
+        setRun(data.run)
+        setItems(data.items || [])
+        setSubmissions(data.submissions || [])
+        setAwards(data.awards || [])
+        setCanManage(!!data.can_manage)
+      }
+    } catch {}
+  }, [token, authedFetch])
+
   useEffect(() => {
     const load = async () => {
       try {
-        const res = await fetch(`/api/reserve-runs/join/${token}`)
+        const res = await authedFetch(`/api/reserve-runs/join/${token}`)
         const data = await res.json()
         if (data.success) {
           setRun(data.run)
           setItems(data.items || [])
           setSubmissions(data.submissions || [])
           setAwards(data.awards || [])
+          setCanManage(!!data.can_manage)
           const chars: UserCharacter[] = data.user_characters || []
           setUserCharacters(chars)
 
@@ -418,7 +474,7 @@ export default function ReserveJoinPage() {
       }
     }
     load()
-  }, [token])
+  }, [token, authedFetch])
 
   useEffect(() => {
     if (run) {
@@ -701,10 +757,70 @@ export default function ReserveJoinPage() {
 
   const statusInfo = STATUS_LABELS[run.status]
   const isOpen = run.status === 'open'
-  const showSubmissions = run.status !== 'open' || run.visibility === 'public_live'
+  const showSubmissions = canManage || run.status !== 'open' || run.visibility === 'public_live'
+
+  // Management actions
+  const executeAction = async (action: string) => {
+    if (!run) return
+    setActionLoading(true)
+    try {
+      const res = await authedFetch(`/api/reserve-runs/${run.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action }),
+      })
+      const data = await res.json()
+      if (data.success) {
+        showNotification('success', `Run ${action}ed`)
+        reloadRun()
+      } else {
+        showNotification('error', data.error)
+      }
+    } catch {
+      showNotification('error', 'Something went wrong')
+    } finally {
+      setActionLoading(false)
+    }
+  }
+
+  const handleLock = () => {
+    confirm({
+      title: 'Lock reserves?',
+      description: 'Players will no longer be able to submit or edit reserves.',
+      confirmLabel: 'Lock run',
+      onConfirm: () => executeAction('lock'),
+    })
+  }
+
+  const deleteSubmission = (submission: Submission) => {
+    confirm({
+      title: `Remove ${submission.character_name}?`,
+      description: 'This deletes the reserve and cannot be undone.',
+      confirmLabel: 'Remove reserve',
+      variant: 'danger',
+      onConfirm: async () => {
+        try {
+          const res = await authedFetch(
+            `/api/reserve-runs/${run.id}/submissions/${submission.id}`,
+            { method: 'DELETE' }
+          )
+          const data = await res.json()
+          if (data.success) {
+            showNotification('success', 'Reserve removed')
+            reloadRun()
+          } else {
+            showNotification('error', data.error || 'Failed to remove reserve')
+          }
+        } catch {
+          showNotification('error', 'Something went wrong')
+        }
+      },
+    })
+  }
 
   return (
     <div className="min-h-screen bg-background">
+      {ConfirmDialog}
       {/* Minimal header — pinned. Matches the landing nav wordmark */}
       <div className="sticky top-0 z-40 border-b border-border bg-background-elevated/95 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between gap-4">
@@ -758,6 +874,18 @@ export default function ReserveJoinPage() {
       </div>
 
       <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 space-y-5">
+        {/* Management toolbar for creators/officers */}
+        {canManage && (
+          <ManagementToolbar
+            runId={run.id}
+            status={run.status}
+            actionLoading={actionLoading}
+            onLock={handleLock}
+            onUnlock={() => executeAction('unlock')}
+            onComplete={() => executeAction('complete')}
+          />
+        )}
+
         {/* Run info card */}
         <Card variant="unified">
           <div className="flex items-start gap-4">
@@ -806,46 +934,71 @@ export default function ReserveJoinPage() {
             )}
           </div>
 
-          {run.discord_invite_url && (
-            <div className="mt-3 pt-3 border-t border-border">
-              <a
-                href={run.discord_invite_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 text-[13px] text-accent hover:underline"
-              >
-                <HugeiconsIcon icon={DiscordIcon} size={16} />
-                Join the guild Discord
-              </a>
+          {/* Manager: inline settings editor. Raider: read-only display. */}
+          {canManage ? (
+            <div className="mt-3">
+              <InlineSettingsEditor
+                runId={run.id}
+                status={run.status}
+                title={run.title}
+                rulesNote={run.rules_note}
+                discordInviteUrl={run.discord_invite_url}
+                hardReserves={run.hard_reserves}
+                maxReserves={run.max_reserves}
+                maxReservesPerItem={run.max_reserves_per_item}
+                visibility={run.visibility}
+                allowDuplicates={run.allow_duplicates}
+                enforceClassRestrictions={run.enforce_class_restrictions}
+                itemMap={itemMap}
+                authedFetch={authedFetch}
+                onRunUpdated={reloadRun}
+                onRunDeleted={() => window.location.href = '/reserve'}
+              />
             </div>
-          )}
-
-          {/* Rules */}
-          {(run.rules_note || run.hard_reserves.length > 0) && (
-            <div className="mt-4 pt-3 border-t border-border space-y-2">
-              {run.rules_note && (
-                <Text size="sm" color="secondary">{run.rules_note}</Text>
-              )}
-              {run.hard_reserves.length > 0 && (
-                <div>
-                  <LabelText size="xs" className="mb-1.5">Hard reserves</LabelText>
-                  <div className="flex flex-wrap gap-1.5">
-                    {run.hard_reserves.map((hr) => {
-                      const item = itemMap.get(hr.loot_item_id)
-                      return item ? (
-                        <Badge
-                          key={hr.loot_item_id}
-                          variant="outline"
-                          className="bg-destructive/10 text-destructive border-destructive/20 gap-1.5"
-                        >
-                          <ItemLink name={item.name} wowheadId={item.wowhead_id} clickable={false} />
-                        </Badge>
-                      ) : null
-                    })}
-                  </div>
+          ) : (
+            <>
+              {run.discord_invite_url && (
+                <div className="mt-3 pt-3 border-t border-border">
+                  <a
+                    href={run.discord_invite_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 text-[13px] text-accent hover:underline"
+                  >
+                    <HugeiconsIcon icon={DiscordIcon} size={16} />
+                    Join the guild Discord
+                  </a>
                 </div>
               )}
-            </div>
+
+              {/* Rules */}
+              {(run.rules_note || run.hard_reserves.length > 0) && (
+                <div className="mt-4 pt-3 border-t border-border space-y-2">
+                  {run.rules_note && (
+                    <Text size="sm" color="secondary">{run.rules_note}</Text>
+                  )}
+                  {run.hard_reserves.length > 0 && (
+                    <div>
+                      <LabelText size="xs" className="mb-1.5">Hard reserves</LabelText>
+                      <div className="flex flex-wrap gap-1.5">
+                        {run.hard_reserves.map((hr) => {
+                          const item = itemMap.get(hr.loot_item_id)
+                          return item ? (
+                            <Badge
+                              key={hr.loot_item_id}
+                              variant="outline"
+                              className="bg-destructive/10 text-destructive border-destructive/20 gap-1.5"
+                            >
+                              <ItemLink name={item.name} wowheadId={item.wowhead_id} clickable={false} />
+                            </Badge>
+                          ) : null
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </>
           )}
         </Card>
 
@@ -968,24 +1121,36 @@ export default function ReserveJoinPage() {
                   return (
                     <div
                       key={sub.id}
-                      className={`px-5 py-3 ${isMine ? 'bg-accent/[0.04]' : ''}`}
+                      className={`px-5 py-3 group ${isMine ? 'bg-accent/[0.04]' : ''}`}
                     >
-                      <div className="flex items-center gap-2 mb-1.5">
-                        <span
-                          className="text-[14px] font-semibold"
-                          style={{ color: classInfo?.color || '#FFFFFF' }}
-                        >
-                          {sub.character_name}
-                        </span>
-                        {sub.character_spec && (
-                          <span className="text-[11px] text-muted-foreground">
-                            ({sub.character_spec} {sub.character_class})
+                      <div className="flex items-center justify-between gap-2 mb-1.5">
+                        <div className="flex items-center gap-2">
+                          <span
+                            className="text-[14px] font-semibold"
+                            style={{ color: classInfo?.color || '#FFFFFF' }}
+                          >
+                            {sub.character_name}
                           </span>
-                        )}
-                        {isMine && (
-                          <span className="text-[10px] uppercase tracking-wide text-accent font-semibold">
-                            You
-                          </span>
+                          {sub.character_spec && (
+                            <span className="text-[11px] text-muted-foreground">
+                              ({sub.character_spec} {sub.character_class})
+                            </span>
+                          )}
+                          {isMine && (
+                            <span className="text-[10px] uppercase tracking-wide text-accent font-semibold">
+                              You
+                            </span>
+                          )}
+                        </div>
+                        {canManage && (
+                          <button
+                            onClick={() => deleteSubmission(sub)}
+                            className="text-muted-foreground hover:text-destructive transition-colors opacity-0 group-hover:opacity-100"
+                            title="Remove this reserve"
+                            aria-label={`Remove ${sub.character_name}'s reserve`}
+                          >
+                            <HugeiconsIcon icon={Delete02Icon} size={14} />
+                          </button>
                         )}
                       </div>
                       <div className="flex flex-wrap gap-x-3 gap-y-1">
