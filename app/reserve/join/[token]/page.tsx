@@ -401,6 +401,13 @@ export default function ReserveJoinPage() {
     } catch {}
   }, [token, authedFetch])
 
+  // Auto-poll for new submissions every 15 seconds while the run is open
+  useEffect(() => {
+    if (!run || run.status !== 'open') return
+    const interval = setInterval(reloadRun, 15_000)
+    return () => clearInterval(interval)
+  }, [run?.status, reloadRun])
+
   useEffect(() => {
     const load = async () => {
       try {
