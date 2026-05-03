@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
-import { verifyPermission } from '@/utils/server-roles'
 import { trackEvent } from '@/utils/analytics/server'
 
 /**
@@ -109,11 +108,24 @@ export async function POST(request: NextRequest) {
 
     const serviceSupabase = createServiceRoleClient()
 
-    // If guild_id provided, verify officer permissions
+    // If guild_id provided, verify the user is a member of the guild
     if (guild_id) {
-      const verification = await verifyPermission(serviceSupabase, user.id, guild_id, 'manage_reserves')
-      if (!verification.hasPermission) {
-        return NextResponse.json({ error: 'Only officers can create guild reserve runs' }, { status: 403 })
+      const { data: userChars } = await serviceSupabase
+        .from('characters')
+        .select('id')
+        .eq('user_id', user.id)
+      if (!userChars || userChars.length === 0) {
+        return NextResponse.json({ error: 'Not a guild member' }, { status: 403 })
+      }
+      const { data: membership } = await serviceSupabase
+        .from('character_guild_memberships')
+        .select('id')
+        .eq('guild_id', guild_id)
+        .in('character_id', userChars.map((c: { id: string }) => c.id))
+        .eq('is_active', true)
+        .limit(1)
+      if (!membership || membership.length === 0) {
+        return NextResponse.json({ error: 'Not a guild member' }, { status: 403 })
       }
     }
 
