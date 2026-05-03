@@ -644,10 +644,10 @@ export default function ReserveJoinPage() {
           class: characterClass,
         }))
       } else {
-        setError(data.error || 'Failed to submit')
+        setError(data.error || 'Couldn\'t save your reserves. Check your selections and try again.')
       }
     } catch {
-      setError('Something went wrong. Try again.')
+      setError('Connection issue. Check your internet and try again.')
     } finally {
       setSubmitting(false)
     }
@@ -927,11 +927,11 @@ export default function ReserveJoinPage() {
               {statusInfo.text}
             </Badge>
             <span className="text-[12px] text-muted-foreground">
-              {run.max_reserves} reserve{run.max_reserves !== 1 ? 's' : ''} / player
+              <span className="tabular-nums">{run.max_reserves}</span> reserve{run.max_reserves !== 1 ? 's' : ''} / player
             </span>
             {run.max_reserves_per_item && (
               <span className="text-[12px] text-muted-foreground">
-                Max {run.max_reserves_per_item} per item
+                Max <span className="tabular-nums">{run.max_reserves_per_item}</span> per item
               </span>
             )}
             {run.enforce_class_restrictions && (
@@ -1017,7 +1017,7 @@ export default function ReserveJoinPage() {
               <div className="flex items-center gap-2">
                 <HugeiconsIcon icon={UserMultiple02Icon} size={16} className="text-muted-foreground" />
                 <LabelText size="sm">
-                  Reserve board ({submissions.length} player{submissions.length === 1 ? '' : 's'})
+                  Reserve board (<span className="tabular-nums">{submissions.length}</span> player{submissions.length === 1 ? '' : 's'})
                 </LabelText>
               </div>
               <div className="flex items-center gap-1 p-0.5 rounded-full border border-border bg-background-subtle">
@@ -1070,7 +1070,7 @@ export default function ReserveJoinPage() {
                                     : 'bg-background-subtle text-muted-foreground'
                                 }`}
                               >
-                                {reservers.length} reserve{reservers.length === 1 ? '' : 's'}
+                                <span className="tabular-nums">{reservers.length}</span> reserve{reservers.length === 1 ? '' : 's'}
                               </span>
                               {itemAwards.length > 0 && (
                                 <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-success/15 text-success font-medium inline-flex items-center gap-1">
@@ -1388,7 +1388,7 @@ export default function ReserveJoinPage() {
 
               {/* Item picker */}
               <div className="space-y-1.5">
-                <Label>Reserve items ({selectedItemIds.length}/{run.max_reserves})</Label>
+                <Label>Reserve items (<span className="tabular-nums">{selectedItemIds.length}/{run.max_reserves}</span>)</Label>
                 <ReserveItemPicker
                   items={items}
                   selectedIds={selectedItemIds}
@@ -1440,8 +1440,8 @@ export default function ReserveJoinPage() {
                 </Heading>
                 <Text size="sm" color="muted">
                   {run.status === 'locked'
-                    ? `Raid ${formatRelative(run.raid_at)} · ${submissions.length} player${submissions.length === 1 ? '' : 's'} signed up`
-                    : `Completed · ${submissions.length} player${submissions.length === 1 ? '' : 's'} reserved · ${awards.length} award${awards.length === 1 ? '' : 's'}`}
+                    ? <>Raid {formatRelative(run.raid_at)} · <span className="tabular-nums">{submissions.length}</span> player{submissions.length === 1 ? '' : 's'} signed up</>
+                    : <>Completed · <span className="tabular-nums">{submissions.length}</span> player{submissions.length === 1 ? '' : 's'} reserved · <span className="tabular-nums">{awards.length}</span> award{awards.length === 1 ? '' : 's'}</>}
                 </Text>
               </div>
             </div>
@@ -1452,7 +1452,7 @@ export default function ReserveJoinPage() {
             empty run, for example) */}
         {!isOpen && submissions.length === 0 && (
           <Card variant="unified" className="text-center">
-            <Text color="muted" size="sm">No reserves were submitted for this run.</Text>
+            <Text color="muted" size="sm">No reserves yet. Share the link with your raid to get started.</Text>
           </Card>
         )}
 

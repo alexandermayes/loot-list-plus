@@ -676,9 +676,9 @@ export default function ReserveRunPage() {
                 </span>
                 <span className="flex items-center gap-1.5">
                   <HugeiconsIcon icon={UserMultiple02Icon} size={14} />
-                  {run.submissions.length} signed up
+                  <span className="tabular-nums">{run.submissions.length}</span> signed up
                 </span>
-                <span>{run.max_reserves} reserve{run.max_reserves !== 1 ? 's' : ''} / player</span>
+                <span><span className="tabular-nums">{run.max_reserves}</span> reserve{run.max_reserves !== 1 ? 's' : ''} / player</span>
               </div>
               </div>
             </div>
@@ -843,11 +843,11 @@ export default function ReserveRunPage() {
           </div>
           <div className="space-y-3 text-[13px] text-foreground-secondary">
             <div className="flex flex-wrap gap-x-6 gap-y-1">
-              <span>{run.max_reserves} reserve{run.max_reserves !== 1 ? 's' : ''} per player</span>
+              <span><span className="tabular-nums">{run.max_reserves}</span> reserve{run.max_reserves !== 1 ? 's' : ''} per player</span>
               {run.max_reserves_per_item && (
-                <span>Max {run.max_reserves_per_item} per item</span>
+                <span>Max <span className="tabular-nums">{run.max_reserves_per_item}</span> per item</span>
               )}
-              <span>{run.visibility === 'hidden_until_lock' ? 'Hidden until locked' : 'Visible immediately'}</span>
+              <span>{run.visibility === 'hidden_until_lock' ? 'Hidden until you lock' : 'Everyone can see reserves'}</span>
               {run.allow_duplicates && <span>Duplicate reserves allowed</span>}
               {run.enforce_class_restrictions && <span>Class restrictions enforced</span>}
             </div>
@@ -953,7 +953,7 @@ export default function ReserveRunPage() {
           <div className="px-5 py-4 border-b border-border space-y-3">
             <div className="flex items-center justify-between gap-3">
               <LabelText size="sm">
-                Participants ({run.submissions.length})
+                Participants (<span className="tabular-nums">{run.submissions.length}</span>)
               </LabelText>
             </div>
             {run.submissions.length > 0 && (
@@ -1043,7 +1043,7 @@ export default function ReserveRunPage() {
           <Card className="overflow-hidden">
             <div className="px-5 py-4 border-b border-border">
               <LabelText size="sm">
-                Contested items ({contestedItems.length})
+                Contested items (<span className="tabular-nums">{contestedItems.length}</span>)
               </LabelText>
             </div>
             <div className="divide-y divide-border">
@@ -1167,7 +1167,7 @@ export default function ReserveRunPage() {
           <Card className="overflow-hidden">
             <div className="px-5 py-4 border-b border-border">
               <LabelText size="sm">
-                Winner log ({run.awards.length})
+                Winner log (<span className="tabular-nums">{run.awards.length}</span>)
               </LabelText>
             </div>
             <div className="divide-y divide-border">
