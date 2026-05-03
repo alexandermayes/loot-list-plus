@@ -433,7 +433,7 @@ export default function GuildSettingsContent() {
           {/* Basic Information */}
           <div className="bg-background-elevated border border-border rounded-xl overflow-hidden" ref={guildInfoRef}>
             <div className="p-6 border-b border-border">
-              <h2 className="text-[24px] font-semibold text-foreground">Guild information</h2>
+              <Heading level={2}>Guild information</Heading>
               <p className="text-muted-foreground text-[13px] mt-1">
                 {isGuildCreator ? "Update your guild's basic details" : "Only the guild owner can edit these settings"}
               </p>
@@ -542,7 +542,7 @@ export default function GuildSettingsContent() {
             <div className="p-6 border-b border-border flex-shrink-0">
               <div className="flex items-start justify-between">
                 <div>
-                  <h2 className="text-[24px] font-semibold text-foreground">Current members</h2>
+                  <Heading level={2}>Current members</Heading>
                   <p className="text-muted-foreground text-[13px] mt-1">Manage guild members and roles</p>
                 </div>
                 <Button variant="outline" size="sm" onClick={() => setShowRolesModal(true)}>
@@ -570,7 +570,7 @@ export default function GuildSettingsContent() {
               <div className="flex items-center gap-3">
                 <img src="/discord-icon.svg" alt="" className="w-6 h-6" />
                 <div>
-                  <h2 className="text-[24px] font-semibold text-foreground">Discord integration</h2>
+                  <Heading level={2}>Discord integration</Heading>
                   <p className="text-muted-foreground text-[13px] mt-1">Post raid summaries to a Discord channel when you finish logging a raid</p>
                 </div>
               </div>
@@ -632,7 +632,7 @@ export default function GuildSettingsContent() {
               <div className="flex items-center gap-3">
                 <img src="/wcl-icon.png" alt="" className="w-6 h-6" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} />
                 <div>
-                  <h2 className="text-[24px] font-semibold text-foreground">Warcraft Logs</h2>
+                  <Heading level={2}>Warcraft Logs</Heading>
                   <p className="text-muted-foreground text-[13px] mt-1">Auto-link WCL reports to raids when posting summaries to Discord</p>
                 </div>
               </div>
@@ -661,7 +661,7 @@ export default function GuildSettingsContent() {
         {isGuildCreator && (
           <div className="bg-background-elevated border border-destructive/30 rounded-xl overflow-hidden">
             <div className="p-6 border-b border-destructive/30">
-              <h2 className="text-[24px] font-semibold text-destructive">Danger Zone</h2>
+              <Heading level={2} className="text-destructive">Danger Zone</Heading>
               <p className="text-muted-foreground text-[13px] mt-1">
                 Irreversible and destructive actions
               </p>

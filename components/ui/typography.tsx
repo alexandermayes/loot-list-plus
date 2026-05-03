@@ -22,7 +22,7 @@ import { cn } from '@/lib/utils'
 // HEADING COMPONENT
 // =============================================================================
 
-const headingVariants = cva('text-foreground', {
+const headingVariants = cva('text-foreground text-balance', {
   variants: {
     level: {
       1: 'text-5xl font-bold leading-tight',      // 42px - Page titles
@@ -68,7 +68,7 @@ Heading.displayName = 'Heading'
 // TEXT COMPONENT
 // =============================================================================
 
-const textVariants = cva('', {
+const textVariants = cva('text-pretty', {
   variants: {
     size: {
       xs: 'text-xs',       // 10px

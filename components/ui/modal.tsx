@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import { cva, type VariantProps } from "class-variance-authority"
+import { AnimatePresence, motion } from "framer-motion"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { Cancel01Icon } from "@hugeicons/core-free-icons"
 
@@ -127,7 +128,7 @@ const ModalTitle = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <h2
     ref={ref}
-    className={cn("text-[20px] font-semibold text-foreground", className)}
+    className={cn("text-[20px] font-semibold text-foreground text-balance", className)}
     {...props}
   />
 ))
@@ -237,8 +238,6 @@ const Modal = ({
     }
   }, [open])
 
-  if (!open) return null
-
   const handleBackdropMouseDown = (e: React.MouseEvent) => {
     // Only track mousedown if it's directly on the backdrop
     mouseDownOnBackdrop.current = e.target === e.currentTarget
@@ -261,16 +260,31 @@ const Modal = ({
   }
 
   return (
-    <div
-      className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4"
-      style={{ zIndex }}
-      onMouseDown={handleBackdropMouseDown}
-      onClick={handleBackdropClick}
-    >
-      <ModalContainer size={size} className={className} maxHeight={maxHeight}>
-        {children}
-      </ModalContainer>
-    </div>
+    <AnimatePresence>
+      {open && (
+        <motion.div
+          className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4"
+          style={{ zIndex }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.15 }}
+          onMouseDown={handleBackdropMouseDown}
+          onClick={handleBackdropClick}
+        >
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, filter: "blur(4px)" }}
+            animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
+            exit={{ opacity: 0, scale: 0.95, filter: "blur(4px)" }}
+            transition={{ duration: 0.15 }}
+          >
+            <ModalContainer size={size} className={className} maxHeight={maxHeight}>
+              {children}
+            </ModalContainer>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   )
 }
 

@@ -89,11 +89,11 @@ export function EmptyState({
           />
         </div>
       )}
-      <h3 className={cn('text-foreground', config.title)}>
+      <h3 className={cn('text-foreground text-balance', config.title)}>
         {title}
       </h3>
       {description && (
-        <p className={cn('text-muted-foreground max-w-sm', config.description)}>
+        <p className={cn('text-muted-foreground max-w-sm text-pretty', config.description)}>
           {description}
         </p>
       )}

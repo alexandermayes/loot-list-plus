@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useMemo, useCallback, useEffect, memo } from 'react'
+import React, { useState, useRef, useMemo, useCallback, useEffect, memo } from 'react'
 import SearchableItemSelect from '@/app/components/SearchableItemSelect'
 import { useGuildContext } from '@/app/contexts/GuildContext'
 import { ExpansionGuard } from '@/app/components/ExpansionGuard'
@@ -17,7 +17,7 @@ import { useConfirm } from '@/components/ui/confirm-modal'
 import { Heading, Text, LabelText } from '@/components/ui/typography'
 import { normalizeBossName } from '@/utils/bossOrder'
 import { getRaidIcon, getRaidShorthand } from '@/utils/raidIcons'
-import { StarFilledIcon, CheckFilledIcon, ClockFilledIcon, AlertFilledIcon, CancelFilledIcon } from '@/components/ui/icons'
+import { CheckFilledIcon, ClockFilledIcon, AlertFilledIcon, CancelFilledIcon } from '@/components/ui/icons'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { InformationCircleIcon } from '@hugeicons/core-free-icons'
@@ -662,6 +662,7 @@ export default function LootListContent() {
   const [showUnrankedPanel, setShowUnrankedPanel] = useState(false)
   const [showMoreMenu, setShowMoreMenu] = useState(false)
   const [contentReady, setContentReady] = useState(false)
+  const hasLoadedOnce = useRef(false)
   // Mobile collapsible brackets - No Bracket and Off-spec start collapsed
   const [collapsedBrackets, setCollapsedBrackets] = useState<Set<string>>(
     new Set(['No bracket (38-25) - Main-spec', 'Off-spec (24-1)'])
@@ -679,10 +680,14 @@ export default function LootListContent() {
   // Fade in content after loading to avoid wowhead tooltip flash
   useEffect(() => {
     if (!isLoading && !isContentLoading) {
+      hasLoadedOnce.current = true
       const timer = setTimeout(() => setContentReady(true), 50)
       return () => clearTimeout(timer)
     } else {
-      setContentReady(false)
+      // Only show skeleton/fade on initial load, not phase switches
+      if (!hasLoadedOnce.current) {
+        setContentReady(false)
+      }
       setIsEditing(false)
     }
   }, [isLoading, isContentLoading])
@@ -1290,7 +1295,7 @@ export default function LootListContent() {
                             />
                           )}
                           <span>{raidNames}</span>
-                          {hasActiveTier && <StarFilledIcon size={14} />}
+
                           {hasSubmission && (
                             <span className={statusColor}>
                               {status.status === 'approved' ? <CheckFilledIcon size={14} /> :
@@ -1310,8 +1315,8 @@ export default function LootListContent() {
           </div>
         )}
 
-        {/* Status Banner skeleton - reserves space during loading to prevent CLS */}
-        {(isLoading || isContentLoading) && (
+        {/* Status Banner skeleton - reserves space during loading to prevent CLS (initial load only) */}
+        {(isLoading || isContentLoading) && !hasLoadedOnce.current && (
           <div className="px-4 sm:px-6 lg:px-8 pb-2">
             <div className="rounded-xl p-4 sm:p-6 border border-border bg-background-elevated">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -1386,8 +1391,9 @@ export default function LootListContent() {
                     </Button>
                     {showMoreMenu && (
                       <div className="absolute right-0 top-full mt-2 w-48 bg-background-elevated border border-border rounded-lg shadow-lg z-50 overflow-hidden">
-                        <button
-                          className="w-full px-4 py-2.5 text-left text-sm hover:bg-muted transition-colors flex items-center gap-2"
+                        <Button
+                          variant="ghost"
+                          className="w-full justify-start !rounded-none"
                           onClick={() => {
                             setShowUnrankedPanel(!showUnrankedPanel)
                             setShowMoreMenu(false)
@@ -1398,10 +1404,11 @@ export default function LootListContent() {
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                           </svg>
                           Show {unrankedItems.length} unranked
-                        </button>
+                        </Button>
                         {rankedCount > 0 && (
-                          <button
-                            className="w-full px-4 py-2.5 text-left text-sm text-destructive hover:bg-destructive/10 transition-colors flex items-center gap-2"
+                          <Button
+                            variant="destructive-ghost"
+                            className="w-full justify-start !rounded-none"
                             onClick={() => {
                               handleClearList()
                               setShowMoreMenu(false)
@@ -1411,7 +1418,7 @@ export default function LootListContent() {
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                             </svg>
                             Clear list
-                          </button>
+                          </Button>
                         )}
                       </div>
                     )}
@@ -1485,74 +1492,54 @@ export default function LootListContent() {
         >
           <div className="overflow-hidden">
             <div className="px-4 sm:px-6 lg:px-8 pb-2">
-              <div className="bg-yellow-900/50 border border-yellow-500 rounded-xl p-4 text-yellow-200">
-                <div className="flex items-start gap-3">
-                  <span className="text-xl">⏰</span>
-                  <div>
-                    <p className="font-semibold mb-1">Submission deadline passed</p>
-                    <p className="text-sm">
-                      The deadline for Phase {selectedPhase} was {phaseDeadline ? new Date(phaseDeadline).toLocaleString() : ''}.
-                      You can still submit changes, but they will require officer approval before being visible on the master sheet.
-                    </p>
-                  </div>
+              <div className="bg-yellow-900/20 border border-yellow-500/30 rounded-xl px-4 py-3 text-yellow-200/80">
+                <div className="flex items-center gap-2.5">
+                  <span className="text-sm">⏰</span>
+                  <p className="text-sm">
+                    Deadline for Phase {selectedPhase} passed {phaseDeadline ? new Date(phaseDeadline).toLocaleDateString() : ''}. Changes will require officer approval.
+                  </p>
                 </div>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Main Content - Flex container for loot list and sidebar */}
-        <div className={`flex px-4 sm:px-6 lg:px-8 pt-1.5 pb-6 ${showUnrankedPanel ? 'gap-6' : ''}`}>
-        {/* Loot List Content */}
-        <div className={`flex-1 min-w-0 space-y-6 transition-all duration-300 ${showUnrankedPanel ? 'pr-0' : ''}`}>
-        {/* Content Loading State */}
-        {(isLoading || isContentLoading) ? (
-          <LootListContentSkeleton />
-        ) : (
-        <div className={`space-y-4 transition-opacity duration-200 ${contentReady ? 'opacity-100' : 'opacity-0'}`}>
-
-        {/* Duplicate Warning */}
+        {/* Duplicate Warning - outside flex container so sidebar aligns with brackets */}
+        {!isLoading && !isContentLoading && (
         <div
-          className="grid transition-[grid-template-rows] duration-300 ease-in-out"
+          className="grid transition-[grid-template-rows] duration-300 ease-in-out px-4 sm:px-6 lg:px-8"
           style={{ gridTemplateRows: duplicateItems.length > 0 ? '1fr' : '0fr' }}
         >
           <div className="overflow-hidden">
-            <div className="bg-red-900/50 border border-red-500 rounded-xl p-4 text-red-300">
-              <strong>Warning:</strong> You have duplicate items on your list. Most items can only appear once. One-handed weapons can appear up to twice for dual-wielders. Tokens can appear once per bracket section.
+            <div className="pb-4">
+              <div className="bg-red-900/50 border border-red-500 rounded-xl p-4 text-red-300">
+                <strong>Warning:</strong> You have duplicate items on your list. Most items can only appear once. One-handed weapons can appear up to twice for dual-wielders. Tokens can appear once per bracket section.
+              </div>
             </div>
           </div>
         </div>
+        )}
 
-        {/* First-time guidance */}
-        {Object.keys(rankings).length === 0 && (
-          <div className="bg-accent/10 border border-accent/30 rounded-xl p-6">
-            <div className="flex items-start gap-4">
-              <div className="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center shrink-0">
-                <span className="text-xl">🎯</span>
-              </div>
-              <div>
-                <p className="text-[16px] font-semibold text-foreground">Time to rank your loot</p>
-                <p className="text-[13px] text-foreground-secondary mt-1">
-                  Your loot list tells officers what you want most. Here's how it works:
-                </p>
-                <div className="mt-3 space-y-2">
-                  <div className="flex items-start gap-2 text-[13px]">
-                    <span className="text-accent font-bold mt-px">1.</span>
-                    <span className="text-foreground-secondary"><span className="text-foreground font-medium">Click any empty slot</span> below to pick an item from the raid loot tables.</span>
-                  </div>
-                  <div className="flex items-start gap-2 text-[13px]">
-                    <span className="text-accent font-bold mt-px">2.</span>
-                    <span className="text-foreground-secondary"><span className="text-foreground font-medium">Rank 50 = highest priority.</span> Put your most wanted items in Bracket 1 at the top.</span>
-                  </div>
-                  <div className="flex items-start gap-2 text-[13px]">
-                    <span className="text-accent font-bold mt-px">3.</span>
-                    <span className="text-foreground-secondary"><span className="text-foreground font-medium">Hit Submit</span> when you're done. Your officer will review and approve your list.</span>
-                  </div>
-                </div>
-              </div>
+        {/* First-time guidance - outside flex container so sidebar aligns with brackets */}
+        {!isLoading && !isContentLoading && Object.keys(rankings).length === 0 && (
+          <div className="px-4 sm:px-6 lg:px-8 pb-4">
+            <div className="bg-background-elevated border border-border rounded-xl px-4 py-3">
+              <p className="text-sm text-foreground-secondary">
+                <span className="text-foreground font-medium">Click any empty slot</span> to pick an item, rank from 50 (highest) to 1, then hit Submit for officer review.
+              </p>
             </div>
           </div>
         )}
+
+        {/* Main Content - Flex container for loot list and sidebar */}
+        <div className={`flex items-start px-4 sm:px-6 lg:px-8 pt-1.5 pb-6 ${showUnrankedPanel ? 'gap-6' : ''}`}>
+        {/* Loot List Content */}
+        <div className={`flex-1 min-w-0 space-y-6 transition-all duration-300 ${showUnrankedPanel ? 'pr-0' : ''}`}>
+        {/* Content Loading State (initial load only — phase switches keep showing previous content) */}
+        {(isLoading || isContentLoading) && !hasLoadedOnce.current ? (
+          <LootListContentSkeleton />
+        ) : (
+        <div className={`space-y-4 transition-opacity duration-200 ${contentReady ? 'opacity-100' : 'opacity-0'}`}>
 
         {/* Bracket Sections */}
         {([

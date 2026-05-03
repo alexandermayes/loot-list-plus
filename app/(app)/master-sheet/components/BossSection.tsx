@@ -110,13 +110,13 @@ function ScoreBreakdownPopover({
         <span className="text-[12px] font-semibold" style={{ color: ranking.class_color }}>
           {ranking.player_name}
         </span>
-        <span className="text-[12px] font-bold text-foreground">{explanation.total.toFixed(decimalPlaces)}</span>
+        <span className="text-[12px] font-bold text-foreground tabular-nums">{explanation.total.toFixed(decimalPlaces)}</span>
       </div>
       <div className="space-y-1">
         {explanation.lines.map(line => (
           <div key={line.key} className="flex items-center justify-between">
             <span className="text-[11px] text-foreground-secondary">{line.label}</span>
-            <span className={`text-[11px] font-medium ${line.value >= 0 ? 'text-foreground' : 'text-destructive'}`}>
+            <span className={`text-[11px] font-medium tabular-nums ${line.value >= 0 ? 'text-foreground' : 'text-destructive'}`}>
               {line.value >= 0 ? '+' : ''}{line.value.toFixed(decimalPlaces)}
             </span>
           </div>
@@ -270,7 +270,7 @@ export const BossSection = memo(function BossSection({
                             {ranking.is_trial && <span className="text-warning text-[9px] ml-0.5">(T)</span>}
                             {!ranking.is_eligible && <span className="text-destructive text-[9px] ml-0.5">⊘</span>}
                           </span>
-                          <span className="text-[10px] text-foreground-muted inline-flex items-center gap-0.5">
+                          <span className="text-[10px] text-foreground-muted inline-flex items-center gap-0.5 tabular-nums">
                             {ranking.loot_score.toFixed(decimalPlaces)}
                             {(() => {
                               const topScore = ir.rankings[0]?.loot_score ?? 0
@@ -448,7 +448,7 @@ const ItemRow = memo(function ItemRow({
                       <span className="text-destructive text-[10px] ml-0.5" title={`Ineligible: ${ranking.raids_attended}/${minimumRaidDays} raids attended`}>⊘</span>
                     )}
                   </span>
-                  <span className="text-[11px] text-foreground-muted inline-flex items-center gap-0.5">
+                  <span className="text-[11px] text-foreground-muted inline-flex items-center gap-0.5 tabular-nums">
                     {ranking.loot_score.toFixed(decimalPlaces)}
                     {/* Tied badge on all candidates sharing #1 score, close-gap on #1 only */}
                     {(() => {

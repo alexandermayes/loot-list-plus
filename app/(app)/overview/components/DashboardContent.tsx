@@ -1000,12 +1000,15 @@ export default function DashboardContent() {
           totalRaidCount = attendanceResult.raidsInWindow
 
           // Build missed raids list — only events that count toward this character's attendance
-          if (totalRaidCount > 0) {
+          // Skip on the initial pass when teams haven't loaded yet (prevents flash)
+          const teamsResolved = !hasFeature(activeGuild, 'raid_teams') || characterTeams.length > 0
+          if (totalRaidCount > 0 && teamsResolved) {
             const recordByEvent = new Map<string, AttRecord>()
             for (const r of teamRecords) recordByEvent.set(r.raid_event_id, r)
 
-            // Filter to configured raid days and deduplicate by date (same as attendance engine)
-            let relevantEvents = raidEventsData as { id: string; raid_date: string }[]
+            // Start with events relevant to this character's team (or all guild events if no team)
+            let relevantEvents = (raidEventsData as { id: string; raid_date: string }[])
+              .filter(e => !activeTeam || teamEventIds.has(e.id))
             if (raidDays.length > 0) {
               relevantEvents = relevantEvents.filter(e => {
                 const [y, m, d] = e.raid_date.split('-').map(Number)
@@ -1817,9 +1820,10 @@ export default function DashboardContent() {
                     const status = phaseStatus[phase]
 
                     return (
-                      <div
+                      <button
                         key={phase}
-                        className="inline-flex items-center gap-2 h-7 pl-1.5 pr-3 rounded-full border border-border bg-background-elevated"
+                        onClick={() => router.push(`/loot-list?phase=${phase}`)}
+                        className="inline-flex items-center gap-2 h-7 pl-1.5 pr-3 rounded-full border border-border bg-background-elevated hover:border-accent/40 transition-colors cursor-pointer"
                       >
                         <span className="px-1.5 py-0.5 rounded bg-accent/20 text-accent text-[10px] font-bold">P{phase}</span>
                         {iconTier && (
@@ -1832,7 +1836,7 @@ export default function DashboardContent() {
                         <span className="text-xs text-foreground">{tierNames}</span>
                         <span className="text-xs text-muted-foreground/60" aria-hidden="true">·</span>
                         <span className={`text-xs ${statusTextColor(status)}`}>{statusLabel(status)}</span>
-                      </div>
+                      </button>
                     )
                   })}
                   <Button
@@ -1891,7 +1895,7 @@ export default function DashboardContent() {
           {!activeCharacter && (
             <div
               onClick={() => setShowCreateCharacterModal(true)}
-              className="bg-background-elevated border border-border rounded-xl p-6 hover:border-accent/50 transition cursor-pointer"
+              className="bg-background-elevated border border-border rounded-xl p-6 hover:border-accent/50 transition-colors cursor-pointer"
             >
               <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
                 <div className="w-16 h-16 bg-muted border border-border-strong rounded-full flex items-center justify-center flex-shrink-0">
@@ -1946,7 +1950,7 @@ export default function DashboardContent() {
                               {contextLabel && <span className="text-muted-foreground">{contextLabel}</span>}
                               <InfoTooltip content={line.detail} />
                             </span>
-                            <span className={`text-[13px] font-medium ${line.value >= 0 ? 'text-foreground' : 'text-destructive'}`}>
+                            <span className={`text-[13px] font-medium tabular-nums ${line.value >= 0 ? 'text-foreground' : 'text-destructive'}`}>
                               {line.value >= 0 ? '+' : ''}{line.value.toFixed(decimalPlaces)}
                             </span>
                           </div>
@@ -2004,7 +2008,7 @@ export default function DashboardContent() {
                     </div>
                   )}
                   {attendanceData.tierInfo && (
-                    <p className="text-[11px] text-muted-foreground mt-2">
+                    <p className="text-[11px] text-muted-foreground mt-2 tabular-nums">
                       {attendanceData.tierInfo.raidsNeeded > 0
                         ? `${attendanceData.tierInfo.raidsNeeded} more raid${attendanceData.tierInfo.raidsNeeded !== 1 ? 's' : ''} to reach ${attendanceData.tierInfo.nextTier} tier (+${attendanceData.tierInfo.nextBonus.toFixed(decimalPlaces)})`
                         : `${attendanceData.tierInfo.current} tier`}
@@ -2130,7 +2134,7 @@ export default function DashboardContent() {
                     <div
                       key={item.item_id}
                       onClick={() => router.push(`/master-sheet?tier=${item.raid_tier_id}&item=${item.item_id}`)}
-                      className="bg-background-inset border border-border rounded-xl p-3 sm:p-4 hover:border-accent/50 transition cursor-pointer"
+                      className="bg-background-inset border border-border rounded-xl p-3 sm:p-4 hover:border-accent/50 transition-colors cursor-pointer"
                     >
                       <div className="flex items-start sm:items-center gap-3 sm:gap-4">
                         <div className="flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 bg-accent/20 rounded-full flex items-center justify-center mt-0.5 sm:mt-0">
@@ -2157,13 +2161,13 @@ export default function DashboardContent() {
                             {!item.is_loot_council && (
                               <>
                                 <span>•</span>
-                                <span className="font-semibold text-foreground">{item.loot_score.toFixed(decimalPlaces)}</span>
+                                <span className="font-semibold text-foreground tabular-nums">{item.loot_score.toFixed(decimalPlaces)}</span>
                               </>
                             )}
                             {!item.is_loot_council && itemBlpData[item.item_id] && (
                               <>
                                 <span>•</span>
-                                <span className="text-accent font-medium" title={`Passed ${itemBlpData[item.item_id].timesPassed} time${itemBlpData[item.item_id].timesPassed !== 1 ? 's' : ''}`}>
+                                <span className="text-accent font-medium tabular-nums" title={`Passed ${itemBlpData[item.item_id].timesPassed} time${itemBlpData[item.item_id].timesPassed !== 1 ? 's' : ''}`}>
                                   +{itemBlpData[item.item_id].bonus.toFixed(decimalPlaces)} BLP
                                 </span>
                               </>
@@ -2302,7 +2306,7 @@ export default function DashboardContent() {
                 {actionsNeeded.filter(submission => !dismissedActions.has(submission.id)).map(submission => (
                   <div
                     key={submission.id}
-                    className="bg-background-inset border border-border rounded-xl p-4 hover:border-accent/50 transition cursor-pointer"
+                    className="bg-background-inset border border-border rounded-xl p-4 hover:border-accent/50 transition-colors cursor-pointer"
                     onClick={() => router.push('/loot-list')}
                   >
                     <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">

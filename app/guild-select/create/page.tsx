@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { ArrowLeft01Icon, UserGroupIcon } from '@hugeicons/core-free-icons'
-import { LoadingSpinner } from '@/components/ui/loading-spinner'
+import { LoadingSpinner, Spinner } from '@/components/ui/loading-spinner'
 import { Button } from '@/components/ui/button'
 import { Heading } from '@/components/ui/typography'
 import { Label } from '@/components/ui/label'
@@ -480,9 +480,7 @@ export default function CreateGuildPage() {
               />
               {checkingName && (
                 <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                  <svg className="w-5 h-5 animate-spin text-muted-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/>
-                  </svg>
+                  <Spinner size="default" className="text-muted-foreground" />
                 </div>
               )}
               {!checkingName && nameAvailable === true && guildName.trim() && (
@@ -583,9 +581,7 @@ export default function CreateGuildPage() {
               {checkingBot && (
                 <div className="bg-muted/50 border border-border rounded-lg p-6">
                   <div className="flex items-center gap-3">
-                    <svg className="w-6 h-6 animate-spin text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/>
-                    </svg>
+                    <Spinner size="lg" className="text-primary" />
                     <div>
                       <p className="text-foreground font-medium">Verifying bot installation</p>
                       <p className="text-sm text-muted-foreground">Checking if LootList+ bot is in your Discord server...</p>
@@ -668,7 +664,7 @@ export default function CreateGuildPage() {
                 variant="ghost"
                 onClick={() => setExpansion('Classic')}
                 disabled={creating}
-                className={`relative aspect-video h-auto p-0 rounded-lg border-2 transition overflow-hidden ${
+                className={`relative aspect-video h-auto p-0 rounded-lg border-2 transition-colors overflow-hidden ${
                   expansion === 'Classic'
                     ? 'border-primary ring-2 ring-primary/50'
                     : 'border-border hover:border-primary/50'
@@ -685,7 +681,7 @@ export default function CreateGuildPage() {
                 variant="ghost"
                 onClick={() => setExpansion('The Burning Crusade')}
                 disabled={creating}
-                className={`relative aspect-video h-auto p-0 rounded-lg border-2 transition overflow-hidden ${
+                className={`relative aspect-video h-auto p-0 rounded-lg border-2 transition-colors overflow-hidden ${
                   expansion === 'The Burning Crusade'
                     ? 'border-primary ring-2 ring-primary/50'
                     : 'border-border hover:border-primary/50'
@@ -702,7 +698,7 @@ export default function CreateGuildPage() {
                 variant="ghost"
                 onClick={() => setExpansion('Wrath of the Lich King')}
                 disabled={creating}
-                className={`relative aspect-video h-auto p-0 rounded-lg border-2 transition overflow-hidden ${
+                className={`relative aspect-video h-auto p-0 rounded-lg border-2 transition-colors overflow-hidden ${
                   expansion === 'Wrath of the Lich King'
                     ? 'border-primary ring-2 ring-primary/50'
                     : 'border-border hover:border-primary/50'
@@ -719,7 +715,7 @@ export default function CreateGuildPage() {
                 variant="ghost"
                 onClick={() => setExpansion('Cataclysm')}
                 disabled={creating}
-                className={`relative aspect-video h-auto p-0 rounded-lg border-2 transition overflow-hidden ${
+                className={`relative aspect-video h-auto p-0 rounded-lg border-2 transition-colors overflow-hidden ${
                   expansion === 'Cataclysm'
                     ? 'border-primary ring-2 ring-primary/50'
                     : 'border-border hover:border-primary/50'
@@ -736,7 +732,7 @@ export default function CreateGuildPage() {
                 variant="ghost"
                 onClick={() => setExpansion('Mists of Pandaria')}
                 disabled={creating}
-                className={`relative aspect-video h-auto p-0 rounded-lg border-2 transition overflow-hidden ${
+                className={`relative aspect-video h-auto p-0 rounded-lg border-2 transition-colors overflow-hidden ${
                   expansion === 'Mists of Pandaria'
                     ? 'border-primary ring-2 ring-primary/50'
                     : 'border-border hover:border-primary/50'
@@ -777,7 +773,7 @@ export default function CreateGuildPage() {
                 variant="ghost"
                 onClick={() => setFaction('Alliance')}
                 disabled={creating}
-                className={`p-4 h-auto rounded-lg border-2 transition ${
+                className={`p-4 h-auto rounded-lg border-2 transition-colors ${
                   faction === 'Alliance'
                     ? 'border-blue-500 bg-blue-500/20 text-blue-200'
                     : 'border-border bg-card hover:border-blue-500/50'
@@ -790,7 +786,7 @@ export default function CreateGuildPage() {
                 variant="ghost"
                 onClick={() => setFaction('Horde')}
                 disabled={creating}
-                className={`p-4 h-auto rounded-lg border-2 transition ${
+                className={`p-4 h-auto rounded-lg border-2 transition-colors ${
                   faction === 'Horde'
                     ? 'border-red-500 bg-red-500/20 text-red-200'
                     : 'border-border bg-card hover:border-red-500/50'

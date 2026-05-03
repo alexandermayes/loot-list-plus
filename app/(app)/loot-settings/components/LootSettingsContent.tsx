@@ -1455,9 +1455,9 @@ export default function LootSettingsContent() {
                     className="bg-background-elevated"
                   >
                     <option value="all" className="bg-background-elevated text-foreground">All classifications</option>
-                    <option value="Reserved" className="bg-background-elevated" style={{ color: '#E57373' }}>Reserved</option>
-                    <option value="Limited" className="bg-background-elevated" style={{ color: '#64B5F6' }}>Limited</option>
-                    <option value="Unlimited" className="bg-background-elevated" style={{ color: '#B0B0B0' }}>Unlimited</option>
+                    <option value="Reserved" className="bg-background-elevated" style={{ color: '#ef4444' }}>Reserved</option>
+                    <option value="Limited" className="bg-background-elevated" style={{ color: '#eab308' }}>Limited</option>
+                    <option value="Unlimited" className="bg-background-elevated" style={{ color: '#22c55e' }}>Unlimited</option>
                   </Select>
                 </div>
                 <div>
@@ -1567,15 +1567,15 @@ export default function LootSettingsContent() {
                         onChange={(e) => updateClassification(item.id, e.target.value)}
                         className="bg-background-elevated font-medium"
                         style={{
-                          color: item.classification === 'Reserved' ? '#E57373' :
-                                 item.classification === 'Limited' ? '#64B5F6' :
-                                 item.classification === 'Unlimited' ? '#B0B0B0' :
-                                 '#ffffff'
+                          color: item.classification === 'Reserved' ? '#ef4444' :
+                                 item.classification === 'Limited' ? '#eab308' :
+                                 item.classification === 'Unlimited' ? '#22c55e' :
+                                 undefined
                         }}
                       >
-                        <option value="Reserved" className="bg-background-elevated" style={{ color: '#E57373' }}>Reserved</option>
-                        <option value="Limited" className="bg-background-elevated" style={{ color: '#64B5F6' }}>Limited</option>
-                        <option value="Unlimited" className="bg-background-elevated" style={{ color: '#B0B0B0' }}>Unlimited</option>
+                        <option value="Reserved" className="bg-background-elevated" style={{ color: '#ef4444' }}>Reserved</option>
+                        <option value="Limited" className="bg-background-elevated" style={{ color: '#eab308' }}>Limited</option>
+                        <option value="Unlimited" className="bg-background-elevated" style={{ color: '#22c55e' }}>Unlimited</option>
                       </Select>
                     </td>
                     <td className="px-2 py-2.5">

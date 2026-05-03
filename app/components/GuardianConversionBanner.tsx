@@ -79,12 +79,13 @@ export default function GuardianConversionBanner({ guildId }: GuardianConversion
         <HugeiconsIcon icon={InformationCircleIcon} size={16} className="text-accent shrink-0" />
         <p className="flex-1 text-sm text-foreground">
           {members.length} guild {members.length === 1 ? 'member hasn\'t' : 'members haven\'t'} chosen between Feral (DPS) and Guardian (Tank).{' '}
-          <button
+          <Button
+            variant="link"
             onClick={() => setExpanded(!expanded)}
-            className="text-accent hover:underline font-medium"
+            className="p-0 h-auto text-sm"
           >
             {expanded ? 'Hide' : 'Show members'}
-          </button>
+          </Button>
         </p>
         <button
           onClick={() => setDismissed(true)}

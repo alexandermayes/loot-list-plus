@@ -411,7 +411,7 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
                       else if (step === 'settings' && canProceedFromDiscord() && canProceedFromDetails()) setCurrentStep('settings')
                     }}
                     disabled={!canAccess}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-full text-[12px] font-medium transition shrink-0 ${
+                    className={`flex items-center gap-2 px-4 py-2 rounded-full text-[12px] font-medium transition-colors shrink-0 ${
                       isCompleted
                         ? 'bg-accent text-foreground'
                         : isCurrent
@@ -435,7 +435,7 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
 
                   {/* Connecting Line */}
                   {idx < 2 && (
-                    <div className={`flex-1 h-0.5 mx-2 transition ${
+                    <div className={`flex-1 h-0.5 mx-2 transition-colors ${
                       stepIndex < currentIndex ? 'bg-accent' : 'bg-border-strong'
                     }`} />
                   )}
@@ -498,7 +498,7 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
                               setShowManualEntry(false)
                               setManualServerId('')
                             }}
-                            className={`relative flex flex-col items-center gap-2 p-3 rounded-xl border transition text-center h-auto ${
+                            className={`relative flex flex-col items-center gap-2 p-3 rounded-xl border transition-colors text-center h-auto ${
                               selectedDiscordServer === guild.id
                                 ? 'border-accent bg-accent/10'
                                 : 'border-border-strong bg-background-elevated hover:border-foreground-muted'
@@ -533,7 +533,7 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
                             setShowManualEntry(true)
                             setSelectedDiscordServer('')
                           }}
-                          className={`relative flex flex-col items-center justify-center gap-2 p-3 rounded-xl border transition text-center h-auto ${
+                          className={`relative flex flex-col items-center justify-center gap-2 p-3 rounded-xl border transition-colors text-center h-auto ${
                             showManualEntry
                               ? 'border-accent bg-accent/10'
                               : 'border-border-strong bg-background-elevated hover:border-foreground-muted'
@@ -561,7 +561,7 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
                         <Button
                           variant="ghost"
                           onClick={() => setShowManualEntry(true)}
-                          className={`relative flex flex-col items-center justify-center gap-2 p-3 rounded-xl border transition text-center h-auto ${
+                          className={`relative flex flex-col items-center justify-center gap-2 p-3 rounded-xl border transition-colors text-center h-auto ${
                             showManualEntry
                               ? 'border-accent bg-accent/10'
                               : 'border-border-strong bg-background-elevated hover:border-foreground-muted'
@@ -698,7 +698,7 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
                             disabled={!exp.available}
                             className={`flex flex-col items-center gap-1 w-full h-auto p-0 !ring-0 !outline-none ${!exp.available ? 'cursor-not-allowed' : ''}`}
                           >
-                            <div className={`relative aspect-square w-full rounded-lg overflow-hidden border-2 transition ${
+                            <div className={`relative aspect-square w-full rounded-lg overflow-hidden border-2 transition-colors ${
                               !exp.available
                                 ? 'border-border opacity-40'
                                 : expansion === exp.id
@@ -707,7 +707,7 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
                             }`}>
                               <img src={exp.image} alt={exp.name} className="w-full h-full object-contain p-2" />
                             </div>
-                            <span className={`text-[10px] font-medium transition ${
+                            <span className={`text-[10px] font-medium transition-colors ${
                               !exp.available
                                 ? 'text-foreground-muted'
                                 : expansion === exp.id ? 'text-accent' : 'text-muted-foreground'

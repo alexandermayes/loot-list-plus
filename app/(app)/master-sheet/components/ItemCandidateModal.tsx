@@ -393,7 +393,7 @@ export const ItemCandidateModal = memo(function ItemCandidateModal({
               <>
                 <div className="flex items-center gap-2 mb-2">
                   <span className="text-[11px] font-medium uppercase tracking-wider text-warning">
-                    {contestInfo.tiedAtTop.length}-way tie at {contestInfo.tiedAtTop[0].loot_score.toFixed(decimalPlaces)} pts
+                    {contestInfo.tiedAtTop.length}-way tie at <span className="tabular-nums">{contestInfo.tiedAtTop[0].loot_score.toFixed(decimalPlaces)}</span> pts
                   </span>
                 </div>
                 <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px]">
@@ -412,7 +412,7 @@ export const ItemCandidateModal = memo(function ItemCandidateModal({
               <>
                 <div className="flex items-center gap-2 mb-2">
                   <span className="text-[11px] font-medium uppercase tracking-wider text-warning">
-                    Close contest, {contestInfo.gapToNext.toFixed(decimalPlaces)} pts apart
+                    Close contest, <span className="tabular-nums">{contestInfo.gapToNext.toFixed(decimalPlaces)}</span> pts apart
                   </span>
                 </div>
                 <div className="flex items-center gap-4 text-[13px]">
@@ -505,7 +505,7 @@ export const ItemCandidateModal = memo(function ItemCandidateModal({
                           <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-1">
                             {explanation.lines.map(line => (
                               <span key={line.key} className="text-[10px] text-muted-foreground">
-                                {line.label}: <span className={`font-medium ${line.value > 0 ? 'text-foreground-secondary' : line.value < 0 ? 'text-destructive' : ''}`}>
+                                {line.label}: <span className={`font-medium tabular-nums ${line.value > 0 ? 'text-foreground-secondary' : line.value < 0 ? 'text-destructive' : ''}`}>
                                   {line.value > 0 ? '+' : ''}{line.value.toFixed(decimalPlaces)}
                                 </span>
                                 {line.context ? ` (${line.context})` : ''}

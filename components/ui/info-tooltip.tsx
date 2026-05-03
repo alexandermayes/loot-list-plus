@@ -62,7 +62,7 @@ export function InfoTooltip({ content, className, iconSize = 14 }: InfoTooltipPr
       {visible && position && createPortal(
         <span
           role="tooltip"
-          className="fixed w-[240px] px-3 py-2.5 rounded-lg bg-background-elevated border border-border shadow-lg text-[12px] leading-relaxed text-foreground-secondary z-[9999] pointer-events-none"
+          className="fixed w-[240px] px-3 py-2.5 rounded-lg bg-background-elevated border border-border shadow-lg text-[12px] leading-relaxed text-foreground-secondary z-[9999] pointer-events-none animate-in fade-in duration-150"
           style={{
             top: position.top - 8,
             left: position.left,

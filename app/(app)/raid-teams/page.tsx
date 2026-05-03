@@ -683,23 +683,20 @@ export default function RaidTeamsPage() {
               {DAY_NAMES.map((name, idx) => {
                 const active = reassignDays.has(idx)
                 return (
-                  <button
+                  <Button
                     key={idx}
                     type="button"
+                    variant={active ? 'accent-subtle' : 'outline'}
+                    size="sm"
                     onClick={() => setReassignDays(prev => {
                       const next = new Set(prev)
                       if (next.has(idx)) next.delete(idx)
                       else next.add(idx)
                       return next
                     })}
-                    className={`px-2.5 py-1 rounded-md text-xs font-medium border transition-colors ${
-                      active
-                        ? 'bg-accent/20 text-accent border-accent/40'
-                        : 'bg-background-subtle text-muted-foreground border-border hover:bg-muted'
-                    }`}
                   >
                     {name.slice(0, 3)}
-                  </button>
+                  </Button>
                 )
               })}
             </div>

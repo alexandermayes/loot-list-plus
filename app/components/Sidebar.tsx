@@ -337,7 +337,7 @@ export default function Sidebar({ currentView = 'overview', onViewChange, isMobi
     <>
     {/* Toast Notification */}
     <div
-      className={`fixed top-[env(safe-area-inset-top,16px)] left-1/2 -translate-x-1/2 z-[200] transition-all duration-300 ease-out mt-4 ${
+      className={`fixed top-[env(safe-area-inset-top,16px)] left-1/2 -translate-x-1/2 z-[200] transition-[opacity,transform] duration-300 ease-out mt-4 ${
         showToast ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4 pointer-events-none'
       }`}
     >
@@ -393,7 +393,7 @@ export default function Sidebar({ currentView = 'overview', onViewChange, isMobi
             <Button
               variant="ghost"
               onClick={() => handleNavClick('overview')}
-              className="cursor-pointer hover:opacity-80 transition flex items-center gap-2 p-0 h-auto"
+              className="cursor-pointer hover:opacity-80 transition-opacity flex items-center gap-2 p-0 h-auto"
             >
               <Image
                 src="/logo.svg"
@@ -437,7 +437,7 @@ export default function Sidebar({ currentView = 'overview', onViewChange, isMobi
             <Button
               variant="ghost"
               onClick={() => setShowCreateGuildModal(true)}
-              className="w-full border-accent border-[0.5px] rounded-[12px] px-[14px] py-2 h-auto flex items-center gap-3 hover:opacity-90 transition"
+              className="w-full border-accent border-[0.5px] rounded-[12px] px-[14px] py-2 h-auto flex items-center gap-3 hover:opacity-90 transition-opacity"
               style={{ background: 'linear-gradient(179.949deg, rgb(255, 128, 0) 0.15%, rgb(153, 77, 0) 113.91%)' }}
             >
               <Image
@@ -462,7 +462,7 @@ export default function Sidebar({ currentView = 'overview', onViewChange, isMobi
               tabIndex={0}
               onClick={() => setGuildDropdownOpen(!guildDropdownOpen)}
               onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setGuildDropdownOpen(!guildDropdownOpen) }}
-              className="w-full bg-background-elevated border border-muted rounded-xl px-3.5 py-2 flex items-center gap-3 hover:bg-muted transition cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+              className="w-full bg-background-elevated border border-muted rounded-xl px-3.5 py-2 flex items-center gap-3 hover:bg-muted transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
             >
               {activeGuild.icon_url ? (
                 <Image
@@ -503,7 +503,7 @@ export default function Sidebar({ currentView = 'overview', onViewChange, isMobi
                 alt="Toggle"
                 width={20}
                 height={20}
-                className={`icon-adaptive w-5 h-5 shrink-0 transition-transform ${guildDropdownOpen ? 'rotate-180' : ''}`}
+                className={`icon-adaptive w-5 h-5 shrink-0 transition-transform duration-150 ${guildDropdownOpen ? 'rotate-180' : ''}`}
               />
             </div>
           )}
@@ -521,7 +521,7 @@ export default function Sidebar({ currentView = 'overview', onViewChange, isMobi
                 const isSelected = g.guild.id === activeGuild?.id
                 const isGuildOfficer = g.member.role === 'Officer' || g.member.role === 'Guild Master'
                 return (
-                  <div key={g.guild.id} className="flex items-center hover:bg-muted transition">
+                  <div key={g.guild.id} className="flex items-center hover:bg-muted transition-colors">
                     <Button
                       variant="ghost"
                       onClick={() => handleSwitchGuild(g.guild.id)}
@@ -569,7 +569,7 @@ export default function Sidebar({ currentView = 'overview', onViewChange, isMobi
                           setGuildDropdownOpen(false)
                           handleNavClick('guild-settings')
                         }}
-                        className="p-2 mr-2 rounded-lg hover:bg-background-elevated transition"
+                        className="p-2 mr-2 rounded-lg hover:bg-background-elevated transition-colors"
                         title="Guild Settings"
                         aria-label="Guild settings"
                       >
@@ -663,7 +663,7 @@ export default function Sidebar({ currentView = 'overview', onViewChange, isMobi
               variant="ghost"
               onClick={() => handleNavClick(item.view)}
               disabled={!activeGuild}
-              className={`w-full px-3.5 py-2.5 h-auto flex items-center gap-3 rounded-[40px] transition font-poppins font-medium text-[13px] border-[0.5px] justify-start ${
+              className={`w-full px-3.5 py-2.5 h-auto flex items-center gap-3 rounded-[40px] transition-colors font-poppins font-medium text-[13px] border-[0.5px] justify-start ${
                 !activeGuild
                   ? 'opacity-20 cursor-not-allowed text-foreground border-transparent'
                   : isActive(item.view)
@@ -704,7 +704,7 @@ export default function Sidebar({ currentView = 'overview', onViewChange, isMobi
                 key={item.view}
                 variant="ghost"
                 onClick={() => handleNavClick(item.view)}
-                className={`w-full px-3.5 py-[10px] h-auto flex items-center gap-3 rounded-[40px] transition font-poppins font-medium text-[13px] text-left border-[0.5px] justify-start ${
+                className={`w-full px-3.5 py-[10px] h-auto flex items-center gap-3 rounded-[40px] transition-colors font-poppins font-medium text-[13px] text-left border-[0.5px] justify-start ${
                   isActive(item.view)
                     ? 'bg-accent/20 border-accent/20 text-accent hover:bg-accent/30'
                     : 'text-foreground hover:bg-muted border-transparent'
@@ -750,7 +750,7 @@ export default function Sidebar({ currentView = 'overview', onViewChange, isMobi
               router.push('/help')
               onNavigate?.()
             }}
-            className={`w-full px-3.5 py-2 h-auto flex items-center gap-3 rounded-[40px] transition font-poppins font-medium text-[13px] border-[0.5px] justify-start ${
+            className={`w-full px-3.5 py-2 h-auto flex items-center gap-3 rounded-[40px] transition-colors font-poppins font-medium text-[13px] border-[0.5px] justify-start ${
               pathname?.startsWith('/help')
                 ? 'bg-accent/20 border-accent/20 text-accent hover:bg-accent/30'
                 : 'text-foreground hover:bg-muted border-transparent'
@@ -780,7 +780,7 @@ export default function Sidebar({ currentView = 'overview', onViewChange, isMobi
               router.push('/updates')
               onNavigate?.()
             }}
-            className={`w-full px-3.5 py-2 h-auto flex items-center gap-3 rounded-[40px] transition font-poppins font-medium text-[13px] border-[0.5px] justify-start ${
+            className={`w-full px-3.5 py-2 h-auto flex items-center gap-3 rounded-[40px] transition-colors font-poppins font-medium text-[13px] border-[0.5px] justify-start ${
               pathname?.startsWith('/updates')
                 ? 'bg-accent/20 border-accent/20 text-accent hover:bg-accent/30'
                 : 'text-foreground hover:bg-muted border-transparent'
@@ -798,7 +798,7 @@ export default function Sidebar({ currentView = 'overview', onViewChange, isMobi
             href="https://discord.gg/JNJewThYAB"
             target="_blank"
             rel="noopener noreferrer"
-            className="w-full px-3.5 py-2 flex items-center gap-3 rounded-[40px] transition font-poppins font-medium text-[13px] text-foreground hover:bg-muted"
+            className="w-full px-3.5 py-2 flex items-center gap-3 rounded-[40px] transition-colors font-poppins font-medium text-[13px] text-foreground hover:bg-muted"
           >
             <Image
               src="/icons/discord-large.svg"
@@ -827,7 +827,7 @@ export default function Sidebar({ currentView = 'overview', onViewChange, isMobi
                 router.push('/profile')
                 onNavigate?.()
               }}
-              className="w-full bg-background-elevated border border-muted rounded-xl px-3.5 py-2 h-auto flex items-center gap-3 hover:bg-muted transition mt-2"
+              className="w-full bg-background-elevated border border-muted rounded-xl px-3.5 py-2 h-auto flex items-center gap-3 hover:bg-muted transition-colors mt-2"
             >
               {user?.user_metadata?.avatar_url ? (
                 <Image
@@ -901,7 +901,7 @@ export default function Sidebar({ currentView = 'overview', onViewChange, isMobi
                 <img
                   src="https://wow.zamimg.com/images/wow/icons/large/inv_shirt_guildtabard_01.jpg"
                   alt="Guild Tabard"
-                  className="w-10 h-10 rounded-lg border-2 border-border shadow-md"
+                  className="w-10 h-10 rounded-lg shadow-md outline outline-1 -outline-offset-1 outline-black/10 dark:outline-white/10"
                 />
                 <div>
                   <h3 className="text-[20px] font-bold text-foreground">Join a guild</h3>
@@ -1106,7 +1106,7 @@ export default function Sidebar({ currentView = 'overview', onViewChange, isMobi
                   {availableGuilds.map((guild) => (
                     <div
                       key={guild.id}
-                      className="bg-background-elevated border border-border-strong rounded-xl p-4 hover:border-border-strong transition"
+                      className="bg-background-elevated border border-border-strong rounded-xl p-4 hover:border-border-strong transition-colors"
                     >
                       <div className="flex items-center justify-between gap-4">
                         <div className="flex items-center gap-3 flex-1">
@@ -1114,7 +1114,7 @@ export default function Sidebar({ currentView = 'overview', onViewChange, isMobi
                             <img
                               src={`https://cdn.discordapp.com/icons/${guild.discord_server_id}/${guild.discord_icon}.png`}
                               alt={guild.discord_name || guild.name}
-                              className="w-10 h-10 rounded-full border border-border"
+                              className="w-10 h-10 rounded-full outline outline-1 -outline-offset-1 outline-black/10 dark:outline-white/10"
                             />
                           )}
                           <div className="flex-1 min-w-0">

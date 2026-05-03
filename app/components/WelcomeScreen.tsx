@@ -416,7 +416,7 @@ export default function WelcomeScreen() {
                 {availableGuilds.map((guild) => (
                   <div
                     key={guild.id}
-                    className="bg-background-elevated border border-border-strong rounded-xl p-4 hover:border-foreground-muted transition"
+                    className="bg-background-elevated border border-border-strong rounded-xl p-4 hover:border-foreground-muted transition-colors"
                   >
                     <div className="flex items-center justify-between gap-4">
                       <div className="flex items-center gap-3 flex-1">

@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { useSWRConfig } from 'swr'
 import { useGuildContext } from '@/app/contexts/GuildContext'
 import { useNotification } from '@/app/contexts/NotificationContext'
+import { Heading } from '@/components/ui/typography'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { ArrowLeft01Icon } from '@hugeicons/core-free-icons'
 import { getExpansionVisuals } from '@/utils/expansionVisuals'
@@ -48,7 +49,7 @@ function CompactRaidToggle({
 
   return (
     <div
-      className={`flex items-center gap-3 p-2.5 rounded-lg transition ${
+      className={`flex items-center gap-3 p-2.5 rounded-lg transition-colors ${
         tier.is_guild_active
           ? 'bg-background-subtle'
           : 'bg-background-subtle/50 opacity-60'
@@ -123,7 +124,7 @@ function PhaseCard({
 
   return (
     <div
-      className={`bg-background-elevated border rounded-xl overflow-hidden transition flex flex-col ${
+      className={`bg-background-elevated border rounded-xl overflow-hidden transition-colors flex flex-col ${
         isUnlocked ? 'border-border' : 'border-border/50 opacity-70'
       }`}
     >
@@ -703,7 +704,7 @@ export default function ExpansionDetailPage({ params }: { params: Promise<{ expa
       {uniquePhases.length > 0 && (
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div className="bg-background-elevated border border-border rounded-xl p-5">
-          <h2 className="text-[18px] font-semibold text-foreground mb-2">Current phase</h2>
+          <Heading level={4} className="mb-2">Current phase</Heading>
           <p className="text-muted-foreground text-sm mb-4">
             Select the phase your guild is progressing through. All phases up to this point will be visible for loot list submissions.
           </p>
@@ -739,7 +740,7 @@ export default function ExpansionDetailPage({ params }: { params: Promise<{ expa
         {/* Phase Merging */}
         {uniquePhases.length > 1 && (
         <div className="bg-background-elevated border border-border rounded-xl p-5">
-          <h2 className="text-[18px] font-semibold text-foreground mb-2">Phase merging</h2>
+          <Heading level={4} className="mb-2">Phase merging</Heading>
           <p className="text-muted-foreground text-sm mb-4">
             Combine phases so raiders rank items from multiple raids on one list.
           </p>

@@ -113,9 +113,9 @@ export default function ManageCharactersPage() {
           {/* Main Characters */}
           {userCharacters.some(c => c.is_main) && (
             <div>
-              <h2 className="text-[18px] font-semibold text-foreground mb-4 px-2">
+              <Heading level={4} className="mb-4 px-2">
                 Main characters
-              </h2>
+              </Heading>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 {userCharacters
                   .filter(c => c.is_main)
@@ -135,9 +135,9 @@ export default function ManageCharactersPage() {
           {/* Alt Characters */}
           {userCharacters.some(c => !c.is_main) && (
             <div>
-              <h2 className="text-[18px] font-semibold text-foreground mb-4 px-2">
+              <Heading level={4} className="mb-4 px-2">
                 Alt characters
-              </h2>
+              </Heading>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 {userCharacters
                   .filter(c => !c.is_main)

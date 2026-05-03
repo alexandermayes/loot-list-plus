@@ -278,7 +278,7 @@ export default function DiscordJoinPage() {
             <h2 className="text-xl font-semibold text-foreground">Available guilds</h2>
             <div className="grid gap-4">
               {availableGuilds.map((guild) => (
-                <Card key={guild.id} className="border-border bg-card/80 hover:bg-card transition">
+                <Card key={guild.id} className="border-border bg-card/80 hover:bg-card transition-colors">
                   <CardContent className="pt-6">
                     <div className="flex items-start justify-between">
                       <div className="space-y-2 flex-1">

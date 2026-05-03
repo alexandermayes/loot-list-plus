@@ -922,7 +922,7 @@ export default function AttendanceContent() {
                 <span className="sm:hidden">Credit</span>
                 <InfoTooltip content="Points earned from attending raids within the rolling window. Contributes directly to your Loot Score." iconSize={12} />
               </p>
-              <p className={`text-[28px] sm:text-[42px] font-bold leading-none ${
+              <p className={`text-[28px] sm:text-[42px] font-bold leading-none tabular-nums ${
                 attendanceScore >= (guildSettings?.max_attendance_bonus || 8) * 0.75 ? 'text-success' :
                 attendanceScore >= (guildSettings?.max_attendance_bonus || 8) * 0.5 ? 'text-warning' :
                 'text-destructive'
@@ -1082,7 +1082,7 @@ export default function AttendanceContent() {
                       {raider.role}
                     </td>
                     <td className="sticky left-[80px] sm:left-[200px] z-10 bg-background-elevated px-2 py-2.5 text-center">
-                      <span className={`font-semibold text-[13px] ${
+                      <span className={`font-semibold text-[13px] tabular-nums ${
                         raider.attendanceScore >= (guildSettings?.max_attendance_bonus || 8) * 0.75 ? 'text-success' :
                         raider.attendanceScore >= (guildSettings?.max_attendance_bonus || 8) * 0.5 ? 'text-warning' :
                         'text-destructive'

@@ -107,6 +107,16 @@ const navSections = [
     ]
   },
   {
+    title: "Polish",
+    items: [
+      { id: "text-wrapping", label: "Text Wrapping" },
+      { id: "tabular-numbers", label: "Tabular Numbers" },
+      { id: "transitions", label: "Transitions" },
+      { id: "image-outlines", label: "Image Outlines" },
+      { id: "concentric-radius", label: "Concentric Radius" },
+    ]
+  },
+  {
     title: "Patterns",
     items: [
       { id: "navigation", label: "Navigation" },
@@ -1627,6 +1637,237 @@ export default function DesignSystemPage() {
                   <div>
                     <p className="font-medium mb-1">Alert (persistent):</p>
                     <code className="text-accent text-xs">{'<Alert variant="success">Message</Alert>'}</code>
+                  </div>
+                </div>
+              </PreviewCard>
+            </div>
+          </Section>
+
+          {/* ============================================== */}
+          {/* POLISH */}
+          {/* ============================================== */}
+
+          {/* Text Wrapping */}
+          <Section id="text-wrapping">
+            <SectionHeader
+              title="Text Wrapping"
+              description="Balanced headings and orphan-free body text"
+            />
+
+            <div className="space-y-8">
+              <div>
+                <SubsectionHeader title="text-balance on Headings" description="Built into the Heading component. Distributes text evenly across lines." />
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  <PreviewCard>
+                    <LabelText className="mb-3">With text-balance</LabelText>
+                    <h3 className="text-2xl font-semibold text-foreground text-balance max-w-[280px]">
+                      A longer heading that wraps across multiple lines evenly
+                    </h3>
+                  </PreviewCard>
+                  <PreviewCard>
+                    <LabelText className="mb-3">Without text-balance</LabelText>
+                    <h3 className="text-2xl font-semibold text-foreground max-w-[280px]" style={{ textWrap: 'wrap' as any }}>
+                      A longer heading that wraps across multiple lines evenly
+                    </h3>
+                  </PreviewCard>
+                </div>
+              </div>
+
+              <div>
+                <SubsectionHeader title="text-pretty on Body Text" description="Built into the Text component. Prevents single-word last lines." />
+                <PreviewCard className="max-w-md">
+                  <Text className="text-pretty">
+                    This paragraph uses text-pretty to avoid orphaned words on the last line. The browser adjusts line breaks throughout so the final line never has just one lonely word.
+                  </Text>
+                </PreviewCard>
+              </div>
+
+              <PreviewCard className="bg-background">
+                <LabelText className="mb-4">Rules</LabelText>
+                <div className="space-y-2 text-sm">
+                  <p><code className="text-accent">text-balance</code> on headings (h1-h6). Auto-applied by <code className="text-accent">{"<Heading>"}</code>.</p>
+                  <p><code className="text-accent">text-pretty</code> on body text. Auto-applied by <code className="text-accent">{"<Text>"}</code>.</p>
+                  <p>Add manually to raw heading/paragraph tags outside the Typography system.</p>
+                </div>
+              </PreviewCard>
+            </div>
+          </Section>
+
+          {/* Tabular Numbers */}
+          <Section id="tabular-numbers">
+            <SectionHeader
+              title="Tabular Numbers"
+              description="Equal-width digits prevent layout shift when values change"
+            />
+
+            <div className="space-y-8">
+              <div>
+                <SubsectionHeader title="Comparison" />
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  <PreviewCard>
+                    <LabelText className="mb-3">With tabular-nums</LabelText>
+                    <div className="space-y-1 tabular-nums text-lg font-semibold text-foreground">
+                      <p>1,111.10</p>
+                      <p>8,888.80</p>
+                      <p>3,142.50</p>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-2">Digits align vertically</p>
+                  </PreviewCard>
+                  <PreviewCard>
+                    <LabelText className="mb-3">Without tabular-nums</LabelText>
+                    <div className="space-y-1 text-lg font-semibold text-foreground" style={{ fontVariantNumeric: 'proportional-nums' }}>
+                      <p>1,111.10</p>
+                      <p>8,888.80</p>
+                      <p>3,142.50</p>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-2">Digits shift as values change</p>
+                  </PreviewCard>
+                </div>
+              </div>
+
+              <PreviewCard className="bg-background">
+                <LabelText className="mb-4">When to use</LabelText>
+                <div className="space-y-2 text-sm">
+                  <p>Scores, attendance points, rankings, loot scores, BLP values, percentages.</p>
+                  <p>Applied globally to <code className="text-accent">td</code>, <code className="text-accent">th</code>, and <code className="text-accent">[data-score]</code>.</p>
+                  <p>Add <code className="text-accent">tabular-nums</code> class to other numeric displays.</p>
+                </div>
+              </PreviewCard>
+            </div>
+          </Section>
+
+          {/* Transitions */}
+          <Section id="transitions">
+            <SectionHeader
+              title="Transitions"
+              description="Always specify exact transition properties"
+            />
+
+            <PreviewCard>
+              <div className="space-y-6">
+                <div>
+                  <LabelText className="mb-3">Correct</LabelText>
+                  <div className="space-y-2 text-sm">
+                    <p><code className="text-success">transition-colors</code> for background, text, border color changes</p>
+                    <p><code className="text-success">transition-opacity</code> for opacity changes</p>
+                    <p><code className="text-success">transition-transform</code> for rotate, scale, translate</p>
+                    <p><code className="text-success">transition-[opacity,transform]</code> for multiple specific properties</p>
+                  </div>
+                </div>
+                <div>
+                  <LabelText className="mb-3">Never use</LabelText>
+                  <div className="space-y-2 text-sm">
+                    <p><code className="text-destructive">transition</code> (bare) maps to <code className="text-muted-foreground">transition-property: all</code></p>
+                    <p><code className="text-destructive">transition-all</code> forces the browser to watch every property</p>
+                  </div>
+                </div>
+              </div>
+            </PreviewCard>
+          </Section>
+
+          {/* Image Outlines */}
+          <Section id="image-outlines">
+            <SectionHeader
+              title="Image Outlines"
+              description="Subtle inset outline for consistent edge definition on any background"
+            />
+
+            <div className="space-y-8">
+              <div>
+                <SubsectionHeader title="Comparison" />
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  <PreviewCard>
+                    <LabelText className="mb-3">With outline</LabelText>
+                    <div className="flex gap-4">
+                      <img
+                        src="https://wow.zamimg.com/images/wow/icons/large/inv_helmet_53.jpg"
+                        alt=""
+                        width={56}
+                        height={56}
+                        className="rounded-md outline outline-1 -outline-offset-1 outline-black/10 dark:outline-white/10"
+                      />
+                      <img
+                        src="https://wow.zamimg.com/images/wow/icons/large/inv_elemental_mote_nether.jpg"
+                        alt=""
+                        width={56}
+                        height={56}
+                        className="rounded-md outline outline-1 -outline-offset-1 outline-black/10 dark:outline-white/10"
+                      />
+                    </div>
+                  </PreviewCard>
+                  <PreviewCard>
+                    <LabelText className="mb-3">Without outline</LabelText>
+                    <div className="flex gap-4">
+                      <img
+                        src="https://wow.zamimg.com/images/wow/icons/large/inv_helmet_53.jpg"
+                        alt=""
+                        width={56}
+                        height={56}
+                        className="rounded-md"
+                      />
+                      <img
+                        src="https://wow.zamimg.com/images/wow/icons/large/inv_elemental_mote_nether.jpg"
+                        alt=""
+                        width={56}
+                        height={56}
+                        className="rounded-md"
+                      />
+                    </div>
+                  </PreviewCard>
+                </div>
+              </div>
+
+              <PreviewCard className="bg-background">
+                <LabelText className="mb-4">Usage</LabelText>
+                <div className="space-y-2 text-sm">
+                  <p>Apply to all rendered images (item icons, avatars, guild crests).</p>
+                  <code className="text-accent block text-xs">outline outline-1 -outline-offset-1 outline-black/10 dark:outline-white/10</code>
+                  <p className="text-muted-foreground">Use <code className="text-accent">outline-black/10</code> and <code className="text-accent">outline-white/10</code> only. Never tinted neutrals (slate, zinc).</p>
+                </div>
+              </PreviewCard>
+            </div>
+          </Section>
+
+          {/* Concentric Radius */}
+          <Section id="concentric-radius">
+            <SectionHeader
+              title="Concentric Border Radius"
+              description="Outer radius = inner radius + padding between them"
+            />
+
+            <div className="space-y-8">
+              <div>
+                <SubsectionHeader title="Comparison" />
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  <PreviewCard>
+                    <LabelText className="mb-3">Correct: concentric</LabelText>
+                    <div className="bg-accent/20 rounded-2xl p-2">
+                      <div className="bg-accent/20 rounded-lg p-4 text-center">
+                        <span className="text-sm text-foreground-secondary">outer 16px, padding 8px, inner 8px</span>
+                      </div>
+                    </div>
+                    <p className="text-xs text-success mt-2">16 = 8 + 8</p>
+                  </PreviewCard>
+                  <PreviewCard>
+                    <LabelText className="mb-3">Wrong: same radius</LabelText>
+                    <div className="bg-destructive/20 rounded-xl p-2">
+                      <div className="bg-destructive/20 rounded-xl p-4 text-center">
+                        <span className="text-sm text-foreground-secondary">outer 16px, padding 8px, inner 16px</span>
+                      </div>
+                    </div>
+                    <p className="text-xs text-destructive mt-2">Corners don't follow the same center point</p>
+                  </PreviewCard>
+                </div>
+              </div>
+
+              <PreviewCard className="bg-background">
+                <LabelText className="mb-4">Formula</LabelText>
+                <div className="space-y-2 text-sm">
+                  <p className="font-medium">outerRadius = innerRadius + padding</p>
+                  <div className="space-y-1 text-muted-foreground">
+                    <p><code className="text-accent">rounded-2xl</code> (16px) + <code className="text-accent">p-2</code> (8px) = <code className="text-accent">rounded-lg</code> (8px) inner</p>
+                    <p><code className="text-accent">rounded-xl</code> (16px) + <code className="text-accent">p-3</code> (12px) = <code className="text-accent">rounded-sm</code> (4px) inner</p>
+                    <p><code className="text-accent">rounded-xl</code> (16px) + <code className="text-accent">p-6</code> (24px+) = treat as separate surfaces</p>
                   </div>
                 </div>
               </PreviewCard>

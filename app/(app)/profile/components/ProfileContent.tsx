@@ -16,6 +16,7 @@ import {
   ModalFooter,
 } from '@/components/ui/modal'
 import { Button } from '@/components/ui/button'
+import { Heading } from '@/components/ui/typography'
 import { Input } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
 import { Label } from '@/components/ui/label'
@@ -394,7 +395,7 @@ export default function ProfileContent() {
             className="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-2 border-border shadow-md"
           />
           <div className="flex-1 min-w-0">
-            <h1 className="text-xl sm:text-[28px] font-bold text-foreground">{displayName}</h1>
+            <Heading level={2} className="text-xl sm:text-3xl">{displayName}</Heading>
             <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 mt-1 text-[13px] text-muted-foreground">
               <div className="flex items-center gap-1.5">
                 <HugeiconsIcon icon={Calendar01Icon} size={14} />
@@ -475,7 +476,7 @@ export default function ProfileContent() {
           {/* Notifications */}
           <div className="bg-background-elevated border border-border rounded-xl overflow-hidden">
             <div className="px-6 py-4 border-b border-border">
-              <h2 className="text-[18px] font-semibold text-foreground">Discord notifications</h2>
+              <Heading level={4}>Discord notifications</Heading>
               <p className="text-muted-foreground text-[13px] mt-1">Control what Discord DMs you receive from the LootList+ bot</p>
             </div>
             <div className="p-4 sm:p-6 space-y-4">
@@ -505,7 +506,7 @@ export default function ProfileContent() {
             <div className="px-6 py-4 border-b border-border">
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="text-[18px] font-semibold text-foreground">Battle.net account</h2>
+                  <Heading level={4}>Battle.net account</Heading>
                   <p className="text-muted-foreground text-[13px] mt-1">Link your Battle.net to import characters and sync gear</p>
                 </div>
               </div>
@@ -592,7 +593,7 @@ export default function ProfileContent() {
           {/* Danger Zone */}
           <div className="bg-background-elevated border border-destructive/30 rounded-xl overflow-hidden">
             <div className="px-6 py-4 border-b border-destructive/30">
-              <h2 className="text-[18px] font-semibold text-destructive">Danger zone</h2>
+              <Heading level={4} className="text-destructive">Danger zone</Heading>
               <p className="text-muted-foreground text-[13px] mt-1">Irreversible and destructive actions</p>
             </div>
             <div className="p-4 sm:p-6 space-y-4">
@@ -651,7 +652,7 @@ export default function ProfileContent() {
           {/* Appearance */}
           <div className="bg-background-elevated border border-border rounded-xl overflow-hidden">
             <div className="px-4 sm:px-6 py-4 border-b border-border">
-              <h2 className="text-[18px] font-semibold text-foreground">Appearance</h2>
+              <Heading level={4}>Appearance</Heading>
               <p className="text-muted-foreground text-[13px] mt-1">Customize how LootList+ looks</p>
             </div>
             <div className="p-4 sm:p-6 space-y-6">
@@ -773,7 +774,7 @@ export default function ProfileContent() {
         <div className="space-y-6">
           <div className="bg-background-elevated border border-border rounded-xl overflow-hidden">
             <div className="px-6 py-4 border-b border-border">
-              <h2 className="text-[18px] font-semibold text-foreground">My guilds</h2>
+              <Heading level={4}>My guilds</Heading>
               <p className="text-muted-foreground text-[13px] mt-1">Guilds you're a member of</p>
             </div>
             <div className="p-4 sm:p-6">

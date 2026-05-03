@@ -125,7 +125,7 @@ const ItemLink = memo(function ItemLink({ name, wowheadId, className = '', click
             alt=""
             width={18}
             height={18}
-            className="inline-block rounded-sm flex-shrink-0"
+            className="inline-block rounded-sm flex-shrink-0 outline outline-1 -outline-offset-1 outline-black/10 dark:outline-white/10"
             style={{ imageRendering: 'pixelated' }}
             loading="eager"
           />

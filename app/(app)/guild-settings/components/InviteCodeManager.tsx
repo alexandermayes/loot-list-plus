@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react'
 import { useGuildContext } from '@/app/contexts/GuildContext'
 import { useNotification } from '@/app/contexts/NotificationContext'
 import { Button } from '@/components/ui/button'
+import { Heading } from '@/components/ui/typography'
 import { useConfirm } from '@/components/ui/confirm-modal'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -142,7 +143,7 @@ export default function InviteCodeManager() {
       <div className="p-6 border-b border-border">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-[24px] font-semibold text-foreground">Invite Codes</h2>
+            <Heading level={2}>Invite Codes</Heading>
             <p className="text-muted-foreground text-[13px] mt-1">Generate and manage invite codes for your guild</p>
           </div>
           <Button size="sm" onClick={() => setShowGenerateForm(!showGenerateForm)}>

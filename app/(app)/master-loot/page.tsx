@@ -316,7 +316,7 @@ export default function MasterLootPage() {
         </div>
         <Link
           href="/loot-settings"
-          className="flex items-center gap-2 px-5 py-2.5 bg-muted hover:bg-muted border border-border rounded-lg text-foreground text-[14px] font-medium transition"
+          className="flex items-center gap-2 px-5 py-2.5 bg-muted hover:bg-muted border border-border rounded-lg text-foreground text-[14px] font-medium transition-colors"
         >
           <HugeiconsIcon icon={Settings01Icon} size={16} />
           Loot settings

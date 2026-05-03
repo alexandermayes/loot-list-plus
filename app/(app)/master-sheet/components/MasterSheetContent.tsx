@@ -12,7 +12,6 @@ import { getBossImage } from '@/utils/bossImages'
 import { getRaidIcon, getRaidShorthand } from '@/utils/raidIcons'
 import { resolvePhaseGroups, getPhaseGroupShortLabel, type PhaseGroup } from '@/domain/expansion/phase-groups'
 import { toDateString } from '@/utils/date'
-import { StarFilledIcon } from '@/components/ui/icons'
 import { useGuildContext } from '@/app/contexts/GuildContext'
 import { useNotification } from '@/app/contexts/NotificationContext'
 import { ExpansionGuard } from '@/app/components/ExpansionGuard'
@@ -1628,12 +1627,11 @@ export default function MasterSheetContent() {
                     const phaseSet = new Set(group.phases)
                     const tiersInGroup = raidTiers.filter(t => t.phase != null && phaseSet.has(t.phase))
                     const activeTiersInGroup = tiersInGroup.filter(t => t.is_guild_active !== false)
-                    const hasActiveTier = tiersInGroup.some(t => t.is_active)
                     const allDisabled = tiersInGroup.every(t => t.is_guild_active === false)
                     const raidNames = activeTiersInGroup.map(t => getRaidShorthand(t.name)).join(', ')
                     return (
                       <option key={group.canonicalPhase} value={group.canonicalPhase}>
-                        {getPhaseGroupShortLabel(group)} {raidNames}{hasActiveTier ? ' ★' : ''}{allDisabled ? ' (Off)' : ''}
+                        {getPhaseGroupShortLabel(group)} {raidNames}{allDisabled ? ' (Off)' : ''}
                       </option>
                     )
                   })}
@@ -1646,7 +1644,6 @@ export default function MasterSheetContent() {
                     const phaseSet = new Set(group.phases)
                     const tiersInGroup = raidTiers.filter(t => t.phase != null && phaseSet.has(t.phase))
                     const activeTiersInGroup = tiersInGroup.filter(t => t.is_guild_active !== false)
-                    const hasActiveTier = tiersInGroup.some(t => t.is_active)
                     const allDisabled = tiersInGroup.every(t => t.is_guild_active === false)
                     const isSelected = selectedPhase === group.canonicalPhase
                     const raidNames = activeTiersInGroup.map(t => getRaidShorthand(t.name)).join(', ')
@@ -1687,7 +1684,6 @@ export default function MasterSheetContent() {
                             />
                           )}
                           <span>{raidNames}</span>
-                          {hasActiveTier && <StarFilledIcon size={14} />}
                           {allDisabled && <span className="text-[10px] uppercase tracking-wide">Off</span>}
                         </span>
                       </Button>

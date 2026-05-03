@@ -95,9 +95,9 @@ function ScoreRow({
         <HugeiconsIcon icon={icon} size={14} className="text-current opacity-80" />
       </div>
       <span className="text-foreground-secondary text-[13px] flex-1">{label}</span>
-      <span className="text-foreground font-medium text-[13px] w-16 text-right">{userValue.toFixed(1)}</span>
-      <span className="text-foreground font-medium text-[13px] w-16 text-right">{winnerValue.toFixed(1)}</span>
-      <span className={`${diffColor} font-medium text-[12px] w-12 text-right`}>
+      <span className="text-foreground font-medium text-[13px] w-16 text-right tabular-nums">{userValue.toFixed(1)}</span>
+      <span className="text-foreground font-medium text-[13px] w-16 text-right tabular-nums">{winnerValue.toFixed(1)}</span>
+      <span className={`${diffColor} font-medium text-[12px] w-12 text-right tabular-nums`}>
         {diff !== 0 ? diffFormatted : '—'}
       </span>
     </div>
@@ -189,7 +189,7 @@ export default function ScoreComparisonModal({
         <div className="flex gap-4">
           <div className="flex-1 bg-background-subtle border border-border rounded-lg p-4 text-center">
             <p className="text-muted-foreground text-[12px] uppercase tracking-wide mb-1">Your score</p>
-            <p className="text-foreground text-2xl font-semibold">{userRanking.loot_score.toFixed(1)}</p>
+            <p className="text-foreground text-2xl font-semibold tabular-nums">{userRanking.loot_score.toFixed(1)}</p>
             <p className="text-foreground-secondary text-[13px]" style={{ color: userRanking.class_color }}>
               {userRanking.player_name}
             </p>
@@ -197,7 +197,7 @@ export default function ScoreComparisonModal({
 
           <div className="flex-1 bg-accent/10 border border-accent/30 rounded-lg p-4 text-center">
             <p className="text-muted-foreground text-[12px] uppercase tracking-wide mb-1">Winner's score</p>
-            <p className="text-accent text-2xl font-semibold">{winnerRanking.loot_score.toFixed(1)}</p>
+            <p className="text-accent text-2xl font-semibold tabular-nums">{winnerRanking.loot_score.toFixed(1)}</p>
             <p className="text-foreground-secondary text-[13px]" style={{ color: winnerRanking.class_color }}>
               {winnerRanking.player_name}
             </p>
@@ -206,7 +206,7 @@ export default function ScoreComparisonModal({
 
         {/* Difference Badge */}
         <div className="text-center">
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-destructive/10 border border-destructive/20 rounded-full text-destructive text-[12px] font-medium">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-destructive/10 border border-destructive/20 rounded-full text-destructive text-[12px] font-medium tabular-nums">
             -{scoreDiff.toFixed(1)} points behind
           </span>
         </div>

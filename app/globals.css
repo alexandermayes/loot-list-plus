@@ -256,6 +256,13 @@ img[alt=""] {
     font-feature-settings: "rlig" 1, "calt" 1;
   }
 
+  /* Tabular numbers for scores, rankings, attendance, and other dynamic values */
+  td, th,
+  [data-score],
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
+
   /* Wowhead item links - reserve space for icon to prevent layout shift */
   a[data-wowhead] {
     display: inline-block !important;

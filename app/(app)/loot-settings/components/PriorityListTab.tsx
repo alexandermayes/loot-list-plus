@@ -606,7 +606,7 @@ export default function PriorityListTab() {
           {/* Mobile: Search + Boss dropdown row */}
           <div className="sm:hidden flex gap-2">
             {/* Search input */}
-            <div className="flex-1 bg-background-elevated border border-border rounded-xl p-2">
+            <div className="flex-1 bg-background-elevated border border-border rounded-lg p-2">
               <div className="relative">
                 <Input
                   variant="rounded"
@@ -632,7 +632,7 @@ export default function PriorityListTab() {
             </div>
             {/* Boss dropdown */}
             {bossNames.length > 0 && (
-              <div className="flex-1 bg-background-elevated border border-border rounded-xl p-2">
+              <div className="flex-1 bg-background-elevated border border-border rounded-lg p-2">
                 <Select
                   variant="rounded"
                   size="sm"

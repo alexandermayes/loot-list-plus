@@ -302,7 +302,7 @@ export default function EditCharacterPage() {
       <div className="min-h-screen bg-background-subtle p-4 sm:p-6 lg:p-8">
         <div className="max-w-2xl mx-auto">
           <div className="bg-background-elevated border border-border rounded-xl p-12 text-center">
-            <h2 className="text-[24px] font-bold text-foreground mb-4">Character not found</h2>
+            <Heading level={2} className="mb-4">Character not found</Heading>
             <Button
               variant="primary"
               size="lg"
@@ -457,7 +457,7 @@ export default function EditCharacterPage() {
           <div className="bg-background-elevated border border-border rounded-xl p-6 mb-6">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <h2 className="text-[15px] font-semibold text-foreground">Battle.net gear sync</h2>
+                <Heading level={5}>Battle.net gear sync</Heading>
                 <p className="text-[13px] text-muted-foreground mt-1">
                   Replace equipped gear with the latest data from Battle.net
                 </p>
@@ -481,7 +481,7 @@ export default function EditCharacterPage() {
                   <Image src="/icons/battlenet.svg" alt="Battle.net" width={20} height={20} className="w-5 h-5" style={{ filter: 'brightness(0) saturate(100%) invert(30%) sepia(93%) saturate(1352%) hue-rotate(196deg) brightness(97%) contrast(101%)' }} />
                 </div>
                 <div>
-                  <h2 className="text-[15px] font-semibold text-foreground">Link to Battle.net</h2>
+                  <Heading level={5}>Link to Battle.net</Heading>
                   <p className="text-[13px] text-muted-foreground mt-1">
                     Connect this character to your Battle.net account to enable gear sync
                   </p>
@@ -501,7 +501,7 @@ export default function EditCharacterPage() {
 
         {/* Delete Character Section */}
         <div className="bg-background-elevated border border-destructive/30 rounded-xl p-6">
-          <h2 className="text-[18px] font-semibold text-destructive mb-2">Danger zone</h2>
+          <Heading level={4} className="text-destructive mb-2">Danger zone</Heading>
           <p className="text-[14px] text-muted-foreground mb-4">
             Deleting a character is permanent and cannot be undone. This will delete all loot submissions and remove the character from all guilds.
           </p>

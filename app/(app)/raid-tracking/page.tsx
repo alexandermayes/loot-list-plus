@@ -2457,11 +2457,11 @@ export default function RaidTrackingPage() {
                 className="flex items-center gap-3 w-full group p-0 h-auto hover:bg-transparent"
               >
                 {isWeekExpanded ? (
-                  <HugeiconsIcon icon={ArrowUp01Icon} size={24} className="text-foreground group-hover:text-accent transition flex-shrink-0" />
+                  <HugeiconsIcon icon={ArrowUp01Icon} size={24} className="text-foreground group-hover:text-accent transition-colors flex-shrink-0" />
                 ) : (
-                  <HugeiconsIcon icon={ArrowDown01Icon} size={24} className="text-foreground group-hover:text-accent transition flex-shrink-0" />
+                  <HugeiconsIcon icon={ArrowDown01Icon} size={24} className="text-foreground group-hover:text-accent transition-colors flex-shrink-0" />
                 )}
-                <h2 className="text-[24px] font-bold text-foreground group-hover:text-accent transition">{getWeekLabel(weekStart)}</h2>
+                <h2 className="text-[24px] font-bold text-foreground group-hover:text-accent transition-colors">{getWeekLabel(weekStart)}</h2>
                 <div className="flex-1 h-[1px] bg-foreground/10"></div>
               </Button>
 
@@ -2486,7 +2486,7 @@ export default function RaidTrackingPage() {
                     variant="ghost"
                     size="icon"
                     onClick={() => toggleRaidExpanded(raid.id)}
-                    className="text-foreground hover:text-accent transition h-auto w-auto p-0"
+                    className="text-foreground hover:text-accent transition-colors h-auto w-auto p-0"
                   >
                     {isExpanded ? <HugeiconsIcon icon={ArrowUp01Icon} size={20} /> : <HugeiconsIcon icon={ArrowDown01Icon} size={20} />}
                   </Button>
@@ -3077,16 +3077,17 @@ export default function RaidTrackingPage() {
 
           <div className={`overflow-y-auto space-y-1 transition-[max-height] duration-200 ${attendeeSearchQuery.length > 0 ? 'max-h-[400px]' : 'max-h-64'}`}>
             {filteredResolutionMembers.length > 0 ? filteredResolutionMembers.map(m => (
-                <button
+                <Button
                   key={m.character_id}
+                  variant="ghost"
                   onClick={() => handleAttendeeResolution(m)}
-                  className="w-full px-4 py-2.5 text-left rounded-lg hover:bg-muted transition-colors flex items-center justify-between"
+                  className="w-full justify-between"
                 >
                   <span className="text-sm font-medium" style={{ color: m.class_color }}>
                     {m.character_name}
                   </span>
                   <span className="text-xs text-muted-foreground">{m.class_name}</span>
-                </button>
+                </Button>
               )) : (
                 <EmptyState
                   icon={Search01Icon}
