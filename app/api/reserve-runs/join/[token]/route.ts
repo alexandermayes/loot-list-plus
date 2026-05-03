@@ -3,7 +3,7 @@ import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { canClassReserveItem } from '@/utils/wowClassRestrictions'
 import { logReserveAudit } from '@/utils/reserve-audit'
-import { extractLeaderToken, verifyReserveRunAccess } from '@/utils/reserve-access'
+import { extractLeaderToken } from '@/utils/reserve-access'
 
 type UserCharacter = {
   id: string
@@ -135,7 +135,8 @@ export async function GET(
     const providedToken = extractLeaderToken(request)
     const isLeader = !!providedToken && providedToken === run.raid_leader_token
 
-    // Determine management access: creator, leader token, or guild officer
+    // Management access on the join page is limited to the run creator
+    // and leader token holders. Officers manage from /reserve/runs/[id].
     let canManage = isLeader
     let user: { id: string; email?: string | null } | null = null
     let userCharacters: UserCharacter[] = []
@@ -145,17 +146,6 @@ export async function GET(
       if (user) {
         // Creator check
         if (run.created_by === user.id) canManage = true
-
-        // Officer check (only if not already a manager)
-        if (!canManage && run.guild_id) {
-          const access = await verifyReserveRunAccess({
-            serviceSupabase,
-            runId: run.id,
-            request,
-            userId: user.id,
-          })
-          if (access.allowed) canManage = true
-        }
 
         // Fetch user's guild characters for the form
         if (run.guild_id) {
