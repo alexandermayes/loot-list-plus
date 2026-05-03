@@ -69,7 +69,7 @@ function defaultLockTime(raidAt: string): string {
 export function CreateReserveRunModal({ open, onClose }: CreateReserveRunModalProps) {
   const router = useRouter()
   const supabase = createClient()
-  const { activeGuild, isOfficer } = useGuildContext()
+  const { activeGuild } = useGuildContext()
   const { showNotification } = useNotification()
 
   // Wizard step: 1 = pick expansion + raid, 2 = configure details
@@ -89,7 +89,7 @@ export function CreateReserveRunModal({ open, onClose }: CreateReserveRunModalPr
   const [lockAt, setLockAt] = useState('')
   const [maxReserves, setMaxReserves] = useState(2)
   const [maxReservesPerItem, setMaxReservesPerItem] = useState<number | ''>('')
-  const [visibility, setVisibility] = useState<'hidden_until_lock' | 'public_live'>('hidden_until_lock')
+  const [visibility, setVisibility] = useState<'hidden_until_lock' | 'public_live'>('public_live')
   const [allowDuplicates, setAllowDuplicates] = useState(false)
   const [enforceClassRestrictions, setEnforceClassRestrictions] = useState(false)
   const [rulesNote, setRulesNote] = useState('')
@@ -99,7 +99,7 @@ export function CreateReserveRunModal({ open, onClose }: CreateReserveRunModalPr
   // Track whether the user has manually edited lock time
   const [lockTimeManual, setLockTimeManual] = useState(false)
 
-  const isGuildMode = !!activeGuild && isOfficer
+  const isGuildMode = !!activeGuild
 
   // Reset form whenever the modal closes
   useEffect(() => {
@@ -113,7 +113,7 @@ export function CreateReserveRunModal({ open, onClose }: CreateReserveRunModalPr
       setLockAt('')
       setMaxReserves(2)
       setMaxReservesPerItem('')
-      setVisibility('hidden_until_lock')
+      setVisibility('public_live')
       setAllowDuplicates(false)
       setEnforceClassRestrictions(false)
       setRulesNote('')
@@ -446,7 +446,7 @@ export function CreateReserveRunModal({ open, onClose }: CreateReserveRunModalPr
                 />
               </div>
               <div className="space-y-2">
-                <Label>Lock time</Label>
+                <Label>Submission deadline</Label>
                 <Input
                   variant="rounded"
                   type="datetime-local"
@@ -456,7 +456,7 @@ export function CreateReserveRunModal({ open, onClose }: CreateReserveRunModalPr
                     setLockTimeManual(true)
                   }}
                 />
-                <Text color="muted" size="xs">Reserves lock manually. This is shown as guidance.</Text>
+                <Text color="muted" size="xs">Shown on the reserve page. You lock reserves manually when ready.</Text>
               </div>
             </div>
 
@@ -475,14 +475,14 @@ export function CreateReserveRunModal({ open, onClose }: CreateReserveRunModalPr
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label>Visibility</Label>
+                <Label>Reserve visibility</Label>
                 <Select
                   variant="rounded"
                   value={visibility}
                   onChange={(e) => setVisibility(e.target.value as 'hidden_until_lock' | 'public_live')}
                 >
-                  <option value="hidden_until_lock">Hidden until locked</option>
-                  <option value="public_live">Visible immediately</option>
+                  <option value="public_live">Everyone can see reserves</option>
+                  <option value="hidden_until_lock">Hidden until you lock</option>
                 </Select>
               </div>
             </div>

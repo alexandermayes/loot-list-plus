@@ -766,18 +766,18 @@ export default function ReserveRunPage() {
               <div className="flex flex-wrap items-center gap-2">
                 <Button variant="outline" size="sm" onClick={exportGargul}>
                   <HugeiconsIcon icon={Copy01Icon} size={14} />
-                  Gargul
+                  Copy for Gargul
                 </Button>
                 <Button variant="outline" size="sm" onClick={exportWeakaura}>
                   <HugeiconsIcon icon={Copy01Icon} size={14} />
-                  WeakAura
+                  Copy for WeakAura
                 </Button>
                 <Button variant="outline" size="sm" onClick={exportCsv}>
                   <HugeiconsIcon icon={FileDownloadIcon} size={14} />
                   CSV
                 </Button>
               </div>
-              <Text color="muted" size="xs">Gargul: in-game, type /gl sr, click Import, then paste. WeakAura: import into your reserve WA. CSV: paste into a spreadsheet.</Text>
+              <Text color="muted" size="xs">Gargul: copy, then in-game type /gl sr and click Import to paste. WeakAura: import into your reserve WA. CSV: paste into a spreadsheet.</Text>
             </div>
           )}
         </Card>

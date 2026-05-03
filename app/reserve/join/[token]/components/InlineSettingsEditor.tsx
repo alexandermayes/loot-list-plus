@@ -253,8 +253,8 @@ export default function InlineSettingsEditor({
                   value={visibilityDraft}
                   onChange={(e) => setVisibilityDraft(e.target.value)}
                 >
-                  <option value="hidden_until_lock">Hidden until locked</option>
-                  <option value="public_live">Visible immediately</option>
+                  <option value="public_live">Everyone can see reserves</option>
+                  <option value="hidden_until_lock">Hidden until you lock</option>
                 </Select>
               </div>
               <div className="space-y-3">
@@ -284,7 +284,7 @@ export default function InlineSettingsEditor({
               <div className="flex flex-wrap gap-x-4 gap-y-1 text-[12px] text-muted-foreground">
                 <span>{maxReserves} reserve{maxReserves !== 1 ? 's' : ''} / player</span>
                 {maxReservesPerItem && <span>Max {maxReservesPerItem} per item</span>}
-                <span>{visibility === 'hidden_until_lock' ? 'Hidden until locked' : 'Visible immediately'}</span>
+                <span>{visibility === 'hidden_until_lock' ? 'Hidden until locked' : 'Everyone can see reserves'}</span>
                 {allowDuplicates && <span>Duplicates allowed</span>}
                 {enforceClassRestrictions && <span>Class restrictions</span>}
               </div>
