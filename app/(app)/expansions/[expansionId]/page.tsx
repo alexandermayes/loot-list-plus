@@ -215,7 +215,7 @@ export default function ExpansionDetailPage({ params }: { params: Promise<{ expa
   const supabase = createClient()
   const router = useRouter()
   const { mutate } = useSWRConfig()
-  const { activeGuild, loading: guildLoading, isOfficer } = useGuildContext()
+  const { activeGuild, loading: guildLoading, hasPermission } = useGuildContext()
   const { showNotification } = useNotification()
 
   useEffect(() => {
@@ -226,7 +226,7 @@ export default function ExpansionDetailPage({ params }: { params: Promise<{ expa
 
   useEffect(() => {
     if (!guildLoading) {
-      if (!isOfficer) {
+      if (!hasPermission('manage_settings')) {
         router.push('/overview')
         return
       }
@@ -234,7 +234,7 @@ export default function ExpansionDetailPage({ params }: { params: Promise<{ expa
         loadData()
       }
     }
-  }, [guildLoading, activeGuild, isOfficer, expansionId])
+  }, [guildLoading, activeGuild, hasPermission, expansionId])
 
   // Define raid tier progression order
   const getRaidTierOrder = (tierName: string): number => {

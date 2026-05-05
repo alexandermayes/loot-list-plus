@@ -42,7 +42,7 @@ interface UnmatchedItemPreview {
 
 export default function SheetImportPage() {
   const router = useRouter()
-  const { activeGuild, guildExpansions, currentExpansion, loading: guildLoading, isOfficer } = useGuildContext()
+  const { activeGuild, guildExpansions, currentExpansion, loading: guildLoading, hasPermission } = useGuildContext()
   const { showNotification } = useNotification()
 
   const [step, setStep] = useState<Step>('upload')
@@ -72,11 +72,11 @@ export default function SheetImportPage() {
 
   useEffect(() => {
     if (guildLoading) return
-    if (!isOfficer) {
+    if (!hasPermission('manage_settings')) {
       router.push('/overview')
       return
     }
-  }, [guildLoading, isOfficer])
+  }, [guildLoading, hasPermission])
 
   useEffect(() => {
     if (currentExpansion && !selectedExpansionId) {

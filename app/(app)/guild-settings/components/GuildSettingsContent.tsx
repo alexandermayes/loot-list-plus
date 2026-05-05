@@ -82,7 +82,7 @@ export default function GuildSettingsContent() {
   const [selectedNewOwner, setSelectedNewOwner] = useState<string>('')
 
   const router = useRouter()
-  const { activeGuild, loading: guildLoading, isOfficer, refreshGuilds, user } = useGuildContext()
+  const { activeGuild, loading: guildLoading, isOfficer, hasPermission, refreshGuilds, user } = useGuildContext()
   const { showNotification } = useNotification()
 
   // Fetch guild members for ownership transfer
@@ -120,8 +120,9 @@ export default function GuildSettingsContent() {
       }
 
       try {
-        // Check if officer using context
-        if (!isOfficer) {
+        // Check if user has any management permission
+        const hasAnyPermission = isOfficer || hasPermission('manage_settings') || hasPermission('manage_members')
+        if (!hasAnyPermission) {
           router.push('/overview')
           return
         }
@@ -398,7 +399,8 @@ export default function GuildSettingsContent() {
   }
 
   // Show unauthorized message if not officer (after loading completes)
-  if (!loading && !guildLoading && (!activeGuild || !isOfficer)) {
+  const hasAnyManagementPermission = isOfficer || hasPermission('manage_settings') || hasPermission('manage_members')
+  if (!loading && !guildLoading && (!activeGuild || !hasAnyManagementPermission)) {
     return (
       <div className="p-4 sm:p-6 lg:p-8 flex items-center justify-center min-h-[60vh]">
         <EmptyState

@@ -161,7 +161,7 @@ export default function RaidTrackingPage() {
 
   const supabase = createClient()
   const router = useRouter()
-  const { activeGuild, isOfficer, loading: guildLoading, currentExpansion, user } = useGuildContext()
+  const { activeGuild, isOfficer, hasPermission, loading: guildLoading, currentExpansion, user } = useGuildContext()
   const { showNotification } = useNotification()
   const { confirm, ConfirmDialog } = useConfirm()
   const { activeTeamId, activeTeam, teams, hasTeams, setTeam } = useRaidTeam()
@@ -240,7 +240,7 @@ export default function RaidTrackingPage() {
     if (guildLoading) return
 
     const loadData = async () => {
-      if (!isOfficer) {
+      if (!hasPermission('manage_attendance')) {
         router.push('/overview')
         return
       }
@@ -331,7 +331,7 @@ export default function RaidTrackingPage() {
     }
 
     loadData().catch(console.error)
-  }, [guildLoading, activeGuild, isOfficer, currentExpansion, activeTeamId])
+  }, [guildLoading, activeGuild, isOfficer, hasPermission, currentExpansion, activeTeamId])
 
   const generateRaidDates = async (guildId: string, settings: any, expansion: any) => {
     // Use expansion raid schedule if available, fall back to guild settings for backwards compatibility

@@ -18,7 +18,7 @@ export default function ImportPage() {
 
   const supabase = createClient()
   const router = useRouter()
-  const { activeGuild, loading: guildLoading, isOfficer } = useGuildContext()
+  const { activeGuild, loading: guildLoading, hasPermission } = useGuildContext()
   const { showNotification } = useNotification()
 
   // Set page title
@@ -30,7 +30,7 @@ export default function ImportPage() {
     if (guildLoading) return
 
     // Check if officer using context
-    if (!isOfficer) {
+    if (!hasPermission('manage_attendance')) {
       router.push('/overview')
       return
     }
@@ -38,7 +38,7 @@ export default function ImportPage() {
     if (activeGuild) {
       setGuildId(activeGuild.id)
     }
-  }, [guildLoading, activeGuild, isOfficer])
+  }, [guildLoading, activeGuild, hasPermission])
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {

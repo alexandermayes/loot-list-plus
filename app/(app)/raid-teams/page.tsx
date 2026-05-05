@@ -36,7 +36,7 @@ interface TeamMember {
 }
 
 export default function RaidTeamsPage() {
-  const { activeGuild, isOfficer, loading: guildLoading } = useGuildContext()
+  const { activeGuild, hasPermission, loading: guildLoading } = useGuildContext()
   const { showNotification } = useNotification()
   const router = useRouter()
 
@@ -78,10 +78,10 @@ export default function RaidTeamsPage() {
 
   // Redirect non-officers or non-Pro guilds
   useEffect(() => {
-    if (!guildLoading && (!isOfficer || !hasFeature(activeGuild, 'raid_teams'))) {
+    if (!guildLoading && (!hasPermission('manage_roster') || !hasFeature(activeGuild, 'raid_teams'))) {
       router.push('/overview')
     }
-  }, [guildLoading, isOfficer, activeGuild, router])
+  }, [guildLoading, hasPermission, activeGuild, router])
 
   // Load teams
   const loadTeams = useCallback(async () => {

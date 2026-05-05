@@ -36,7 +36,7 @@ const MOBILE_SIDEBAR_WIDTH = 280
 export default function Sidebar({ currentView = 'overview', onViewChange, isMobileOverlay = false, onNavigate }: SidebarProps) {
   const router = useRouter()
   const pathname = usePathname()
-  const { user, activeGuild, userGuilds, switchGuild, hasMultipleGuilds, isOfficer, activeMember, loading } = useGuildContext()
+  const { user, activeGuild, userGuilds, switchGuild, hasMultipleGuilds, isOfficer, hasPermission, activeMember, loading } = useGuildContext()
   const { sidebarWidth, setSidebarWidth, isResizing, setIsResizing, minWidth, maxWidth } = useSidebar()
   const { count: pendingSubmissionCount } = usePendingSubmissionCount(activeGuild?.id ?? null, isOfficer)
   const [guildDropdownOpen, setGuildDropdownOpen] = useState(false)
@@ -302,13 +302,13 @@ export default function Sidebar({ currentView = 'overview', onViewChange, isMobi
     { name: 'Reserve', view: 'reserve', icon: '/icons/reserve.svg' },
   ]
 
-  const adminItems = isOfficer ? [
-    { name: 'Raid Tracking', view: 'raid-tracking', icon: '/icons/raid-tracking.svg' },
-    { name: 'Loot Submissions', view: 'loot-submissions', icon: '/icons/master-loot.svg' },
-    { name: 'Loot Management', view: 'loot-settings', icon: '/icons/guild-settings.svg' },
-    ...(hasFeature(activeGuild, 'raid_teams') ? [{ name: 'Raid Teams', view: 'raid-teams', icon: '/icons/user-multiple.svg' }] : []),
-    ...(hasFeature(activeGuild, 'audit_log') ? [{ name: 'Audit Log', view: 'audit-log', icon: '/icons/monitor.svg' }] : []),
-  ] : []
+  const adminItems = [
+    ...(hasPermission('manage_attendance') ? [{ name: 'Raid Tracking', view: 'raid-tracking', icon: '/icons/raid-tracking.svg' }] : []),
+    ...(hasPermission('manage_loot') ? [{ name: 'Loot Submissions', view: 'loot-submissions', icon: '/icons/master-loot.svg' }] : []),
+    ...(hasPermission('manage_settings') ? [{ name: 'Loot Management', view: 'loot-settings', icon: '/icons/guild-settings.svg' }] : []),
+    ...(hasPermission('manage_roster') && hasFeature(activeGuild, 'raid_teams') ? [{ name: 'Raid Teams', view: 'raid-teams', icon: '/icons/user-multiple.svg' }] : []),
+    ...(hasPermission('view_audit_log') && hasFeature(activeGuild, 'audit_log') ? [{ name: 'Audit Log', view: 'audit-log', icon: '/icons/monitor.svg' }] : []),
+  ]
 
   const isActive = (view: string) => {
     // Check currentView prop first (for dashboard mode)
@@ -483,7 +483,7 @@ export default function Sidebar({ currentView = 'overview', onViewChange, isMobi
                   {activeGuild.realm ? `${activeGuild.realm} • ${activeGuild.faction}` : ''}
                 </p>
               </div>
-              {isOfficer && (
+              {(isOfficer || hasPermission('manage_settings') || hasPermission('manage_members')) && (
                 <Button
                   variant="ghost"
                   size="icon"

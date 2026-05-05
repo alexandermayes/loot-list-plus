@@ -171,7 +171,7 @@ function DetailLine({ label, value }: { label: string; value: string }) {
 const PAGE_SIZE = 30
 
 export default function AuditLogPage() {
-  const { activeGuild, isOfficer } = useGuildContext()
+  const { activeGuild, hasPermission } = useGuildContext()
   const [logs, setLogs] = useState<AuditLog[]>([])
   const [total, setTotal] = useState(0)
   const [offset, setOffset] = useState(0)
@@ -231,13 +231,13 @@ export default function AuditLogPage() {
     setOffset(0)
   }, [tableFilter, actionFilter, debouncedSearch])
 
-  if (!isOfficer || !hasFeature(activeGuild, 'audit_log')) {
+  if (!hasPermission('view_audit_log') || !hasFeature(activeGuild, 'audit_log')) {
     return (
       <div className="p-8">
         <EmptyState
           icon={Search01Icon}
-          title={!isOfficer ? "Officers only" : "Pro feature"}
-          description={!isOfficer ? "You need officer permissions to view audit logs." : "Audit log is available on the Pro plan."}
+          title={!hasPermission('view_audit_log') ? "Officers only" : "Pro feature"}
+          description={!hasPermission('view_audit_log') ? "You need officer permissions to view audit logs." : "Audit log is available on the Pro plan."}
         />
       </div>
     )

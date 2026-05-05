@@ -107,7 +107,7 @@ export default function AdminLootItems() {
 
   const supabase = createClient()
   const router = useRouter()
-  const { activeGuild, activeMember, loading: guildLoading, isOfficer } = useGuildContext()
+  const { activeGuild, activeMember, loading: guildLoading, hasPermission } = useGuildContext()
   const { showNotification } = useNotification()
 
   const loadLootItems = async (expansionId: string) => {
@@ -175,7 +175,7 @@ export default function AdminLootItems() {
 
   const loadData = async () => {
     // Check if officer using context
-    if (!isOfficer) {
+    if (!hasPermission('manage_settings')) {
       router.push('/overview')
       return
     }

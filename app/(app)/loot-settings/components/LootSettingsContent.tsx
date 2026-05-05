@@ -240,7 +240,7 @@ export default function LootSettingsContent() {
 
   const supabase = createClient()
   const router = useRouter()
-  const { activeGuild, activeMember, loading: guildLoading, isOfficer } = useGuildContext()
+  const { activeGuild, activeMember, loading: guildLoading, hasPermission } = useGuildContext()
   const { showNotification } = useNotification()
 
   // Check if settings have unsaved changes
@@ -494,7 +494,7 @@ export default function LootSettingsContent() {
     }
 
     // Check if officer using context
-    if (!isOfficer) {
+    if (!hasPermission('manage_settings')) {
       router.push('/overview')
       return
     }
