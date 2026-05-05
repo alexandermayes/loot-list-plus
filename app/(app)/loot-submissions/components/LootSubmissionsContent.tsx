@@ -28,6 +28,8 @@ import { Label } from '@/components/ui/label'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Heading } from '@/components/ui/typography'
 import ItemLink from '@/app/components/ItemLink'
+import { useRaidTeam } from '@/app/hooks/useRaidTeam'
+import { TeamSelector } from '@/app/components/TeamSelector'
 import { refreshWowheadTooltips } from '@/lib/wowhead'
 import { trackClientEvent } from '@/utils/analytics/client'
 import { notifySubmissionChanged } from '@/app/hooks/usePendingSubmissionCount'
@@ -160,9 +162,11 @@ export default function LootSubmissionsContent() {
 
   const supabase = createClient()
   const router = useRouter()
-  const { activeGuild, loading: guildLoading, isOfficer } = useGuildContext()
+  const { activeGuild, loading: guildLoading, hasPermission } = useGuildContext()
   const { showNotification } = useNotification()
   const { confirm, ConfirmDialog } = useConfirm()
+  const { activeTeamId, teams, hasTeams, setTeam } = useRaidTeam()
+  const [teamCharacterIds, setTeamCharacterIds] = useState<Set<string> | null>(null)
 
   useEffect(() => {
     document.title = 'LootList+ • Loot Submissions'
@@ -176,6 +180,24 @@ export default function LootSubmissionsContent() {
     }
   }, [submissionDetails])
 
+  // Fetch team member character IDs when a team is selected
+  useEffect(() => {
+    if (!activeTeamId) {
+      setTeamCharacterIds(null)
+      return
+    }
+    const supabaseClient = createClient()
+    supabaseClient
+      .from('raid_team_members')
+      .select('character_id')
+      .eq('raid_team_id', activeTeamId)
+      .then(({ data }: { data: { character_id: string }[] | null }) => {
+        if (data) {
+          setTeamCharacterIds(new Set(data.map(m => m.character_id)))
+        }
+      })
+  }, [activeTeamId])
+
   // Track whether we've done the initial parallel load so the "re-fetch on
   // phase change" effect below doesn't double-fire for the first render.
   const initialLoadRef = useRef(false)
@@ -187,7 +209,7 @@ export default function LootSubmissionsContent() {
         return
       }
 
-      if (!isOfficer) {
+      if (!hasPermission('manage_loot')) {
         router.push('/overview')
         return
       }
@@ -799,6 +821,7 @@ export default function LootSubmissionsContent() {
 
   const filteredSubmissions = submissions.filter(sub => {
     if (filter !== 'all' && sub.status !== filter) return false
+    if (teamCharacterIds && !teamCharacterIds.has(sub.character_id)) return false
     if (searchQuery) {
       const q = searchQuery.toLowerCase()
       return sub.member?.character_name?.toLowerCase().includes(q)
@@ -824,9 +847,18 @@ export default function LootSubmissionsContent() {
   return (
     <div className="font-poppins">
       {/* Header - Always visible */}
-      <div className="p-4 sm:p-6 lg:p-8 pb-1.5">
-        <Heading level={1}>Loot Submissions</Heading>
-        <p className="text-muted-foreground mt-1 text-base">Review and manage character loot submissions</p>
+      <div className="p-4 sm:p-6 lg:p-8 pb-1.5 flex items-start justify-between gap-4">
+        <div>
+          <Heading level={1}>Loot Submissions</Heading>
+          <p className="text-muted-foreground mt-1 text-base">Review and manage character loot submissions</p>
+        </div>
+        {hasTeams && (
+          <TeamSelector
+            teams={teams}
+            activeTeamId={activeTeamId}
+            onTeamChange={setTeam}
+          />
+        )}
       </div>
 
       {/* Phase Selector - Sticky. Reserve consistent height to prevent CLS. */}

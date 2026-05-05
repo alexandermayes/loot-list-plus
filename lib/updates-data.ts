@@ -14,6 +14,51 @@ export interface UpdateEntry {
 
 export const updates: UpdateEntry[] = [
   {
+    date: 'May 5, 2026',
+    items: [
+      {
+        category: 'feature',
+        title: 'Filter loot submissions by raid team',
+        description: 'Officers can now filter the Loot Submissions page by raid team, so you only see submissions from the team you manage.',
+      },
+      {
+        category: 'feature',
+        title: 'Granular officer permissions',
+        description: 'Guild Masters can now assign specific permissions to officers (manage loot, attendance, roster, settings) instead of all-or-nothing access.',
+      },
+      {
+        category: 'feature',
+        title: 'Reserve run management from the join page',
+        description: 'Reserve run creators can now manage submissions, toggle visibility, and update settings directly from the join page without leaving it.',
+      },
+      {
+        category: 'improvement',
+        title: 'Any guild member can create reserve runs',
+        description: 'Reserve runs are no longer restricted to officers. Any member can create and manage their own runs.',
+      },
+      {
+        category: 'improvement',
+        title: 'Missed raid dates on the overview',
+        description: 'Your attendance widget now shows which specific raids you missed, with dates and reasons (absent, late, excused).',
+      },
+      {
+        category: 'improvement',
+        title: 'Revamped member list',
+        description: 'The guild members list now includes search, sorting, class icons, and raid team assignments for easier management.',
+      },
+      {
+        category: 'improvement',
+        title: 'Reserve join page auto-refreshes',
+        description: 'The reserve join page now polls for new submissions every 15 seconds, so you see updates without manually refreshing.',
+      },
+      {
+        category: 'improvement',
+        title: 'UI polish pass',
+        description: 'Smoother modal animations, balanced text wrapping on headings, tabular number alignment on scores, and subtle icon outlines across the app.',
+      },
+    ],
+  },
+  {
     date: 'April 28, 2026',
     items: [
       {
