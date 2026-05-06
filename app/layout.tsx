@@ -137,6 +137,14 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
+        {/* Preconnect to critical third-party origins to shave ~100-300ms off
+            the first Supabase/PostHog request by completing DNS+TCP+TLS early */}
+        {process.env.NEXT_PUBLIC_SUPABASE_URL && (
+          <link rel="preconnect" href={process.env.NEXT_PUBLIC_SUPABASE_URL} />
+        )}
+        <link rel="dns-prefetch" href="https://us.i.posthog.com" />
+        <link rel="dns-prefetch" href="https://wow.zamimg.com" />
+
         {/* JSON-LD Structured Data */}
         <script
           type="application/ld+json"

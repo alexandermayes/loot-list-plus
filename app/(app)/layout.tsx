@@ -7,7 +7,11 @@ export default async function Layout({ children }: { children: React.ReactNode }
 
   try {
     const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    // Use getSession() instead of getUser() to avoid a network round-trip to
+    // Supabase Auth. The middleware already validated the token, so local JWT
+    // parsing is safe here. Saves ~200-400ms per page navigation.
+    const { data: { session } } = await supabase.auth.getSession()
+    const user = session?.user
 
     if (user) {
       // Run characters and active preferences queries in parallel

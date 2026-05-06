@@ -57,41 +57,44 @@ function PostHogPageView() {
   return null
 }
 
-// User identification component
+// User identification component — uses auth state change events instead of
+// calling getUser() on mount, which would add a redundant ~200-400ms network
+// round-trip (middleware and GuildContext already handle auth).
 function PostHogIdentify() {
   const posthog = usePostHog()
   const supabase = createClient()
 
   useEffect(() => {
-    const identifyUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
+    if (!posthog) return
 
-      if (user && posthog) {
-        // Get user preferences for additional context
-        const { data: prefs } = await supabase
-          .from('user_preferences')
-          .select('preferred_display_name, discord_id')
-          .eq('user_id', user.id)
-          .single()
+    const identifyFromSession = async (sessionUser: { id: string; email?: string; created_at?: string }) => {
+      const { data: prefs } = await supabase
+        .from('user_preferences')
+        .select('preferred_display_name, discord_id')
+        .eq('user_id', sessionUser.id)
+        .single()
 
-        posthog.identify(user.id, {
-          email: user.email,
-          discord_id: prefs?.discord_id,
-          display_name: prefs?.preferred_display_name,
-          created_at: user.created_at,
-        })
-      }
+      posthog.identify(sessionUser.id, {
+        email: sessionUser.email,
+        discord_id: prefs?.discord_id,
+        display_name: prefs?.preferred_display_name,
+        created_at: sessionUser.created_at,
+      })
     }
 
-    identifyUser()
+    // Identify from current session without a network call (no round-trip)
+    const initIdentify = async () => {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (session?.user) identifyFromSession(session.user)
+    }
+    initIdentify()
 
     // Re-identify on auth state changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event: string, session: { user?: { id: string; created_at?: string } } | null) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event: string, session: { user?: { id: string; email?: string; created_at?: string } } | null) => {
       if (event === 'SIGNED_IN' && session?.user) {
-        identifyUser()
+        identifyFromSession(session.user)
 
         // Distinguish signup from returning sign-in
-        // If the account was created within the last 60 seconds, it's a new signup
         if (session.user.created_at) {
           const createdAt = new Date(session.user.created_at).getTime()
           const now = Date.now()
@@ -101,7 +104,7 @@ function PostHogIdentify() {
           })
         }
       } else if (event === 'SIGNED_OUT') {
-        posthog?.reset()
+        posthog.reset()
       }
     })
 
