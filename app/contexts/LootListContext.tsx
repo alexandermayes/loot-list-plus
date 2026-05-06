@@ -30,7 +30,11 @@ import {
   findNextValidSlot,
   findNextNoBracketSlot,
   placeInBracket,
-  type BracketItem
+  type BracketItem,
+  type BracketLimits,
+  DEFAULT_MAX_ALLOCATION_POINTS,
+  DEFAULT_MAX_TOKENS,
+  DEFAULT_MAX_CATEGORY,
 } from '@/domain/loot/bracket-validation'
 import { resolvePhaseGroups, type PhaseGroup } from '@/domain/expansion/phase-groups'
 
@@ -92,6 +96,7 @@ interface LootListDataContextType {
   selectedPhase: number | null // Canonical phase of the selected group
   phaseDeadline: string | null
   enforceSlotRestrictions: boolean
+  bracketLimits: BracketLimits
   equippedItems: EquippedItem[]
   equippedWowheadIds: Set<number>
 
@@ -156,6 +161,11 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
   const [initialRankings, setInitialRankings] = useState<Record<string, string>>({})
   const [originalStatus, setOriginalStatus] = useState<string | null>(null)
   const [enforceSlotRestrictions, setEnforceSlotRestrictions] = useState(true)
+  const [bracketLimits, setBracketLimits] = useState<BracketLimits>({
+    maxAllocationPoints: DEFAULT_MAX_ALLOCATION_POINTS,
+    maxTokens: DEFAULT_MAX_TOKENS,
+    maxCategory: DEFAULT_MAX_CATEGORY,
+  })
   const [isSaving, setIsSaving] = useState(false)
   const [isImportingBis, setIsImportingBis] = useState(false)
   const [initialLoadComplete, setInitialLoadComplete] = useState(false)
@@ -421,7 +431,7 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
     const loadSettingsAndDeadlines = async () => {
       const settingsPromise = supabase
         .from('guild_settings')
-        .select('enforce_slot_restrictions')
+        .select('enforce_slot_restrictions, max_allocation_points_per_bracket, max_tokens_per_bracket, max_category_per_bracket')
         .eq('guild_id', activeGuild.id)
         .single()
 
@@ -436,6 +446,11 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
       const [settingsResult, deadlinesResult] = await Promise.all([settingsPromise, deadlinesPromise])
 
       setEnforceSlotRestrictions(settingsResult.data?.enforce_slot_restrictions ?? true)
+      setBracketLimits({
+        maxAllocationPoints: settingsResult.data?.max_allocation_points_per_bracket ?? DEFAULT_MAX_ALLOCATION_POINTS,
+        maxTokens: settingsResult.data?.max_tokens_per_bracket ?? DEFAULT_MAX_TOKENS,
+        maxCategory: settingsResult.data?.max_category_per_bracket ?? DEFAULT_MAX_CATEGORY,
+      })
 
       if (deadlinesResult.data?.phase_deadlines) {
         setExpansionPhaseDeadlines(deadlinesResult.data.phase_deadlines as Record<string, string | null>)
@@ -600,7 +615,7 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
       })
 
       // Initialize bracket states for smart placement
-      const bracketStates = createBracketStates()
+      const bracketStates = createBracketStates(bracketLimits)
       const noBracketPlacements = new Map<string, string>() // "rank-slot" -> itemId
       const newRankings: Record<string, string> = {}
       let importedCount = 0
@@ -622,7 +637,7 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
         if (lcItemIds.has(bisItem.loot_item_id)) continue
 
         // Try to find a valid slot in brackets first
-        const bracketSlot = findNextValidSlot(item, bracketStates, enforceSlotRestrictions, itemsById)
+        const bracketSlot = findNextValidSlot(item, bracketStates, enforceSlotRestrictions, itemsById, bracketLimits)
 
         if (bracketSlot) {
           // Place in bracket
@@ -661,7 +676,7 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setIsImportingBis(false)
     }
-  }, [activeCharacter, selectedPhase, targetExpansionId, activeGuild?.id, itemsData?.items, equippedWowheadIds, enforceSlotRestrictions, gearData?.items])
+  }, [activeCharacter, selectedPhase, targetExpansionId, activeGuild?.id, itemsData?.items, equippedWowheadIds, enforceSlotRestrictions, bracketLimits, gearData?.items])
 
   // Check for changes
   const hasChanges = useMemo(() => {
@@ -1100,6 +1115,7 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
     selectedPhase,
     phaseDeadline,
     enforceSlotRestrictions,
+    bracketLimits,
     equippedItems: gearData?.items || [],
     equippedWowheadIds,
     isLoading,
@@ -1122,6 +1138,7 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
     selectedPhase,
     phaseDeadline,
     enforceSlotRestrictions,
+    bracketLimits,
     gearData?.items,
     equippedWowheadIds,
     isLoading,

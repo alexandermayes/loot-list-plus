@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
-import { validateBracketRules, type BracketItem } from '@/domain/loot/bracket-validation'
+import { validateBracketRules, type BracketItem, type BracketLimits } from '@/domain/loot/bracket-validation'
 import { logStatusChange } from '@/utils/audit/log'
 import { trackEvent, setUserMilestone } from '@/utils/analytics/server'
 
@@ -75,14 +75,19 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to read submission items' }, { status: 500 })
     }
 
-    // Get guild settings for enforce_slot_restrictions
+    // Get guild settings for bracket rules
     const { data: settings } = await serviceSupabase
       .from('guild_settings')
-      .select('enforce_slot_restrictions')
+      .select('enforce_slot_restrictions, max_allocation_points_per_bracket, max_tokens_per_bracket, max_category_per_bracket')
       .eq('guild_id', submission.guild_id)
       .single()
 
     const enforceSlotRestrictions = settings?.enforce_slot_restrictions ?? false
+    const bracketLimits: BracketLimits = {
+      maxAllocationPoints: settings?.max_allocation_points_per_bracket ?? 3,
+      maxTokens: settings?.max_tokens_per_bracket ?? 1,
+      maxCategory: settings?.max_category_per_bracket ?? 1,
+    }
 
     // Build validation input
     const validationItems = (submissionItems || []).map((si: any) => ({
@@ -98,7 +103,7 @@ export async function POST(request: NextRequest) {
     }))
 
     // Validate bracket rules
-    const violations = validateBracketRules(validationItems, enforceSlotRestrictions)
+    const violations = validateBracketRules(validationItems, enforceSlotRestrictions, bracketLimits)
 
     if (violations.length > 0) {
       return NextResponse.json({

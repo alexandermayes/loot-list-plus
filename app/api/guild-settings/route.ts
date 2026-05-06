@@ -77,6 +77,9 @@ const ALLOWED_SETTINGS_FIELDS = [
 
   // Loot List Rules
   'enforce_slot_restrictions',
+  'max_allocation_points_per_bracket',
+  'max_tokens_per_bracket',
+  'max_category_per_bracket',
 
   // Discord Integration
   'raid_summary_channel_id',
@@ -221,6 +224,11 @@ export async function GET(request: Request) {
 
             // Discord Integration
             raid_summary_channel_id: null,
+
+            // Loot List Rules
+            max_allocation_points_per_bracket: 3,
+            max_tokens_per_bracket: 1,
+            max_category_per_bracket: 1,
 
             // Warcraft Logs Integration
             wcl_guild_url: null

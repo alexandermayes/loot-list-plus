@@ -217,7 +217,7 @@ Your list is divided into bracket sections, each with specific rules:
 
 ### Bracket rules (brackets 1-4 only)
 
-Each bracket has a **3-point allocation limit**:
+Each bracket has an **allocation point limit** (default 3, configurable by officers):
 - **Reserved** items cost 1 point
 - **Limited** items cost 1 point
 - **Unlimited** items cost 0 points
@@ -986,7 +986,7 @@ export const glossaryTerms: GlossaryTerm[] = [
   {
     term: 'Allocation points',
     definition:
-      'Points spent when ranking Reserved or Limited items in a bracket. Each costs 1 point, Unlimited costs 0. You can spend up to 3 points per bracket.',
+      'Points spent when ranking Reserved or Limited items in a bracket. Each costs 1 point, Unlimited costs 0. The per-bracket limit is set by your officers (default 3).',
     articleSlug: 'submitting-loot-list',
   },
   {

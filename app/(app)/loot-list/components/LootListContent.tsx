@@ -388,6 +388,7 @@ interface BracketSectionProps {
   removedRankings: Record<string, string>
   onRestoreItem: (lootItemId: string, itemName: string) => void
   validation?: { allocationPoints: number; maxPoints: number; violations: string[] }
+  maxAllocationPoints?: number
   expandedErrors: Set<string>
   toggleErrorExpanded: (bracketName: string) => void
   isCollapsed: boolean
@@ -416,6 +417,7 @@ function BracketSection({
   removedRankings,
   onRestoreItem,
   validation,
+  maxAllocationPoints,
   expandedErrors,
   toggleErrorExpanded,
   isCollapsed,
@@ -443,10 +445,10 @@ function BracketSection({
             </h2>
             {showAllocationPoints && validation ? (
               <p className={`text-[12px] font-medium mt-1 ${textColorClass}`}>
-                Allocation Points: {validation.allocationPoints}/{validation.maxPoints} <InfoTooltip content="Reserved and Limited items cost 1 point each. Unlimited items cost 0. You can spend up to 3 points per bracket." iconSize={12} />
+                Allocation Points: {validation.allocationPoints}/{validation.maxPoints} <InfoTooltip content={`Reserved and Limited items cost 1 point each. Unlimited items cost 0. You can spend up to ${validation.maxPoints} points per bracket.`} iconSize={12} />
               </p>
             ) : showAllocationPoints ? (
-              <p className={`${textColorClass} text-[12px] mt-1`}>Max 3 allocation points per bracket</p>
+              <p className={`${textColorClass} text-[12px] mt-1`}>Max {maxAllocationPoints ?? 3} allocation points per bracket</p>
             ) : subtitle ? (
               <p className={`${textColorClass} text-[12px]`}>{subtitle}</p>
             ) : null}
@@ -597,6 +599,7 @@ export default function LootListContent() {
     selectedPhase,
     phaseDeadline,
     enforceSlotRestrictions,
+    bracketLimits,
     equippedWowheadIds,
     isLoading,
     isContentLoading,
@@ -985,10 +988,10 @@ export default function LootListContent() {
 
   const bracketValidations = useMemo((): BracketValidation[] => {
     const brackets: BracketValidation[] = [
-      { bracketName: 'Bracket 1 (50-48)', allocationPoints: 0, maxPoints: 3, ranks: [50, 49, 48], violations: [], itemErrors: [] },
-      { bracketName: 'Bracket 2 (47-45)', allocationPoints: 0, maxPoints: 3, ranks: [47, 46, 45], violations: [], itemErrors: [] },
-      { bracketName: 'Bracket 3 (44-42)', allocationPoints: 0, maxPoints: 3, ranks: [44, 43, 42], violations: [], itemErrors: [] },
-      { bracketName: 'Bracket 4 (41-39)', allocationPoints: 0, maxPoints: 3, ranks: [41, 40, 39], violations: [], itemErrors: [] },
+      { bracketName: 'Bracket 1 (50-48)', allocationPoints: 0, maxPoints: bracketLimits.maxAllocationPoints ?? 3, ranks: [50, 49, 48], violations: [], itemErrors: [] },
+      { bracketName: 'Bracket 2 (47-45)', allocationPoints: 0, maxPoints: bracketLimits.maxAllocationPoints ?? 3, ranks: [47, 46, 45], violations: [], itemErrors: [] },
+      { bracketName: 'Bracket 3 (44-42)', allocationPoints: 0, maxPoints: bracketLimits.maxAllocationPoints ?? 3, ranks: [44, 43, 42], violations: [], itemErrors: [] },
+      { bracketName: 'Bracket 4 (41-39)', allocationPoints: 0, maxPoints: bracketLimits.maxAllocationPoints ?? 3, ranks: [41, 40, 39], violations: [], itemErrors: [] },
     ]
 
     brackets.forEach(bracket => {
@@ -1099,9 +1102,10 @@ export default function LootListContent() {
       }
 
       // Check for duplicate item types and mark affected items
+      const maxCategory = bracketLimits.maxCategory ?? 1
       Object.entries(itemTypesInBracket).forEach(([type, data]) => {
-        if (data.count > 1) {
-          bracket.violations.push(`Duplicate ${type} (${data.count} selected)`)
+        if (data.count > maxCategory) {
+          bracket.violations.push(`Too many ${type} items (${data.count}/${maxCategory})`)
           data.items.forEach(item => {
             bracket.itemErrors.push({
               ...item,
@@ -1114,9 +1118,10 @@ export default function LootListContent() {
 
       // Check for duplicate item slots and mark affected items (if enforcement is enabled)
       if (enforceSlotRestrictions) {
+        const maxTokens = bracketLimits.maxTokens ?? 1
         Object.entries(itemSlotsInBracket).forEach(([slot, data]) => {
-          if (data.count > 1) {
-            bracket.violations.push(`Multiple ${slot} items (${data.count} selected) - only 1 allowed per bracket`)
+          if (data.count > maxTokens) {
+            bracket.violations.push(`Too many ${slot} items (${data.count}/${maxTokens})`)
             data.items.forEach(item => {
               bracket.itemErrors.push({
                 ...item,
@@ -1130,7 +1135,7 @@ export default function LootListContent() {
     })
 
     return brackets.filter(b => b.violations.length > 0 || b.allocationPoints > 0)
-  }, [rankings, bracket14ItemsById, enforceSlotRestrictions])
+  }, [rankings, bracket14ItemsById, enforceSlotRestrictions, bracketLimits])
   const hasValidationErrors = bracketValidations.some(b => b.violations.length > 0)
 
   // Get validation for a specific bracket by name
@@ -1633,6 +1638,7 @@ export default function LootListContent() {
             removedRankings={removedRankings}
             onRestoreItem={handleRestoreItem}
             validation={getBracketValidation(bracket.name)}
+            maxAllocationPoints={bracketLimits.maxAllocationPoints}
             expandedErrors={expandedErrors}
             toggleErrorExpanded={toggleErrorExpanded}
             isCollapsed={collapsedBrackets.has(bracket.name)}

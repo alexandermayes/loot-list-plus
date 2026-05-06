@@ -10,15 +10,36 @@ export interface BracketConfig {
 }
 
 /**
+ * Per-guild bracket limit overrides.
+ * All fields optional — defaults to the hardcoded constants when omitted.
+ */
+export interface BracketLimits {
+  maxAllocationPoints?: number  // default 3
+  maxTokens?: number            // default 1
+  maxCategory?: number          // default 1 (max same item_type per bracket)
+}
+
+export const DEFAULT_MAX_ALLOCATION_POINTS = 3
+export const DEFAULT_MAX_TOKENS = 1
+export const DEFAULT_MAX_CATEGORY = 1
+
+/**
  * Bracket configuration for loot list ranking.
  * Brackets 1-4 have allocation limits, No Bracket and Off-spec do not.
  */
 export const BRACKET_CONFIG: BracketConfig[] = [
-  { name: 'Bracket 1', ranks: [50, 49, 48], maxPoints: 3 },
-  { name: 'Bracket 2', ranks: [47, 46, 45], maxPoints: 3 },
-  { name: 'Bracket 3', ranks: [44, 43, 42], maxPoints: 3 },
-  { name: 'Bracket 4', ranks: [41, 40, 39], maxPoints: 3 },
+  { name: 'Bracket 1', ranks: [50, 49, 48], maxPoints: DEFAULT_MAX_ALLOCATION_POINTS },
+  { name: 'Bracket 2', ranks: [47, 46, 45], maxPoints: DEFAULT_MAX_ALLOCATION_POINTS },
+  { name: 'Bracket 3', ranks: [44, 43, 42], maxPoints: DEFAULT_MAX_ALLOCATION_POINTS },
+  { name: 'Bracket 4', ranks: [41, 40, 39], maxPoints: DEFAULT_MAX_ALLOCATION_POINTS },
 ]
+
+/**
+ * Build bracket configs with a custom maxPoints value.
+ */
+export function getBracketConfigWithLimits(maxAllocationPoints: number): BracketConfig[] {
+  return BRACKET_CONFIG.map(b => ({ ...b, maxPoints: maxAllocationPoints }))
+}
 
 // No Bracket zone (ranks 38-25) - no allocation limits
 export const NO_BRACKET_RANKS = Array.from({ length: 14 }, (_, i) => 38 - i) // [38, 37, ..., 25]
@@ -50,20 +71,22 @@ export interface BracketItem {
 export interface BracketState {
   config: BracketConfig
   currentPoints: number
-  itemTypesUsed: Set<string>
-  itemSlotsUsed: Set<string>
+  itemTypesUsed: Map<string, number>  // type -> count
+  itemSlotsUsed: Map<string, number>  // slot -> count
   placements: Map<string, string> // "rank-slot" -> itemId
 }
 
 /**
  * Create initial bracket states for BIS import.
  */
-export function createBracketStates(): BracketState[] {
-  return BRACKET_CONFIG.map(config => ({
+export function createBracketStates(limits?: BracketLimits): BracketState[] {
+  const maxAlloc = limits?.maxAllocationPoints ?? DEFAULT_MAX_ALLOCATION_POINTS
+  const configs = getBracketConfigWithLimits(maxAlloc)
+  return configs.map(config => ({
     config,
     currentPoints: 0,
-    itemTypesUsed: new Set(),
-    itemSlotsUsed: new Set(),
+    itemTypesUsed: new Map(),
+    itemSlotsUsed: new Map(),
     placements: new Map(),
   }))
 }
@@ -73,8 +96,8 @@ export function createBracketStates(): BracketState[] {
  *
  * Rules checked:
  * 1. Allocation points won't exceed max
- * 2. Item type not already in bracket (duplicate type rule)
- * 3. Item slot not already in bracket (if enforceSlotRestrictions)
+ * 2. Item type count won't exceed maxCategory
+ * 3. Token count won't exceed maxTokens (if enforceSlotRestrictions)
  * 4. Reserved items must be alone at their rank
  */
 export function canPlaceInBracket(
@@ -83,10 +106,13 @@ export function canPlaceInBracket(
   rank: number,
   slot: 1 | 2,
   enforceSlotRestrictions: boolean,
-  itemsById: Map<string, BracketItem>
+  itemsById: Map<string, BracketItem>,
+  limits?: BracketLimits
 ): boolean {
   const cost = item.allocation_cost || 0
   const isReserved = item.classification === 'Reserved'
+  const maxCategory = limits?.maxCategory ?? DEFAULT_MAX_CATEGORY
+  const maxTokens = limits?.maxTokens ?? DEFAULT_MAX_TOKENS
 
   // Rule 1: Check allocation points
   if (bracket.currentPoints + cost > bracket.config.maxPoints) {
@@ -94,14 +120,20 @@ export function canPlaceInBracket(
   }
 
   // Rule 2: Check duplicate item_type (skip for tokens — different tokens are distinct items)
-  if (item.item_type && item.item_type !== 'Token' && bracket.itemTypesUsed.has(item.item_type)) {
-    return false
+  if (item.item_type && item.item_type !== 'Token') {
+    const currentCount = bracket.itemTypesUsed.get(item.item_type) ?? 0
+    if (currentCount >= maxCategory) {
+      return false
+    }
   }
 
   // Rule 3: Restrict duplicate tokens per bracket (if enforcement enabled)
   // Only applies to token items — non-token slots are already restricted by Rule 2
-  if (enforceSlotRestrictions && item.item_slot === 'Token' && bracket.itemSlotsUsed.has('Token')) {
-    return false
+  if (enforceSlotRestrictions && item.item_slot === 'Token') {
+    const tokenCount = bracket.itemSlotsUsed.get('Token') ?? 0
+    if (tokenCount >= maxTokens) {
+      return false
+    }
   }
 
   // Rule 4: Reserved companion rule
@@ -142,10 +174,12 @@ export function placeInBracket(
   bracket.placements.set(`${rank}-${slot}`, item.id)
   bracket.currentPoints += item.allocation_cost || 0
   if (item.item_type && item.item_type !== 'Token') {
-    bracket.itemTypesUsed.add(item.item_type)
+    const count = bracket.itemTypesUsed.get(item.item_type) ?? 0
+    bracket.itemTypesUsed.set(item.item_type, count + 1)
   }
   if (item.item_slot) {
-    bracket.itemSlotsUsed.add(item.item_slot)
+    const count = bracket.itemSlotsUsed.get(item.item_slot) ?? 0
+    bracket.itemSlotsUsed.set(item.item_slot, count + 1)
   }
 }
 
@@ -160,7 +194,8 @@ export function findNextValidSlot(
   item: BracketItem,
   bracketStates: BracketState[],
   enforceSlotRestrictions: boolean,
-  itemsById: Map<string, BracketItem>
+  itemsById: Map<string, BracketItem>,
+  limits?: BracketLimits
 ): { bracketIndex: number; rank: number; slot: 1 | 2 } | null {
   for (let bracketIndex = 0; bracketIndex < bracketStates.length; bracketIndex++) {
     const bracket = bracketStates[bracketIndex]
@@ -172,7 +207,7 @@ export function findNextValidSlot(
           continue
         }
 
-        if (canPlaceInBracket(item, bracket, rank, slot, enforceSlotRestrictions, itemsById)) {
+        if (canPlaceInBracket(item, bracket, rank, slot, enforceSlotRestrictions, itemsById, limits)) {
           return { bracketIndex, rank, slot }
         }
       }
@@ -199,15 +234,21 @@ export interface BracketViolation {
  */
 export function validateBracketRules(
   items: { rank: number; slot: number; item: BracketItem }[],
-  enforceSlotRestrictions: boolean
+  enforceSlotRestrictions: boolean,
+  limits?: BracketLimits
 ): BracketViolation[] {
   const violations: BracketViolation[] = []
   const itemsById = new Map(items.map(i => [i.item.id, i.item]))
 
+  const maxAlloc = limits?.maxAllocationPoints ?? DEFAULT_MAX_ALLOCATION_POINTS
+  const maxCategory = limits?.maxCategory ?? DEFAULT_MAX_CATEGORY
+  const maxTokens = limits?.maxTokens ?? DEFAULT_MAX_TOKENS
+  const configs = getBracketConfigWithLimits(maxAlloc)
+
   // Group items by bracket
   const bracketItems = new Map<number, typeof items>()
   for (const entry of items) {
-    const bracketIndex = BRACKET_CONFIG.findIndex(b => b.ranks.includes(entry.rank))
+    const bracketIndex = configs.findIndex(b => b.ranks.includes(entry.rank))
     if (bracketIndex === -1) continue // No Bracket or Off-spec zone — no rules
     const existing = bracketItems.get(bracketIndex) || []
     existing.push(entry)
@@ -215,7 +256,7 @@ export function validateBracketRules(
   }
 
   for (const [bracketIndex, bracketEntries] of bracketItems) {
-    const config = BRACKET_CONFIG[bracketIndex]
+    const config = configs[bracketIndex]
 
     // Rule 1: Allocation points
     let totalPoints = 0
@@ -231,19 +272,20 @@ export function validateBracketRules(
     }
 
     // Rule 2: Duplicate item types (non-token)
-    const typesSeen = new Set<string>()
+    const typeCounts = new Map<string, number>()
     for (const entry of bracketEntries) {
       const t = entry.item.item_type
       if (t && t !== 'Token') {
-        if (typesSeen.has(t)) {
+        const count = (typeCounts.get(t) ?? 0) + 1
+        typeCounts.set(t, count)
+        if (count > maxCategory) {
           violations.push({
             bracket: config.name,
             rule: 'duplicate_type',
-            detail: `Duplicate item type "${t}" in bracket`,
+            detail: `${count} "${t}" items in bracket (max ${maxCategory})`,
           })
           break // one violation per bracket is enough
         }
-        typesSeen.add(t)
       }
     }
 
@@ -253,11 +295,11 @@ export function validateBracketRules(
       for (const entry of bracketEntries) {
         if (entry.item.item_slot === 'Token') tokenCount++
       }
-      if (tokenCount > 1) {
+      if (tokenCount > maxTokens) {
         violations.push({
           bracket: config.name,
           rule: 'duplicate_token',
-          detail: `${tokenCount} tokens in bracket (max 1 when slot restrictions enabled)`,
+          detail: `${tokenCount} tokens in bracket (max ${maxTokens})`,
         })
       }
     }

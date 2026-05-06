@@ -229,7 +229,10 @@ export default function LootSettingsContent() {
     blp_maximum: 5.0,
 
     // Loot List Rules
-    enforce_slot_restrictions: false
+    enforce_slot_restrictions: false,
+    max_allocation_points_per_bracket: 3,
+    max_tokens_per_bracket: 1,
+    max_category_per_bracket: 1
   })
 
   const [guildRoles, setGuildRoles] = useState<{ name: string; position: number }[]>([
@@ -457,7 +460,10 @@ export default function LootSettingsContent() {
         blp_maximum: settings.blp_maximum,
 
         // Loot List Rules
-        enforce_slot_restrictions: settings.enforce_slot_restrictions
+        enforce_slot_restrictions: settings.enforce_slot_restrictions,
+        max_allocation_points_per_bracket: settings.max_allocation_points_per_bracket,
+        max_tokens_per_bracket: settings.max_tokens_per_bracket,
+        max_category_per_bracket: settings.max_category_per_bracket
       }
 
       const response = await fetch('/api/guild-settings', {
@@ -2350,20 +2356,71 @@ export default function LootSettingsContent() {
                         </CardTitle>
                         <CardDescription>Control how raiders can arrange items in their priority brackets.</CardDescription>
                       </CardHeader>
-                      <CardContent>
-                        <div>
-                          <Label className="block mb-2">One token per bracket</Label>
-                          <p className="text-xs text-muted-foreground mb-2">Restrict each bracket to a single tier token. Other equipment slots are always limited to one per bracket.</p>
-                          <Select
-                            variant="pill"
-                            value={settings.enforce_slot_restrictions ? 'yes' : 'no'}
-                            onChange={(e) => setSettings({ ...settings, enforce_slot_restrictions: e.target.value === 'yes' })}
-                            className="bg-background-elevated w-32"
-                          >
-                            <option value="no">No</option>
-                            <option value="yes">Yes</option>
-                          </Select>
+                      <CardContent className="space-y-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                          <div>
+                            <Label className="block mb-2 inline-flex items-center gap-1">Allocation points <InfoTooltip content="How many allocation points (from Reserved and Limited items) a raider can spend in each bracket. Unlimited items cost 0." iconSize={12} /></Label>
+                            <Select
+                              variant="pill"
+                              value={settings.max_allocation_points_per_bracket}
+                              onChange={(e) => setSettings({ ...settings, max_allocation_points_per_bracket: Number(e.target.value) })}
+                              className="bg-background-elevated"
+                            >
+                              {[1, 2, 3, 4, 5, 6].map(n => (
+                                <option key={n} value={n}>{n}</option>
+                              ))}
+                            </Select>
+                            <p className="text-muted-foreground text-[12px] mt-1">Max per bracket</p>
+                          </div>
+
+                          <div>
+                            <Label className="block mb-2 inline-flex items-center gap-1">Same category <InfoTooltip content="How many items of the same equipment type (e.g. weapon, chest) a raider can place in each bracket. Tokens are excluded from this limit." iconSize={12} /></Label>
+                            <Select
+                              variant="pill"
+                              value={settings.max_category_per_bracket}
+                              onChange={(e) => setSettings({ ...settings, max_category_per_bracket: Number(e.target.value) })}
+                              className="bg-background-elevated"
+                            >
+                              {[1, 2, 3, 4, 5, 6].map(n => (
+                                <option key={n} value={n}>{n}</option>
+                              ))}
+                            </Select>
+                            <p className="text-muted-foreground text-[12px] mt-1">Max per bracket</p>
+                          </div>
+
+                          <div>
+                            <Label className="block mb-2">Limit tier tokens</Label>
+                            <Select
+                              variant="pill"
+                              value={settings.enforce_slot_restrictions ? 'yes' : 'no'}
+                              onChange={(e) => setSettings({ ...settings, enforce_slot_restrictions: e.target.value === 'yes' })}
+                              className="bg-background-elevated"
+                            >
+                              <option value="no">No</option>
+                              <option value="yes">Yes</option>
+                            </Select>
+                            <p className="text-muted-foreground text-[12px] mt-1">Restrict tokens per bracket</p>
+                          </div>
                         </div>
+
+                        {settings.enforce_slot_restrictions && (
+                          <div className="bg-background-elevated border border-border-strong p-4 rounded-xl">
+                            <div className="w-full sm:w-1/3">
+                              <Label className="block mb-2 inline-flex items-center gap-1">Max tier tokens <InfoTooltip content="How many tier token items a raider can place in each bracket." iconSize={12} /></Label>
+                              <Select
+                                variant="pill"
+                                value={settings.max_tokens_per_bracket}
+                                onChange={(e) => setSettings({ ...settings, max_tokens_per_bracket: Number(e.target.value) })}
+                                className="bg-background-elevated"
+                              >
+                                {[1, 2, 3, 4, 5, 6].map(n => (
+                                  <option key={n} value={n}>{n}</option>
+                                ))}
+                              </Select>
+                              <p className="text-muted-foreground text-[12px] mt-1">Per bracket</p>
+                            </div>
+                          </div>
+                        )}
                       </CardContent>
                     </Card>
 
