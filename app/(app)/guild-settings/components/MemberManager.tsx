@@ -103,35 +103,47 @@ export default function MemberManager() {
     const mainChar = member.mainCharacter
     if (!mainChar) return
 
+    const newTeam = teamId ? raidTeams.find(t => t.id === teamId) : null
+    const optimisticData = {
+      ...membersData,
+      members: membersData!.members.map((m: any) =>
+        m.user_id === member.user_id
+          ? { ...m, raid_team: newTeam ? { id: newTeam.id, name: newTeam.name, color: newTeam.color_hex } : null }
+          : m
+      )
+    }
+
     try {
-      // Remove from current team
-      if (member.raid_team?.id) {
-        await fetch(`/api/raid-teams/${member.raid_team.id}/members`, {
-          method: 'DELETE',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ character_ids: [mainChar.id] }),
-        })
-      }
-      // Add to new team
-      if (teamId) {
-        const res = await fetch(`/api/raid-teams/${teamId}/members`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ character_ids: [mainChar.id] }),
-        })
-        if (!res.ok) {
-          const data = await res.json()
-          throw new Error(data.error || 'Failed to assign team')
+      await refreshMembers(async () => {
+        // Remove from current team
+        if (member.raid_team?.id) {
+          await fetch(`/api/raid-teams/${member.raid_team.id}/members`, {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ character_ids: [mainChar.id] }),
+          })
         }
-      }
-      refreshMembers()
+        // Add to new team
+        if (teamId) {
+          const res = await fetch(`/api/raid-teams/${teamId}/members`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ character_ids: [mainChar.id] }),
+          })
+          if (!res.ok) {
+            const data = await res.json()
+            throw new Error(data.error || 'Failed to assign team')
+          }
+        }
+        return optimisticData
+      }, { optimisticData, rollbackOnError: true, revalidate: false })
       const teamName = teamId ? raidTeams.find(t => t.id === teamId)?.name : null
       showNotification('success', teamName ? `${mainChar.name} assigned to ${teamName}` : `${mainChar.name} removed from team`)
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to update team'
       showNotification('error', message)
     }
-  }, [raidTeams, refreshMembers, showNotification])
+  }, [raidTeams, membersData, refreshMembers, showNotification])
 
   const members: Member[] = useMemo(() => {
     if (!membersData?.members) return []
@@ -536,19 +548,6 @@ export default function MemberManager() {
 
                     {/* Actions */}
                     <div className="flex items-center gap-1 flex-shrink-0 ml-auto">
-                      {showTeamAssignment && raidTeams.length > 0 && mainChar && (
-                        <Select
-                          value={member.raid_team?.id || ''}
-                          onChange={(e) => handleTeamChange(member, e.target.value || null)}
-                          size="sm"
-                          className="w-[120px] text-[12px]"
-                        >
-                          <option value="" className="bg-background-elevated">No team</option>
-                          {raidTeams.map(team => (
-                            <option key={team.id} value={team.id} className="bg-background-elevated">{team.name}</option>
-                          ))}
-                        </Select>
-                      )}
                       {canModify && (
                         <button
                           onClick={() => handleToggleTrialStatus(member.user_id, displayName, member.membership_status)}
@@ -566,6 +565,19 @@ export default function MemberManager() {
                         >
                           <HugeiconsIcon icon={UserBlock01Icon} size={14} />
                         </button>
+                      )}
+                      {showTeamAssignment && raidTeams.length > 0 && mainChar && (
+                        <Select
+                          value={member.raid_team?.id || ''}
+                          onChange={(e) => handleTeamChange(member, e.target.value || null)}
+                          size="sm"
+                          className="w-[120px] text-[12px]"
+                        >
+                          <option value="" className="bg-background-elevated">No team</option>
+                          {raidTeams.map(team => (
+                            <option key={team.id} value={team.id} className="bg-background-elevated">{team.name}</option>
+                          ))}
+                        </Select>
                       )}
                       {canModify && assignableRoles.length > 0 ? (
                         <Select
