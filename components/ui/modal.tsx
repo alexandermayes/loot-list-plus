@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { createPortal } from "react-dom"
 import { cva, type VariantProps } from "class-variance-authority"
 import { AnimatePresence, motion } from "framer-motion"
 import { HugeiconsIcon } from "@hugeicons/react"
@@ -259,7 +260,11 @@ const Modal = ({
     mouseDownOnBackdrop.current = false
   }
 
-  return (
+  // Portal to document.body so `fixed inset-0` is always relative to the
+  // viewport, not an ancestor with transform/filter/backdrop-filter.
+  if (typeof document === "undefined") return null
+
+  return createPortal(
     <AnimatePresence>
       {open && (
         <motion.div
@@ -284,7 +289,8 @@ const Modal = ({
           </motion.div>
         </motion.div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   )
 }
 
