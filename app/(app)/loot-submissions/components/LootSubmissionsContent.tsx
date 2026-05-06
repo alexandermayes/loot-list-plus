@@ -292,15 +292,11 @@ export default function LootSubmissionsContent() {
               const submissionIds = submissionsData.map((s: { id: string }) => s.id)
               let countMap: Record<string, number> = {}
               if (submissionIds.length > 0) {
-                const { data: itemCounts } = await supabase
-                  .from('loot_submission_items')
-                  .select('submission_id')
-                  .in('submission_id', submissionIds)
-                  .is('removed_at', null)
-                  .limit(5000)
-                itemCounts?.forEach((item: { submission_id: string }) => {
-                  countMap[item.submission_id] = (countMap[item.submission_id] || 0) + 1
-                })
+                // Fetch counts server-side to avoid RLS overhead on large item tables
+                const countRes = await fetch(`/api/loot-submissions/item-counts?ids=${submissionIds.join(',')}`)
+                if (countRes.ok) {
+                  countMap = await countRes.json()
+                }
               }
 
               const formattedSubmissions = submissionsData.map((sub: RawSubmission) => {
@@ -406,19 +402,15 @@ export default function LootSubmissionsContent() {
       return
     }
 
-    // Get item counts for each submission
+    // Get item counts server-side to avoid RLS overhead on large item tables
     const submissionIds = submissionsData.map((s: { id: string }) => s.id)
-    const { data: itemCounts } = await supabase
-      .from('loot_submission_items')
-      .select('submission_id')
-      .in('submission_id', submissionIds)
-      .is('removed_at', null)
-      .limit(5000)
-
-    const countMap: Record<string, number> = {}
-    itemCounts?.forEach((item: { submission_id: string }) => {
-      countMap[item.submission_id] = (countMap[item.submission_id] || 0) + 1
-    })
+    let countMap: Record<string, number> = {}
+    if (submissionIds.length > 0) {
+      const countRes = await fetch(`/api/loot-submissions/item-counts?ids=${submissionIds.join(',')}`)
+      if (countRes.ok) {
+        countMap = await countRes.json()
+      }
+    }
 
     // Transform data to match expected format
     const formattedSubmissions = submissionsData.map((sub: RawSubmission) => {
