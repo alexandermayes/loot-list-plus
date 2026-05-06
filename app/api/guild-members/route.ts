@@ -208,21 +208,21 @@ export async function GET(request: NextRequest) {
 
       const { data: raidTeamMembers } = await serviceSupabase
         .from('raid_team_members')
-        .select('character_id, raid_team:raid_teams(name, color_hex)')
+        .select('character_id, raid_team:raid_teams(id, name, color_hex)')
         .in('character_id', allCharIds)
 
       if (raidTeamMembers) {
-        const charTeamMap = new Map<string, { name: string; color: string }>()
+        const charTeamMap = new Map<string, { id: string; name: string; color: string }>()
         for (const rtm of raidTeamMembers) {
           const team = Array.isArray(rtm.raid_team) ? rtm.raid_team[0] : rtm.raid_team
           if (team) {
-            charTeamMap.set(rtm.character_id, { name: team.name, color: team.color_hex || '#808080' })
+            charTeamMap.set(rtm.character_id, { id: team.id, name: team.name, color: team.color_hex || '#808080' })
           }
         }
 
         for (const member of members) {
           const mainId = member.mainCharacter?.id
-          let raidTeam: { name: string; color: string } | null = null
+          let raidTeam: { id: string; name: string; color: string } | null = null
           if (mainId && charTeamMap.has(mainId)) {
             raidTeam = charTeamMap.get(mainId)!
           } else {
