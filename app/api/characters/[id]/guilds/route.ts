@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient, getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
+import { getDefaultRoleName } from '@/domain/guild/default-role'
 
 /**
  * GET /api/characters/[id]/guilds
@@ -127,7 +128,8 @@ export async function POST(
       .eq('id', guild_id)
       .single()
 
-    const role = guildData?.created_by === user.id ? 'Guild Master' : 'Member'
+    const defaultRole = await getDefaultRoleName(guild_id)
+    const role = guildData?.created_by === user.id ? 'Guild Master' : defaultRole
 
     // Check if membership already exists
     const { data: existingMembership } = await supabase

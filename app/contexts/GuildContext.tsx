@@ -773,8 +773,24 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
 
       // Check the permissions cache for this role
       const guildPerms = rolePermissionsCache.get(activeGuild.id)
-      const rolePerms = guildPerms?.get(roleName) || []
-      return rolePerms.includes(permission)
+      let rolePerms = guildPerms?.get(roleName)
+
+      // Fallback: if the role name doesn't match any guild_roles entry
+      // (e.g., role was renamed after this member joined), use the
+      // lowest-position role's permissions as a fallback
+      if (!rolePerms && guildPerms && guildPerms.size > 0) {
+        const guildPositions = rolePositionCache.get(activeGuild.id)
+        if (guildPositions) {
+          let lowestRole: string | null = null
+          let lowestPos = Infinity
+          for (const [name, pos] of guildPositions) {
+            if (pos < lowestPos) { lowestPos = pos; lowestRole = name }
+          }
+          if (lowestRole) rolePerms = guildPerms.get(lowestRole)
+        }
+      }
+
+      return (rolePerms || []).includes(permission)
     }
   }, [isOfficer, activeGuild, activeMember, activeCharacter, characterMemberships, rolePermissionsCache])
 

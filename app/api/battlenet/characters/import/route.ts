@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
+import { getDefaultRoleName } from '@/domain/guild/default-role'
 import {
   getBattlenetAccount,
   battlenetFetch,
@@ -314,13 +315,14 @@ export async function POST(request: NextRequest) {
 
     // Add to guild if provided
     if (guildId) {
+      const defaultRole = await getDefaultRoleName(guildId)
       const { error: guildError } = await supabase
         .from('character_guild_memberships')
         .upsert(
           {
             character_id: character.id,
             guild_id: guildId,
-            role: 'Member',
+            role: defaultRole,
             is_active: true,
             joined_via: 'battlenet_import',
           },

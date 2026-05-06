@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient, getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { setUserMilestone } from '@/utils/analytics/server'
+import { getDefaultRoleName } from '@/domain/guild/default-role'
 
 // GET - Validate invite code and get guild info (works without auth for invite preview)
 export async function GET(
@@ -154,6 +155,9 @@ export async function POST(
     // Use service role client to bypass RLS for character operations
     const serviceSupabase = createServiceRoleClient()
 
+    // Resolve the guild's default role name (lowest-position role)
+    const defaultRole = await getDefaultRoleName(guildId)
+
     // Get the guild details for realm
     const { data: guildData } = await supabase
       .from('guilds')
@@ -212,7 +216,7 @@ export async function POST(
         .from('character_guild_memberships')
         .update({
           is_active: true,
-          role: 'Member',
+          role: defaultRole,
           joined_at: new Date().toISOString(),
           joined_via: 'invite_code'
         })
@@ -249,7 +253,7 @@ export async function POST(
       .insert({
         character_id: characterId,
         guild_id: guildId,
-        role: 'Member',
+        role: defaultRole,
         is_active: true,
         joined_at: new Date().toISOString(),
         joined_via: 'invite_code'

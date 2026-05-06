@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient, getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
+import { getDefaultRoleName } from '@/domain/guild/default-role'
 
 /** Partial shape of a guild object from the Discord API (GET /users/@me/guilds) */
 interface DiscordGuild {
@@ -32,6 +33,9 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       )
     }
+
+    // Resolve the guild's default role name for new members
+    const defaultRole = await getDefaultRoleName(guild_id)
 
     // Check if user has Discord verification
     const { data: preferences } = await supabase
@@ -199,7 +203,7 @@ export async function POST(request: NextRequest) {
         .from('character_guild_memberships')
         .update({
           is_active: true,
-          role: 'Member',
+          role: defaultRole,
           joined_at: new Date().toISOString(),
           joined_via: 'discord_verify'
         })
@@ -236,7 +240,7 @@ export async function POST(request: NextRequest) {
       .insert({
         character_id: characterId,
         guild_id: guild_id,
-        role: 'Member',
+        role: defaultRole,
         is_active: true,
         joined_at: new Date().toISOString(),
         joined_via: 'discord_verify'

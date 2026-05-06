@@ -132,16 +132,24 @@ export default function RoleManager({ onRolesChanged }: RoleManagerProps) {
       return
     }
 
+    const oldRole = roles.find(r => r.id === roleId)
     try {
-      const { error } = await supabase
-        .from('guild_roles')
-        .update({
+      const res = await fetch('/api/guild-roles', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          role_id: roleId,
+          guild_id: activeGuild!.id,
           name: editingRoleName.trim(),
           permissions: editingPermissions,
-        })
-        .eq('id', roleId)
+          old_name: oldRole?.name,
+        }),
+      })
 
-      if (error) throw error
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data.error || 'Couldn\'t save role')
+      }
 
       showNotification('success', 'Role saved')
       setEditingRoleId(null)
