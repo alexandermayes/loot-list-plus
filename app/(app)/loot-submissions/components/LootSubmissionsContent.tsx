@@ -297,6 +297,7 @@ export default function LootSubmissionsContent() {
                   .select('submission_id')
                   .in('submission_id', submissionIds)
                   .is('removed_at', null)
+                  .limit(5000)
                 itemCounts?.forEach((item: { submission_id: string }) => {
                   countMap[item.submission_id] = (countMap[item.submission_id] || 0) + 1
                 })
@@ -412,6 +413,7 @@ export default function LootSubmissionsContent() {
       .select('submission_id')
       .in('submission_id', submissionIds)
       .is('removed_at', null)
+      .limit(5000)
 
     const countMap: Record<string, number> = {}
     itemCounts?.forEach((item: { submission_id: string }) => {
@@ -1265,7 +1267,7 @@ export default function LootSubmissionsContent() {
             ) : (
               <>
                 {/* Desktop table */}
-                <div className="hidden sm:block">
+                <div className="hidden sm:block overflow-y-auto max-h-[60vh]">
                   <table className="w-full">
                     <thead className="sticky top-0 z-10">
                       <tr className="bg-background-subtle border-b border-border">
@@ -1460,7 +1462,7 @@ export default function LootSubmissionsContent() {
           document.body
         ) : (
           /* Desktop: Modal */
-          <Modal open={true} onClose={closeSubmission} size="xl">
+          <Modal open={true} onClose={closeSubmission} size="xl" zIndex={60}>
             <ModalHeader onClose={closeSubmission}>
               {headerContent}
             </ModalHeader>
