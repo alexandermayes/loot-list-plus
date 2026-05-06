@@ -47,7 +47,7 @@ ModalBackdrop.displayName = "ModalBackdrop"
 
 // Modal Container variants
 const modalContainerVariants = cva(
-  "bg-background-subtle border border-border-strong rounded-xl w-full overflow-hidden flex flex-col",
+  "bg-background-subtle border border-border-strong rounded-xl w-full overflow-clip flex flex-col",
   {
     variants: {
       size: {
