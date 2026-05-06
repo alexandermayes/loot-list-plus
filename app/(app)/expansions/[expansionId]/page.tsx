@@ -102,7 +102,7 @@ interface PhaseCardProps {
   isUnlocked: boolean
   updating: string | null
   onDeadlineInputChange: (value: string) => void
-  onUpdateDeadline: () => void
+  onUpdateDeadline: (value: string) => void
   onToggleRaidActive: (tierId: string, currentValue: boolean) => void
   onToggleRaidRankings: (tierId: string, currentValue: boolean) => void
 }
@@ -156,24 +156,16 @@ function PhaseCard({
             <label className="block text-[11px] font-medium text-muted-foreground mb-1.5">
               Submission deadline
             </label>
-            <div className="flex items-center gap-2">
-              <DateTimePicker
-                value={deadlineInput}
-                onChange={(e) => onDeadlineInputChange(e.target.value)}
-                variant="rounded"
-                size="sm"
-                className="flex-1"
-              />
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={onUpdateDeadline}
-                disabled={isUpdatingDeadline}
-                loading={isUpdatingDeadline}
-              >
-                Save
-              </Button>
-            </div>
+            <DateTimePicker
+              value={deadlineInput}
+              onChange={(e) => {
+                onDeadlineInputChange(e.target.value)
+                onUpdateDeadline(e.target.value)
+              }}
+              variant="rounded"
+              size="sm"
+              className="w-full"
+            />
           </div>
 
           {/* Raids */}
@@ -337,7 +329,14 @@ export default function ExpansionDetailPage({ params }: { params: Promise<{ expa
             const phaseNum = parseInt(phase)
             phaseDeadlinesMap[phaseNum] = deadline
             if (deadline) {
-              phaseDlInputs[phaseNum] = new Date(deadline).toISOString().slice(0, 16)
+              // Format as local datetime for the input (avoid toISOString which converts to UTC)
+              const d = new Date(deadline)
+              const yyyy = d.getFullYear()
+              const mm = String(d.getMonth() + 1).padStart(2, '0')
+              const dd = String(d.getDate()).padStart(2, '0')
+              const hh = String(d.getHours()).padStart(2, '0')
+              const min = String(d.getMinutes()).padStart(2, '0')
+              phaseDlInputs[phaseNum] = `${yyyy}-${mm}-${dd}T${hh}:${min}`
             } else {
               phaseDlInputs[phaseNum] = ''
             }
@@ -410,7 +409,7 @@ export default function ExpansionDetailPage({ params }: { params: Promise<{ expa
     }
   }
 
-  const handleUpdatePhaseDeadline = async (phase: number) => {
+  const handleUpdatePhaseDeadline = async (phase: number, value?: string) => {
     if (!activeGuild) return
     setUpdating(`phase-${phase}`)
 
@@ -423,7 +422,7 @@ export default function ExpansionDetailPage({ params }: { params: Promise<{ expa
         .single()
 
       const currentDeadlines = (currentData?.phase_deadlines || {}) as Record<string, string | null>
-      const deadlineValue = phaseDeadlineInputs[phase] || null
+      const deadlineValue = value !== undefined ? (value || null) : (phaseDeadlineInputs[phase] || null)
 
       const updatedDeadlines = {
         ...currentDeadlines,
@@ -936,7 +935,7 @@ export default function ExpansionDetailPage({ params }: { params: Promise<{ expa
                   ...phaseDeadlineInputs,
                   [phase]: value
                 })}
-                onUpdateDeadline={() => handleUpdatePhaseDeadline(phase)}
+                onUpdateDeadline={(value) => handleUpdatePhaseDeadline(phase, value)}
                 onToggleRaidActive={handleToggleGuildActive}
                 onToggleRaidRankings={handleToggleMasterSheetVisibility}
               />
