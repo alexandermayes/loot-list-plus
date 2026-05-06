@@ -857,6 +857,7 @@ export default function LootSubmissionsContent() {
             teams={teams}
             activeTeamId={activeTeamId}
             onTeamChange={setTeam}
+            className="w-44 shrink-0"
           />
         )}
       </div>
