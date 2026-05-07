@@ -70,17 +70,30 @@ export default function LandingFooter() {
           </div>
 
           {/* Tagline */}
-          <p className="text-xs text-[#bababa]/50 text-center md:text-right">
-            Made with ❤️ by{' '}
-            <a
-              href="https://discord.gg/JNJewThYAB"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-[#bababa] hover:text-white transition-colors"
-            >
-              Big Yikes
-            </a>
-          </p>
+          <div className="text-xs text-[#bababa]/50 text-center md:text-right space-y-1">
+            <p>
+              Made with ❤️ by{' '}
+              <a
+                href="https://discord.gg/JNJewThYAB"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[#bababa] hover:text-white transition-colors"
+              >
+                Big Yikes
+              </a>
+            </p>
+            <p>
+              Parses by{' '}
+              <a
+                href="https://parseforge.gg"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[#bababa] hover:text-white transition-colors"
+              >
+                parseforge.gg
+              </a>
+            </p>
+          </div>
         </div>
       </div>
     </motion.footer>

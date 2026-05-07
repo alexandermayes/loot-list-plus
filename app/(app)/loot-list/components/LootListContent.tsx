@@ -1650,14 +1650,6 @@ export default function LootListContent() {
           />
         ))}
 
-        {/* Footer */}
-        <div className="pt-4 pb-2 text-center">
-          <Text size="xs" color="muted">
-            Need help finding your BIS? Check out{' '}
-            <a href="https://parseforge.gg" target="_blank" rel="noopener noreferrer" className="text-accent hover:underline">parseforge.gg</a>
-          </Text>
-        </div>
-
         {/* How to Rank Modal */}
         <Modal open={showInstructionsModal} onClose={() => setShowInstructionsModal(false)} size="lg">
           <ModalHeader onClose={() => setShowInstructionsModal(false)}>
