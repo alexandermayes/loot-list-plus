@@ -45,7 +45,8 @@ export default function LootHistoryTab() {
   const [newEntryIds, setNewEntryIds] = useState<Set<string>>(new Set())
 
   const supabase = createClient()
-  const { activeGuild, isOfficer } = useGuildContext()
+  const { activeGuild, hasPermission } = useGuildContext()
+  const canManageLoot = hasPermission('manage_loot')
   const { showNotification } = useNotification()
   const { activeTeamId } = useRaidTeam()
 
@@ -154,15 +155,15 @@ export default function LootHistoryTab() {
 
   // Fetch history when filters change
   useEffect(() => {
-    if (activeGuild && isOfficer) {
+    if (activeGuild && canManageLoot) {
       fetchHistory(0, false)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeGuild, isOfficer, filterTier, fromDate, toDate, activeTeamId])
+  }, [activeGuild, canManageLoot, filterTier, fromDate, toDate, activeTeamId])
 
   // Debounce search filters
   useEffect(() => {
-    if (!activeGuild || !isOfficer) return
+    if (!activeGuild || !canManageLoot) return
 
     const timer = setTimeout(() => {
       fetchHistory(0, false)
@@ -170,7 +171,7 @@ export default function LootHistoryTab() {
 
     return () => clearTimeout(timer)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [characterSearch, itemSearch, activeGuild, isOfficer])
+  }, [characterSearch, itemSearch, activeGuild, canManageLoot])
 
   // Refresh Wowhead tooltips after entries load
   useEffect(() => {

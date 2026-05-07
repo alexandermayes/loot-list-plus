@@ -339,9 +339,9 @@ export default function GuildSettingsContent() {
   // Load Discord channels when guild has a Discord server
   useEffect(() => {
     if (!activeGuild?.discord_server_id || guildLoading || loading) return
-    if (!isOfficer) return
+    if (!hasPermission('manage_settings')) return
     loadDiscordChannels()
-  }, [activeGuild?.discord_server_id, guildLoading, loading, isOfficer])
+  }, [activeGuild?.discord_server_id, guildLoading, loading, hasPermission])
 
   const handleSaveRaidSummaryChannel = async (channelId: string | null) => {
     if (!activeGuild) return

@@ -346,7 +346,7 @@ interface ReceivedItem {
 }
 
 export default function DashboardContent() {
-  const { activeGuild, activeMember, activeCharacter, userGuilds, loading: guildLoading, isOfficer, currentExpansion, characterMemberships, user, refreshCharacters } = useGuildContext()
+  const { activeGuild, activeMember, activeCharacter, userGuilds, loading: guildLoading, isOfficer, hasPermission, currentExpansion, characterMemberships, user, refreshCharacters } = useGuildContext()
   const { showNotification } = useNotification()
   const [raidTiers, setRaidTiers] = useState<RaidTier[]>([])
   const [loading, setLoading] = useState(true)
@@ -1695,7 +1695,7 @@ export default function DashboardContent() {
     }
 
     // Priority 3: Officer actions waiting
-    if (isOfficer && actionsNeeded.length > 0) {
+    if (hasPermission('manage_loot') && actionsNeeded.length > 0) {
       return `${actionsNeeded.length} submission${actionsNeeded.length === 1 ? '' : 's'} waiting for review.`
     }
 
@@ -1710,7 +1710,7 @@ export default function DashboardContent() {
     }
 
     return `Viewing loot for ${charName}`
-  }, [activeCharacter?.name, nextRaidDates, lootListDeadline, isOfficer, actionsNeeded.length, lootPriority, receivedItems.length])
+  }, [activeCharacter?.name, nextRaidDates, lootListDeadline, hasPermission, actionsNeeded.length, lootPriority, receivedItems.length])
 
   // Hero section (greeting + character card) can render as soon as guild context is ready.
   // Dashboard data sections below the hero wait for the full data load.
@@ -1855,12 +1855,12 @@ export default function DashboardContent() {
       </div>
 
       {/* Officer banner: unconverted Feral Druids in guild */}
-      {heroReady && isOfficer && activeGuild && (
+      {heroReady && hasPermission('manage_loot') && activeGuild && (
         <GuardianConversionBanner guildId={activeGuild.id} />
       )}
 
       {/* Setup guide for new guild admins */}
-      {heroReady && isOfficer && activeGuild && (
+      {heroReady && hasPermission('manage_settings') && activeGuild && (
         <SetupGuide
           guildId={activeGuild.id}
           guildName={activeGuild.name}
@@ -1881,7 +1881,7 @@ export default function DashboardContent() {
                 <div className="flex-1">
                   <p className="text-foreground font-semibold text-base">Action required</p>
                   <p className="text-muted-foreground text-sm mt-1">{error}</p>
-                  {isOfficer && (
+                  {hasPermission('manage_settings') && (
                     <Button className="mt-3" onClick={() => router.push('/expansions')}>
                       Manage expansions
                     </Button>
@@ -2370,7 +2370,7 @@ export default function DashboardContent() {
       <OnboardingModal
         open={showOnboarding}
         onClose={handleCloseOnboarding}
-        isOfficer={isOfficer}
+        isOfficer={hasPermission('manage_loot')}
         guildName={activeGuild?.name}
       />
 

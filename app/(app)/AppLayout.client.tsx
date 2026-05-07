@@ -1,7 +1,7 @@
 'use client'
 
 import { usePathname } from 'next/navigation'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import dynamic from 'next/dynamic'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -30,6 +30,18 @@ function AppLayoutContent({
   const { user, loading, activeGuild, activeCharacter } = useGuildContext()
   const [showFeedbackModal, setShowFeedbackModal] = useState(false)
   const { sidebarWidth, isResizing, isMobile, isMobileMenuOpen, closeMobileMenu } = useSidebar()
+
+  // Lock body scroll when mobile menu is open
+  useEffect(() => {
+    if (isMobile && isMobileMenuOpen) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = ''
+    }
+    return () => {
+      document.body.style.overflow = ''
+    }
+  }, [isMobile, isMobileMenuOpen])
 
   // Map pathname to currentView for sidebar highlighting
   const getCurrentView = () => {

@@ -131,7 +131,7 @@ export default function PriorityListTab() {
   const [collapsedRaids, setCollapsedRaids] = useState<Set<string>>(new Set())
 
   const supabase = createClient()
-  const { activeGuild, loading: guildLoading, isOfficer } = useGuildContext()
+  const { activeGuild, loading: guildLoading } = useGuildContext()
   const { showNotification } = useNotification()
 
   // Get unique phases from raid tiers

@@ -101,7 +101,7 @@ export default function MasterLootPage() {
 
   const supabase = createClient()
   const router = useRouter()
-  const { activeGuild, loading: guildLoading, isOfficer } = useGuildContext()
+  const { activeGuild, loading: guildLoading, hasPermission } = useGuildContext()
   const { showNotification } = useNotification()
 
   useEffect(() => {
@@ -115,7 +115,7 @@ export default function MasterLootPage() {
 
   useEffect(() => {
     const loadData = async () => {
-      if (!guildLoading && !isOfficer) {
+      if (!guildLoading && !hasPermission('manage_loot')) {
         router.push('/overview')
         return
       }

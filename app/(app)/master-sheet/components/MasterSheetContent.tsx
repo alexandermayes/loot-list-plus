@@ -154,7 +154,8 @@ interface AggregateCharacterRow {
 
 
 export default function MasterSheetContent() {
-  const { activeGuild, activeCharacter, loading: guildLoading, isOfficer } = useGuildContext()
+  const { activeGuild, activeCharacter, loading: guildLoading, hasPermission } = useGuildContext()
+  const canManageLoot = hasPermission('manage_loot')
   const { showNotification } = useNotification()
   const router = useRouter()
   const [allItemRankings, setAllItemRankings] = useState<ItemRankings[]>([])
@@ -461,7 +462,7 @@ export default function MasterSheetContent() {
             : Promise.resolve({ data: null as null | { current_phase: number | null; phase_groups: unknown } }),
           // Pre-fetch the "has approved submission" check so it doesn't
           // block initial render. Officers bypass this entirely.
-          !isOfficer && activeCharacter?.id && expansionId
+          !canManageLoot && activeCharacter?.id && expansionId
             ? supabase
                 .from('loot_submissions')
                 .select('id')
@@ -551,7 +552,7 @@ export default function MasterSheetContent() {
 
         // Wire up the has-approved-submission check from the parallel batch.
         // Officers bypass this.
-        if (isOfficer) {
+        if (canManageLoot) {
           setHasApprovedSubmission(true)
         } else {
           const approvedSubs = (approvedSubsResult as { data: { id: string }[] | null }).data
@@ -565,7 +566,7 @@ export default function MasterSheetContent() {
     }
 
     loadData().catch(console.error)
-  }, [guildLoading, activeGuild, activeCharacter, isOfficer])
+  }, [guildLoading, activeGuild, activeCharacter, canManageLoot])
 
   // Get tiers for the currently selected phase group (memoized to prevent infinite loops)
   const phaseTiers = useMemo(() => {
@@ -603,7 +604,7 @@ export default function MasterSheetContent() {
 
       // Only load rankings if master sheet is visible OR user is an officer
       // Also require an approved submission for non-officers (prevents gaming)
-      if ((!masterSheetVisible || !hasApprovedSubmission) && !isOfficer) {
+      if ((!masterSheetVisible || !hasApprovedSubmission) && !canManageLoot) {
         setAllItemRankings([])
         setContentLoading(false)
         return
@@ -884,7 +885,7 @@ export default function MasterSheetContent() {
     }
 
     loadAllRankings()
-  }, [selectedPhase, phaseTiers, guildId, guildSettings, masterSheetVisible, hasApprovedSubmission, isOfficer, activeTeamId])
+  }, [selectedPhase, phaseTiers, guildId, guildSettings, masterSheetVisible, hasApprovedSubmission, canManageLoot, activeTeamId])
 
   // Refresh Wowhead tooltips after items are loaded
   // Uses centralized debounced refresh to prevent excessive API calls
@@ -902,7 +903,7 @@ export default function MasterSheetContent() {
         .filter(t => t.is_guild_active !== false)
         .map(t => t.id)
 
-      if (viewMode !== 'aggregate' || selectedPhase === null || !guildId || !isOfficer || activeTierIds.length === 0) {
+      if (viewMode !== 'aggregate' || selectedPhase === null || !guildId || !canManageLoot || activeTierIds.length === 0) {
         return
       }
 
@@ -1052,7 +1053,7 @@ export default function MasterSheetContent() {
     }
 
     loadAggregateData()
-  }, [viewMode, selectedPhase, phaseTiers, guildId, isOfficer])
+  }, [viewMode, selectedPhase, phaseTiers, guildId, canManageLoot])
 
   // Handle phase switching from query params
   useEffect(() => {
@@ -1566,7 +1567,7 @@ export default function MasterSheetContent() {
                 Loot Rankings{!initialLoading && selectedPhase !== null && <span className="text-muted-foreground"> · P{selectedPhase}{activePhaseTiers.length > 0 ? ` ${activePhaseTiers.map(t => getRaidShorthand(t.name)).join(', ')}` : ''}</span>}
               </Heading>
               <p className="text-muted-foreground mt-1 text-base">
-                {viewMode === 'aggregate' && isOfficer
+                {viewMode === 'aggregate' && canManageLoot
                   ? 'Most wanted items across the guild'
                   : 'All ranked players for each item'}
               </p>
@@ -1588,7 +1589,7 @@ export default function MasterSheetContent() {
                 <span className="hidden sm:inline">How scores work</span>
                 <span className="sm:hidden">Scores</span>
               </Button>
-              {isOfficer && (
+              {canManageLoot && (
                 <Button
                   onClick={handleExportToGargul}
                   disabled={contentLoading || raidTiers.length === 0 || isExporting}
@@ -1692,7 +1693,7 @@ export default function MasterSheetContent() {
                 </div>
               </HorizontalScroll>
               {/* Officer View Toggle */}
-              {isOfficer && (
+              {canManageLoot && (
                 <>
                   {/* Mobile: Dropdown */}
                   <div className="sm:hidden">
@@ -1831,7 +1832,7 @@ export default function MasterSheetContent() {
         ) : (
         <div className="animate-fade-in">
         {/* Master Sheet Access Gates */}
-        {!isOfficer && !hasApprovedSubmission ? (
+        {!canManageLoot && !hasApprovedSubmission ? (
           <div className="bg-background-elevated border border-border rounded-xl p-12 text-center">
             <div className="max-w-md mx-auto">
               <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
@@ -1843,7 +1844,7 @@ export default function MasterSheetContent() {
               </p>
             </div>
           </div>
-        ) : !masterSheetVisible && !isOfficer ? (
+        ) : !masterSheetVisible && !canManageLoot ? (
           <div className="bg-background-elevated border border-border rounded-xl p-12 text-center">
             <div className="max-w-md mx-auto">
               <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
@@ -1858,7 +1859,7 @@ export default function MasterSheetContent() {
         ) : (
           <>
             {/* Officer Viewing Hidden Sheet Badge */}
-            {!masterSheetVisible && isOfficer && (
+            {!masterSheetVisible && canManageLoot && (
               <div className="bg-blue-950/50 border border-blue-600/50 rounded-xl p-4">
                 <div className="flex items-center gap-3">
                   <span className="text-xl">👁️</span>
@@ -1873,7 +1874,7 @@ export default function MasterSheetContent() {
             )}
 
             {/* Officer Viewing Disabled Tiers Badge */}
-            {hasDisabledTiers && isOfficer && (
+            {hasDisabledTiers && canManageLoot && (
               <div className="bg-amber-950/50 border border-amber-600/50 rounded-xl p-4">
                 <div className="flex items-center gap-3">
                   <span className="text-xl">⚠️</span>
@@ -1888,7 +1889,7 @@ export default function MasterSheetContent() {
             )}
 
             {/* Aggregate View (Officer Only) */}
-            {viewMode === 'aggregate' && isOfficer ? (
+            {viewMode === 'aggregate' && canManageLoot ? (
               <LootListSummaryView
                 items={aggregateItems}
                 loading={aggregateLoading}
@@ -1896,7 +1897,7 @@ export default function MasterSheetContent() {
                 selectedBoss={aggregateBossFilter}
                 onBossFilter={setAggregateBossFilter}
               />
-            ) : viewMode === 'raid' && isOfficer ? (
+            ) : viewMode === 'raid' && canManageLoot ? (
               <RaidModeView
                 sortedRaidTiers={sortedRaidTiers}
                 onItemClick={handleItemClick}
@@ -1909,12 +1910,12 @@ export default function MasterSheetContent() {
               <EmptyState
                 icon={ScrollIcon}
                 title="No rankings yet"
-                description={isOfficer
+                description={canManageLoot
                   ? "Rankings show up once raiders submit their Loot Lists and you approve them."
                   : "Rankings show up after you submit your Loot List and an Officer approves it."
                 }
                 variant="card"
-                action={isOfficer
+                action={canManageLoot
                   ? { label: 'View submissions', onClick: () => router.push('/master-loot'), variant: 'primary' as const }
                   : hasApprovedSubmission ? undefined : { label: 'Create my loot list', onClick: () => router.push('/loot-list'), variant: 'primary' as const }
                 }
@@ -1927,10 +1928,10 @@ export default function MasterSheetContent() {
                 onToggleRaidTierCollapse={toggleRaidTierCollapse}
                 onToggleBossCollapse={toggleBossCollapse}
                 activeCharacterId={activeCharacter?.id}
-                isOfficer={isOfficer}
+                isOfficer={canManageLoot}
                 guildSettings={guildSettings ?? undefined}
                 onCompare={handleCompare}
-                onItemClick={isOfficer ? handleItemClick : undefined}
+                onItemClick={canManageLoot ? handleItemClick : undefined}
                 maxRankingsCount={maxRankingsCount}
               />
             )}
@@ -1974,7 +1975,7 @@ export default function MasterSheetContent() {
         />
 
         {/* Item Candidate Modal (officer-only) */}
-        {isOfficer && (
+        {canManageLoot && (
           <ItemCandidateModal
             open={!!candidateModalData}
             onClose={() => setCandidateModalData(null)}
@@ -1984,7 +1985,7 @@ export default function MasterSheetContent() {
             receivedCharacterIds={candidateReceivedIds}
             guildSettings={guildSettings ?? {}}
             guildId={guildId}
-            isOfficer={isOfficer}
+            isOfficer={canManageLoot}
             raidTierId={candidateModalData?.item?.raid_tier_id}
             mostRecentRaidEventId={mostRecentRaidEventId}
           />

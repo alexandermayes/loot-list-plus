@@ -14,12 +14,12 @@ export function notifySubmissionChanged() {
   window.dispatchEvent(new Event(SUBMISSION_CHANGED_EVENT))
 }
 
-export function usePendingSubmissionCount(guildId: string | null, isOfficer: boolean) {
+export function usePendingSubmissionCount(guildId: string | null, canManageLoot: boolean) {
   const [count, setCount] = useState(0)
   const supabase = createClient()
 
   const fetchCount = useCallback(async () => {
-    if (!guildId || !isOfficer) {
+    if (!guildId || !canManageLoot) {
       setCount(0)
       return
     }
@@ -33,7 +33,7 @@ export function usePendingSubmissionCount(guildId: string | null, isOfficer: boo
     if (!error && pendingCount !== null) {
       setCount(pendingCount)
     }
-  }, [guildId, isOfficer])
+  }, [guildId, canManageLoot])
 
   useEffect(() => {
     fetchCount()
