@@ -1796,7 +1796,12 @@ export default function LootSettingsContent() {
       {/* Loot System Settings Modal */}
       <Modal open={showSettingsModal} onClose={() => setShowSettingsModal(false)} size="xl">
         <ModalHeader onClose={() => setShowSettingsModal(false)}>
-          <ModalTitle>Loot system settings</ModalTitle>
+          <div className="flex items-center gap-3">
+            <ModalTitle>Loot system settings</ModalTitle>
+            {settingsSaveStatus === 'saving' && <span className="text-[12px] text-muted-foreground">Saving...</span>}
+            {settingsSaveStatus === 'saved' && <span className="text-[12px] text-success">Saved</span>}
+            {settingsSaveStatus === 'error' && <span className="text-[12px] text-destructive">Save failed</span>}
+          </div>
         </ModalHeader>
         <ModalBody className="space-y-6">
               {/* General Settings */}
@@ -2643,16 +2648,6 @@ export default function LootSettingsContent() {
                 )}
               </div>
         </ModalBody>
-        <ModalFooter>
-          <div className="flex items-center gap-2 mr-auto text-[12px]">
-            {settingsSaveStatus === 'saving' && <span className="text-muted-foreground">Saving...</span>}
-            {settingsSaveStatus === 'saved' && <span className="text-success">Settings saved</span>}
-            {settingsSaveStatus === 'error' && <span className="text-destructive">Save failed. Try again.</span>}
-          </div>
-          <Button variant="outline" onClick={() => setShowSettingsModal(false)} disabled={settingsSaveStatus === 'saving'}>
-            Close
-          </Button>
-        </ModalFooter>
       </Modal>
 
       {/* Notes Modal */}
