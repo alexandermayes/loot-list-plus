@@ -151,10 +151,11 @@ export default function LootSettingsContent() {
   const [notesModalValue, setNotesModalValue] = useState('')
   const [savingNotes, setSavingNotes] = useState(false)
   const [showSettingsModal, setShowSettingsModal] = useState(false)
-  const [savingSettings, setSavingSettings] = useState(false)
+  const [settingsSaveStatus, setSettingsSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
   const [advancedExpanded, setAdvancedExpanded] = useState(false)
   const [initialSettings, setInitialSettings] = useState<typeof settings | null>(null)
   const [initialGuildRoles, setInitialGuildRoles] = useState<typeof guildRoles | null>(null)
+  const settingsLoadedRef = useRef(false)
   const [viewMode, setViewMode] = useState<'items' | 'priorities'>('items')
 
   // Guild Settings State
@@ -251,6 +252,82 @@ export default function LootSettingsContent() {
     JSON.stringify(settings) !== JSON.stringify(initialSettings) ||
     JSON.stringify(guildRoles) !== JSON.stringify(initialGuildRoles)
   )
+
+  // Auto-save settings after any change (debounced)
+  useEffect(() => {
+    if (!settingsLoadedRef.current || !activeGuild) return
+
+    const timer = setTimeout(async () => {
+      setSettingsSaveStatus('saving')
+      try {
+        const safeSettings = {
+          raid_days_per_week: settings.raid_days_per_week,
+          first_raid_day: settings.first_raid_day,
+          second_raid_day: settings.second_raid_day,
+          third_raid_day: settings.third_raid_day,
+          fourth_raid_day: settings.fourth_raid_day,
+          fifth_raid_day: settings.fifth_raid_day,
+          reset_date: settings.reset_date,
+          decimal_places: settings.decimal_places,
+          attendance_type: settings.attendance_type,
+          rolling_attendance_weeks: settings.rolling_attendance_weeks,
+          use_signups: settings.use_signups,
+          signup_weight: settings.signup_weight,
+          max_attendance_bonus: settings.max_attendance_bonus,
+          max_attendance_threshold: settings.max_attendance_threshold,
+          middle_attendance_bonus: settings.middle_attendance_bonus,
+          middle_attendance_threshold: settings.middle_attendance_threshold,
+          bottom_attendance_bonus: settings.bottom_attendance_bonus,
+          bottom_attendance_threshold: settings.bottom_attendance_threshold,
+          minimum_raid_days_enabled: settings.minimum_raid_days_enabled,
+          minimum_raid_days: settings.minimum_raid_days,
+          new_member_mode: settings.new_member_mode || 'raw',
+          late_early_penalty_enabled: settings.late_early_penalty_enabled,
+          late_early_penalty_value: settings.late_early_penalty_value,
+          guild_rank_bonuses_enabled: settings.guild_rank_bonuses_enabled,
+          rank_modifiers: settings.rank_modifiers,
+          role_bonus_priority_single_item: settings.role_bonus_priority_single_item,
+          class_bonus_priority_single_item: settings.class_bonus_priority_single_item,
+          raid_roles_overall_bonus_priority: settings.raid_roles_overall_bonus_priority,
+          role_modifiers: settings.role_modifiers,
+          single_raider_overall_bonus: settings.single_raider_overall_bonus,
+          single_raider_bonus_single_item: settings.single_raider_bonus_single_item,
+          donation_bonuses_enabled: settings.donation_bonuses_enabled,
+          donation_cap_enabled: settings.donation_cap_enabled,
+          donation_bonus_type: settings.donation_bonus_type,
+          number_of_ranks: settings.number_of_ranks,
+          trial_penalty_enabled: settings.trial_penalty_enabled,
+          trial_penalty_value: settings.trial_penalty_value,
+          trial_auto_promote_enabled: settings.trial_auto_promote_enabled,
+          trial_auto_promote_weeks: settings.trial_auto_promote_weeks,
+          new_members_start_as_trial: settings.new_members_start_as_trial,
+          blp_enabled: settings.blp_enabled,
+          blp_increment: settings.blp_increment,
+          blp_maximum: settings.blp_maximum,
+          enforce_slot_restrictions: settings.enforce_slot_restrictions,
+          max_allocation_points_per_bracket: settings.max_allocation_points_per_bracket,
+          max_tokens_per_bracket: settings.max_tokens_per_bracket,
+          max_category_per_bracket: settings.max_category_per_bracket,
+        }
+
+        const response = await fetch('/api/guild-settings', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ guild_id: activeGuild.id, settings: safeSettings }),
+        })
+
+        if (!response.ok) throw new Error('Save failed')
+        setSettingsSaveStatus('saved')
+        setTimeout(() => setSettingsSaveStatus('idle'), 2000)
+      } catch {
+        setSettingsSaveStatus('error')
+        setTimeout(() => setSettingsSaveStatus('idle'), 3000)
+      }
+    }, 800)
+
+    return () => clearTimeout(timer)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [settings])
 
   // Set page title
   useEffect(() => {
@@ -376,6 +453,10 @@ export default function LootSettingsContent() {
               return { ...prev, rank_modifiers: newModifiers }
             })
           }
+
+          // Mark settings as loaded after all state updates flush,
+          // so auto-save doesn't fire during initial hydration
+          setTimeout(() => { settingsLoadedRef.current = true }, 100)
         }
       } else {
         console.error('Failed to load settings:', response.status, response.statusText)
@@ -383,113 +464,6 @@ export default function LootSettingsContent() {
     } catch (error) {
       console.error('Error loading guild settings:', error)
       showNotification('error', 'Couldn\'t load loot settings. Check your connection and try again.')
-    }
-  }
-
-  const saveSettings = async () => {
-    if (!activeGuild) return
-
-    setSavingSettings(true)
-    try {
-      // Filter out any fields that the schema cache doesn't recognize yet
-      // Only save the core fields that we know exist
-      const safeSettings = {
-        // General Settings
-        raid_days_per_week: settings.raid_days_per_week,
-        first_raid_day: settings.first_raid_day,
-        second_raid_day: settings.second_raid_day,
-        third_raid_day: settings.third_raid_day,
-        fourth_raid_day: settings.fourth_raid_day,
-        fifth_raid_day: settings.fifth_raid_day,
-        reset_date: settings.reset_date,
-        decimal_places: settings.decimal_places,
-
-        // Attendance Settings
-        attendance_type: settings.attendance_type,
-        rolling_attendance_weeks: settings.rolling_attendance_weeks,
-        use_signups: settings.use_signups,
-        signup_weight: settings.signup_weight,
-
-        // Attendance Bonus Tiers
-        max_attendance_bonus: settings.max_attendance_bonus,
-        max_attendance_threshold: settings.max_attendance_threshold,
-        middle_attendance_bonus: settings.middle_attendance_bonus,
-        middle_attendance_threshold: settings.middle_attendance_threshold,
-        bottom_attendance_bonus: settings.bottom_attendance_bonus,
-        bottom_attendance_threshold: settings.bottom_attendance_threshold,
-
-        // Minimum Raids
-        minimum_raid_days_enabled: settings.minimum_raid_days_enabled,
-        minimum_raid_days: settings.minimum_raid_days,
-
-        // New Member Policy
-        new_member_mode: settings.new_member_mode || 'raw',
-
-        // Late/Early Penalty
-        late_early_penalty_enabled: settings.late_early_penalty_enabled,
-        late_early_penalty_value: settings.late_early_penalty_value,
-
-        // Rank Bonuses
-        guild_rank_bonuses_enabled: settings.guild_rank_bonuses_enabled,
-        rank_modifiers: settings.rank_modifiers,
-
-        // Role/Class Bonuses
-        role_bonus_priority_single_item: settings.role_bonus_priority_single_item,
-        class_bonus_priority_single_item: settings.class_bonus_priority_single_item,
-        raid_roles_overall_bonus_priority: settings.raid_roles_overall_bonus_priority,
-        role_modifiers: settings.role_modifiers,
-        single_raider_overall_bonus: settings.single_raider_overall_bonus,
-        single_raider_bonus_single_item: settings.single_raider_bonus_single_item,
-
-        // Donation Settings
-        donation_bonuses_enabled: settings.donation_bonuses_enabled,
-        donation_cap_enabled: settings.donation_cap_enabled,
-        donation_bonus_type: settings.donation_bonus_type,
-        number_of_ranks: settings.number_of_ranks,
-
-        // Trial System Settings
-        trial_penalty_enabled: settings.trial_penalty_enabled,
-        trial_penalty_value: settings.trial_penalty_value,
-        trial_auto_promote_enabled: settings.trial_auto_promote_enabled,
-        trial_auto_promote_weeks: settings.trial_auto_promote_weeks,
-        new_members_start_as_trial: settings.new_members_start_as_trial,
-
-        // BLP (Bad Luck Protection) Settings
-        blp_enabled: settings.blp_enabled,
-        blp_increment: settings.blp_increment,
-        blp_maximum: settings.blp_maximum,
-
-        // Loot List Rules
-        enforce_slot_restrictions: settings.enforce_slot_restrictions,
-        max_allocation_points_per_bracket: settings.max_allocation_points_per_bracket,
-        max_tokens_per_bracket: settings.max_tokens_per_bracket,
-        max_category_per_bracket: settings.max_category_per_bracket
-      }
-
-      const response = await fetch('/api/guild-settings', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          guild_id: activeGuild.id,
-          settings: safeSettings
-        })
-      })
-
-      if (!response.ok) {
-        const errorData = await response.json()
-        console.error('API Error:', errorData)
-        throw new Error(errorData.error || 'Couldn\'t save settings. Try again.')
-      }
-
-      setShowSettingsModal(false)
-      showNotification('success', 'Loot settings saved. Good to go.')
-    } catch (error: any) {
-      console.error('Error saving settings:', error)
-      showNotification('error', error.message || 'Couldn\'t save settings. Try again.')
-    } finally {
-      setSavingSettings(false)
     }
   }
 
@@ -2670,11 +2644,13 @@ export default function LootSettingsContent() {
               </div>
         </ModalBody>
         <ModalFooter>
-          <Button variant="outline" onClick={() => setShowSettingsModal(false)} disabled={savingSettings}>
-            Cancel
-          </Button>
-          <Button onClick={saveSettings} loading={savingSettings} disabled={!hasSettingsChanges}>
-            Save settings
+          <div className="flex items-center gap-2 mr-auto text-[12px]">
+            {settingsSaveStatus === 'saving' && <span className="text-muted-foreground">Saving...</span>}
+            {settingsSaveStatus === 'saved' && <span className="text-success">Settings saved</span>}
+            {settingsSaveStatus === 'error' && <span className="text-destructive">Save failed. Try again.</span>}
+          </div>
+          <Button variant="outline" onClick={() => setShowSettingsModal(false)} disabled={settingsSaveStatus === 'saving'}>
+            Close
           </Button>
         </ModalFooter>
       </Modal>
