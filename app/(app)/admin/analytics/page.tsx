@@ -360,18 +360,318 @@ function LoadingSkeleton() {
   )
 }
 
+type Tab = 'guilds' | 'blog' | 'funnel' | 'traffic' | 'revenue'
+
+// ─── PostHog-backed section components ──────────────────────
+
+function BlogSection() {
+  const [data, setData] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetch('/api/admin/analytics?section=blog')
+      .then(r => r.json()).then(setData)
+      .catch(() => {}).finally(() => setLoading(false))
+  }, [])
+
+  if (loading) return <div className="py-12 text-center"><Text color="muted">Loading blog data...</Text></div>
+  if (!data) return <div className="py-12 text-center"><Text color="muted">No blog data available</Text></div>
+
+  return (
+    <div className="space-y-6">
+      {/* Top posts */}
+      <Card>
+        <CardHeader><CardTitle>Top posts (30 days)</CardTitle></CardHeader>
+        <CardContent>
+          {data.top_posts.length === 0 ? (
+            <Text color="muted" size="sm">No blog views yet. Data will appear once the PostHog fix deploys.</Text>
+          ) : (
+            <div className="space-y-2">
+              {data.top_posts.map((p: any, i: number) => (
+                <div key={i} className="flex items-center justify-between py-1.5">
+                  <Text size="sm" className="truncate flex-1 mr-4">{p.path.replace('/blog/', '')}</Text>
+                  <div className="flex items-center gap-4 shrink-0">
+                    <Text size="sm" color="secondary" className="tabular-nums">{p.views} views</Text>
+                    <Text size="sm" color="muted" className="tabular-nums w-20 text-right">{p.uniques} uniq</Text>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Weekly trend */}
+      {data.weekly_trend.length > 0 && (
+        <Card>
+          <CardHeader><CardTitle>Weekly blog traffic</CardTitle></CardHeader>
+          <CardContent>
+            <div className="flex items-end gap-[3px] h-20">
+              {data.weekly_trend.map((w: any, i: number) => {
+                const max = Math.max(...data.weekly_trend.map((w: any) => w.views), 1)
+                const height = Math.max((w.views / max) * 100, w.views > 0 ? 6 : 0)
+                return (
+                  <div key={i} className="flex-1 h-full flex items-end group relative">
+                    <div className="w-full rounded-sm bg-accent/80" style={{ height: `${height}%`, minHeight: height > 0 ? '4px' : '0' }} />
+                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-1.5 py-0.5 bg-background-elevated border border-border rounded text-[10px] text-foreground opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-10">
+                      {w.views} views &middot; {w.week}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Referrers */}
+      {data.referrers.length > 0 && (
+        <Card>
+          <CardHeader><CardTitle>Referrer sources</CardTitle></CardHeader>
+          <CardContent>
+            <div className="space-y-1.5">
+              {data.referrers.map((r: any, i: number) => (
+                <div key={i} className="flex items-center justify-between py-1">
+                  <Text size="sm" className="truncate flex-1 mr-4">{r.referrer === '$direct' ? 'Direct / Bookmark' : r.referrer}</Text>
+                  <Text size="sm" color="secondary" className="tabular-nums shrink-0">{r.views}</Text>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Engagement */}
+      {data.engagement.length > 0 && (
+        <Card>
+          <CardHeader><CardTitle>Engagement (scroll + time)</CardTitle></CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {data.engagement.map((e: any, i: number) => (
+                <div key={i} className="flex items-center justify-between py-1">
+                  <Text size="sm" className="truncate flex-1 mr-4">{e.slug}</Text>
+                  <div className="flex items-center gap-4 shrink-0">
+                    <Text size="sm" color="secondary" className="tabular-nums">{e.avg_seconds}s avg</Text>
+                    <Text size="sm" color="muted" className="tabular-nums">{e.completed}/{e.total} completed</Text>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  )
+}
+
+function FunnelSection() {
+  const [data, setData] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetch('/api/admin/analytics?section=funnel')
+      .then(r => r.json()).then(setData)
+      .catch(() => {}).finally(() => setLoading(false))
+  }, [])
+
+  if (loading) return <div className="py-12 text-center"><Text color="muted">Loading funnel data...</Text></div>
+  if (!data) return null
+
+  const steps = data.steps || []
+  const topCount = steps[0]?.count || 1
+
+  return (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader><CardTitle>Signup funnel (30 days)</CardTitle></CardHeader>
+        <CardContent className="space-y-3">
+          {steps.map((step: any, i: number) => {
+            const pct = topCount > 0 ? Math.round((step.count / topCount) * 100) : 0
+            const width = topCount > 0 ? Math.max((step.count / topCount) * 100, 8) : 8
+            return (
+              <div key={i}>
+                <div className="flex items-baseline justify-between mb-1">
+                  <Text size="sm">{step.name}</Text>
+                  <Text size="sm" color="secondary" className="tabular-nums">{step.count} {i > 0 ? `(${pct}%)` : ''}</Text>
+                </div>
+                <div className="h-5 bg-background-subtle rounded-md overflow-hidden">
+                  <div className="h-full bg-accent/80 rounded-md" style={{ width: `${width}%` }} />
+                </div>
+              </div>
+            )
+          })}
+        </CardContent>
+      </Card>
+
+      {data.weekly_signups?.length > 0 && (
+        <Card>
+          <CardHeader><CardTitle>Weekly signups</CardTitle></CardHeader>
+          <CardContent>
+            <div className="flex items-end gap-[3px] h-20">
+              {data.weekly_signups.map((w: any, i: number) => {
+                const max = Math.max(...data.weekly_signups.map((w: any) => w.signups), 1)
+                const height = Math.max((w.signups / max) * 100, w.signups > 0 ? 6 : 0)
+                return (
+                  <div key={i} className="flex-1 h-full flex items-end group relative">
+                    <div className="w-full rounded-sm bg-success/80" style={{ height: `${height}%`, minHeight: height > 0 ? '4px' : '0' }} />
+                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-1.5 py-0.5 bg-background-elevated border border-border rounded text-[10px] text-foreground opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-10">
+                      {w.signups} &middot; {w.week}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  )
+}
+
+function TrafficSection() {
+  const [data, setData] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetch('/api/admin/analytics?section=traffic')
+      .then(r => r.json()).then(setData)
+      .catch(() => {}).finally(() => setLoading(false))
+  }, [])
+
+  if (loading) return <div className="py-12 text-center"><Text color="muted">Loading traffic data...</Text></div>
+  if (!data) return null
+
+  return (
+    <div className="space-y-6">
+      {/* By domain */}
+      <Card>
+        <CardHeader><CardTitle>Traffic by domain (30 days)</CardTitle></CardHeader>
+        <CardContent>
+          <div className="space-y-2">
+            {(data.by_domain || []).map((d: any, i: number) => (
+              <div key={i} className="flex items-center justify-between py-1.5">
+                <Text size="sm" className="font-medium">{d.host}</Text>
+                <div className="flex items-center gap-4 shrink-0">
+                  <Text size="sm" color="secondary" className="tabular-nums">{d.views.toLocaleString()} views</Text>
+                  <Text size="sm" color="muted" className="tabular-nums w-24 text-right">{d.uniques.toLocaleString()} uniq</Text>
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Top pages */}
+      <Card>
+        <CardHeader><CardTitle>Top pages</CardTitle></CardHeader>
+        <CardContent>
+          <div className="space-y-1.5">
+            {(data.top_pages || []).map((p: any, i: number) => (
+              <div key={i} className="flex items-center justify-between py-1">
+                <Text size="sm" className="truncate flex-1 mr-4">{p.path}</Text>
+                <div className="flex items-center gap-4 shrink-0">
+                  <Text size="sm" color="secondary" className="tabular-nums">{p.views}</Text>
+                  <Text size="sm" color="muted" className="tabular-nums w-16 text-right">{p.uniques} uniq</Text>
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Weekly trend */}
+      {(data.weekly_trend || []).length > 0 && (
+        <Card>
+          <CardHeader><CardTitle>Weekly traffic</CardTitle></CardHeader>
+          <CardContent>
+            <div className="flex items-end gap-[3px] h-20">
+              {data.weekly_trend.map((w: any, i: number) => {
+                const max = Math.max(...data.weekly_trend.map((w: any) => w.views), 1)
+                const height = Math.max((w.views / max) * 100, w.views > 0 ? 6 : 0)
+                return (
+                  <div key={i} className="flex-1 h-full flex items-end group relative">
+                    <div className="w-full rounded-sm bg-accent/80" style={{ height: `${height}%`, minHeight: height > 0 ? '4px' : '0' }} />
+                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-1.5 py-0.5 bg-background-elevated border border-border rounded text-[10px] text-foreground opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-10">
+                      {w.views.toLocaleString()} &middot; {w.uniques} uniq &middot; {w.week}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  )
+}
+
+function RevenueSection() {
+  const [data, setData] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetch('/api/admin/analytics?section=revenue')
+      .then(r => r.json()).then(setData)
+      .catch(() => {}).finally(() => setLoading(false))
+  }, [])
+
+  if (loading) return <div className="py-12 text-center"><Text color="muted">Loading revenue data...</Text></div>
+  if (!data) return null
+
+  const tiers = data.tiers || {}
+
+  return (
+    <div className="space-y-6">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <StatCard label="Active guilds" value={data.total_active} />
+        <StatCard label="Pro guilds" value={data.pro_count} />
+        <StatCard label="Pro rate" value={`${data.pro_rate}%`} />
+        <StatCard label="Upgrade clicks (30d)" value={data.upgrade_clicks_30d} />
+      </div>
+
+      <Card>
+        <CardHeader><CardTitle>Subscription tiers</CardTitle></CardHeader>
+        <CardContent>
+          <div className="space-y-2">
+            {Object.entries(tiers).map(([tier, count]) => {
+              const pct = data.total_active > 0 ? Math.round(((count as number) / data.total_active) * 100) : 0
+              return (
+                <div key={tier} className="flex items-center gap-3">
+                  <Text size="sm" className="w-20 shrink-0 capitalize font-medium">{tier}</Text>
+                  <div className="flex-1 h-5 bg-background-subtle rounded-md overflow-hidden">
+                    <div
+                      className="h-full rounded-md bg-accent/80"
+                      style={{ width: `${Math.max(pct, (count as number) > 0 ? 4 : 0)}%` }}
+                    />
+                  </div>
+                  <Text size="sm" color="secondary" className="w-24 text-right shrink-0 tabular-nums">
+                    {count as number} ({pct}%)
+                  </Text>
+                </div>
+              )
+            })}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+
+// ─── Main page ──────────────────────────────────────────────
+
 export default function AnalyticsPage() {
   const [data, setData] = useState<AnalyticsData | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [sort, setSort] = useState<{ key: SortKey; dir: SortDir }>({ key: 'raids', dir: 'desc' })
+  const [activeTab, setActiveTab] = useState<Tab>('guilds')
 
   useEffect(() => {
     trackClientEvent('admin_analytics_page_viewed')
   }, [])
 
   useEffect(() => {
-    fetch('/api/admin/analytics')
+    fetch('/api/admin/analytics?section=guilds')
       .then(async res => {
         if (!res.ok) {
           const body = await res.json().catch(() => ({}))
@@ -416,6 +716,14 @@ export default function AnalyticsPage() {
 
   const retentionTotal = retention.active + retention.churned + retention.dormant
 
+  const tabs: { key: Tab; label: string }[] = [
+    { key: 'guilds', label: 'Guilds' },
+    { key: 'blog', label: 'Blog' },
+    { key: 'funnel', label: 'Funnel' },
+    { key: 'traffic', label: 'Traffic' },
+    { key: 'revenue', label: 'Revenue' },
+  ]
+
   return (
     <div className="p-8 max-w-7xl mx-auto space-y-8">
       <div>
@@ -423,6 +731,30 @@ export default function AnalyticsPage() {
         <Text color="secondary">Usage metrics across all guilds</Text>
       </div>
 
+      {/* Tab bar */}
+      <div className="flex gap-1 border-b border-border">
+        {tabs.map(tab => (
+          <button
+            key={tab.key}
+            onClick={() => setActiveTab(tab.key)}
+            className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 -mb-px ${
+              activeTab === tab.key
+                ? 'text-accent border-accent'
+                : 'text-muted-foreground border-transparent hover:text-foreground hover:border-border'
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Tab content */}
+      {activeTab === 'blog' && <BlogSection />}
+      {activeTab === 'funnel' && <FunnelSection />}
+      {activeTab === 'traffic' && <TrafficSection />}
+      {activeTab === 'revenue' && <RevenueSection />}
+
+      {activeTab === 'guilds' && <>
       {/* Summary cards */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
         <StatCard label="Guilds" value={summary.total_guilds} sub={`${retention.new_guilds} new (30d)`} />
@@ -648,6 +980,7 @@ export default function AnalyticsPage() {
           </table>
         </CardContent>
       </Card>
+      </>}
     </div>
   )
 }

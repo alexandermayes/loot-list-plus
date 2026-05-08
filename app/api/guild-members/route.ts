@@ -3,7 +3,7 @@ import { createClient, getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { verifyPermission, verifyRoleChangePermissions, verifyMemberRemovalPermissions } from '@/utils/server-roles'
 import { ROLE_POSITIONS } from '@/domain/guild/roles'
-import { trackApiError } from '@/utils/analytics/server'
+import { trackApiError, trackEvent } from '@/utils/analytics/server'
 import { batchGetDisplayNames } from '@/utils/batch-display-names'
 import { logAudit } from '@/utils/audit/log'
 
@@ -321,6 +321,13 @@ export async function PUT(request: NextRequest) {
       userId: user.id,
       oldData: { action: 'role_change' },
       newData: { new_role, target_user_id, character_ids },
+    })
+
+    trackEvent({
+      event: 'member_role_changed',
+      userId: user.id,
+      guildId: guild_id,
+      properties: { new_role },
     })
 
     return NextResponse.json({ success: true })

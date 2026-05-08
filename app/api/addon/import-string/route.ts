@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { verifyOfficerPermissions } from '@/utils/server-roles'
-import { trackApiError } from '@/utils/analytics/server'
+import { trackApiError, trackEvent } from '@/utils/analytics/server'
 import { inflateRawSync } from 'zlib'
 
 interface AddonAward {
@@ -119,6 +119,15 @@ export async function POST(request: NextRequest) {
         console.error('Failed to process attendance:', err)
         results.attendance.errors++
       }
+    }
+
+    if (results.awards.processed > 0) {
+      trackEvent({
+        event: 'loot_item_imported',
+        userId: user.id,
+        guildId: payload.guildId,
+        properties: { source: 'addon', count: results.awards.processed },
+      })
     }
 
     return NextResponse.json({ data: results })

@@ -3,6 +3,7 @@ import LandingNav from '@/app/components/landing/LandingNav'
 import LandingCTA from '@/app/components/landing/LandingCTA'
 import LandingFooter from '@/app/components/landing/LandingFooter'
 import BlogRelatedPosts from '@/app/components/landing/BlogRelatedPosts'
+import BlogTracker from '@/app/components/landing/BlogTracker'
 
 export const metadata: Metadata = {
   title: 'How to Set Up a Fair Loot System for Your WoW Guild | LootList+',
@@ -111,6 +112,7 @@ export default function BlogPost() {
 
       {/* Article */}
       <article className="relative pt-32 pb-20 px-6 md:px-12 lg:px-20">
+        <BlogTracker slug="how-to-set-up-a-fair-loot-system-for-your-wow-guild" title="How to Set Up a Fair Loot System for Your WoW Guild" />
         <div className="max-w-3xl mx-auto">
           {/* Breadcrumb */}
           <nav className="mb-8 text-sm text-foreground-secondary">

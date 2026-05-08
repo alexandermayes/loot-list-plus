@@ -16,6 +16,7 @@ import { Button } from '@/components/ui/button'
 import { DateTimePicker } from '@/components/ui/date-time-picker'
 import { Switch } from '@/components/ui/switch'
 import { Skeleton } from '@/components/ui/skeletons'
+import { trackClientEvent } from '@/utils/analytics/client'
 
 interface RaidTier {
   id: string
@@ -209,6 +210,10 @@ export default function ExpansionDetailPage({ params }: { params: Promise<{ expa
   const { mutate } = useSWRConfig()
   const { activeGuild, loading: guildLoading, hasPermission } = useGuildContext()
   const { showNotification } = useNotification()
+
+  useEffect(() => {
+    trackClientEvent('expansion_settings_page_viewed')
+  }, [])
 
   useEffect(() => {
     if (expansion) {

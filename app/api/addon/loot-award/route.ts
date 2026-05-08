@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { verifyOfficerPermissions } from '@/utils/server-roles'
-import { trackApiError } from '@/utils/analytics/server'
+import { trackApiError, trackEvent } from '@/utils/analytics/server'
 
 interface LootAwardRequest {
   guild_id: string
@@ -104,6 +104,13 @@ export async function POST(request: NextRequest) {
       console.error('Failed to insert loot history:', insertError)
       return NextResponse.json({ error: 'Failed to record award' }, { status: 500 })
     }
+
+    trackEvent({
+      event: 'loot_item_imported',
+      userId: user.id,
+      guildId: guild_id,
+      properties: { source: 'addon', count: 1 },
+    })
 
     return NextResponse.json({
       data: {

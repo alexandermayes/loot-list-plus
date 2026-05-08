@@ -123,6 +123,13 @@ export async function POST(request: NextRequest) {
     }
 
     if (successCount > 0) {
+      if (successCount === 1) {
+        trackEvent({
+          event: 'loot_item_awarded',
+          userId: user.id,
+          guildId: guild_id,
+        })
+      }
       trackEvent({
         event: 'loot_awarded_bulk',
         userId: user.id,

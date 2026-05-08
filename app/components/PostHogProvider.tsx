@@ -17,7 +17,7 @@ function ensurePostHogInitialized() {
     posthog.init(process.env.NEXT_PUBLIC_POSTHOG_KEY, {
       api_host: '/a',
       ui_host: 'https://us.i.posthog.com',
-      person_profiles: 'identified_only',
+      person_profiles: 'always',
       capture_pageview: false,
       capture_pageleave: true,
       persistence: 'localStorage+cookie',

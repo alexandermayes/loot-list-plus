@@ -227,6 +227,13 @@ export async function PATCH(request: NextRequest) {
       newData: updates,
     })
 
+    trackEvent({
+      event: 'attendance_recorded',
+      userId: user.id,
+      guildId: guild_id,
+      properties: { raid_event_id: filters.raid_event_id, action: 'update' },
+    })
+
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error('Error in PATCH /api/attendance/bulk:', error)

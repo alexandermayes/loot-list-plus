@@ -40,6 +40,24 @@ const breadcrumbLd = {
 
 const posts = [
   {
+    slug: 'how-to-handle-loot-drama-without-losing-raiders',
+    title: 'How to Handle Loot Drama Without Losing Raiders',
+    description:
+      'Loot drama kills more guilds than bad mechanics. Here\'s how to prevent it, defuse it when it happens, and build a system raiders actually trust.',
+    date: 'May 7, 2026',
+    readTime: '9 min read',
+    tag: 'Guide',
+  },
+  {
+    slug: 'how-to-run-loot-without-a-spreadsheet',
+    title: 'How to Run Loot in WoW Classic Without a Spreadsheet',
+    description:
+      'Spreadsheets were the default for Classic loot tracking, but they break at scale. Here\'s how to run a clean loot system without one.',
+    date: 'May 7, 2026',
+    readTime: '8 min read',
+    tag: 'Guide',
+  },
+  {
     slug: 'loot-priority-lists-vs-loot-council',
     title: 'Loot Priority Lists vs Loot Council: An Honest Comparison',
     description:

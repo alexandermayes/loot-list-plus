@@ -170,6 +170,7 @@ export default function LootSubmissionsContent() {
 
   useEffect(() => {
     document.title = 'LootList+ • Loot Submissions'
+    trackClientEvent('admin_pending_submissions_viewed')
   }, [])
 
   // Refresh Wowhead tooltips when submission details modal opens
@@ -498,6 +499,11 @@ export default function LootSubmissionsContent() {
         guild_id: guildId,
         submission_id: submissionId,
         new_status: status,
+        character_name: submission?.member?.character_name,
+      })
+      trackClientEvent(status === 'approved' ? 'pending_submission_approved' : 'pending_submission_rejected', {
+        guild_id: guildId,
+        submission_id: submissionId,
         character_name: submission?.member?.character_name,
       })
 

@@ -40,6 +40,11 @@ type ClientEvent =
   | 'landing_cta_clicked'
   | 'landing_nav_clicked'
   | 'landing_section_viewed'
+  // Blog engagement
+  | 'blog_post_viewed'
+  | 'blog_scroll_depth'
+  | 'blog_time_on_page'
+  | 'blog_cta_clicked'
   // Page views
   | 'overview_page_viewed'
   | 'loot_list_page_viewed'

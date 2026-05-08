@@ -1,15 +1,117 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
+
+// ─── PostHog HogQL query helper ─────────────────────────────
+
+async function queryPostHog(hogql: string): Promise<any[]> {
+  const apiKey = process.env.POSTHOG_PERSONAL_API_KEY
+  if (!apiKey) return []
+  try {
+    const res = await fetch('https://us.posthog.com/api/projects/310668/query/', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query: { kind: 'HogQLQuery', query: hogql } }),
+    })
+    if (!res.ok) return []
+    const data = await res.json()
+    return data.results || []
+  } catch {
+    return []
+  }
+}
+
+// ─── Section handlers ───────────────────────────────────────
+
+async function getBlogAnalytics() {
+  const [topPosts, weeklyTrend, referrers, engagement] = await Promise.all([
+    queryPostHog(`SELECT properties.$pathname as path, count() as views, count(DISTINCT properties.distinct_id) as uniques FROM events WHERE event = '$pageview' AND properties.$pathname LIKE '/blog/%' AND properties.$pathname != '/blog/' AND timestamp > now() - INTERVAL 30 DAY GROUP BY path ORDER BY views DESC LIMIT 20`),
+    queryPostHog(`SELECT toMonday(timestamp) as week, count() as views, count(DISTINCT properties.distinct_id) as uniques FROM events WHERE event = '$pageview' AND properties.$pathname LIKE '/blog/%' AND timestamp > now() - INTERVAL 12 WEEK GROUP BY week ORDER BY week ASC`),
+    queryPostHog(`SELECT properties.$referrer as referrer, count() as views FROM events WHERE event = '$pageview' AND properties.$pathname LIKE '/blog/%' AND properties.$pathname != '/blog/' AND timestamp > now() - INTERVAL 30 DAY AND properties.$referrer IS NOT NULL AND properties.$referrer != '' GROUP BY referrer ORDER BY views DESC LIMIT 15`),
+    queryPostHog(`SELECT properties.slug as slug, avg(properties.seconds) as avg_seconds, countIf(properties.depth = 100) as completed, count() as total FROM events WHERE event IN ('blog_time_on_page', 'blog_scroll_depth') AND timestamp > now() - INTERVAL 30 DAY GROUP BY slug ORDER BY total DESC`),
+  ])
+
+  return {
+    top_posts: topPosts.map(r => ({ path: r[0], views: r[1], uniques: r[2] })),
+    weekly_trend: weeklyTrend.map(r => ({ week: r[0], views: r[1], uniques: r[2] })),
+    referrers: referrers.map(r => ({ referrer: r[0], views: r[1] })),
+    engagement: engagement.map(r => ({ slug: r[0], avg_seconds: Math.round(r[1] || 0), completed: r[2], total: r[3] })),
+  }
+}
+
+async function getFunnelAnalytics() {
+  const [landingVisitors, signups, guildsCreated, firstRaid, weeklySignups] = await Promise.all([
+    queryPostHog(`SELECT count(DISTINCT properties.distinct_id) as c FROM events WHERE event = '$pageview' AND properties.$host LIKE '%getlootlist%' AND timestamp > now() - INTERVAL 30 DAY`),
+    queryPostHog(`SELECT count(DISTINCT properties.distinct_id) as c FROM events WHERE event = 'user_signed_up' AND timestamp > now() - INTERVAL 30 DAY`),
+    queryPostHog(`SELECT count(DISTINCT properties.distinct_id) as c FROM events WHERE event = 'guild_creation_completed' AND timestamp > now() - INTERVAL 30 DAY`),
+    queryPostHog(`SELECT count(DISTINCT properties.distinct_id) as c FROM events WHERE event = 'attendance_bulk_recorded' AND timestamp > now() - INTERVAL 30 DAY`),
+    queryPostHog(`SELECT toMonday(timestamp) as week, count(DISTINCT properties.distinct_id) as signups FROM events WHERE event = 'user_signed_up' AND timestamp > now() - INTERVAL 12 WEEK GROUP BY week ORDER BY week ASC`),
+  ])
+
+  return {
+    steps: [
+      { name: 'Landing visitors', count: landingVisitors[0]?.[0] || 0 },
+      { name: 'Signed up', count: signups[0]?.[0] || 0 },
+      { name: 'Created guild', count: guildsCreated[0]?.[0] || 0 },
+      { name: 'First raid tracked', count: firstRaid[0]?.[0] || 0 },
+    ],
+    weekly_signups: weeklySignups.map(r => ({ week: r[0], signups: r[1] })),
+  }
+}
+
+async function getTrafficAnalytics() {
+  const [byDomain, topPages, weeklyTrend] = await Promise.all([
+    queryPostHog(`SELECT properties.$host as host, count() as views, count(DISTINCT properties.distinct_id) as uniques FROM events WHERE event = '$pageview' AND timestamp > now() - INTERVAL 30 DAY AND properties.$host NOT LIKE 'localhost%' GROUP BY host ORDER BY views DESC LIMIT 10`),
+    queryPostHog(`SELECT properties.$pathname as path, count() as views, count(DISTINCT properties.distinct_id) as uniques FROM events WHERE event = '$pageview' AND timestamp > now() - INTERVAL 30 DAY AND properties.$host NOT LIKE 'localhost%' GROUP BY path ORDER BY views DESC LIMIT 25`),
+    queryPostHog(`SELECT toMonday(timestamp) as week, count() as views, count(DISTINCT properties.distinct_id) as uniques FROM events WHERE event = '$pageview' AND properties.$host NOT LIKE 'localhost%' AND timestamp > now() - INTERVAL 12 WEEK GROUP BY week ORDER BY week ASC`),
+  ])
+
+  return {
+    by_domain: byDomain.map(r => ({ host: r[0], views: r[1], uniques: r[2] })),
+    top_pages: topPages.map(r => ({ path: r[0], views: r[1], uniques: r[2] })),
+    weekly_trend: weeklyTrend.map(r => ({ week: r[0], views: r[1], uniques: r[2] })),
+  }
+}
+
+async function getRevenueAnalytics() {
+  const supabase = createServiceRoleClient()
+
+  const [guildsResult, upgradeClicks] = await Promise.all([
+    supabase.from('guilds').select('subscription_tier, is_active, created_at'),
+    queryPostHog(`SELECT count() as clicks FROM events WHERE event = 'pro_upgrade_clicked' AND timestamp > now() - INTERVAL 30 DAY`),
+  ])
+
+  const guilds = guildsResult.data || []
+  const activeGuilds = guilds.filter(g => g.is_active)
+  const tiers: Record<string, number> = {}
+  for (const g of activeGuilds) {
+    const tier = g.subscription_tier || 'free'
+    tiers[tier] = (tiers[tier] || 0) + 1
+  }
+
+  const proCount = tiers['pro'] || 0
+  const totalActive = activeGuilds.length
+
+  return {
+    tiers,
+    total_active: totalActive,
+    pro_count: proCount,
+    pro_rate: totalActive > 0 ? Math.round((proCount / totalActive) * 100) : 0,
+    upgrade_clicks_30d: upgradeClicks[0]?.[0] || 0,
+  }
+}
 
 /**
  * GET /api/admin/analytics
  *
- * Super-admin endpoint that returns platform-wide usage metrics
- * for monetization planning. Returns guild-level engagement data
- * so we can identify what features to gate and where to set tier thresholds.
+ * Super-admin endpoint. Supports section param:
+ * - ?section=guilds (default) — existing guild-level metrics
+ * - ?section=blog — blog performance from PostHog
+ * - ?section=funnel — signup funnel from PostHog
+ * - ?section=traffic — site traffic from PostHog
+ * - ?section=revenue — subscription metrics from Supabase + PostHog
  */
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     const authClient = await createClient()
     const { data: { user } } = await authClient.auth.getUser()
@@ -26,6 +128,16 @@ export async function GET() {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
+    const { searchParams } = new URL(request.url)
+    const section = searchParams.get('section') || 'guilds'
+
+    // Route to section-specific handlers
+    if (section === 'blog') return NextResponse.json(await getBlogAnalytics())
+    if (section === 'funnel') return NextResponse.json(await getFunnelAnalytics())
+    if (section === 'traffic') return NextResponse.json(await getTrafficAnalytics())
+    if (section === 'revenue') return NextResponse.json(await getRevenueAnalytics())
+
+    // Default: guilds section (existing code)
     const supabase = createServiceRoleClient()
 
     // Run all queries in parallel

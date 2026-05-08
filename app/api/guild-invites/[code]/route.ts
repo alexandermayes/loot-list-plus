@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient, getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
-import { setUserMilestone } from '@/utils/analytics/server'
+import { setUserMilestone, trackEvent } from '@/utils/analytics/server'
 import { getDefaultRoleName } from '@/domain/guild/default-role'
 
 // GET - Validate invite code and get guild info (works without auth for invite preview)
@@ -185,6 +185,8 @@ export async function POST(
           updated_at: new Date().toISOString()
         })
 
+      trackEvent({ event: 'guild_joined', userId: user.id, guildId })
+
       return NextResponse.json({
         success: true,
         guild_id: guildId,
@@ -240,6 +242,8 @@ export async function POST(
           updated_at: new Date().toISOString()
         })
 
+      trackEvent({ event: 'guild_joined', userId: user.id, guildId })
+
       return NextResponse.json({
         success: true,
         guild_id: guildId,
@@ -278,6 +282,7 @@ export async function POST(
       })
 
     setUserMilestone(user.id, 'first_guild_joined_at')
+    trackEvent({ event: 'guild_joined', userId: user.id, guildId })
 
     return NextResponse.json({
       success: true,
