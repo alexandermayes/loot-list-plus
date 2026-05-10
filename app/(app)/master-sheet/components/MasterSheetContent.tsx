@@ -752,18 +752,31 @@ export default function MasterSheetContent() {
           return
         }
 
-        const { data: charactersData, error: charError } = await supabase
-          .from('characters')
-          .select(`
-            id,
-            name,
-            user_id,
-            spec_id,
-            class:wow_classes(name, color_hex),
-            spec:class_specs(id, name),
-            character_guild_memberships(role, membership_status, is_active, guild_id)
-          `)
-          .in('id', characterIds)
+        // Fetch characters and their guild memberships in parallel.
+        // Memberships are fetched separately (not embedded) because the
+        // embedded join returns empty arrays for other users' characters
+        // due to RLS on character_guild_memberships.
+        const [
+          { data: charactersData, error: charError },
+          { data: membershipsData },
+        ] = await Promise.all([
+          supabase
+            .from('characters')
+            .select(`
+              id,
+              name,
+              user_id,
+              spec_id,
+              class:wow_classes(name, color_hex),
+              spec:class_specs(id, name)
+            `)
+            .in('id', characterIds),
+          supabase
+            .from('character_guild_memberships')
+            .select('character_id, role, membership_status, is_active, guild_id')
+            .eq('guild_id', activeGuild!.id)
+            .in('character_id', characterIds),
+        ])
 
         if (charError) {
           console.error('Error loading characters:', charError)
@@ -771,6 +784,11 @@ export default function MasterSheetContent() {
           setContentLoading(false)
           return
         }
+
+        // Build membership lookup by character_id
+        const membershipByCharId = new Map<string, CharacterGuildMembership>(
+          (membershipsData || []).map((m: CharacterGuildMembership & { character_id: string }) => [m.character_id, m])
+        )
 
         // Pre-calculate attendance for all characters in a single batched query
         // This replaces N individual queries with just 4 bulk queries total
@@ -817,9 +835,7 @@ export default function MasterSheetContent() {
             }
 
             const attendanceData = attendanceCache[character.id] || { score: 0, raidsAttended: 0, raidsInWindow: 0, isEligible: true }
-            const guildMembership = character.character_guild_memberships?.find(
-              (m: CharacterGuildMembership) => m.guild_id === activeGuild!.id
-            )
+            const guildMembership = membershipByCharId.get(character.id)
             const charClass = Array.isArray(character.class) ? character.class[0] : character.class
             const charSpec = Array.isArray(character.spec) ? character.spec[0] : character.spec
             const specName = charSpec?.name || null
@@ -1382,22 +1398,35 @@ export default function MasterSheetContent() {
       return itemsData.map((item: TierLootItem) => ({ item, rankings: [] }))
     }
 
-    const { data: charactersData } = await supabase
-      .from('characters')
-      .select(`
-        id,
-        name,
-        user_id,
-        spec_id,
-        class:wow_classes(name, color_hex),
-        spec:class_specs(id, name),
-        character_guild_memberships(role, membership_status, is_active, guild_id)
-      `)
-      .in('id', characterIds)
+    // Fetch characters and memberships separately (embedded join returns
+    // empty arrays for other users' characters due to RLS).
+    const [{ data: charactersData }, { data: tierMembershipsData }] = await Promise.all([
+      supabase
+        .from('characters')
+        .select(`
+          id,
+          name,
+          user_id,
+          spec_id,
+          class:wow_classes(name, color_hex),
+          spec:class_specs(id, name)
+        `)
+        .in('id', characterIds),
+      supabase
+        .from('character_guild_memberships')
+        .select('character_id, role, membership_status, is_active, guild_id')
+        .eq('guild_id', activeGuild.id)
+        .in('character_id', characterIds),
+    ])
 
     if (!charactersData) {
       return itemsData.map((item: TierLootItem) => ({ item, rankings: [] }))
     }
+
+    // Build membership lookup by character_id
+    const tierMembershipByCharId = new Map<string, CharacterGuildMembership>(
+      (tierMembershipsData || []).map((m: CharacterGuildMembership & { character_id: string }) => [m.character_id, m])
+    )
 
     const tierWowheadIdSet = new Set(itemsData.map((i: TierLootItem) => i.wowhead_id))
     const receivedItemCounts = new Map<string, number>()
@@ -1452,9 +1481,7 @@ export default function MasterSheetContent() {
         }
 
         const attendanceData = attendanceCache[character.id] || { score: 0, raidsAttended: 0, raidsInWindow: 0, isEligible: true }
-        const guildMembership = character.character_guild_memberships?.find(
-          (m: CharacterGuildMembership) => m.guild_id === activeGuild.id
-        )
+        const guildMembership = tierMembershipByCharId.get(character.id)
         const charClass = Array.isArray(character.class) ? character.class[0] : character.class
         const charSpec = Array.isArray(character.spec) ? character.spec[0] : character.spec
         const specName = charSpec?.name || null
