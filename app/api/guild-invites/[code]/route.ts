@@ -205,6 +205,17 @@ export async function POST(
       .eq('guild_id', guildId)
       .single()
 
+    // Check if new members should start as trial
+    const { data: joinSettings } = await serviceSupabase
+      .from('guild_settings')
+      .select('new_members_start_as_trial')
+      .eq('guild_id', guildId)
+      .single()
+    const startAsTrial = joinSettings?.new_members_start_as_trial === true
+    const trialFields = startAsTrial
+      ? { membership_status: 'trial' as const, trial_started_at: new Date().toISOString() }
+      : {}
+
     if (existingMembership) {
       if (existingMembership.is_active) {
         return NextResponse.json(
@@ -220,7 +231,8 @@ export async function POST(
           is_active: true,
           role: defaultRole,
           joined_at: new Date().toISOString(),
-          joined_via: 'invite_code'
+          joined_via: 'invite_code',
+          ...trialFields,
         })
         .eq('id', existingMembership.id)
 
@@ -260,7 +272,8 @@ export async function POST(
         role: defaultRole,
         is_active: true,
         joined_at: new Date().toISOString(),
-        joined_via: 'invite_code'
+        joined_via: 'invite_code',
+        ...trialFields,
       })
 
     if (memberError) {

@@ -171,6 +171,17 @@ export async function POST(request: NextRequest) {
 
     const characterId = existingCharacters[0].id
 
+    // Check if new members should start as trial
+    const { data: joinSettings } = await serviceSupabase
+      .from('guild_settings')
+      .select('new_members_start_as_trial')
+      .eq('guild_id', guild_id)
+      .single()
+    const startAsTrial = joinSettings?.new_members_start_as_trial === true
+    const trialFields = startAsTrial
+      ? { membership_status: 'trial' as const, trial_started_at: new Date().toISOString() }
+      : {}
+
     // Check if character has any membership (active or inactive) in this guild
     const { data: existingMembership } = await serviceSupabase
       .from('character_guild_memberships')
@@ -205,7 +216,8 @@ export async function POST(request: NextRequest) {
           is_active: true,
           role: defaultRole,
           joined_at: new Date().toISOString(),
-          joined_via: 'discord_verify'
+          joined_via: 'discord_verify',
+          ...trialFields,
         })
         .eq('id', existingMembership.id)
 
@@ -243,7 +255,8 @@ export async function POST(request: NextRequest) {
         role: defaultRole,
         is_active: true,
         joined_at: new Date().toISOString(),
-        joined_via: 'discord_verify'
+        joined_via: 'discord_verify',
+        ...trialFields,
       })
 
     if (memberError) {

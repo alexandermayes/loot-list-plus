@@ -3,6 +3,10 @@
     {
       "path": "/api/cron/post-update",
       "schedule": "0 * * * *"
+    },
+    {
+      "path": "/api/cron/auto-promote-trials",
+      "schedule": "0 6 * * *"
     }
   ]
 }
