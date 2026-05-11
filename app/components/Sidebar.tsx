@@ -417,7 +417,7 @@ export default function Sidebar({ currentView = 'overview', onViewChange, isMobi
 
       {/* Main Navigation - Scrollable (extends to bottom) */}
       <div className={`flex-1 flex flex-col gap-6 min-h-0 overflow-y-auto overscroll-contain sidebar-scrollable px-2.5 ${
-        isMobileOverlay ? 'pt-[60px] pb-6' : 'pt-[88px] pb-[220px]'
+        isMobileOverlay ? 'pt-[60px] pb-6' : 'pt-[88px] pb-[265px]'
       }`}>
         {/* Guild Selector */}
         <div className="flex flex-col gap-[4px]">
@@ -748,6 +748,15 @@ export default function Sidebar({ currentView = 'overview', onViewChange, isMobi
           className="absolute bottom-0 left-0 right-0 flex flex-col gap-0 z-10 bg-background-subtle border-t border-border p-[10px]"
           style={{ width: sidebarWidth }}
         >
+          {/* Fade gradient above bottom section */}
+          <div
+            className="absolute left-0 right-0 pointer-events-none border-b border-border"
+            style={{
+              bottom: '100%',
+              height: 32,
+              background: 'linear-gradient(to top, hsl(var(--background-subtle)) 0%, hsl(var(--background-subtle) / 0) 100%)',
+            }}
+          />
           <Button
             variant="ghost"
             onClick={() => {
