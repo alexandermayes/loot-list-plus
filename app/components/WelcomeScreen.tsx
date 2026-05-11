@@ -24,27 +24,29 @@ export default function WelcomeScreen() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [showModal, setShowModal] = useState(false)
-  const [modalView, setModalView] = useState<'main' | 'discord'>('main')
   const [discordLoading, setDiscordLoading] = useState(false)
   const [availableGuilds, setAvailableGuilds] = useState<any[]>([])
   const [discordError, setDiscordError] = useState('')
   const [joiningGuildId, setJoiningGuildId] = useState<string | null>(null)
   const [showCreateGuild, setShowCreateGuild] = useState(false)
+  // Pre-fill data for guild creation from Discord flow
+  const [createPreselectedServer, setCreatePreselectedServer] = useState<string | undefined>()
+  const [createSuggestedName, setCreateSuggestedName] = useState<string | undefined>()
+  // Cached Discord servers for pre-fill
+  const [discordServers, setDiscordServers] = useState<{ id: string; name: string; owner: boolean }[]>([])
   const router = useRouter()
   const supabase = createClient()
 
   const handleCloseModal = () => {
     setShowModal(false)
-    setModalView('main')
   }
 
   const handleOpenDiscordModal = async () => {
-    setModalView('discord')
+    trackClientEvent('welcome_discord_clicked')
     setDiscordLoading(true)
     setDiscordError('')
     setAvailableGuilds([])
 
-    // Get current user
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) {
       setDiscordError('Please log in first')
@@ -52,30 +54,26 @@ export default function WelcomeScreen() {
       return
     }
 
-    // Check Discord verification
+    // Auto-verify Discord if needed
     const { data: preferences } = await supabase
       .from('user_preferences')
       .select('discord_verified')
       .eq('user_id', user.id)
       .single()
 
-    // If not verified but user logged in with Discord, auto-verify them
     if (!preferences?.discord_verified) {
       try {
-        const verifyResponse = await fetch('/api/verify-discord', {
-          method: 'POST'
-        })
-
+        const verifyResponse = await fetch('/api/verify-discord', { method: 'POST' })
         if (!verifyResponse.ok) {
           const errorData = await verifyResponse.json()
-          setDiscordError(errorData.error || 'Discord verification required. Please go to your Profile to verify your Discord account.')
+          setDiscordError(errorData.error || 'Discord verification required. Go to your Profile to verify.')
+          trackClientEvent('welcome_discord_error')
           setDiscordLoading(false)
           return
         }
-
-      } catch (err) {
-        console.error('Auto-verification failed:', err)
-        setDiscordError('Discord verification required. Please go to your Profile to verify your Discord account.')
+      } catch {
+        setDiscordError('Discord verification required. Go to your Profile to verify.')
+        trackClientEvent('welcome_discord_error')
         setDiscordLoading(false)
         return
       }
@@ -88,18 +86,33 @@ export default function WelcomeScreen() {
 
       if (!response.ok) {
         const errorMessage = response.status === 429
-          ? 'Discord rate limit reached. Please wait a moment and try again.'
-          : data.error || 'Couldn\'t load guilds. Check your connection and try again.'
+          ? 'Discord rate limit reached. Wait a moment and try again.'
+          : data.error || 'Couldn\'t load guilds. Check your connection.'
         setDiscordError(errorMessage)
+        trackClientEvent('welcome_discord_error')
         setDiscordLoading(false)
         return
       }
 
-      setAvailableGuilds(data.available_guilds || [])
+      const guilds = data.available_guilds || []
+      setAvailableGuilds(guilds)
+
+      if (guilds.length === 0) {
+        trackClientEvent('welcome_discord_no_guilds')
+        // Also fetch user's Discord servers for pre-fill
+        try {
+          const serversRes = await fetch('/api/discord-servers')
+          if (serversRes.ok) {
+            const serversData = await serversRes.json()
+            setDiscordServers(serversData.guilds || [])
+          }
+        } catch { /* ignore */ }
+      }
+
       setDiscordLoading(false)
-    } catch (err) {
-      console.error('Error loading guilds:', err)
-      setDiscordError('Couldn\'t load guilds. Check your connection and try again.')
+    } catch {
+      setDiscordError('Couldn\'t load guilds. Check your connection.')
+      trackClientEvent('welcome_discord_error')
       setDiscordLoading(false)
     }
   }
@@ -111,9 +124,7 @@ export default function WelcomeScreen() {
     try {
       const response = await fetch('/api/discord-guilds/join', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ guild_id: guildId })
       })
 
@@ -125,12 +136,10 @@ export default function WelcomeScreen() {
         return
       }
 
-      // Success! Redirect to dashboard
       trackClientEvent('onboarding_guild_joined', { join_method: 'discord', guild_id: guildId })
       window.location.href = '/overview'
-    } catch (err) {
-      console.error('Error joining guild:', err)
-      setDiscordError('Couldn\'t join guild. Check your connection and try again.')
+    } catch {
+      setDiscordError('Couldn\'t join guild. Check your connection.')
       setJoiningGuildId(null)
     }
   }
@@ -141,15 +150,14 @@ export default function WelcomeScreen() {
       return
     }
 
+    trackClientEvent('welcome_code_entered')
     setLoading(true)
     setError('')
 
     try {
       const response = await fetch(`/api/guild-invites/${inviteCode.trim()}`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        }
+        headers: { 'Content-Type': 'application/json' }
       })
 
       const data = await response.json()
@@ -160,28 +168,22 @@ export default function WelcomeScreen() {
         return
       }
 
-      // Success! Redirect to dashboard
       trackClientEvent('onboarding_guild_joined', { join_method: 'invite_code' })
       window.location.href = '/overview'
     } catch (err: any) {
-      setError(err.message || 'Couldn\'t join guild. Check your connection and try again.')
+      setError(err.message || 'Couldn\'t join guild. Check your connection.')
       setLoading(false)
     }
   }
 
   const handleModalCodeJoin = async () => {
-    if (!modalInviteCode.trim()) {
-      return
-    }
-
+    if (!modalInviteCode.trim()) return
     setJoiningGuildId('code')
 
     try {
       const response = await fetch(`/api/guild-invites/${modalInviteCode.trim()}`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        }
+        headers: { 'Content-Type': 'application/json' }
       })
 
       const data = await response.json()
@@ -192,20 +194,21 @@ export default function WelcomeScreen() {
         return
       }
 
-      // Success! Redirect to dashboard
       trackClientEvent('onboarding_guild_joined', { join_method: 'invite_code' })
       window.location.href = '/overview'
     } catch (err: any) {
-      setDiscordError(err.message || 'Couldn\'t join guild. Check your connection and try again.')
+      setDiscordError(err.message || 'Couldn\'t join guild. Check your connection.')
       setJoiningGuildId(null)
     }
   }
 
-  const handleDiscordJoin = () => {
-    setShowModal(true)
-    setModalView('main')
-    setModalInviteCode('')
-    setDiscordError('')
+  const handleCreateFromDiscord = () => {
+    // Pre-fill with the user's owned server if available
+    const ownedServer = discordServers.find(s => s.owner)
+    setCreatePreselectedServer(ownedServer?.id)
+    setCreateSuggestedName(ownedServer?.name)
+    handleCloseModal()
+    setShowCreateGuild(true)
   }
 
   useEffect(() => {
@@ -214,8 +217,8 @@ export default function WelcomeScreen() {
 
   return (
     <>
-      <div className="flex items-center justify-center min-h-[calc(100vh-4rem)] px-4 lg:px-[290px]">
-        <div className="flex flex-col items-center gap-10 max-w-[817px] w-full">
+      <div className="flex items-center justify-center min-h-[calc(100vh-4rem)] px-4 lg:px-12">
+        <div className="flex flex-col items-center gap-10 w-full max-w-5xl">
           {/* Header */}
           <div className="flex flex-col items-center gap-5 text-center w-full">
             <Image
@@ -225,110 +228,127 @@ export default function WelcomeScreen() {
               height={44}
               className="w-[33px] h-[44px]"
             />
-            <h1 className="font-poppins font-bold text-[42px] leading-[43px] text-foreground">
+            <h1 className="font-poppins font-bold text-[42px] leading-[43px] text-foreground text-balance">
               Welcome to LootList+
             </h1>
-            <p className="font-poppins font-normal text-base text-muted-foreground">
-              You're not a member of any guilds yet. Pick an option below to join one.
+            <p className="font-poppins font-normal text-base text-muted-foreground text-pretty">
+              You're not in any guilds yet. Join an existing guild or start a new one.
             </p>
           </div>
 
-          {/* Join Options */}
-          <div className="flex flex-col gap-6 w-full">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-2.5 w-full">
-              {/* Join via Discord */}
-              <div className="bg-background-elevated border border-border rounded-[24px] sm:rounded-[40px] p-4 pt-6 sm:p-6 sm:pt-[43px] pb-4 sm:pb-6 flex flex-col items-center">
-                <div className="flex flex-col gap-6 items-center w-full flex-1">
-                  <Image
-                    src="/icons/discord-large.svg"
-                    alt="Discord"
-                    width={44}
-                    height={44}
-                    className="w-11 h-11"
-                  />
-                  <div className="flex flex-col gap-1 text-center w-full">
-                    <h2 className="font-poppins font-bold text-2xl text-foreground">
-                      Join with Discord
-                    </h2>
-                    <p className="font-poppins font-normal text-sm text-muted-foreground">
-                      If your guild has Discord linked, you're in automatically.
-                    </p>
-                  </div>
+          {/* 3 Options Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 w-full">
+            {/* Join via Discord */}
+            <div className="bg-background-elevated border border-border rounded-[24px] sm:rounded-[40px] p-4 pt-6 sm:p-6 sm:pt-[43px] pb-4 sm:pb-6 flex flex-col items-center">
+              <div className="flex flex-col gap-6 items-center w-full flex-1">
+                <Image
+                  src="/icons/discord-large.svg"
+                  alt="Discord"
+                  width={44}
+                  height={44}
+                  className="w-11 h-11"
+                />
+                <div className="flex flex-col gap-1 text-center w-full">
+                  <h2 className="font-poppins font-bold text-xl text-foreground">
+                    Join with Discord
+                  </h2>
+                  <p className="font-poppins font-normal text-sm text-muted-foreground text-pretty">
+                    Auto-join if your guild has Discord linked.
+                  </p>
                 </div>
-                <Button
-                  onClick={() => {
-                    setShowModal(true)
-                    handleOpenDiscordModal()
-                  }}
-                  className="w-full mt-6"
-                >
-                  Select guild
-                </Button>
               </div>
+              <Button
+                onClick={() => {
+                  setShowModal(true)
+                  handleOpenDiscordModal()
+                }}
+                className="w-full mt-6"
+              >
+                Find my guild
+              </Button>
+            </div>
 
-              {/* Join with Code */}
-              <div className="bg-background-elevated border border-border rounded-[24px] sm:rounded-[40px] p-4 pt-6 sm:p-6 sm:pt-[43px] pb-4 sm:pb-6 flex flex-col items-center">
-                <div className="flex flex-col gap-6 items-center w-full flex-1">
-                  <Image
-                    src="/icons/password-validation.svg"
-                    alt="Code"
-                    width={44}
-                    height={44}
-                    className="w-11 h-11"
+            {/* Join with Code */}
+            <div className="bg-background-elevated border border-border rounded-[24px] sm:rounded-[40px] p-4 pt-6 sm:p-6 sm:pt-[43px] pb-4 sm:pb-6 flex flex-col items-center">
+              <div className="flex flex-col gap-6 items-center w-full flex-1">
+                <Image
+                  src="/icons/password-validation.svg"
+                  alt="Code"
+                  width={44}
+                  height={44}
+                  className="w-11 h-11"
+                />
+                <div className="flex flex-col gap-1 text-center w-full">
+                  <h2 className="font-poppins font-bold text-xl text-foreground">
+                    Join with code
+                  </h2>
+                  <p className="font-poppins font-normal text-sm text-muted-foreground text-pretty">
+                    Paste the invite code from your officer.
+                  </p>
+                </div>
+              </div>
+              <div className="flex flex-col gap-2.5 w-full mt-6">
+                <div className="flex gap-2.5 w-full">
+                  <Input
+                    type="text"
+                    value={inviteCode}
+                    onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
+                    placeholder="ABC123DEF456"
+                    variant="pill"
+                    className="flex-1 min-w-0 font-poppins font-medium"
+                    disabled={loading}
                   />
-                  <div className="flex flex-col gap-1 text-center w-full">
-                    <h2 className="font-poppins font-bold text-2xl text-foreground">
-                      Join with code
-                    </h2>
-                    <p className="font-poppins font-normal text-sm text-muted-foreground">
-                      Paste the code from your guild officer.
-                    </p>
-                  </div>
+                  <Button
+                    onClick={handleCodeJoin}
+                    disabled={!inviteCode.trim()}
+                    loading={loading}
+                    className="shrink-0"
+                  >
+                    Join
+                  </Button>
                 </div>
-                <div className="flex flex-col gap-2.5 w-full mt-6">
-                  <div className="flex gap-2.5 w-full">
-                    <Input
-                      type="text"
-                      value={inviteCode}
-                      onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
-                      placeholder="ABC123DEF456"
-                      variant="pill"
-                      className="flex-1 min-w-0 font-poppins font-medium"
-                      disabled={loading}
-                    />
-                    <Button
-                      onClick={handleCodeJoin}
-                      disabled={!inviteCode.trim()}
-                      loading={loading}
-                      className="shrink-0"
-                    >
-                      Join
-                    </Button>
-                  </div>
-                  {error && (
-                    <p className="text-destructive text-sm font-poppins text-center">{error}</p>
-                  )}
-                </div>
+                {error && (
+                  <p className="text-destructive text-sm font-poppins text-center">{error}</p>
+                )}
               </div>
             </div>
 
-            {/* Create Guild CTA */}
-            <div className="flex flex-col gap-3 items-center p-4 sm:p-6 rounded-[24px] sm:rounded-[40px] w-full lg:w-[409px] mx-auto">
-              <p className="font-poppins font-normal text-sm text-muted-foreground text-center">
-                Setting up a new guild? Create one and become the first officer.
-              </p>
+            {/* Create a Guild */}
+            <div className="bg-background-elevated border border-border rounded-[24px] sm:rounded-[40px] p-4 pt-6 sm:p-6 sm:pt-[43px] pb-4 sm:pb-6 flex flex-col items-center">
+              <div className="flex flex-col gap-6 items-center w-full flex-1">
+                <Image
+                  src="/icons/crown.svg"
+                  alt="Create"
+                  width={44}
+                  height={44}
+                  className="w-11 h-11"
+                  onError={(e) => { (e.target as HTMLImageElement).src = '/lootlist-icon.svg' }}
+                />
+                <div className="flex flex-col gap-1 text-center w-full">
+                  <h2 className="font-poppins font-bold text-xl text-foreground">
+                    Start a guild
+                  </h2>
+                  <p className="font-poppins font-normal text-sm text-muted-foreground text-pretty">
+                    Set up your guild and invite your raiders.
+                  </p>
+                </div>
+              </div>
               <Button
-                variant="outline"
-                onClick={() => setShowCreateGuild(true)}
-                className="w-full max-w-xs"
+                onClick={() => {
+                  trackClientEvent('welcome_create_clicked')
+                  setShowCreateGuild(true)
+                }}
+                className="w-full mt-6"
               >
-                Create a guild
+                Create guild
               </Button>
-              <p className="font-poppins font-normal text-xs text-muted-foreground text-center">
-                Ask your guild officer for an invite code or Discord link.
-              </p>
             </div>
           </div>
+
+          {/* Help text */}
+          <p className="font-poppins font-normal text-xs text-muted-foreground text-center">
+            Not sure which to pick? Ask your guild officer for an invite code, or create a guild if you're the leader.
+          </p>
         </div>
       </div>
 
@@ -392,21 +412,50 @@ export default function WelcomeScreen() {
               )}
             </Alert>
           ) : availableGuilds.length === 0 ? (
-            <div className="text-center py-8">
-              <p className="font-bold text-[18px] text-foreground mb-2">No guilds found</p>
-              <p className="text-[14px] text-muted-foreground mb-4">
-                We didn't find any LootList+ guilds linked to your Discord servers.
-              </p>
-              <div className="bg-background-elevated border border-border-strong rounded-xl p-4 text-left space-y-2">
-                <p className="text-[14px] text-foreground font-medium">Why this might happen:</p>
-                <ul className="text-[13px] text-muted-foreground space-y-1 list-disc list-inside">
-                  <li>No servers you're in use LootList+</li>
-                  <li>You're already in all matching guilds</li>
-                  <li>Discord integration isn't set up yet</li>
-                </ul>
-                <p className="text-[13px] text-muted-foreground mt-3">
-                  Use an invite code, or ask a guild officer to enable Discord integration.
+            // Improved empty state: CTA to create + inline code input
+            <div className="space-y-6 py-4">
+              <div className="text-center">
+                <p className="font-bold text-[18px] text-foreground mb-2">Your guild isn't on LootList+ yet</p>
+                <p className="text-[14px] text-muted-foreground">
+                  None of your Discord servers match a LootList+ guild. You can create one or join with a code.
                 </p>
+              </div>
+
+              {/* Create guild CTA */}
+              <Button
+                onClick={handleCreateFromDiscord}
+                className="w-full"
+              >
+                Create your guild
+              </Button>
+
+              {/* Or join with code */}
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-border" />
+                </div>
+                <div className="relative flex justify-center">
+                  <span className="bg-background-elevated px-3 text-[12px] text-muted-foreground">or join with a code</span>
+                </div>
+              </div>
+
+              <div className="flex gap-2.5">
+                <Input
+                  type="text"
+                  value={modalInviteCode}
+                  onChange={(e) => setModalInviteCode(e.target.value.toUpperCase())}
+                  placeholder="Invite code"
+                  variant="pill"
+                  className="flex-1 font-poppins font-medium"
+                />
+                <Button
+                  onClick={handleModalCodeJoin}
+                  disabled={!modalInviteCode.trim()}
+                  loading={joiningGuildId === 'code'}
+                  className="shrink-0"
+                >
+                  Join
+                </Button>
               </div>
             </div>
           ) : (
@@ -431,7 +480,7 @@ export default function WelcomeScreen() {
                           <h4 className="font-bold text-[14px] text-foreground truncate">{guild.name}</h4>
                           <div className="flex gap-2 text-[12px] text-muted-foreground mt-0.5">
                             {guild.realm && <span>{guild.realm}</span>}
-                            {guild.realm && <span>•</span>}
+                            {guild.realm && <span>&middot;</span>}
                             <span>{guild.faction}</span>
                           </div>
                         </div>
@@ -458,7 +507,7 @@ export default function WelcomeScreen() {
           <div className="flex items-start gap-2">
             <HugeiconsIcon icon={InformationCircleIcon} size={16} className="text-muted-foreground shrink-0 mt-0.5" />
             <p className="text-[12px] text-muted-foreground">
-              We check which Discord servers you're a member of and match them with LootList+ guilds that have Discord integration enabled.
+              We check which Discord servers you're in and match them with LootList+ guilds.
             </p>
           </div>
         </div>
@@ -472,8 +521,9 @@ export default function WelcomeScreen() {
           setShowCreateGuild(false)
           router.refresh()
         }}
+        preselectedServerId={createPreselectedServer}
+        suggestedName={createSuggestedName}
       />
     </>
   )
 }
-

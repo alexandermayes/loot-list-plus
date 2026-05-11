@@ -40,6 +40,12 @@ type ClientEvent =
   | 'landing_cta_clicked'
   | 'landing_nav_clicked'
   | 'landing_section_viewed'
+  // Welcome screen
+  | 'welcome_discord_clicked'
+  | 'welcome_code_entered'
+  | 'welcome_create_clicked'
+  | 'welcome_discord_no_guilds'
+  | 'welcome_discord_error'
   // Blog engagement
   | 'blog_post_viewed'
   | 'blog_scroll_depth'

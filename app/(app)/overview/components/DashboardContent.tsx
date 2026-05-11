@@ -1666,7 +1666,9 @@ export default function DashboardContent() {
   }
 
   // Show welcome screen if no active guild (after loading completes)
-  if (!guildLoading && !activeGuild) {
+  // Dev preview: ?welcome=true forces the welcome screen for testing
+  const forceWelcome = process.env.NODE_ENV === 'development' && searchParams.get('welcome') === 'true'
+  if ((!guildLoading && !activeGuild) || forceWelcome) {
     return <WelcomeScreen />
   }
 

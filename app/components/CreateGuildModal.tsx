@@ -34,6 +34,8 @@ interface CreateGuildModalProps {
   isOpen: boolean
   onClose: () => void
   onSuccess?: () => void
+  preselectedServerId?: string
+  suggestedName?: string
 }
 
 type Step = 'discord' | 'details' | 'settings'
@@ -46,7 +48,7 @@ const EXPANSIONS = [
   { id: 'Mists of Pandaria', name: 'MoP', image: '/images/expansions/MoPlogo.webp', available: true },
 ]
 
-export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModalProps) {
+export function CreateGuildModal({ isOpen, onClose, onSuccess, preselectedServerId, suggestedName }: CreateGuildModalProps) {
   const router = useRouter()
   const supabase = createClient()
 
@@ -96,8 +98,11 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateGuildModa
       setSelectedDiscordServer('')
       setShowManualEntry(false)
       setManualServerId('')
+      // Pre-fill from parent if provided
+      if (preselectedServerId) setSelectedDiscordServer(preselectedServerId)
+      if (suggestedName) setGuildName(suggestedName)
     }
-  }, [isOpen])
+  }, [isOpen, preselectedServerId, suggestedName])
 
   const loadUserData = async () => {
     setLoading(true)
