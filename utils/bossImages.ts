@@ -200,6 +200,7 @@ const bossIconNames: Record<string, string> = {
   'Void Reaver': 'spell_shadow_shadowandflame',
   'Kael\'thas Sunstrider': 'achievement_boss_kael-thassunstrider_01',
   'Trash': 'inv_misc_bag_10_blue',
+  'Crafting Materials': 'trade_engineering',
 
   // Mount Hyjal
   'Rage Winterchill': 'spell_frost_glacier',
