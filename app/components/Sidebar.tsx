@@ -14,13 +14,16 @@ import { Input } from '@/components/ui/input'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { HugeiconsIcon } from '@hugeicons/react'
-import { Cancel01Icon, Settings01Icon, Notification03Icon } from '@hugeicons/core-free-icons'
+import { Cancel01Icon, Settings01Icon, Notification03Icon, BubbleChatEditIcon } from '@hugeicons/core-free-icons'
 import { usePendingSubmissionCount } from '../hooks/usePendingSubmissionCount'
 import { trackClientEvent } from '@/utils/analytics/client'
 import { hasFeature } from '@/domain/guild/feature-flags'
 
-// Lazy load modal to reduce initial bundle size
+// Lazy load modals to reduce initial bundle size
 const CreateGuildModal = dynamic(() => import('./CreateGuildModal').then(mod => ({ default: mod.CreateGuildModal })), {
+  loading: () => null
+})
+const FeedbackModal = dynamic(() => import('./FeedbackModal').then(mod => ({ default: mod.FeedbackModal })), {
   loading: () => null
 })
 
@@ -50,6 +53,7 @@ export default function Sidebar({ currentView = 'overview', onViewChange, isMobi
   const [availableGuilds, setAvailableGuilds] = useState<any[]>([])
   const [discordError, setDiscordError] = useState('')
   const [showCreateGuildModal, setShowCreateGuildModal] = useState(false)
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
   const sidebarRef = useRef<HTMLElement>(null)
   const supabase = createClient()
@@ -786,12 +790,21 @@ export default function Sidebar({ currentView = 'overview', onViewChange, isMobi
                 : 'text-foreground hover:bg-muted border-transparent'
             }`}
           >
-            <HugeiconsIcon
-              icon={Notification03Icon}
-              size={20}
-              className={`w-5 h-5 ${pathname?.startsWith('/updates') ? 'text-accent' : ''}`}
-            />
+            <span className={`w-5 h-5 flex items-center justify-center shrink-0 overflow-visible ${pathname?.startsWith('/updates') ? 'text-accent' : ''}`}>
+              <HugeiconsIcon icon={Notification03Icon} size={24} strokeWidth={1.5} />
+            </span>
             <span className="whitespace-nowrap">Updates</span>
+          </Button>
+
+          <Button
+            variant="ghost"
+            onClick={() => setShowFeedbackModal(true)}
+            className="w-full px-3.5 py-2 h-auto flex items-center gap-3 rounded-[40px] transition-colors font-poppins font-medium text-[13px] text-foreground hover:bg-muted border-[0.5px] border-transparent justify-start"
+          >
+            <span className="w-5 h-5 flex items-center justify-center shrink-0 overflow-visible">
+              <HugeiconsIcon icon={BubbleChatEditIcon} size={24} strokeWidth={1.5} />
+            </span>
+            <span className="whitespace-nowrap">Give feedback</span>
           </Button>
 
           <a
@@ -871,6 +884,11 @@ export default function Sidebar({ currentView = 'overview', onViewChange, isMobi
     <CreateGuildModal
       isOpen={showCreateGuildModal}
       onClose={() => setShowCreateGuildModal(false)}
+    />
+
+    <FeedbackModal
+      isOpen={showFeedbackModal}
+      onClose={() => setShowFeedbackModal(false)}
     />
 
     {/* Join Guild Modal */}

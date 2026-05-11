@@ -2,7 +2,6 @@
 
 import { usePathname } from 'next/navigation'
 import { useState, useEffect } from 'react'
-import dynamic from 'next/dynamic'
 import Image from 'next/image'
 import Link from 'next/link'
 import Sidebar from '@/app/components/Sidebar'
@@ -10,16 +9,12 @@ import { MobileMenuButton } from '@/app/components/MobileMenuButton'
 import { Skeleton } from '@/components/ui/skeletons'
 import { Button } from '@/components/ui/button'
 import { HugeiconsIcon } from '@hugeicons/react'
-import { Bug01Icon, Notification03Icon } from '@hugeicons/core-free-icons'
+import { Notification03Icon } from '@hugeicons/core-free-icons'
 import { SidebarProvider, useSidebar } from '@/app/contexts/SidebarContext'
 import { AccentColorProvider } from '@/app/contexts/AccentColorContext'
 import { useGuildContext } from '@/app/contexts/GuildContext'
 import { DeploymentCheck } from '@/app/components/DeploymentCheck'
 import { KonamiEasterEgg } from '@/app/components/KonamiEasterEgg'
-
-const FeedbackModal = dynamic(() => import('@/app/components/FeedbackModal').then(mod => ({ default: mod.FeedbackModal })), {
-  loading: () => null
-})
 
 function AppLayoutContent({
   children,
@@ -28,7 +23,6 @@ function AppLayoutContent({
 }) {
   const pathname = usePathname()
   const { user, loading, activeGuild, activeCharacter } = useGuildContext()
-  const [showFeedbackModal, setShowFeedbackModal] = useState(false)
   const { sidebarWidth, isResizing, isMobile, isMobileMenuOpen, closeMobileMenu } = useSidebar()
 
   // Lock body scroll when mobile menu is open
@@ -309,23 +303,6 @@ function AppLayoutContent({
         </div>
       </main>
 
-      {/* Floating Feedback Button */}
-      <Button
-        variant="primary"
-        size="sm"
-        onClick={() => setShowFeedbackModal(true)}
-        className="fixed bottom-6 right-6 rounded-full shadow-lg z-40 gap-1.5 px-3"
-        aria-label="Give feedback"
-      >
-        <HugeiconsIcon icon={Bug01Icon} size={16} />
-        <span className="text-[12px]">Give feedback</span>
-      </Button>
-
-      {/* Feedback Modal */}
-      <FeedbackModal
-        isOpen={showFeedbackModal}
-        onClose={() => setShowFeedbackModal(false)}
-      />
     </div>
   )
 }
