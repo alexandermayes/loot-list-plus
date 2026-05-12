@@ -103,7 +103,7 @@ function getCategory(tableName: string): AuditCategory {
     case 'attendance_records': return 'attendance'
     case 'guild_settings': return 'settings'
     case 'character_guild_memberships':
-    case 'guild_members': return 'members'
+    case 'guild_members': return 'members' // legacy, kept for historical log entries
     case 'blp_tracking': return 'blp'
     case 'loot_submission_items': return 'items'
     default: return 'settings'

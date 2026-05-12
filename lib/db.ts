@@ -2,7 +2,7 @@
  * Friendly type aliases for database tables.
  *
  * Import from here instead of defining inline interfaces:
- *   import type { DbCharacter, DbGuild, DbGuildMember } from '@/lib/db'
+ *   import type { DbCharacter, DbGuild } from '@/lib/db'
  *
  * Regenerate with: npm run gen:types
  */
@@ -25,7 +25,6 @@ export type DbClassSpec = Tables['class_specs']['Row']
 export type DbExpansion = Tables['expansions']['Row']
 export type DbGuildInviteCode = Tables['guild_invite_codes']['Row']
 export type DbGuildItemPriority = Tables['guild_item_priorities']['Row']
-export type DbGuildMember = Tables['guild_members']['Row']
 export type DbGuildRole = Tables['guild_roles']['Row']
 export type DbGuildSettings = Tables['guild_settings']['Row']
 export type DbGuild = Tables['guilds']['Row']

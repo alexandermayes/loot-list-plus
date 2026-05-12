@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Deactivate character memberships (trigger syncs guild_members automatically)
+    // Deactivate character memberships
     if (characterMemberships.length > 0) {
       const charMembershipIds = characterMemberships.map(m => m.id)
       const { error: charDeleteError } = await supabase

@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Delete character guild memberships (trigger syncs guild_members automatically)
+    // Delete character guild memberships
     let charMembersQuery = supabase
       .from('character_guild_memberships')
       .delete()

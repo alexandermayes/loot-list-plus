@@ -71,14 +71,6 @@ export async function GET(request: NextRequest) {
       .eq('user_id', char.user_id)
       .single()
 
-    // Check guild_members (deprecated table)
-    const { data: legacyMember } = await serviceSupabase
-      .from('guild_members')
-      .select('id, user_id, role, is_active')
-      .eq('user_id', char.user_id)
-      .eq('guild_id', guildId)
-      .maybeSingle()
-
     // Check loot submissions
     const { data: submissions } = await serviceSupabase
       .from('loot_submissions')
@@ -207,12 +199,6 @@ export async function GET(request: NextRequest) {
         active_character_id: activeChar.active_character_id,
         active_guild_id: activeChar.active_guild_id,
       } : null,
-      legacy_guild_member: legacyMember ? {
-        exists: true,
-        is_active: legacyMember.is_active,
-        role: legacyMember.role,
-        user_id_matches: legacyMember.user_id === char.user_id,
-      } : { exists: false },
       submissions: submissions?.map(s => ({
         id: s.id,
         status: s.status,

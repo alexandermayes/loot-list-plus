@@ -164,20 +164,9 @@ export async function GET(request: NextRequest) {
         console.log('[addon/export-string] Characters found:', characters?.length, 'error:', charErr?.message)
 
         if (characters && characters.length > 0) {
-          // Try to get roles from guild_members (legacy table uses user_id)
-          const { data: legacyRoles } = await supabase
-            .from('guild_members')
-            .select('user_id, role')
-            .eq('guild_id', guildId)
-
-          const userRoleMap: Record<string, string> = {}
-          for (const lr of legacyRoles || []) {
-            userRoleMap[lr.user_id] = lr.role
-          }
-
           memberships = characters.map(c => ({
             character_id: c.id,
-            role: userRoleMap[c.user_id] || 'Member',
+            role: 'Member',
             membership_status: 'full',
             characters: c,
           }))

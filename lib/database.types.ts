@@ -14,6 +14,44 @@ export type Database = {
   }
   public: {
     Tables: {
+      addon_sync_tokens: {
+        Row: {
+          created_at: string | null
+          expires_at: string
+          guild_id: string
+          id: string
+          last_used_at: string | null
+          token_hash: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          expires_at: string
+          guild_id: string
+          id?: string
+          last_used_at?: string | null
+          token_hash: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          expires_at?: string
+          guild_id?: string
+          id?: string
+          last_used_at?: string | null
+          token_hash?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "addon_sync_tokens_guild_id_fkey"
+            columns: ["guild_id"]
+            isOneToOne: false
+            referencedRelation: "guilds"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       attendance_records: {
         Row: {
           attended: boolean | null
@@ -635,67 +673,6 @@ export type Database = {
           },
         ]
       }
-      guild_members: {
-        Row: {
-          character_name: string | null
-          class_id: string | null
-          guild_id: string | null
-          id: string
-          invite_code_id: string | null
-          is_active: boolean | null
-          joined_at: string | null
-          joined_via: string | null
-          role: string
-          user_id: string | null
-        }
-        Insert: {
-          character_name?: string | null
-          class_id?: string | null
-          guild_id?: string | null
-          id?: string
-          invite_code_id?: string | null
-          is_active?: boolean | null
-          joined_at?: string | null
-          joined_via?: string | null
-          role?: string
-          user_id?: string | null
-        }
-        Update: {
-          character_name?: string | null
-          class_id?: string | null
-          guild_id?: string | null
-          id?: string
-          invite_code_id?: string | null
-          is_active?: boolean | null
-          joined_at?: string | null
-          joined_via?: string | null
-          role?: string
-          user_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "guild_members_class_id_fkey"
-            columns: ["class_id"]
-            isOneToOne: false
-            referencedRelation: "wow_classes"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "guild_members_guild_id_fkey"
-            columns: ["guild_id"]
-            isOneToOne: false
-            referencedRelation: "guilds"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "guild_members_invite_code_id_fkey"
-            columns: ["invite_code_id"]
-            isOneToOne: false
-            referencedRelation: "guild_invite_codes"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       guild_roles: {
         Row: {
           color_hex: string | null
@@ -704,6 +681,7 @@ export type Database = {
           id: string
           is_default: boolean | null
           name: string
+          permissions: string[] | null
           position: number
         }
         Insert: {
@@ -713,6 +691,7 @@ export type Database = {
           id?: string
           is_default?: boolean | null
           name: string
+          permissions?: string[] | null
           position?: number
         }
         Update: {
@@ -722,6 +701,7 @@ export type Database = {
           id?: string
           is_default?: boolean | null
           name?: string
+          permissions?: string[] | null
           position?: number
         }
         Relationships: [
@@ -758,8 +738,11 @@ export type Database = {
           id: string
           late_early_penalty_enabled: boolean | null
           late_early_penalty_value: number | null
+          max_allocation_points_per_bracket: number
           max_attendance_bonus: number
           max_attendance_threshold: number
+          max_category_per_bracket: number
+          max_tokens_per_bracket: number
           middle_attendance_bonus: number
           middle_attendance_threshold: number
           minimum_raid_days: number | null
@@ -816,8 +799,11 @@ export type Database = {
           id?: string
           late_early_penalty_enabled?: boolean | null
           late_early_penalty_value?: number | null
+          max_allocation_points_per_bracket?: number
           max_attendance_bonus?: number
           max_attendance_threshold?: number
+          max_category_per_bracket?: number
+          max_tokens_per_bracket?: number
           middle_attendance_bonus?: number
           middle_attendance_threshold?: number
           minimum_raid_days?: number | null
@@ -874,8 +860,11 @@ export type Database = {
           id?: string
           late_early_penalty_enabled?: boolean | null
           late_early_penalty_value?: number | null
+          max_allocation_points_per_bracket?: number
           max_attendance_bonus?: number
           max_attendance_threshold?: number
+          max_category_per_bracket?: number
+          max_tokens_per_bracket?: number
           middle_attendance_bonus?: number
           middle_attendance_threshold?: number
           minimum_raid_days?: number | null
@@ -1034,6 +1023,7 @@ export type Database = {
           notes: string | null
           raid_event_id: string | null
           raid_tier_id: string
+          source: string | null
           updated_at: string | null
         }
         Insert: {
@@ -1049,6 +1039,7 @@ export type Database = {
           notes?: string | null
           raid_event_id?: string | null
           raid_tier_id: string
+          source?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -1064,6 +1055,7 @@ export type Database = {
           notes?: string | null
           raid_event_id?: string | null
           raid_tier_id?: string
+          source?: string | null
           updated_at?: string | null
         }
         Relationships: [
@@ -1827,6 +1819,7 @@ export type Database = {
       reserve_submissions: {
         Row: {
           character_class: string
+          character_id: string | null
           character_name: string
           character_spec: string | null
           created_at: string
@@ -1839,6 +1832,7 @@ export type Database = {
         }
         Insert: {
           character_class: string
+          character_id?: string | null
           character_name: string
           character_spec?: string | null
           created_at?: string
@@ -1851,6 +1845,7 @@ export type Database = {
         }
         Update: {
           character_class?: string
+          character_id?: string | null
           character_name?: string
           character_spec?: string | null
           created_at?: string
@@ -1862,6 +1857,13 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "reserve_submissions_character_id_fkey"
+            columns: ["character_id"]
+            isOneToOne: false
+            referencedRelation: "characters"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "reserve_submissions_reserve_run_id_fkey"
             columns: ["reserve_run_id"]
@@ -1900,32 +1902,6 @@ export type Database = {
           },
           {
             foreignKeyName: "user_active_characters_active_guild_id_fkey"
-            columns: ["active_guild_id"]
-            isOneToOne: false
-            referencedRelation: "guilds"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      user_active_guilds: {
-        Row: {
-          active_guild_id: string
-          updated_at: string | null
-          user_id: string
-        }
-        Insert: {
-          active_guild_id: string
-          updated_at?: string | null
-          user_id: string
-        }
-        Update: {
-          active_guild_id?: string
-          updated_at?: string | null
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "user_active_guilds_active_guild_id_fkey"
             columns: ["active_guild_id"]
             isOneToOne: false
             referencedRelation: "guilds"
@@ -2139,10 +2115,6 @@ export type Database = {
           invite_is_active: boolean
           invite_max_uses: number
         }[]
-      }
-      refresh_guild_member_from_cgm: {
-        Args: { p_guild_id: string; p_user_id: string }
-        Returns: undefined
       }
       reset_blp: {
         Args: {
