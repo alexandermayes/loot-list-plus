@@ -293,8 +293,12 @@ export default function LootSubmissionsContent() {
               const submissionIds = submissionsData.map((s: { id: string }) => s.id)
               let countMap: Record<string, number> = {}
               if (submissionIds.length > 0) {
-                // Fetch counts server-side to avoid RLS overhead on large item tables
-                const countRes = await fetch(`/api/loot-submissions/item-counts?ids=${submissionIds.join(',')}`)
+                // Use POST for large lists to avoid URL length limits
+                const countRes = await fetch('/api/loot-submissions/item-counts', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ ids: submissionIds }),
+                })
                 if (countRes.ok) {
                   countMap = await countRes.json()
                 }
@@ -407,7 +411,11 @@ export default function LootSubmissionsContent() {
     const submissionIds = submissionsData.map((s: { id: string }) => s.id)
     let countMap: Record<string, number> = {}
     if (submissionIds.length > 0) {
-      const countRes = await fetch(`/api/loot-submissions/item-counts?ids=${submissionIds.join(',')}`)
+      const countRes = await fetch('/api/loot-submissions/item-counts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids: submissionIds }),
+      })
       if (countRes.ok) {
         countMap = await countRes.json()
       }
