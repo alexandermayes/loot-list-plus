@@ -47,6 +47,7 @@ interface CreateCharacterModalProps {
   onClose: () => void
   onSuccess?: () => void
   suggestedName?: string // Discord username to show as placeholder hint
+  required?: boolean // When true, hides close/cancel buttons (first-run flow)
 }
 
 // Classes gated by expansion - only show if guild's expansion is at or after the class's debut
@@ -79,7 +80,7 @@ function isClassAvailableForExpansion(className: string, expansionName: string |
   return currentIndex >= gateIndex
 }
 
-export function CreateCharacterModal({ isOpen, onClose, onSuccess, suggestedName }: CreateCharacterModalProps) {
+export function CreateCharacterModal({ isOpen, onClose, onSuccess, suggestedName, required = false }: CreateCharacterModalProps) {
   const { activeGuild, userCharacters, refreshCharacters, switchCharacter, currentExpansion } = useGuildContext()
   const { showNotification } = useNotification()
   const supabase = createClient()
@@ -344,10 +345,13 @@ export function CreateCharacterModal({ isOpen, onClose, onSuccess, suggestedName
 
   return (
     <>
-    <Modal open={isOpen && !showBattlenetPicker} onClose={onClose} size="default">
+    <Modal open={isOpen && !showBattlenetPicker} onClose={required ? () => {} : onClose} size="default">
       <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
-        <ModalHeader onClose={onClose}>
-          <ModalTitle>Create character</ModalTitle>
+        <ModalHeader onClose={required ? undefined : onClose}>
+          <ModalTitle>{required ? 'Create your character' : 'Create character'}</ModalTitle>
+          {required && (
+            <p className="text-[12px] text-muted-foreground mt-1">You need a character to use LootList+.</p>
+          )}
         </ModalHeader>
 
         <ModalBody className="space-y-5">
@@ -492,14 +496,16 @@ export function CreateCharacterModal({ isOpen, onClose, onSuccess, suggestedName
         </ModalBody>
 
         <ModalFooter>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={onClose}
-            disabled={loading}
-          >
-            Cancel
-          </Button>
+          {!required && (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onClose}
+              disabled={loading}
+            >
+              Cancel
+            </Button>
+          )}
           <Button
             type="submit"
             variant="primary"

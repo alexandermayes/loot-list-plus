@@ -2360,12 +2360,9 @@ export default function DashboardContent() {
       {/* Create Character Modal */}
       <CreateCharacterModal
         isOpen={showCreateCharacterModal}
-        onClose={() => {
-          // Don't allow dismissal if user has no character — they need one to use the app
-          if (!activeCharacter) return
-          setShowCreateCharacterModal(false)
-        }}
+        onClose={() => setShowCreateCharacterModal(false)}
         suggestedName={activeCharacter?.name}
+        required={!activeCharacter}
       />
 
       {/* Onboarding Modal for new users */}
