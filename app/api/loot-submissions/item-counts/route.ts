@@ -8,9 +8,10 @@ async function getItemCounts(submissionIds: string[]): Promise<Record<string, nu
 
   const serviceSupabase = createServiceRoleClient()
 
-  // Supabase .in() has a practical limit; batch if needed
-  const BATCH_SIZE = 200
-  const allData: { submission_id: string }[] = []
+  // Batch by submission IDs AND paginate within each batch
+  // (Supabase default limit is 1000 rows per query)
+  const BATCH_SIZE = 100
+  const countMap: Record<string, number> = {}
 
   for (let i = 0; i < submissionIds.length; i += BATCH_SIZE) {
     const batch = submissionIds.slice(i, i + BATCH_SIZE)
@@ -19,14 +20,15 @@ async function getItemCounts(submissionIds: string[]): Promise<Record<string, nu
       .select('submission_id')
       .in('submission_id', batch)
       .is('removed_at', null)
+      .limit(10000) // override default 1000-row limit
 
-    if (!error && data) allData.push(...data)
+    if (!error && data) {
+      data.forEach((item: { submission_id: string }) => {
+        countMap[item.submission_id] = (countMap[item.submission_id] || 0) + 1
+      })
+    }
   }
 
-  const countMap: Record<string, number> = {}
-  allData.forEach(item => {
-    countMap[item.submission_id] = (countMap[item.submission_id] || 0) + 1
-  })
   return countMap
 }
 
