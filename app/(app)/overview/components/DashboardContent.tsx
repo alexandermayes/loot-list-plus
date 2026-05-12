@@ -1697,7 +1697,7 @@ export default function DashboardContent() {
     }
 
     // Priority 3: Officer actions waiting
-    if (hasPermission('manage_loot') && actionsNeeded.length > 0) {
+    if (hasPermission('manage_submissions') && actionsNeeded.length > 0) {
       return `${actionsNeeded.length} submission${actionsNeeded.length === 1 ? '' : 's'} waiting for review.`
     }
 

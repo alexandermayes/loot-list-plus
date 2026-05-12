@@ -272,28 +272,28 @@ export default function RoleManager({ onRolesChanged }: RoleManagerProps) {
                       {/* Permission toggles */}
                       <div className="space-y-1.5">
                         <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Permissions</p>
-                        {ALL_PERMISSION_CODES.map(perm => {
-                          const isOfficerRole = role.position >= 50
-                          const checked = isOfficerRole || editingPermissions.includes(perm)
-                          return (
-                            <label
-                              key={perm}
-                              className={`flex items-center justify-between py-1.5 px-2 rounded-md ${isOfficerRole ? 'opacity-50' : 'hover:bg-muted/50 cursor-pointer'}`}
-                            >
-                              <div>
-                                <p className="text-[13px] text-foreground">{PERMISSIONS[perm].label}</p>
-                                <p className="text-[11px] text-muted-foreground">{PERMISSIONS[perm].description}</p>
-                              </div>
-                              <Switch
-                                checked={checked}
-                                onCheckedChange={() => !isOfficerRole && togglePermission(perm)}
-                                disabled={isOfficerRole}
-                              />
-                            </label>
-                          )
-                        })}
+                        <div className="grid grid-cols-2 gap-1">
+                          {ALL_PERMISSION_CODES.map(perm => {
+                            const isOfficerRole = role.position >= 50
+                            const checked = isOfficerRole || editingPermissions.includes(perm)
+                            return (
+                              <label
+                                key={perm}
+                                title={PERMISSIONS[perm].description}
+                                className={`flex items-center gap-2 py-1.5 px-2 rounded-md ${isOfficerRole ? 'opacity-50' : 'hover:bg-muted/50 cursor-pointer'}`}
+                              >
+                                <Switch
+                                  checked={checked}
+                                  onCheckedChange={() => !isOfficerRole && togglePermission(perm)}
+                                  disabled={isOfficerRole}
+                                />
+                                <span className="text-[12px] text-foreground">{PERMISSIONS[perm].label}</span>
+                              </label>
+                            )
+                          })}
+                        </div>
                         {role.position >= 50 && (
-                          <p className="text-[10px] text-muted-foreground italic pt-1">
+                          <p className="text-[10px] text-muted-foreground italic">
                             Officers and Guild Master have all permissions by default.
                           </p>
                         )}

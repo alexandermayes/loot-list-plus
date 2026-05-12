@@ -70,7 +70,8 @@ export function hasGuildMasterPermissions(roleName: string, roles: { name: strin
 // ─── Granular Permissions ──────────────────────────────────
 
 export const PERMISSIONS = {
-  manage_loot: { label: 'Manage loot', description: 'Award loot, manage loot history and submissions' },
+  manage_submissions: { label: 'Manage submissions', description: 'Review, approve, and reject loot list submissions' },
+  manage_loot: { label: 'Manage loot', description: 'Award loot, manage loot history and item classifications' },
   manage_attendance: { label: 'Manage attendance', description: 'Record attendance, manage raid events' },
   manage_members: { label: 'Manage members', description: 'Change roles, set trial status, remove members' },
   manage_settings: { label: 'Manage settings', description: 'Edit guild settings, loot rules, item priorities' },

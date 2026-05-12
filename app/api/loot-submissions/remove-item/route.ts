@@ -73,7 +73,7 @@ export async function POST(request: Request) {
     }
 
     if (!isOwner) {
-      const { hasPermission } = await verifyPermission(serviceSupabase, user.id, guild_id, 'manage_loot')
+      const { hasPermission } = await verifyPermission(serviceSupabase, user.id, guild_id, 'manage_submissions')
       if (!hasPermission) {
         return NextResponse.json(
           { error: 'Only the list owner or officers can remove items' },

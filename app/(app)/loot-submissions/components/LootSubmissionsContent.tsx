@@ -210,7 +210,7 @@ export default function LootSubmissionsContent() {
         return
       }
 
-      if (!hasPermission('manage_loot')) {
+      if (!hasPermission('manage_submissions')) {
         router.push('/overview')
         return
       }

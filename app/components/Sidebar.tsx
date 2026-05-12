@@ -41,7 +41,7 @@ export default function Sidebar({ currentView = 'overview', onViewChange, isMobi
   const pathname = usePathname()
   const { user, activeGuild, userGuilds, switchGuild, hasMultipleGuilds, isOfficer, hasPermission, activeMember, loading } = useGuildContext()
   const { sidebarWidth, setSidebarWidth, isResizing, setIsResizing, minWidth, maxWidth } = useSidebar()
-  const { count: pendingSubmissionCount } = usePendingSubmissionCount(activeGuild?.id ?? null, hasPermission('manage_loot'))
+  const { count: pendingSubmissionCount } = usePendingSubmissionCount(activeGuild?.id ?? null, hasPermission('manage_submissions'))
   const [guildDropdownOpen, setGuildDropdownOpen] = useState(false)
   const [showJoinModal, setShowJoinModal] = useState(false)
   const [modalView, setModalView] = useState<'main' | 'discord'>('main')
@@ -308,7 +308,7 @@ export default function Sidebar({ currentView = 'overview', onViewChange, isMobi
 
   const adminItems = [
     ...(hasPermission('manage_attendance') ? [{ name: 'Raid Tracking', view: 'raid-tracking', icon: '/icons/raid-tracking.svg' }] : []),
-    ...(hasPermission('manage_loot') ? [{ name: 'Loot Submissions', view: 'loot-submissions', icon: '/icons/master-loot.svg' }] : []),
+    ...(hasPermission('manage_submissions') ? [{ name: 'Loot Submissions', view: 'loot-submissions', icon: '/icons/master-loot.svg' }] : []),
     ...(hasPermission('manage_settings') ? [{ name: 'Loot Management', view: 'loot-settings', icon: '/icons/guild-settings.svg' }] : []),
     ...(hasPermission('manage_roster') && hasFeature(activeGuild, 'raid_teams') ? [{ name: 'Raid Teams', view: 'raid-teams', icon: '/icons/user-multiple.svg' }] : []),
     ...(hasPermission('view_audit_log') && hasFeature(activeGuild, 'audit_log') ? [{ name: 'Audit Log', view: 'audit-log', icon: '/icons/monitor.svg' }] : []),

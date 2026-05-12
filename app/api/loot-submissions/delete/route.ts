@@ -26,7 +26,7 @@ export async function DELETE(request: Request) {
     // Support single submission deletion via submission_id
     if (submission_id) {
       // Verify user has officer permissions
-      const verification = await verifyPermission(serviceSupabase, user.id, guild_id, 'manage_loot')
+      const verification = await verifyPermission(serviceSupabase, user.id, guild_id, 'manage_submissions')
       if (!verification.hasPermission) {
         return NextResponse.json({ error: 'Only officers can delete loot lists' }, { status: 403 })
       }
@@ -100,7 +100,7 @@ export async function DELETE(request: Request) {
     }
 
     // Verify user has officer permissions (position >= 50)
-    const verification = await verifyPermission(serviceSupabase, user.id, guild_id, 'manage_loot')
+    const verification = await verifyPermission(serviceSupabase, user.id, guild_id, 'manage_submissions')
     if (!verification.hasPermission) {
       return NextResponse.json({ error: 'Only officers can delete loot lists' }, { status: 403 })
     }

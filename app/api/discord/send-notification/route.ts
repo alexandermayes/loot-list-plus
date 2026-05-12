@@ -69,7 +69,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify the caller is an officer in the submission's guild
-    const verification = await verifyPermission(serviceSupabase, user.id, submission.guild_id, 'manage_loot')
+    const verification = await verifyPermission(serviceSupabase, user.id, submission.guild_id, 'manage_submissions')
     if (!verification.hasPermission) {
       return NextResponse.json({ error: 'Only officers can send submission notifications' }, { status: 403 })
     }

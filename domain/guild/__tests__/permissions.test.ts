@@ -12,8 +12,8 @@ import {
 // ─── PERMISSIONS constant integrity ─────────────────────────
 
 describe('PERMISSIONS constant', () => {
-  it('defines exactly 7 permissions', () => {
-    expect(ALL_PERMISSION_CODES).toHaveLength(7)
+  it('defines exactly 8 permissions', () => {
+    expect(ALL_PERMISSION_CODES).toHaveLength(8)
   })
 
   it('every permission has a label and description', () => {
@@ -32,6 +32,7 @@ describe('PERMISSIONS constant', () => {
 
   it('contains the expected permission codes', () => {
     const expected = [
+      'manage_submissions',
       'manage_loot',
       'manage_attendance',
       'manage_members',
@@ -112,6 +113,7 @@ describe('roleHasPermission — granular permissions', () => {
 
   it('grants only the specific permission in the array', () => {
     expect(roleHasPermission(10, ['manage_loot'], 'manage_loot')).toBe(true)
+    expect(roleHasPermission(10, ['manage_loot'], 'manage_submissions')).toBe(false)
     expect(roleHasPermission(10, ['manage_loot'], 'manage_attendance')).toBe(false)
     expect(roleHasPermission(10, ['manage_loot'], 'manage_members')).toBe(false)
     expect(roleHasPermission(10, ['manage_loot'], 'manage_settings')).toBe(false)
