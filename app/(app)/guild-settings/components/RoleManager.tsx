@@ -299,10 +299,19 @@ export default function RoleManager({ onRolesChanged }: RoleManagerProps) {
                         )}
                       </div>
                       <div className="flex gap-2">
-                        <Button size="sm" onClick={() => handleSaveEditRole(role.id)} className="flex-1">
-                          <HugeiconsIcon icon={Tick01Icon} size={16} />
-                          Save
-                        </Button>
+                        {(() => {
+                          const origPerms = new Set(role.permissions || [])
+                          const editPerms = new Set(editingPermissions)
+                          const hasChanges = editingRoleName.trim() !== role.name ||
+                            origPerms.size !== editPerms.size ||
+                            [...origPerms].some(p => !editPerms.has(p))
+                          return (
+                            <Button size="sm" onClick={() => handleSaveEditRole(role.id)} className="flex-1" disabled={!hasChanges}>
+                              <HugeiconsIcon icon={Tick01Icon} size={16} />
+                              Save
+                            </Button>
+                          )
+                        })()}
                         <Button variant="outline" size="sm" onClick={handleCancelEdit} className="flex-1">
                           <HugeiconsIcon icon={Cancel01Icon} size={16} />
                           Cancel
