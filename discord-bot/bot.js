@@ -25,7 +25,7 @@ client.once('clientReady', () => {
   // Set bot status/activity
   client.user.setPresence({
     activities: [{
-      name: 'LootList+ | lootlistplus.dev',
+      name: 'LootList+ | getlootlist.com',
       type: ActivityType.Playing
     }],
     status: 'online'
