@@ -20,7 +20,7 @@ export default function TermsOfServicePage() {
           Terms of Service
         </Heading>
         <Text color="secondary" className="mb-8">
-          Last updated: March 15, 2026
+          Last updated: May 12, 2026
         </Text>
 
         <div className="space-y-8 text-foreground">
@@ -182,6 +182,11 @@ export default function TermsOfServicePage() {
                 <Text>Remove members from the guild</Text>
               </li>
             </ul>
+            <Text>
+              Guild Masters may create custom roles with specific permissions (such as managing
+              submissions, attendance, or roster) and assign them to members. The scope of each
+              member&apos;s access is determined by their assigned role.
+            </Text>
             <Text>
               We are not responsible for decisions made by guild officers regarding loot
               distribution or membership. Disputes between guild members should be resolved within

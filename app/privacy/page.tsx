@@ -20,7 +20,7 @@ export default function PrivacyPolicyPage() {
           Privacy Policy
         </Heading>
         <Text color="secondary" className="mb-8">
-          Last updated: March 15, 2026
+          Last updated: May 12, 2026
         </Text>
 
         <div className="space-y-8 text-foreground">
@@ -162,6 +162,9 @@ export default function PrivacyPolicyPage() {
               </li>
               <li>
                 <Text>Guild membership dates and roles</Text>
+              </li>
+              <li>
+                <Text>Audit log entries for officer actions (approvals, loot awards, settings changes)</Text>
               </li>
             </ul>
 
@@ -497,7 +500,39 @@ export default function PrivacyPolicyPage() {
           </section>
 
           <section className="space-y-4">
-            <Heading level={2}>11. Third-Party Links</Heading>
+            <Heading level={2}>11. Cookies</Heading>
+            <Text>
+              LootList+ uses cookies and similar technologies for the following purposes:
+            </Text>
+            <ul className="ml-6 list-disc space-y-2">
+              <li>
+                <Text>
+                  <strong>Authentication</strong> - Session cookies from Supabase to keep you logged
+                  in. These are essential for the Service to function.
+                </Text>
+              </li>
+              <li>
+                <Text>
+                  <strong>Analytics</strong> - PostHog sets cookies to distinguish unique visitors and
+                  track usage patterns. These help us understand how the Service is used and where to
+                  improve.
+                </Text>
+              </li>
+              <li>
+                <Text>
+                  <strong>Preferences</strong> - We may store your display preferences (such as theme
+                  or accent color) in local storage.
+                </Text>
+              </li>
+            </ul>
+            <Text>
+              We do not use advertising cookies or tracking pixels from ad networks. You can block
+              analytics cookies using a browser extension without affecting core functionality.
+            </Text>
+          </section>
+
+          <section className="space-y-4">
+            <Heading level={2}>12. Third-Party Links</Heading>
             <Text>
               The Service may contain links to third-party websites, including Wowhead for item
               tooltips and Discord for authentication. We are not responsible for the privacy
@@ -507,7 +542,7 @@ export default function PrivacyPolicyPage() {
           </section>
 
           <section className="space-y-4">
-            <Heading level={2}>12. Changes to This Policy</Heading>
+            <Heading level={2}>13. Changes to This Policy</Heading>
             <Text>
               We may update this Privacy Policy from time to time. We will notify you of significant
               changes by posting a notice on the Service or through other reasonable means. The
@@ -521,7 +556,7 @@ export default function PrivacyPolicyPage() {
           </section>
 
           <section className="space-y-4">
-            <Heading level={2}>13. Contact Us</Heading>
+            <Heading level={2}>14. Contact Us</Heading>
             <Text>
               If you have any questions about this Privacy Policy or our data practices, please
               contact us at:
