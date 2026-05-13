@@ -381,10 +381,10 @@ function BlogSection() {
     <div className="space-y-6">
       {/* Top posts */}
       <Card>
-        <CardHeader><CardTitle>Top posts (30 days)</CardTitle></CardHeader>
+        <CardHeader><CardTitle>Top posts (90 days)</CardTitle></CardHeader>
         <CardContent>
           {data.top_posts.length === 0 ? (
-            <Text color="muted" size="sm">No blog views yet. Data will appear once the PostHog fix deploys.</Text>
+            <Text color="muted" size="sm">No blog views yet.</Text>
           ) : (
             <div className="space-y-2">
               {data.top_posts.map((p: any, i: number) => (

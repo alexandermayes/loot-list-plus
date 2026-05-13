@@ -25,10 +25,10 @@ async function queryPostHog(hogql: string): Promise<any[]> {
 
 async function getBlogAnalytics() {
   const [topPosts, weeklyTrend, referrers, engagement] = await Promise.all([
-    queryPostHog(`SELECT properties.$pathname as path, count() as views, count(DISTINCT properties.distinct_id) as uniques FROM events WHERE event = '$pageview' AND properties.$pathname LIKE '/blog/%' AND properties.$pathname != '/blog/' AND timestamp > now() - INTERVAL 30 DAY GROUP BY path ORDER BY views DESC LIMIT 20`),
+    queryPostHog(`SELECT properties.$pathname as path, count() as views, count(DISTINCT properties.distinct_id) as uniques FROM events WHERE event = '$pageview' AND properties.$pathname LIKE '/blog/%' AND properties.$pathname != '/blog/' AND timestamp > now() - INTERVAL 90 DAY GROUP BY path ORDER BY views DESC LIMIT 20`),
     queryPostHog(`SELECT toMonday(timestamp) as week, count() as views, count(DISTINCT properties.distinct_id) as uniques FROM events WHERE event = '$pageview' AND properties.$pathname LIKE '/blog/%' AND timestamp > now() - INTERVAL 12 WEEK GROUP BY week ORDER BY week ASC`),
-    queryPostHog(`SELECT properties.$referrer as referrer, count() as views FROM events WHERE event = '$pageview' AND properties.$pathname LIKE '/blog/%' AND properties.$pathname != '/blog/' AND timestamp > now() - INTERVAL 30 DAY AND properties.$referrer IS NOT NULL AND properties.$referrer != '' GROUP BY referrer ORDER BY views DESC LIMIT 15`),
-    queryPostHog(`SELECT properties.slug as slug, avg(properties.seconds) as avg_seconds, countIf(properties.depth = 100) as completed, count() as total FROM events WHERE event IN ('blog_time_on_page', 'blog_scroll_depth') AND timestamp > now() - INTERVAL 30 DAY GROUP BY slug ORDER BY total DESC`),
+    queryPostHog(`SELECT properties.$referrer as referrer, count() as views FROM events WHERE event = '$pageview' AND properties.$pathname LIKE '/blog/%' AND properties.$pathname != '/blog/' AND timestamp > now() - INTERVAL 90 DAY AND properties.$referrer IS NOT NULL AND properties.$referrer != '' GROUP BY referrer ORDER BY views DESC LIMIT 15`),
+    queryPostHog(`SELECT properties.slug as slug, avg(properties.seconds) as avg_seconds, countIf(properties.depth = 100) as completed, count() as total FROM events WHERE event IN ('blog_time_on_page', 'blog_scroll_depth') AND timestamp > now() - INTERVAL 90 DAY GROUP BY slug ORDER BY total DESC`),
   ])
 
   return {
