@@ -1,4 +1,4 @@
-import { createClient, getAuthenticatedUser } from '@/utils/supabase/server'
+import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { NextResponse } from 'next/server'
 import { verifyPermission } from '@/utils/server-roles'
@@ -24,7 +24,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const supabase = await createClient()
     const serviceSupabase = createServiceRoleClient()
 
     const body = await request.json()
@@ -65,7 +64,9 @@ export async function POST(request: Request) {
       notes: priority.notes || null
     }))
 
-    const { data: results, error: upsertError } = await supabase
+    // guild_item_priorities currently has no RLS policies. Permission is verified
+    // above, so use the service client for the upsert.
+    const { data: results, error: upsertError } = await serviceSupabase
       .from('guild_item_priorities')
       .upsert(upsertRows, {
         onConflict: 'guild_id,item_id,raid_tier_id'

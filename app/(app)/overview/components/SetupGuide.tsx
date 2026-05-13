@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
+import Image from 'next/image'
 import { createClient } from '@/utils/supabase/client'
 import { useGuildContext } from '@/app/contexts/GuildContext'
 import { Button } from '@/components/ui/button'
@@ -33,10 +34,11 @@ interface SetupStep {
 interface SetupGuideProps {
   guildId: string
   guildName: string
+  guildIconUrl?: string | null
   hasExpansion: boolean
 }
 
-export function SetupGuide({ guildId, guildName, hasExpansion }: SetupGuideProps) {
+export function SetupGuide({ guildId, guildName, guildIconUrl, hasExpansion }: SetupGuideProps) {
   const router = useRouter()
   const supabase = createClient()
   const { activeCharacter } = useGuildContext()
@@ -49,31 +51,22 @@ export function SetupGuide({ guildId, guildName, hasExpansion }: SetupGuideProps
   const checkSetupProgress = useCallback(async () => {
     try {
       const [membersResult, inviteResult, settingsResult, submissionsResult, raidsResult] = await Promise.all([
-        // Check member count (not just invite codes)
         supabase
           .from('character_guild_memberships')
           .select('id', { count: 'exact', head: true })
           .eq('guild_id', guildId)
           .eq('is_active', true),
-
-        // Check invite codes
         fetch(`/api/guild-invites?guild_id=${guildId}`).then(r => r.ok ? r.json() : null),
-
-        // Check guild settings for raid schedule
         supabase
           .from('guild_settings')
           .select('first_raid_day, second_raid_day, raid_days_per_week')
           .eq('guild_id', guildId)
           .single(),
-
-        // Check approved submissions
         supabase
           .from('loot_submissions')
           .select('id', { count: 'exact', head: true })
           .eq('guild_id', guildId)
           .eq('status', 'approved'),
-
-        // Check raid events
         supabase
           .from('raid_events')
           .select('id', { count: 'exact', head: true })
@@ -114,7 +107,7 @@ export function SetupGuide({ guildId, guildName, hasExpansion }: SetupGuideProps
           id: 'invite',
           title: 'Invite your raiders',
           description: hasInviteCode && !hasMembers
-            ? `Invite code created. Share it to get your guildies in.`
+            ? 'Invite code created. Share it to get your guildies in.'
             : 'Create an invite link so your raiders can join.',
           completedDescription: `${memberCount} member${memberCount !== 1 ? 's' : ''} in the guild.`,
           icon: UserGroupIcon,
@@ -156,7 +149,6 @@ export function SetupGuide({ guildId, guildName, hasExpansion }: SetupGuideProps
 
       setSteps(newSteps)
 
-      // Auto-expand first incomplete step
       const firstIncomplete = newSteps.find(s => !s.complete)
       if (firstIncomplete) {
         setExpandedStep(firstIncomplete.id)
@@ -172,7 +164,6 @@ export function SetupGuide({ guildId, guildName, hasExpansion }: SetupGuideProps
     checkSetupProgress()
   }, [checkSetupProgress])
 
-  // Check dismissal in localStorage
   useEffect(() => {
     const key = `setup-guide-dismissed-${guildId}`
     if (localStorage.getItem(key) === 'true') {
@@ -180,7 +171,6 @@ export function SetupGuide({ guildId, guildName, hasExpansion }: SetupGuideProps
     }
   }, [guildId])
 
-  // Check if we should celebrate (all complete, not yet celebrated)
   useEffect(() => {
     if (steps.length === 0) return
     const allComplete = steps.every(s => s.complete)
@@ -207,28 +197,51 @@ export function SetupGuide({ guildId, guildName, hasExpansion }: SetupGuideProps
   const allComplete = completedCount === steps.length
   const progress = steps.length > 0 ? (completedCount / steps.length) * 100 : 0
 
+  // Guild icon or fallback
+  const guildAvatar = guildIconUrl ? (
+    <Image
+      src={guildIconUrl}
+      alt=""
+      width={40}
+      height={40}
+      className="w-10 h-10 rounded-lg shrink-0 outline outline-1 -outline-offset-1 outline-black/10 dark:outline-white/10"
+    />
+  ) : (
+    <div className="w-10 h-10 rounded-lg shrink-0 bg-accent/15 flex items-center justify-center outline outline-1 -outline-offset-1 outline-black/10 dark:outline-white/10">
+      <span className="text-accent font-bold text-[16px]">{guildName.charAt(0).toUpperCase()}</span>
+    </div>
+  )
+
   // Celebration state
   if (celebrating || allComplete) {
     return (
-      <div className="relative bg-background-elevated border border-accent/30 rounded-xl overflow-hidden">
-        {/* Subtle accent glow */}
-        <div className="absolute inset-0 bg-accent/[0.03] pointer-events-none" />
-
-        <div className="relative px-6 py-8 text-center">
-          <div className="w-12 h-12 rounded-full bg-accent/15 flex items-center justify-center mx-auto mb-4">
-            <HugeiconsIcon icon={SparklesIcon} size={24} className="text-accent" />
-          </div>
+      <div className="relative bg-background-elevated border border-accent/20 rounded-xl overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-accent/[0.04] to-transparent pointer-events-none" />
+        <div className="relative px-6 py-8 flex flex-col items-center text-center">
+          {guildIconUrl ? (
+            <Image
+              src={guildIconUrl}
+              alt=""
+              width={56}
+              height={56}
+              className="w-14 h-14 rounded-xl mb-4 outline outline-1 -outline-offset-1 outline-black/10 dark:outline-white/10"
+            />
+          ) : (
+            <div className="w-14 h-14 rounded-xl bg-accent/15 flex items-center justify-center mb-4">
+              <HugeiconsIcon icon={SparklesIcon} size={28} className="text-accent" />
+            </div>
+          )}
           <h2 className="text-[20px] font-bold text-foreground">
             {guildName} is ready for loot
           </h2>
-          <p className="text-muted-foreground text-sm mt-2 max-w-md mx-auto">
-            All {steps.length} steps complete. Your guild is set up for fair, transparent loot distribution. Time to raid.
+          <p className="text-muted-foreground text-[13px] mt-1.5 max-w-sm">
+            All {steps.length} steps complete. Your guild is set up for fair, transparent loot distribution.
           </p>
           <Button
             variant="ghost"
             size="sm"
             onClick={handleDismissCelebration}
-            className="mt-4 text-muted-foreground"
+            className="mt-4 text-muted-foreground text-[12px]"
           >
             Dismiss
           </Button>
@@ -239,54 +252,71 @@ export function SetupGuide({ guildId, guildName, hasExpansion }: SetupGuideProps
 
   return (
     <div className="bg-background-elevated border border-border rounded-xl overflow-hidden">
-      {/* Header */}
-      <div className="px-6 pt-5 pb-4">
-        <div className="flex items-start justify-between">
-          <div className="flex-1 min-w-0">
-            <h2 className="text-[18px] font-bold text-foreground">
-              Get {guildName} ready for loot
-            </h2>
-            <p className="text-muted-foreground text-[13px] mt-1">
-              {completedCount} of {steps.length} steps complete
-            </p>
+      {/* Header with guild identity */}
+      <div className="px-5 pt-5 pb-4">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex items-center gap-3 flex-1 min-w-0">
+            {guildAvatar}
+            <div className="min-w-0">
+              <h2 className="text-[16px] font-bold text-foreground truncate">
+                Set up {guildName}
+              </h2>
+              <p className="text-muted-foreground text-[12px] mt-0.5">
+                {completedCount} of {steps.length} steps done
+              </p>
+            </div>
           </div>
           <button
             onClick={handleDismiss}
             className="text-muted-foreground hover:text-foreground transition-colors p-1 -mr-1 -mt-1"
             aria-label="Dismiss setup guide"
           >
-            <HugeiconsIcon icon={Cancel01Icon} size={18} />
+            <HugeiconsIcon icon={Cancel01Icon} size={16} />
           </button>
         </div>
 
-        {/* Progress bar */}
-        <div className="mt-3 h-1.5 bg-muted rounded-full overflow-hidden">
-          <div
-            className="h-full bg-accent rounded-full transition-all duration-700 ease-out"
-            style={{ width: `${progress}%` }}
-          />
+        {/* Progress bar with step dots */}
+        <div className="mt-4 flex items-center gap-1.5">
+          {steps.map((step, i) => (
+            <div
+              key={step.id}
+              className="flex-1 h-1.5 rounded-full overflow-hidden"
+            >
+              <div
+                className={`h-full rounded-full transition-all duration-500 ${
+                  step.complete
+                    ? 'bg-accent'
+                    : i === steps.findIndex(s => !s.complete)
+                      ? 'bg-accent/30'
+                      : 'bg-muted'
+                }`}
+                style={{ width: '100%' }}
+              />
+            </div>
+          ))}
         </div>
       </div>
 
       {/* Steps */}
-      <div className="px-3 pb-3">
+      <div className="px-2.5 pb-2.5">
         {steps.map((step) => {
           const isExpanded = expandedStep === step.id && !step.complete
-          const isNextStep = !step.complete && expandedStep === step.id
+          const firstIncompleteIdx = steps.findIndex(s => !s.complete)
+          const isNextStep = steps.indexOf(step) === firstIncompleteIdx
 
           return (
             <div
               key={step.id}
               className={`rounded-lg transition-colors ${
                 step.complete
-                  ? 'opacity-50'
-                  : isNextStep
-                    ? 'bg-accent/[0.06]'
+                  ? ''
+                  : isExpanded
+                    ? 'bg-accent/[0.05]'
                     : 'hover:bg-muted/50 cursor-pointer'
               }`}
             >
               <div
-                className="flex items-center gap-3.5 px-3 py-3"
+                className={`flex items-center gap-3 px-3 py-2.5 ${step.complete ? 'opacity-40' : ''}`}
                 role={step.complete ? undefined : 'button'}
                 tabIndex={step.complete ? undefined : 0}
                 onClick={step.complete ? undefined : () => setExpandedStep(
@@ -299,22 +329,22 @@ export function SetupGuide({ guildId, guildName, hasExpansion }: SetupGuideProps
                   }
                 }}
               >
-                {/* Step indicator */}
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-colors ${
+                {/* Step number or check */}
+                <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 text-[11px] font-semibold transition-colors ${
                   step.complete
                     ? 'bg-success/15'
                     : isNextStep
-                      ? 'bg-accent/15'
-                      : 'bg-muted'
+                      ? 'bg-accent text-accent-foreground'
+                      : 'bg-muted text-muted-foreground'
                 }`}>
                   {step.complete ? (
-                    <HugeiconsIcon icon={CheckmarkCircle01Icon} size={18} className="text-success" />
+                    <HugeiconsIcon icon={CheckmarkCircle01Icon} size={16} className="text-success" />
                   ) : (
-                    <HugeiconsIcon icon={step.icon} size={16} className={isNextStep ? 'text-accent' : 'text-muted-foreground'} />
+                    <span className="tabular-nums">{steps.indexOf(step) + 1}</span>
                   )}
                 </div>
 
-                {/* Step content */}
+                {/* Step title */}
                 <div className="flex-1 min-w-0">
                   <p className={`text-[13px] font-medium ${
                     step.complete
@@ -330,20 +360,20 @@ export function SetupGuide({ guildId, guildName, hasExpansion }: SetupGuideProps
                   )}
                 </div>
 
-                {/* Status */}
-                {step.complete && (
-                  <HugeiconsIcon icon={CheckmarkCircle01Icon} size={16} className="text-success shrink-0" />
-                )}
-                {!step.complete && !isExpanded && (
-                  <span className="text-[11px] text-muted-foreground shrink-0">
-                    {steps.indexOf(step) === steps.findIndex(s => !s.complete) ? 'Next' : ''}
-                  </span>
+                {/* Chevron for expandable */}
+                {!step.complete && (
+                  <svg
+                    className={`w-4 h-4 text-muted-foreground transition-transform shrink-0 ${isExpanded ? 'rotate-90' : ''}`}
+                    fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
                 )}
               </div>
 
-              {/* Expanded details */}
+              {/* Expanded action */}
               {isExpanded && (
-                <div className="px-3 pb-3 pl-[52px]">
+                <div className="px-3 pb-3 pl-[46px]">
                   <p className="text-[12px] text-muted-foreground mb-3">
                     {step.description}
                   </p>
@@ -351,10 +381,9 @@ export function SetupGuide({ guildId, guildName, hasExpansion }: SetupGuideProps
                     variant="accent"
                     size="sm"
                     onClick={() => router.push(step.href)}
-                    className="text-[12px]"
                   >
                     {step.cta}
-                    <HugeiconsIcon icon={ArrowRight01Icon} size={14} className="ml-1" />
+                    <HugeiconsIcon icon={ArrowRight01Icon} size={14} className="ml-1.5" />
                   </Button>
                 </div>
               )}

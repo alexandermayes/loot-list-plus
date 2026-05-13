@@ -390,15 +390,21 @@ export default function PriorityListTab() {
         })
       })
 
-      if (response.ok) {
-        const data = await response.json()
-        setPriorities(prev => ({
-          ...prev,
-          [selectedItem.id]: data.priority
-        }))
-        setShowModal(false)
-        setSelectedItem(null)
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}))
+        const message = body?.error || `Couldn't save priority (HTTP ${response.status}).`
+        console.error('Error saving priority:', response.status, body)
+        showNotification('error', message)
+        return
       }
+
+      const data = await response.json()
+      setPriorities(prev => ({
+        ...prev,
+        [selectedItem.id]: data.priority
+      }))
+      setShowModal(false)
+      setSelectedItem(null)
     } catch (error) {
       console.error('Error saving priority:', error)
       showNotification('error', 'Couldn\'t save priority. Try again.')

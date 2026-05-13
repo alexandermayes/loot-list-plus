@@ -1,4 +1,5 @@
 import { createClient, getAuthenticatedUser } from '@/utils/supabase/server'
+import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { NextResponse } from 'next/server'
 import { trackApiError } from '@/utils/analytics/server'
 
@@ -47,8 +48,10 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Not a member of this guild' }, { status: 403 })
     }
 
-    // Build query
-    let query = supabase
+    // guild_item_priorities currently has no RLS policies. Membership is verified
+    // above, so use the service client for the read.
+    const serviceSupabase = createServiceRoleClient()
+    let query = serviceSupabase
       .from('guild_item_priorities')
       .select(`
         *,
@@ -172,14 +175,19 @@ export async function POST(request: Request) {
       }
     }
 
+    // guild_item_priorities currently has no RLS policies (the old ones referenced
+    // the dropped guild_members table). Permission is verified above, so use the
+    // service client for reads/writes on this table.
+    const serviceSupabase = createServiceRoleClient()
+
     // Check if priority exists for this item
-    const { data: existingPriority } = await supabase
+    const { data: existingPriority } = await serviceSupabase
       .from('guild_item_priorities')
       .select('id')
       .eq('guild_id', guild_id)
       .eq('item_id', item_id)
       .eq('raid_tier_id', raid_tier_id)
-      .single()
+      .maybeSingle()
 
     const priorityData = {
       guild_id,
@@ -195,7 +203,7 @@ export async function POST(request: Request) {
     let result
     if (existingPriority) {
       // Update existing priority
-      const { data, error } = await supabase
+      const { data, error } = await serviceSupabase
         .from('guild_item_priorities')
         .update(priorityData)
         .eq('id', existingPriority.id)
@@ -209,7 +217,7 @@ export async function POST(request: Request) {
       result = data
     } else {
       // Insert new priority
-      const { data, error } = await supabase
+      const { data, error } = await serviceSupabase
         .from('guild_item_priorities')
         .insert(priorityData)
         .select()
@@ -296,8 +304,10 @@ export async function DELETE(request: Request) {
       }
     }
 
-    // Delete the priority
-    const { error } = await supabase
+    // guild_item_priorities currently has no RLS policies. Permission is verified
+    // above, so use the service client for the actual delete.
+    const serviceSupabase = createServiceRoleClient()
+    const { error } = await serviceSupabase
       .from('guild_item_priorities')
       .delete()
       .eq('guild_id', guildId)

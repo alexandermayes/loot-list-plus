@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect, useMemo, useCallback, memo } from 'react'
+import { createPortal } from 'react-dom'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 
@@ -49,6 +50,7 @@ const MultiSelectDropdown = memo(function MultiSelectDropdown({
   const [search, setSearch] = useState('')
   const [dropdownPosition, setDropdownPosition] = useState<{ top: number, left: number, width: number, openUpwards: boolean } | null>(null)
   const dropdownRef = useRef<HTMLDivElement>(null)
+  const panelRef = useRef<HTMLDivElement>(null)
   const buttonRef = useRef<HTMLButtonElement>(null)
   const searchInputRef = useRef<HTMLInputElement>(null)
 
@@ -63,7 +65,9 @@ const MultiSelectDropdown = memo(function MultiSelectDropdown({
         return
       }
 
-      if (dropdownRef.current && !dropdownRef.current.contains(target)) {
+      const clickedTrigger = dropdownRef.current?.contains(target)
+      const clickedPanel = panelRef.current?.contains(target)
+      if (!clickedTrigger && !clickedPanel) {
         setIsOpen(false)
         setSearch('')
       }
@@ -91,7 +95,7 @@ const MultiSelectDropdown = memo(function MultiSelectDropdown({
 
     const handleScrollOrResize = (e: Event) => {
       // Don't close if scrolling inside the dropdown
-      if (e.type === 'scroll' && dropdownRef.current?.contains(e.target as Node)) {
+      if (e.type === 'scroll' && panelRef.current?.contains(e.target as Node)) {
         return
       }
       setIsOpen(false)
@@ -198,9 +202,10 @@ const MultiSelectDropdown = memo(function MultiSelectDropdown({
         </svg>
       </Button>
 
-      {isOpen && dropdownPosition && (
+      {isOpen && dropdownPosition && typeof document !== 'undefined' && createPortal(
         <div
-          className="fixed z-[9999] max-w-xs bg-background-elevated border border-border-strong rounded-lg shadow-xl overflow-hidden"
+          ref={panelRef}
+          className="fixed z-[9999] bg-background-elevated border border-border-strong rounded-lg shadow-xl overflow-hidden"
           style={{
             top: dropdownPosition.openUpwards ? 'auto' : `${dropdownPosition.top + 4}px`,
             bottom: dropdownPosition.openUpwards ? `${window.innerHeight - dropdownPosition.top + 4}px` : 'auto',
@@ -329,7 +334,8 @@ const MultiSelectDropdown = memo(function MultiSelectDropdown({
             )
             })()}
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   )
