@@ -5,7 +5,8 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { ArrowLeft01Icon, UserGroupIcon } from '@hugeicons/core-free-icons'
-import { LoadingSpinner, Spinner } from '@/components/ui/loading-spinner'
+import { Spinner } from '@/components/ui/loading-spinner'
+import { Skeleton } from '@/components/ui/skeletons'
 import { Button } from '@/components/ui/button'
 import { Heading } from '@/components/ui/typography'
 import { Label } from '@/components/ui/label'
@@ -387,7 +388,18 @@ export default function CreateGuildPage() {
   }
 
   if (loading) {
-    return <LoadingSpinner fullScreen />
+    return (
+      <div className="min-h-screen bg-background p-8 space-y-6">
+        <Skeleton className="h-8 w-32" />
+        <Skeleton className="h-10 w-64" />
+        <div className="max-w-md space-y-4">
+          <Skeleton className="h-10 w-full rounded-pill" />
+          <Skeleton className="h-10 w-full rounded-pill" />
+          <Skeleton className="h-10 w-full rounded-pill" />
+          <Skeleton className="h-12 w-full rounded-pill" />
+        </div>
+      </div>
+    )
   }
 
   return (

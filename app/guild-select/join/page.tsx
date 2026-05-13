@@ -2,11 +2,20 @@
 
 import { useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { LoadingSpinner } from '@/components/ui/loading-spinner'
+import { Skeleton } from '@/components/ui/skeletons'
+
+function RedirectSkeleton() {
+  return (
+    <div className="p-8 space-y-6">
+      <Skeleton className="h-8 w-48" />
+      <Skeleton className="h-64 w-full rounded-xl" />
+    </div>
+  )
+}
 
 export default function JoinGuildPage() {
   return (
-    <Suspense fallback={<LoadingSpinner fullScreen />}>
+    <Suspense fallback={<RedirectSkeleton />}>
       <JoinGuildRedirect />
     </Suspense>
   )
@@ -28,5 +37,5 @@ function JoinGuildRedirect() {
     router.replace(`/?next=${encodeURIComponent(nextUrl)}`)
   }, [])
 
-  return <LoadingSpinner fullScreen />
+  return <RedirectSkeleton />
 }

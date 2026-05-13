@@ -10,7 +10,6 @@ import RoleManager from './RoleManager'
 import ExpansionManager from './ExpansionManager'
 import RealmSelector from '@/app/components/RealmSelector'
 import { getRegionForRealm } from '@/data/wow-realms'
-import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { GuildSettingsContentSkeleton } from '@/components/ui/skeletons'
 import { EmptyState } from '@/components/ui/empty-state'
 import {

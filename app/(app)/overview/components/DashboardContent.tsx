@@ -22,7 +22,6 @@ const GuardianConversionBanner = dynamic(() => import('@/app/components/Guardian
   loading: () => null
 })
 import { parseDate, toDateString } from '@/utils/date'
-import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
 import { DashboardContentSkeleton, DashboardDataSkeleton } from '@/components/ui/skeletons'
@@ -1866,6 +1865,7 @@ export default function DashboardContent() {
         <SetupGuide
           guildId={activeGuild.id}
           guildName={activeGuild.name}
+          guildIconUrl={activeGuild.icon_url}
           hasExpansion={!!activeGuild.active_expansion_id}
         />
       )}

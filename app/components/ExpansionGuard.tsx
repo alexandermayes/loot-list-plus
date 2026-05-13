@@ -5,7 +5,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { AlertCircleIcon } from '@hugeicons/core-free-icons'
 import { Button } from '@/components/ui/button'
-import { LoadingSpinner } from '@/components/ui/loading-spinner'
+import { DashboardContentSkeleton } from '@/components/ui/skeletons'
 import { useRouter } from 'next/navigation'
 
 /**
@@ -30,11 +30,7 @@ export function ExpansionGuard({ children }: { children: React.ReactNode }) {
 
   // Show loading state while guild data is being fetched
   if (loading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        <LoadingSpinner size="lg" />
-      </div>
-    )
+    return <DashboardContentSkeleton />
   }
 
   // If no active expansion is set, show the guard message

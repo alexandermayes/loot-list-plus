@@ -5,7 +5,8 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { ArrowLeft01Icon, Tick01Icon, UserGroupIcon } from '@hugeicons/core-free-icons'
-import { LoadingSpinner } from '@/components/ui/loading-spinner'
+import { Skeleton } from '@/components/ui/skeletons'
+import { Spinner } from '@/components/ui/loading-spinner'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Heading } from '@/components/ui/typography'
@@ -138,7 +139,13 @@ export default function DiscordJoinPage() {
   }
 
   if (loading) {
-    return <LoadingSpinner fullScreen />
+    return (
+      <div className="min-h-screen bg-background p-8 space-y-6">
+        <Skeleton className="h-8 w-48" />
+        <Skeleton className="h-12 w-72" />
+        <Skeleton className="h-64 w-full max-w-md rounded-xl" />
+      </div>
+    )
   }
 
   if (success) {
@@ -150,7 +157,7 @@ export default function DiscordJoinPage() {
           </div>
           <h2 className="text-2xl font-bold text-foreground">Successfully joined</h2>
           <p className="text-muted-foreground">Redirecting...</p>
-          <LoadingSpinner />
+          <Spinner size="lg" />
         </div>
       </div>
     )

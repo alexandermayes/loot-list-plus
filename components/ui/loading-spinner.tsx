@@ -1,5 +1,4 @@
 import { cn } from '@/lib/utils'
-import Image from 'next/image'
 
 /**
  * Spinner Component - Simple inline spinner for buttons and small contexts
@@ -55,52 +54,27 @@ export function Spinner({ size = 'default', className }: SpinnerProps) {
  */
 interface LoadingSpinnerProps {
   className?: string
-  fullScreen?: boolean
   text?: string
   size?: 'sm' | 'default' | 'lg'
 }
 
-const iconSizes = {
-  sm: { container: 'w-8 h-8', icon: 24 },
-  default: { container: 'w-16 h-16', icon: 48 },
-  lg: { container: 'w-20 h-20', icon: 64 },
+const spinnerIconSizes = {
+  sm: 'w-5 h-5',
+  default: 'w-6 h-6',
+  lg: 'w-8 h-8',
 }
 
 export function LoadingSpinner({
   className,
-  fullScreen = false,
   text,
   size = 'default'
 }: LoadingSpinnerProps) {
-  const { container, icon } = iconSizes[size]
-
-  const spinner = (
-    <div className={cn('flex flex-col items-center justify-center gap-4', className)}>
-      {/* Pulsing loot icon */}
-      <div className={cn('relative flex items-center justify-center', container)}>
-        <Image
-          src="/loot-icon.svg"
-          alt="Loading"
-          width={icon}
-          height={icon}
-          className="icon-adaptive animate-pulse-fast"
-          priority
-        />
-      </div>
-
+  return (
+    <div className={cn('flex flex-col items-center justify-center gap-3', className)}>
+      <Spinner size={size === 'sm' ? 'sm' : size === 'lg' ? 'lg' : 'default'} className={spinnerIconSizes[size]} />
       {text && (
-        <p className="text-sm text-muted-foreground animate-pulse">{text}</p>
+        <p className="text-sm text-muted-foreground">{text}</p>
       )}
     </div>
   )
-
-  if (fullScreen) {
-    return (
-      <div className="fixed inset-0 bg-background flex items-center justify-center z-50">
-        {spinner}
-      </div>
-    )
-  }
-
-  return spinner
 }
