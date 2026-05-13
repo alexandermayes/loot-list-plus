@@ -24,7 +24,7 @@ const GuardianConversionBanner = dynamic(() => import('@/app/components/Guardian
 import { parseDate, toDateString } from '@/utils/date'
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
-import { DashboardContentSkeleton, DashboardDataSkeleton } from '@/components/ui/skeletons'
+import { DashboardDataSkeleton } from '@/components/ui/skeletons'
 import { ScrollIcon, StarIcon } from '@hugeicons/core-free-icons'
 import { StatusBadge, type SubmissionStatus } from '@/components/ui/status-badge'
 import { getRaidIcon } from '@/utils/raidIcons'
@@ -1870,10 +1870,8 @@ export default function DashboardContent() {
         />
       )}
 
-      {/* Show full skeleton only while guild context is loading */}
-      {guildLoading ? (
-        <DashboardContentSkeleton />
-      ) : (
+      {/* Guild context loading is handled by the page-level loading.tsx skeleton */}
+      {guildLoading ? null : (
         <>
           {/* Error Message (e.g., no expansion set) */}
           {error && (
