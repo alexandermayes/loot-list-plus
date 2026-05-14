@@ -10,7 +10,15 @@ import { Text } from '@/components/ui/typography'
 import ItemLink from '@/app/components/ItemLink'
 import { useNotification } from '@/app/contexts/NotificationContext'
 import { explainScore } from '@/domain/scoring/explain'
-import type { ScoringConfig, ScoreComponents } from '@/domain/types'
+import { toDateString } from '@/utils/date'
+import type {
+  ScoringConfig,
+  ScoreComponents,
+  AwardReason,
+  AwardOutcomeType,
+  DecisionCandidateSummary,
+  DecisionContext,
+} from '@/domain/types'
 import type { PlayerRanking, LootItem } from './BossSection'
 
 interface ItemPriority {
@@ -30,7 +38,7 @@ interface LootAward {
   notes: string | null
 }
 
-const AWARD_REASONS = [
+const AWARD_REASONS: { value: AwardReason; label: string }[] = [
   { value: '', label: 'No reason (score winner)' },
   { value: 'score', label: 'Score winner' },
   { value: 'loot_council', label: 'Loot council decision' },
@@ -38,6 +46,32 @@ const AWARD_REASONS = [
   { value: 'offspec', label: 'Offspec / no contest' },
   { value: 'roll', label: 'Won roll (tied scores)' },
 ]
+
+/** Default empty reason ('' / 'score') resolves to 'score'; everything else passes through. */
+function reasonToOutcome(reason: AwardReason): AwardOutcomeType {
+  if (reason === '' || reason === 'score') return 'score'
+  return reason
+}
+
+/** Build ScoreComponents from a flat PlayerRanking (itemRank derived by subtraction). */
+function rankingToComponents(r: PlayerRanking): ScoreComponents {
+  return {
+    itemRank:
+      r.loot_score -
+      r.attendance_score -
+      r.role_modifier -
+      r.role_bonus -
+      r.priority_bonus -
+      r.bad_luck_bonus -
+      r.trial_penalty,
+    attendanceScore: r.attendance_score,
+    rankModifier: r.role_modifier,
+    roleBonus: r.role_bonus,
+    priorityBonus: r.priority_bonus,
+    trialPenalty: r.trial_penalty,
+    badLuckBonus: r.bad_luck_bonus,
+  }
+}
 
 interface ItemCandidateModalProps {
   open: boolean
@@ -98,16 +132,7 @@ function formatDate(dateStr: string): string {
 
 /** Reconstruct ScoreResult from flat PlayerRanking for explainScore() */
 function rankingToExplanation(r: PlayerRanking, config?: Partial<ScoringConfig>) {
-  const components: ScoreComponents = {
-    itemRank: r.loot_score - r.attendance_score - r.role_modifier - r.role_bonus - r.priority_bonus - r.bad_luck_bonus - r.trial_penalty,
-    attendanceScore: r.attendance_score,
-    rankModifier: r.role_modifier,
-    roleBonus: r.role_bonus,
-    priorityBonus: r.priority_bonus,
-    trialPenalty: r.trial_penalty,
-    badLuckBonus: r.bad_luck_bonus,
-  }
-  return explainScore({ total: r.loot_score, components }, config)
+  return explainScore({ total: r.loot_score, components: rankingToComponents(r) }, config)
 }
 
 export const ItemCandidateModal = memo(function ItemCandidateModal({
@@ -130,10 +155,19 @@ export const ItemCandidateModal = memo(function ItemCandidateModal({
 
   // Award UI state
   const [awardingCandidate, setAwardingCandidate] = useState<PlayerRanking | null>(null)
-  const [awardReason, setAwardReason] = useState('')
+  const [awardReason, setAwardReason] = useState<AwardReason>('')
   const [awardNote, setAwardNote] = useState('')
   const [awarding, setAwarding] = useState(false)
   const [undoingAwardId, setUndoingAwardId] = useState<string | null>(null)
+
+  // Override requires a non-empty note (trust feature: every override leaves a paper trail).
+  const noteRequired = awardReason === 'override'
+  const noteMissing = noteRequired && awardNote.trim().length === 0
+
+  const sortedRankings = useMemo(
+    () => [...rankings].sort((a, b) => b.loot_score - a.loot_score),
+    [rankings]
+  )
 
   const { showNotification } = useNotification()
 
@@ -175,12 +209,41 @@ export const ItemCandidateModal = memo(function ItemCandidateModal({
 
   const handleAward = useCallback(async () => {
     if (!awardingCandidate || !item || !guildId) return
+    if (noteMissing) return
     setAwarding(true)
 
-    const notes = [
-      awardReason && awardReason !== '' ? AWARD_REASONS.find(r => r.value === awardReason)?.label : null,
-      awardNote.trim() || null,
-    ].filter(Boolean).join(': ')
+    const note = awardNote.trim() || null
+
+    // Build a structured decision snapshot at award time. The server includes
+    // this in audit_logs.new_data so we can answer "why this person won" later
+    // without rerunning scoring or pulling stale rankings.
+    const topScore = sortedRankings[0]?.loot_score ?? awardingCandidate.loot_score
+    const second = sortedRankings[1]
+    const tiedAtTop = !!second && Math.abs(topScore - second.loot_score) < 0.01
+    const gapToNext = second ? topScore - second.loot_score : null
+    const wasScoreWinner = Math.abs(awardingCandidate.loot_score - topScore) < 0.01
+
+    const topCandidates: DecisionCandidateSummary[] = sortedRankings.slice(0, 3).map(r => ({
+      character_id: r.character_id,
+      player_name: r.player_name,
+      loot_score: r.loot_score,
+      is_trial: r.is_trial,
+      is_eligible: r.is_eligible,
+      has_received: receivedCharacterIds.has(r.character_id),
+      bad_luck_bonus: r.bad_luck_bonus,
+      components: rankingToComponents(r),
+    }))
+
+    const decisionContext: DecisionContext = {
+      outcome_type: reasonToOutcome(awardReason),
+      was_score_winner: wasScoreWinner,
+      tied_at_top: tiedAtTop,
+      gap_to_next: gapToNext,
+      awarded_character_id: awardingCandidate.character_id,
+      winner_score: awardingCandidate.loot_score,
+      winner_components: rankingToComponents(awardingCandidate),
+      top_candidates: topCandidates,
+    }
 
     try {
       const res = await fetch('/api/loot-history/bulk', {
@@ -192,9 +255,12 @@ export const ItemCandidateModal = memo(function ItemCandidateModal({
             loot_item_id: item.id,
             raid_tier_id: raidTierId || null,
             raid_event_id: mostRecentRaidEventId || null,
-            awarded_date: new Date().toISOString().split('T')[0],
+            awarded_date: toDateString(new Date()),
             character_id: awardingCandidate.character_id,
-            notes: notes || null,
+            // Server composes `loot_history.notes` from reason + note when these are present.
+            reason: awardReason || null,
+            note,
+            decision_context: decisionContext,
           }],
         }),
       })
@@ -222,13 +288,13 @@ export const ItemCandidateModal = memo(function ItemCandidateModal({
     } finally {
       setAwarding(false)
     }
-  }, [awardingCandidate, item, guildId, raidTierId, mostRecentRaidEventId, awardReason, awardNote, showNotification, onAwardComplete])
+  }, [awardingCandidate, item, guildId, raidTierId, mostRecentRaidEventId, awardReason, awardNote, noteMissing, sortedRankings, receivedCharacterIds, showNotification, onAwardComplete])
 
   // Keyboard shortcuts: Enter to confirm award, Escape to cancel
   useEffect(() => {
     if (!awardingCandidate || !open) return
     const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Enter' && !e.shiftKey && !awarding) {
+      if (e.key === 'Enter' && !e.shiftKey && !awarding && !noteMissing) {
         e.preventDefault()
         handleAward()
       } else if (e.key === 'Escape') {
@@ -239,7 +305,7 @@ export const ItemCandidateModal = memo(function ItemCandidateModal({
     }
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
-  }, [awardingCandidate, open, awarding, handleAward])
+  }, [awardingCandidate, open, awarding, noteMissing, handleAward])
 
   const handleUndoAward = useCallback(async (award: LootAward) => {
     if (!guildId) return
@@ -268,11 +334,6 @@ export const ItemCandidateModal = memo(function ItemCandidateModal({
       setUndoingAwardId(null)
     }
   }, [guildId, item?.id, showNotification, onAwardComplete])
-
-  const sortedRankings = useMemo(
-    () => [...rankings].sort((a, b) => b.loot_score - a.loot_score),
-    [rankings]
-  )
 
   // Generate inline explanations for top 3 candidates
   const topExplanations = useMemo(() => {
@@ -595,7 +656,7 @@ export const ItemCandidateModal = memo(function ItemCandidateModal({
                   variant="rounded"
                   size="sm"
                   value={awardReason}
-                  onChange={(e) => setAwardReason(e.target.value)}
+                  onChange={(e) => setAwardReason(e.target.value as AwardReason)}
                 >
                   {AWARD_REASONS.map(r => (
                     <option key={r.value} value={r.value}>{r.label}</option>
@@ -604,14 +665,16 @@ export const ItemCandidateModal = memo(function ItemCandidateModal({
               </div>
               {(awardReason === 'override' || awardReason === 'loot_council') && (
                 <div className="flex-1 min-w-[200px]">
-                  <Text size="xs" color="muted" className="mb-1">Note</Text>
+                  <Text size="xs" color="muted" className="mb-1">
+                    Note {noteRequired && <span className="text-destructive">(required)</span>}
+                  </Text>
                   <Input
                     size="sm"
                     variant="rounded"
-                    placeholder="Explain the decision..."
+                    placeholder={noteRequired ? 'Explain the override...' : 'Explain the decision...'}
                     value={awardNote}
                     onChange={(e) => setAwardNote(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === 'Enter') handleAward() }}
+                    onKeyDown={(e) => { if (e.key === 'Enter' && !noteMissing) handleAward() }}
                   />
                 </div>
               )}
@@ -619,6 +682,7 @@ export const ItemCandidateModal = memo(function ItemCandidateModal({
                 variant="primary"
                 size="sm"
                 loading={awarding}
+                disabled={noteMissing}
                 onClick={handleAward}
               >
                 Confirm award

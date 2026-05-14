@@ -4,6 +4,90 @@ import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { verifyPermission } from '@/utils/server-roles'
 import { logAudit } from '@/utils/audit/log'
 import { trackEvent, setUserMilestone } from '@/utils/analytics/server'
+import type { AwardReason, AwardOutcomeType } from '@/domain/types'
+
+const AWARD_REASON_VALUES = new Set<AwardReason>(['', 'score', 'loot_council', 'override', 'offspec', 'roll'])
+const OUTCOME_TYPE_VALUES = new Set<AwardOutcomeType>(['score', 'roll', 'loot_council', 'override', 'offspec'])
+const ALLOWED_COMPONENT_KEYS = ['itemRank', 'attendanceScore', 'rankModifier', 'roleBonus', 'priorityBonus', 'trialPenalty', 'badLuckBonus'] as const
+const REASON_LABELS: Record<Exclude<AwardReason, '' | 'score'> | 'score', string> = {
+  score: 'Score winner',
+  loot_council: 'Loot council decision',
+  override: 'Override',
+  offspec: 'Offspec / no contest',
+  roll: 'Won roll (tied scores)',
+}
+const MAX_AUDIT_PAYLOAD_BYTES = 4096
+
+function asFiniteNumber(v: unknown): number | null {
+  return typeof v === 'number' && Number.isFinite(v) ? v : null
+}
+
+function sanitizeComponents(input: unknown): Record<string, number> | null {
+  if (!input || typeof input !== 'object') return null
+  const src = input as Record<string, unknown>
+  const out: Record<string, number> = {}
+  for (const key of ALLOWED_COMPONENT_KEYS) {
+    const n = asFiniteNumber(src[key])
+    if (n !== null) out[key] = n
+  }
+  return out
+}
+
+function sanitizeCandidate(input: unknown): Record<string, unknown> | null {
+  if (!input || typeof input !== 'object') return null
+  const src = input as Record<string, unknown>
+  const character_id = typeof src.character_id === 'string' ? src.character_id.slice(0, 64) : null
+  if (!character_id) return null
+  return {
+    character_id,
+    player_name: typeof src.player_name === 'string' ? src.player_name.slice(0, 64) : null,
+    loot_score: asFiniteNumber(src.loot_score),
+    is_trial: typeof src.is_trial === 'boolean' ? src.is_trial : null,
+    is_eligible: typeof src.is_eligible === 'boolean' ? src.is_eligible : null,
+    has_received: typeof src.has_received === 'boolean' ? src.has_received : null,
+    bad_luck_bonus: asFiniteNumber(src.bad_luck_bonus),
+    components: sanitizeComponents(src.components),
+  }
+}
+
+/**
+ * Whitelist + size-cap an officer-supplied decision_context before persisting
+ * to audit_logs. Drops any unknown keys, hard-caps top_candidates to 3, and
+ * stamps `_truncated: true` if the serialized payload would exceed the cap.
+ */
+function sanitizeDecisionContext(input: unknown): Record<string, unknown> | null {
+  if (!input || typeof input !== 'object') return null
+  const src = input as Record<string, unknown>
+  const outcome_type = typeof src.outcome_type === 'string' && OUTCOME_TYPE_VALUES.has(src.outcome_type as AwardOutcomeType)
+    ? (src.outcome_type as AwardOutcomeType)
+    : null
+  const topCandidatesRaw = Array.isArray(src.top_candidates) ? src.top_candidates.slice(0, 3) : []
+  const top_candidates = topCandidatesRaw.map(sanitizeCandidate).filter((c): c is Record<string, unknown> => c !== null)
+
+  const sanitized: Record<string, unknown> = {
+    outcome_type,
+    was_score_winner: typeof src.was_score_winner === 'boolean' ? src.was_score_winner : null,
+    tied_at_top: typeof src.tied_at_top === 'boolean' ? src.tied_at_top : null,
+    gap_to_next: asFiniteNumber(src.gap_to_next),
+    awarded_character_id: typeof src.awarded_character_id === 'string' ? src.awarded_character_id.slice(0, 64) : null,
+    winner_score: asFiniteNumber(src.winner_score),
+    winner_components: sanitizeComponents(src.winner_components),
+    top_candidates,
+  }
+
+  if (JSON.stringify(sanitized).length > MAX_AUDIT_PAYLOAD_BYTES) {
+    return { outcome_type, awarded_character_id: sanitized.awarded_character_id, _truncated: true }
+  }
+  return sanitized
+}
+
+/** Compose the human-readable `loot_history.notes` from a structured reason+note pair. */
+function composeNotesFromReason(reason: AwardReason | null | undefined, note: string | null | undefined): string | null {
+  const trimmedNote = typeof note === 'string' ? note.trim() : ''
+  const label = reason ? REASON_LABELS[reason] : null
+  const parts = [label, trimmedNote || null].filter(Boolean) as string[]
+  return parts.length ? parts.join(': ') : null
+}
 
 /**
  * POST /api/loot-history/bulk
@@ -35,6 +119,8 @@ export async function POST(request: NextRequest) {
     }
 
     const results: { index: number; success: boolean; error?: string; id?: string }[] = []
+    // Parallel array of sanitized award metadata, used by the audit-log pass below.
+    const awardMeta: { reason: AwardReason | null; note: string | null; notes: string | null; decisionContext: Record<string, unknown> | null }[] = []
 
     // Look up expansion_id from raid_tier_id (first item's tier)
     let expansionId: string | null = null
@@ -58,6 +144,23 @@ export async function POST(request: NextRequest) {
 
     for (let i = 0; i < items.length; i++) {
       const item = items[i]
+
+      // Structured decision fields (new). All optional — old callers (bulk
+      // imports) keep working with just `notes`.
+      const rawReason = typeof item.reason === 'string' ? item.reason : null
+      const reason: AwardReason | null = rawReason !== null && AWARD_REASON_VALUES.has(rawReason as AwardReason)
+        ? (rawReason as AwardReason)
+        : null
+      const note = typeof item.note === 'string' ? item.note.slice(0, 500) : null
+      const decisionContext = sanitizeDecisionContext(item.decision_context)
+      // If the client sent structured reason/note, compose the human notes
+      // string server-side so legacy read paths ("Recent awards" strip) still
+      // get the familiar "Label: note" format. Otherwise honor `notes` as-is.
+      const composedNotes = reason !== null || note !== null
+        ? composeNotesFromReason(reason, note)
+        : null
+      const finalNotes = composedNotes ?? (typeof item.notes === 'string' ? item.notes : null)
+
       const insertData: Record<string, unknown> = {
         loot_item_id: item.loot_item_id,
         guild_id,
@@ -65,12 +168,14 @@ export async function POST(request: NextRequest) {
         raid_event_id: item.raid_event_id,
         awarded_date: item.awarded_date,
         awarded_by: user.id,
-        notes: item.notes || null,
+        notes: finalNotes,
         expansion_id: expansionId,
       }
 
       if (item.character_id) insertData.character_id = item.character_id
       if (item.character_name) insertData.character_name = item.character_name
+
+      awardMeta.push({ reason, note, notes: finalNotes, decisionContext })
 
       const { data, error } = await serviceSupabase
         .from('loot_history')
@@ -96,8 +201,11 @@ export async function POST(request: NextRequest) {
     for (const result of results) {
       if (result.success && result.id) {
         const item = items[result.index]
+        const meta = awardMeta[result.index]
 
-        // Audit log
+        // Audit log — Award Decision Receipt: capture the *why* alongside the *what*.
+        // reason/note/decision_context are only present for officer UI awards;
+        // bulk-import callers persist a plain `notes` string and leave the rest null.
         logAudit({
           supabase: serviceSupabase,
           guildId: guild_id,
@@ -111,6 +219,10 @@ export async function POST(request: NextRequest) {
             character_name: item.character_name,
             raid_event_id: item.raid_event_id,
             awarded_date: item.awarded_date,
+            notes: meta?.notes ?? null,
+            reason: meta?.reason ?? null,
+            note: meta?.note ?? null,
+            decision_context: meta?.decisionContext ?? null,
           },
         })
 

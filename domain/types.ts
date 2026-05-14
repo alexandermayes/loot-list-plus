@@ -193,3 +193,40 @@ export interface ScoreExplanation {
   total: number
   lines: ScoreLine[]
 }
+
+// ─── Award Decision Receipt ─────────────────────────────────
+
+/** Officer-selected reason at the moment of award. Empty string = default "score winner". */
+export type AwardReason = '' | 'score' | 'loot_council' | 'override' | 'offspec' | 'roll'
+
+/** Canonical outcome categories stored in the audit receipt. */
+export type AwardOutcomeType = 'score' | 'roll' | 'loot_council' | 'override' | 'offspec'
+
+/** Compact per-candidate snapshot captured at award time for the audit receipt. */
+export interface DecisionCandidateSummary {
+  character_id: string
+  player_name: string
+  loot_score: number
+  is_trial: boolean
+  is_eligible: boolean
+  has_received: boolean
+  bad_luck_bonus: number
+  components: ScoreComponents
+}
+
+/**
+ * Structured "why this award happened" snapshot sent from the officer UI
+ * to the award API and persisted in audit_logs.new_data. Lets us reconstruct
+ * the decision later without rerunning scoring.
+ */
+export interface DecisionContext {
+  outcome_type: AwardOutcomeType
+  was_score_winner: boolean
+  tied_at_top: boolean
+  gap_to_next: number | null
+  awarded_character_id: string
+  winner_score: number
+  winner_components: ScoreComponents
+  /** Up to 3 candidates, ordered by loot_score desc. */
+  top_candidates: DecisionCandidateSummary[]
+}
