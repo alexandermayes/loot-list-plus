@@ -120,9 +120,13 @@ export async function POST(
       )
     }
 
+    // Character ownership is verified above, so all subsequent writes use the
+    // service role client to avoid RLS blocking non-officer users from adding
+    // their own characters to a guild they're joining.
+    const serviceSupabase = createServiceRoleClient()
+
     // Determine role server-side: guild creator gets Guild Master, everyone else gets Member
-    const serviceSupabaseForRole = createServiceRoleClient()
-    const { data: guildData } = await serviceSupabaseForRole
+    const { data: guildData } = await serviceSupabase
       .from('guilds')
       .select('created_by')
       .eq('id', guild_id)
@@ -132,7 +136,7 @@ export async function POST(
     const role = guildData?.created_by === user.id ? 'Guild Master' : defaultRole
 
     // Check if membership already exists
-    const { data: existingMembership } = await supabase
+    const { data: existingMembership } = await serviceSupabase
       .from('character_guild_memberships')
       .select('id, is_active')
       .eq('character_id', id)
@@ -147,7 +151,7 @@ export async function POST(
         )
       } else {
         // Reactivate membership
-        const { data: membership, error } = await supabase
+        const { data: membership, error } = await serviceSupabase
           .from('character_guild_memberships')
           .update({ is_active: true })
           .eq('id', existingMembership.id)
@@ -178,7 +182,7 @@ export async function POST(
     }
 
     // Create new character membership
-    const { data: membership, error } = await supabase
+    const { data: membership, error } = await serviceSupabase
       .from('character_guild_memberships')
       .insert({
         character_id: id,
@@ -207,8 +211,6 @@ export async function POST(
         { status: 500 }
       )
     }
-
-    // guild_members record is auto-synced by DB trigger from character_guild_memberships
 
     return NextResponse.json({ membership }, { status: 201 })
   } catch (error) {
@@ -265,8 +267,10 @@ export async function DELETE(
       )
     }
 
-    // Soft delete by setting is_active to false
-    const { error } = await supabase
+    // Character ownership verified above — use service role to bypass RLS
+    // (non-officers cannot UPDATE character_guild_memberships otherwise).
+    const serviceSupabase = createServiceRoleClient()
+    const { error } = await serviceSupabase
       .from('character_guild_memberships')
       .update({ is_active: false })
       .eq('character_id', id)
