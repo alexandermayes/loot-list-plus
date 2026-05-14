@@ -14,6 +14,96 @@ export interface UpdateEntry {
 
 export const updates: UpdateEntry[] = [
   {
+    date: 'May 13, 2026',
+    items: [
+      {
+        category: 'feature',
+        title: 'Configurable bracket limits',
+        description: 'Officers can now customize allocation point caps, token limits, and per-category restrictions for each loot list bracket. Defaults still match the standard 50-39 ranking system.',
+      },
+      {
+        category: 'feature',
+        title: 'Auto-promote trial members',
+        description: 'Turn on "new members start as trial" in guild settings and members automatically promote to full status when their trial period ends.',
+      },
+      {
+        category: 'feature',
+        title: 'Two new blog posts',
+        description: '"How to Run Loot Without a Spreadsheet" and "How to Handle Loot Drama Without Losing Raiders" are live on the blog.',
+      },
+      {
+        category: 'improvement',
+        title: 'Auto-save loot settings',
+        description: 'Phase deadlines, raid tier toggles, and loot rules now save automatically as you change them. Save status moved into the modal header so you always know your changes persisted.',
+      },
+      {
+        category: 'improvement',
+        title: 'Audit log redesigned',
+        description: 'The audit log is now an activity feed with clearer event grouping and faster scanning.',
+      },
+      {
+        category: 'improvement',
+        title: 'Onboarding flow polish',
+        description: 'Welcome screen redesigned to reduce drop-off between signup and guild creation. Setup guide steps are clearer, and the first-character modal handles dismissal correctly.',
+      },
+      {
+        category: 'improvement',
+        title: 'Smoother loading states',
+        description: 'Replaced the logo spinner with skeleton loaders tailored to each page. Routes now show structure instantly while data fetches in the background.',
+      },
+      {
+        category: 'improvement',
+        title: 'Granular submission permissions',
+        description: 'Manage submissions is now a separate permission from manage loot. Officers can review submissions without getting access to settings and roster management.',
+      },
+      {
+        category: 'improvement',
+        title: 'Sidebar updates',
+        description: 'Give feedback moved from a floating button to the sidebar nav. A subtle fade gradient at the bottom hints at scrollable content.',
+      },
+      {
+        category: 'improvement',
+        title: 'Faster page loads',
+        description: 'Eliminated redundant auth network calls and added optimistic updates for team and role changes.',
+      },
+      {
+        category: 'fix',
+        title: 'Trial penalty missing on master sheet',
+        description: 'Trial penalties were silently dropped due to an RLS issue, so trial members showed inflated scores. Now applied correctly across all views.',
+      },
+      {
+        category: 'fix',
+        title: 'Off-spec bracket items',
+        description: 'The off-spec bracket now shows all items your class can equip, not just a filtered subset.',
+      },
+      {
+        category: 'fix',
+        title: 'Submission item counts',
+        description: 'Loot submissions occasionally showed 0 items due to a 1000-row default limit from Supabase. Counts now load reliably regardless of submission size.',
+      },
+      {
+        category: 'fix',
+        title: 'Deadline timezone drift',
+        description: 'Setting a phase deadline could shift the displayed date by a day in some timezones. Now stored and shown consistently.',
+      },
+      {
+        category: 'fix',
+        title: 'Custom role permissions',
+        description: 'Renaming a custom role now propagates everywhere it appears, and a missing default role no longer locks members out.',
+      },
+      {
+        category: 'fix',
+        title: 'Roster management for non-officers',
+        description: 'Members with the manage roster permission can now add and remove characters from the guild, not just officers.',
+      },
+      {
+        category: 'fix',
+        title: 'Modal layout polish',
+        description: 'Modal backdrops cover the full viewport even when content scrolls, and the submission detail modal now has a properly sticky table header.',
+      },
+    ],
+  },
+  {
     date: 'May 5, 2026',
     items: [
       {
