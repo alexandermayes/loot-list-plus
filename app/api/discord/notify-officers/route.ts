@@ -3,6 +3,7 @@ import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { trackApiError } from '@/utils/analytics/server'
 import { discordFetch } from '@/lib/discord'
+import { roleHasPermission } from '@/domain/guild/roles'
 
 interface NotifyOfficersPayload {
   guild_id: string
@@ -71,7 +72,28 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Not a member of this guild' }, { status: 403 })
     }
 
-    // Get all officers and guild masters for this guild with their Discord IDs
+    // Find every role in this guild whose holders should be notified about new
+    // submissions: officer-level positions get it implicitly, and any custom
+    // role with the explicit manage_submissions permission gets it too.
+    const { data: guildRoles, error: rolesError } = await supabase
+      .from('guild_roles')
+      .select('name, position, permissions')
+      .eq('guild_id', guild_id)
+
+    if (rolesError) {
+      console.error('Error fetching guild roles:', rolesError)
+      return NextResponse.json({ error: 'Failed to fetch guild roles' }, { status: 500 })
+    }
+
+    const notifiableRoleNames = (guildRoles || [])
+      .filter(r => roleHasPermission(r.position ?? 0, r.permissions ?? [], 'manage_submissions'))
+      .map(r => r.name)
+
+    // Fall back to default role names so guilds that never seeded guild_roles still work
+    if (notifiableRoleNames.length === 0) {
+      notifiableRoleNames.push('Officer', 'Guild Master')
+    }
+
     const { data: officers, error: officersError } = await supabase
       .from('character_guild_memberships')
       .select(`
@@ -81,7 +103,7 @@ export async function POST(request: NextRequest) {
         )
       `)
       .eq('guild_id', guild_id)
-      .in('role', ['Officer', 'Guild Master'])
+      .in('role', notifiableRoleNames)
       .eq('is_active', true)
 
     if (officersError) {
