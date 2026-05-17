@@ -3,6 +3,7 @@
 import dynamic from 'next/dynamic'
 import Image from 'next/image'
 import { createClient } from '@/utils/supabase/client'
+import { paginatedSelect } from '@/utils/supabase/paginate'
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { computeScore, computeAttendance, type ItemPriority, type AttendanceResult } from '@/domain/scoring'
@@ -677,11 +678,14 @@ export default function MasterSheetContent() {
 
           // Load loot history to filter out characters who already received items.
           // Match by wowhead_id (not loot_item_id) so awards from other tiers with the same physical item are caught.
-          supabase
-            .from('loot_history')
-            .select('character_id, loot_item:loot_items(wowhead_id)')
-            .eq('guild_id', guildId)
-            .limit(10000),
+          // Paginated to defeat Supabase's 1000-row response cap — see utils/supabase/paginate.
+          paginatedSelect<{ character_id: string; loot_item: { wowhead_id: number } | null }>((start, end) =>
+            supabase
+              .from('loot_history')
+              .select('character_id, loot_item:loot_items(wowhead_id)')
+              .eq('guild_id', guildId)
+              .range(start, end)
+          ).then(data => ({ data })),
 
           // BLP data (if enabled)
           guildSettings.blp_enabled
@@ -924,13 +928,16 @@ export default function MasterSheetContent() {
 
         const itemIds = itemsData.map((i: { id: string }) => i.id)
 
-        // Get all submission items for these items
-        const { data: submissionItemsData } = await supabase
-          .from('loot_submission_items')
-          .select('loot_item_id, rank, slot, submission_id')
-          .in('loot_item_id', itemIds)
-          .is('removed_at', null)
-          .limit(10000)
+        // Get all submission items for these items (paginated to defeat Supabase's 1000-row cap)
+        const submissionItemsData = await paginatedSelect<{ loot_item_id: string; rank: number; slot: number; submission_id: string }>(
+          (start, end) =>
+            supabase
+              .from('loot_submission_items')
+              .select('loot_item_id, rank, slot, submission_id')
+              .in('loot_item_id', itemIds)
+              .is('removed_at', null)
+              .range(start, end)
+        )
 
         if (!submissionItemsData || submissionItemsData.length === 0) {
           setAggregateItems([])
@@ -964,12 +971,16 @@ export default function MasterSheetContent() {
           .in('id', characterIds)
 
         // Get loot history for awarded count (match by wowhead_id so cross-tier awards are counted)
+        // Paginated to defeat Supabase's 1000-row response cap.
         const wowheadIdSet = new Set(itemsData.map((i: { wowhead_id: number }) => i.wowhead_id))
-        const { data: lootHistoryData } = await supabase
-          .from('loot_history')
-          .select('loot_item:loot_items(wowhead_id)')
-          .eq('guild_id', guildId)
-          .limit(10000)
+        const lootHistoryData = await paginatedSelect<{ loot_item: { wowhead_id: number } | null }>(
+          (start, end) =>
+            supabase
+              .from('loot_history')
+              .select('loot_item:loot_items(wowhead_id)')
+              .eq('guild_id', guildId)
+              .range(start, end)
+        )
 
         // Count awards per wowhead_id
         const awardedCounts: Record<number, number> = {}
@@ -1346,11 +1357,14 @@ export default function MasterSheetContent() {
 
       // Load loot history to filter out characters who already received items
       // Match by wowhead_id (not loot_item_id) so awards from other tiers with the same physical item are caught
-      supabase
-        .from('loot_history')
-        .select('character_id, loot_item:loot_items(wowhead_id)')
-        .eq('guild_id', guildId)
-        .limit(10000),
+      // Paginated to defeat Supabase's 1000-row response cap.
+      paginatedSelect<{ character_id: string; loot_item: { wowhead_id: number } | null }>((start, end) =>
+        supabase
+          .from('loot_history')
+          .select('character_id, loot_item:loot_items(wowhead_id)')
+          .eq('guild_id', guildId)
+          .range(start, end)
+      ).then(data => ({ data })),
 
       // Fetch BLP data for all items in this tier
       (async (): Promise<Record<string, number>> => {

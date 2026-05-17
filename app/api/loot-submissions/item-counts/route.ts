@@ -2,30 +2,37 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 
-// Shared logic for fetching item counts
+// Shared logic for fetching item counts.
+//
+// Supabase enforces a server-side 1000-row cap that .limit(10000) does NOT
+// override — the previous implementation passed batches of 100 submission IDs
+// hoping the limit would let through 10000 rows, but the server still capped
+// each response at 1000. Submissions later in each batch silently came back
+// with count=0. Paginate with .range() within each batch until exhausted.
 async function getItemCounts(submissionIds: string[]): Promise<Record<string, number>> {
   if (submissionIds.length === 0) return {}
 
   const serviceSupabase = createServiceRoleClient()
 
-  // Batch by submission IDs AND paginate within each batch
-  // (Supabase default limit is 1000 rows per query)
   const BATCH_SIZE = 100
+  const PAGE = 1000
   const countMap: Record<string, number> = {}
 
   for (let i = 0; i < submissionIds.length; i += BATCH_SIZE) {
     const batch = submissionIds.slice(i, i + BATCH_SIZE)
-    const { data, error } = await serviceSupabase
-      .from('loot_submission_items')
-      .select('submission_id')
-      .in('submission_id', batch)
-      .is('removed_at', null)
-      .limit(10000) // override default 1000-row limit
+    for (let start = 0; ; start += PAGE) {
+      const { data, error } = await serviceSupabase
+        .from('loot_submission_items')
+        .select('submission_id')
+        .in('submission_id', batch)
+        .is('removed_at', null)
+        .range(start, start + PAGE - 1)
 
-    if (!error && data) {
-      data.forEach((item: { submission_id: string }) => {
+      if (error || !data || data.length === 0) break
+      for (const item of data as { submission_id: string }[]) {
         countMap[item.submission_id] = (countMap[item.submission_id] || 0) + 1
-      })
+      }
+      if (data.length < PAGE) break
     }
   }
 
