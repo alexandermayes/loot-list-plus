@@ -98,8 +98,15 @@ export function computeAttendance(input: AttendanceInput): AttendanceResult {
 
   // 1. Rolling window
   const asOf = input.asOfDate ? parseDateLocal(input.asOfDate) : new Date()
-  const windowStart = new Date(asOf)
+  let windowStart = new Date(asOf)
   windowStart.setDate(windowStart.getDate() - config.rolling_attendance_weeks * 7)
+  // Clamp to expansion's raid start date so pre-expansion events (e.g., blanks
+  // auto-created by /api/raid-events/ensure before the expansion launched)
+  // don't inflate the denominator.
+  if (input.raidStartDate) {
+    const startDate = parseDateLocal(input.raidStartDate)
+    if (startDate > windowStart) windowStart = startDate
+  }
   const windowStartStr = formatDate(windowStart)
   const asOfStr = formatDate(asOf)
 

@@ -589,7 +589,7 @@ export default function AttendanceContent() {
 
         // Load guild-wide attendance data (includes score for all characters)
         // Pass filteredRaidEvents (schedule-filtered) so computeAttendance matches the overview
-        await loadGuildAttendance(activeCharData.active_guild_id, filteredRaidEvents, settingsData, characterData.id, raidDays as number[])
+        await loadGuildAttendance(activeCharData.active_guild_id, filteredRaidEvents, settingsData, characterData.id, raidDays as number[], raidStartDate)
       } catch (error) {
         console.error('Failed to load attendance data:', error)
         setError("Couldn't load attendance data. Check your connection and try again.")
@@ -606,7 +606,7 @@ export default function AttendanceContent() {
     })
   }, [user, activeTeamId])
 
-  const loadGuildAttendance = async (guildId: string, raidEvents: RaidEvent[], settings: any, activeCharacterId?: string, raidDays: number[] = []) => {
+  const loadGuildAttendance = async (guildId: string, raidEvents: RaidEvent[], settings: any, activeCharacterId?: string, raidDays: number[] = [], raidStartDate: string | null = null) => {
     try {
       const raidEventIds = raidEvents.map(r => r.id)
       const raidDaysPerWeek = raidDays.length || settings?.raid_days_per_week || 2
@@ -758,6 +758,7 @@ export default function AttendanceContent() {
           memberJoinedAt: joinedAt ? toDateString(new Date(joinedAt)) : undefined,
           newMemberMode,
           asOfDate: todayStr,
+          raidStartDate: raidStartDate || undefined,
           fillInEvents: charFillInEvents.length > 0 ? charFillInEvents : undefined,
           fillInRecords: charFillInRecords.length > 0 ? charFillInRecords : undefined,
           weeklyAttendanceCap: activeTeamId ? raidDaysPerWeek : undefined,
@@ -808,6 +809,7 @@ export default function AttendanceContent() {
               memberJoinedAt: joinedAt ? toDateString(new Date(joinedAt)) : undefined,
               newMemberMode,
               asOfDate: todayStr,
+              raidStartDate: raidStartDate || undefined,
               fillInEvents: myFillInEvents.length > 0 ? myFillInEvents : undefined,
               fillInRecords: myFillInRecords.length > 0 ? myFillInRecords : undefined,
               weeklyAttendanceCap: activeTeamId ? raidDaysPerWeek : undefined,

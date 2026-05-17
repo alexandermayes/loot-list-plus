@@ -853,7 +853,7 @@ export default function DashboardContent() {
       const expansionDataPromise = activeGuild?.active_expansion_id
         ? supabase
             .from('expansions')
-            .select('raid_days_per_week, first_raid_day, second_raid_day, third_raid_day, fourth_raid_day, fifth_raid_day, timezone')
+            .select('raid_start_date, raid_days_per_week, first_raid_day, second_raid_day, third_raid_day, fourth_raid_day, fifth_raid_day, timezone')
             .eq('id', activeGuild.active_expansion_id)
             .single()
         : Promise.resolve({ data: null, error: null })
@@ -981,6 +981,7 @@ export default function DashboardContent() {
 
           // Compute attendance via engine (handles windowing, dedup, new member mode, fill-in credit)
           const newMemberMode = (guildSettings.new_member_mode || 'raw') as 'raw' | 'fair' | 'minimum_gate'
+          const raidStartDate = (expansionData as { raid_start_date?: string | null } | null)?.raid_start_date || undefined
           const attendanceResult = computeAttendance({
             records: teamRecords,
             raidEvents: raidEventsData || [],
@@ -989,6 +990,7 @@ export default function DashboardContent() {
             memberJoinedAt: membership?.joined_at ? toDateString(new Date(membership.joined_at)) : undefined,
             newMemberMode,
             asOfDate: todayStr,
+            raidStartDate,
             fillInEvents: fillInEvents.length > 0 ? fillInEvents : undefined,
             fillInRecords: fillInRecords.length > 0 ? fillInRecords : undefined,
             weeklyAttendanceCap: activeTeam ? raidDaysPerWeek : undefined,

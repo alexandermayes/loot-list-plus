@@ -414,4 +414,43 @@ describe('computeAttendance', () => {
       expect(result.raidsAttended).toBe(1) // only event-0
     })
   })
+
+  // ─── raidStartDate clamps the rolling window ───────────────
+
+  describe('raidStartDate', () => {
+    it('excludes events before raidStartDate even when inside the rolling window', () => {
+      // First raid is on 2026-05-17. Blank events auto-created for 2026-04-12,
+      // 2026-04-19, 2026-04-26 (all on raid days but pre-expansion). Without
+      // raidStartDate the denominator would be 4 → 1/4 = 25% = 0.
+      const result = computeAttendance(makeInput({
+        raidEvents: makeEvents([
+          '2026-04-12',
+          '2026-04-19',
+          '2026-04-26',
+          '2026-05-17',
+        ]),
+        records: makeRecords([{ eventIndex: 3, attended: true, signedUp: true }]),
+        config: { rolling_attendance_weeks: 6, attendance_type: 'points-per-raid' },
+        asOfDate: '2026-05-17',
+        raidStartDate: '2026-05-17',
+      }))
+      expect(result.raidsInWindow).toBe(1)
+      expect(result.raidsAttended).toBe(1)
+    })
+
+    it('is a no-op when raidStartDate is older than the rolling window start', () => {
+      const result = computeAttendance(makeInput({
+        raidEvents: makeEvents(['2026-03-10', '2026-03-15']),
+        records: makeRecords([
+          { eventIndex: 0, attended: true },
+          { eventIndex: 1, attended: true },
+        ]),
+        config: { rolling_attendance_weeks: 4 },
+        asOfDate: '2026-03-18',
+        raidStartDate: '2020-01-01',
+      }))
+      expect(result.raidsInWindow).toBe(2)
+      expect(result.raidsAttended).toBe(2)
+    })
+  })
 })

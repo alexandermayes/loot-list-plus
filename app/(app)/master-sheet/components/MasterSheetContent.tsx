@@ -281,10 +281,11 @@ export default function MasterSheetContent() {
     const raidDaySource = activeGuild?.active_expansion_id
       ? (await supabase
           .from('expansions')
-          .select('raid_days_per_week, first_raid_day, second_raid_day, third_raid_day, fourth_raid_day, fifth_raid_day')
+          .select('raid_start_date, raid_days_per_week, first_raid_day, second_raid_day, third_raid_day, fourth_raid_day, fifth_raid_day')
           .eq('id', activeGuild.active_expansion_id)
           .single()).data
       : null
+    const raidStartDate: string | null = (raidDaySource as { raid_start_date?: string | null } | null)?.raid_start_date || null
 
     const baseSettings = {
       raid_days_per_week: (raidDaySource || guildSettings).raid_days_per_week || 2,
@@ -401,6 +402,7 @@ export default function MasterSheetContent() {
         memberJoinedAt: membership?.joined_at ? toDateString(new Date(membership.joined_at)) : undefined,
         newMemberMode,
         asOfDate: todayStr,
+        raidStartDate: raidStartDate || undefined,
         fillInEvents: charFillInEvents.length > 0 ? charFillInEvents : undefined,
         fillInRecords: charFillInRecords.length > 0 ? charFillInRecords : undefined,
         weeklyAttendanceCap: activeTeamId ? raidDaysPerWeek : undefined,
@@ -630,38 +632,65 @@ export default function MasterSheetContent() {
 
         const itemIds = itemsData.map((i: { id: string }) => i.id)
 
-        // PERFORMANCE: Parallelize independent queries that only need itemIds
-        // These queries don't depend on each other, so run them concurrently
+        // PERFORMANCE: Parallelize independent queries that only need itemIds.
+        // Query 1 (visibility) routes through a service-role API because RLS on
+        // `loot_submission_items` / `loot_submissions` / `characters` silently
+        // drops rows when a CGM is inactive — that's caused master sheet
+        // raiders to vanish multiple times. The API returns rankings +
+        // approved submissions + characters + memberships in one trip.
+        const visibilityPromise = (async (): Promise<{
+          rankings: { rank: number; slot: number; submission_id: string; loot_item_id: string }[]
+          submissions: { id: string; status: string; character_id: string | null }[]
+          characters: CharacterWithRelations[]
+          memberships: (CharacterGuildMembership & { character_id: string })[]
+          error?: string
+        }> => {
+          try {
+            const res = await fetch('/api/master-sheet/visibility', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ guild_id: guildId, item_ids: itemIds }),
+            })
+            if (!res.ok) {
+              const body = await res.json().catch(() => ({}))
+              return { rankings: [], submissions: [], characters: [], memberships: [], error: body.error || `HTTP ${res.status}` }
+            }
+            const payload = await res.json()
+            return {
+              rankings: payload.rankings || [],
+              submissions: payload.submissions || [],
+              characters: payload.characters || [],
+              memberships: payload.memberships || [],
+            }
+          } catch (err) {
+            return { rankings: [], submissions: [], characters: [], memberships: [], error: err instanceof Error ? err.message : 'unknown' }
+          }
+        })()
+
         const [
-          rankingsResult,
+          visibility,
           lootHistoryResult,
           blpResult,
           prioritiesResults
         ] = await Promise.all([
-          // Query 1: Get all ranking submissions for all items
-          supabase
-            .from('loot_submission_items')
-            .select('rank, slot, submission_id, loot_item_id')
-            .in('loot_item_id', itemIds)
-            .is('removed_at', null)
-            .limit(10000),
+          visibilityPromise,
 
-          // Query 2: Load loot history to filter out characters who already received items
-          // Match by wowhead_id (not loot_item_id) so awards from other tiers with the same physical item are caught
+          // Load loot history to filter out characters who already received items.
+          // Match by wowhead_id (not loot_item_id) so awards from other tiers with the same physical item are caught.
           supabase
             .from('loot_history')
             .select('character_id, loot_item:loot_items(wowhead_id)')
             .eq('guild_id', guildId)
             .limit(10000),
 
-          // Query 3: Fetch BLP data (if enabled)
+          // BLP data (if enabled)
           guildSettings.blp_enabled
             ? fetch(`/api/blp?guild_id=${guildId}&item_ids=${itemIds.join(',')}`)
                 .then(res => res.ok ? res.json() : { data: {} })
                 .catch(() => ({ data: {} }))
             : Promise.resolve({ data: {} }),
 
-          // Query 4: Load item priorities for all tiers in parallel
+          // Item priorities for all tiers in parallel
           Promise.all(
             activeTierIds.map(tierId =>
               fetch(`/api/prio-list?guild_id=${guildId}&raid_tier_id=${tierId}`)
@@ -671,7 +700,7 @@ export default function MasterSheetContent() {
           )
         ])
 
-        const { data: allRankingsData, error: rankingsError } = rankingsResult
+        const allRankingsData = visibility.rankings
         const { data: lootHistoryData } = lootHistoryResult
         const blpDataMap: Record<string, number> = blpResult.data || {}
 
@@ -698,88 +727,40 @@ export default function MasterSheetContent() {
         }
         setLootReceivedCounts(receivedItemCounts)
 
-        if (rankingsError) {
-          console.error('Error loading rankings:', rankingsError)
+        if (visibility.error) {
+          console.error('Error loading master-sheet visibility:', visibility.error)
           showNotification('error', 'Couldn\'t load rankings. Check your connection and try again.')
           setAllItemRankings(itemsData.map((item: LootItem) => ({ item, rankings: [] })))
           setContentLoading(false)
           return
         }
 
-        if (!allRankingsData || allRankingsData.length === 0) {
+        if (allRankingsData.length === 0) {
           setAllItemRankings(itemsData.map((item: LootItem) => ({ item, rankings: [] })))
           setContentLoading(false)
           return
         }
 
-        // Get all submissions (only approved lists show on master sheet)
-        const submissionIds = [...new Set(allRankingsData.map((r: { submission_id: string }) => r.submission_id))]
+        let subsData = visibility.submissions
+        let charactersData = visibility.characters
+        let membershipsData = visibility.memberships
 
-        const { data: subsData, error: subsError } = await supabase
-          .from('loot_submissions')
-          .select('id, status, character_id')
-          .in('id', submissionIds)
-          .eq('status', 'approved')
-
-        if (subsError) {
-          console.error('Error loading submissions:', subsError)
-        }
-
-        if (!subsData || subsData.length === 0) {
-          setAllItemRankings(itemsData.map((item: LootItem) => ({ item, rankings: [] })))
-          setContentLoading(false)
-          return
-        }
-
-        // Get all character info (filter out nulls)
-        let characterIds = [...new Set(subsData.map((s: { character_id: string | null }) => s.character_id).filter((id: string | null) => id !== null))]
-
-        // Filter to team members when a team is selected
-        if (activeTeamId && characterIds.length > 0) {
+        // Team filter: when a team is selected, scope the master sheet to that
+        // team's members only. The RLS-bypassing visibility API above returns
+        // every approved-list raider in the guild; this narrows the visible
+        // set without re-introducing the silent-drop bug (anyone in the team
+        // shows up even with inactive CGM).
+        if (activeTeamId && charactersData.length > 0) {
           const { data: teamMembers } = await supabase
             .from('raid_team_members')
             .select('character_id')
             .eq('raid_team_id', activeTeamId)
-          if (teamMembers) {
-            const teamCharIds = new Set(teamMembers.map((m: { character_id: string }) => m.character_id))
-            characterIds = characterIds.filter(id => teamCharIds.has(id as string))
-          }
+          const teamCharIds = new Set((teamMembers || []).map((m: { character_id: string }) => m.character_id))
+          charactersData = charactersData.filter(c => teamCharIds.has(c.id))
+          subsData = subsData.filter(s => !!s.character_id && teamCharIds.has(s.character_id))
         }
 
-        if (characterIds.length === 0) {
-          setAllItemRankings(itemsData.map((item: LootItem) => ({ item, rankings: [] })))
-          setContentLoading(false)
-          return
-        }
-
-        // Fetch characters and their guild memberships in parallel.
-        // Memberships are fetched separately (not embedded) because the
-        // embedded join returns empty arrays for other users' characters
-        // due to RLS on character_guild_memberships.
-        const [
-          { data: charactersData, error: charError },
-          { data: membershipsData },
-        ] = await Promise.all([
-          supabase
-            .from('characters')
-            .select(`
-              id,
-              name,
-              user_id,
-              spec_id,
-              class:wow_classes(name, color_hex),
-              spec:class_specs(id, name)
-            `)
-            .in('id', characterIds),
-          supabase
-            .from('character_guild_memberships')
-            .select('character_id, role, membership_status, is_active, guild_id')
-            .eq('guild_id', activeGuild!.id)
-            .in('character_id', characterIds),
-        ])
-
-        if (charError) {
-          console.error('Error loading characters:', charError)
+        if (subsData.length === 0 || charactersData.length === 0) {
           setAllItemRankings(itemsData.map((item: LootItem) => ({ item, rankings: [] })))
           setContentLoading(false)
           return
@@ -1298,20 +1279,49 @@ export default function MasterSheetContent() {
     const itemIds = itemsData.map((i: TierLootItem) => i.id)
 
     // Fetch ranking submissions AND independent data (priorities, loot history, BLP) in parallel
-    // These only depend on itemIds/tierId, not on each other
+    // These only depend on itemIds/tierId, not on each other. Rankings/subs/
+    // chars/memberships go through the service-role visibility API so RLS on
+    // loot_submission_items / loot_submissions / characters can't silently
+    // hide CGM-orphaned raiders. See the matching block in loadAllRankings.
+    type TierRankingData = { rank: number; slot: number; submission_id: string; loot_item_id: string }
+    type TierSubmissionData = { id: string; status: string; character_id: string | null }
+
+    const tierVisibilityPromise = (async (): Promise<{
+      rankings: TierRankingData[]
+      submissions: TierSubmissionData[]
+      characters: CharacterWithRelations[]
+      memberships: (CharacterGuildMembership & { character_id: string })[]
+      error?: string
+    }> => {
+      try {
+        const res = await fetch('/api/master-sheet/visibility', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ guild_id: guildId, item_ids: itemIds }),
+        })
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({}))
+          return { rankings: [], submissions: [], characters: [], memberships: [], error: body.error || `HTTP ${res.status}` }
+        }
+        const payload = await res.json()
+        return {
+          rankings: payload.rankings || [],
+          submissions: payload.submissions || [],
+          characters: payload.characters || [],
+          memberships: payload.memberships || [],
+        }
+      } catch (err) {
+        return { rankings: [], submissions: [], characters: [], memberships: [], error: err instanceof Error ? err.message : 'unknown' }
+      }
+    })()
+
     const [
-      { data: allRankingsData },
+      tierVisibility,
       prioritiesMap,
       { data: lootHistoryData },
       tierBlpDataMap,
     ] = await Promise.all([
-      // Get all ranking submissions for all items at once
-      supabase
-        .from('loot_submission_items')
-        .select('rank, slot, submission_id, loot_item_id')
-        .in('loot_item_id', itemIds)
-        .is('removed_at', null)
-        .limit(10000),
+      tierVisibilityPromise,
 
       // Load item priorities for this tier
       (async (): Promise<Record<string, ItemPriority>> => {
@@ -1361,65 +1371,33 @@ export default function MasterSheetContent() {
       })(),
     ])
 
-    if (!allRankingsData || allRankingsData.length === 0) {
+    if (tierVisibility.error) {
+      console.error('Error loading master-sheet visibility (tier):', tierVisibility.error)
       return itemsData.map((item: TierLootItem) => ({ item, rankings: [] }))
     }
 
-    // Get all submissions (only approved lists)
-    type TierRankingData = { rank: number; slot: number; submission_id: string; loot_item_id: string }
-    const submissionIds = [...new Set(allRankingsData.map((r: TierRankingData) => r.submission_id))]
-    const { data: subsData } = await supabase
-      .from('loot_submissions')
-      .select('id, status, character_id')
-      .in('id', submissionIds)
-      .eq('status', 'approved')
-
-    if (!subsData || subsData.length === 0) {
+    const allRankingsData = tierVisibility.rankings
+    if (allRankingsData.length === 0) {
       return itemsData.map((item: TierLootItem) => ({ item, rankings: [] }))
     }
 
-    // Get all character info
-    type TierSubmissionData = { id: string; status: string; character_id: string | null }
-    let characterIds = [...new Set(subsData.map((s: TierSubmissionData) => s.character_id).filter((id: string | null) => id !== null))]
+    let subsData = tierVisibility.submissions
+    let charactersData = tierVisibility.characters
+    const tierMembershipsData = tierVisibility.memberships
 
-    // Filter to team members when a team is selected
-    if (activeTeamId && characterIds.length > 0) {
+    // Team filter: scope to the selected team's members. See the matching
+    // block in loadAllRankings for the reasoning.
+    if (activeTeamId && charactersData.length > 0) {
       const { data: teamMembers } = await supabase
         .from('raid_team_members')
         .select('character_id')
         .eq('raid_team_id', activeTeamId)
-      if (teamMembers) {
-        const teamCharIds = new Set(teamMembers.map((m: { character_id: string }) => m.character_id))
-        characterIds = characterIds.filter(id => teamCharIds.has(id as string))
-      }
+      const teamCharIds = new Set((teamMembers || []).map((m: { character_id: string }) => m.character_id))
+      charactersData = charactersData.filter(c => teamCharIds.has(c.id))
+      subsData = subsData.filter(s => !!s.character_id && teamCharIds.has(s.character_id))
     }
 
-    if (characterIds.length === 0) {
-      return itemsData.map((item: TierLootItem) => ({ item, rankings: [] }))
-    }
-
-    // Fetch characters and memberships separately (embedded join returns
-    // empty arrays for other users' characters due to RLS).
-    const [{ data: charactersData }, { data: tierMembershipsData }] = await Promise.all([
-      supabase
-        .from('characters')
-        .select(`
-          id,
-          name,
-          user_id,
-          spec_id,
-          class:wow_classes(name, color_hex),
-          spec:class_specs(id, name)
-        `)
-        .in('id', characterIds),
-      supabase
-        .from('character_guild_memberships')
-        .select('character_id, role, membership_status, is_active, guild_id')
-        .eq('guild_id', activeGuild.id)
-        .in('character_id', characterIds),
-    ])
-
-    if (!charactersData) {
+    if (subsData.length === 0 || charactersData.length === 0) {
       return itemsData.map((item: TierLootItem) => ({ item, rankings: [] }))
     }
 

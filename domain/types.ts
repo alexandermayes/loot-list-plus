@@ -110,6 +110,13 @@ export interface AttendanceInput {
   memberJoinedAt?: string
   /** Defaults to today. Pass explicitly for deterministic tests. */
   asOfDate?: string  // YYYY-MM-DD
+  /**
+   * Expansion raid start date (YYYY-MM-DD). When set, the rolling window's
+   * lower bound is clamped to this date so events from before the expansion
+   * started (e.g., auto-created blanks from `/api/raid-events/ensure`) don't
+   * leak into the denominator.
+   */
+  raidStartDate?: string
   /** New member mode: 'raw' | 'fair' | 'minimum_gate'. Defaults to 'raw'. */
   newMemberMode?: 'raw' | 'fair' | 'minimum_gate'
   /**

@@ -107,11 +107,11 @@ export async function GET(request: NextRequest) {
       .eq('id', guildId)
       .single()
 
-    let expansionRaidDays: { first_raid_day: number | null; second_raid_day: number | null; raid_days_per_week: number | null } | null = null
+    let expansionRaidDays: { first_raid_day: number | null; second_raid_day: number | null; raid_days_per_week: number | null; raid_start_date?: string | null } | null = null
     if (guild?.active_expansion_id) {
       const { data: exp } = await serviceSupabase
         .from('expansions')
-        .select('first_raid_day, second_raid_day, raid_days_per_week')
+        .select('first_raid_day, second_raid_day, raid_days_per_week, raid_start_date')
         .eq('id', guild.active_expansion_id)
         .single()
       expansionRaidDays = exp
@@ -178,6 +178,7 @@ export async function GET(request: NextRequest) {
         memberJoinedAt: membership.joined_at ? toDateString(new Date(membership.joined_at)) : undefined,
         newMemberMode,
         asOfDate: toDateString(today),
+        raidStartDate: expansionRaidDays?.raid_start_date || undefined,
       })
     }
 
