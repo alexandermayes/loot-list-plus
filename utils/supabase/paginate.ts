@@ -7,10 +7,20 @@
  * `.range()`, or rows silently disappear. This helper paginates in
  * 1000-row pages until exhausted.
  *
+ * **You MUST include a deterministic `.order(...)` in the builder.** Without
+ * it, Postgres returns rows in arbitrary order, and successive `.range()`
+ * calls can skip rows and/or return duplicates — leading to silently wrong
+ * results. `.order('id')` on the primary key is a safe default.
+ *
  * Usage:
  * ```ts
  * const rows = await paginatedSelect<RowShape>((start, end) =>
- *   supabase.from('table').select('cols').eq('guild_id', id).range(start, end)
+ *   supabase
+ *     .from('table')
+ *     .select('cols')
+ *     .eq('guild_id', id)
+ *     .order('id', { ascending: true })  // required for stable pagination
+ *     .range(start, end)
  * )
  * ```
  */

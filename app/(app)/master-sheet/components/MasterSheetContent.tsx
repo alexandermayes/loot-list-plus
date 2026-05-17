@@ -678,12 +678,13 @@ export default function MasterSheetContent() {
 
           // Load loot history to filter out characters who already received items.
           // Match by wowhead_id (not loot_item_id) so awards from other tiers with the same physical item are caught.
-          // Paginated to defeat Supabase's 1000-row response cap — see utils/supabase/paginate.
+          // Paginated + ordered to defeat Supabase's 1000-row cap — see utils/supabase/paginate.
           paginatedSelect<{ character_id: string; loot_item: { wowhead_id: number } | null }>((start, end) =>
             supabase
               .from('loot_history')
               .select('character_id, loot_item:loot_items(wowhead_id)')
               .eq('guild_id', guildId)
+              .order('id', { ascending: true })
               .range(start, end)
           ).then(data => ({ data })),
 
@@ -928,7 +929,7 @@ export default function MasterSheetContent() {
 
         const itemIds = itemsData.map((i: { id: string }) => i.id)
 
-        // Get all submission items for these items (paginated to defeat Supabase's 1000-row cap)
+        // Get all submission items for these items (paginated + ordered to defeat Supabase's 1000-row cap)
         const submissionItemsData = await paginatedSelect<{ loot_item_id: string; rank: number; slot: number; submission_id: string }>(
           (start, end) =>
             supabase
@@ -936,6 +937,7 @@ export default function MasterSheetContent() {
               .select('loot_item_id, rank, slot, submission_id')
               .in('loot_item_id', itemIds)
               .is('removed_at', null)
+              .order('id', { ascending: true })
               .range(start, end)
         )
 
@@ -971,7 +973,7 @@ export default function MasterSheetContent() {
           .in('id', characterIds)
 
         // Get loot history for awarded count (match by wowhead_id so cross-tier awards are counted)
-        // Paginated to defeat Supabase's 1000-row response cap.
+        // Paginated + ordered to defeat Supabase's 1000-row response cap.
         const wowheadIdSet = new Set(itemsData.map((i: { wowhead_id: number }) => i.wowhead_id))
         const lootHistoryData = await paginatedSelect<{ loot_item: { wowhead_id: number } | null }>(
           (start, end) =>
@@ -979,6 +981,7 @@ export default function MasterSheetContent() {
               .from('loot_history')
               .select('loot_item:loot_items(wowhead_id)')
               .eq('guild_id', guildId)
+              .order('id', { ascending: true })
               .range(start, end)
         )
 
@@ -1357,12 +1360,13 @@ export default function MasterSheetContent() {
 
       // Load loot history to filter out characters who already received items
       // Match by wowhead_id (not loot_item_id) so awards from other tiers with the same physical item are caught
-      // Paginated to defeat Supabase's 1000-row response cap.
+      // Paginated + ordered to defeat Supabase's 1000-row response cap.
       paginatedSelect<{ character_id: string; loot_item: { wowhead_id: number } | null }>((start, end) =>
         supabase
           .from('loot_history')
           .select('character_id, loot_item:loot_items(wowhead_id)')
           .eq('guild_id', guildId)
+          .order('id', { ascending: true })
           .range(start, end)
       ).then(data => ({ data })),
 

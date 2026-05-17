@@ -26,6 +26,12 @@ async function getItemCounts(submissionIds: string[]): Promise<Record<string, nu
         .select('submission_id')
         .in('submission_id', batch)
         .is('removed_at', null)
+        // `.order('id')` is REQUIRED for stable pagination — without it,
+        // Postgres returns rows in arbitrary order and successive .range()
+        // calls skip / duplicate rows, which previously caused 14 of 172
+        // approved submissions in Big Yikes to show count=0 despite having
+        // real items.
+        .order('id', { ascending: true })
         .range(start, start + PAGE - 1)
 
       if (error || !data || data.length === 0) break

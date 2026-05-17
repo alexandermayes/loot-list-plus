@@ -79,7 +79,9 @@ export async function POST(request: NextRequest) {
     // a single phase, and the silently-truncated rows used to drop raiders
     // off the master sheet at random (whichever submissions had rankings in
     // the tail end of the result). Paginate explicitly via .range() in batches
-    // of 1000 until exhausted.
+    // of 1000 until exhausted. `.order('id')` is REQUIRED — without it,
+    // successive .range() calls can skip rows and/or duplicate them because
+    // Postgres has no deterministic order to apply OFFSET/LIMIT against.
     const rankings: { rank: number; slot: number; submission_id: string; loot_item_id: string }[] = []
     const PAGE = 1000
     for (let start = 0; ; start += PAGE) {
@@ -88,6 +90,7 @@ export async function POST(request: NextRequest) {
         .select('rank, slot, submission_id, loot_item_id')
         .in('loot_item_id', item_ids)
         .is('removed_at', null)
+        .order('id', { ascending: true })
         .range(start, start + PAGE - 1)
       if (!page || page.length === 0) break
       rankings.push(...page)
