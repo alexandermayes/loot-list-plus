@@ -21,13 +21,44 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url)
-    const guildId = searchParams.get('guild_id')
-
-    if (!guildId) {
-      return NextResponse.json({ error: 'guild_id is required' }, { status: 400 })
-    }
+    let guildId = searchParams.get('guild_id')
 
     const serviceSupabase = createServiceRoleClient()
+
+    // If no guild_id is provided, find one for the caller by looking up an
+    // active membership on one of their characters. Avoids needing the user
+    // to dig through localStorage for a UUID.
+    if (!guildId) {
+      const { data: callerChars } = await serviceSupabase
+        .from('characters')
+        .select('id')
+        .eq('user_id', user.id)
+
+      const charIds = (callerChars || []).map((c: { id: string }) => c.id)
+      if (charIds.length === 0) {
+        return NextResponse.json({ error: 'No characters found for this user' }, { status: 404 })
+      }
+
+      const { data: guilds } = await serviceSupabase
+        .from('character_guild_memberships')
+        .select('guild_id, guilds(name)')
+        .in('character_id', charIds)
+        .eq('is_active', true)
+
+      const unique = [...new Map((guilds || []).map((g: any) => [g.guild_id, g])).values()]
+      if (unique.length === 0) {
+        return NextResponse.json({ error: 'No active guild memberships found' }, { status: 404 })
+      }
+
+      if (unique.length > 1) {
+        return NextResponse.json({
+          error: 'Multiple guilds found, specify ?guild_id=<id>',
+          guilds: unique.map((g: any) => ({ guild_id: g.guild_id, name: g.guilds?.name })),
+        }, { status: 400 })
+      }
+
+      guildId = unique[0].guild_id as string
+    }
 
     const { hasPermission, error: permError } = await verifyPermission(serviceSupabase, user.id, guildId, 'manage_settings')
     if (!hasPermission) {
