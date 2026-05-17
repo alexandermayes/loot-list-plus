@@ -51,14 +51,19 @@ export async function POST(request: NextRequest) {
     const supabase = await createClient()
     const serviceSupabase = createServiceRoleClient()
 
-    // Get submission with character info
+    // Get submission with character info (class included for embed color + footer)
     const { data: submission, error: subError } = await supabase
       .from('loot_submissions')
       .select(`
         id,
         guild_id,
         character_id,
-        characters(id, name, user_id)
+        characters(
+          id,
+          name,
+          user_id,
+          class:wow_classes(name, color_hex)
+        )
       `)
       .eq('id', submission_id)
       .single()
@@ -76,7 +81,9 @@ export async function POST(request: NextRequest) {
 
     // Handle both array and object return types from Supabase relation
     const charactersData = submission.characters
-    const character = (Array.isArray(charactersData) ? charactersData[0] : charactersData) as { id: string; name: string; user_id: string } | null
+    type WowClass = { name: string; color_hex: string }
+    type CharRow = { id: string; name: string; user_id: string; class?: WowClass | WowClass[] | null }
+    const character = (Array.isArray(charactersData) ? charactersData[0] : charactersData) as CharRow | null
     if (!character?.user_id) {
       console.error('No character or user_id found for submission')
       return NextResponse.json({ error: 'Character not found' }, { status: 404 })
@@ -116,33 +123,55 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    // Build the notification message
-    const statusEmoji = status === 'approved' ? '✅' : status === 'rejected' ? '❌' : '📝'
-    const statusText = status === 'approved' ? 'approved' : status === 'rejected' ? 'rejected' : 'needs revision'
+    // Build a Discord rich embed. The color stripe matches the character's
+    // class, so a raider seeing many of these DMs over a phase can tell at a
+    // glance which alt got approved without reading the header — and we
+    // sidestep Discord's URL-unfurl pulling the stale marketing OG card.
+    const STATUS_META = {
+      approved: {
+        title: '✅ Loot list approved',
+        tail: 'Your rankings are now active on the Master Sheet.',
+        fallbackColor: 0x10b981, // emerald
+      },
+      rejected: {
+        title: '❌ Loot list rejected',
+        tail: 'Please review the feedback and resubmit.',
+        fallbackColor: 0xef4444, // red
+      },
+      needs_revision: {
+        title: '📝 Revisions requested',
+        tail: 'Please review the feedback and make the requested changes.',
+        fallbackColor: 0xf59e0b, // amber
+      },
+    } as const
 
-    let message = `${statusEmoji} **Loot List Update**\n\n`
-    message += `Your loot list for **${character_name || character.name}**`
-    if (phase) {
-      message += ` (Phase ${phase})`
-    }
-    if (guild_name) {
-      message += ` in **${guild_name}**`
-    }
-    message += ` has been **${statusText}**`
+    const meta = STATUS_META[status]
+    const charClass = Array.isArray(character.class) ? character.class[0] : character.class
+    const colorHex = charClass?.color_hex
+    const embedColor = colorHex
+      ? parseInt(colorHex.replace('#', ''), 16)
+      : meta.fallbackColor
 
-    if (status === 'approved') {
-      message += `.\n\nYour rankings are now active on the Master Sheet.`
-    } else if (status === 'rejected') {
-      message += `.\n\nPlease review the feedback and resubmit.`
-    } else {
-      message += `.\n\nPlease review the feedback and make the requested changes.`
-    }
+    const charName = character_name || character.name
+    const headerLine = `**${charName}**${phase ? ` — Phase ${phase}` : ''}${guild_name ? ` in **${guild_name}**` : ''}`
 
+    const fields: { name: string; value: string; inline?: boolean }[] = []
     if (review_notes) {
-      message += `\n\n**Officer Notes:**\n> ${review_notes.replace(/\n/g, '\n> ')}`
+      // Discord embed field values cap at 1024 chars.
+      const trimmed = review_notes.length > 1020 ? review_notes.slice(0, 1020) + '…' : review_notes
+      fields.push({ name: 'Officer notes', value: trimmed })
     }
 
-    message += `\n\n[View your loot list](https://lootlistplus.com/loot-list)`
+    const footerParts = [charClass?.name, guild_name, 'LootList+'].filter(Boolean) as string[]
+    const embed = {
+      title: meta.title,
+      url: 'https://lootlistplus.com/loot-list',
+      description: `${headerLine}\n\n${meta.tail}`,
+      color: embedColor,
+      fields,
+      footer: { text: footerParts.join(' • ') },
+      timestamp: new Date().toISOString(),
+    }
 
     // First, create a DM channel with the user
     const dmChannelResponse = await discordFetch('https://discord.com/api/v10/users/@me/channels', {
@@ -184,7 +213,7 @@ export async function POST(request: NextRequest) {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        content: message
+        embeds: [embed],
       })
     })
 
