@@ -364,7 +364,6 @@ export default function DashboardContent() {
   const [showOnboarding, setShowOnboarding] = useState(false)
   const [showGuardianConversion, setShowGuardianConversion] = useState(false)
   const [guardianSpecId, setGuardianSpecId] = useState<string | null>(null)
-  const [showFirstLootCelebration, setShowFirstLootCelebration] = useState(false)
 
   // Stats state
   const [stats, setStats] = useState({
@@ -1648,17 +1647,6 @@ export default function DashboardContent() {
       }))
 
       setReceivedItems(transformedItems)
-
-      // First loot celebration — one-time confetti per character
-      if (transformedItems.length > 0 && activeCharacter) {
-        const celebKey = `lootlist_first_loot_${activeCharacter.id}`
-        if (typeof window !== 'undefined' && !localStorage.getItem(celebKey)) {
-          localStorage.setItem(celebKey, 'true')
-          setShowFirstLootCelebration(true)
-          setTimeout(() => setShowFirstLootCelebration(false), 3000)
-        }
-      }
-
     } catch (error) {
       console.error('Error loading received items:', error)
       showNotification('error', 'Couldn\'t load your received items. Try refreshing the page.')
@@ -1722,43 +1710,6 @@ export default function DashboardContent() {
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 space-y-6 font-poppins">
-      {/* First loot celebration */}
-      {showFirstLootCelebration && (
-        <div className="fixed inset-0 pointer-events-none z-[9999] overflow-hidden" aria-hidden="true">
-          <div className="absolute inset-0 flex items-center justify-center">
-            <p
-              className="text-3xl sm:text-5xl font-black tracking-wider animate-fade-in"
-              style={{
-                color: '#a335ee',
-                textShadow: '0 0 40px rgba(163, 53, 238, 0.5), 0 0 80px rgba(163, 53, 238, 0.2)',
-              }}
-            >
-              Grats!
-            </p>
-          </div>
-          {Array.from({ length: 40 }, (_, i) => (
-            <span
-              key={i}
-              className="absolute text-lg"
-              style={{
-                left: `${Math.random() * 100}%`,
-                top: '-20px',
-                animation: `loot-rain ${2 + Math.random() * 2}s ease-in ${Math.random() * 1}s forwards`,
-              }}
-            >
-              {['✨', '🎉', '⭐', '💜', '🟣', '💎'][Math.floor(Math.random() * 6)]}
-            </span>
-          ))}
-          <style>{`
-            @keyframes loot-rain {
-              0% { transform: translateY(0) rotate(0deg); opacity: 1; }
-              80% { opacity: 1; }
-              100% { transform: translateY(110vh) rotate(360deg); opacity: 0; }
-            }
-          `}</style>
-        </div>
-      )}
-
       {/* Header - Always visible but stable during loading */}
       <div>
         <Heading level={1}>

@@ -368,11 +368,6 @@ export const updates: UpdateEntry[] = [
       },
       {
         category: 'feature',
-        title: 'First loot celebration',
-        description: 'The first time a character receives an item, the overview page celebrates with a "Grats!" moment. One-time per character.',
-      },
-      {
-        category: 'feature',
         title: 'Tied score indicator',
         description: 'When players have the same Loot Score on the Master Sheet, a dice icon now appears next to their score.',
       },
