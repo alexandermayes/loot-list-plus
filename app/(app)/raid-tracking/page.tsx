@@ -2665,13 +2665,21 @@ export default function RaidTrackingPage() {
 
                               {/* Desktop: Inline Loot Items (names only, no interactive elements inside button) */}
                               {memberLoot.length > 0 && (
-                                <span className="hidden sm:flex items-center gap-2 text-[12px] min-w-0">
-                                  <span className="text-muted-foreground">→</span>
-                                  {memberLoot.map(loot => (
-                                    <span key={loot.id} className="min-w-0">
-                                      <ItemLink name={loot.item_name} wowheadId={loot.item_wowhead_id} className="text-[12px] truncate" />
+                                <span className="hidden sm:flex items-center gap-2 text-[12px] min-w-0 overflow-hidden">
+                                  <span className="text-muted-foreground flex-shrink-0">→</span>
+                                  {memberLoot.slice(0, 2).map(loot => (
+                                    <span key={loot.id} className="min-w-0 max-w-[180px] flex-shrink overflow-hidden">
+                                      <ItemLink name={loot.item_name} wowheadId={loot.item_wowhead_id} className="text-[12px]" />
                                     </span>
                                   ))}
+                                  {memberLoot.length > 2 && (
+                                    <span
+                                      className="text-[11px] font-medium text-muted-foreground bg-muted px-2 py-0.5 rounded-full flex-shrink-0"
+                                      title={memberLoot.slice(2).map(l => l.item_name).join(', ')}
+                                    >
+                                      +{memberLoot.length - 2} more
+                                    </span>
+                                  )}
                                 </span>
                               )}
 
