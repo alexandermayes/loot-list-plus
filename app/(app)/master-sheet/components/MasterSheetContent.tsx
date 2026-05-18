@@ -8,6 +8,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { computeScore, computeAttendance, type ItemPriority, type AttendanceResult } from '@/domain/scoring'
 import { getSpecRoles } from '@/domain/loot/spec-role-mapping'
+import { formatRankingsForGargul } from '@/domain/loot/gargul-dft'
 import { getBossOrder, normalizeBossName } from '@/utils/bossOrder'
 import { getBossImage } from '@/utils/bossImages'
 import { getRaidIcon, getRaidShorthand } from '@/utils/raidIcons'
@@ -1253,25 +1254,12 @@ export default function MasterSheetContent() {
     return ids
   }, [candidateModalData, lootReceivedCounts])
 
-  // Generate Gargul DFT export from rankings data (memoized callback)
-  // DFT format: "itemId^DFTFC Header:\ncoloredPlayerLines;" per item.
-  // After WoW EditBox escaping (| -> ||), Gargul's parser:
-  //   strsub(line, 12) skips the 11-char escaped color prefix (||cffXXXXXX)
-  //   gsub("|r: ", "") strips the color reset, then explode(line, "|") splits name from score.
-  // DFT sorts descending (highest score first) and supports a custom header label.
-  const formatRankingsForGargul = useCallback((rankings: ItemRankings[]): string => {
-    const dp = guildSettings?.decimal_places ?? 2
-    return rankings
-      .filter(ir => ir.rankings.length > 0)
-      .map(ir => {
-        const itemId = ir.item.wowhead_id
-        const playerLines = ir.rankings.map(r => {
-          const colorHex = r.class_color.replace('#', '')
-          return `|cff${colorHex} ${r.player_name}|r: ${r.loot_score.toFixed(dp)}`
-        }).join('\n')
-        return `"${itemId}^DFTFC LootList+ Score:\n${playerLines};"`
-      })
-      .join('\n')
+  // Build the Gargul DFT export string. See `formatRankingsForGargul` in
+  // domain/loot/gargul-dft.ts — it merges rows that share a wowhead id
+  // (e.g. Nether Vortex from SSC + TK) so Gargul shows every reserver's
+  // best score on the single combined item.
+  const buildGargulExport = useCallback((rankings: ItemRankings[]): string => {
+    return formatRankingsForGargul(rankings, guildSettings?.decimal_places ?? 2)
   }, [guildSettings?.decimal_places])
 
   // Fetch rankings for a single tier
@@ -1547,7 +1535,7 @@ export default function MasterSheetContent() {
       )
       const allTiersRankings = tierResults.flat()
 
-      const exportData = formatRankingsForGargul(allTiersRankings)
+      const exportData = buildGargulExport(allTiersRankings)
 
       if (!exportData) {
         showNotification('warning', 'No ranked items found to export. Make sure submissions are approved.')
