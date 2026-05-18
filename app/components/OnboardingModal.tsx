@@ -86,7 +86,7 @@ export default function OnboardingModal({ open, onClose, isOfficer, guildName }:
   return (
     <AnimatePresence>
       {open && (
-        <Modal open={open} onClose={handleClose} size="default">
+        <Modal open={open} onClose={handleClose} size="xl">
           {/* Custom branded header with gradient */}
           <div className="relative overflow-hidden rounded-t-xl">
             {/* Animated gradient background - subtle color shift */}
