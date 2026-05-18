@@ -581,7 +581,7 @@ export const tempestkeep: Raid = {
         { name: 'Rod of the Sun King', slot: 'Main Hand', wowhead_id: 29996 },
         { name: 'The Nexus Key', slot: 'Main Hand', wowhead_id: 29988 },
         { name: 'Royal Gauntlets of Silvermoon', slot: 'Hands', wowhead_id: 29998 },
-        { name: 'Twinblade of the Phoenix', slot: 'One-Hand', wowhead_id: 29993 },
+        { name: 'Twinblade of the Phoenix', slot: 'Two-Hand', wowhead_id: 29993 },
         { name: 'Band of the Ranger-General', slot: 'Finger', wowhead_id: 29997 },
         { name: 'Verdant Sphere', slot: 'Quest', wowhead_id: 32405 },
         // Tier 5 Chest Tokens

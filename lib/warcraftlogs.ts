@@ -93,7 +93,14 @@ async function getWclToken(): Promise<string | null> {
  * Accepts formats like:
  *   https://classic.warcraftlogs.com/guild/us/faerlina/guild-name  (slug-based)
  *   https://classic.warcraftlogs.com/guild/id/772496               (ID-based)
+ *   https://classic.warcraftlogs.com/guild/reports-list/772496     (reports page)
+ *   https://classic.warcraftlogs.com/guild/page/772496             (legacy summary page)
+ *   https://classic.warcraftlogs.com/guild/calendar/772496         (calendar)
+ *   https://classic.warcraftlogs.com/guild/772496                  (id shorthand)
  *   https://www.warcraftlogs.com/guild/us/faerlina/guild-name
+ *
+ * Any `/guild/.../{numericId}` shape is treated as ID-based — the WCL API
+ * resolves by ID regardless of which guild subpage the user copied.
  */
 export function parseWclGuildUrl(url: string): WclGuildRef | null {
   try {
@@ -108,12 +115,16 @@ export function parseWclGuildUrl(url: string): WclGuildRef | null {
 
     // Path segments: /guild/...
     const segments = parsed.pathname.split('/').filter(Boolean)
-    if (segments.length < 3 || segments[0] !== 'guild') return null
+    if (segments.length < 2 || segments[0] !== 'guild') return null
 
-    // ID-based format: /guild/id/{numericId}
-    if (segments[1] === 'id' && /^\d+$/.test(segments[2])) {
+    // ID-based: any `/guild/.../{numericId}` shape. Covers /guild/id/123,
+    // /guild/reports-list/123, /guild/page/123, /guild/calendar/123, and
+    // the shorthand /guild/123. Region slugs like "us"/"eu"/"kr" are never
+    // numeric, so this won't collide with the slug-based form below.
+    const lastSegment = segments[segments.length - 1]
+    if (/^\d+$/.test(lastSegment)) {
       return {
-        guildId: parseInt(segments[2], 10),
+        guildId: parseInt(lastSegment, 10),
         isClassic,
         subdomain,
       }

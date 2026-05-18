@@ -30,6 +30,7 @@ import { Label } from '@/components/ui/label'
 import { SecurityLockIcon, RotateClockwiseIcon } from '@hugeicons/core-free-icons'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { trackClientEvent } from '@/utils/analytics/client'
+import { parseWclGuildUrl } from '@/lib/warcraftlogs'
 
 export default function GuildSettingsContent() {
   const [loading, setLoading] = useState(true)
@@ -370,8 +371,8 @@ export default function GuildSettingsContent() {
   const handleSaveWclUrl = async (url: string) => {
     if (!activeGuild) return
     const trimmed = url.trim()
-    if (trimmed && !trimmed.match(/^https:\/\/(\w+\.)?warcraftlogs\.com\/guild\//)) {
-      showNotification('error', 'URL must be a Warcraft Logs guild page (e.g. https://classic.warcraftlogs.com/guild/us/faerlina/guild-name)')
+    if (trimmed && !parseWclGuildUrl(trimmed)) {
+      showNotification('error', "Couldn't read that link. Paste your guild page URL from WCL (e.g. https://classic.warcraftlogs.com/guild/us/faerlina/guild-name).")
       return
     }
     setSavingWcl(true)

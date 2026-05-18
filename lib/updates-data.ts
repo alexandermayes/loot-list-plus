@@ -14,6 +14,71 @@ export interface UpdateEntry {
 
 export const updates: UpdateEntry[] = [
   {
+    date: 'May 18, 2026',
+    items: [
+      {
+        category: 'feature',
+        title: 'Guild recruitment blog post',
+        description: '"How to Recruit for Your WoW Guild" is live on the blog with full SEO and sitemap coverage.',
+      },
+      {
+        category: 'improvement',
+        title: 'Class-colored submission DMs',
+        description: 'Discord submission notifications now use rich embeds colored by the submitter\'s class, both for the submitter\'s receipt and the officer alert. Spot who submitted what at a glance.',
+      },
+      {
+        category: 'improvement',
+        title: 'Submission alerts follow the permission',
+        description: 'Anyone with the manage submissions permission now gets pinged for new submissions, not just Officers and Guild Masters.',
+      },
+      {
+        category: 'improvement',
+        title: 'More Warcraft Logs URL formats',
+        description: 'Paste your guild\'s profile, reports list, calendar, or ID page from WCL and we\'ll link the matching report. The error message is also clearer when a URL can\'t be read.',
+      },
+      {
+        category: 'improvement',
+        title: 'Attendance window respects expansion start',
+        description: 'Attendance ratios now begin counting from each expansion\'s raid start date, so seasons that have just launched don\'t show stale numbers.',
+      },
+      {
+        category: 'improvement',
+        title: 'Award decisions in the audit log',
+        description: 'Each loot award now writes a structured decision receipt to the audit log so you can review exactly what was awarded.',
+      },
+      {
+        category: 'fix',
+        title: 'Stable pagination',
+        description: 'Tables no longer shuffle rows when you change pages. Every paginated query now uses a deterministic sort.',
+      },
+      {
+        category: 'fix',
+        title: 'Item counts on submissions and history',
+        description: 'Submissions and master sheet history now show the correct item counts. Some views were previously displaying 0 or wrong totals.',
+      },
+      {
+        category: 'fix',
+        title: 'Master sheet capacity and orphans',
+        description: 'Master sheet no longer drops raiders past 1000 items or hides raiders whose submissions referenced removed characters.',
+      },
+      {
+        category: 'fix',
+        title: 'Loot pill overlap on raid tracking',
+        description: 'Long lists of inline loot pills are now capped so they no longer overlap other content on the raid tracking page.',
+      },
+      {
+        category: 'fix',
+        title: 'Auto-reject submissions for removed characters',
+        description: 'When a character is removed from your active raid roster, their pending submissions are now auto-rejected instead of staying stuck in review.',
+      },
+      {
+        category: 'fix',
+        title: 'Twinblade of the Phoenix slot',
+        description: 'Now correctly listed as a two-handed weapon. It was showing as one-handed in TBC loot lists.',
+      },
+    ],
+  },
+  {
     date: 'May 13, 2026',
     items: [
       {

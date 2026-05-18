@@ -3,7 +3,7 @@ import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { verifyPermission } from '@/utils/server-roles'
 import { trackApiError } from '@/utils/analytics/server'
-import { fetchWclReportForDate, getWclReportUrl, isWclConfigured } from '@/lib/warcraftlogs'
+import { fetchWclReportForDate, getWclReportUrl, isWclConfigured, parseWclGuildUrl } from '@/lib/warcraftlogs'
 
 /**
  * POST - Fetch and store a WCL report code for a raid event.
@@ -42,6 +42,15 @@ export async function POST(request: NextRequest) {
     const wclGuildUrl = settings?.wcl_guild_url
     if (!wclGuildUrl) {
       return NextResponse.json({ error: 'No Warcraft Logs URL configured. Set one in guild settings.' }, { status: 400 })
+    }
+
+    // Validate the URL parses to a guild ref before hitting WCL, otherwise
+    // the user sees a misleading "no matching report found" message.
+    if (!parseWclGuildUrl(wclGuildUrl)) {
+      return NextResponse.json(
+        { error: "Couldn't read your Warcraft Logs URL. Paste your guild page link from WCL into guild settings." },
+        { status: 400 }
+      )
     }
 
     // Load raid event
