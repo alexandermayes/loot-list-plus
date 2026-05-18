@@ -55,9 +55,10 @@ describe('formatRankingsForGargul', () => {
     expect(out.indexOf('Alice')).toBeLessThan(out.indexOf('Bob'))
   })
 
-  it('keeps a player\'s highest score when they rank the same wowhead in multiple rows', () => {
-    // Bob ranked Nether Vortex (SSC) low and Nether Vortex (TK) high.
-    // Gargul should show his best score, not duplicate or pick the worse one.
+  it('emits a line per ranking when a player ranks the same wowhead in multiple rows', () => {
+    // Bob ranked Nether Vortex (SSC) at one slot and Nether Vortex (TK) at
+    // another to signal he wants two drops (weapon + belt recipe). Gargul
+    // should show both entries, descending, so he gets prio on both drops.
     const out = formatRankingsForGargul(
       [
         item(30183, [r('cBob', 'Bob', 25)]),
@@ -66,9 +67,10 @@ describe('formatRankingsForGargul', () => {
       2
     )
     expect(out).toContain('Bob|r: 75.00')
-    expect(out).not.toContain('Bob|r: 25.00')
-    // Bob should only appear once.
-    expect(out.match(/Bob/g)?.length).toBe(1)
+    expect(out).toContain('Bob|r: 25.00')
+    expect(out.match(/Bob/g)?.length).toBe(2)
+    // Higher score comes first.
+    expect(out.indexOf('75.00')).toBeLessThan(out.indexOf('25.00'))
   })
 
   it('keeps distinct wowhead ids in separate blocks', () => {

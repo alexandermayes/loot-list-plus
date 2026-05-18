@@ -12,12 +12,15 @@
  *   gsub("|r: ", "") strips the color reset, then explode(line, "|") splits name from score.
  * DFT sorts descending (highest score first) and supports a custom header label.
  *
- * Dedupe rule: a single physical WoW item (e.g. Nether Vortex, wowhead_id 30183)
- * may appear as multiple `loot_items` rows when it drops in more than one raid
- * (SSC + TK). Gargul keys by wowhead id and only keeps one block per id, so we
- * must merge all rankings sharing a wowhead_id into a single block. When the
- * same character has ranked the item in multiple rows, keep their highest
- * loot_score so Gargul shows their best prio.
+ * Grouping rule: a single physical WoW item (e.g. Nether Vortex, wowhead_id
+ * 30183) may appear as multiple `loot_items` rows when it drops in more than
+ * one raid (SSC + TK). Gargul keys by wowhead id and only keeps one block per
+ * id, so all rankings sharing a wowhead_id collapse into a single block.
+ *
+ * Per-character entries are NOT deduped. If a raider deliberately ranked both
+ * copies (e.g. one slot for the weapon recipe, one for the belt recipe), they
+ * appear twice in the Gargul prio so the officer can award them each drop.
+ * This treats two distinct rankings as the explicit signal it is.
  */
 
 export interface GargulDftRankingEntry {
@@ -36,33 +39,27 @@ export function formatRankingsForGargul(
   itemRankings: readonly GargulDftItemRankings[],
   decimalPlaces: number
 ): string {
-  // Group by wowhead id, keeping each character's highest score across rows.
-  const byWowheadId = new Map<number, Map<string, GargulDftRankingEntry>>()
+  // Group by wowhead id; preserve every ranking so raiders who ranked the
+  // same wowhead in more than one row appear once per ranking.
+  const byWowheadId = new Map<number, GargulDftRankingEntry[]>()
   for (const ir of itemRankings) {
     const wowheadId = ir.item.wowhead_id
     if (!wowheadId || wowheadId <= 0) continue
     if (ir.rankings.length === 0) continue
 
-    let bestByChar = byWowheadId.get(wowheadId)
-    if (!bestByChar) {
-      bestByChar = new Map<string, GargulDftRankingEntry>()
-      byWowheadId.set(wowheadId, bestByChar)
+    let entries = byWowheadId.get(wowheadId)
+    if (!entries) {
+      entries = []
+      byWowheadId.set(wowheadId, entries)
     }
-    for (const r of ir.rankings) {
-      const existing = bestByChar.get(r.character_id)
-      if (!existing || r.loot_score > existing.loot_score) {
-        bestByChar.set(r.character_id, r)
-      }
-    }
+    entries.push(...ir.rankings)
   }
 
   const blocks: string[] = []
-  for (const [wowheadId, bestByChar] of byWowheadId) {
-    if (bestByChar.size === 0) continue
-    const merged = Array.from(bestByChar.values()).sort(
-      (a, b) => b.loot_score - a.loot_score
-    )
-    const playerLines = merged
+  for (const [wowheadId, entries] of byWowheadId) {
+    if (entries.length === 0) continue
+    const sorted = entries.slice().sort((a, b) => b.loot_score - a.loot_score)
+    const playerLines = sorted
       .map(r => {
         const colorHex = r.class_color.replace('#', '')
         return `|cff${colorHex} ${r.player_name}|r: ${r.loot_score.toFixed(decimalPlaces)}`

@@ -1255,9 +1255,10 @@ export default function MasterSheetContent() {
   }, [candidateModalData, lootReceivedCounts])
 
   // Build the Gargul DFT export string. See `formatRankingsForGargul` in
-  // domain/loot/gargul-dft.ts — it merges rows that share a wowhead id
-  // (e.g. Nether Vortex from SSC + TK) so Gargul shows every reserver's
-  // best score on the single combined item.
+  // domain/loot/gargul-dft.ts — it groups rows that share a wowhead id (e.g.
+  // Nether Vortex from SSC + TK) into a single Gargul block, but preserves
+  // every ranking so a raider who deliberately ranked both copies (weapon +
+  // belt) gets prio on both drops.
   const buildGargulExport = useCallback((rankings: ItemRankings[]): string => {
     return formatRankingsForGargul(rankings, guildSettings?.decimal_places ?? 2)
   }, [guildSettings?.decimal_places])
