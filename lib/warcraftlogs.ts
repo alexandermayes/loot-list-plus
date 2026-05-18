@@ -153,7 +153,20 @@ function isGuildById(ref: WclGuildRef): ref is WclGuildById {
 // Report fetching
 // ---------------------------------------------------------------------------
 
-const WCL_API_URL = 'https://www.warcraftlogs.com/api/v2/client'
+/**
+ * WCL has separate GraphQL endpoints for classic and retail. A classic guild
+ * is not visible on www.warcraftlogs.com and vice-versa, so we must route to
+ * the subdomain implied by the guild URL the user pasted.
+ *
+ *   classic.warcraftlogs.com  -> classic API
+ *   fresh.warcraftlogs.com    -> fresh classic API
+ *   www.warcraftlogs.com      -> retail API
+ *
+ * OAuth token issuance is shared across all subdomains via www.
+ */
+function wclApiUrlForSubdomain(subdomain: string): string {
+  return `https://${subdomain}.warcraftlogs.com/api/v2/client`
+}
 
 /**
  * Check whether a WCL zone name matches any of the given raid tier names.
@@ -189,10 +202,18 @@ export async function fetchWclReportForDate(
   raidTierNames?: string[]
 ): Promise<WclReport | null> {
   const guildRef = parseWclGuildUrl(guildUrl)
-  if (!guildRef) return null
+  if (!guildRef) {
+    console.warn('WCL: could not parse guild URL', guildUrl)
+    return null
+  }
 
   const token = await getWclToken()
-  if (!token) return null
+  if (!token) {
+    console.warn('WCL: could not obtain access token')
+    return null
+  }
+
+  const apiUrl = wclApiUrlForSubdomain(guildRef.subdomain)
 
   // Build time window: raid date noon +-18h (in ms)
   const dateNoon = new Date(raidDate + 'T12:00:00Z').getTime()
@@ -215,7 +236,7 @@ export async function fetchWclReportForDate(
       }
     `
     try {
-      const lookupRes = await fetch(WCL_API_URL, {
+      const lookupRes = await fetch(apiUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -232,9 +253,16 @@ export async function fetchWclReportForDate(
       })
       const lookupJson = await lookupRes.json()
       const resolvedId = lookupJson?.data?.guildData?.guild?.id
-      if (!resolvedId) return null
+      if (!resolvedId) {
+        console.warn(
+          'WCL: guild lookup returned no match',
+          { apiUrl, name: guildRef.guildName, server: guildRef.serverSlug, region: guildRef.region, errors: lookupJson?.errors }
+        )
+        return null
+      }
       guildId = resolvedId
-    } catch {
+    } catch (err) {
+      console.error('WCL: guild lookup request failed', err)
       return null
     }
   }
@@ -265,7 +293,7 @@ export async function fetchWclReportForDate(
     const controller = new AbortController()
     const timeout = setTimeout(() => controller.abort(), 5000)
 
-    const response = await fetch(WCL_API_URL, {
+    const response = await fetch(apiUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -286,7 +314,10 @@ export async function fetchWclReportForDate(
     const rawReports: Array<WclReport & { zone?: { name: string } }> | undefined =
       json?.data?.reportData?.reports?.data
 
-    if (!rawReports || rawReports.length === 0) return null
+    if (!rawReports || rawReports.length === 0) {
+      console.warn('WCL: reports query returned no rows', { apiUrl, guildId, raidDate, errors: json?.errors })
+      return null
+    }
 
     // Filter by zone if raid tier names were provided
     let reports = rawReports
@@ -294,7 +325,15 @@ export async function fetchWclReportForDate(
       reports = rawReports.filter(r =>
         r.zone?.name && zoneMatchesTiers(r.zone.name, raidTierNames)
       )
-      if (reports.length === 0) return null
+      if (reports.length === 0) {
+        console.warn('WCL: zone filter eliminated all reports', {
+          guildId,
+          raidDate,
+          raidTierNames,
+          zones: rawReports.map(r => r.zone?.name),
+        })
+        return null
+      }
     }
 
     // Pick the report with startTime closest to raid date noon
