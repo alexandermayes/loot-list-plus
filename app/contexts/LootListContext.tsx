@@ -923,6 +923,7 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             guild_id: activeGuild.id,
+            character_id: activeCharacter.id,
             character_name: activeCharacter.name,
             phase: selectedPhase,
             guild_name: activeGuild.name

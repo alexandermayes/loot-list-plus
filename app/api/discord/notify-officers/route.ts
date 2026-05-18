@@ -7,6 +7,7 @@ import { roleHasPermission } from '@/domain/guild/roles'
 
 interface NotifyOfficersPayload {
   guild_id: string
+  character_id?: string
   character_name: string
   phase?: number
   guild_name?: string
@@ -29,7 +30,7 @@ export async function POST(request: NextRequest) {
     }
 
     const payload: NotifyOfficersPayload = await request.json()
-    const { guild_id, character_name, phase, guild_name } = payload
+    const { guild_id, character_id, character_name, phase, guild_name } = payload
 
     if (!guild_id || !character_name) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
@@ -182,17 +183,36 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    // Build the notification message
-    let message = `📋 **New Loot List Submission**\n\n`
-    message += `**${character_name}** has submitted their loot list`
-    if (phase) {
-      message += ` for Phase ${phase}`
+    // Look up the submitter's class so the embed stripe matches their class
+    // color — same pattern as the approval DM (commit c162ab4). Falls back to
+    // the LootList+ accent when class data is missing.
+    type WowClass = { name: string; color_hex: string }
+    let charClass: WowClass | null = null
+    if (character_id) {
+      const { data: charRow } = await supabase
+        .from('characters')
+        .select('class:wow_classes(name, color_hex)')
+        .eq('id', character_id)
+        .maybeSingle()
+      const raw = (charRow as { class?: WowClass | WowClass[] | null } | null)?.class
+      charClass = Array.isArray(raw) ? raw[0] ?? null : raw ?? null
     }
-    if (guild_name) {
-      message += ` in **${guild_name}**`
+
+    const FALLBACK_COLOR = 0xff8000 // LootList+ accent (legendary orange)
+    const embedColor = charClass?.color_hex
+      ? parseInt(charClass.color_hex.replace('#', ''), 16)
+      : FALLBACK_COLOR
+
+    const headerLine = `**${character_name}**${phase ? ` — Phase ${phase}` : ''}${guild_name ? ` in **${guild_name}**` : ''}`
+    const footerParts = [charClass?.name, guild_name, 'LootList+'].filter(Boolean) as string[]
+    const embed = {
+      title: '📋 New loot list submission',
+      url: 'https://lootlistplus.com/loot-submissions',
+      description: `${headerLine}\n\nReview it when you get a chance.`,
+      color: embedColor,
+      footer: { text: footerParts.join(' • ') },
+      timestamp: new Date().toISOString(),
     }
-    message += `.\n\nReview it when you get a chance.`
-    message += `\n\n[Review submissions](https://lootlistplus.com/loot-submissions)`
 
     // Send DMs to each officer
     let sentCount = 0
@@ -228,7 +248,7 @@ export async function POST(request: NextRequest) {
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
-            content: message
+            embeds: [embed]
           })
         })
 
