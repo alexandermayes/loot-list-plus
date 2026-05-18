@@ -40,6 +40,15 @@ const breadcrumbLd = {
 
 const posts = [
   {
+    slug: 'guild-recruitment-guide-find-raiders-who-stay',
+    title: 'Guild Recruitment Guide: How to Find Raiders Who Actually Stay',
+    description:
+      'Most guild recruitment fills seats with raiders who quit in 4 weeks. Here\'s how to write apps, run trials, and build a roster that survives the tier.',
+    date: 'May 21, 2026',
+    readTime: '10 min read',
+    tag: 'Guide',
+  },
+  {
     slug: 'how-to-handle-loot-drama-without-losing-raiders',
     title: 'How to Handle Loot Drama Without Losing Raiders',
     description:

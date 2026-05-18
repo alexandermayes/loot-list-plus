@@ -8,6 +8,14 @@ type RelatedPost = {
 
 const ALL_POSTS: RelatedPost[] = [
   {
+    slug: 'guild-recruitment-guide-find-raiders-who-stay',
+    title: 'Guild Recruitment Guide: How to Find Raiders Who Actually Stay',
+    description:
+      'Recruiting raiders is easy. Keeping them past week 4 is the actual problem. Here\'s how to write apps, run trials, and retain who you find.',
+    readTime: '10 min read',
+    tag: 'Guide',
+  },
+  {
     slug: 'how-to-handle-loot-drama-without-losing-raiders',
     title: 'How to Handle Loot Drama Without Losing Raiders',
     description:
