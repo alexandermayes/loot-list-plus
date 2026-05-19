@@ -223,6 +223,11 @@ export async function GET(request: NextRequest) {
         }
 
         for (const member of members) {
+          // Attach team to each character individually
+          for (const c of member.characters) {
+            ;(c as any).raid_team = charTeamMap.get(c.id) ?? null
+          }
+          // Member-level aggregate: main's team, falling back to first alt with a team
           const mainId = member.mainCharacter?.id
           let raidTeam: { id: string; name: string; color: string } | null = null
           if (mainId && charTeamMap.has(mainId)) {

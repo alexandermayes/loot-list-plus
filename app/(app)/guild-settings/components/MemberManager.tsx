@@ -7,7 +7,7 @@ import { useNotification } from '@/app/contexts/NotificationContext'
 import { useGuildMembers } from '@/app/hooks/use-api'
 import { hasFeature } from '@/domain/guild/feature-flags'
 import { HugeiconsIcon } from '@hugeicons/react'
-import { UserBlock01Icon, Time01Icon, CheckmarkSquare01Icon, Search01Icon, SortingAZ02Icon } from '@hugeicons/core-free-icons'
+import { UserBlock01Icon, Time01Icon, CheckmarkSquare01Icon, Search01Icon, SortingAZ02Icon, ArrowRight01Icon } from '@hugeicons/core-free-icons'
 import { Select } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -26,6 +26,7 @@ interface Character {
   spec: {
     name: string
   } | null
+  raid_team?: { id: string; name: string; color: string } | null
 }
 
 interface GuildRole {
@@ -72,6 +73,8 @@ export default function MemberManager() {
   const [search, setSearch] = useState('')
   const [sortMode, setSortMode] = useState<SortMode>('role')
   const [savingCharacterRole, setSavingCharacterRole] = useState<string | null>(null)
+  const [savingCharacterTeam, setSavingCharacterTeam] = useState<string | null>(null)
+  const [expandedUserIds, setExpandedUserIds] = useState<Set<string>>(new Set())
 
   const supabase = createClient()
   const { activeGuild, user } = useGuildContext()
@@ -146,6 +149,71 @@ export default function MemberManager() {
       showNotification('error', message)
     }
   }, [raidTeams, membersData, refreshMembers, showNotification])
+
+  const handleCharacterTeamChange = useCallback(async (
+    member: Member,
+    character: Character,
+    teamId: string | null,
+  ) => {
+    const newTeam = teamId ? raidTeams.find(t => t.id === teamId) : null
+    setSavingCharacterTeam(character.id)
+
+    const optimisticData = {
+      ...membersData,
+      members: membersData!.members.map((m: any) =>
+        m.user_id === member.user_id
+          ? {
+              ...m,
+              characters: m.characters.map((c: any) =>
+                c.id === character.id
+                  ? { ...c, raid_team: newTeam ? { id: newTeam.id, name: newTeam.name, color: newTeam.color_hex } : null }
+                  : c
+              ),
+            }
+          : m
+      ),
+    }
+
+    try {
+      await refreshMembers(async () => {
+        if (character.raid_team?.id) {
+          await fetch(`/api/raid-teams/${character.raid_team.id}/members`, {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ character_ids: [character.id] }),
+          })
+        }
+        if (teamId) {
+          const res = await fetch(`/api/raid-teams/${teamId}/members`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ character_ids: [character.id] }),
+          })
+          if (!res.ok) {
+            const data = await res.json().catch(() => ({}))
+            throw new Error(data.error || `Couldn't assign ${character.name}. Try again.`)
+          }
+        }
+        const teamName = teamId ? raidTeams.find(t => t.id === teamId)?.name : null
+        showNotification('success', teamName ? `${character.name} assigned to ${teamName}` : `${character.name} removed from team`)
+        return optimisticData
+      }, { optimisticData, rollbackOnError: true, revalidate: false })
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : `Couldn't update ${character.name}'s team. Try again.`
+      showNotification('error', message)
+    } finally {
+      setSavingCharacterTeam(prev => prev === character.id ? null : prev)
+    }
+  }, [raidTeams, membersData, refreshMembers, showNotification])
+
+  const toggleExpanded = useCallback((userId: string) => {
+    setExpandedUserIds(prev => {
+      const next = new Set(prev)
+      if (next.has(userId)) next.delete(userId)
+      else next.add(userId)
+      return next
+    })
+  }, [])
 
   const members: Member[] = useMemo(() => {
     if (!membersData?.members) return []
@@ -480,36 +548,39 @@ export default function MemberManager() {
   const trialCount = members.filter(m => m.membership_status === 'trial').length
 
   return (
-    <div className="p-4 space-y-3">
-      {/* Toolbar: search + sort */}
-      <div className="flex items-center gap-2">
-        <div className="relative flex-1">
-          <HugeiconsIcon
-            icon={Search01Icon}
-            size={14}
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none"
-          />
-          <Input
-            placeholder="Search members..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-8"
+    <div className="flex flex-col">
+      {/* Sticky toolbar: search + sort */}
+      <div className="sticky top-0 z-10 bg-background-elevated px-4 pt-4 pb-3 border-b border-border/60">
+        <div className="flex items-center gap-2">
+          <div className="relative flex-1">
+            <HugeiconsIcon
+              icon={Search01Icon}
+              size={14}
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none"
+            />
+            <Input
+              placeholder="Search members..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-8"
+              size="sm"
+            />
+          </div>
+          <Select
+            value={sortMode}
+            onChange={(e) => setSortMode(e.target.value as SortMode)}
             size="sm"
-          />
+            className="w-[110px] flex-shrink-0"
+          >
+            <option value="role">By role</option>
+            <option value="class">By class</option>
+            <option value="team">By team</option>
+            <option value="alpha">A-Z</option>
+          </Select>
         </div>
-        <Select
-          value={sortMode}
-          onChange={(e) => setSortMode(e.target.value as SortMode)}
-          size="sm"
-          className="w-[110px] flex-shrink-0"
-        >
-          <option value="role">By role</option>
-          <option value="class">By class</option>
-          <option value="team">By team</option>
-          <option value="alpha">A-Z</option>
-        </Select>
       </div>
 
+      <div className="p-4 pt-3 space-y-3">
       {loading ? (
         <p className="text-muted-foreground text-center py-4">Loading members...</p>
       ) : members.length === 0 ? (
@@ -540,10 +611,36 @@ export default function MemberManager() {
                 const canModify = canModifyMember(member.user_id, member.role)
                 const assignableRoles = getAssignableRoles(member.user_id, member.role)
                 const classColor = mainChar?.class?.color_hex || '#666'
+                const isExpanded = expandedUserIds.has(member.user_id)
+                const memberHasCustomizations = member.characters.some(c => {
+                  const roleDiffers = c.role !== member.role
+                  const teamDiffers = (c.raid_team?.id ?? null) !== (member.raid_team?.id ?? null)
+                  return roleDiffers || teamDiffers
+                })
 
                 return (
                   <div key={member.user_id} className="space-y-px">
-                    <div className="flex items-center gap-2.5 px-2.5 py-1.5 rounded-md hover:bg-background-elevated/50 transition-colors group">
+                    <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-md hover:bg-background-elevated/50 transition-colors group">
+                      {/* Chevron disclosure */}
+                      {hasCharacters ? (
+                        <button
+                          type="button"
+                          onClick={() => toggleExpanded(member.user_id)}
+                          className={`p-0.5 -ml-1 -mr-0.5 transition-colors ${memberHasCustomizations ? 'text-accent hover:text-accent' : 'text-muted-foreground/60 hover:text-foreground'}`}
+                          title={isExpanded ? 'Hide characters' : memberHasCustomizations ? 'Show characters (has custom rank or team)' : 'Show characters'}
+                          aria-expanded={isExpanded}
+                          aria-label={isExpanded ? `Collapse ${displayName}` : `Expand ${displayName}`}
+                        >
+                          <HugeiconsIcon
+                            icon={ArrowRight01Icon}
+                            size={12}
+                            className={`transition-transform ${isExpanded ? 'rotate-90' : ''}`}
+                          />
+                        </button>
+                      ) : (
+                        <span className="w-3 -ml-1" aria-hidden="true" />
+                      )}
+
                       {/* Class icon */}
                       {mainChar?.class?.name ? (
                         <img
@@ -641,8 +738,8 @@ export default function MemberManager() {
                       </div>
                     </div>
 
-                    {/* Per-character rank sub-rows */}
-                    {hasCharacters && (
+                    {/* Per-character sub-rows */}
+                    {isExpanded && hasCharacters && (
                       <div className="ml-[26px] pl-3 border-l border-border/40">
                         {member.characters.map(char => {
                           const charClassColor = char.class?.color_hex || '#666'
@@ -653,8 +750,10 @@ export default function MemberManager() {
                             : null
                           const charAssignableRoles = getAssignableRoles(member.user_id, char.role)
                           const canEditCharRole = charAssignableRoles.length > 0
-                          const differsFromMain = char.role !== member.role
-                          const isSaving = savingCharacterRole === char.id
+                          const roleDiffers = char.role !== member.role
+                          const teamDiffers = (char.raid_team?.id ?? null) !== (member.raid_team?.id ?? null)
+                          const isSavingRole = savingCharacterRole === char.id
+                          const isSavingTeam = savingCharacterTeam === char.id
                           return (
                             <div
                               key={char.id}
@@ -685,19 +784,35 @@ export default function MemberManager() {
                                   {specLabel}
                                 </span>
                               )}
-                              <div className="ml-auto flex items-center gap-2">
-                                {differsFromMain && (
+                              <div className="ml-auto flex items-center gap-1.5">
+                                {(roleDiffers || teamDiffers) && (
                                   <span className="text-[9px] font-semibold text-accent uppercase tracking-wider">
-                                    custom rank
+                                    custom
                                   </span>
+                                )}
+                                {showTeamAssignment && raidTeams.length > 0 && canModify && (
+                                  <Select
+                                    value={char.raid_team?.id || ''}
+                                    onChange={(e) => handleCharacterTeamChange(member, char, e.target.value || null)}
+                                    size="sm"
+                                    disabled={isSavingTeam}
+                                    className="w-[120px] text-[12px]"
+                                    aria-label={`Team for ${char.name}`}
+                                  >
+                                    <option value="" className="bg-background-elevated">No team</option>
+                                    {raidTeams.map(team => (
+                                      <option key={team.id} value={team.id} className="bg-background-elevated">{team.name}</option>
+                                    ))}
+                                  </Select>
                                 )}
                                 {canEditCharRole ? (
                                   <Select
                                     value={char.role}
                                     onChange={(e) => handleCharacterRoleChange(member, char, e.target.value)}
                                     size="sm"
-                                    disabled={isSaving}
+                                    disabled={isSavingRole}
                                     className="w-[130px] text-[12px]"
+                                    aria-label={`Rank for ${char.name}`}
                                   >
                                     {!charAssignableRoles.find(r => r.name === char.role) && (
                                       <option value={char.role} className="bg-background-elevated">{char.role}</option>
@@ -729,6 +844,7 @@ export default function MemberManager() {
         <p className="text-[11px] text-muted-foreground">
           {members.length} members • {officerCount} officers • {trialCount} trials
         </p>
+      </div>
       </div>
 
       {ConfirmDialog}
