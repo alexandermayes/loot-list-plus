@@ -178,16 +178,49 @@ const RAIDS: RaidConfig[] = [
 
 const FETCH_HEADERS = {
   'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-  'Accept': 'text/html,application/xhtml+xml',
+  'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
   'Accept-Language': 'en-US,en;q=0.9',
+  'Accept-Encoding': 'gzip, deflate, br',
+  'Sec-Fetch-Dest': 'document',
+  'Sec-Fetch-Mode': 'navigate',
+  'Sec-Fetch-Site': 'none',
+  'Sec-Fetch-User': '?1',
+  'Upgrade-Insecure-Requests': '1',
+}
+
+const MIRRORS = ['www', 'de', 'fr', 'es', 'pt', 'ru', 'tw', 'cn', 'ko']
+let mirrorIdx = 0
+function nextMirror() {
+  const m = MIRRORS[mirrorIdx % MIRRORS.length]
+  mirrorIdx++
+  return m
 }
 
 async function fetchPage(url: string): Promise<string> {
-  const response = await fetch(url, { headers: FETCH_HEADERS })
-  if (!response.ok) {
-    throw new Error(`HTTP ${response.status} from ${url}`)
+  // Try each mirror in round-robin. On 403, rotate.
+  const path = url.replace(/^https?:\/\/[^/]+/, '')
+  const backoffs = [60000, 180000, 300000]
+  let attemptsOnMirrors = 0
+  for (;;) {
+    const mirror = nextMirror()
+    const finalUrl = `https://${mirror}.wowhead.com${path}`
+    const response = await fetch(finalUrl, { headers: FETCH_HEADERS })
+    if (response.ok) return response.text()
+    if (response.status === 403) {
+      attemptsOnMirrors++
+      if (attemptsOnMirrors < MIRRORS.length) continue
+      // All mirrors blocked: backoff
+      const backoffSlot = Math.min(Math.floor(attemptsOnMirrors / MIRRORS.length) - 1, backoffs.length - 1)
+      const wait = backoffs[backoffSlot]
+      console.log(`    [all mirrors rate-limited, sleeping ${wait/1000}s]`)
+      await new Promise(r => setTimeout(r, wait))
+      if (attemptsOnMirrors > MIRRORS.length * backoffs.length) {
+        throw new Error(`Exhausted retries across mirrors for ${path}`)
+      }
+      continue
+    }
+    throw new Error(`HTTP ${response.status} from ${finalUrl}`)
   }
-  return response.text()
 }
 
 // =============================================
@@ -373,7 +406,7 @@ async function fetchBossLoot(
       console.error(`    NPC ${npcId}: Error - ${(err as Error).message}`)
     }
 
-    await sleep(300)
+    await sleep(800)
   }
 
   const { normal, heroic } = filterAndMapItems(allRawItems, hasHeroic, boss.heroicOnly)
@@ -512,7 +545,7 @@ async function main() {
       console.log(`    → ${items.length} items`)
 
       bossResults.push({ name: boss.name, items })
-      await sleep(500)
+      await sleep(1200)
     }
 
     allRaidData.push({ config: raid, bosses: bossResults })

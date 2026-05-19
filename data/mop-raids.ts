@@ -2006,7 +2006,8 @@ export const siegeOfOrgrimmar: Raid = {
     {
       name: 'Crafting Materials',
       items: [
-        { name: 'Spirit of War', slot: 'Crafting', wowhead_id: 98717 },
+        { name: 'Spirit of War', slot: 'Crafting', wowhead_id: 102218 },
+        { name: 'Balanced Trillium Ingot', slot: 'Crafting', wowhead_id: 98717 },
       ],
     },
   ],

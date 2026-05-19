@@ -5254,7 +5254,8 @@ export const ITEM_ICONS: Record<number, string> = {
   69237: 'spell_mage_flameorb',
   71998: 'spell_fire_felfirenova',
   94289: 'ability_rogue_envelopingshadows',
-  98717: 'ability_deathknight_sanguinfortitude'
+  98717: 'inv_ingot_trillium_balanced',
+  102218: 'ability_deathknight_sanguinfortitude'
 }
 
 /**
