@@ -280,7 +280,7 @@ async function refreshSupabaseSession(request: NextRequest): Promise<{ response:
   return { response, user }
 }
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname
 
   // Rewrite getlootlist.com/ to the static landing page
