@@ -416,6 +416,6 @@ export async function proxy(request: NextRequest) {
 export const config = {
   matcher: [
     // Match all page routes for session refresh (excludes static files)
-    '/((?!_next/static|_next/image|favicon.ico|site\\.webmanifest|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|mp4|woff|woff2)$).*)',
+    '/((?!a/|_next/static|_next/image|favicon.ico|site\\.webmanifest|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|mp4|woff|woff2)$).*)',
   ],
 }
