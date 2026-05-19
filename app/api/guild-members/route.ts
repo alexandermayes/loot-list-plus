@@ -107,6 +107,7 @@ export async function GET(request: NextRequest) {
       id: string
       name: string
       is_main: boolean
+      role: string
       class: { name: string; color_hex: string } | null
       spec: { name: string } | null
     }
@@ -131,6 +132,7 @@ export async function GET(request: NextRequest) {
         id: char.id,
         name: char.name,
         is_main: char.is_main,
+        role: membership.role,
         class: Array.isArray(char.class) ? char.class[0] : char.class,
         spec: Array.isArray(char.spec) ? char.spec[0] : char.spec
       }
@@ -277,13 +279,29 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: verification.error }, { status: 403 })
     }
 
+    // Scope the hierarchy check to the specific character when only one is being
+    // changed (per-character rank moves). For bulk moves across all of a user's
+    // characters, fall back to the user's overall rank.
+    let scopedTargetRole: string | null = null
+    if (Array.isArray(character_ids) && character_ids.length === 1) {
+      const { data: singleCharMembership } = await serviceSupabase
+        .from('character_guild_memberships')
+        .select('role')
+        .eq('guild_id', guild_id)
+        .eq('character_id', character_ids[0])
+        .eq('is_active', true)
+        .maybeSingle()
+      scopedTargetRole = singleCharMembership?.role ?? null
+    }
+
     // Verify the role change is allowed based on position hierarchy
     const roleChangeCheck = await verifyRoleChangePermissions(
       serviceSupabase,
       user.id,
       target_user_id,
       guild_id,
-      new_role
+      new_role,
+      scopedTargetRole,
     )
     if (!roleChangeCheck.allowed) {
       return NextResponse.json({ error: roleChangeCheck.error }, { status: 403 })

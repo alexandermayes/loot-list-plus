@@ -232,7 +232,14 @@ export async function verifyRoleChangePermissions(
   callerId: string,
   targetUserId: string,
   guildId: string,
-  newRoleName: string
+  newRoleName: string,
+  /**
+   * When provided, hierarchy checks use this role instead of the target user's
+   * highest role across their characters. Used for per-character role changes
+   * where the relevant authority gate is the specific character being modified,
+   * not the user's overall rank.
+   */
+  scopedTargetRole?: string | null,
 ): Promise<{ allowed: boolean; error?: string }> {
   // Get guild info including creator
   const { data: guild } = await serviceSupabase
@@ -259,8 +266,16 @@ export async function verifyRoleChangePermissions(
     return { allowed: false, error: 'Caller not a member of this guild' }
   }
 
-  // Get target's current position
-  const targetRole = await getUserGuildRole(serviceSupabase, targetUserId, guildId)
+  // Get target's current position — scoped to a specific character role when provided.
+  let targetRole: { role: string; position: number } | null
+  if (scopedTargetRole) {
+    targetRole = {
+      role: scopedTargetRole,
+      position: getRolePositionFromRoles(scopedTargetRole, roles),
+    }
+  } else {
+    targetRole = await getUserGuildRole(serviceSupabase, targetUserId, guildId)
+  }
   if (!targetRole) {
     return { allowed: false, error: 'Target not a member of this guild' }
   }

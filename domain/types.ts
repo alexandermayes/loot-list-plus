@@ -28,12 +28,6 @@ export interface ScoringConfig {
   bottom_attendance_threshold: number
   guild_rank_bonuses_enabled: boolean
   rank_modifiers: Record<string, number>
-  /**
-   * Per-character rank bonus overrides, keyed by character id.
-   * When a character's id appears here, the value replaces the role-based
-   * rank bonus for that character (even if 0). Absence = use role bonus.
-   */
-  character_rank_overrides: Record<string, number>
   raid_roles_overall_bonus_priority: boolean
   role_modifiers: Record<string, number>
   minimum_raid_days_enabled: boolean

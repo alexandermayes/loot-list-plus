@@ -18,6 +18,7 @@ interface Character {
   id: string
   name: string
   is_main: boolean
+  role: string
   class: {
     name: string
     color_hex: string
@@ -70,9 +71,7 @@ export default function MemberManager() {
   const [guildCreatorId, setGuildCreatorId] = useState<string | null>(null)
   const [search, setSearch] = useState('')
   const [sortMode, setSortMode] = useState<SortMode>('role')
-  const [rankOverrides, setRankOverrides] = useState<Record<string, number>>({})
-  const [rankBonusesEnabled, setRankBonusesEnabled] = useState<boolean>(true)
-  const [savingOverrides, setSavingOverrides] = useState<boolean>(false)
+  const [savingCharacterRole, setSavingCharacterRole] = useState<string | null>(null)
 
   const supabase = createClient()
   const { activeGuild, user } = useGuildContext()
@@ -181,69 +180,58 @@ export default function MemberManager() {
     if (activeGuild) loadRoles()
   }, [activeGuild])
 
-  useEffect(() => {
+  const handleCharacterRoleChange = useCallback(async (
+    member: Member,
+    character: Character,
+    newRole: string
+  ) => {
     if (!activeGuild?.id) return
-    let cancelled = false
-    supabase
-      .from('guild_settings')
-      .select('character_rank_overrides, guild_rank_bonuses_enabled')
-      .eq('guild_id', activeGuild.id)
-      .maybeSingle()
-      .then(({ data }: { data: { character_rank_overrides: unknown; guild_rank_bonuses_enabled: boolean | null } | null }) => {
-        if (cancelled) return
-        const raw = (data?.character_rank_overrides ?? {}) as Record<string, unknown>
-        const sanitized: Record<string, number> = {}
-        for (const [id, value] of Object.entries(raw)) {
-          const num = typeof value === 'number' ? value : Number(value)
-          if (Number.isFinite(num)) sanitized[id] = num
-        }
-        setRankOverrides(sanitized)
-        setRankBonusesEnabled(data?.guild_rank_bonuses_enabled !== false)
-      })
-    return () => { cancelled = true }
-  }, [activeGuild?.id])
+    if (newRole === character.role) return
 
-  const persistOverrides = useCallback(async (next: Record<string, number>) => {
-    if (!activeGuild?.id) return
-    setSavingOverrides(true)
+    setSavingCharacterRole(character.id)
+
+    const optimisticData = {
+      ...membersData,
+      members: membersData!.members.map((m: any) =>
+        m.user_id === member.user_id
+          ? {
+              ...m,
+              characters: m.characters.map((c: any) =>
+                c.id === character.id ? { ...c, role: newRole } : c
+              ),
+            }
+          : m
+      ),
+    }
+
     try {
-      const res = await fetch('/api/guild-settings', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          guild_id: activeGuild.id,
-          settings: { character_rank_overrides: next },
-        }),
-      })
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}))
-        throw new Error(data.error || 'Couldn\'t save bonus. Try again.')
-      }
+      await refreshMembers(async () => {
+        const res = await fetch('/api/guild-members', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            guild_id: activeGuild.id,
+            target_user_id: member.user_id,
+            character_ids: [character.id],
+            new_role: newRole,
+          }),
+        })
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}))
+          throw new Error(data.error || `Couldn't change ${character.name}'s rank. Try again.`)
+        }
+        showNotification('success', `${character.name} is now ${newRole}`)
+        return optimisticData
+      }, { optimisticData, rollbackOnError: true, revalidate: false })
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Couldn\'t save bonus. Try again.'
+      const message = error instanceof Error
+        ? error.message
+        : `Couldn't change ${character.name}'s rank. Try again.`
       showNotification('error', message)
     } finally {
-      setSavingOverrides(false)
+      setSavingCharacterRole(prev => prev === character.id ? null : prev)
     }
-  }, [activeGuild?.id, showNotification])
-
-  const handleOverrideCommit = useCallback((characterId: string, rawValue: string) => {
-    setRankOverrides(prev => {
-      const next = { ...prev }
-      const trimmed = rawValue.trim()
-      if (trimmed === '') {
-        if (!(characterId in next)) return prev
-        delete next[characterId]
-      } else {
-        const num = Number(trimmed)
-        if (!Number.isFinite(num)) return prev
-        if (next[characterId] === num) return prev
-        next[characterId] = num
-      }
-      persistOverrides(next)
-      return next
-    })
-  }, [persistOverrides])
+  }, [activeGuild?.id, membersData, refreshMembers, showNotification])
 
 
   const loadRoles = async () => {
@@ -371,7 +359,6 @@ export default function MemberManager() {
   }, [currentUserId, members, roles])
 
   const isCurrentUserCreator = currentUserId === guildCreatorId
-  const canEditAnyBonus = isCurrentUserCreator || currentUserPosition >= ROLE_POSITIONS.OFFICER
 
   const getAssignableRoles = (targetUserId: string, targetCurrentRole: string) => {
     const targetPosition = roles.find(r => r.name === targetCurrentRole)?.position || 0
@@ -654,18 +641,20 @@ export default function MemberManager() {
                       </div>
                     </div>
 
-                    {/* Per-character rank bonus sub-rows */}
+                    {/* Per-character rank sub-rows */}
                     {hasCharacters && (
                       <div className="ml-[26px] pl-3 border-l border-border/40">
                         {member.characters.map(char => {
                           const charClassColor = char.class?.color_hex || '#666'
-                          const overrideValue = rankOverrides[char.id]
-                          const hasOverride = char.id in rankOverrides
                           const specLabel = char.spec?.name && char.class?.name
                             ? (char.spec.name !== char.class.name
                                 ? `${char.spec.name} ${char.class.name}`
                                 : char.class.name)
                             : null
+                          const charAssignableRoles = getAssignableRoles(member.user_id, char.role)
+                          const canEditCharRole = charAssignableRoles.length > 0
+                          const differsFromMain = char.role !== member.role
+                          const isSaving = savingCharacterRole === char.id
                           return (
                             <div
                               key={char.id}
@@ -697,35 +686,31 @@ export default function MemberManager() {
                                 </span>
                               )}
                               <div className="ml-auto flex items-center gap-2">
-                                {hasOverride && (
-                                  <span className="text-[9px] font-semibold text-accent uppercase tracking-wider tabular-nums">
-                                    override
+                                {differsFromMain && (
+                                  <span className="text-[9px] font-semibold text-accent uppercase tracking-wider">
+                                    custom rank
                                   </span>
                                 )}
-                                {canEditAnyBonus ? (
-                                  <Input
-                                    variant="pill"
+                                {canEditCharRole ? (
+                                  <Select
+                                    value={char.role}
+                                    onChange={(e) => handleCharacterRoleChange(member, char, e.target.value)}
                                     size="sm"
-                                    type="number"
-                                    inputMode="numeric"
-                                    step="0.1"
-                                    defaultValue={hasOverride ? String(overrideValue) : ''}
-                                    placeholder={rankBonusesEnabled ? 'role bonus' : 'disabled'}
-                                    disabled={savingOverrides || !rankBonusesEnabled}
-                                    onBlur={(e) => handleOverrideCommit(char.id, e.target.value)}
-                                    onKeyDown={(e) => {
-                                      if (e.key === 'Enter') {
-                                        (e.target as HTMLInputElement).blur()
-                                      }
-                                    }}
-                                    className="w-[110px] text-right tabular-nums"
-                                    aria-label={`Rank bonus override for ${char.name}`}
-                                  />
-                                ) : hasOverride ? (
-                                  <span className="text-[11px] text-accent tabular-nums">
-                                    {overrideValue > 0 ? `+${overrideValue}` : overrideValue}
+                                    disabled={isSaving}
+                                    className="w-[130px] text-[12px]"
+                                  >
+                                    {!charAssignableRoles.find(r => r.name === char.role) && (
+                                      <option value={char.role} className="bg-background-elevated">{char.role}</option>
+                                    )}
+                                    {charAssignableRoles.map(role => (
+                                      <option key={role.id} value={role.name} className="bg-background-elevated">{role.name}</option>
+                                    ))}
+                                  </Select>
+                                ) : (
+                                  <span className="text-[11px] text-muted-foreground px-1.5 w-[130px] text-right">
+                                    {char.role}
                                   </span>
-                                ) : null}
+                                )}
                               </div>
                             </div>
                           )

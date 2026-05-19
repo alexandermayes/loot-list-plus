@@ -130,22 +130,13 @@ end
 
 ----------------------------------------------------------------------
 -- getRankModifier
---
--- When characterId is provided and a per-character override exists in
--- character_rank_overrides, the override replaces the role-based bonus
--- (even when the override is 0).
 ----------------------------------------------------------------------
-function SE:GetRankModifier(role, settings, characterId)
+function SE:GetRankModifier(role, settings)
     if not settings then settings = {} end
     local config = self:MergeDefaults(settings)
 
     if not config.guild_rank_bonuses_enabled then
         return 0
-    end
-
-    if characterId and config.character_rank_overrides
-        and config.character_rank_overrides[characterId] ~= nil then
-        return config.character_rank_overrides[characterId]
     end
 
     if not role or not config.rank_modifiers then return 0 end
@@ -272,7 +263,7 @@ function SE:CalculateCharacterItemScore(characterId, wowheadId, lootItemId)
         )
     end
 
-    local rankModifier = self:GetRankModifier(member.guildRole, settings, characterId)
+    local rankModifier = self:GetRankModifier(member.guildRole, settings)
 
     local blpCount = DB:GetBLPCount(characterId, lootItemId)
     local badLuckBonus = self:CalculateBadLuckBonus(blpCount, settings)
@@ -352,7 +343,6 @@ local DEFAULTS = {
     bottom_attendance_threshold = 0.25,
     guild_rank_bonuses_enabled = true,
     rank_modifiers = {},
-    character_rank_overrides = {},
     raid_roles_overall_bonus_priority = false,
     role_modifiers = {},
     minimum_raid_days_enabled = true,
