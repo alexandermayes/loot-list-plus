@@ -51,6 +51,7 @@ const ALLOWED_SETTINGS_FIELDS = [
   'guild_rank_bonuses_enabled',
   'number_of_ranks',
   'rank_modifiers',
+  'character_rank_overrides',
   'role_bonus_priority_single_item',
   'class_bonus_priority_single_item',
   'raid_roles_overall_bonus_priority',

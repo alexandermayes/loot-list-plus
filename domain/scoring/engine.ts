@@ -26,7 +26,7 @@ export function computeScore(input: ScoreInput): ScoreResult {
   const components: ScoreComponents = {
     itemRank: input.itemRank,
     attendanceScore: input.attendance.score,
-    rankModifier: getRankModifier(input.character.guildRank, config),
+    rankModifier: getRankModifier(input.character.guildRank, config, input.character.characterId),
     roleBonus: getRoleModifier(input.character.specRoles, config),
     badLuckBonus: calculateBadLuckBonus(input.timesPassed, config),
     priorityBonus: calculatePriorityBonus(

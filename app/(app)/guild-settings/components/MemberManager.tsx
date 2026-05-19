@@ -7,7 +7,7 @@ import { useNotification } from '@/app/contexts/NotificationContext'
 import { useGuildMembers } from '@/app/hooks/use-api'
 import { hasFeature } from '@/domain/guild/feature-flags'
 import { HugeiconsIcon } from '@hugeicons/react'
-import { UserBlock01Icon, Time01Icon, CheckmarkSquare01Icon, Search01Icon, SortingAZ02Icon } from '@hugeicons/core-free-icons'
+import { UserBlock01Icon, Time01Icon, CheckmarkSquare01Icon, Search01Icon, SortingAZ02Icon, ArrowRight01Icon } from '@hugeicons/core-free-icons'
 import { Select } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -70,6 +70,10 @@ export default function MemberManager() {
   const [guildCreatorId, setGuildCreatorId] = useState<string | null>(null)
   const [search, setSearch] = useState('')
   const [sortMode, setSortMode] = useState<SortMode>('role')
+  const [expandedUserIds, setExpandedUserIds] = useState<Set<string>>(new Set())
+  const [rankOverrides, setRankOverrides] = useState<Record<string, number>>({})
+  const [rankBonusesEnabled, setRankBonusesEnabled] = useState<boolean>(true)
+  const [savingOverrides, setSavingOverrides] = useState<boolean>(false)
 
   const supabase = createClient()
   const { activeGuild, user } = useGuildContext()
@@ -177,6 +181,79 @@ export default function MemberManager() {
   useEffect(() => {
     if (activeGuild) loadRoles()
   }, [activeGuild])
+
+  useEffect(() => {
+    if (!activeGuild?.id) return
+    let cancelled = false
+    supabase
+      .from('guild_settings')
+      .select('character_rank_overrides, guild_rank_bonuses_enabled')
+      .eq('guild_id', activeGuild.id)
+      .maybeSingle()
+      .then(({ data }: { data: { character_rank_overrides: unknown; guild_rank_bonuses_enabled: boolean | null } | null }) => {
+        if (cancelled) return
+        const raw = (data?.character_rank_overrides ?? {}) as Record<string, unknown>
+        const sanitized: Record<string, number> = {}
+        for (const [id, value] of Object.entries(raw)) {
+          const num = typeof value === 'number' ? value : Number(value)
+          if (Number.isFinite(num)) sanitized[id] = num
+        }
+        setRankOverrides(sanitized)
+        setRankBonusesEnabled(data?.guild_rank_bonuses_enabled !== false)
+      })
+    return () => { cancelled = true }
+  }, [activeGuild?.id])
+
+  const persistOverrides = useCallback(async (next: Record<string, number>) => {
+    if (!activeGuild?.id) return
+    setSavingOverrides(true)
+    try {
+      const res = await fetch('/api/guild-settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          guild_id: activeGuild.id,
+          settings: { character_rank_overrides: next },
+        }),
+      })
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        throw new Error(data.error || 'Couldn\'t save bonus. Try again.')
+      }
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Couldn\'t save bonus. Try again.'
+      showNotification('error', message)
+    } finally {
+      setSavingOverrides(false)
+    }
+  }, [activeGuild?.id, showNotification])
+
+  const handleOverrideCommit = useCallback((characterId: string, rawValue: string) => {
+    setRankOverrides(prev => {
+      const next = { ...prev }
+      const trimmed = rawValue.trim()
+      if (trimmed === '') {
+        if (!(characterId in next)) return prev
+        delete next[characterId]
+      } else {
+        const num = Number(trimmed)
+        if (!Number.isFinite(num)) return prev
+        if (next[characterId] === num) return prev
+        next[characterId] = num
+      }
+      persistOverrides(next)
+      return next
+    })
+  }, [persistOverrides])
+
+  const toggleExpanded = useCallback((userId: string) => {
+    setExpandedUserIds(prev => {
+      const next = new Set(prev)
+      if (next.has(userId)) next.delete(userId)
+      else next.add(userId)
+      return next
+    })
+  }, [])
 
   const loadRoles = async () => {
     if (!activeGuild) return
@@ -484,12 +561,31 @@ export default function MemberManager() {
                 const canModify = canModifyMember(member.user_id, member.role)
                 const assignableRoles = getAssignableRoles(member.user_id, member.role)
                 const classColor = mainChar?.class?.color_hex || '#666'
+                const isExpanded = expandedUserIds.has(member.user_id)
+                const memberHasAnyOverride = member.characters.some(c => c.id in rankOverrides)
 
                 return (
+                  <div key={member.user_id}>
                   <div
-                    key={member.user_id}
                     className="flex items-center gap-2.5 px-2.5 py-1.5 rounded-md hover:bg-background-elevated/50 transition-colors group"
                   >
+                    {hasCharacters && canModify ? (
+                      <button
+                        type="button"
+                        onClick={() => toggleExpanded(member.user_id)}
+                        className="p-0.5 -ml-1 text-muted-foreground hover:text-foreground transition-colors"
+                        title={isExpanded ? 'Hide characters' : 'Show characters'}
+                        aria-expanded={isExpanded}
+                      >
+                        <HugeiconsIcon
+                          icon={ArrowRight01Icon}
+                          size={14}
+                          className={`transition-transform ${isExpanded ? 'rotate-90' : ''} ${memberHasAnyOverride ? 'text-accent' : ''}`}
+                        />
+                      </button>
+                    ) : (
+                      <span className="w-[14px]" />
+                    )}
                     {/* Class icon */}
                     {mainChar?.class?.name ? (
                       <img
@@ -597,6 +693,78 @@ export default function MemberManager() {
                         <span className="text-[11px] text-muted-foreground px-1.5 w-[130px] text-right">{member.role}</span>
                       )}
                     </div>
+                  </div>
+                  {isExpanded && hasCharacters && canModify && (
+                    <div className="ml-6 mb-1 px-3 py-2 rounded-md bg-background-subtle border border-border/60 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <p className="text-[11px] font-semibold text-foreground-secondary">
+                          Per-character rank bonus
+                        </p>
+                        <p className="text-[10px] text-muted-foreground">
+                          Replaces the {member.role} bonus for that character. Leave blank to use the role bonus.
+                        </p>
+                      </div>
+                      <div className="space-y-1">
+                        {member.characters.map(char => {
+                          const charClassColor = char.class?.color_hex || '#666'
+                          const overrideValue = rankOverrides[char.id]
+                          const hasOverride = char.id in rankOverrides
+                          return (
+                            <div key={char.id} className="flex items-center gap-2 py-0.5">
+                              {char.class?.name ? (
+                                <img
+                                  src={`https://wow.zamimg.com/images/wow/icons/large/classicon_${char.class.name.toLowerCase().replace(' ', '')}.jpg`}
+                                  alt={char.class.name}
+                                  className="w-4 h-4 rounded-full flex-shrink-0 outline outline-1 -outline-offset-1 outline-black/10 dark:outline-white/10"
+                                />
+                              ) : (
+                                <div className="w-4 h-4 rounded-full flex-shrink-0 bg-muted" />
+                              )}
+                              <span
+                                className="text-[12px] font-medium truncate"
+                                style={{ color: charClassColor }}
+                              >
+                                {char.name}
+                              </span>
+                              {char.is_main && (
+                                <span className="text-[10px] text-muted-foreground">main</span>
+                              )}
+                              <div className="ml-auto flex items-center gap-1.5">
+                                {hasOverride && (
+                                  <span className="text-[10px] text-accent tabular-nums">
+                                    override
+                                  </span>
+                                )}
+                                <Input
+                                  variant="pill"
+                                  size="sm"
+                                  type="number"
+                                  inputMode="numeric"
+                                  step="0.1"
+                                  defaultValue={hasOverride ? String(overrideValue) : ''}
+                                  placeholder={rankBonusesEnabled ? 'role bonus' : 'disabled'}
+                                  disabled={savingOverrides || !rankBonusesEnabled}
+                                  onBlur={(e) => handleOverrideCommit(char.id, e.target.value)}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                      (e.target as HTMLInputElement).blur()
+                                    }
+                                  }}
+                                  className="w-[88px] text-right tabular-nums"
+                                  aria-label={`Rank bonus override for ${char.name}`}
+                                />
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </div>
+                      {!rankBonusesEnabled && (
+                        <p className="text-[10px] text-warning">
+                          Guild rank bonuses are disabled. Enable them in loot settings to apply these overrides.
+                        </p>
+                      )}
+                    </div>
+                  )}
                   </div>
                 )
               })}

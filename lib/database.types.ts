@@ -722,6 +722,7 @@ export type Database = {
           blp_maximum: number | null
           bottom_attendance_bonus: number
           bottom_attendance_threshold: number
+          character_rank_overrides: Json
           class_bonus_priority_single_item: boolean | null
           created_at: string | null
           decimal_places: number | null
@@ -783,6 +784,7 @@ export type Database = {
           blp_maximum?: number | null
           bottom_attendance_bonus?: number
           bottom_attendance_threshold?: number
+          character_rank_overrides?: Json
           class_bonus_priority_single_item?: boolean | null
           created_at?: string | null
           decimal_places?: number | null
@@ -844,6 +846,7 @@ export type Database = {
           blp_maximum?: number | null
           bottom_attendance_bonus?: number
           bottom_attendance_threshold?: number
+          character_rank_overrides?: Json
           class_bonus_priority_single_item?: boolean | null
           created_at?: string | null
           decimal_places?: number | null

@@ -223,6 +223,54 @@ describe('getRankModifier', () => {
     // Default has 'Yiker': -1
     expect(getRankModifier('Yiker')).toBe(-1)
   })
+
+  describe('character_rank_overrides', () => {
+    const baseSettings = {
+      guild_rank_bonuses_enabled: true,
+      rank_modifiers: { 'Officer': 2, 'Trial': -1 },
+    }
+
+    it('uses override value when characterId is present in overrides', () => {
+      const settings = {
+        ...baseSettings,
+        character_rank_overrides: { 'char-1': 5 },
+      }
+      expect(getRankModifier('Officer', settings, 'char-1')).toBe(5)
+    })
+
+    it('falls back to role bonus when characterId has no override', () => {
+      const settings = {
+        ...baseSettings,
+        character_rank_overrides: { 'char-1': 5 },
+      }
+      expect(getRankModifier('Officer', settings, 'char-2')).toBe(2)
+    })
+
+    it('falls back to role bonus when characterId is not provided', () => {
+      const settings = {
+        ...baseSettings,
+        character_rank_overrides: { 'char-1': 5 },
+      }
+      expect(getRankModifier('Officer', settings)).toBe(2)
+    })
+
+    it('treats override of 0 as an explicit zero (replaces role bonus)', () => {
+      const settings = {
+        ...baseSettings,
+        character_rank_overrides: { 'char-1': 0 },
+      }
+      expect(getRankModifier('Officer', settings, 'char-1')).toBe(0)
+    })
+
+    it('returns 0 even with override when guild_rank_bonuses_enabled is false', () => {
+      const settings = {
+        guild_rank_bonuses_enabled: false,
+        rank_modifiers: { 'Officer': 2 },
+        character_rank_overrides: { 'char-1': 5 },
+      }
+      expect(getRankModifier('Officer', settings, 'char-1')).toBe(0)
+    })
+  })
 })
 
 // ─── getRoleModifier ─────────────────────────────────────────

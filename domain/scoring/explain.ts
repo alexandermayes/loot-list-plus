@@ -50,10 +50,18 @@ export function explainScore(
 
   if (s.rankModifier !== 0) {
     const rankName = input?.character?.guildRank || undefined
+    const characterId = input?.character?.characterId
+    const hasCharacterOverride = !!(
+      characterId
+      && c.character_rank_overrides
+      && characterId in c.character_rank_overrides
+    )
     lines.push({
       label: 'Rank bonus',
       value: s.rankModifier,
-      detail: rankName ? `Modifier for "${rankName}" rank` : 'Based on your guild rank',
+      detail: hasCharacterOverride
+        ? 'Per-character override'
+        : rankName ? `Modifier for "${rankName}" rank` : 'Based on your guild rank',
       key: 'rankModifier',
       ...(rankName ? { context: { rankName } } : {}),
     })

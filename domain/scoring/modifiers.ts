@@ -4,12 +4,24 @@ import { DEFAULT_SETTINGS } from './defaults'
 /**
  * Get rank modifier from settings.
  * Returns the bonus/penalty for a character's guild rank (e.g., Officer: 0, Trial: -1).
+ *
+ * When `characterId` is provided and a per-character override exists in
+ * `character_rank_overrides`, the override replaces the role-based bonus
+ * (even when the override is 0).
  */
-export function getRankModifier(role: string, settings: Partial<ScoringConfig> = {}): number {
+export function getRankModifier(
+  role: string,
+  settings: Partial<ScoringConfig> = {},
+  characterId?: string | null
+): number {
   const config = { ...DEFAULT_SETTINGS, ...settings } as ScoringConfig
 
   if (!config.guild_rank_bonuses_enabled) {
     return 0
+  }
+
+  if (characterId && config.character_rank_overrides && characterId in config.character_rank_overrides) {
+    return config.character_rank_overrides[characterId]
   }
 
   return config.rank_modifiers[role] || 0

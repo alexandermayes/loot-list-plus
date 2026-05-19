@@ -21,6 +21,7 @@ export const DEFAULT_SETTINGS: Partial<ScoringConfig> = {
     'Alt Yiker': -4,
     'New Yiker': -1
   },
+  character_rank_overrides: {},
   minimum_raid_days_enabled: true,
   minimum_raid_days: 2,
   late_early_penalty_enabled: true,
