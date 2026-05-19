@@ -144,6 +144,20 @@ export default function LandingValueProps() {
           <StatCard value="0" label="spreadsheets needed" className="h-[250px] md:h-[300px] flex-shrink-0 md:w-auto md:flex-1" />
           <StatCard value="1" label="system for loot, attendance, and priorities" className="h-[250px] md:h-[300px] flex-shrink-0 md:w-auto md:flex-1" />
         </motion.div>
+
+        {/* Row 3: quote */}
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={isInView ? { opacity: 1, y: 0 } : {}}
+          transition={{ delay: 0.4 }}
+          className="flex"
+        >
+          <QuoteCard
+            quote="LootList+ is a game changer. As someone who has always dreaded being a loot master, I no longer despise handling loot. Cannot recommend it enough."
+            author={{ name: 'Para/Kidney', guild: 'Indecisive' }}
+            className="h-[220px] md:h-[260px] w-full"
+          />
+        </motion.div>
       </div>
     </section>
   )
