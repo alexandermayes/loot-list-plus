@@ -7,7 +7,7 @@ import { useNotification } from '@/app/contexts/NotificationContext'
 import { useGuildMembers } from '@/app/hooks/use-api'
 import { hasFeature } from '@/domain/guild/feature-flags'
 import { HugeiconsIcon } from '@hugeicons/react'
-import { UserBlock01Icon, Time01Icon, CheckmarkSquare01Icon, Search01Icon, SortingAZ02Icon, ArrowRight01Icon } from '@hugeicons/core-free-icons'
+import { UserBlock01Icon, Time01Icon, CheckmarkSquare01Icon, Search01Icon, SortingAZ02Icon } from '@hugeicons/core-free-icons'
 import { Select } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -70,7 +70,6 @@ export default function MemberManager() {
   const [guildCreatorId, setGuildCreatorId] = useState<string | null>(null)
   const [search, setSearch] = useState('')
   const [sortMode, setSortMode] = useState<SortMode>('role')
-  const [expandedUserIds, setExpandedUserIds] = useState<Set<string>>(new Set())
   const [rankOverrides, setRankOverrides] = useState<Record<string, number>>({})
   const [rankBonusesEnabled, setRankBonusesEnabled] = useState<boolean>(true)
   const [savingOverrides, setSavingOverrides] = useState<boolean>(false)
@@ -246,14 +245,6 @@ export default function MemberManager() {
     })
   }, [persistOverrides])
 
-  const toggleExpanded = useCallback((userId: string) => {
-    setExpandedUserIds(prev => {
-      const next = new Set(prev)
-      if (next.has(userId)) next.delete(userId)
-      else next.add(userId)
-      return next
-    })
-  }, [])
 
   const loadRoles = async () => {
     if (!activeGuild) return
@@ -380,6 +371,7 @@ export default function MemberManager() {
   }, [currentUserId, members, roles])
 
   const isCurrentUserCreator = currentUserId === guildCreatorId
+  const canEditAnyBonus = isCurrentUserCreator || currentUserPosition >= ROLE_POSITIONS.OFFICER
 
   const getAssignableRoles = (targetUserId: string, targetCurrentRole: string) => {
     const targetPosition = roles.find(r => r.name === targetCurrentRole)?.position || 0
@@ -561,156 +553,124 @@ export default function MemberManager() {
                 const canModify = canModifyMember(member.user_id, member.role)
                 const assignableRoles = getAssignableRoles(member.user_id, member.role)
                 const classColor = mainChar?.class?.color_hex || '#666'
-                const isExpanded = expandedUserIds.has(member.user_id)
-                const memberHasAnyOverride = member.characters.some(c => c.id in rankOverrides)
 
                 return (
-                  <div key={member.user_id}>
-                  <div
-                    className="flex items-center gap-2.5 px-2.5 py-1.5 rounded-md hover:bg-background-elevated/50 transition-colors group"
-                  >
-                    {hasCharacters && canModify ? (
-                      <button
-                        type="button"
-                        onClick={() => toggleExpanded(member.user_id)}
-                        className="p-0.5 -ml-1 text-muted-foreground hover:text-foreground transition-colors"
-                        title={isExpanded ? 'Hide characters' : 'Show characters'}
-                        aria-expanded={isExpanded}
-                      >
-                        <HugeiconsIcon
-                          icon={ArrowRight01Icon}
-                          size={14}
-                          className={`transition-transform ${isExpanded ? 'rotate-90' : ''} ${memberHasAnyOverride ? 'text-accent' : ''}`}
+                  <div key={member.user_id} className="space-y-px">
+                    <div className="flex items-center gap-2.5 px-2.5 py-1.5 rounded-md hover:bg-background-elevated/50 transition-colors group">
+                      {/* Class icon */}
+                      {mainChar?.class?.name ? (
+                        <img
+                          src={`https://wow.zamimg.com/images/wow/icons/large/classicon_${mainChar.class.name.toLowerCase().replace(' ', '')}.jpg`}
+                          alt={mainChar.class.name}
+                          className="w-5 h-5 rounded-full flex-shrink-0 outline outline-1 -outline-offset-1 outline-black/10 dark:outline-white/10"
                         />
-                      </button>
-                    ) : (
-                      <span className="w-[14px]" />
-                    )}
-                    {/* Class icon */}
-                    {mainChar?.class?.name ? (
-                      <img
-                        src={`https://wow.zamimg.com/images/wow/icons/large/classicon_${mainChar.class.name.toLowerCase().replace(' ', '')}.jpg`}
-                        alt={mainChar.class.name}
-                        className="w-5 h-5 rounded-full flex-shrink-0 border border-border/50"
-                      />
-                    ) : (
-                      <div className="w-5 h-5 rounded-full flex-shrink-0 bg-muted" />
-                    )}
-
-                    {/* Name + meta */}
-                    <div className="flex-1 min-w-0 flex items-center gap-1.5 flex-wrap">
-                      <span
-                        className="font-semibold text-[13px] truncate"
-                        style={{ color: classColor }}
-                      >
-                        {displayName}
-                      </span>
-                      {isGuildOwner && (
-                        <span className="px-1 py-px rounded text-[9px] font-semibold bg-accent/15 text-accent leading-tight">
-                          Owner
-                        </span>
-                      )}
-                      {member.membership_status === 'trial' && (
-                        <span className="px-1 py-px rounded text-[9px] font-semibold bg-warning/15 text-warning leading-tight">
-                          Trial
-                        </span>
-                      )}
-                      {mainChar?.spec && mainChar?.class && (
-                        <span className="text-muted-foreground text-[11px] hidden sm:inline">
-                          {mainChar.spec.name !== mainChar.class.name
-                            ? `${mainChar.spec.name} ${mainChar.class.name}`
-                            : mainChar.class.name}
-                        </span>
-                      )}
-                      {!hasCharacters && (
-                        <span className="text-muted-foreground text-[11px] italic">No characters</span>
-                      )}
-                      {member.characters.length > 1 && (
-                        <span className="text-muted-foreground text-[11px]">
-                          +{member.characters.length - 1} alt{member.characters.length > 2 ? 's' : ''}
-                        </span>
-                      )}
-                      {member.raid_team && sortMode !== 'team' && (
-                        <span className="text-[10px] font-medium" style={{ color: member.raid_team.color }}>
-                          {member.raid_team.name}
-                        </span>
-                      )}
-                      {member.joined_at && (
-                        <span className="text-muted-foreground/60 text-[10px] hidden md:inline">
-                          {getJoinedAgo(member.joined_at)}
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Actions */}
-                    <div className="flex items-center gap-1 flex-shrink-0 ml-auto">
-                      {canModify && (
-                        <button
-                          onClick={() => handleToggleTrialStatus(member.user_id, displayName, member.membership_status)}
-                          className={`p-1 rounded transition-colors ${member.membership_status === 'trial' ? 'text-success hover:bg-success/10' : 'text-muted-foreground hover:text-warning hover:bg-warning/10'} opacity-0 group-hover:opacity-100`}
-                          title={member.membership_status === 'trial' ? 'Promote to full member' : 'Set as trial'}
-                        >
-                          <HugeiconsIcon icon={member.membership_status === 'trial' ? CheckmarkSquare01Icon : Time01Icon} size={14} />
-                        </button>
-                      )}
-                      {canModify && (
-                        <button
-                          onClick={() => handleRemoveMember(member.user_id, displayName)}
-                          className="p-1 rounded text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors opacity-0 group-hover:opacity-100"
-                          title="Remove from guild"
-                        >
-                          <HugeiconsIcon icon={UserBlock01Icon} size={14} />
-                        </button>
-                      )}
-                      {showTeamAssignment && raidTeams.length > 0 && mainChar && (
-                        <Select
-                          value={member.raid_team?.id || ''}
-                          onChange={(e) => handleTeamChange(member, e.target.value || null)}
-                          size="sm"
-                          className="w-[120px] text-[12px]"
-                        >
-                          <option value="" className="bg-background-elevated">No team</option>
-                          {raidTeams.map(team => (
-                            <option key={team.id} value={team.id} className="bg-background-elevated">{team.name}</option>
-                          ))}
-                        </Select>
-                      )}
-                      {canModify && assignableRoles.length > 0 ? (
-                        <Select
-                          value={member.role}
-                          onChange={(e) => handleChangeRole(member.user_id, e.target.value)}
-                          size="sm"
-                          className="w-[130px] text-[12px]"
-                        >
-                          {!assignableRoles.find(r => r.name === member.role) && (
-                            <option value={member.role} className="bg-background-elevated">{member.role}</option>
-                          )}
-                          {assignableRoles.map(role => (
-                            <option key={role.id} value={role.name} className="bg-background-elevated">{role.name}</option>
-                          ))}
-                        </Select>
                       ) : (
-                        <span className="text-[11px] text-muted-foreground px-1.5 w-[130px] text-right">{member.role}</span>
+                        <div className="w-5 h-5 rounded-full flex-shrink-0 bg-muted" />
                       )}
-                    </div>
-                  </div>
-                  {isExpanded && hasCharacters && canModify && (
-                    <div className="ml-6 mb-1 px-3 py-2 rounded-md bg-background-subtle border border-border/60 space-y-2">
-                      <div className="flex items-center justify-between">
-                        <p className="text-[11px] font-semibold text-foreground-secondary">
-                          Per-character rank bonus
-                        </p>
-                        <p className="text-[10px] text-muted-foreground">
-                          Replaces the {member.role} bonus for that character. Leave blank to use the role bonus.
-                        </p>
+
+                      {/* Name + meta */}
+                      <div className="flex-1 min-w-0 flex items-center gap-1.5 flex-wrap">
+                        <span
+                          className="font-semibold text-[13px] truncate"
+                          style={{ color: classColor }}
+                        >
+                          {displayName}
+                        </span>
+                        {isGuildOwner && (
+                          <span className="px-1 py-px rounded text-[9px] font-semibold bg-accent/15 text-accent leading-tight">
+                            Owner
+                          </span>
+                        )}
+                        {member.membership_status === 'trial' && (
+                          <span className="px-1 py-px rounded text-[9px] font-semibold bg-warning/15 text-warning leading-tight">
+                            Trial
+                          </span>
+                        )}
+                        {!hasCharacters && (
+                          <span className="text-muted-foreground text-[11px] italic">No characters</span>
+                        )}
+                        {member.raid_team && sortMode !== 'team' && (
+                          <span className="text-[10px] font-medium" style={{ color: member.raid_team.color }}>
+                            {member.raid_team.name}
+                          </span>
+                        )}
+                        {member.joined_at && (
+                          <span className="text-muted-foreground/60 text-[10px] hidden md:inline">
+                            {getJoinedAgo(member.joined_at)}
+                          </span>
+                        )}
                       </div>
-                      <div className="space-y-1">
+
+                      {/* Actions */}
+                      <div className="flex items-center gap-1 flex-shrink-0 ml-auto">
+                        {canModify && (
+                          <button
+                            onClick={() => handleToggleTrialStatus(member.user_id, displayName, member.membership_status)}
+                            className={`p-1 rounded transition-colors ${member.membership_status === 'trial' ? 'text-success hover:bg-success/10' : 'text-muted-foreground hover:text-warning hover:bg-warning/10'} opacity-0 group-hover:opacity-100`}
+                            title={member.membership_status === 'trial' ? 'Promote to full member' : 'Set as trial'}
+                          >
+                            <HugeiconsIcon icon={member.membership_status === 'trial' ? CheckmarkSquare01Icon : Time01Icon} size={14} />
+                          </button>
+                        )}
+                        {canModify && (
+                          <button
+                            onClick={() => handleRemoveMember(member.user_id, displayName)}
+                            className="p-1 rounded text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors opacity-0 group-hover:opacity-100"
+                            title="Remove from guild"
+                          >
+                            <HugeiconsIcon icon={UserBlock01Icon} size={14} />
+                          </button>
+                        )}
+                        {showTeamAssignment && raidTeams.length > 0 && mainChar && (
+                          <Select
+                            value={member.raid_team?.id || ''}
+                            onChange={(e) => handleTeamChange(member, e.target.value || null)}
+                            size="sm"
+                            className="w-[120px] text-[12px]"
+                          >
+                            <option value="" className="bg-background-elevated">No team</option>
+                            {raidTeams.map(team => (
+                              <option key={team.id} value={team.id} className="bg-background-elevated">{team.name}</option>
+                            ))}
+                          </Select>
+                        )}
+                        {canModify && assignableRoles.length > 0 ? (
+                          <Select
+                            value={member.role}
+                            onChange={(e) => handleChangeRole(member.user_id, e.target.value)}
+                            size="sm"
+                            className="w-[130px] text-[12px]"
+                          >
+                            {!assignableRoles.find(r => r.name === member.role) && (
+                              <option value={member.role} className="bg-background-elevated">{member.role}</option>
+                            )}
+                            {assignableRoles.map(role => (
+                              <option key={role.id} value={role.name} className="bg-background-elevated">{role.name}</option>
+                            ))}
+                          </Select>
+                        ) : (
+                          <span className="text-[11px] text-muted-foreground px-1.5 w-[130px] text-right">{member.role}</span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Per-character rank bonus sub-rows */}
+                    {hasCharacters && (
+                      <div className="ml-[26px] pl-3 border-l border-border/40">
                         {member.characters.map(char => {
                           const charClassColor = char.class?.color_hex || '#666'
                           const overrideValue = rankOverrides[char.id]
                           const hasOverride = char.id in rankOverrides
+                          const specLabel = char.spec?.name && char.class?.name
+                            ? (char.spec.name !== char.class.name
+                                ? `${char.spec.name} ${char.class.name}`
+                                : char.class.name)
+                            : null
                           return (
-                            <div key={char.id} className="flex items-center gap-2 py-0.5">
+                            <div
+                              key={char.id}
+                              className="flex items-center gap-2 px-2 py-1 rounded-sm hover:bg-background-elevated/30 transition-colors"
+                            >
                               {char.class?.name ? (
                                 <img
                                   src={`https://wow.zamimg.com/images/wow/icons/large/classicon_${char.class.name.toLowerCase().replace(' ', '')}.jpg`}
@@ -727,44 +687,51 @@ export default function MemberManager() {
                                 {char.name}
                               </span>
                               {char.is_main && (
-                                <span className="text-[10px] text-muted-foreground">main</span>
+                                <span className="text-[9px] font-semibold text-muted-foreground/80 uppercase tracking-wider">
+                                  main
+                                </span>
                               )}
-                              <div className="ml-auto flex items-center gap-1.5">
+                              {specLabel && (
+                                <span className="text-muted-foreground text-[11px] truncate hidden sm:inline">
+                                  {specLabel}
+                                </span>
+                              )}
+                              <div className="ml-auto flex items-center gap-2">
                                 {hasOverride && (
-                                  <span className="text-[10px] text-accent tabular-nums">
+                                  <span className="text-[9px] font-semibold text-accent uppercase tracking-wider tabular-nums">
                                     override
                                   </span>
                                 )}
-                                <Input
-                                  variant="pill"
-                                  size="sm"
-                                  type="number"
-                                  inputMode="numeric"
-                                  step="0.1"
-                                  defaultValue={hasOverride ? String(overrideValue) : ''}
-                                  placeholder={rankBonusesEnabled ? 'role bonus' : 'disabled'}
-                                  disabled={savingOverrides || !rankBonusesEnabled}
-                                  onBlur={(e) => handleOverrideCommit(char.id, e.target.value)}
-                                  onKeyDown={(e) => {
-                                    if (e.key === 'Enter') {
-                                      (e.target as HTMLInputElement).blur()
-                                    }
-                                  }}
-                                  className="w-[88px] text-right tabular-nums"
-                                  aria-label={`Rank bonus override for ${char.name}`}
-                                />
+                                {canEditAnyBonus ? (
+                                  <Input
+                                    variant="pill"
+                                    size="sm"
+                                    type="number"
+                                    inputMode="numeric"
+                                    step="0.1"
+                                    defaultValue={hasOverride ? String(overrideValue) : ''}
+                                    placeholder={rankBonusesEnabled ? 'role bonus' : 'disabled'}
+                                    disabled={savingOverrides || !rankBonusesEnabled}
+                                    onBlur={(e) => handleOverrideCommit(char.id, e.target.value)}
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter') {
+                                        (e.target as HTMLInputElement).blur()
+                                      }
+                                    }}
+                                    className="w-[110px] text-right tabular-nums"
+                                    aria-label={`Rank bonus override for ${char.name}`}
+                                  />
+                                ) : hasOverride ? (
+                                  <span className="text-[11px] text-accent tabular-nums">
+                                    {overrideValue > 0 ? `+${overrideValue}` : overrideValue}
+                                  </span>
+                                ) : null}
                               </div>
                             </div>
                           )
                         })}
                       </div>
-                      {!rankBonusesEnabled && (
-                        <p className="text-[10px] text-warning">
-                          Guild rank bonuses are disabled. Enable them in loot settings to apply these overrides.
-                        </p>
-                      )}
-                    </div>
-                  )}
+                    )}
                   </div>
                 )
               })}
