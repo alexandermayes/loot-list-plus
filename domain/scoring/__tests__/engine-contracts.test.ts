@@ -35,6 +35,7 @@ function makeInput(overrides: Partial<ScoreInput> = {}): ScoreInput {
     config: {},
     itemPriority: null,
     timesPassed: 0,
+    donationBonus: 0,
     ...overrides,
   }
 }
@@ -197,10 +198,10 @@ describe('explainScore payload contract', () => {
     expect(lineSum).toBe(explanation.total)
   })
 
-  it('minimum 2 lines (itemRank + attendance), maximum 7 lines', () => {
+  it('minimum 2 lines (itemRank + attendance), maximum 8 lines', () => {
     const minimal = explainScore(computeScore(makeInput()))
     expect(minimal.lines.length).toBeGreaterThanOrEqual(2)
-    expect(minimal.lines.length).toBeLessThanOrEqual(7)
+    expect(minimal.lines.length).toBeLessThanOrEqual(8)
 
     // All components active
     const maximal = explainScore(computeScore(makeInput({
@@ -211,14 +212,21 @@ describe('explainScore payload contract', () => {
         trial_penalty_enabled: true, trial_penalty_value: -2,
         blp_enabled: true, blp_increment: 1, blp_maximum: 5,
         raid_roles_overall_bonus_priority: true, role_modifiers: { tank: 2 },
+        donation_bonus_type: 'rolling',
       },
       itemPriority: {
         role_priorities: { tank: 5 }, class_priorities: {}, character_priorities: {},
         priority_bonuses: { role: 5, class: 3, character: 2 },
       },
       timesPassed: 3,
-    })))
-    expect(maximal.lines.length).toBe(7) // all 7 components
+      donationBonus: 4,
+    })), {
+      trial_penalty_enabled: true, trial_penalty_value: -2,
+      blp_enabled: true, blp_increment: 1, blp_maximum: 5,
+      raid_roles_overall_bonus_priority: true, role_modifiers: { tank: 2 },
+      donation_bonus_type: 'rolling',
+    })
+    expect(maximal.lines.length).toBe(8) // all 8 components
   })
 })
 

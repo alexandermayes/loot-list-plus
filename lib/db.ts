@@ -22,6 +22,7 @@ export type DbCharacterEquippedItem = Tables['character_equipped_items']['Row']
 export type DbCharacterGuildMembership = Tables['character_guild_memberships']['Row']
 export type DbCharacter = Tables['characters']['Row']
 export type DbClassSpec = Tables['class_specs']['Row']
+export type DbDonationRecord = Tables['donation_records']['Row']
 export type DbExpansion = Tables['expansions']['Row']
 export type DbGuildInviteCode = Tables['guild_invite_codes']['Row']
 export type DbGuildItemPriority = Tables['guild_item_priorities']['Row']
@@ -42,12 +43,14 @@ export type DbWowClass = Tables['wow_classes']['Row']
 
 export type DbAttendanceRecordInsert = Tables['attendance_records']['Insert']
 export type DbAuditLogInsert = Tables['audit_logs']['Insert']
+export type DbDonationRecordInsert = Tables['donation_records']['Insert']
 export type DbLootHistoryInsert = Tables['loot_history']['Insert']
 export type DbLootSubmissionInsert = Tables['loot_submissions']['Insert']
 
 // ─── Update Types ────────────────────────────────────────────
 
 export type DbAttendanceRecordUpdate = Tables['attendance_records']['Update']
+export type DbDonationRecordUpdate = Tables['donation_records']['Update']
 export type DbLootSubmissionUpdate = Tables['loot_submissions']['Update']
 
 // ─── Re-export Database type for createClient<Database> ──────

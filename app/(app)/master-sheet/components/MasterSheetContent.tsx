@@ -7,6 +7,7 @@ import { paginatedSelect } from '@/utils/supabase/paginate'
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { computeScore, computeAttendance, type ItemPriority, type AttendanceResult } from '@/domain/scoring'
+import { calculateDonationsBatch } from '@/lib/donations/batch'
 import { getSpecRoles } from '@/domain/loot/spec-role-mapping'
 import { formatRankingsForGargul } from '@/domain/loot/gargul-dft'
 import { getBossOrder, normalizeBossName } from '@/utils/bossOrder'
@@ -783,6 +784,15 @@ export default function MasterSheetContent() {
           (charactersData || []).map((c: CharacterWithRelations) => ({ id: c.id, user_id: c.user_id }))
         )
 
+        // Pre-calculate donation bonus for all characters in one query.
+        // Short-circuits to all-zeros when donation_bonuses_enabled is false.
+        const donationCache = await calculateDonationsBatch(
+          supabase,
+          guildId,
+          guildSettings,
+          (charactersData || []).map((c: CharacterWithRelations) => c.id),
+        )
+
         // Determine minimum raids required for eligibility
         // Eligibility is now computed by computeAttendance() via attendanceCache
 
@@ -848,6 +858,7 @@ export default function MasterSheetContent() {
               config: guildSettings,
               itemPriority: prioritiesMap[item.id] || null,
               timesPassed: blpDataMap[blpKey] || 0,
+              donationBonus: donationCache[character.id] ?? 0,
             })
 
             rankings.push({
@@ -862,6 +873,7 @@ export default function MasterSheetContent() {
               priority_bonus: scoreResult.components.priorityBonus,
               bad_luck_bonus: scoreResult.components.badLuckBonus,
               trial_penalty: scoreResult.components.trialPenalty,
+              donation_bonus: scoreResult.components.donationBonus,
               is_trial: membershipStatus === 'trial',
               character_id: character.id,
               raids_attended: attendanceData.raidsAttended,
@@ -1428,6 +1440,14 @@ export default function MasterSheetContent() {
       charactersData.map((c: CharacterWithRelations) => ({ id: c.id, user_id: c.user_id }))
     )
 
+    // Pre-calculate donation bonus for all characters in one query.
+    const donationCache = await calculateDonationsBatch(
+      supabase,
+      guildId,
+      guildSettings,
+      charactersData.map((c: CharacterWithRelations) => c.id),
+    )
+
     // Determine minimum raids required for eligibility
     const minimumRaidDays = guildSettings.minimum_raid_days || 2
     const isMinimumGateMode = guildSettings.new_member_mode === 'minimum_gate'
@@ -1492,6 +1512,7 @@ export default function MasterSheetContent() {
           config: guildSettings,
           itemPriority: prioritiesMap[item.id] || null,
           timesPassed: tierBlpDataMap[tierBlpKey] || 0,
+          donationBonus: donationCache[character.id] ?? 0,
         })
 
         rankings.push({
@@ -1506,6 +1527,7 @@ export default function MasterSheetContent() {
           priority_bonus: scoreResult.components.priorityBonus,
           bad_luck_bonus: scoreResult.components.badLuckBonus,
           trial_penalty: scoreResult.components.trialPenalty,
+          donation_bonus: scoreResult.components.donationBonus,
           is_trial: membershipStatus === 'trial',
           character_id: character.id,
           raids_attended: attendanceData.raidsAttended,

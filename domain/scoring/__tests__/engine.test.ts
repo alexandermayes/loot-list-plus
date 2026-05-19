@@ -21,6 +21,7 @@ function makeInput(overrides: Partial<ScoreInput> = {}): ScoreInput {
     config: {},
     itemPriority: null,
     timesPassed: 0,
+    donationBonus: 0,
     ...overrides,
   }
 }
@@ -38,6 +39,7 @@ describe('computeScore', () => {
     expect(result.components.badLuckBonus).toBe(0)
     expect(result.components.priorityBonus).toBe(0)
     expect(result.components.trialPenalty).toBe(0)
+    expect(result.components.donationBonus).toBe(0)
   })
 
   it('includes attendance score', () => {
@@ -127,6 +129,44 @@ describe('computeScore', () => {
     expect(result.total).toBe(57.5)
   })
 
+  // ─── Donation bonus ────────────────────────────────────────
+
+  it('passes donationBonus through to components', () => {
+    const result = computeScore(makeInput({ donationBonus: 7 }))
+    expect(result.components.donationBonus).toBe(7)
+  })
+
+  it('adds positive donationBonus to total', () => {
+    const result = computeScore(makeInput({ donationBonus: 4 }))
+    expect(result.total).toBe(54) // 50 + 4
+  })
+
+  it('subtracts negative donationBonus (clawback)', () => {
+    const result = computeScore(makeInput({ donationBonus: -3 }))
+    expect(result.total).toBe(47) // 50 + (-3)
+  })
+
+  it('donationBonus of 0 leaves total unchanged from other components', () => {
+    const result = computeScore(makeInput({
+      attendance: { score: 2 },
+      donationBonus: 0,
+    }))
+    expect(result.total).toBe(52) // 50 + 2
+  })
+
+  it('donationBonus composes with all other components', () => {
+    const result = computeScore(makeInput({
+      itemRank: 45,
+      character: { characterId: 'c', specId: null, specRoles: ['tank'], guildRank: 'Yiker', membershipStatus: 'full' },
+      attendance: { score: 2.5 },
+      config: { raid_roles_overall_bonus_priority: true, role_modifiers: { tank: 2 } },
+      donationBonus: 5,
+    }))
+    // 45 + 2.5 + (-1) + 2 + 5 = 53.5
+    expect(result.components.donationBonus).toBe(5)
+    expect(result.total).toBe(53.5)
+  })
+
   // ─── Parity with calculateLootScore ────────────────────────
 
   it.each(LOOT_SCORE_FIXTURES)('parity with calculateLootScore: $name', ({ input, expected }) => {
@@ -162,6 +202,7 @@ describe('computeScore', () => {
       + result.components.badLuckBonus
       + result.components.priorityBonus
       + result.components.trialPenalty
+      + result.components.donationBonus
     expect(result.total).toBe(manualTotal)
   })
 })
@@ -213,6 +254,38 @@ describe('explainScore', () => {
     expect(labels).not.toContain('Priority bonus')
     expect(labels).not.toContain('Trial penalty')
     expect(labels).not.toContain('Bad luck protection')
+    expect(labels).not.toContain('Donation bonus')
+  })
+
+  it('includes donation line when donationBonus is non-zero', () => {
+    const result = computeScore(makeInput({ donationBonus: 5 }))
+    const explanation = explainScore(result, { donation_bonus_type: 'rolling', donation_rolling_weeks: 4 })
+    const line = explanation.lines.find(l => l.label === 'Donation bonus')
+    expect(line?.value).toBe(5)
+    expect(line?.key).toBe('donationBonus')
+    expect(line?.detail).toContain('4-week window')
+  })
+
+  it('donation detail varies by bonus type', () => {
+    const result = computeScore(makeInput({ donationBonus: 3 }))
+    const permanent = explainScore(result, { donation_bonus_type: 'permanent' })
+      .lines.find(l => l.label === 'Donation bonus')
+    expect(permanent?.detail).toContain('all-time')
+
+    const hardReset = explainScore(result, { donation_bonus_type: 'hard-reset' })
+      .lines.find(l => l.label === 'Donation bonus')
+    expect(hardReset?.detail).toContain('since last reset')
+  })
+
+  it('donation detail mentions cap when cap_enabled', () => {
+    const result = computeScore(makeInput({ donationBonus: 10 }))
+    const explanation = explainScore(result, {
+      donation_bonus_type: 'permanent',
+      donation_cap_enabled: true,
+      donation_cap_points: 25,
+    })
+    const line = explanation.lines.find(l => l.label === 'Donation bonus')
+    expect(line?.detail).toContain('capped at 25')
   })
 
   it('item rank detail shows list position', () => {

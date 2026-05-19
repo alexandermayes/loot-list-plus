@@ -29,6 +29,7 @@ import { refreshWowheadTooltips } from '@/lib/wowhead'
 import PriorityListTab from './PriorityListTab'
 import { SegmentedControl } from '@/components/ui/segmented-control'
 import { Checkbox } from '@/components/ui/checkbox'
+import { useConfirm } from '@/components/ui/confirm-modal'
 import { trackClientEvent } from '@/utils/analytics/client'
 import { InfoTooltip } from '@/components/ui/info-tooltip'
 
@@ -215,7 +216,10 @@ export default function LootSettingsContent() {
     // Donation Settings
     donation_bonuses_enabled: false,
     donation_cap_enabled: false,
+    donation_cap_points: 0,
     donation_bonus_type: 'rolling' as 'permanent' | 'rolling' | 'hard-reset',
+    donation_rolling_weeks: null as number | null,
+    donation_reset_at: null as string | null,
 
     // Trial System Settings
     trial_penalty_enabled: false,
@@ -246,6 +250,7 @@ export default function LootSettingsContent() {
   const router = useRouter()
   const { activeGuild, activeMember, loading: guildLoading, hasPermission } = useGuildContext()
   const { showNotification } = useNotification()
+  const { confirm, ConfirmDialog } = useConfirm()
 
   // Check if settings have unsaved changes
   const hasSettingsChanges = initialSettings !== null && (
@@ -294,7 +299,10 @@ export default function LootSettingsContent() {
           single_raider_bonus_single_item: settings.single_raider_bonus_single_item,
           donation_bonuses_enabled: settings.donation_bonuses_enabled,
           donation_cap_enabled: settings.donation_cap_enabled,
+          donation_cap_points: settings.donation_cap_points,
           donation_bonus_type: settings.donation_bonus_type,
+          donation_rolling_weeks: settings.donation_rolling_weeks,
+          donation_reset_at: settings.donation_reset_at,
           number_of_ranks: settings.number_of_ranks,
           trial_penalty_enabled: settings.trial_penalty_enabled,
           trial_penalty_value: settings.trial_penalty_value,
@@ -2640,6 +2648,72 @@ export default function LootSettingsContent() {
                             </Select>
                             <p className="text-muted-foreground text-[11px] mt-1">How donation points persist over time</p>
                           </div>
+
+                          <div>
+                            <Label className="block mb-2 inline-flex items-center gap-1">Cap points <InfoTooltip content="Maximum total donation bonus a raider can accumulate. Applies to all donations including historical ones." iconSize={12} /></Label>
+                            <Input
+                              variant="pill"
+                              type="number"
+                              min={0}
+                              max={1000}
+                              step="0.5"
+                              value={settings.donation_cap_points ?? 0}
+                              onChange={(e) => setSettings({ ...settings, donation_cap_points: Number(e.target.value) || 0 })}
+                              disabled={!settings.donation_bonuses_enabled || !settings.donation_cap_enabled}
+                            />
+                            <p className="text-muted-foreground text-[11px] mt-1">Max bonus per raider</p>
+                          </div>
+
+                          <div>
+                            <Label className="block mb-2 inline-flex items-center gap-1">Rolling window (weeks) <InfoTooltip content="Donations older than this are excluded from a raider's bonus. Leave blank to reuse the attendance rolling window." iconSize={12} /></Label>
+                            <Input
+                              variant="pill"
+                              type="number"
+                              min={1}
+                              max={52}
+                              step="1"
+                              placeholder={`${settings.rolling_attendance_weeks ?? 4} (attendance window)`}
+                              value={settings.donation_rolling_weeks ?? ''}
+                              onChange={(e) => {
+                                const raw = e.target.value
+                                const parsed = raw === '' ? null : Math.max(1, Math.min(52, Number(raw) || 1))
+                                setSettings({ ...settings, donation_rolling_weeks: parsed })
+                              }}
+                              disabled={!settings.donation_bonuses_enabled || settings.donation_bonus_type !== 'rolling'}
+                            />
+                            <p className="text-muted-foreground text-[11px] mt-1">Only applies in rolling mode</p>
+                          </div>
+
+                          <div>
+                            <Label className="block mb-2 inline-flex items-center gap-1">Hard reset <InfoTooltip content="Hides all donations dated before this anchor from scoring. Use when starting a new tier or season. Records are preserved in the audit log." iconSize={12} /></Label>
+                            {settings.donation_reset_at && (
+                              <p className="text-foreground-secondary text-[12px] mt-1 mb-1">
+                                Anchor: <span className="tabular-nums">{settings.donation_reset_at}</span>
+                              </p>
+                            )}
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="w-full"
+                              disabled={!settings.donation_bonuses_enabled || settings.donation_bonus_type !== 'hard-reset'}
+                              onClick={() => {
+                                const today = toDateString(new Date())
+                                confirm({
+                                  title: 'Reset donations?',
+                                  description: `Donations dated before ${today} will no longer count toward Loot Score. Records stay in the audit log — this is non-destructive.`,
+                                  confirmLabel: 'Reset donations',
+                                  variant: 'danger',
+                                  onConfirm: () => {
+                                    setSettings({ ...settings, donation_reset_at: today })
+                                    showNotification('success', `Donations reset to ${today}.`)
+                                  },
+                                })
+                              }}
+                            >
+                              {settings.donation_reset_at ? 'Reset again' : 'Reset now'}
+                            </Button>
+                            <p className="text-muted-foreground text-[11px] mt-1">Only applies in hard-reset mode</p>
+                          </div>
                         </div>
                       </CardContent>
                     </Card>
@@ -2696,6 +2770,8 @@ export default function LootSettingsContent() {
           </Button>
         </ModalFooter>
       </Modal>
+
+      {ConfirmDialog}
     </ExpansionGuard>
   )
 }

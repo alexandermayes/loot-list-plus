@@ -102,5 +102,31 @@ export function explainScore(
     })
   }
 
+  if (s.donationBonus !== 0) {
+    const parts: string[] = []
+    switch (c.donation_bonus_type) {
+      case 'permanent':
+        parts.push('all-time bank donations')
+        break
+      case 'rolling': {
+        const weeks = c.donation_rolling_weeks ?? c.rolling_attendance_weeks
+        parts.push(`bank donations, ${weeks}-week window`)
+        break
+      }
+      case 'hard-reset':
+        parts.push('bank donations since last reset')
+        break
+    }
+    if (c.donation_cap_enabled) {
+      parts.push(`capped at ${c.donation_cap_points}`)
+    }
+    lines.push({
+      label: 'Donation bonus',
+      value: s.donationBonus,
+      detail: parts.join(', '),
+      key: 'donationBonus',
+    })
+  }
+
   return { total: result.total, lines }
 }

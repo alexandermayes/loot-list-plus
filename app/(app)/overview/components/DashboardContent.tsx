@@ -34,6 +34,7 @@ import { InfoTooltip } from '@/components/ui/info-tooltip'
 import { useGuildContext } from '@/app/contexts/GuildContext'
 import ItemLink from '@/app/components/ItemLink'
 import { computeScore, computeAttendance, explainScore, getRoleModifierWithLabel, calculateBadLuckBonus, type ItemPriority, type AttendanceResult, type ScoreExplanation } from '@/domain/scoring'
+import { calculateDonationsBatch } from '@/lib/donations/batch'
 import { getSpecRoles, getRoleDisplayName, type Role } from '@/domain/loot/spec-role-mapping'
 import { refreshWowheadTooltips } from '@/lib/wowhead'
 import { useNotification } from '@/app/contexts/NotificationContext'
@@ -814,6 +815,7 @@ export default function DashboardContent() {
       let savedTimezone = 'UTC'
       let savedDeduplicatedRaidEvents: Array<{ id: string; raid_date: string }> = []
       let savedAttendanceRecords: Array<{ raid_event_id: string; attended: boolean }> = []
+      let donationBonusForChar = 0
 
       // Start all independent fetches in parallel: submission items, guild settings, membership, expansion, raid events
       const submissionItemsPromise = supabase
@@ -1060,6 +1062,14 @@ export default function DashboardContent() {
             specRole = specRoles.length > 0 ? specRoles[0] : null
           }
 
+          // Donation bonus for this character (0 when feature is off — short-circuit in helper).
+          donationBonusForChar = (await calculateDonationsBatch(
+            supabase,
+            activeGuild.id,
+            guildSettings,
+            [characterId],
+          ))[characterId] ?? 0
+
           // Use engine for modifier display values + explanation
           const baseInput = {
             itemRank: 0,
@@ -1074,6 +1084,7 @@ export default function DashboardContent() {
             config: guildSettings,
             itemPriority: null,
             timesPassed: 0,
+            donationBonus: donationBonusForChar,
           }
           const dummyScore = computeScore(baseInput)
           roleModifier = dummyScore.components.rankModifier
@@ -1428,6 +1439,7 @@ export default function DashboardContent() {
             config: savedGuildSettings || {},
             itemPriority: prioritiesMap[item.id] || null,
             timesPassed: blpData[item.id] || 0,
+            donationBonus: donationBonusForChar,
           })
           const lootScore = itemScoreResult.total
 

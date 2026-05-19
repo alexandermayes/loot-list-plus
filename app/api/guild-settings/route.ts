@@ -61,7 +61,10 @@ const ALLOWED_SETTINGS_FIELDS = [
   // Donation Settings
   'donation_bonuses_enabled',
   'donation_cap_enabled',
+  'donation_cap_points',
   'donation_bonus_type',
+  'donation_rolling_weeks',
+  'donation_reset_at',
 
   // Trial System
   'trial_penalty_enabled',

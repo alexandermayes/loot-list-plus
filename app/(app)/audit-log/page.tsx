@@ -24,6 +24,7 @@ import {
   Edit01Icon,
   Add01Icon,
   Layers01Icon,
+  GiftIcon,
 } from '@hugeicons/core-free-icons'
 import { trackClientEvent } from '@/utils/analytics/client'
 import { hasFeature } from '@/domain/guild/feature-flags'
@@ -44,7 +45,7 @@ interface AuditLog {
 
 // --- Category system ---
 
-type AuditCategory = 'submission' | 'loot' | 'attendance' | 'settings' | 'members' | 'blp' | 'items'
+type AuditCategory = 'submission' | 'loot' | 'attendance' | 'settings' | 'members' | 'blp' | 'items' | 'donations'
 
 const CATEGORY_CONFIG: Record<AuditCategory, {
   label: string
@@ -94,6 +95,12 @@ const CATEGORY_CONFIG: Record<AuditCategory, {
     color: 'text-[#8b5cf6]',
     bgColor: 'bg-[#8b5cf6]/10',
   },
+  donations: {
+    label: 'Donation',
+    icon: GiftIcon,
+    color: 'text-[#14b8a6]',
+    bgColor: 'bg-[#14b8a6]/10',
+  },
 }
 
 function getCategory(tableName: string): AuditCategory {
@@ -106,6 +113,7 @@ function getCategory(tableName: string): AuditCategory {
     case 'guild_members': return 'members' // legacy, kept for historical log entries
     case 'blp_tracking': return 'blp'
     case 'loot_submission_items': return 'items'
+    case 'donation_records': return 'donations'
     default: return 'settings'
   }
 }
@@ -283,6 +291,31 @@ function describeActivity(log: AuditLog): { summary: string; detail?: string } {
         detail: `${oldName} → ${newName}`,
       }
       return { summary: 'updated loot award' }
+    }
+  }
+
+  // Donations
+  if (table_name === 'donation_records') {
+    const name = new_data?.character_name || old_data?.character_name || 'unknown'
+    const fmtPoints = (p: unknown) => typeof p === 'number' ? (p > 0 ? `+${p}` : `${p}`) : ''
+    if (action === 'INSERT') {
+      const pts = fmtPoints(new_data?.points)
+      const kind = new_data?.kind
+      const amount = new_data?.amount_text
+      const parts = [pts, kind && `${kind}`, amount && `(${amount})`].filter(Boolean)
+      return { summary: `logged donation for ${name}`, detail: parts.join(' ') || undefined }
+    }
+    if (action === 'DELETE') {
+      const pts = fmtPoints(old_data?.points)
+      return { summary: `removed donation from ${name}`, detail: pts || undefined }
+    }
+    if (action === 'UPDATE') {
+      const oldPts = old_data?.points
+      const newPts = new_data?.points
+      if (typeof oldPts === 'number' && typeof newPts === 'number' && oldPts !== newPts) {
+        return { summary: `edited donation for ${name}`, detail: `${fmtPoints(oldPts)} → ${fmtPoints(newPts)}` }
+      }
+      return { summary: `edited donation for ${name}` }
     }
   }
 

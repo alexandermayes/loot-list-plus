@@ -18,7 +18,10 @@ import { calculatePriorityBonus } from './priority'
  *
  * Formula:
  *   total = itemRank + attendanceScore + rankModifier + roleBonus
- *         + badLuckBonus + priorityBonus + trialPenalty
+ *         + badLuckBonus + priorityBonus + trialPenalty + donationBonus
+ *
+ * `donationBonus` is pre-computed per character via `calculateDonationBonus()`
+ * and passed in on the ScoreInput. Same pattern as `attendance.score`.
  */
 export function computeScore(input: ScoreInput): ScoreResult {
   const config = withDefaults(input.config)
@@ -36,6 +39,7 @@ export function computeScore(input: ScoreInput): ScoreResult {
       input.character.specRoles[0] ?? null
     ),
     trialPenalty: getTrialPenalty(input.character.membershipStatus, config),
+    donationBonus: input.donationBonus,
   }
 
   const total = components.itemRank
@@ -45,6 +49,7 @@ export function computeScore(input: ScoreInput): ScoreResult {
     + components.badLuckBonus
     + components.priorityBonus
     + components.trialPenalty
+    + components.donationBonus
 
   return { total, components }
 }

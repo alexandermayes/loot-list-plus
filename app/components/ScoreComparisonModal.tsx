@@ -35,6 +35,7 @@ interface PlayerRanking {
   priority_bonus: number
   bad_luck_bonus: number
   trial_penalty: number
+  donation_bonus: number
   is_trial: boolean
   character_id: string
 }
@@ -57,6 +58,7 @@ function rankingToScoreResult(r: PlayerRanking): ScoreResult {
     badLuckBonus: r.bad_luck_bonus,
     priorityBonus: r.priority_bonus,
     trialPenalty: r.trial_penalty,
+    donationBonus: r.donation_bonus,
   }
   return { total: r.loot_score, components }
 }

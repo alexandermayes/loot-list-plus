@@ -500,6 +500,66 @@ export type Database = {
           },
         ]
       }
+      donation_records: {
+        Row: {
+          amount_text: string | null
+          awarded_at: string
+          awarded_by: string | null
+          character_id: string | null
+          character_name: string
+          created_at: string
+          guild_id: string
+          id: string
+          kind: string
+          note: string | null
+          points: number
+          updated_at: string
+        }
+        Insert: {
+          amount_text?: string | null
+          awarded_at?: string
+          awarded_by?: string | null
+          character_id?: string | null
+          character_name: string
+          created_at?: string
+          guild_id: string
+          id?: string
+          kind: string
+          note?: string | null
+          points: number
+          updated_at?: string
+        }
+        Update: {
+          amount_text?: string | null
+          awarded_at?: string
+          awarded_by?: string | null
+          character_id?: string | null
+          character_name?: string
+          created_at?: string
+          guild_id?: string
+          id?: string
+          kind?: string
+          note?: string | null
+          points?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "donation_records_character_id_fkey"
+            columns: ["character_id"]
+            isOneToOne: false
+            referencedRelation: "characters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "donation_records_guild_id_fkey"
+            columns: ["guild_id"]
+            isOneToOne: false
+            referencedRelation: "guilds"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       expansions: {
         Row: {
           created_at: string | null
@@ -728,6 +788,9 @@ export type Database = {
           donation_bonus_type: string | null
           donation_bonuses_enabled: boolean | null
           donation_cap_enabled: boolean | null
+          donation_cap_points: number
+          donation_reset_at: string | null
+          donation_rolling_weeks: number | null
           enforce_slot_restrictions: boolean
           fifth_raid_day: number | null
           first_raid_day: number | null
@@ -789,6 +852,9 @@ export type Database = {
           donation_bonus_type?: string | null
           donation_bonuses_enabled?: boolean | null
           donation_cap_enabled?: boolean | null
+          donation_cap_points?: number
+          donation_reset_at?: string | null
+          donation_rolling_weeks?: number | null
           enforce_slot_restrictions?: boolean
           fifth_raid_day?: number | null
           first_raid_day?: number | null
@@ -850,6 +916,9 @@ export type Database = {
           donation_bonus_type?: string | null
           donation_bonuses_enabled?: boolean | null
           donation_cap_enabled?: boolean | null
+          donation_cap_points?: number
+          donation_reset_at?: string | null
+          donation_rolling_weeks?: number | null
           enforce_slot_restrictions?: boolean
           fifth_raid_day?: number | null
           first_raid_day?: number | null

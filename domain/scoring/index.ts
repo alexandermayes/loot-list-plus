@@ -36,6 +36,9 @@ export { withDefaults, getDefaultSettings } from './defaults'
 // ─── Utility (display helpers, not scoring) ──────────────────
 export { calculateBadLuckBonus, getRoleModifierWithLabel, getRankModifier } from './modifiers'
 
+// ─── Donations (pure; not yet wired into computeScore — see PR3) ────────
+export { calculateDonationBonus } from './donations'
+
 // ─── Internal (engine internals, exported for tests) ─────────
 /** @internal Use computeAttendance() instead */
 export { calculateAttendanceScore } from './attendance-score'
@@ -55,4 +58,5 @@ export type {
   CharacterContext, ScoreInput, ScoreResult, ScoreComponents,
   ScoreExplanation, ScoreLine,
   AttendanceStatus, RaidEvent, AttendanceInput, AttendanceResult,
+  DonationRecord,
 } from '../types'

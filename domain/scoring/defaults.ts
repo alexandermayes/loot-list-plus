@@ -32,7 +32,13 @@ export const DEFAULT_SETTINGS: Partial<ScoringConfig> = {
   new_members_start_as_trial: false,
   blp_enabled: false,
   blp_increment: 1,
-  blp_maximum: 5
+  blp_maximum: 5,
+  donation_bonuses_enabled: false,
+  donation_cap_enabled: false,
+  donation_cap_points: 0,
+  donation_bonus_type: 'rolling',
+  donation_rolling_weeks: null,
+  donation_reset_at: null
 }
 
 export function withDefaults(partial: Partial<ScoringConfig>): ScoringConfig {

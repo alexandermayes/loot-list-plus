@@ -44,6 +44,15 @@ export interface ScoringConfig {
   blp_enabled: boolean
   blp_increment: number
   blp_maximum: number
+  // Donations
+  donation_bonuses_enabled: boolean
+  donation_cap_enabled: boolean
+  donation_cap_points: number
+  donation_bonus_type: 'permanent' | 'rolling' | 'hard-reset'
+  /** Window for rolling-decay mode. Null = fall back to rolling_attendance_weeks. */
+  donation_rolling_weeks: number | null
+  /** Anchor date for hard-reset mode (YYYY-MM-DD). Null = no reset yet, include all. */
+  donation_reset_at: string | null
 }
 
 /** Backward-compatible alias */
@@ -59,6 +68,20 @@ export interface AttendanceRecord {
   was_benched?: boolean
   is_excused?: boolean
   points_override?: number | null
+}
+
+// ─── Donations ───────────────────────────────────────────────
+
+/**
+ * Minimal donation record for scoring.
+ * The full DB row (kind, amount_text, note, character_id, etc.) is irrelevant
+ * to score computation — only the signed point value and award date matter.
+ */
+export interface DonationRecord {
+  /** Signed score impact. Negative = clawback / revocation. */
+  points: number
+  /** YYYY-MM-DD */
+  awarded_at: string
 }
 
 // ─── Item Priority ───────────────────────────────────────────
@@ -165,6 +188,13 @@ export interface ScoreInput {
   itemPriority: ItemPriority | null
   /** BLP times_passed for this character+item, or 0 */
   timesPassed: number
+  /**
+   * Pre-computed donation bonus for this character.
+   * Compute once per character with `calculateDonationBonus(records, config)`,
+   * then pass the result here for every item that character is scored on.
+   * Pass 0 when donations are disabled or the character has no records.
+   */
+  donationBonus: number
 }
 
 /** Breakdown of all score components */
@@ -176,6 +206,7 @@ export interface ScoreComponents {
   badLuckBonus: number
   priorityBonus: number
   trialPenalty: number
+  donationBonus: number
 }
 
 /** Result from computeScore() */
@@ -190,7 +221,7 @@ export interface ScoreLine {
   value: number
   detail: string
   /** Optional key identifying the component (for UI styling/icons) */
-  key?: 'itemRank' | 'attendance' | 'rankModifier' | 'roleBonus' | 'priorityBonus' | 'trialPenalty' | 'badLuckBonus'
+  key?: 'itemRank' | 'attendance' | 'rankModifier' | 'roleBonus' | 'priorityBonus' | 'trialPenalty' | 'badLuckBonus' | 'donationBonus'
   /** Optional context for richer UI rendering (e.g., rank name, role label) */
   context?: Record<string, string | number | boolean>
 }
