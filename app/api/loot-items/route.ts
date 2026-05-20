@@ -106,7 +106,10 @@ export async function GET(request: NextRequest) {
       { items: enrichedItems },
       {
         headers: {
-          'Cache-Control': 'private, no-cache',
+          // Spec-filtered loot list for a character. Stable until admins edit
+          // loot_items or the character changes spec. 60s browser cache keeps
+          // back-nav instant; SWR window absorbs the rare officer edit.
+          'Cache-Control': 'private, max-age=60, stale-while-revalidate=300',
         },
       }
     )

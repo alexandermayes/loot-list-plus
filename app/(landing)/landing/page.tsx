@@ -33,7 +33,7 @@ export const metadata: Metadata = {
     locale: 'en_US',
     type: 'website',
     images: [{
-      url: 'https://www.getlootlist.com/og-image.png',
+      url: 'https://www.getlootlist.com/og-image.jpg',
       width: 2400,
       height: 1264,
       alt: 'LootList+ - Loot Management for WoW Classic Guilds',
@@ -43,7 +43,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'LootList+ - Loot Management for WoW Classic Guilds',
     description: 'The ultimate loot management system for World of Warcraft Classic guilds.',
-    images: ['https://www.getlootlist.com/og-image.png'],
+    images: ['https://www.getlootlist.com/og-image.jpg'],
   },
 }
 

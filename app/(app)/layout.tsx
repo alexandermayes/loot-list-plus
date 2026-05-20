@@ -19,7 +19,20 @@ export default async function Layout({ children }: { children: React.ReactNode }
         supabase
           .from('characters')
           .select(`
-            *,
+            id,
+            user_id,
+            name,
+            realm,
+            class_id,
+            spec_id,
+            level,
+            is_main,
+            battle_net_id,
+            region,
+            created_at,
+            updated_at,
+            game_version,
+            guardian_conversion_dismissed,
             class:wow_classes (
               id,
               name,
@@ -43,7 +56,10 @@ export default async function Layout({ children }: { children: React.ReactNode }
       const characters = charactersResult.data
       const activePrefs = activeResult.data
 
-      // Fetch memberships if we have characters
+      // Fetch memberships if we have characters. We omit nested character fields
+      // (battle_net_id, region, level, timestamps) that aren't read at first
+      // paint to shrink the payload — GuildContext re-joins to the full
+      // characters list above when it needs them.
       let memberships = null
       if (characters && characters.length > 0) {
         const characterIds = characters.map((c: { id: string }) => c.id)
@@ -64,12 +80,7 @@ export default async function Layout({ children }: { children: React.ReactNode }
               realm,
               class_id,
               spec_id,
-              level,
               is_main,
-              battle_net_id,
-              region,
-              created_at,
-              updated_at,
               class:wow_classes (
                 id,
                 name,
@@ -85,12 +96,9 @@ export default async function Layout({ children }: { children: React.ReactNode }
               name,
               realm,
               faction,
-              discord_server_id,
               icon_url,
               created_by,
-              is_active,
               require_discord_verification,
-              created_at,
               active_expansion_id,
               subscription_tier,
               guild_roles (

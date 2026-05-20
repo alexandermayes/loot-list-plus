@@ -1,13 +1,11 @@
-'use client'
-
-import dynamic from 'next/dynamic'
+import { Suspense } from 'react'
+import GuildSettingsContent from './components/GuildSettingsContent'
 import { GuildSettingsContentSkeleton } from '@/components/ui/skeletons'
 
-const GuildSettingsContent = dynamic(
-  () => import('./components/GuildSettingsContent'),
-  { loading: () => <GuildSettingsContentSkeleton /> }
-)
-
 export default function GuildSettingsPage() {
-  return <GuildSettingsContent />
+  return (
+    <Suspense fallback={<GuildSettingsContentSkeleton />}>
+      <GuildSettingsContent />
+    </Suspense>
+  )
 }

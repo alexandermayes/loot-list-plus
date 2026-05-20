@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import withBundleAnalyzerImport from "@next/bundle-analyzer";
 
 const isDev = process.env.NODE_ENV === 'development';
 
@@ -155,11 +156,8 @@ const nextConfig: NextConfig = {
     ];
   },
   experimental: {
-    // Reduce App Router client cache to prevent stale RSC payloads after deployments.
-    // dynamic: 0 means navigating to a page always fetches fresh server data instead
-    // of serving a cached response from a previous visit in this session.
     staleTimes: {
-      dynamic: 0,
+      dynamic: 30,
       static: 180,
     },
     // Tree-shake large icon and animation libraries for smaller bundles
@@ -173,4 +171,8 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+const withBundleAnalyzer = withBundleAnalyzerImport({
+  enabled: process.env.ANALYZE === "true",
+});
+
+export default withBundleAnalyzer(nextConfig);

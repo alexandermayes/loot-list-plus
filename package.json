@@ -59,6 +59,7 @@
     "swr": "^2.3.8"
   },
   "devDependencies": {
+    "@next/bundle-analyzer": "^16.2.6",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",

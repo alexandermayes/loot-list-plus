@@ -54,7 +54,7 @@ export default function Error({
           {/* Gnome Image */}
           <div className="mb-8">
             <img
-              src="/images/404-gnome.png"
+              src="/images/404-gnome.webp"
               alt="Gnome engineer looking confused at a broken contraption"
               className="w-full max-w-md mx-auto"
               draggable={false}

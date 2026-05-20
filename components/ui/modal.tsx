@@ -3,7 +3,6 @@
 import * as React from "react"
 import { createPortal } from "react-dom"
 import { cva, type VariantProps } from "class-variance-authority"
-import { AnimatePresence, motion } from "framer-motion"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { Cancel01Icon } from "@hugeicons/core-free-icons"
 
@@ -21,6 +20,8 @@ import { cn } from "@/lib/utils"
  * - xl: max-w-3xl (large content)
  * - full: max-w-4xl (very large content)
  */
+
+const TRANSITION_MS = 150
 
 // Modal Backdrop
 const ModalBackdrop = React.forwardRef<
@@ -196,16 +197,31 @@ const Modal = ({
   maxHeight,
   zIndex = 50,
 }: ModalProps) => {
-  // Track if mousedown started on the backdrop (not inside the modal)
-  // This prevents closing when user drags selection from inside modal to outside
+  // Two-phase state: `mounted` controls whether the DOM exists, `visible`
+  // controls the CSS transition. When closing, we drop `visible` first,
+  // wait for the transition to play, then unmount.
+  const [mounted, setMounted] = React.useState(open)
+  const [visible, setVisible] = React.useState(false)
   const mouseDownOnBackdrop = React.useRef(false)
+
+  React.useEffect(() => {
+    if (open) {
+      setMounted(true)
+      // Mount first, then flip to visible on the next frame so the browser
+      // sees the transition from the initial closed state.
+      const id = requestAnimationFrame(() => setVisible(true))
+      return () => cancelAnimationFrame(id)
+    }
+    setVisible(false)
+    const id = setTimeout(() => setMounted(false), TRANSITION_MS)
+    return () => clearTimeout(id)
+  }, [open])
 
   // Handle escape key
   React.useEffect(() => {
+    if (!open) return
     const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && open) {
-        onClose()
-      }
+      if (e.key === "Escape") onClose()
     }
     document.addEventListener("keydown", handleEscape)
     return () => document.removeEventListener("keydown", handleEscape)
@@ -213,24 +229,23 @@ const Modal = ({
 
   // Prevent body scroll when open (including iOS Safari)
   React.useEffect(() => {
-    if (open) {
-      const scrollY = window.scrollY
-      document.body.style.position = "fixed"
-      document.body.style.top = `-${scrollY}px`
-      document.body.style.left = "0"
-      document.body.style.right = "0"
-      document.body.style.overflow = "hidden"
+    if (!mounted) return
+    const scrollY = window.scrollY
+    document.body.style.position = "fixed"
+    document.body.style.top = `-${scrollY}px`
+    document.body.style.left = "0"
+    document.body.style.right = "0"
+    document.body.style.overflow = "hidden"
 
-      return () => {
-        document.body.style.position = ""
-        document.body.style.top = ""
-        document.body.style.left = ""
-        document.body.style.right = ""
-        document.body.style.overflow = ""
-        window.scrollTo(0, scrollY)
-      }
+    return () => {
+      document.body.style.position = ""
+      document.body.style.top = ""
+      document.body.style.left = ""
+      document.body.style.right = ""
+      document.body.style.overflow = ""
+      window.scrollTo(0, scrollY)
     }
-  }, [open])
+  }, [mounted])
 
   // Reset mousedown tracking when modal closes
   React.useEffect(() => {
@@ -240,15 +255,10 @@ const Modal = ({
   }, [open])
 
   const handleBackdropMouseDown = (e: React.MouseEvent) => {
-    // Only track mousedown if it's directly on the backdrop
     mouseDownOnBackdrop.current = e.target === e.currentTarget
   }
 
   const handleBackdropClick = (e: React.MouseEvent) => {
-    // Only close if:
-    // 1. Click is directly on backdrop (not bubbled from children)
-    // 2. mousedown also started on the backdrop (prevents drag-selection closing)
-    // 3. Click is within valid bounds (not from mouse leaving/entering window)
     if (
       e.target === e.currentTarget &&
       mouseDownOnBackdrop.current &&
@@ -260,36 +270,30 @@ const Modal = ({
     mouseDownOnBackdrop.current = false
   }
 
-  // Portal to document.body so `fixed inset-0` is always relative to the
-  // viewport, not an ancestor with transform/filter/backdrop-filter.
   if (typeof document === "undefined") return null
+  if (!mounted) return null
 
   return createPortal(
-    <AnimatePresence>
-      {open && (
-        <motion.div
-          className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4"
-          style={{ zIndex }}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.15 }}
-          onMouseDown={handleBackdropMouseDown}
-          onClick={handleBackdropClick}
-        >
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95, filter: "blur(4px)" }}
-            animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
-            exit={{ opacity: 0, scale: 0.95, filter: "blur(4px)" }}
-            transition={{ duration: 0.15 }}
-          >
-            <ModalContainer size={size} className={className} maxHeight={maxHeight}>
-              {children}
-            </ModalContainer>
-          </motion.div>
-        </motion.div>
+    <div
+      className={cn(
+        "fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 transition-opacity duration-150",
+        visible ? "opacity-100" : "opacity-0"
       )}
-    </AnimatePresence>,
+      style={{ zIndex }}
+      onMouseDown={handleBackdropMouseDown}
+      onClick={handleBackdropClick}
+    >
+      <div
+        className={cn(
+          "w-full flex items-center justify-center transition-[opacity,transform] duration-150 ease-out",
+          visible ? "opacity-100 scale-100" : "opacity-0 scale-95"
+        )}
+      >
+        <ModalContainer size={size} className={className} maxHeight={maxHeight}>
+          {children}
+        </ModalContainer>
+      </div>
+    </div>,
     document.body
   )
 }

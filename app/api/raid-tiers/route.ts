@@ -67,8 +67,11 @@ export async function GET(request: NextRequest) {
       { tiers: tiers || [], current_phase: currentPhase, phase_groups: phaseGroups },
       {
         headers: {
-          'Cache-Control': 'private, no-cache'
-        }
+          // Changes when an officer toggles a tier or advances a phase. 60s
+          // browser cache + 5min SWR keeps repeat navigations snappy while
+          // bounding staleness.
+          'Cache-Control': 'private, max-age=60, stale-while-revalidate=300',
+        },
       }
     )
   } catch (error) {
