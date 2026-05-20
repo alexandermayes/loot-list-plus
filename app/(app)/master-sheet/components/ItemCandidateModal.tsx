@@ -419,7 +419,7 @@ export const ItemCandidateModal = memo(function ItemCandidateModal({
               )}
             </ModalDescription>
           </div>
-          <Link href="/loot-settings" onClick={onClose}>
+          <Link href="/loot-management" onClick={onClose}>
             <Button variant="outline" size="sm" className="shrink-0">
               Edit priority
             </Button>

@@ -527,7 +527,7 @@ export default function SheetImportPage() {
             }}>
               Import more
             </Button>
-            <Button variant="primary" onClick={() => router.push('/loot-settings')}>
+            <Button variant="primary" onClick={() => router.push('/loot-management')}>
               View loot management
             </Button>
           </div>

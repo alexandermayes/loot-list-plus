@@ -1,5 +1,5 @@
-import { LootItemsPageSkeleton } from '@/components/ui/skeletons'
+import { LootSettingsPageSkeleton } from '@/components/ui/skeletons'
 
 export default function Loading() {
-  return <LootItemsPageSkeleton />
+  return <LootSettingsPageSkeleton />
 }

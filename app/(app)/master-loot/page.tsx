@@ -315,7 +315,7 @@ export default function MasterLootPage() {
           <p className="text-muted-foreground mt-1 text-base">Manage loot submissions and available items</p>
         </div>
         <Link
-          href="/loot-settings"
+          href="/loot-management"
           className="flex items-center gap-2 px-5 py-2.5 bg-muted hover:bg-muted border border-border rounded-lg text-foreground text-[14px] font-medium transition-colors"
         >
           <HugeiconsIcon icon={Settings01Icon} size={16} />

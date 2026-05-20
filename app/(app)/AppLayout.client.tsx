@@ -46,7 +46,7 @@ function AppLayoutContent({
     if (pathname === '/guild-settings') return 'guild-settings'
     if (pathname === '/expansions') return 'expansions'
     if (pathname === '/loot-submissions') return 'loot-submissions'
-    if (pathname === '/loot-settings') return 'loot-settings'
+    if (pathname === '/loot-management' || pathname === '/loot-settings') return 'loot-settings'
     if (pathname === '/raid-tracking') return 'raid-tracking'
     if (pathname.startsWith('/reserve')) return 'reserve'
     if (pathname === '/updates') return 'updates'

@@ -44,7 +44,12 @@ function formatPoints(p: number): string {
   return p > 0 ? `+${p}` : `${p}`
 }
 
-export default function DonationsTab() {
+interface DonationsTabProps {
+  /** Called when the empty-state CTA fires (no `donation_bonuses_enabled`). */
+  onOpenSettings?: () => void
+}
+
+export default function DonationsTab({ onOpenSettings }: DonationsTabProps = {}) {
   const { activeGuild, hasPermission } = useGuildContext()
   const { showNotification } = useNotification()
   const { confirm, ConfirmDialog } = useConfirm()
@@ -278,11 +283,11 @@ export default function DonationsTab() {
         description="Turn them on in loot settings to start crediting raiders for bank donations."
         size="default"
         variant="card"
-        action={{
+        action={onOpenSettings ? {
           label: 'Open loot settings',
-          onClick: () => { window.location.href = '/loot-settings' },
+          onClick: onOpenSettings,
           variant: 'primary',
-        }}
+        } : undefined}
       />
     )
   }

@@ -27,6 +27,7 @@ import { ErrorState } from '@/components/ui/error-state'
 import { Textarea } from '@/components/ui/textarea'
 import { refreshWowheadTooltips } from '@/lib/wowhead'
 import PriorityListTab from './PriorityListTab'
+import DonationsTab from './DonationsTab'
 import { SegmentedControl } from '@/components/ui/segmented-control'
 import { Checkbox } from '@/components/ui/checkbox'
 import { useConfirm } from '@/components/ui/confirm-modal'
@@ -157,7 +158,7 @@ export default function LootSettingsContent() {
   const [initialSettings, setInitialSettings] = useState<typeof settings | null>(null)
   const [initialGuildRoles, setInitialGuildRoles] = useState<typeof guildRoles | null>(null)
   const settingsLoadedRef = useRef(false)
-  const [viewMode, setViewMode] = useState<'items' | 'priorities'>('items')
+  const [viewMode, setViewMode] = useState<'items' | 'priorities' | 'donations'>('items')
 
   // Guild Settings State
   const getDefaultResetDate = () => {
@@ -339,7 +340,11 @@ export default function LootSettingsContent() {
 
   // Set page title
   useEffect(() => {
-    document.title = viewMode === 'items' ? 'LootList+ • Loot Management' : 'LootList+ • Priority List'
+    document.title = viewMode === 'items'
+      ? 'LootList+ • Loot Management'
+      : viewMode === 'donations'
+        ? 'LootList+ • Donations'
+        : 'LootList+ • Priority List'
   }, [viewMode])
 
   // Track page view
@@ -1308,7 +1313,11 @@ export default function LootSettingsContent() {
           <div>
             <Heading level={1}>Loot Management</Heading>
             <p className="text-muted-foreground mt-1 text-base">
-              {viewMode === 'items' ? 'Manage loot items and configure classifications' : 'Set role, class and individual raider priorities'}
+              {viewMode === 'items'
+                ? 'Manage loot items and configure classifications'
+                : viewMode === 'donations'
+                  ? 'Log bank donations and credit raiders'
+                  : 'Set role, class and individual raider priorities'}
             </p>
           </div>
 
@@ -1317,7 +1326,8 @@ export default function LootSettingsContent() {
             <SegmentedControl
               options={[
                 { value: 'items', label: 'Items' },
-                { value: 'priorities', label: 'Priorities' }
+                { value: 'priorities', label: 'Priorities' },
+                { value: 'donations', label: 'Donations' },
               ]}
               value={viewMode}
               onChange={setViewMode}
@@ -1329,7 +1339,7 @@ export default function LootSettingsContent() {
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
                 </svg>
-                Import from spreadsheet
+                Import
               </Button>
             </Link>
 
@@ -1342,7 +1352,7 @@ export default function LootSettingsContent() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
               </svg>
-              Loot system settings
+              Loot settings
             </Button>
           </div>
         </div>
@@ -1351,27 +1361,33 @@ export default function LootSettingsContent() {
         {viewMode === 'items' && (
           <>
             {/* Stats */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
               <div className="bg-background-elevated border border-border rounded-xl p-4">
                 <p className="text-foreground-muted text-sm">Total items</p>
-                <p className="text-2xl font-bold text-foreground">{filteredItems.length}</p>
+                <p className="text-2xl font-bold text-foreground tabular-nums">{filteredItems.length}</p>
               </div>
               <div className="bg-background-elevated border border-border rounded-xl p-4">
                 <p className="text-foreground-muted text-sm">Available</p>
-                <p className="text-2xl font-bold text-success">
+                <p className="text-2xl font-bold text-success tabular-nums">
                   {filteredItems.filter(i => i.is_available).length}
                 </p>
               </div>
               <div className="bg-background-elevated border border-border rounded-xl p-4">
                 <p className="text-foreground-muted text-sm">Reserved</p>
-                <p className="text-2xl font-bold text-destructive">
+                <p className="text-2xl font-bold text-destructive tabular-nums">
                   {filteredItems.filter(i => i.classification === 'Reserved').length}
                 </p>
               </div>
               <div className="bg-background-elevated border border-border rounded-xl p-4">
                 <p className="text-foreground-muted text-sm">Limited</p>
-                <p className="text-2xl font-bold text-warning">
+                <p className="text-2xl font-bold text-warning tabular-nums">
                   {filteredItems.filter(i => i.classification === 'Limited').length}
+                </p>
+              </div>
+              <div className="bg-background-elevated border border-border rounded-xl p-4">
+                <p className="text-foreground-muted text-sm">Loot Council</p>
+                <p className="text-2xl font-bold text-accent tabular-nums">
+                  {filteredItems.filter(i => i.is_loot_council).length}
                 </p>
               </div>
             </div>
@@ -1799,6 +1815,10 @@ export default function LootSettingsContent() {
 
         {/* Priorities Tab Content */}
         {viewMode === 'priorities' && <PriorityListTab />}
+
+        {viewMode === 'donations' && (
+          <DonationsTab onOpenSettings={() => setShowSettingsModal(true)} />
+        )}
       </div>
 
       {/* Loot System Settings Modal */}

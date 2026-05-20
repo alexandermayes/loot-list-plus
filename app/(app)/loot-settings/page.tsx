@@ -1,13 +1,9 @@
-'use client'
+import { redirect } from 'next/navigation'
 
-import dynamic from 'next/dynamic'
-import { LootSettingsPageSkeleton } from '@/components/ui/skeletons'
-
-const LootSettingsContent = dynamic(
-  () => import('./components/LootSettingsContent'),
-  { loading: () => <LootSettingsPageSkeleton /> }
-)
-
-export default function LootSettingsPage() {
-  return <LootSettingsContent />
+/**
+ * /loot-settings was renamed to /loot-management on 2026-05-19 to match the
+ * sidebar label. This thin page preserves bookmarks.
+ */
+export default function LootSettingsRedirect() {
+  redirect('/loot-management')
 }

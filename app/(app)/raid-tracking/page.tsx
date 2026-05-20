@@ -7,9 +7,6 @@ import { HugeiconsIcon } from '@hugeicons/react'
 import { ArrowDown01Icon, ArrowUp01Icon, Upload01Icon, Cancel01Icon, MoreVerticalIcon, DiscordIcon } from '@hugeicons/core-free-icons'
 import nextDynamic from 'next/dynamic'
 
-const DonationsTab = nextDynamic(() => import('./components/DonationsTab'), {
-  loading: () => <div className="min-h-[400px] p-4"><div className="h-9 w-full bg-muted rounded-xl animate-pulse" /></div>,
-})
 const LootHistoryTab = nextDynamic(() => import('./components/LootHistoryTab'), {
   loading: () => (
     <div className="min-h-[400px] space-y-4 p-4">
@@ -149,7 +146,7 @@ export default function RaidTrackingPage() {
   const [importing, setImporting] = useState(false)
   const [postingDiscord, setPostingDiscord] = useState<string | null>(null)
   const [linkingWcl, setLinkingWcl] = useState<string | null>(null)
-  const [activeTab, setActiveTab] = useState<'tracking' | 'history' | 'donations'>('tracking')
+  const [activeTab, setActiveTab] = useState<'tracking' | 'history'>('tracking')
 
   // Reassign loot modal state
   const [reassignModal, setReassignModal] = useState<{
@@ -170,11 +167,7 @@ export default function RaidTrackingPage() {
   const { activeTeamId, activeTeam, teams, hasTeams, setTeam } = useRaidTeam()
 
   useEffect(() => {
-    document.title = activeTab === 'tracking'
-      ? 'LootList+ • Raid Tracking'
-      : activeTab === 'donations'
-        ? 'LootList+ • Donations'
-        : 'LootList+ • Loot History'
+    document.title = activeTab === 'tracking' ? 'LootList+ • Raid Tracking' : 'LootList+ • Loot History'
   }, [activeTab])
 
   useEffect(() => {
@@ -2310,11 +2303,7 @@ export default function RaidTrackingPage() {
         <div>
           <Heading level={1}>Raid Tracking</Heading>
           <p className="text-muted-foreground mt-1 text-base">
-            {activeTab === 'tracking'
-              ? 'Manage attendance and signups for each raid day'
-              : activeTab === 'donations'
-                ? 'Log bank donations and credit raiders'
-                : 'View loot distribution history'}
+            {activeTab === 'tracking' ? 'Manage attendance and signups for each raid day' : 'View loot distribution history'}
             {currentExpansion && (
               <span className="text-accent ml-2">• {currentExpansion.expansion_name}</span>
             )}
@@ -2334,8 +2323,7 @@ export default function RaidTrackingPage() {
         <SegmentedControl
           options={[
             { value: 'tracking', label: 'Tracking' },
-            { value: 'history', label: 'Loot history' },
-            { value: 'donations', label: 'Donations' },
+            { value: 'history', label: 'Loot history' }
           ]}
           value={activeTab}
           onChange={setActiveTab}
@@ -2842,11 +2830,6 @@ export default function RaidTrackingPage() {
       {/* Loot History Tab Content */}
       {activeTab === 'history' && (
         <LootHistoryTab />
-      )}
-
-      {/* Donations Tab Content */}
-      {activeTab === 'donations' && (
-        <DonationsTab />
       )}
 
       {/* Skip Day Modal */}
