@@ -130,6 +130,24 @@ export default function Sidebar({ currentView = 'overview', onViewChange, isMobi
     }
   }, [showJoinModal, showCreateGuildModal])
 
+  // Reopen Select guild → Discord view after a reconnect round-trip.
+  // The Reconnect button stashes ?openGuildModal=discord on the destination URL.
+  const reopenedAfterReconnectRef = useRef(false)
+  useEffect(() => {
+    if (!user || reopenedAfterReconnectRef.current) return
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('openGuildModal') !== 'discord') return
+    reopenedAfterReconnectRef.current = true
+
+    params.delete('openGuildModal')
+    const remaining = params.toString()
+    const cleaned = `${window.location.pathname}${remaining ? `?${remaining}` : ''}${window.location.hash}`
+    window.history.replaceState(null, '', cleaned)
+
+    setShowJoinModal(true)
+    handleOpenDiscordModal()
+  }, [user])
+
   const handleLogout = async () => {
     await supabase.auth.signOut()
     window.location.href = '/'
@@ -1110,10 +1128,12 @@ export default function Sidebar({ currentView = 'overview', onViewChange, isMobi
                 {discordError.includes('connection expired') && (
                   <Button
                     onClick={async () => {
+                      const base = pathname || '/overview'
+                      const next = `${base}${base.includes('?') ? '&' : '?'}openGuildModal=discord`
                       await supabase.auth.signInWithOAuth({
                         provider: 'discord',
                         options: {
-                          redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(pathname || '/overview')}`,
+                          redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`,
                           scopes: 'identify guilds'
                         }
                       })
