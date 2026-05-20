@@ -1107,6 +1107,21 @@ export default function Sidebar({ currentView = 'overview', onViewChange, isMobi
                     Go to profile to verify Discord
                   </Button>
                 )}
+                {discordError.includes('connection expired') && (
+                  <Button
+                    onClick={async () => {
+                      await supabase.auth.signInWithOAuth({
+                        provider: 'discord',
+                        options: {
+                          redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(pathname || '/overview')}`,
+                          scopes: 'identify guilds'
+                        }
+                      })
+                    }}
+                  >
+                    Reconnect Discord
+                  </Button>
+                )}
               </Alert>
             ) : availableGuilds.length === 0 ? (
               <div className="text-center py-8">

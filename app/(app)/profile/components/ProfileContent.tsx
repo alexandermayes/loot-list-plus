@@ -71,6 +71,10 @@ export default function ProfileContent() {
   // Notification preferences
   const [notifySubmissionStatus, setNotifySubmissionStatus] = useState(true)
 
+  // Discord connection state (verified + live OAuth token availability)
+  const [discordVerified, setDiscordVerified] = useState<boolean | null>(null)
+  const [reconnectingDiscord, setReconnectingDiscord] = useState(false)
+
   const { theme, setTheme } = useTheme()
   const { accentColor, setAccentColor, saveAccentColor } = useAccentColor()
 
@@ -129,12 +133,31 @@ export default function ProfileContent() {
   const loadNotificationPrefs = async (userId: string) => {
     const { data } = await supabase
       .from('user_preferences')
-      .select('notify_submission_status')
+      .select('notify_submission_status, discord_verified')
       .eq('user_id', userId)
       .single()
 
     if (data) {
       setNotifySubmissionStatus(data.notify_submission_status ?? true)
+      setDiscordVerified(Boolean(data.discord_verified))
+    } else {
+      setDiscordVerified(false)
+    }
+  }
+
+  const handleReconnectDiscord = async () => {
+    setReconnectingDiscord(true)
+    try {
+      await supabase.auth.signInWithOAuth({
+        provider: 'discord',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback?next=/profile`,
+          scopes: 'identify guilds'
+        }
+      })
+    } catch {
+      setReconnectingDiscord(false)
+      showNotification('error', "Couldn't start Discord reconnect. Try again.")
     }
   }
 
@@ -401,10 +424,39 @@ export default function ProfileContent() {
                 <HugeiconsIcon icon={Calendar01Icon} size={14} />
                 <span>Member since {user?.created_at ? new Date(user.created_at).toLocaleDateString() : ''}</span>
               </div>
-              <div className="flex items-center gap-1.5">
-                <HugeiconsIcon icon={CheckmarkCircle01Icon} size={14} className="text-success" />
-                <span>Discord connected</span>
-              </div>
+              {discordVerified === null ? (
+                <div className="flex items-center gap-1.5">
+                  <Skeleton className="h-4 w-32" />
+                </div>
+              ) : discordVerified ? (
+                <div className="flex items-center gap-1.5">
+                  <HugeiconsIcon icon={CheckmarkCircle01Icon} size={14} className="text-success" />
+                  <span>Discord linked</span>
+                  <span aria-hidden="true">·</span>
+                  <button
+                    type="button"
+                    onClick={handleReconnectDiscord}
+                    disabled={reconnectingDiscord}
+                    className="text-accent hover:underline disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm"
+                  >
+                    {reconnectingDiscord ? 'Reconnecting…' : 'Reconnect'}
+                  </button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-1.5">
+                  <HugeiconsIcon icon={Cancel01Icon} size={14} className="text-destructive" />
+                  <span>Discord not linked</span>
+                  <span aria-hidden="true">·</span>
+                  <button
+                    type="button"
+                    onClick={handleReconnectDiscord}
+                    disabled={reconnectingDiscord}
+                    className="text-accent hover:underline disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm"
+                  >
+                    {reconnectingDiscord ? 'Connecting…' : 'Reconnect Discord'}
+                  </button>
+                </div>
+              )}
             </div>
           </div>
           <Button variant="outline" onClick={handleLogout} loading={loggingOut} className="w-full sm:w-auto">
