@@ -453,4 +453,115 @@ describe('computeAttendance', () => {
       expect(result.raidsAttended).toBe(2)
     })
   })
+
+  // ─── Bonus events (off-schedule officer-created raids) ─────
+
+  describe('bonus events', () => {
+    // 2026-03-10 = Tuesday, 2026-03-12 = Thursday, 2026-03-14 = Saturday
+    it('includes is_bonus events even when day-of-week is not in raidDays', () => {
+      const events: RaidEvent[] = [
+        { id: 'tue', raid_date: '2026-03-10' },
+        { id: 'thu', raid_date: '2026-03-12' },
+        { id: 'sat-bonus', raid_date: '2026-03-14', is_bonus: true },
+      ]
+      const result = computeAttendance(makeInput({
+        raidEvents: events,
+        records: [
+          { raid_event_id: 'tue', signed_up: false, attended: true, no_call_no_show: false },
+          { raid_event_id: 'thu', signed_up: false, attended: true, no_call_no_show: false },
+          { raid_event_id: 'sat-bonus', signed_up: false, attended: true, no_call_no_show: false },
+        ],
+        raidDays: [2, 4], // Tue, Thu only
+        asOfDate: '2026-03-18',
+      }))
+      // Bonus counts toward denominator AND numerator
+      expect(result.raidsInWindow).toBe(3)
+      expect(result.raidsAttended).toBe(3)
+    })
+
+    it('off-schedule events without is_bonus stay filtered out', () => {
+      const events: RaidEvent[] = [
+        { id: 'tue', raid_date: '2026-03-10' },
+        { id: 'thu', raid_date: '2026-03-12' },
+        { id: 'sat-not-bonus', raid_date: '2026-03-14' }, // off-schedule, not flagged
+      ]
+      const result = computeAttendance(makeInput({
+        raidEvents: events,
+        records: [
+          { raid_event_id: 'tue', signed_up: false, attended: true, no_call_no_show: false },
+          { raid_event_id: 'thu', signed_up: false, attended: true, no_call_no_show: false },
+          { raid_event_id: 'sat-not-bonus', signed_up: false, attended: true, no_call_no_show: false },
+        ],
+        raidDays: [2, 4],
+        asOfDate: '2026-03-18',
+      }))
+      // Saturday is dropped — preserves existing behavior for non-bonus off-schedule rows
+      expect(result.raidsInWindow).toBe(2)
+      expect(result.raidsAttended).toBe(2)
+    })
+
+    it('absentees of a bonus event take the same hit as missing a scheduled day', () => {
+      const events: RaidEvent[] = [
+        { id: 'tue', raid_date: '2026-03-10' },
+        { id: 'thu', raid_date: '2026-03-12' },
+        { id: 'sat-bonus', raid_date: '2026-03-14', is_bonus: true },
+      ]
+      const result = computeAttendance(makeInput({
+        raidEvents: events,
+        records: [
+          { raid_event_id: 'tue', signed_up: false, attended: true, no_call_no_show: false },
+          { raid_event_id: 'thu', signed_up: false, attended: true, no_call_no_show: false },
+          // no record for sat-bonus
+        ],
+        raidDays: [2, 4],
+        asOfDate: '2026-03-18',
+      }))
+      expect(result.raidsInWindow).toBe(3)
+      expect(result.raidsAttended).toBe(2)
+    })
+
+    it('weekly cap clamps bonus contribution like any other event', () => {
+      // Team raids 2x/week. Add a Saturday bonus on top — cap=2 clamps that week to 2.
+      const events: RaidEvent[] = [
+        { id: 'tue', raid_date: '2026-03-10' },
+        { id: 'thu', raid_date: '2026-03-12' },
+        { id: 'sat-bonus', raid_date: '2026-03-14', is_bonus: true },
+      ]
+      const result = computeAttendance(makeInput({
+        raidEvents: events,
+        records: [
+          { raid_event_id: 'tue', signed_up: false, attended: true, no_call_no_show: false },
+          { raid_event_id: 'thu', signed_up: false, attended: true, no_call_no_show: false },
+          { raid_event_id: 'sat-bonus', signed_up: false, attended: true, no_call_no_show: false },
+        ],
+        raidDays: [2, 4],
+        weeklyAttendanceCap: 2,
+        asOfDate: '2026-03-18',
+      }))
+      // Cap=2 clamps the week's denominator. Attendee gets capped credit, not 3/3.
+      expect(result.raidsInWindow).toBe(2)
+      expect(result.raidsAttended).toBe(2)
+    })
+
+    it('bonus event respects rolling window', () => {
+      // Window: 4 weeks back from 2026-03-18 → 2026-02-18 onward
+      const events: RaidEvent[] = [
+        { id: 'old-bonus', raid_date: '2026-01-10', is_bonus: true }, // way outside window
+        { id: 'tue', raid_date: '2026-03-10' },
+      ]
+      const result = computeAttendance(makeInput({
+        raidEvents: events,
+        records: [
+          { raid_event_id: 'old-bonus', signed_up: false, attended: true, no_call_no_show: false },
+          { raid_event_id: 'tue', signed_up: false, attended: true, no_call_no_show: false },
+        ],
+        config: { rolling_attendance_weeks: 4 },
+        raidDays: [2, 4],
+        asOfDate: '2026-03-18',
+      }))
+      // Bonus event outside the window is excluded — bonus flag does not bypass windowing
+      expect(result.raidsInWindow).toBe(1)
+      expect(result.raidsAttended).toBe(1)
+    })
+  })
 })

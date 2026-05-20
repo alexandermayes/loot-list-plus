@@ -1227,6 +1227,7 @@ export type Database = {
           name: string
           notes: string | null
           officer_notes: string | null
+          primary_stat: string | null
           raid_tier_id: string | null
           roles: string[] | null
           weapon_type: string | null
@@ -1247,6 +1248,7 @@ export type Database = {
           name: string
           notes?: string | null
           officer_notes?: string | null
+          primary_stat?: string | null
           raid_tier_id?: string | null
           roles?: string[] | null
           weapon_type?: string | null
@@ -1267,6 +1269,7 @@ export type Database = {
           name?: string
           notes?: string | null
           officer_notes?: string | null
+          primary_stat?: string | null
           raid_tier_id?: string | null
           roles?: string[] | null
           weapon_type?: string | null
@@ -1483,6 +1486,7 @@ export type Database = {
           created_at: string | null
           guild_id: string | null
           id: string
+          is_bonus: boolean
           is_skipped: boolean | null
           notes: string | null
           raid_date: string
@@ -1495,6 +1499,7 @@ export type Database = {
           created_at?: string | null
           guild_id?: string | null
           id?: string
+          is_bonus?: boolean
           is_skipped?: boolean | null
           notes?: string | null
           raid_date: string
@@ -1507,6 +1512,7 @@ export type Database = {
           created_at?: string | null
           guild_id?: string | null
           id?: string
+          is_bonus?: boolean
           is_skipped?: boolean | null
           notes?: string | null
           raid_date?: string

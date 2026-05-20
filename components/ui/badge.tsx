@@ -15,6 +15,18 @@ const badgeVariants = cva(
         destructive:
           "border-transparent bg-destructive text-destructive-foreground hover:bg-destructive/80",
         outline: "text-foreground",
+        // Solid accent badge (e.g. "Today" — high-emphasis current-state marker)
+        accent:
+          "border-transparent bg-accent text-accent-foreground",
+        // Subtle accent badge (e.g. "Bonus" — low-emphasis accent annotation)
+        "accent-subtle":
+          "bg-accent/20 text-accent border-accent/40",
+        // Subtle success badge (e.g. "Imported" — confirms a completed state)
+        "success-subtle":
+          "bg-success/30 text-success border-success/50",
+        // Subtle destructive badge (e.g. "Skipped" — non-blocking negative state)
+        "destructive-subtle":
+          "bg-destructive/30 text-destructive border-transparent",
       },
     },
     defaultVariants: {

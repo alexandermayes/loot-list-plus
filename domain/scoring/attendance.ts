@@ -115,9 +115,11 @@ export function computeAttendance(input: AttendanceInput): AttendanceResult {
     e.raid_date >= windowStartStr && e.raid_date <= asOfStr
   )
 
-  // 2. Raid-day filter
+  // 2. Raid-day filter (bonus events bypass it: officers explicitly
+  // created them, so we trust them regardless of day-of-week)
   if (input.raidDays.length > 0) {
     eventsInWindow = eventsInWindow.filter(e => {
+      if (e.is_bonus) return true
       const d = parseDateLocal(e.raid_date)
       return input.raidDays.includes(d.getDay())
     })

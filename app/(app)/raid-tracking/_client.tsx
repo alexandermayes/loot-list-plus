@@ -4,7 +4,7 @@ import { createClient } from '@/utils/supabase/client'
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { HugeiconsIcon } from '@hugeicons/react'
-import { ArrowDown01Icon, ArrowUp01Icon, Upload01Icon, Cancel01Icon, MoreVerticalIcon, DiscordIcon } from '@hugeicons/core-free-icons'
+import { ArrowDown01Icon, ArrowUp01Icon, Upload01Icon, Cancel01Icon, MoreVerticalIcon, DiscordIcon, PlusSignIcon } from '@hugeicons/core-free-icons'
 import nextDynamic from 'next/dynamic'
 
 const LootHistoryTab = nextDynamic(() => import('./components/LootHistoryTab'), {
@@ -42,6 +42,7 @@ import {
   ModalFooter,
 } from '@/components/ui/modal'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
@@ -95,6 +96,7 @@ interface RaidEvent {
   is_skipped: boolean
   skip_reason: string | null
   wcl_report_code: string | null
+  is_bonus?: boolean
 }
 
 interface AttendanceStatus {
@@ -122,6 +124,10 @@ export default function RaidTrackingPage() {
   const [showSkipModal, setShowSkipModal] = useState<{ raidId: string, date: string } | null>(null)
   const [skipReason, setSkipReason] = useState('')
   const [showImportModal, setShowImportModal] = useState<{ raidId: string, date: string, isEdit: boolean } | null>(null)
+  const [showBonusModal, setShowBonusModal] = useState(false)
+  const [bonusDate, setBonusDate] = useState('')
+  const [bonusNotes, setBonusNotes] = useState('')
+  const [creatingBonus, setCreatingBonus] = useState(false)
 
   // Unified import form state
   const [attendanceData, setAttendanceData] = useState('')
@@ -422,7 +428,9 @@ export default function RaidTrackingPage() {
     // Filter events: show scheduled raid days only.
     // When a team is selected: strictly filter to team's raid days.
     // When "All teams": also include off-schedule events that have attendance data.
+    // Bonus events (officer-created off-schedule raids) are always kept.
     const filteredEvents = (allEvents || []).filter((event: RaidEvent) => {
+      if (event.is_bonus) return true
       const eventDate = parseDate(event.raid_date)
       if (activeTeamId) {
         return isDateScheduled(event.raid_date, eventDate.getDay(), raidDays, activeTeam?.schedule_history ?? null)
@@ -897,6 +905,50 @@ export default function RaidTrackingPage() {
 
     setShowSkipModal(null)
     setSkipReason('')
+  }
+
+  const openBonusModal = () => {
+    setBonusDate(toDateString(new Date()))
+    setBonusNotes('')
+    setShowBonusModal(true)
+  }
+
+  const submitBonusRaidDay = async () => {
+    if (!activeGuild || !currentExpansion || !bonusDate || creatingBonus) return
+    setCreatingBonus(true)
+    try {
+      const res = await fetch('/api/raid-events/bonus', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          guild_id: activeGuild.id,
+          expansion_id: currentExpansion.expansion_id,
+          raid_date: bonusDate,
+          raid_team_id: activeTeamId || null,
+          notes: bonusNotes.trim() || null,
+        }),
+      })
+      const body = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        showNotification('error', body.error || "Couldn't add bonus raid day. Try again.")
+        return
+      }
+      const newEvent = body.event as RaidEvent
+      setRaidDates(prev => {
+        if (prev.some(r => r.id === newEvent.id)) return prev
+        return [newEvent, ...prev].sort((a, b) => b.raid_date.localeCompare(a.raid_date))
+      })
+      // Auto-expand the week containing the new event so officers can see it
+      const firstRaidDayForExpand = currentExpansion?.first_raid_day ?? guildSettings?.first_raid_day ?? 0
+      const weekStart = getWeekStart(newEvent.raid_date, firstRaidDayForExpand)
+      setExpandedWeeks(prev => new Set(prev).add(weekStart))
+      showNotification('success', 'Bonus raid day added')
+      setShowBonusModal(false)
+    } catch (err) {
+      showNotification('error', err instanceof Error ? err.message : "Couldn't add bonus raid day. Try again.")
+    } finally {
+      setCreatingBonus(false)
+    }
   }
 
   const handlePostToDiscord = async (raidId: string) => {
@@ -2320,6 +2372,17 @@ export default function RaidTrackingPage() {
             className="w-40"
           />
         )}
+        {activeTab === 'tracking' && !raidStartDateInFuture && (
+          <Button
+            variant="outline"
+            onClick={openBonusModal}
+            className="self-start"
+          >
+            <HugeiconsIcon icon={PlusSignIcon} size={16} />
+            <span className="hidden sm:inline">Add bonus raid day</span>
+            <span className="sm:hidden">Bonus day</span>
+          </Button>
+        )}
         <SegmentedControl
           options={[
             { value: 'tracking', label: 'Tracking' },
@@ -2501,19 +2564,16 @@ export default function RaidTrackingPage() {
                         })}
                       </h3>
                       {raid.is_skipped && (
-                        <span className="px-3 py-1 rounded-full text-[11px] font-medium bg-destructive/30 text-destructive">
-                          Skipped: {raid.skip_reason}
-                        </span>
+                        <Badge variant="destructive-subtle">Skipped: {raid.skip_reason}</Badge>
+                      )}
+                      {raid.is_bonus && !raid.is_skipped && (
+                        <Badge variant="accent-subtle">Bonus</Badge>
                       )}
                       {!isPast && !raid.is_skipped && raid.raid_date === today && (
-                        <span className="px-3 py-1 rounded-full text-[11px] font-medium bg-accent text-foreground">
-                          Today
-                        </span>
+                        <Badge variant="accent">Today</Badge>
                       )}
                       {hasImportedData && !raid.is_skipped && (
-                        <span className="px-3 py-1 rounded-full text-[11px] font-medium bg-success/30 text-success border border-success/50">
-                          Imported
-                        </span>
+                        <Badge variant="success-subtle">Imported</Badge>
                       )}
                     </div>
                     {!raid.is_skipped && (
@@ -2831,6 +2891,57 @@ export default function RaidTrackingPage() {
       {activeTab === 'history' && (
         <LootHistoryTab />
       )}
+
+      {/* Bonus Raid Day Modal */}
+      <Modal open={showBonusModal} onClose={() => !creatingBonus && setShowBonusModal(false)} size="sm">
+        <ModalHeader onClose={() => !creatingBonus && setShowBonusModal(false)}>
+          <ModalTitle>Add bonus raid day</ModalTitle>
+          <ModalDescription>
+            Track an off-schedule raid. Attendance and loot count like a regular raid day.
+            {activeTeamId
+              ? ' Tied to the selected team.'
+              : hasTeams
+                ? ' No team selected, so this event will be unassigned.'
+                : ''}
+          </ModalDescription>
+        </ModalHeader>
+        <ModalBody className="space-y-4">
+          <div>
+            <Label className="mb-2">Raid date</Label>
+            <Input
+              type="date"
+              variant="rounded"
+              size="sm"
+              value={bonusDate}
+              max={today}
+              onChange={e => setBonusDate(e.target.value)}
+            />
+          </div>
+          <div>
+            <Label className="mb-2">Notes (optional)</Label>
+            <Input
+              variant="rounded"
+              size="sm"
+              value={bonusNotes}
+              onChange={e => setBonusNotes(e.target.value)}
+              placeholder="e.g., Heroic split run, Saturday alt night..."
+            />
+          </div>
+        </ModalBody>
+        <ModalFooter>
+          <Button variant="outline" onClick={() => setShowBonusModal(false)} disabled={creatingBonus}>
+            Cancel
+          </Button>
+          <Button
+            variant="primary"
+            onClick={submitBonusRaidDay}
+            loading={creatingBonus}
+            disabled={!bonusDate || creatingBonus}
+          >
+            Add raid day
+          </Button>
+        </ModalFooter>
+      </Modal>
 
       {/* Skip Day Modal */}
       <Modal open={!!showSkipModal} onClose={() => setShowSkipModal(null)} size="sm">

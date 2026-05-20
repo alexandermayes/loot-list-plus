@@ -313,7 +313,7 @@ export default function MasterSheetContent() {
 
     let raidEventsQuery = supabase
       .from('raid_events')
-      .select('id, raid_date')
+      .select('id, raid_date, is_bonus')
       .eq('guild_id', guildId)
       .eq('is_skipped', false)
       .gte('raid_date', periodStartStr)

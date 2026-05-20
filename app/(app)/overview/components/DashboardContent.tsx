@@ -873,7 +873,7 @@ export default function DashboardContent() {
       const raidEventsPromise = activeTeam
         ? supabase
             .from('raid_events')
-            .select('id, raid_date, raid_team_id')
+            .select('id, raid_date, raid_team_id, is_bonus')
             .eq('guild_id', activeGuild.id)
             .eq('is_skipped', false)
             .gte('raid_date', toDateString(eagerPeriodStart))
@@ -881,7 +881,7 @@ export default function DashboardContent() {
             .or(`raid_team_id.eq.${activeTeam.id},raid_team_id.is.null`)
         : supabase
             .from('raid_events')
-            .select('id, raid_date, raid_team_id')
+            .select('id, raid_date, raid_team_id, is_bonus')
             .eq('guild_id', activeGuild.id)
             .eq('is_skipped', false)
             .gte('raid_date', toDateString(eagerPeriodStart))

@@ -11,6 +11,7 @@ interface RaidEventInput {
   is_skipped: boolean
   skip_reason: string | null
   raid_team_id?: string | null
+  is_bonus?: boolean
 }
 
 /**

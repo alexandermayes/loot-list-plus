@@ -488,7 +488,7 @@ export default function AttendanceContent() {
         // Display grid still filters by team, but scoring uses team+unassigned
         let raidEventsQuery = supabase
           .from('raid_events')
-          .select('id, raid_date, is_skipped, notes, wcl_report_code, raid_team_id')
+          .select('id, raid_date, is_skipped, notes, wcl_report_code, raid_team_id, is_bonus')
           .eq('guild_id', activeCharData.active_guild_id)
           .gte('raid_date', toDateString(lowerBound))
           .lte('raid_date', toDateString(periodEnd))
@@ -546,7 +546,9 @@ export default function AttendanceContent() {
         // When a team is selected: strictly filter to team's raid days only.
         // When "All teams": events WITH attendance always show (officer tracked an off-schedule day),
         // events WITHOUT attendance only show if they match a configured raid day.
+        // Bonus events (officer-created off-schedule raids) are always kept.
         const filteredRaidEvents = deduplicatedRaidEvents.filter(event => {
+          if ((event as RaidEvent & { is_bonus?: boolean }).is_bonus) return true
           const eventDay = parseDate(event.raid_date).getDay()
           if (activeTeamId) {
             // Team view: only show the team's scheduled raid days

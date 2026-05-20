@@ -109,6 +109,12 @@ export type AttendanceStatus =
 export interface RaidEvent {
   id: string
   raid_date: string  // YYYY-MM-DD
+  /**
+   * Officer-created off-schedule raid. When true, the scoring engine
+   * bypasses the day-of-week filter so the event counts even on a date
+   * that isn't part of the configured schedule.
+   */
+  is_bonus?: boolean
 }
 
 /** Input for computeAttendance() */
