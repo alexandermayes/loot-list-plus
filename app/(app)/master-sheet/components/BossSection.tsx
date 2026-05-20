@@ -195,7 +195,7 @@ export const BossSection = memo(function BossSection({
       <Button
         variant="ghost"
         onClick={() => onToggleCollapse(boss)}
-        className="w-full px-5 py-3 flex items-center justify-between hover:bg-muted transition-colors !rounded-none"
+        className="w-full px-5 py-3 flex items-center justify-between text-left hover:bg-muted transition-colors !rounded-none"
       >
         <div className="flex items-center gap-3">
           {bossImage && (
