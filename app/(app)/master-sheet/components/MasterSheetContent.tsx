@@ -10,6 +10,7 @@ import { computeScore, computeAttendance, type ItemPriority, type AttendanceResu
 import { calculateDonationsBatch } from '@/lib/donations/batch'
 import { getSpecRoles } from '@/domain/loot/spec-role-mapping'
 import { formatRankingsForGargul } from '@/domain/loot/gargul-dft'
+import { applyGlobalReceiveSkip } from '@/domain/loot/apply-receive-skip'
 import { getBossOrder, normalizeBossName } from '@/utils/bossOrder'
 import { getBossImage } from '@/utils/bossImages'
 import { getRaidIcon, getRaidShorthand } from '@/utils/raidIcons'
@@ -1333,7 +1334,6 @@ export default function MasterSheetContent() {
     const [
       tierVisibility,
       prioritiesMap,
-      { data: lootHistoryData },
       tierBlpDataMap,
     ] = await Promise.all([
       tierVisibilityPromise,
@@ -1359,17 +1359,10 @@ export default function MasterSheetContent() {
         return {}
       })(),
 
-      // Load loot history to filter out characters who already received items
-      // Match by wowhead_id (not loot_item_id) so awards from other tiers with the same physical item are caught
-      // Paginated + ordered to defeat Supabase's 1000-row response cap.
-      paginatedSelect<{ character_id: string; loot_item: { wowhead_id: number } | null }>((start, end) =>
-        supabase
-          .from('loot_history')
-          .select('character_id, loot_item:loot_items(wowhead_id)')
-          .eq('guild_id', guildId)
-          .order('id', { ascending: true })
-          .range(start, end)
-      ).then(data => ({ data })),
+      // Loot-history-based skip is applied globally by the caller after all
+      // tier fetches complete — see `handleExportToGargul`. Doing it per tier
+      // double-counted awards for wowheads that span tiers (e.g. Nether
+      // Vortex in SSC + TK), removing the character from both blocks.
 
       // Fetch BLP data for all items in this tier
       (async (): Promise<Record<string, number>> => {
@@ -1425,16 +1418,6 @@ export default function MasterSheetContent() {
       (tierMembershipsData || []).map((m: CharacterGuildMembership & { character_id: string }) => [m.character_id, m])
     )
 
-    const tierWowheadIdSet = new Set(itemsData.map((i: TierLootItem) => i.wowhead_id))
-    const receivedItemCounts = new Map<string, number>()
-    for (const h of (lootHistoryData || []) as { character_id: string; loot_item: { wowhead_id: number } | null }[]) {
-      const wowheadId = h.loot_item?.wowhead_id
-      if (wowheadId == null || !tierWowheadIdSet.has(wowheadId)) continue
-      const key = `${h.character_id}-${wowheadId}`
-      receivedItemCounts.set(key, (receivedItemCounts.get(key) || 0) + 1)
-    }
-    setLootReceivedCounts(receivedItemCounts)
-
     // Pre-calculate attendance for all characters in a single batched query
     const attendanceCache = await calculateAttendanceBatch(
       charactersData.map((c: CharacterWithRelations) => ({ id: c.id, user_id: c.user_id }))
@@ -1459,11 +1442,9 @@ export default function MasterSheetContent() {
     const tierSubsById = new Map<string, TierSubmissionData>(subsData.map((s: TierSubmissionData) => [s.id, s]))
     const tierCharacterById = new Map<string, CharacterWithRelations>(charactersData.map((c: CharacterWithRelations) => [c.id, c]))
 
-    // Track remaining awards to skip per character+item (mutable copy)
-    const remainingSkips = new Map(receivedItemCounts)
-
     for (const item of itemsData) {
-      // Sort by rank descending so highest-ranked entries are skipped first when awarded
+      // Sort by rank descending so the caller's global receive-skip drops the
+      // highest-ranked entries first (their top picks leave the prio).
       const itemRankingsData = allRankingsData
         .filter((r: TierRankingData) => r.loot_item_id === item.id)
         .sort((a: TierRankingData, b: TierRankingData) => b.rank - a.rank)
@@ -1475,15 +1456,6 @@ export default function MasterSheetContent() {
 
         const character = sub.character_id ? tierCharacterById.get(sub.character_id) : undefined
         if (!character) continue
-
-        // Skip if character has already received this item (matched by wowhead_id)
-        // Only skip as many entries as times awarded (handles duplicate tokens for MS/OS)
-        const skipKey = `${character.id}-${item.wowhead_id}`
-        const skipsLeft = remainingSkips.get(skipKey) || 0
-        if (skipsLeft > 0) {
-          remainingSkips.set(skipKey, skipsLeft - 1)
-          continue
-        }
 
         const attendanceData = attendanceCache[character.id] || { score: 0, raidsAttended: 0, raidsInWindow: 0, isEligible: true }
         const guildMembership = tierMembershipByCharId.get(character.id)
@@ -1552,11 +1524,32 @@ export default function MasterSheetContent() {
     setIsExporting(true)
 
     try {
-      // Fetch rankings for all active raid tiers in parallel
-      const tierResults = await Promise.all(
-        raidTiers.map(tier => fetchTierRankings(tier.id))
-      )
-      const allTiersRankings = tierResults.flat()
+      // Fetch per-tier rankings in parallel with the guild-wide loot history.
+      // The skip-already-awarded rule is applied globally below — see
+      // `applyGlobalReceiveSkip`. Doing it inside `fetchTierRankings` used to
+      // double-count awards for wowheads that span tiers (Nether Vortex in
+      // SSC + TK), and one award would drop the raider from both blocks.
+      const [tierResults, lootHistoryData] = await Promise.all([
+        Promise.all(raidTiers.map(tier => fetchTierRankings(tier.id))),
+        paginatedSelect<{ character_id: string; loot_item: { wowhead_id: number } | null }>((start, end) =>
+          supabase
+            .from('loot_history')
+            .select('character_id, loot_item:loot_items(wowhead_id)')
+            .eq('guild_id', guildId)
+            .order('id', { ascending: true })
+            .range(start, end)
+        ),
+      ])
+
+      const receivedByCharAndWowhead = new Map<string, number>()
+      for (const h of lootHistoryData) {
+        const wowheadId = h.loot_item?.wowhead_id
+        if (wowheadId == null) continue
+        const key = `${h.character_id}-${wowheadId}`
+        receivedByCharAndWowhead.set(key, (receivedByCharAndWowhead.get(key) || 0) + 1)
+      }
+
+      const allTiersRankings = applyGlobalReceiveSkip(tierResults.flat(), receivedByCharAndWowhead)
 
       const exportData = buildGargulExport(allTiersRankings)
 
