@@ -52,7 +52,9 @@ export function getBossOrder(bossName: string): number {
     'Sulfuron Harbinger': 7,
     'Golemagg the Incinerator': 8,
     'Majordomo Executus': 9,
-    'Ragnaros': 10,
+    // Ragnaros: shared name with Cata Firelands. Value (336) sorts him last in
+    // Firelands; Classic MC bosses are 1-9 so he still sorts last in MC.
+    'Ragnaros': 336,
 
     // Onyxia's Lair
     'Onyxia': 11,
@@ -65,7 +67,9 @@ export function getBossOrder(bossName: string): number {
     'Ebonroc': 16,
     'Flamegor': 17,
     'Chromaggus': 18,
-    'Nefarian': 19,
+    // Nefarian: shared name with Cata Blackwing Descent. Value (305) sorts him last
+    // in BWD; Classic BWL bosses are 12-18 so he still sorts last in BWL.
+    'Nefarian': 305,
 
     // Zul'Gurub
     'High Priestess Jeklik': 20,
@@ -183,7 +187,155 @@ export function getBossOrder(bossName: string): number {
     'Felmyst': 172,
     'Eredar Twins': 173,
     'M\'uru': 174,
-    'Kil\'jaeden': 175
+    'Kil\'jaeden': 175,
+
+    // ==================== WRATH OF THE LICH KING ====================
+
+    // Naxxramas (Wrath) - Tier 7
+    // Most boss names are shared with Classic Naxx (orders 43-57). Only new key:
+    'Four Horsemen': 51,
+
+    // Eye of Eternity (Tier 7)
+    'Malygos': 220,
+
+    // Obsidian Sanctum (Tier 7)
+    'Sartharion': 225,
+
+    // Ulduar (Tier 8)
+    'Flame Leviathan': 230,
+    'Ignis the Furnace Master': 231,
+    'Razorscale': 232,
+    'XT-002 Deconstructor': 233,
+    'Assembly of Iron': 234,
+    'Kologarn': 235,
+    'Auriaya': 236,
+    'Hodir': 237,
+    'Thorim': 238,
+    'Freya': 239,
+    'Mimiron': 240,
+    'General Vezax': 241,
+    'Yogg-Saron': 242,
+    'Algalon the Observer': 243,
+
+    // Trial of the Crusader (Tier 9)
+    'Northrend Beasts': 250,
+    'Lord Jaraxxus': 251,
+    'Faction Champions': 252,
+    'Twin Val\'kyr': 253,
+    'Anub\'arak': 254,
+
+    // Onyxia's Lair (Wrath) - sole boss "Onyxia" inherits Classic order 11
+
+    // Icecrown Citadel (Tier 10)
+    'Lord Marrowgar': 270,
+    'Lady Deathwhisper': 271,
+    'Gunship Battle': 272,
+    'Deathbringer Saurfang': 273,
+    'Festergut': 274,
+    'Rotface': 275,
+    'Professor Putricide': 276,
+    'Blood Prince Council': 277,
+    'Blood-Queen Lana\'thel': 278,
+    'Valithria Dreamwalker': 279,
+    'Sindragosa': 280,
+    'The Lich King': 281,
+
+    // Ruby Sanctum (Tier 10)
+    'Saviana Ragefire': 290,
+    'Halion': 291,
+
+    // ==================== CATACLYSM ====================
+
+    // Blackwing Descent (Tier 11) - Nefarian (305) defined in Classic BWL section
+    'Magmaw': 300,
+    'Omnotron Defense System': 301,
+    'Chimaeron': 302,
+    'Atramedes': 303,
+    'Maloriak': 304,
+
+    // The Bastion of Twilight (Tier 11)
+    'Halfus Wyrmbreaker': 310,
+    'Theralion and Valiona': 311,
+    'Ascendant Council': 312,
+    'Cho\'gall': 313,
+    'Sinestra': 314,
+
+    // Throne of the Four Winds (Tier 11)
+    'Conclave of Wind': 320,
+    'Al\'Akir': 321,
+
+    // Firelands (Tier 12) - Ragnaros (336) defined in Classic MC section
+    'Beth\'tilac': 330,
+    'Lord Rhyolith': 331,
+    'Alysrazor': 332,
+    'Shannox': 333,
+    'Baleroc': 334,
+    'Majordomo Staghelm': 335,
+
+    // Dragon Soul (Tier 13)
+    'Morchok': 340,
+    'Warlord Zon\'ozz': 341,
+    'Yor\'sahj the Unsleeping': 342,
+    'Hagara the Stormbinder': 343,
+    'Ultraxion': 344,
+    'Warmaster Blackhorn': 345,
+    'Spine of Deathwing': 346,
+    'Madness of Deathwing': 347,
+
+    // ==================== MISTS OF PANDARIA ====================
+
+    // Mogu'shan Vaults (Tier 14)
+    'The Stone Guard': 400,
+    'Feng the Accursed': 401,
+    'Gara\'jal the Spiritbinder': 402,
+    'The Spirit Kings': 403,
+    'Elegon': 404,
+    'Will of the Emperor': 405,
+
+    // Heart of Fear (Tier 14)
+    'Imperial Vizier Zor\'lok': 410,
+    'Blade Lord Ta\'yak': 411,
+    'Garalon': 412,
+    'Wind Lord Mel\'jarak': 413,
+    'Amber-Shaper Un\'sok': 414,
+    'Grand Empress Shek\'zeer': 415,
+
+    // Terrace of Endless Spring (Tier 14)
+    'Protectors of the Endless': 420,
+    'Tsulong': 421,
+    'Lei Shi': 422,
+    'Sha of Fear': 423,
+
+    // Throne of Thunder (Tier 15)
+    'Jin\'rokh the Breaker': 430,
+    'Horridon': 431,
+    'Council of Elders': 432,
+    'Tortos': 433,
+    'Megaera': 434,
+    'Ji-Kun': 435,
+    'Durumu the Forgotten': 436,
+    'Primordius': 437,
+    'Dark Animus': 438,
+    'Iron Qon': 439,
+    'Twin Consorts': 440,
+    'Lei Shen': 441,
+    'Ra-den': 442,
+
+    // Siege of Orgrimmar (Tier 16)
+    'Immerseus': 450,
+    'The Fallen Protectors': 451,
+    'Norushen': 452,
+    'Sha of Pride': 453,
+    'Galakras': 454,
+    'Iron Juggernaut': 455,
+    'Kor\'kron Dark Shaman': 456,
+    'General Nazgrim': 457,
+    'Malkorok': 458,
+    'Spoils of Pandaria': 459,
+    'Thok the Bloodthirsty': 460,
+    'Siegecrafter Blackfuse': 461,
+    'Paragons of the Klaxxi': 462,
+    'Garrosh Hellscream': 463
   }
 
   return order[normalizedName] || 999 // Unknown bosses go to the end
