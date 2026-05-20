@@ -499,6 +499,12 @@ export const serpentshrinecavern: Raid = {
       ],
     },
     {
+      name: 'Trash',
+      items: [
+        { name: 'Wildfury Greatstaff', slot: 'Two-Hand', wowhead_id: 30021 },
+      ],
+    },
+    {
       name: 'Crafting Materials',
       items: [
         { name: 'Nether Vortex', slot: 'Crafting', wowhead_id: 30183 },
@@ -594,7 +600,6 @@ export const tempestkeep: Raid = {
       name: 'Trash',
       items: [
         // Trash Drops
-        { name: 'Wildfury Greatstaff', slot: 'Two-Hand', wowhead_id: 30021 },
         { name: 'Seventh Ring of the Tirisfalen', slot: 'Finger', wowhead_id: 30028 },
         { name: 'Mantle of the Elven Kings', slot: 'Shoulder', wowhead_id: 30024 },
         { name: 'Fire-Cord of the Magus', slot: 'Waist', wowhead_id: 30020 },
