@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
+import { toDateString } from '@/utils/date'
 
 /**
  * POST /api/raid-events/ensure
@@ -151,10 +152,14 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // 3. Reload all events in the date range (includes newly created + off-schedule events)
+    // 3. Reload all events in the date range (includes newly created + off-schedule events).
+    // Extend the upper bound to today so bonus events on dates after the latest
+    // scheduled day (which won't appear in `dates`) are still returned.
     const sortedDates = [...dates].sort()
     const startDate = sortedDates[0]
-    const endDate = sortedDates[sortedDates.length - 1]
+    const scheduledEnd = sortedDates[sortedDates.length - 1]
+    const todayStr = toDateString(new Date())
+    const endDate = scheduledEnd > todayStr ? scheduledEnd : todayStr
 
     const { data: allEvents, error: eventsError } = await serviceSupabase
       .from('raid_events')
