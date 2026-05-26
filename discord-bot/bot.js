@@ -5,7 +5,7 @@ if (process.env.NODE_ENV !== 'production') {
   require('dotenv').config({ path: '../.env.local' });
 }
 
-const { handleMessageCreate, handleReactionAdd } = require('./feedback');
+const { handleMessageCreate, handleReactionAdd, isFeedbackConfigured, warnMissingOnce } = require('./feedback');
 const { scheduleDigest } = require('./digest');
 
 const client = new Client({
@@ -35,6 +35,11 @@ client.once('clientReady', () => {
     status: 'online'
   });
 
+  if (isFeedbackConfigured()) {
+    console.log('[feedback] enabled — channel + reaction listeners active');
+  } else {
+    warnMissingOnce();
+  }
   scheduleDigest(client);
 });
 

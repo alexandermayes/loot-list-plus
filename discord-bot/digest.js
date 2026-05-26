@@ -1,4 +1,4 @@
-const { supabase, fileFeedback } = require('./feedback');
+const { getSupabase, fileFeedback, isFeedbackConfigured } = require('./feedback');
 
 // Backfill window: re-scan the last 48h of the feedback channel on each cron
 // firing. Anything not already in discord_feedback_map gets filed. This
@@ -8,6 +8,8 @@ const BACKFILL_HOURS = 48;
 const BACKFILL_MESSAGE_LIMIT = 200;
 
 async function fetchTodayMappings() {
+  const supabase = getSupabase();
+  if (!supabase) return { count: 0, channelCount: 0, reactionCount: 0 };
   const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
   const { data, error, count } = await supabase
     .from('discord_feedback_map')
@@ -99,6 +101,10 @@ async function postDigest(client, { todayCount, channelCount, reactionCount, ope
 }
 
 async function runDigest(client) {
+  if (!isFeedbackConfigured()) {
+    console.log('[digest] skipped — feedback not configured');
+    return;
+  }
   console.log('[digest] running daily digest');
   const backfill = await runBackfill(client);
   const { count, channelCount, reactionCount } = await fetchTodayMappings();
@@ -130,6 +136,10 @@ function msUntilNext9amPT() {
 }
 
 function scheduleDigest(client) {
+  if (!isFeedbackConfigured()) {
+    console.log('[digest] not scheduled — feedback not configured');
+    return;
+  }
   const tick = () => {
     runDigest(client).catch((err) => console.error('[digest] run failed:', err));
     setTimeout(tick, 24 * 60 * 60 * 1000);

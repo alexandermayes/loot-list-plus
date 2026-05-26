@@ -4,23 +4,48 @@ const { createClient } = require('@supabase/supabase-js');
 const TRIGGER_EMOJI = '🐛';
 const ISSUE_LABELS = ['bug', 'user-feedback', 'discord-source'];
 
-const supabase = createClient(
-  requireEnv('SUPABASE_URL'),
-  requireEnv('SUPABASE_SERVICE_ROLE_KEY'),
-  { auth: { persistSession: false } }
-);
+// Feedback handling is gated on these being present. If any are missing, the
+// bot logs a one-time warning and falls back to presence-only behavior so a
+// half-configured deploy can't take the bot offline.
+const REQUIRED_VARS = ['SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY', 'GITHUB_TOKEN', 'GITHUB_REPO'];
 
-function requireEnv(name) {
-  const v = process.env[name];
-  if (!v) throw new Error(`Missing required env var: ${name}`);
-  return v;
-}
+let _supabase = null;
+let _missingWarned = false;
 
 function envOrNull(name) {
   return process.env[name] || null;
 }
 
+function missingRequiredVars() {
+  return REQUIRED_VARS.filter((v) => !process.env[v]);
+}
+
+function isFeedbackConfigured() {
+  return missingRequiredVars().length === 0;
+}
+
+function warnMissingOnce() {
+  if (_missingWarned) return;
+  _missingWarned = true;
+  const missing = missingRequiredVars();
+  console.warn(`[feedback] disabled — missing env var(s): ${missing.join(', ')}`);
+  console.warn('[feedback] bot will stay online for presence only. set these on Railway and redeploy to enable feedback capture.');
+}
+
+function getSupabase() {
+  if (_supabase) return _supabase;
+  if (!isFeedbackConfigured()) return null;
+  _supabase = createClient(
+    process.env.SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_ROLE_KEY,
+    { auth: { persistSession: false } }
+  );
+  return _supabase;
+}
+
 async function lookupExistingIssue(messageId) {
+  const supabase = getSupabase();
+  if (!supabase) return null;
   const { data, error } = await supabase
     .from('discord_feedback_map')
     .select('github_issue_number')
@@ -34,6 +59,8 @@ async function lookupExistingIssue(messageId) {
 }
 
 async function recordMapping(row) {
+  const supabase = getSupabase();
+  if (!supabase) return;
   const { error } = await supabase.from('discord_feedback_map').insert(row);
   if (error) {
     console.error('[feedback] failed to record mapping:', error);
@@ -75,8 +102,8 @@ async function generateTitle(description) {
 }
 
 async function createGithubIssue({ title, body }) {
-  const token = requireEnv('GITHUB_TOKEN');
-  const repo = requireEnv('GITHUB_REPO'); // format: owner/repo
+  const token = process.env.GITHUB_TOKEN;
+  const repo = process.env.GITHUB_REPO; // format: owner/repo
   const res = await fetch(`https://api.github.com/repos/${repo}/issues`, {
     method: 'POST',
     headers: {
@@ -192,6 +219,7 @@ function isAllowedReactor(member) {
 }
 
 async function handleMessageCreate(message) {
+  if (!isFeedbackConfigured()) { warnMissingOnce(); return; }
   const channelId = envOrNull('FEEDBACK_CHANNEL_ID');
   if (!channelId) return;
   if (message.channel.id !== channelId) return;
@@ -205,6 +233,7 @@ async function handleMessageCreate(message) {
 }
 
 async function handleReactionAdd(reaction, user) {
+  if (!isFeedbackConfigured()) { warnMissingOnce(); return; }
   if (user.bot) return;
   if (reaction.emoji.name !== TRIGGER_EMOJI) return;
 
@@ -242,6 +271,8 @@ module.exports = {
   handleMessageCreate,
   handleReactionAdd,
   fileFeedback,
-  supabase,
+  getSupabase,
+  isFeedbackConfigured,
+  warnMissingOnce,
   TRIGGER_EMOJI,
 };
