@@ -71,11 +71,31 @@ export default function SearchableItemSelect({
 }: SearchableItemSelectProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [search, setSearch] = useState('')
-  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 })
+  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0, maxHeight: 384 })
   const dropdownRef = useRef<HTMLDivElement>(null)
   const buttonRef = useRef<HTMLDivElement>(null)
   const searchInputRef = useRef<HTMLInputElement>(null)
   const dropdownContentRef = useRef<HTMLDivElement>(null)
+
+  const computeDropdownPosition = useCallback(() => {
+    if (!buttonRef.current) return null
+    const rect = buttonRef.current.getBoundingClientRect()
+    const viewportHeight = window.innerHeight
+    const gap = 4
+    const edgePadding = 8
+    const preferredHeight = 384
+    const spaceBelow = viewportHeight - rect.bottom - gap - edgePadding
+    const spaceAbove = rect.top - gap - edgePadding
+    const placeAbove = spaceBelow < Math.min(preferredHeight, 240) && spaceAbove > spaceBelow
+    const available = Math.max(160, placeAbove ? spaceAbove : spaceBelow)
+    const maxHeight = Math.min(preferredHeight, available)
+    return {
+      top: placeAbove ? rect.top - maxHeight - gap : rect.bottom + gap,
+      left: rect.left,
+      width: rect.width,
+      maxHeight,
+    }
+  }, [])
 
   const selectedItem = useMemo(() => items.find(i => i.id === value), [items, value])
 
@@ -135,18 +155,13 @@ export default function SearchableItemSelect({
     }
 
     let rafId: number | null = null
-    const handleScroll = () => {
-      // Use requestAnimationFrame to throttle position updates
+    const handleReposition = () => {
       if (rafId) return
 
       rafId = requestAnimationFrame(() => {
-        if (buttonRef.current && isOpen) {
-          const rect = buttonRef.current.getBoundingClientRect()
-          setDropdownPosition({
-            top: rect.bottom,
-            left: rect.left,
-            width: rect.width
-          })
+        if (isOpen) {
+          const next = computeDropdownPosition()
+          if (next) setDropdownPosition(next)
         }
         rafId = null
       })
@@ -157,29 +172,25 @@ export default function SearchableItemSelect({
       document.addEventListener('mousedown', handleClickOutside)
     }, 0)
 
-    window.addEventListener('scroll', handleScroll, true)
+    window.addEventListener('scroll', handleReposition, true)
+    window.addEventListener('resize', handleReposition)
 
     return () => {
       clearTimeout(timeoutId)
       document.removeEventListener('mousedown', handleClickOutside)
-      window.removeEventListener('scroll', handleScroll, true)
+      window.removeEventListener('scroll', handleReposition, true)
+      window.removeEventListener('resize', handleReposition)
       if (rafId) {
         cancelAnimationFrame(rafId)
       }
     }
-  }, [isOpen])
+  }, [isOpen, computeDropdownPosition])
 
   // Handle opening the dropdown with position calculation
   const handleOpen = () => {
     if (isSlotDisabled || readOnly) return
-    if (buttonRef.current) {
-      const rect = buttonRef.current.getBoundingClientRect()
-      setDropdownPosition({
-        top: rect.bottom,
-        left: rect.left,
-        width: rect.width
-      })
-    }
+    const next = computeDropdownPosition()
+    if (next) setDropdownPosition(next)
     setIsOpen(true)
   }
 
@@ -297,16 +308,17 @@ export default function SearchableItemSelect({
       {isOpen && !mobile && dropdownPosition.width > 0 && (
         <div
           ref={dropdownContentRef}
-          className="fixed z-[9999] bg-background-elevated border border-border-strong rounded-lg shadow-lg max-h-96 overflow-hidden"
+          className="fixed z-[9999] bg-background-elevated border border-border-strong rounded-lg shadow-lg overflow-hidden flex flex-col"
           style={{
-            top: `${dropdownPosition.top + 4}px`,
+            top: `${dropdownPosition.top}px`,
             left: `${dropdownPosition.left}px`,
             width: `${dropdownPosition.width}px`,
+            maxHeight: `${dropdownPosition.maxHeight}px`,
             minWidth: '250px'
           }}
         >
           {/* Search Input */}
-          <div className="p-2 border-b border-border sticky top-0 bg-background-elevated">
+          <div className="p-2 border-b border-border bg-background-elevated shrink-0">
             <Input
               ref={searchInputRef}
               type="text"
@@ -319,7 +331,7 @@ export default function SearchableItemSelect({
           </div>
 
           {/* Items List */}
-          <div className="max-h-80 overflow-y-auto">
+          <div className="flex-1 overflow-y-auto">
             {filteredItems.length === 0 ? (
               <div className="px-3 py-4 text-center text-muted-foreground text-[13px]">
                 No items found
