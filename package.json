@@ -28,7 +28,8 @@
     "test:users:create": "tsx scripts/create-test-users.ts",
     "test:users:clean": "tsx scripts/create-test-users.ts --clean",
     "seed:test:multi": "tsx scripts/seed-test-data-multiuser.ts",
-    "seed:test:multi:clean": "tsx scripts/seed-test-data-multiuser.ts --clean"
+    "seed:test:multi:clean": "tsx scripts/seed-test-data-multiuser.ts --clean",
+    "sync:feedback": "tsx scripts/sync-feedback-inbox.ts"
   },
   "dependencies": {
     "@hugeicons-pro/core-solid-rounded": "^3.1.0",
