@@ -53,6 +53,9 @@ export const TOKEN_CLASS_MAPPING: Record<string, WowClassName[]> = {
   'Desecrated Wristguards': ['Warrior'],
   'Desecrated Sabatons': ['Warrior'],
 
+  // Desecrated Legguards - Hunter/Shaman (mail T3 leg piece)
+  'Desecrated Legguards': ['Hunter', 'Shaman'],
+
   // Desecrated Tunic/Spaulders/etc - Rogue
   'Desecrated Tunic': ['Rogue'],
   'Desecrated Spaulders': ['Rogue'],
@@ -81,8 +84,13 @@ export const TOKEN_CLASS_MAPPING: Record<string, WowClassName[]> = {
   'Imperial Qiraji Regalia': ['Priest', 'Mage', 'Warlock', 'Druid', 'Shaman'],
 
   // ============================================================================
-  // WOTLK TIER 7 TOKENS (Naxxramas 25, Obsidian Sanctum)
+  // WOTLK TIER 7 TOKENS (Naxxramas, Obsidian Sanctum, Eye of Eternity)
   // ============================================================================
+  // 10-man tokens use "Lost" prefix, 25-man tokens use "Valorous" prefix.
+  // "Heroic" tokens are an additional T7 25-man variant.
+  'Lost Conqueror': ['Paladin', 'Priest', 'Warlock'],
+  'Lost Protector': ['Hunter', 'Shaman', 'Warrior'],
+  'Lost Vanquisher': ['Mage', 'Druid', 'Rogue'],
   'Heroic Conqueror': ['Paladin', 'Priest', 'Warlock'],
   'Heroic Protector': ['Hunter', 'Shaman', 'Warrior'],
   'Heroic Vanquisher': ['Mage', 'Druid', 'Rogue'],
@@ -108,9 +116,9 @@ export const TOKEN_CLASS_MAPPING: Record<string, WowClassName[]> = {
   // ============================================================================
   // WOTLK TIER 10 TOKENS (Icecrown Citadel)
   // ============================================================================
-  'Conquerors Mark of Sanctification': ['Paladin', 'Priest', 'Warlock'],
-  'Protectors Mark of Sanctification': ['Hunter', 'Shaman', 'Warrior'],
-  'Vanquishers Mark of Sanctification': ['Mage', 'Druid', 'Rogue'],
+  'Conqueror\'s Mark of Sanctification': ['Paladin', 'Priest', 'Warlock'],
+  'Protector\'s Mark of Sanctification': ['Hunter', 'Shaman', 'Warrior'],
+  'Vanquisher\'s Mark of Sanctification': ['Mage', 'Druid', 'Rogue'],
 
   // ============================================================================
   // CATA TIER 11 TOKENS (Blackwing Descent, Bastion of Twilight, Throne of the Four Winds)
