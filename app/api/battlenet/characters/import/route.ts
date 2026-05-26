@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
+import { revalidateUserBundle } from '@/lib/cache/user-bundle'
 import { getDefaultRoleName } from '@/domain/guild/default-role'
 import {
   getBattlenetAccount,
@@ -401,6 +402,8 @@ export async function POST(request: NextRequest) {
         version,
       },
     })
+
+    revalidateUserBundle(user.id)
 
     return NextResponse.json(
       {

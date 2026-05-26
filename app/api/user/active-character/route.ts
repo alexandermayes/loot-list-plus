@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient, getAuthenticatedUser } from '@/utils/supabase/server'
+import { revalidateUserBundle } from '@/lib/cache/user-bundle'
 
 /**
  * GET /api/user/active-character
@@ -176,6 +177,7 @@ export async function PUT(request: Request) {
         )
       }
 
+      revalidateUserBundle(user.id)
       return NextResponse.json({ activeSelection })
     } else {
       // Insert new record
@@ -220,6 +222,7 @@ export async function PUT(request: Request) {
         )
       }
 
+      revalidateUserBundle(user.id)
       return NextResponse.json({ activeSelection })
     }
   } catch (error) {

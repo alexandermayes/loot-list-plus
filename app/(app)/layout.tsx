@@ -1,6 +1,7 @@
 import AppLayout from './AppLayout.client'
 import { PrefetchProvider, type PrefetchedGuildData } from './PrefetchProvider'
 import { createClient } from '@/utils/supabase/server'
+import { getCachedUserBundle } from '@/lib/cache/user-bundle'
 
 export default async function Layout({ children }: { children: React.ReactNode }) {
   let prefetchedData: PrefetchedGuildData | null = null
@@ -14,112 +15,14 @@ export default async function Layout({ children }: { children: React.ReactNode }
     const user = session?.user
 
     if (user) {
-      // Run characters and active preferences queries in parallel
-      const [charactersResult, activeResult] = await Promise.all([
-        supabase
-          .from('characters')
-          .select(`
-            id,
-            user_id,
-            name,
-            realm,
-            class_id,
-            spec_id,
-            level,
-            is_main,
-            battle_net_id,
-            region,
-            created_at,
-            updated_at,
-            game_version,
-            guardian_conversion_dismissed,
-            class:wow_classes (
-              id,
-              name,
-              color_hex
-            ),
-            spec:class_specs (
-              id,
-              name
-            )
-          `)
-          .eq('user_id', user.id)
-          .order('is_main', { ascending: false })
-          .order('created_at', { ascending: true }),
-        supabase
-          .from('user_active_characters')
-          .select('active_character_id, active_guild_id')
-          .eq('user_id', user.id)
-          .maybeSingle(),
-      ])
-
-      const characters = charactersResult.data
-      const activePrefs = activeResult.data
-
-      // Fetch memberships if we have characters. We omit nested character fields
-      // (battle_net_id, region, level, timestamps) that aren't read at first
-      // paint to shrink the payload — GuildContext re-joins to the full
-      // characters list above when it needs them.
-      let memberships = null
-      if (characters && characters.length > 0) {
-        const characterIds = characters.map((c: { id: string }) => c.id)
-        const { data: membershipsData } = await supabase
-          .from('character_guild_memberships')
-          .select(`
-            id,
-            character_id,
-            guild_id,
-            role,
-            is_active,
-            joined_at,
-            joined_via,
-            character:characters (
-              id,
-              user_id,
-              name,
-              realm,
-              class_id,
-              spec_id,
-              is_main,
-              class:wow_classes (
-                id,
-                name,
-                color_hex
-              ),
-              spec:class_specs (
-                id,
-                name
-              )
-            ),
-            guild:guilds (
-              id,
-              name,
-              realm,
-              faction,
-              icon_url,
-              created_by,
-              require_discord_verification,
-              active_expansion_id,
-              subscription_tier,
-              guild_roles (
-                name,
-                position
-              )
-            )
-          `)
-          .in('character_id', characterIds)
-          .eq('is_active', true)
-        memberships = membershipsData
-      }
-
+      // Cached, tag-invalidated bundle. Most navigations hit cache; writes
+      // revalidate the user tag via revalidateUserBundle().
+      const bundle = await getCachedUserBundle(user.id)
       prefetchedData = {
         user: { id: user.id, email: user.email },
-        characters,
-        activePreferences: activePrefs ? {
-          active_character_id: activePrefs.active_character_id,
-          active_guild_id: activePrefs.active_guild_id,
-        } : null,
-        memberships,
+        characters: bundle.characters as PrefetchedGuildData['characters'],
+        activePreferences: bundle.activePreferences,
+        memberships: bundle.memberships as PrefetchedGuildData['memberships'],
       }
     }
   } catch {

@@ -6,6 +6,7 @@ import { ROLE_POSITIONS } from '@/domain/guild/roles'
 import { trackApiError, trackEvent } from '@/utils/analytics/server'
 import { batchGetDisplayNames } from '@/utils/batch-display-names'
 import { logAudit } from '@/utils/audit/log'
+import { revalidateUserBundle } from '@/lib/cache/user-bundle'
 
 // GET - List all members of a guild (uses service role to bypass RLS)
 export async function GET(request: NextRequest) {
@@ -352,6 +353,10 @@ export async function PUT(request: NextRequest) {
       guildId: guild_id,
       properties: { new_role },
     })
+
+    // Invalidate the affected user's prefetch — their role is part of the
+    // cached membership shape and gates officer UI.
+    revalidateUserBundle(target_user_id)
 
     return NextResponse.json({ success: true })
   } catch (error) {

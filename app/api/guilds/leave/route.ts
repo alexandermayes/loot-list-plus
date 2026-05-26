@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient, getAuthenticatedUser } from '@/utils/supabase/server'
+import { revalidateUserBundle } from '@/lib/cache/user-bundle'
 import { trackApiError, trackEvent } from '@/utils/analytics/server'
 
 // POST - Leave a guild
@@ -122,6 +123,7 @@ export async function POST(request: NextRequest) {
         .eq('user_id', user.id)
     }
 
+    revalidateUserBundle(user.id)
     trackEvent({ event: 'guild_left', userId: user.id, guildId: guild_id, properties: { guild_id } })
 
     return NextResponse.json({

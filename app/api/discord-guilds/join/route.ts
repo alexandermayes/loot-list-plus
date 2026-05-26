@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient, getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
+import { revalidateUserBundle } from '@/lib/cache/user-bundle'
 import { getDefaultRoleName } from '@/domain/guild/default-role'
 
 /** Partial shape of a guild object from the Discord API (GET /users/@me/guilds) */
@@ -239,6 +240,7 @@ export async function POST(request: NextRequest) {
           updated_at: new Date().toISOString()
         })
 
+      revalidateUserBundle(user.id)
       return NextResponse.json({
         success: true,
         guild_id: guild_id,
@@ -286,6 +288,7 @@ export async function POST(request: NextRequest) {
 
     const needsCharacterSetup = !characterData?.class_id
 
+    revalidateUserBundle(user.id)
     return NextResponse.json({
       success: true,
       guild_id: guild_id,

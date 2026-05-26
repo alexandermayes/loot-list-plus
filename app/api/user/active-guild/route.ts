@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient, getAuthenticatedUser } from '@/utils/supabase/server'
+import { revalidateUserBundle } from '@/lib/cache/user-bundle'
 
 // GET - Get user's active guild (reads from user_active_characters, the source of truth)
 export async function GET() {
@@ -109,6 +110,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    revalidateUserBundle(user.id)
     return NextResponse.json({
       success: true,
       active_guild_id: guild_id,

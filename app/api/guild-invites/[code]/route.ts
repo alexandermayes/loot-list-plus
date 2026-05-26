@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient, getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
+import { revalidateUserBundle } from '@/lib/cache/user-bundle'
 import { setUserMilestone, trackEvent } from '@/utils/analytics/server'
 import { getDefaultRoleName } from '@/domain/guild/default-role'
 
@@ -254,6 +255,7 @@ export async function POST(
           updated_at: new Date().toISOString()
         })
 
+      revalidateUserBundle(user.id)
       trackEvent({ event: 'guild_joined', userId: user.id, guildId })
 
       return NextResponse.json({
@@ -294,6 +296,7 @@ export async function POST(
         updated_at: new Date().toISOString()
       })
 
+    revalidateUserBundle(user.id)
     setUserMilestone(user.id, 'first_guild_joined_at')
     trackEvent({ event: 'guild_joined', userId: user.id, guildId })
 

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient, getAuthenticatedUser } from '@/utils/supabase/server'
 import { getCached, invalidateCache, cacheKeys } from '@/utils/cache'
+import { revalidateUserBundle } from '@/lib/cache/user-bundle'
 import { trackApiError, trackEvent } from '@/utils/analytics/server'
 
 // WoW character name validation and formatting
@@ -199,6 +200,7 @@ export async function POST(request: Request) {
 
     // Invalidate cache after creating character
     await invalidateCache(cacheKeys.userCharacters(user.id))
+    revalidateUserBundle(user.id)
 
     trackEvent({ event: 'character_created', userId: user.id, properties: { character_id: enrichedCharacter.id, character_name: enrichedCharacter.name } })
 

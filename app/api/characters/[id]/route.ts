@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient, getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
+import { revalidateUserBundle } from '@/lib/cache/user-bundle'
 import { trackApiError, trackEvent } from '@/utils/analytics/server'
 
 // WoW character name validation and formatting
@@ -227,6 +228,7 @@ export async function PUT(
       }
     }
 
+    revalidateUserBundle(user.id)
     trackEvent({ event: 'character_updated', userId: user.id, properties: { character_id: id } })
 
     return NextResponse.json({ character: enrichedCharacter })
@@ -376,6 +378,7 @@ export async function DELETE(
       )
     }
 
+    revalidateUserBundle(user.id)
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error('Error in DELETE /api/characters/[id]:', error)

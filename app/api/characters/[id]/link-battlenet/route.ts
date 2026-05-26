@@ -9,6 +9,7 @@ import {
   type GameVersion,
 } from '@/lib/battlenet'
 import { invalidateCache, cacheKeys } from '@/utils/cache'
+import { revalidateUserBundle } from '@/lib/cache/user-bundle'
 
 type LocalizedString = string | Record<string, string>
 
@@ -329,6 +330,7 @@ export async function POST(
     }
 
     await invalidateCache(cacheKeys.userCharacters(user.id))
+    revalidateUserBundle(user.id)
 
     return NextResponse.json({
       character: updatedCharacter,
