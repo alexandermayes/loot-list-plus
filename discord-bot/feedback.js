@@ -121,9 +121,21 @@ async function createGithubIssue({ title, body }) {
   return await res.json();
 }
 
+function isForumStarter(message) {
+  return Boolean(message.channel?.isThread?.() && message.id === message.channel.id);
+}
+
+function channelLabel(message) {
+  if (isForumStarter(message)) {
+    const parentName = message.channel.parent?.name;
+    return parentName ? `#${parentName} → "${message.channel.name}"` : `forum post "${message.channel.name}"`;
+  }
+  return message.channel?.name ? `#${message.channel.name}` : message.channel?.id || 'unknown';
+}
+
 function buildIssueBody({ message, source, triggeredBy }) {
   const author = `${message.author.tag} (${message.author.id})`;
-  const channel = message.channel?.name ? `#${message.channel.name}` : message.channel?.id || 'unknown';
+  const label = channelLabel(message);
   const messageLink = `https://discord.com/channels/${message.guild.id}/${message.channel.id}/${message.id}`;
   const attachments = [...message.attachments.values()];
 
@@ -132,7 +144,7 @@ function buildIssueBody({ message, source, triggeredBy }) {
     message.content?.trim() || '(no message text)',
     '',
     '## Details',
-    `- **Source:** ${source === 'channel' ? `Auto-captured from ${channel}` : `Reaction (${TRIGGER_EMOJI}) by ${triggeredBy?.tag || 'unknown'} in ${channel}`}`,
+    `- **Source:** ${source === 'channel' ? `Auto-captured from ${label}` : `Reaction (${TRIGGER_EMOJI}) by ${triggeredBy?.tag || 'unknown'} in ${label}`}`,
     `- **Reporter:** ${author}`,
     `- **Posted:** ${message.createdAt.toISOString()}`,
     `- **Discord link:** ${messageLink}`,
@@ -160,12 +172,17 @@ async function fileFeedback({ message, source, triggeredBy }) {
   }
 
   const text = message.content?.trim();
-  if (!text && message.attachments.size === 0) {
+  const forumStarter = isForumStarter(message);
+  if (!text && message.attachments.size === 0 && !forumStarter) {
     console.log(`[feedback] message ${message.id} has no content and no attachments, skipping`);
     return null;
   }
 
-  const title = await generateTitle(text || '(image only)');
+  // For forum posts, the user already wrote a title (the thread name). Use it
+  // directly — no need to ask Claude to summarize the body into a title.
+  const title = forumStarter
+    ? message.channel.name
+    : await generateTitle(text || '(image only)');
   const body = buildIssueBody({ message, source, triggeredBy });
 
   const issue = await createGithubIssue({ title, body });
@@ -222,8 +239,18 @@ async function handleMessageCreate(message) {
   if (!isFeedbackConfigured()) { warnMissingOnce(); return; }
   const channelId = envOrNull('FEEDBACK_CHANNEL_ID');
   if (!channelId) return;
-  if (message.channel.id !== channelId) return;
   if (message.author?.bot) return;
+
+  // Two valid shapes for the watched channel:
+  //   1. Plain text channel — message lands directly in it
+  //   2. Forum channel — each post is a thread whose parent is the forum.
+  //      We only file the starter message (skip replies) so each post = 1 issue.
+  const isDirectMatch = message.channel.id === channelId;
+  const isForumPostStarter =
+    message.channel.parentId === channelId &&
+    message.channel.isThread?.() &&
+    message.id === message.channel.id;
+  if (!isDirectMatch && !isForumPostStarter) return;
 
   try {
     await fileFeedback({ message, source: 'channel' });

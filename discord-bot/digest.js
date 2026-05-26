@@ -1,3 +1,4 @@
+const { ChannelType } = require('discord.js');
 const { getSupabase, fileFeedback, isFeedbackConfigured } = require('./feedback');
 
 // Backfill window: re-scan the last 48h of the feedback channel on each cron
@@ -48,20 +49,30 @@ async function fetchOpenIssueCount() {
   return json.total_count ?? null;
 }
 
-async function runBackfill(client) {
-  const channelId = process.env.FEEDBACK_CHANNEL_ID;
-  if (!channelId) return { scanned: 0, filed: 0 };
-
-  const channel = await client.channels.fetch(channelId).catch(() => null);
-  if (!channel?.isTextBased?.()) {
-    console.warn('[digest] backfill: feedback channel not found or not text-based');
-    return { scanned: 0, filed: 0 };
-  }
-
-  const cutoff = Date.now() - BACKFILL_HOURS * 60 * 60 * 1000;
+async function backfillForum(channel, cutoff) {
   let filed = 0;
   let scanned = 0;
+  try {
+    const active = await channel.threads.fetchActive().catch(() => ({ threads: new Map() }));
+    const archived = await channel.threads.fetchArchived({ limit: 100 }).catch(() => ({ threads: new Map() }));
+    const threads = [...active.threads.values(), ...archived.threads.values()];
+    for (const thread of threads) {
+      if (thread.createdTimestamp < cutoff) continue;
+      const starter = await thread.fetchStarterMessage().catch(() => null);
+      if (!starter || starter.author?.bot) continue;
+      scanned += 1;
+      const result = await fileFeedback({ message: starter, source: 'channel' });
+      if (result && !result.deduped) filed += 1;
+    }
+  } catch (err) {
+    console.error('[digest] forum backfill error:', err);
+  }
+  return { scanned, filed };
+}
 
+async function backfillTextChannel(channel, cutoff) {
+  let filed = 0;
+  let scanned = 0;
   try {
     const messages = await channel.messages.fetch({ limit: BACKFILL_MESSAGE_LIMIT });
     for (const message of messages.values()) {
@@ -72,10 +83,31 @@ async function runBackfill(client) {
       if (result && !result.deduped) filed += 1;
     }
   } catch (err) {
-    console.error('[digest] backfill error:', err);
+    console.error('[digest] text backfill error:', err);
+  }
+  return { scanned, filed };
+}
+
+async function runBackfill(client) {
+  const channelId = process.env.FEEDBACK_CHANNEL_ID;
+  if (!channelId) return { scanned: 0, filed: 0 };
+
+  const channel = await client.channels.fetch(channelId).catch(() => null);
+  if (!channel) {
+    console.warn('[digest] backfill: feedback channel not found');
+    return { scanned: 0, filed: 0 };
   }
 
-  return { scanned, filed };
+  const cutoff = Date.now() - BACKFILL_HOURS * 60 * 60 * 1000;
+
+  if (channel.type === ChannelType.GuildForum) {
+    return await backfillForum(channel, cutoff);
+  }
+  if (channel.isTextBased?.()) {
+    return await backfillTextChannel(channel, cutoff);
+  }
+  console.warn(`[digest] backfill: channel type ${channel.type} not supported`);
+  return { scanned: 0, filed: 0 };
 }
 
 async function postDigest(client, { todayCount, channelCount, reactionCount, openCount, backfill }) {
