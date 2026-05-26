@@ -591,28 +591,39 @@ export default function LootSettingsContent() {
 
     const tierIds = tiersData.map((t: any) => t.id)
 
-    // Load loot items (uses tier IDs from above)
-    const { data: itemsData } = await supabase
-      .from('loot_items')
-      .select(`
-        id,
-        name,
-        boss_name,
-        item_slot,
-        wowhead_id,
-        classification,
-        item_type,
-        allocation_cost,
-        is_available,
-        is_loot_council,
-        roles,
-        officer_notes,
-        raid_tier:raid_tiers(name)
-      `)
-      .in('raid_tier_id', tierIds)
-      .order('name')
+    // Load loot items in 1000-row pages. PostgREST silently caps unpaginated
+    // queries at 1000 rows, which truncated late-alphabet items for guilds
+    // whose active expansion has >1000 items (e.g. MoP at 1705).
+    const PAGE_SIZE = 1000
+    const itemsData: any[] = []
+    for (let from = 0; ; from += PAGE_SIZE) {
+      const { data: page } = await supabase
+        .from('loot_items')
+        .select(`
+          id,
+          name,
+          boss_name,
+          item_slot,
+          wowhead_id,
+          classification,
+          item_type,
+          allocation_cost,
+          is_available,
+          is_loot_council,
+          roles,
+          officer_notes,
+          raid_tier:raid_tiers(name)
+        `)
+        .in('raid_tier_id', tierIds)
+        .order('name')
+        .range(from, from + PAGE_SIZE - 1)
 
-    if (itemsData) {
+      if (!page || page.length === 0) break
+      itemsData.push(...page)
+      if (page.length < PAGE_SIZE) break
+    }
+
+    if (itemsData.length > 0) {
       setLootItems(itemsData as any)
 
       // Initialize item roles state
@@ -639,16 +650,26 @@ export default function LootSettingsContent() {
         specs[id] = { primary: new Set(), secondary: new Set() }
       })
 
-      const { data: specRelations, error: specError } = await supabase
-        .from('loot_item_classes')
-        .select('loot_item_id, spec_id, spec_type')
-        .in('loot_item_id', itemIds)
+      // Paginate spec relations — each item can have multiple entries, so
+      // even ~150 items can blow past the 1000-row default cap.
+      const specRelations: any[] = []
+      for (let from = 0; ; from += PAGE_SIZE) {
+        const { data: page, error: specError } = await supabase
+          .from('loot_item_classes')
+          .select('loot_item_id, spec_id, spec_type')
+          .in('loot_item_id', itemIds)
+          .range(from, from + PAGE_SIZE - 1)
 
-      if (specError) {
-        console.error('Error loading spec relations:', specError)
+        if (specError) {
+          console.error('Error loading spec relations:', specError)
+          break
+        }
+        if (!page || page.length === 0) break
+        specRelations.push(...page)
+        if (page.length < PAGE_SIZE) break
       }
 
-      if (specRelations) {
+      if (specRelations.length > 0) {
         specRelations.forEach((rel: any) => {
           if (rel.spec_id && rel.loot_item_id) {
             if (rel.spec_type === 'primary') {
