@@ -167,12 +167,28 @@ async function fileFeedback({ message, source, triggeredBy }) {
   return { issueNumber: issue.number, deduped: false };
 }
 
+function parseCsv(value) {
+  return (value || '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
 function isAllowedReactor(member) {
   if (!member) return false;
   if (member.permissions.has(PermissionFlagsBits.Administrator)) return true;
-  const roleId = envOrNull('FEEDBACK_REACTION_ROLE_ID');
-  if (!roleId) return false;
-  return member.roles.cache.has(roleId);
+
+  const allowedIds = parseCsv(envOrNull('FEEDBACK_REACTION_ROLE_IDS'));
+  if (allowedIds.length > 0 && member.roles.cache.some((r) => allowedIds.includes(r.id))) {
+    return true;
+  }
+
+  const allowedNames = parseCsv(envOrNull('FEEDBACK_REACTION_ROLE_NAMES')).map((n) => n.toLowerCase());
+  if (allowedNames.length > 0 && member.roles.cache.some((r) => allowedNames.includes(r.name.toLowerCase()))) {
+    return true;
+  }
+
+  return false;
 }
 
 async function handleMessageCreate(message) {
