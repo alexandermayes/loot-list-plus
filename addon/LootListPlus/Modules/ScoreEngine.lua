@@ -50,9 +50,12 @@ function SE:CalculateAttendanceScore(records, totalRaids, settings)
 
     -- Count attended raids (benched counts as attended)
     -- Excused excluded from both numerator and denominator
+    -- Late attended raids (not benched) tracked separately so linear and
+    -- breakpoint modes can subtract the per-raid penalty from the numerator.
     local attendedCount = 0
     local signedUpCount = 0
     local excusedCount = 0
+    local lateCount = 0
 
     for _, r in ipairs(records) do
         if r.is_excused then
@@ -64,13 +67,17 @@ function SE:CalculateAttendanceScore(records, totalRaids, settings)
             if r.signed_up then
                 signedUpCount = signedUpCount + 1
             end
+            if r.attended and not r.was_benched and r.was_late and latePenaltyEnabled then
+                lateCount = lateCount + 1
+            end
         end
     end
 
     local effectiveTotal = totalRaids - excusedCount
     if effectiveTotal <= 0 then return 0 end
 
-    local attendancePercentage = attendedCount / effectiveTotal
+    local adjustedAttended = math.max(0, attendedCount - lateCount * latePenaltyValue)
+    local attendancePercentage = adjustedAttended / effectiveTotal
 
     if config.attendance_type == "points-per-raid" then
         local attendancePointsPerRaid = 1 - config.signup_weight

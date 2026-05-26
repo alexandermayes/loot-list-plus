@@ -26,20 +26,25 @@ export function calculateAttendanceScore(
   // Count attended raids (benched counts as attended for scoring)
   // Excused absences excluded from both numerator and denominator.
   // NCNS excluded from numerator only (missing a raid still hurts your percentage).
+  // Late attended raids (not benched) are tracked separately so linear and
+  // breakpoint modes can subtract the per-raid penalty from the numerator.
   let attendedCount = 0
   let signedUpCount = 0
   let excusedCount = 0
+  let lateCount = 0
 
   records.forEach(r => {
     if (r.is_excused) { excusedCount++; return }
     if (r.no_call_no_show) return
     if (r.attended || r.was_benched) attendedCount++
     if (r.signed_up) signedUpCount++
+    if (r.attended && !r.was_benched && r.was_late && latePenaltyEnabled) lateCount++
   })
 
   const effectiveTotal = totalRaids - excusedCount
   if (effectiveTotal <= 0) return 0
-  const attendancePercentage = attendedCount / effectiveTotal
+  const adjustedAttended = Math.max(0, attendedCount - lateCount * latePenaltyValue)
+  const attendancePercentage = adjustedAttended / effectiveTotal
 
   if (config.attendance_type === 'points-per-raid') {
     const attendancePointsPerRaid = 1 - config.signup_weight

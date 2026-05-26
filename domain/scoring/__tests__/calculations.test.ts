@@ -609,3 +609,104 @@ describe('calculateAttendanceScore (late/benched)', () => {
     expect(score).toBe(1.5)
   })
 })
+
+// ─── Late penalty in linear / breakpoint modes ───────────────
+
+describe('calculateAttendanceScore — late penalty across modes', () => {
+  describe('linear mode', () => {
+    const settings = {
+      ...DEFAULT_LINEAR_SETTINGS,
+      late_early_penalty_enabled: true,
+      late_early_penalty_value: 0.25,
+    }
+
+    it('subtracts per-raid penalty from numerator', () => {
+      // 3 attended + 1 late, denominator 4
+      // Without penalty: 4/4 = 100% → 4.0
+      // With penalty: (4 - 1*0.25)/4 = 3.75/4 = 0.9375 → 0.9375 * 4 = 3.75
+      const records = [attended(), attended(), attended(), late()]
+      expect(calculateAttendanceScore(records, 4, settings)).toBe(3.75)
+    })
+
+    it('stacks penalty across multiple late raids', () => {
+      // 2 late, 2 attended, denominator 4
+      // (4 - 2*0.25)/4 = 3.5/4 = 0.875 → 0.875 * 4 = 3.5
+      const records = [attended(), attended(), late(), late()]
+      expect(calculateAttendanceScore(records, 4, settings)).toBe(3.5)
+    })
+
+    it('no penalty when disabled', () => {
+      const noPenalty = { ...settings, late_early_penalty_enabled: false }
+      const records = [attended(), attended(), attended(), late()]
+      // Late counts as full attended → 4/4 = 100% → 4.0
+      expect(calculateAttendanceScore(records, 4, noPenalty)).toBe(4)
+    })
+
+    it('benched + late gets full credit (no penalty on bench)', () => {
+      // Benched is not actually present, so being marked late doesn't penalize.
+      const benchedLate = { signed_up: false, attended: false, no_call_no_show: false, was_benched: true, was_late: true }
+      const records = [attended(), attended(), attended(), benchedLate]
+      // All 4 count fully → 4/4 = 100% → 4.0
+      expect(calculateAttendanceScore(records, 4, settings)).toBe(4)
+    })
+
+    it('floors at 0 when penalty exceeds attended count', () => {
+      // 1 late, denominator 4, penalty 2.0 → adjusted = max(0, 1 - 2) = 0
+      const records = [late()]
+      const big = { ...settings, late_early_penalty_value: 2.0 }
+      expect(calculateAttendanceScore(records, 4, big)).toBe(0)
+    })
+
+    it('signup bonus still computed from unpenalized signup count', () => {
+      // 1 late+signed, denominator 1
+      // base: (1 - 0.25)/1 = 0.75 → 0.75 * 4 = 3.0
+      // signup: 1/1 * 4 * 0.25 = 1.0
+      // total: 4.0 (capped)
+      const records = [late(true)]
+      expect(calculateAttendanceScore(records, 1, settings)).toBe(4)
+    })
+  })
+
+  describe('breakpoint mode', () => {
+    const settings = {
+      ...DEFAULT_BREAKPOINT_SETTINGS,
+      late_early_penalty_enabled: true,
+      late_early_penalty_value: 0.25,
+    }
+
+    it('late raids can drop a raider below a threshold', () => {
+      // 9/10 attended, 1 late → (9 - 0.25)/10 = 0.875 → middle bracket (2)
+      const records = [
+        attended(), attended(), attended(), attended(), attended(),
+        attended(), attended(), attended(), late(),
+      ]
+      expect(calculateAttendanceScore(records, 10, settings)).toBe(2)
+    })
+
+    it('without late penalty, same records hit max bracket', () => {
+      const noPenalty = { ...settings, late_early_penalty_enabled: false }
+      const records = [
+        attended(), attended(), attended(), attended(), attended(),
+        attended(), attended(), attended(), late(),
+      ]
+      // 9/10 = 90% → max
+      expect(calculateAttendanceScore(records, 10, noPenalty)).toBe(4)
+    })
+
+    it('multiple late raids accumulate penalty', () => {
+      // 10 attended, 4 of them late → (10 - 4*0.25)/10 = 9/10 = 90% → max
+      // One more late → (10 - 5*0.25)/10 = 8.75/10 = 87.5% → middle
+      const fourLate = [
+        attended(), attended(), attended(), attended(), attended(),
+        attended(), late(), late(), late(), late(),
+      ]
+      expect(calculateAttendanceScore(fourLate, 10, settings)).toBe(4)
+
+      const fiveLate = [
+        attended(), attended(), attended(), attended(), attended(),
+        late(), late(), late(), late(), late(),
+      ]
+      expect(calculateAttendanceScore(fiveLate, 10, settings)).toBe(2)
+    })
+  })
+})
