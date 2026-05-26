@@ -7,7 +7,7 @@ import { ExpansionProvider } from "./contexts/ExpansionContext";
 import { NotificationProvider } from "./contexts/NotificationContext";
 import { ThemeProvider } from "./components/ThemeProvider";
 import { SWRProvider } from "./components/SWRProvider";
-import { PostHogProvider } from "./components/PostHogProvider";
+import { PostHogProviderDeferred } from "./components/PostHogProviderDeferred";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Analytics } from "@vercel/analytics/next";
 import NotificationContainer from "./components/NotificationContainer";
@@ -179,12 +179,12 @@ export default function RootLayout({
             <NotificationProvider>
               <GuildContextProvider>
                 <ExpansionProvider>
-                  <PostHogProvider>
+                  <PostHogProviderDeferred>
                     <NotificationContainer />
                     {children}
                     <SpeedInsights />
                     <Analytics />
-                  </PostHogProvider>
+                  </PostHogProviderDeferred>
                 </ExpansionProvider>
               </GuildContextProvider>
             </NotificationProvider>
