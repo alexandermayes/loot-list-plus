@@ -88,37 +88,38 @@ export const TOKEN_CLASS_MAPPING: Record<string, WowClassName[]> = {
   // ============================================================================
   // 10-man tokens use "Lost" prefix, 25-man tokens use "Valorous" prefix.
   // "Heroic" tokens are an additional T7 25-man variant.
+  // Death Knights roll on Vanquisher tokens across all Wrath tiers.
   'Lost Conqueror': ['Paladin', 'Priest', 'Warlock'],
   'Lost Protector': ['Hunter', 'Shaman', 'Warrior'],
-  'Lost Vanquisher': ['Mage', 'Druid', 'Rogue'],
+  'Lost Vanquisher': ['Death Knight', 'Druid', 'Mage', 'Rogue'],
   'Heroic Conqueror': ['Paladin', 'Priest', 'Warlock'],
   'Heroic Protector': ['Hunter', 'Shaman', 'Warrior'],
-  'Heroic Vanquisher': ['Mage', 'Druid', 'Rogue'],
+  'Heroic Vanquisher': ['Death Knight', 'Druid', 'Mage', 'Rogue'],
   'Valorous Conqueror': ['Paladin', 'Priest', 'Warlock'],
   'Valorous Protector': ['Hunter', 'Shaman', 'Warrior'],
-  'Valorous Vanquisher': ['Mage', 'Druid', 'Rogue'],
+  'Valorous Vanquisher': ['Death Knight', 'Druid', 'Mage', 'Rogue'],
 
   // ============================================================================
   // WOTLK TIER 8 TOKENS (Ulduar)
   // ============================================================================
   'Conqueror of Ulduar': ['Paladin', 'Priest', 'Warlock'],
   'Protector of Ulduar': ['Hunter', 'Shaman', 'Warrior'],
-  'Vanquisher of Ulduar': ['Mage', 'Druid', 'Rogue'],
+  'Vanquisher of Ulduar': ['Death Knight', 'Druid', 'Mage', 'Rogue'],
 
   // ============================================================================
   // WOTLK TIER 9 TOKENS (Trial of the Crusader)
   // ============================================================================
   'Regalia of the Grand Conqueror': ['Paladin', 'Priest', 'Warlock'],
   'Regalia of the Grand Protector': ['Hunter', 'Shaman', 'Warrior'],
-  'Regalia of the Grand Vanquisher': ['Mage', 'Druid', 'Rogue'],
-  'Trophy of the Crusade': ['Warrior', 'Paladin', 'Hunter', 'Rogue', 'Priest', 'Shaman', 'Mage', 'Warlock', 'Druid'],
+  'Regalia of the Grand Vanquisher': ['Death Knight', 'Druid', 'Mage', 'Rogue'],
+  'Trophy of the Crusade': ['Warrior', 'Paladin', 'Hunter', 'Rogue', 'Priest', 'Shaman', 'Mage', 'Warlock', 'Druid', 'Death Knight'],
 
   // ============================================================================
   // WOTLK TIER 10 TOKENS (Icecrown Citadel)
   // ============================================================================
   'Conqueror\'s Mark of Sanctification': ['Paladin', 'Priest', 'Warlock'],
   'Protector\'s Mark of Sanctification': ['Hunter', 'Shaman', 'Warrior'],
-  'Vanquisher\'s Mark of Sanctification': ['Mage', 'Druid', 'Rogue'],
+  'Vanquisher\'s Mark of Sanctification': ['Death Knight', 'Druid', 'Mage', 'Rogue'],
 
   // ============================================================================
   // CATA TIER 11 TOKENS (Blackwing Descent, Bastion of Twilight, Throne of the Four Winds)
