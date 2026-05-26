@@ -102,9 +102,10 @@ export const TOKEN_CLASS_MAPPING: Record<string, WowClassName[]> = {
   // ============================================================================
   // WOTLK TIER 8 TOKENS (Ulduar)
   // ============================================================================
-  'Conqueror of Ulduar': ['Paladin', 'Priest', 'Warlock'],
-  'Protector of Ulduar': ['Hunter', 'Shaman', 'Warrior'],
-  'Vanquisher of Ulduar': ['Death Knight', 'Druid', 'Mage', 'Rogue'],
+  // Ulduar T8 tokens use the "Wayward" prefix in item names.
+  'Wayward Conqueror': ['Paladin', 'Priest', 'Warlock'],
+  'Wayward Protector': ['Hunter', 'Shaman', 'Warrior'],
+  'Wayward Vanquisher': ['Death Knight', 'Druid', 'Mage', 'Rogue'],
 
   // ============================================================================
   // WOTLK TIER 9 TOKENS (Trial of the Crusader)

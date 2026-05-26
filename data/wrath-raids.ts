@@ -1243,6 +1243,14 @@ export const trialOfTheCrusader: Raid = {
       ],
     },
     {
+      name: 'Argent Crusade Tribute Chest',
+      items: [
+        { name: 'Regalia of the Grand Conqueror', slot: 'Token', wowhead_id: 47557 },
+        { name: 'Regalia of the Grand Protector', slot: 'Token', wowhead_id: 47558 },
+        { name: 'Regalia of the Grand Vanquisher', slot: 'Token', wowhead_id: 47559 },
+      ],
+    },
+    {
       name: 'Crafting Materials',
       items: [
         { name: 'Crusader Orb', slot: 'Crafting', wowhead_id: 47556 },
