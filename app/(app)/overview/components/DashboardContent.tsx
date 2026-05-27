@@ -345,7 +345,15 @@ interface ReceivedItem {
   raid_tier_name: string
 }
 
-export default function DashboardContent() {
+interface DashboardContentProps {
+  // Server-rendered heading passed in from page.tsx. Used as the LCP-friendly
+  // initial heading until GuildContext loads and the dynamic contextual
+  // greeting kicks in. Both SSR and first client render produce the same
+  // markup (this prop), so no hydration mismatch.
+  serverHeading?: React.ReactNode
+}
+
+export default function DashboardContent({ serverHeading }: DashboardContentProps = {}) {
   const { activeGuild, activeMember, activeCharacter, userGuilds, loading: guildLoading, isOfficer, hasPermission, currentExpansion, characterMemberships, user, refreshCharacters } = useGuildContext()
   const { showNotification } = useNotification()
   const [raidTiers, setRaidTiers] = useState<RaidTier[]>([])
@@ -1729,12 +1737,15 @@ export default function DashboardContent() {
     <div className="p-4 sm:p-6 lg:p-8 space-y-6 font-poppins">
       {/* Header - Always visible but stable during loading */}
       <div>
-        <Heading level={1}>
-          {!heroReady || !greeting || !greetingName
-            ? 'Welcome back!'
-            : <>{greeting[0]}<span style={{ color: activeCharacter?.class?.color_hex || undefined }}>{greetingName}</span>{greeting[1]}</>
-          }
-        </Heading>
+        {!heroReady || !greeting || !greetingName ? (
+          // Server-rendered fallback if provided (LCP target), otherwise the
+          // generic placeholder. Same markup on SSR + first client render.
+          serverHeading ?? <Heading level={1}>Welcome back!</Heading>
+        ) : (
+          <Heading level={1}>
+            {greeting[0]}<span style={{ color: activeCharacter?.class?.color_hex || undefined }}>{greetingName}</span>{greeting[1]}
+          </Heading>
+        )}
         <p className="text-muted-foreground mt-1 text-base">
           {!heroReady || (activeCharacter && insightsLoading)
             ? 'Loading your dashboard...'
