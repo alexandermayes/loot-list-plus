@@ -22,9 +22,8 @@ import { Search01Icon } from '@hugeicons/core-free-icons'
 import { EmptyState } from '@/components/ui/empty-state'
 import { ErrorState } from '@/components/ui/error-state'
 import { refreshWowheadTooltips } from '@/lib/wowhead'
-import PriorityListTab from './PriorityListTab'
-import DonationsTab from './DonationsTab'
 import { ItemRow } from './ItemRow'
+import { Skeleton } from '@/components/ui/skeletons'
 
 // Modals are lazy-loaded so their JS doesn't ship in the initial bundle.
 // Combined with conditional render below, each chunk fetches on first open.
@@ -40,6 +39,24 @@ import { SegmentedControl } from '@/components/ui/segmented-control'
 import { useConfirm } from '@/components/ui/confirm-modal'
 import { trackClientEvent } from '@/utils/analytics/client'
 import { InfoTooltip } from '@/components/ui/info-tooltip'
+
+// Lazy-load the two off-default tabs so the Items tab (default) doesn't pay
+// for their JS on first paint. PriorityListTab (~933 lines) and DonationsTab
+// (~521 lines) only load when the user clicks their tab.
+function TabLoadingSkeleton() {
+  return (
+    <div className="space-y-4">
+      <Skeleton className="h-8 w-48" />
+      <Skeleton className="h-64 w-full rounded-xl" />
+    </div>
+  )
+}
+const PriorityListTab = nextDynamic(() => import('./PriorityListTab'), {
+  loading: () => <TabLoadingSkeleton />,
+})
+const DonationsTab = nextDynamic(() => import('./DonationsTab'), {
+  loading: () => <TabLoadingSkeleton />,
+})
 
 interface LootItem {
   id: string
