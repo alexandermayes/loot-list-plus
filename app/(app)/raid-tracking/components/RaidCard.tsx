@@ -1,5 +1,6 @@
 'use client'
 
+import { memo } from 'react'
 import { RaidCardHeader } from './RaidCardHeader'
 import { RaidMemberList } from './RaidMemberList'
 import type { CellState } from './cell-state'
@@ -52,7 +53,7 @@ interface RaidCardProps {
   onDeleteLootEntry: (lootId: string, raidId: string) => void
 }
 
-export function RaidCard(props: RaidCardProps) {
+function RaidCardInner(props: RaidCardProps) {
   const {
     raid,
     isExpanded,
@@ -127,3 +128,5 @@ export function RaidCard(props: RaidCardProps) {
     </div>
   )
 }
+
+export const RaidCard = memo(RaidCardInner)

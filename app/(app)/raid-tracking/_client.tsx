@@ -1,7 +1,7 @@
 'use client'
 
 import { createClient } from '@/utils/supabase/client'
-import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { PlusSignIcon } from '@hugeicons/core-free-icons'
@@ -122,6 +122,37 @@ export default function RaidTrackingPage() {
   const { showNotification } = useNotification()
   const { confirm, ConfirmDialog } = useConfirm()
   const { activeTeamId, activeTeam, teams, hasTeams, setTeam } = useRaidTeam()
+
+  // Snapshot of state read inside stable action handlers. Keeping these out of
+  // useCallback deps lets the handlers stay reference-stable across renders,
+  // which is what makes React.memo on RaidCard actually skip work when only
+  // one raid's data changed.
+  const latestRef = useRef({
+    attendance,
+    members,
+    raidLoot,
+    unlinkedAttendees,
+    raidDates,
+    activeGuild,
+    currentExpansion,
+    reassignModal,
+    postingDiscord,
+    linkingWcl,
+  })
+  useEffect(() => {
+    latestRef.current = {
+      attendance,
+      members,
+      raidLoot,
+      unlinkedAttendees,
+      raidDates,
+      activeGuild,
+      currentExpansion,
+      reassignModal,
+      postingDiscord,
+      linkingWcl,
+    }
+  })
 
   useEffect(() => {
     document.title = activeTab === 'tracking' ? 'LootList+ • Raid Tracking' : 'LootList+ • Loot History'
@@ -506,7 +537,7 @@ export default function RaidTrackingPage() {
     return toDateString(weekStart)
   }
 
-  const loadRaidAttendance = async (raidId: string) => {
+  const loadRaidAttendance = useCallback(async (raidId: string) => {
     // Load attendance records
     const { data: records } = await supabase
       .from('attendance_records')
@@ -520,6 +551,8 @@ export default function RaidTrackingPage() {
     const linkedCharIdsInRaid = new Set(
       records?.filter((r: any) => r.character_id).map((r: any) => r.character_id)
     )
+
+    const currentMembers = latestRef.current.members
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     records?.forEach((r: any) => {
@@ -535,7 +568,7 @@ export default function RaidTrackingPage() {
       } else if (r.character_name) {
         // Unlinked attendee - only skip if a linked record for this member already exists
         // in this raid (prevents duplicates when both linked and unlinked records exist)
-        const matchedMember = members.find(
+        const matchedMember = currentMembers.find(
           m => m.character_name.toLowerCase() === r.character_name.toLowerCase()
         )
         if (!matchedMember || !linkedCharIdsInRaid.has(matchedMember.character_id)) {
@@ -619,7 +652,7 @@ export default function RaidTrackingPage() {
       showNotification('error', 'Couldn\'t load loot history for this raid. Try again.')
       setRaidLoot(prev => ({ ...prev, [raidId]: [] }))
     }
-  }
+  }, [supabase, showNotification])
 
   const toggleRaidExpanded = useCallback(async (raidId: string) => {
     setExpandedRaids(prev => {
@@ -632,14 +665,14 @@ export default function RaidTrackingPage() {
       return next
     })
 
-    // Load attendance if not already loaded
-    if (!attendance[raidId]) {
+    if (!latestRef.current.attendance[raidId]) {
       await loadRaidAttendance(raidId)
     }
-  }, [attendance, loadRaidAttendance])
+  }, [loadRaidAttendance])
 
-  const setAttendanceStatus = async (raidId: string, characterId: string, userId: string, state: CellState) => {
-    const current = attendance[raidId]?.[characterId]
+  const setAttendanceStatus = useCallback(async (raidId: string, characterId: string, userId: string, state: CellState) => {
+    const { attendance: latestAttendance, activeGuild: latestGuild } = latestRef.current
+    const current = latestAttendance[raidId]?.[characterId]
     const preserveSignedUp = current?.signed_up || false
 
     let newStatus: AttendanceStatus
@@ -665,7 +698,6 @@ export default function RaidTrackingPage() {
         break
     }
 
-    // Optimistic update
     setAttendance(prev => ({
       ...prev,
       [raidId]: {
@@ -674,18 +706,12 @@ export default function RaidTrackingPage() {
       }
     }))
 
-    // Save to database via API (bypasses RLS)
-    const payload = {
-      raid_event_id: raidId,
-      character_id: characterId,
-      user_id: userId,
-      ...newStatus
-    }
+    const payload = { raid_event_id: raidId, character_id: characterId, user_id: userId, ...newStatus }
     const res = await fetch('/api/attendance/bulk', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        guild_id: activeGuild?.id,
+        guild_id: latestGuild?.id,
         action: 'upsert',
         records: [payload],
         onConflict: 'raid_event_id,character_id'
@@ -698,31 +724,31 @@ export default function RaidTrackingPage() {
       showNotification('error', errBody.error || 'Couldn\'t save attendance. Try again.')
       await loadRaidAttendance(raidId)
     }
-  }
+  }, [showNotification, loadRaidAttendance])
 
-  const cycleStatus = (raidId: string, characterId: string, userId: string) => {
-    const current = attendance[raidId]?.[characterId]
+  const cycleStatus = useCallback((raidId: string, characterId: string, userId: string) => {
+    const current = latestRef.current.attendance[raidId]?.[characterId]
     const currentState = getCellState(current)
     const cycle: CellState[] = ['empty', 'attended', 'late', 'standby', 'no-show', 'excused']
     const currentIdx = cycle.indexOf(currentState)
     const nextState = cycle[(currentIdx + 1) % cycle.length]
     setAttendanceStatus(raidId, characterId, userId, nextState)
-  }
+  }, [setAttendanceStatus])
 
-  const markAllAttended = async (raidId: string, raidMembers: Member[]) => {
+  const markAllAttended = useCallback(async (raidId: string, raidMembers: Member[]) => {
     for (const member of raidMembers) {
-      const state = getCellState(attendance[raidId]?.[member.character_id])
+      const state = getCellState(latestRef.current.attendance[raidId]?.[member.character_id])
       if (state === 'empty') {
         await setAttendanceStatus(raidId, member.character_id, member.user_id, 'attended')
       }
     }
-  }
+  }, [setAttendanceStatus])
 
-  const toggleSignup = async (raidId: string, characterId: string, userId: string) => {
-    const current = attendance[raidId]?.[characterId]
+  const toggleSignup = useCallback(async (raidId: string, characterId: string, userId: string) => {
+    const { attendance: latestAttendance, activeGuild: latestGuild } = latestRef.current
+    const current = latestAttendance[raidId]?.[characterId]
     const newSignedUp = !current?.signed_up
 
-    // Optimistic update
     setAttendance(prev => ({
       ...prev,
       [raidId]: {
@@ -737,12 +763,11 @@ export default function RaidTrackingPage() {
       }
     }))
 
-    // Save to database via API (bypasses RLS)
     const res = await fetch('/api/attendance/bulk', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        guild_id: activeGuild?.id,
+        guild_id: latestGuild?.id,
         action: 'upsert',
         records: [{
           raid_event_id: raidId,
@@ -763,9 +788,9 @@ export default function RaidTrackingPage() {
       showNotification('error', 'Couldn\'t save signup status. Try again.')
       await loadRaidAttendance(raidId)
     }
-  }
+  }, [showNotification, loadRaidAttendance])
 
-  const removeFromAttendance = (raidId: string, characterId: string) => {
+  const removeFromAttendance = useCallback((raidId: string, characterId: string) => {
     confirm({
       title: 'Remove from raid',
       description: 'Remove this character from attendance tracking for this raid?',
@@ -775,7 +800,7 @@ export default function RaidTrackingPage() {
         const res = await fetch('/api/attendance/bulk', {
           method: 'DELETE',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ guild_id: activeGuild?.id, raid_event_id: raidId, character_id: characterId })
+          body: JSON.stringify({ guild_id: latestRef.current.activeGuild?.id, raid_event_id: raidId, character_id: characterId })
         })
 
         if (!res.ok) {
@@ -784,7 +809,6 @@ export default function RaidTrackingPage() {
           return
         }
 
-        // Update local state
         setAttendance(prev => {
           const newState = { ...prev }
           if (newState[raidId]) {
@@ -798,21 +822,22 @@ export default function RaidTrackingPage() {
         showNotification('success', 'Removed from raid')
       }
     })
-  }
+  }, [confirm, showNotification])
 
-  const reassignLoot = async (lootId: string, newCharacterId: string, newCharacterName: string) => {
-    if (!reassignModal) return
+  const reassignLoot = useCallback(async (lootId: string, newCharacterId: string, newCharacterName: string) => {
+    const { reassignModal: target, activeGuild: latestGuild } = latestRef.current
+    if (!target) return
 
     const res = await fetch('/api/loot-history/bulk', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        guild_id: activeGuild?.id,
+        guild_id: latestGuild?.id,
         id: lootId,
         updates: {
           character_id: newCharacterId,
           character_name: null,
-          notes: `Reassigned from ${reassignModal.currentMember.character_name}`
+          notes: `Reassigned from ${target.currentMember.character_name}`
         }
       })
     })
@@ -824,15 +849,14 @@ export default function RaidTrackingPage() {
       return
     }
 
-    // Reload loot for this raid
-    await loadRaidAttendance(reassignModal.raidId)
+    await loadRaidAttendance(target.raidId)
     setReassignModal(null)
     showNotification('success', `Loot reassigned to ${newCharacterName}`)
-  }
+  }, [showNotification, loadRaidAttendance])
 
-  const toggleSkipDay = async (raidId: string, currentSkipped: boolean) => {
+  const toggleSkipDay = useCallback(async (raidId: string, currentSkipped: boolean) => {
     if (!currentSkipped) {
-      const raid = raidDates.find(r => r.id === raidId)
+      const raid = latestRef.current.raidDates.find(r => r.id === raidId)
       if (raid) {
         setShowSkipModal({ raidId, date: raid.raid_date })
       }
@@ -846,7 +870,7 @@ export default function RaidTrackingPage() {
         r.id === raidId ? { ...r, is_skipped: false, skip_reason: null } : r
       ))
     }
-  }
+  }, [supabase])
 
   const confirmSkipDay = async () => {
     if (!showSkipModal) return
@@ -908,14 +932,15 @@ export default function RaidTrackingPage() {
     }
   }
 
-  const handlePostToDiscord = async (raidId: string) => {
-    if (!activeGuild || postingDiscord) return
+  const handlePostToDiscord = useCallback(async (raidId: string) => {
+    const { activeGuild: latestGuild, postingDiscord: currentPosting } = latestRef.current
+    if (!latestGuild || currentPosting) return
     setPostingDiscord(raidId)
     try {
       const response = await fetch('/api/discord/post-raid-summary', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ guild_id: activeGuild.id, raid_event_id: raidId }),
+        body: JSON.stringify({ guild_id: latestGuild.id, raid_event_id: raidId }),
       })
       const data = await response.json()
       if (!response.ok) {
@@ -928,16 +953,17 @@ export default function RaidTrackingPage() {
     } finally {
       setPostingDiscord(null)
     }
-  }
+  }, [showNotification])
 
-  const handleLinkWcl = async (raidId: string) => {
-    if (!activeGuild || linkingWcl) return
+  const handleLinkWcl = useCallback(async (raidId: string) => {
+    const { activeGuild: latestGuild, linkingWcl: currentLinking } = latestRef.current
+    if (!latestGuild || currentLinking) return
     setLinkingWcl(raidId)
     try {
       const response = await fetch('/api/wcl/link-report', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ guild_id: activeGuild.id, raid_event_id: raidId }),
+        body: JSON.stringify({ guild_id: latestGuild.id, raid_event_id: raidId }),
       })
       const data = await response.json()
       if (!response.ok) {
@@ -948,7 +974,6 @@ export default function RaidTrackingPage() {
         showNotification('info', data.message || 'No matching report found for this date.')
         return
       }
-      // Update local state with the report code
       setRaidDates(prev => prev.map(r =>
         r.id === raidId ? { ...r, wcl_report_code: data.report_code } : r
       ))
@@ -958,13 +983,13 @@ export default function RaidTrackingPage() {
     } finally {
       setLinkingWcl(null)
     }
-  }
+  }, [showNotification])
 
-  const handleImportClick = async (raid: RaidEvent, hasImportedData: boolean) => {
+  const handleImportClick = useCallback(async (raid: RaidEvent, hasImportedData: boolean) => {
     await loadLootItems()
 
     if (hasImportedData) {
-      if (!attendance[raid.id]) {
+      if (!latestRef.current.attendance[raid.id]) {
         await loadRaidAttendance(raid.id)
       }
       setLootData('')
@@ -978,9 +1003,12 @@ export default function RaidTrackingPage() {
       setInitialSignupsData('')
       setShowImportModal({ raidId: raid.id, date: raid.raid_date, isEdit: false })
     }
-  }
+    // loadLootItems is intentionally not in deps — it's defined later in the file
+    // and is stable via useCallback below.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loadRaidAttendance])
 
-  const deleteLootEntry = (lootId: string, raidId: string) => {
+  const deleteLootEntry = useCallback((lootId: string, raidId: string) => {
     confirm({
       title: 'Remove loot entry',
       description: 'Are you sure you want to remove this loot entry? This will restore the item to the master sheet.',
@@ -990,7 +1018,7 @@ export default function RaidTrackingPage() {
         const res = await fetch('/api/loot-history/bulk', {
           method: 'DELETE',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ guild_id: activeGuild?.id, ids: [lootId] })
+          body: JSON.stringify({ guild_id: latestRef.current.activeGuild?.id, ids: [lootId] })
         })
 
         if (!res.ok) {
@@ -999,14 +1027,13 @@ export default function RaidTrackingPage() {
           return
         }
 
-        // Update local state
         setRaidLoot(prev => ({
           ...prev,
           [raidId]: prev[raidId]?.filter(l => l.id !== lootId) || []
         }))
       }
     })
-  }
+  }, [confirm, showNotification])
 
   const importSignups = async () => {
     if (!showImportModal || !activeGuild) return
@@ -1116,22 +1143,21 @@ export default function RaidTrackingPage() {
 
   // Load all loot items for the current expansion
   // Returns the items array so callers can use it immediately (since setState is async)
-  const loadLootItems = async (): Promise<typeof lootItems> => {
-    if (!activeGuild || !currentExpansion) {
+  const loadLootItems = useCallback(async (): Promise<typeof lootItems> => {
+    const { activeGuild: latestGuild, currentExpansion: latestExp } = latestRef.current
+    if (!latestGuild || !latestExp) {
       return []
     }
 
-    // Get all raid tiers for this expansion
     const { data: tiers } = await supabase
       .from('raid_tiers')
       .select('id')
-      .eq('expansion_id', currentExpansion.expansion_id)
+      .eq('expansion_id', latestExp.expansion_id)
 
     if (!tiers || tiers.length === 0) return []
 
     const tierIds = tiers.map((t: { id: string }) => t.id)
 
-    // Get all loot items for these tiers
     const { data: items } = await supabase
       .from('loot_items')
       .select('id, name, wowhead_id, boss_name, raid_tier_id')
@@ -1143,7 +1169,7 @@ export default function RaidTrackingPage() {
       return items
     }
     return []
-  }
+  }, [supabase])
 
   // Preview functions to show match counts
   // Parse MRT/attendance data - handles formats like:
