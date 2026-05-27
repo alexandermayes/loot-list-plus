@@ -578,7 +578,9 @@ function BracketSection({
   )
 }
 
-export default function LootListContent() {
+export default function LootListContent({
+  serverHeading,
+}: { serverHeading?: React.ReactNode } = {}) {
   const {
     activeGuild,
     activeCharacter,
@@ -1251,15 +1253,17 @@ export default function LootListContent() {
   return (
     <ExpansionGuard>
       <div className="font-poppins">
-        {/* Header - Always visible */}
+        {/* Header - heading may be server-rendered for LCP; subtitle stays client-driven */}
         <div className="p-4 sm:p-6 lg:p-8 pb-1.5">
           <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
             <div>
-              <Heading level={1}>
-                Loot Lists{activeCharacter && (
-                  <> for <span style={{ color: activeCharacter.class?.color_hex }}>{activeCharacter.name}</span></>
-                )}
-              </Heading>
+              {activeCharacter ? (
+                <Heading level={1}>
+                  Loot Lists for <span style={{ color: activeCharacter.class?.color_hex }}>{activeCharacter.name}</span>
+                </Heading>
+              ) : (
+                serverHeading ?? <Heading level={1}>Loot Lists</Heading>
+              )}
               <p className="text-muted-foreground mt-1 text-base">
                 {isLoading ? 'Loading phases...' : (() => {
                   const group = resolvedGroups.find(g => g.canonicalPhase === selectedPhase)
