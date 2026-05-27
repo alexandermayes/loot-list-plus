@@ -1,6 +1,7 @@
 'use client'
 
 import { createClient } from '@/utils/supabase/client'
+import { paginatedSelect } from '@/utils/supabase/paginate'
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import nextDynamic from 'next/dynamic'
 import { useRouter } from 'next/navigation'
@@ -613,13 +614,13 @@ export default function LootSettingsContent({
 
     const tierIds = tiersData.map((t: any) => t.id)
 
-    // Load loot items in 1000-row pages. PostgREST silently caps unpaginated
-    // queries at 1000 rows, which truncated late-alphabet items for guilds
-    // whose active expansion has >1000 items (e.g. MoP at 1705).
-    const PAGE_SIZE = 1000
-    const itemsData: any[] = []
-    for (let from = 0; ; from += PAGE_SIZE) {
-      const { data: page } = await supabase
+    // Load loot items in pages. PostgREST silently caps unpaginated queries
+    // at 1000 rows, which truncated late-alphabet items for guilds whose
+    // active expansion has >1000 items (e.g. MoP at 1705). Order by 'id' so
+    // successive pages are stable — 'name' alone isn't unique across tiers
+    // and can cause Postgres to skip / duplicate rows between range() calls.
+    const itemsData = await paginatedSelect<any>((start, end) =>
+      supabase
         .from('loot_items')
         .select(`
           id,
@@ -637,13 +638,9 @@ export default function LootSettingsContent({
           raid_tier:raid_tiers(name)
         `)
         .in('raid_tier_id', tierIds)
-        .order('name')
-        .range(from, from + PAGE_SIZE - 1)
-
-      if (!page || page.length === 0) break
-      itemsData.push(...page)
-      if (page.length < PAGE_SIZE) break
-    }
+        .order('id', { ascending: true })
+        .range(start, end)
+    )
 
     if (itemsData.length > 0) {
       setLootItems(itemsData as any)
@@ -673,23 +670,19 @@ export default function LootSettingsContent({
       })
 
       // Paginate spec relations — each item can have multiple entries, so
-      // even ~150 items can blow past the 1000-row default cap.
-      const specRelations: any[] = []
-      for (let from = 0; ; from += PAGE_SIZE) {
-        const { data: page, error: specError } = await supabase
-          .from('loot_item_classes')
-          .select('loot_item_id, spec_id, spec_type')
-          .in('loot_item_id', itemIds)
-          .range(from, from + PAGE_SIZE - 1)
-
-        if (specError) {
-          console.error('Error loading spec relations:', specError)
-          break
-        }
-        if (!page || page.length === 0) break
-        specRelations.push(...page)
-        if (page.length < PAGE_SIZE) break
-      }
+      // even ~150 items can blow past the 1000-row default cap. The previous
+      // inline loop had no .order() which lets Postgres skip/duplicate rows
+      // between range() calls (the same bug class that caused loot-submission
+      // item-counts to silently undercount).
+      const specRelations = await paginatedSelect<{ loot_item_id: string; spec_id: string | null; spec_type: string }>(
+        (start, end) =>
+          supabase
+            .from('loot_item_classes')
+            .select('loot_item_id, spec_id, spec_type')
+            .in('loot_item_id', itemIds)
+            .order('id', { ascending: true })
+            .range(start, end)
+      )
 
       if (specRelations.length > 0) {
         specRelations.forEach((rel: any) => {
