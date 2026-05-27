@@ -4,7 +4,6 @@ import { createClient } from '@/utils/supabase/client'
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import ItemLink from '@/app/components/ItemLink'
 import { useGuildContext } from '@/app/contexts/GuildContext'
 import { useNotification } from '@/app/contexts/NotificationContext'
 import { ExpansionGuard } from '@/app/components/ExpansionGuard'
@@ -16,10 +15,8 @@ import { toDateString } from '@/utils/date'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import StyledSelect from '@/app/components/StyledSelect'
-import MultiSelectDropdown from '@/app/components/MultiSelectDropdown'
 import { specMapping, allRoles } from '@/domain/loot/spec-role-mapping'
-import { HugeiconsIcon } from '@hugeicons/react'
-import { StickyNote01Icon, Search01Icon } from '@hugeicons/core-free-icons'
+import { Search01Icon } from '@hugeicons/core-free-icons'
 import { EmptyState } from '@/components/ui/empty-state'
 import { ErrorState } from '@/components/ui/error-state'
 import { refreshWowheadTooltips } from '@/lib/wowhead'
@@ -27,8 +24,8 @@ import PriorityListTab from './PriorityListTab'
 import DonationsTab from './DonationsTab'
 import { SettingsModal } from './SettingsModal'
 import { NotesModal } from './NotesModal'
+import { ItemRow } from './ItemRow'
 import { SegmentedControl } from '@/components/ui/segmented-control'
-import { Checkbox } from '@/components/ui/checkbox'
 import { useConfirm } from '@/components/ui/confirm-modal'
 import { trackClientEvent } from '@/utils/analytics/client'
 import { InfoTooltip } from '@/components/ui/info-tooltip'
@@ -1569,145 +1566,27 @@ export default function LootSettingsContent({
               </thead>
               <tbody className="divide-y divide-border">
                 {paginatedItems.map((item) => (
-                  <tr key={item.id} className="hover:bg-muted/50">
-                    <td className="px-4 py-2.5">
-                      <Checkbox
-                        size="sm"
-                        checked={item.is_available}
-                        onCheckedChange={() => toggleAvailability(item.id, item.is_available)}
-                        aria-label={`Toggle availability for ${item.name}`}
-                      />
-                    </td>
-                    <td className="px-2 py-2.5 text-center">
-                      <Checkbox
-                        size="sm"
-                        variant="accent"
-                        checked={item.is_loot_council ?? false}
-                        onCheckedChange={() => toggleLootCouncil(item.id, item.is_loot_council ?? false)}
-                        disabled={!item.is_available}
-                        aria-label={`Toggle Loot Council for ${item.name}`}
-                      />
-                    </td>
-                    <td className="px-4 py-2.5 text-[13px] text-foreground">
-                      <div className="truncate overflow-hidden">
-                        <ItemLink name={item.name} wowheadId={item.wowhead_id} />
-                      </div>
-                    </td>
-                    <td className="px-4 py-2.5 text-[12px] text-foreground-muted">
-                      <div className="truncate">{item.boss_name}</div>
-                    </td>
-                    <td className="px-4 py-2.5 text-[12px] text-foreground-muted">
-                      <div className="truncate">{item.item_slot}</div>
-                    </td>
-                    <td className="px-4 py-2.5 text-[12px] text-foreground-muted">
-                      <div className="truncate">{(item.raid_tier as any)?.name}</div>
-                    </td>
-                    <td className="px-2 py-2.5">
-                      <Select
-                        variant="pill"
-                        size="sm"
-                        value={item.classification}
-                        onChange={(e) => updateClassification(item.id, e.target.value)}
-                        className="bg-background-elevated font-medium"
-                        style={{
-                          color: item.classification === 'Reserved' ? '#ef4444' :
-                                 item.classification === 'Limited' ? '#eab308' :
-                                 item.classification === 'Unlimited' ? '#22c55e' :
-                                 undefined
-                        }}
-                      >
-                        <option value="Reserved" className="bg-background-elevated" style={{ color: '#ef4444' }}>Reserved</option>
-                        <option value="Limited" className="bg-background-elevated" style={{ color: '#eab308' }}>Limited</option>
-                        <option value="Unlimited" className="bg-background-elevated" style={{ color: '#22c55e' }}>Unlimited</option>
-                      </Select>
-                    </td>
-                    <td className="px-2 py-2.5">
-                      <MultiSelectDropdown
-                        placeholder="Primary"
-                        selectedIds={itemSpecs[item.id]?.primary || new Set()}
-                        options={[]}
-                        optionGroups={[
-                          {
-                            label: '',
-                            options: [
-                              { id: 'all', label: 'All specs/roles', isRoleGroup: true },
-                              { id: 'role:tank', label: 'All tanks', isRoleGroup: true },
-                              { id: 'role:healer', label: 'All healers', isRoleGroup: true },
-                              { id: 'role:physical', label: 'All physical DPS', isRoleGroup: true },
-                              { id: 'role:caster', label: 'All caster DPS', isRoleGroup: true }
-                            ]
-                          },
-                          {
-                            label: 'Individual specs',
-                            options: classSpecOptions.map(opt => ({
-                              id: opt.id,
-                              label: opt.label,
-                              disabled: itemSpecs[item.id]?.secondary.has(opt.id)
-                            }))
-                          }
-                        ]}
-                        onAdd={(id) => addSpec(item.id, id, 'primary')}
-                        onRemove={(id) => removeSpec(item.id, id, 'primary')}
-                        onClear={() => removeAllSpecs(item.id, 'primary')}
-                        getDisplayName={(id) => getSpecName(id)}
-                        getClassColor={(id) => getSpecColor(id)}
-                        getConsolidatedDisplay={(ids) => getConsolidatedSpecNames(ids)}
-                        isOptionSelected={(optionId, selectedIds) => isRoleGroupSelected(optionId, selectedIds)}
-                        variant="primary"
-                      />
-                    </td>
-                    <td className="px-2 py-2.5">
-                      <MultiSelectDropdown
-                        placeholder="Secondary"
-                        selectedIds={itemSpecs[item.id]?.secondary || new Set()}
-                        options={[]}
-                        optionGroups={[
-                          {
-                            label: '',
-                            options: [
-                              { id: 'all', label: 'All specs/roles', isRoleGroup: true },
-                              { id: 'role:tank', label: 'All tanks', isRoleGroup: true },
-                              { id: 'role:healer', label: 'All healers', isRoleGroup: true },
-                              { id: 'role:physical', label: 'All physical DPS', isRoleGroup: true },
-                              { id: 'role:caster', label: 'All caster DPS', isRoleGroup: true }
-                            ]
-                          },
-                          {
-                            label: 'Individual specs',
-                            options: classSpecOptions.map(opt => ({
-                              id: opt.id,
-                              label: opt.label,
-                              disabled: itemSpecs[item.id]?.primary.has(opt.id)
-                            }))
-                          }
-                        ]}
-                        onAdd={(id) => addSpec(item.id, id, 'secondary')}
-                        onRemove={(id) => removeSpec(item.id, id, 'secondary')}
-                        onClear={() => removeAllSpecs(item.id, 'secondary')}
-                        getDisplayName={(id) => getSpecName(id)}
-                        getClassColor={(id) => getSpecColor(id)}
-                        getConsolidatedDisplay={(ids) => getConsolidatedSpecNames(ids)}
-                        isOptionSelected={(optionId, selectedIds) => isRoleGroupSelected(optionId, selectedIds)}
-                        variant="secondary"
-                      />
-                    </td>
-                    <td className="px-2 py-2.5 text-center sm:static sticky right-0 bg-background-elevated shadow-[-4px_0_8px_-4px_rgba(0,0,0,0.3)] sm:shadow-none">
-                      <button
-                        onClick={() => {
-                          setNotesModalItem(item)
-                          setNotesModalValue(itemNotes[item.id] || '')
-                        }}
-                        title={itemNotes[item.id] || 'Add note'}
-                        className={`p-1.5 rounded-md transition-colors ${
-                          itemNotes[item.id]
-                            ? 'text-accent hover:bg-accent/10'
-                            : 'text-foreground-muted hover:text-foreground hover:bg-background-elevated'
-                        }`}
-                      >
-                        <HugeiconsIcon icon={StickyNote01Icon} size={16} />
-                      </button>
-                    </td>
-                  </tr>
+                  <ItemRow
+                    key={item.id}
+                    item={item}
+                    specs={itemSpecs[item.id]}
+                    note={itemNotes[item.id] || ''}
+                    classSpecOptions={classSpecOptions}
+                    onToggleAvailability={toggleAvailability}
+                    onToggleLootCouncil={toggleLootCouncil}
+                    onUpdateClassification={updateClassification}
+                    onAddSpec={addSpec}
+                    onRemoveSpec={removeSpec}
+                    onRemoveAllSpecs={removeAllSpecs}
+                    onOpenNotes={(item, currentNote) => {
+                      setNotesModalItem(item)
+                      setNotesModalValue(currentNote)
+                    }}
+                    getSpecName={getSpecName}
+                    getSpecColor={getSpecColor}
+                    getConsolidatedSpecNames={getConsolidatedSpecNames}
+                    isRoleGroupSelected={isRoleGroupSelected}
+                  />
                 ))}
               </tbody>
             </table>
