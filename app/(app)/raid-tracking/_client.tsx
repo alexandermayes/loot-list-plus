@@ -496,11 +496,18 @@ export default function RaidTrackingPage() {
         // Not critical - headers will show 0 until expanded
       }
 
-      // Auto-expand the most recent week
-      const mostRecentRaid = deduplicatedEvents[0]
+      // Auto-expand the two most recent weeks (covers "this week + last week")
       const effectiveFirstRaidDay = raidScheduleSource.first_raid_day ?? 0
-      const mostRecentWeekStart = getWeekStart(mostRecentRaid.raid_date, effectiveFirstRaidDay)
-      setExpandedWeeks(new Set([mostRecentWeekStart]))
+      const topWeekStarts: string[] = []
+      for (const event of deduplicatedEvents) {
+        const ws = getWeekStart(event.raid_date, effectiveFirstRaidDay)
+        if (!topWeekStarts.includes(ws)) {
+          topWeekStarts.push(ws)
+          if (topWeekStarts.length === 2) break
+        }
+      }
+      const mostRecentWeekStart = topWeekStarts[0]
+      setExpandedWeeks(new Set(topWeekStarts))
 
       // Auto-expand the first raid day in the most recent week (earliest date in that week)
       const raidsInMostRecentWeek = deduplicatedEvents.filter((r: RaidEvent) =>
@@ -2232,15 +2239,37 @@ export default function RaidTrackingPage() {
     })
   }, [])
 
+  const todayWeekStart = useMemo(
+    () => getWeekStart(toDateString(new Date()), firstRaidDay),
+    [firstRaidDay]
+  )
+
   const getWeekLabel = useCallback((weekStartDate: string) => {
-    const date = parseDate(weekStartDate)
-    return `Week of ${date.toLocaleDateString('en-US', {
-      weekday: 'long',
-      month: 'long',
-      day: 'numeric',
-      year: 'numeric'
-    })}`
+    const start = parseDate(weekStartDate)
+    const end = new Date(start)
+    end.setDate(end.getDate() + 6)
+    const sameMonth =
+      start.getMonth() === end.getMonth() && start.getFullYear() === end.getFullYear()
+    const startStr = start.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })
+    const endStr = sameMonth
+      ? String(end.getDate())
+      : end.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })
+    const currentYear = new Date().getFullYear()
+    const showYear =
+      start.getFullYear() !== currentYear || end.getFullYear() !== currentYear
+    return showYear ? `${startStr} – ${endStr}, ${end.getFullYear()}` : `${startStr} – ${endStr}`
   }, [])
+
+  const getWeekRelativeTag = useCallback(
+    (weekStartDate: string): 'this' | 'last' | null => {
+      if (weekStartDate === todayWeekStart) return 'this'
+      const prev = parseDate(todayWeekStart)
+      prev.setDate(prev.getDate() - 7)
+      if (toDateString(prev) === weekStartDate) return 'last'
+      return null
+    },
+    [todayWeekStart]
+  )
 
   // Memoize expensive raid grouping computation
   const { raidsByWeek, weekKeys } = useMemo(() => {
@@ -2510,6 +2539,18 @@ export default function RaidTrackingPage() {
         {weekKeys.map((weekStart) => {
           const raids = raidsByWeek[weekStart]
           const isWeekExpanded = expandedWeeks.has(weekStart)
+          const relativeTag = getWeekRelativeTag(weekStart)
+          const nonSkippedRaids = raids.filter((r) => !r.is_skipped)
+          const weekRaidCount = nonSkippedRaids.length
+          const weekAttended = nonSkippedRaids.reduce(
+            (sum, r) => sum + getAttendanceCount(r.id),
+            0
+          )
+          const weekLoot = nonSkippedRaids.reduce(
+            (sum, r) => sum + getLootCount(r.id),
+            0
+          )
+          const hasSummary = weekRaidCount > 0
 
           return (
             <div key={weekStart} className="space-y-3">
@@ -2525,6 +2566,17 @@ export default function RaidTrackingPage() {
                   <HugeiconsIcon icon={ArrowDown01Icon} size={24} className="text-foreground group-hover:text-accent transition-colors flex-shrink-0" />
                 )}
                 <h2 className="text-[24px] font-bold text-foreground group-hover:text-accent transition-colors">{getWeekLabel(weekStart)}</h2>
+                {relativeTag && (
+                  <Badge variant="accent-subtle" className="flex-shrink-0">
+                    {relativeTag === 'this' ? 'This week' : 'Last week'}
+                  </Badge>
+                )}
+                {!isWeekExpanded && hasSummary && (
+                  <span className="text-[13px] text-foreground-muted tabular-nums flex-shrink-0">
+                    {weekRaidCount} {weekRaidCount === 1 ? 'raid' : 'raids'} • {weekAttended} attended
+                    {weekLoot > 0 && <span className="text-[#a335ee]"> • {weekLoot} loot</span>}
+                  </span>
+                )}
                 <div className="flex-1 h-[1px] bg-foreground/10"></div>
               </Button>
 
@@ -2643,26 +2695,40 @@ export default function RaidTrackingPage() {
                       <span className="sm:hidden">Discord</span>
                     </Button>
                   )}
-                  {!raid.is_skipped && hasImportedData && guildSettings?.wcl_guild_url && !raid.wcl_report_code && (
+                  {raid.is_skipped ? (
                     <Button
-                      variant="outline"
+                      variant="destructive"
                       size="sm"
-                      onClick={() => handleLinkWcl(raid.id)}
-                      loading={linkingWcl === raid.id}
-                      className="border-[#e35e15]/50 text-[#e35e15] hover:bg-[#e35e15]/10"
+                      onClick={() => toggleSkipDay(raid.id, raid.is_skipped)}
+                      className="bg-destructive/30 hover:bg-destructive/40"
                     >
-                      <span className="hidden sm:inline">Link WCL</span>
-                      <span className="sm:hidden">WCL</span>
+                      Unskip
                     </Button>
+                  ) : (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="outline" size="sm" aria-label="More raid actions" className="px-2">
+                          <HugeiconsIcon icon={MoreVerticalIcon} size={16} />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        {hasImportedData && guildSettings?.wcl_guild_url && !raid.wcl_report_code && (
+                          <DropdownMenuItem
+                            onClick={() => handleLinkWcl(raid.id)}
+                            disabled={linkingWcl === raid.id}
+                          >
+                            {linkingWcl === raid.id ? 'Linking WCL…' : 'Link WCL'}
+                          </DropdownMenuItem>
+                        )}
+                        <DropdownMenuItem
+                          onClick={() => toggleSkipDay(raid.id, false)}
+                          className="text-destructive focus:text-destructive"
+                        >
+                          Skip day
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   )}
-                  <Button
-                    variant={raid.is_skipped ? 'destructive' : 'outline'}
-                    size="sm"
-                    onClick={() => toggleSkipDay(raid.id, raid.is_skipped)}
-                    className={raid.is_skipped ? 'bg-destructive/30 hover:bg-destructive/40' : ''}
-                  >
-                    {raid.is_skipped ? 'Unskip' : 'Skip day'}
-                  </Button>
                 </div>
               </div>
 
