@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect, useRef } from 'react'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { Cancel01Icon, MoreVerticalIcon } from '@hugeicons/core-free-icons'
 import { Button } from '@/components/ui/button'
@@ -18,6 +19,17 @@ import type {
   RaidLootEntry,
   UnlinkedAttendee,
 } from './types'
+
+// Keyboard mapping for the hover-to-mark shortcut on member rows.
+// 1=Attended, 2=Late, 3=Standby, 4=No show, 5=Excused, 0=Clear.
+const KEY_TO_STATE: Record<string, CellState> = {
+  '1': 'attended',
+  '2': 'late',
+  '3': 'standby',
+  '4': 'no-show',
+  '5': 'excused',
+  '0': 'empty',
+}
 
 interface RaidMemberListProps {
   raidId: string
@@ -96,6 +108,29 @@ export function RaidMemberList({
   onOpenReassign,
   onDeleteLootEntry,
 }: RaidMemberListProps) {
+  // Tracks the currently hovered member row so the document keydown listener
+  // can dispatch a status change for that row when the officer presses 1-5.
+  // A ref (not state) keeps the listener stable and avoids re-renders on hover.
+  const hoveredRef = useRef<{ characterId: string; userId: string } | null>(null)
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.metaKey || e.ctrlKey || e.altKey) return
+      // Don't steal keys while typing in a form field
+      const target = e.target as HTMLElement | null
+      const tag = target?.tagName
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || target?.isContentEditable) return
+      const hovered = hoveredRef.current
+      if (!hovered) return
+      const nextState = KEY_TO_STATE[e.key]
+      if (!nextState) return
+      e.preventDefault()
+      onSetAttendanceStatus(raidId, hovered.characterId, hovered.userId, nextState)
+    }
+    document.addEventListener('keydown', handler)
+    return () => document.removeEventListener('keydown', handler)
+  }, [raidId, onSetAttendanceStatus])
+
   const noMembers = members.length === 0
   const noUnlinked = !unlinkedAttendees || unlinkedAttendees.length === 0
 
@@ -169,6 +204,17 @@ export function RaidMemberList({
             <div
               key={member.character_id}
               className={`flex flex-col rounded-lg transition-colors ${getCellStyle(state)}`}
+              onMouseEnter={() => {
+                hoveredRef.current = {
+                  characterId: member.character_id,
+                  userId: member.user_id,
+                }
+              }}
+              onMouseLeave={() => {
+                if (hoveredRef.current?.characterId === member.character_id) {
+                  hoveredRef.current = null
+                }
+              }}
             >
               <div className="flex items-center">
                 <button
