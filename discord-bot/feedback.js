@@ -241,6 +241,12 @@ async function handleMessageCreate(message) {
   if (!channelId) return;
   if (message.author?.bot) return;
 
+  // Diagnostic: log any message that touches the watched channel so we can
+  // verify the bot is receiving events at all when capture isn't happening.
+  if (message.channel.id === channelId || message.channel.parentId === channelId) {
+    console.log(`[feedback] msg event: id=${message.id} chan=${message.channel.id} parent=${message.channel.parentId ?? 'none'} threadStarter=${message.id === message.channel.id} author=${message.author?.tag}`);
+  }
+
   // Two valid shapes for the watched channel:
   //   1. Plain text channel — message lands directly in it
   //   2. Forum channel — each post is a thread whose parent is the forum.
@@ -262,6 +268,11 @@ async function handleMessageCreate(message) {
 async function handleReactionAdd(reaction, user) {
   if (!isFeedbackConfigured()) { warnMissingOnce(); return; }
   if (user.bot) return;
+
+  // Diagnostic: log every non-bot reaction so we can see whether the gateway
+  // is delivering reaction events at all (regardless of emoji match).
+  console.log(`[feedback] reaction event: emoji=${reaction.emoji.name} (codepoints=${[...(reaction.emoji.name||'')].map((c) => c.codePointAt(0).toString(16)).join(',')}) by=${user.tag} msgId=${reaction.message?.id} channelId=${reaction.message?.channel?.id} channelType=${reaction.message?.channel?.type}`);
+
   if (reaction.emoji.name !== TRIGGER_EMOJI) return;
 
   // Reaction may be partial (uncached message) — fetch full
