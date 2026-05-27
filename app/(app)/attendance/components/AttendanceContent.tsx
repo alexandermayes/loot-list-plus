@@ -74,7 +74,13 @@ interface WeekGroup {
   raids: RaidEvent[]
 }
 
-export default function AttendanceContent() {
+interface AttendanceContentProps {
+  // Server-rendered heading from page.tsx — LCP target until the client
+  // takes over with the same markup.
+  serverHeading?: React.ReactNode
+}
+
+export default function AttendanceContent({ serverHeading }: AttendanceContentProps = {}) {
   // Personal attendance state
   const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>([])
   const [loading, setLoading] = useState(true)
@@ -949,10 +955,12 @@ export default function AttendanceContent() {
     <div className="p-4 sm:p-6 lg:p-8 space-y-6 font-poppins">
       {/* Header - Always visible */}
       <div className="flex items-start justify-between gap-4">
-        <div>
-          <Heading level={1}>Attendance</Heading>
-          <p className="text-muted-foreground mt-1 text-base">Track raid attendance and view attendance scores</p>
-        </div>
+        {serverHeading ?? (
+          <div>
+            <Heading level={1}>Attendance</Heading>
+            <p className="text-muted-foreground mt-1 text-base">Track raid attendance and view attendance scores</p>
+          </div>
+        )}
         {hasTeams && (
           <TeamSelector
             teams={teams}
