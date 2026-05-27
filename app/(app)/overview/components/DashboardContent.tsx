@@ -43,6 +43,7 @@ import { SetupGuide } from './SetupGuide'
 import { hasFeature } from '@/domain/guild/feature-flags'
 import type { RaidTeam } from '@/domain/raid-team/types'
 import { resolveRaidDays, resolveRollingWeeks } from '@/domain/raid-team/settings'
+import { paginatedSelect } from '@/utils/supabase/paginate'
 
 // Get next N raid dates from configured raid days
 function getNextRaidDates(raidDays: number[], timezone: string, count = 2): Date[] {
@@ -954,15 +955,20 @@ export default function DashboardContent({ serverHeading }: DashboardContentProp
             (e: { raid_date: string }) => e.raid_date >= actualPeriodStartStr
           )
 
-          // Fetch ALL character attendance records (guild-wide, not just team events)
-          // so we can detect fill-in attendance on other teams' events
-          const { data: allCharRecords } = await supabase
-            .from('attendance_records')
-            .select('raid_event_id, signed_up, attended, no_call_no_show, was_late, was_benched, is_excused, points_override')
-            .eq('character_id', characterId)
-
+          // Fetch ALL character attendance records (guild-wide, not just team
+          // events) so we can detect fill-in attendance on other teams'.
+          // Paginated — a 3-year+ raider attending all raids crosses 1000 rows,
+          // and silent truncation feeds wrong attendance into the team-aware
+          // score shown right on the dashboard.
           type AttRecord = { raid_event_id: string; signed_up: boolean; attended: boolean; no_call_no_show: boolean; was_late?: boolean; was_benched?: boolean; is_excused?: boolean; points_override?: number | null }
-          const charRecords: AttRecord[] = allCharRecords || []
+          const charRecords = await paginatedSelect<AttRecord>((start, end) =>
+            supabase
+              .from('attendance_records')
+              .select('raid_event_id, signed_up, attended, no_call_no_show, was_late, was_benched, is_excused, points_override')
+              .eq('character_id', characterId)
+              .order('id', { ascending: true })
+              .range(start, end)
+          )
           const teamEventIds = new Set(raidEventsData.map((r: { id: string }) => r.id))
 
           // Records on team events (for primary scoring)
@@ -1237,26 +1243,42 @@ export default function DashboardContent({ serverHeading }: DashboardContentProp
             }
           }
         })(),
-        // Competition: count others wanting the same items
+        // Competition: count others wanting the same items.
+        // Paginated — for an active guild ~40 raiders × ~50 items per submission,
+        // the cross-product can easily exceed the 1000-row PostgREST cap and the
+        // "X others want this" count silently undercounts popular items.
         (async () => {
           try {
-            const { data: allSubmissionsForItems } = await supabase
-              .from('loot_submission_items')
-              .select(`
-                loot_item_id,
-                rank,
-                submission:loot_submissions!inner (
-                  character_id,
-                  guild_id,
-                  status
-                )
-              `)
-              .in('loot_item_id', filteredItemIds)
-              .eq('submission.guild_id', activeGuild.id)
-              .eq('submission.status', 'approved')
-              .is('removed_at', null)
+            type CompetitionRow = {
+              loot_item_id: string
+              rank: number
+              submission:
+                | { character_id: string; guild_id: string; status: string }
+                | { character_id: string; guild_id: string; status: string }[]
+                | null
+            }
+            const allSubmissionsForItems = await paginatedSelect<CompetitionRow>(
+              (start, end) =>
+                supabase
+                  .from('loot_submission_items')
+                  .select(`
+                    loot_item_id,
+                    rank,
+                    submission:loot_submissions!inner (
+                      character_id,
+                      guild_id,
+                      status
+                    )
+                  `)
+                  .in('loot_item_id', filteredItemIds)
+                  .eq('submission.guild_id', activeGuild.id)
+                  .eq('submission.status', 'approved')
+                  .is('removed_at', null)
+                  .order('id', { ascending: true })
+                  .range(start, end)
+            )
 
-            if (allSubmissionsForItems) {
+            if (allSubmissionsForItems.length > 0) {
               // Group by item, count unique characters, find user's rank position
               const itemMap = new Map<string, Array<{ character_id: string; rank: number }>>()
               for (const sub of allSubmissionsForItems) {
@@ -1287,21 +1309,36 @@ export default function DashboardContent({ serverHeading }: DashboardContentProp
             // Competition data not critical
           }
         })(),
-        // Loot efficiency: count total received items + track which items were received
-        // Match by wowhead_id so cross-tier awards (same physical item, different UUID) are detected
+        // Loot efficiency: count total received items + track which items were
+        // received (matched by wowhead_id so cross-tier awards on the same
+        // physical item are detected).
+        // The count query stays separate (head: true, count: exact) because it
+        // isn't capped at 1000. The data read is paginated — a 3+ year veteran
+        // can easily cross 1000 awards, and a truncated set would leave items
+        // they already received showing as still-available priorities.
         (async () => {
           try {
-            const { data, count } = await supabase
-              .from('loot_history')
-              .select('loot_item:loot_items(wowhead_id)', { count: 'exact' })
-              .eq('character_id', characterId)
-              .eq('guild_id', activeGuild.id)
-            totalReceivedCount = count || 0
-            if (data) {
-              for (const h of data as { loot_item: { wowhead_id: number } | null }[]) {
-                if (h.loot_item?.wowhead_id != null) {
-                  receivedWowheadIds.add(h.loot_item.wowhead_id)
-                }
+            const [countResult, allAwards] = await Promise.all([
+              supabase
+                .from('loot_history')
+                .select('id', { count: 'exact', head: true })
+                .eq('character_id', characterId)
+                .eq('guild_id', activeGuild.id),
+              paginatedSelect<{ loot_item: { wowhead_id: number } | null }>(
+                (start, end) =>
+                  supabase
+                    .from('loot_history')
+                    .select('loot_item:loot_items(wowhead_id)')
+                    .eq('character_id', characterId)
+                    .eq('guild_id', activeGuild.id)
+                    .order('id', { ascending: true })
+                    .range(start, end)
+              ),
+            ])
+            totalReceivedCount = countResult.count || 0
+            for (const h of allAwards) {
+              if (h.loot_item?.wowhead_id != null) {
+                receivedWowheadIds.add(h.loot_item.wowhead_id)
               }
             }
           } catch {
