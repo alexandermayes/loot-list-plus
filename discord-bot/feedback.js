@@ -2,8 +2,16 @@ const { PermissionFlagsBits } = require('discord.js');
 const { createClient } = require('@supabase/supabase-js');
 
 const TRIGGER_EMOJI = '🐛';
+const FEATURE_TRIGGER_EMOJI = '💡';
 const BUG_LABELS = ['bug', 'user-feedback', 'discord-source'];
 const FEATURE_LABELS = ['enhancement', 'user-feedback', 'discord-source'];
+
+// Reaction emoji → labels applied when an officer reacts on any message.
+// Lets feature requests be filed from any channel just like bugs.
+const REACTION_TRIGGERS = {
+  [TRIGGER_EMOJI]: BUG_LABELS,
+  [FEATURE_TRIGGER_EMOJI]: FEATURE_LABELS,
+};
 
 // Channels the bot watches in realtime. Each entry maps an env var holding
 // a Discord channel ID to the labels applied to the resulting GitHub issue.
@@ -417,11 +425,12 @@ async function handleMessageCreate(message) {
 async function handleReactionAdd(reaction, user) {
   if (!isFeedbackConfigured()) { warnMissingOnce(); return; }
   if (user.bot) return;
-  if (reaction.emoji.name !== TRIGGER_EMOJI) return;
+  const labels = REACTION_TRIGGERS[reaction.emoji.name];
+  if (!labels) return;
 
   // Logged only for trigger-emoji reactions — across 49 servers, logging
   // every reaction is too noisy.
-  console.log(`[feedback] ${TRIGGER_EMOJI} reaction by=${user.tag} msgId=${reaction.message?.id} channelId=${reaction.message?.channel?.id}`);
+  console.log(`[feedback] ${reaction.emoji.name} reaction by=${user.tag} msgId=${reaction.message?.id} channelId=${reaction.message?.channel?.id}`);
 
   // Reaction may be partial (uncached message) — fetch full
   if (reaction.partial) {
@@ -447,7 +456,7 @@ async function handleReactionAdd(reaction, user) {
   }
 
   try {
-    await fileFeedback({ message, source: 'reaction', triggeredBy: user });
+    await fileFeedback({ message, source: 'reaction', triggeredBy: user, labels });
   } catch (err) {
     console.error('[feedback] reaction listener error:', err);
   }
