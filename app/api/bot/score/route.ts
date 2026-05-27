@@ -12,6 +12,7 @@
 import { NextResponse } from 'next/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { computeAttendance } from '@/domain/scoring'
+import { resolveRaidDays } from '@/domain/raid-team/settings'
 import { trackApiError } from '@/utils/analytics/server'
 import { checkBotAuth, resolveGuildFromDiscord } from '../_helpers'
 
@@ -62,7 +63,7 @@ export async function GET(request: Request) {
     const [settingsResult, raidEventsResult, recordsResult] = await Promise.all([
       supabase
         .from('guild_settings')
-        .select('rolling_attendance_weeks, attendance_type, signup_weight, max_attendance_bonus, raid_days, week_reset_day, late_early_penalty_enabled, late_early_penalty_value, minimum_raid_days, minimum_raid_days_enabled, middle_attendance_threshold, middle_attendance_bonus, max_attendance_threshold')
+        .select('rolling_attendance_weeks, attendance_type, signup_weight, max_attendance_bonus, raid_days_per_week, first_raid_day, second_raid_day, third_raid_day, fourth_raid_day, fifth_raid_day, week_reset_day, late_early_penalty_enabled, late_early_penalty_value, minimum_raid_days, minimum_raid_days_enabled, middle_attendance_threshold, middle_attendance_bonus, max_attendance_threshold')
         .eq('guild_id', guild.id)
         .single(),
       supabase
@@ -88,7 +89,23 @@ export async function GET(request: Request) {
       raid_team_id: e.raid_team_id ?? null,
     }))
 
-    const raidDays: number[] = Array.isArray(settings.raid_days) ? settings.raid_days as number[] : []
+    // raid_days_per_week + first..fifth_raid_day are the canonical day-of-week
+    // integers (0=Sun) the scoring engine wants. The legacy `raid_days` string
+    // array (["Sunday","Monday"]) is not what we want — passing names where
+    // numbers are expected made the day-of-week filter drop every event → 0/0.
+    // V1 uses the guild's default raid days (no team override); we don't yet
+    // know which raid team this slash command's character is on.
+    const raidDays = resolveRaidDays(
+      {
+        raid_days_per_week: settings.raid_days_per_week ?? 2,
+        first_raid_day: settings.first_raid_day,
+        second_raid_day: settings.second_raid_day,
+        third_raid_day: settings.third_raid_day,
+        fourth_raid_day: settings.fourth_raid_day,
+        fifth_raid_day: settings.fifth_raid_day,
+      },
+      null
+    )
 
     const attendance = computeAttendance({
       records: recordsResult.data || [],
