@@ -15,7 +15,8 @@ import { Search01Icon } from '@hugeicons/core-free-icons'
 import type { LootItem } from './types'
 
 interface LootItemSelectionTarget {
-  itemId: string
+  index: number
+  itemId: number
   characterName: string
 }
 

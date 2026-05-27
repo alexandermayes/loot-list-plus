@@ -4,7 +4,7 @@ import { createClient } from '@/utils/supabase/client'
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { HugeiconsIcon } from '@hugeicons/react'
-import { ArrowDown01Icon, ArrowUp01Icon, Cancel01Icon, MoreVerticalIcon, PlusSignIcon } from '@hugeicons/core-free-icons'
+import { ArrowDown01Icon, ArrowUp01Icon, PlusSignIcon } from '@hugeicons/core-free-icons'
 import nextDynamic from 'next/dynamic'
 
 const LootHistoryTab = nextDynamic(() => import('./components/LootHistoryTab'), {
@@ -32,26 +32,26 @@ import { Heading, Text } from '@/components/ui/typography'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { useGuildContext } from '@/app/contexts/GuildContext'
 import { useNotification } from '@/app/contexts/NotificationContext'
-import ItemLink from '@/app/components/ItemLink'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
 import { useConfirm } from '@/components/ui/confirm-modal'
 import { SegmentedControl } from '@/components/ui/segmented-control'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
 import { trackClientEvent } from '@/utils/analytics/client'
 import { parseDate, toDateString } from '@/utils/date'
 import { useRaidTeam } from '@/app/hooks/useRaidTeam'
 import { isDateScheduled } from '@/domain/raid-team/schedule-history'
 import { resolveRaidDays } from '@/domain/raid-team/settings'
 import { TeamSelector } from '@/app/components/TeamSelector'
-import type { Member, RaidLootEntry, LootItem } from './components/types'
+import type {
+  Member,
+  RaidLootEntry,
+  LootItem,
+  RaidEvent,
+  AttendanceStatus,
+  UnlinkedAttendee,
+} from './components/types'
+import { getCellState, type CellState } from './components/cell-state'
 import { SkipDayModal } from './components/SkipDayModal'
 import { BonusRaidModal } from './components/BonusRaidModal'
 import { ReassignLootModal } from './components/ReassignLootModal'
@@ -59,32 +59,7 @@ import { LootItemSelectionModal } from './components/LootItemSelectionModal'
 import { AttendeeResolutionModal } from './components/AttendeeResolutionModal'
 import { ImportModal } from './components/ImportModal'
 import { RaidCardHeader } from './components/RaidCardHeader'
-
-interface UnlinkedAttendee {
-  character_name: string
-  status: AttendanceStatus
-}
-
-interface RaidEvent {
-  id: string
-  raid_date: string
-  notes: string | null
-  is_skipped: boolean
-  skip_reason: string | null
-  wcl_report_code: string | null
-  is_bonus?: boolean
-}
-
-interface AttendanceStatus {
-  signed_up: boolean
-  attended: boolean
-  no_call_no_show: boolean
-  was_late: boolean
-  was_benched: boolean
-  is_excused?: boolean
-}
-
-type CellState = 'attended' | 'late' | 'standby' | 'no-show' | 'excused' | 'empty'
+import { RaidMemberList } from './components/RaidMemberList'
 
 export default function RaidTrackingPage() {
   const [members, setMembers] = useState<Member[]>([])
@@ -641,28 +616,6 @@ export default function RaidTrackingPage() {
       await loadRaidAttendance(raidId)
     }
   }, [attendance, loadRaidAttendance])
-
-  const getCellState = (status: AttendanceStatus | undefined): CellState => {
-    if (!status) return 'empty'
-    if (status.no_call_no_show) return 'no-show'
-    if (status.is_excused) return 'excused'
-    if (status.attended && status.was_late) return 'late'
-    if (status.was_benched) return 'standby'
-    if (status.attended) return 'attended'
-    return 'empty'
-  }
-
-  const getCellStyle = (state: CellState) => {
-    switch (state) {
-      case 'attended': return 'bg-background-elevated border border-border border-l-2 border-l-success'
-      case 'late': return 'bg-background-elevated border border-border border-l-2 border-l-warning'
-      case 'standby': return 'bg-background-elevated border border-border border-l-2 border-l-orange-500'
-      case 'no-show': return 'bg-background-elevated border border-border border-l-2 border-l-destructive'
-      case 'excused': return 'bg-background-elevated border border-border border-l-2 border-l-muted-foreground'
-      default: return 'bg-background-elevated border border-border'
-    }
-  }
-
 
   const setAttendanceStatus = async (raidId: string, characterId: string, userId: string, state: CellState) => {
     const current = attendance[raidId]?.[characterId]
@@ -2610,215 +2563,22 @@ export default function RaidTrackingPage() {
                 onSkipDay={toggleSkipDay}
               />
 
-              {/* Expanded Member List */}
               {isExpanded && !raid.is_skipped && (
-                <div className="border-t border-border px-4 sm:px-6 py-4">
-                  {members.length === 0 && (!unlinkedAttendees[raid.id] || unlinkedAttendees[raid.id].length === 0) ? (
-                    /* Empty State */
-                    <div className="text-center py-12">
-                      <div className="w-16 h-16 mx-auto mb-4 bg-muted rounded-full flex items-center justify-center">
-                        <svg className="w-8 h-8 text-foreground-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                        </svg>
-                      </div>
-                      <h4 className="text-[16px] font-semibold text-foreground mb-2">No raiders with loot lists</h4>
-                      <p className="text-foreground-muted text-[13px] max-w-md mx-auto">
-                        Guild members with loot submissions will appear here. Use the "Import data" button to add attendance for this raid day.
-                      </p>
-                    </div>
-                  ) : (
-                  <>
-                  {/* Mark all attended button */}
-                  {members.some(m => getCellState(attendance[raid.id]?.[m.character_id]) === 'empty') && (
-                    <div className="flex justify-end mb-2">
-                      <Button variant="success-outline" size="sm" onClick={() => markAllAttended(raid.id, members)}>
-                        Mark all attended
-                      </Button>
-                    </div>
-                  )}
-
-                  {/* Click-row raider list */}
-                  <div className="space-y-1">
-                    {/* Linked Members */}
-                    {members.map(member => {
-                      const status = attendance[raid.id]?.[member.character_id]
-                      const state = getCellState(status)
-                      const isSignedUp = status?.signed_up || false
-                      const memberLoot = raidLoot[raid.id]?.filter(l =>
-                        l.character_name.toLowerCase() === member.character_name.toLowerCase()
-                      ) || []
-
-                      return (
-                        <div
-                          key={member.character_id}
-                          className={`flex flex-col rounded-lg transition-colors ${getCellStyle(state)}`}
-                        >
-                          <div className="flex items-center">
-                            {/* Clickable area - cycles status */}
-                            <button
-                              type="button"
-                              onClick={() => cycleStatus(raid.id, member.character_id, member.user_id)}
-                              className="flex items-center gap-2 min-w-0 flex-1 px-3 py-2 text-left cursor-pointer hover:bg-muted/50 rounded-l-lg transition-colors"
-                            >
-                              <span
-                                className="font-medium text-[13px] truncate"
-                                style={{ color: member.class_color }}
-                              >
-                                {member.character_name}
-                              </span>
-
-                              {/* Desktop: Inline Loot Items (names only, no interactive elements inside button) */}
-                              {memberLoot.length > 0 && (
-                                <span className="hidden sm:flex items-center gap-2 text-[12px] min-w-0 overflow-hidden">
-                                  <span className="text-muted-foreground flex-shrink-0">→</span>
-                                  {memberLoot.slice(0, 2).map(loot => (
-                                    <span key={loot.id} className="min-w-0 max-w-[180px] flex-shrink overflow-hidden">
-                                      <ItemLink name={loot.item_name} wowheadId={loot.item_wowhead_id} className="text-[12px]" />
-                                    </span>
-                                  ))}
-                                  {memberLoot.length > 2 && (
-                                    <span
-                                      className="text-[11px] font-medium text-muted-foreground bg-muted px-2 py-0.5 rounded-full flex-shrink-0"
-                                      title={memberLoot.slice(2).map(l => l.item_name).join(', ')}
-                                    >
-                                      +{memberLoot.length - 2} more
-                                    </span>
-                                  )}
-                                </span>
-                              )}
-
-                              <span className="flex-1" />
-
-                              {/* Status pill */}
-                              {state === 'attended' && <span className="text-[11px] font-medium text-success bg-success/15 px-2 py-0.5 rounded-full flex-shrink-0">Attended</span>}
-                              {state === 'late' && <span className="text-[11px] font-medium text-warning bg-warning/15 px-2 py-0.5 rounded-full flex-shrink-0">Late</span>}
-                              {state === 'standby' && <span className="text-[11px] font-medium text-orange-500 bg-orange-500/15 px-2 py-0.5 rounded-full flex-shrink-0">Standby</span>}
-                              {state === 'no-show' && <span className="text-[11px] font-medium text-destructive bg-destructive/15 px-2 py-0.5 rounded-full flex-shrink-0">No Show</span>}
-                              {state === 'excused' && <span className="text-[11px] font-medium text-muted-foreground bg-muted px-2 py-0.5 rounded-full flex-shrink-0">Excused</span>}
-                              {isSignedUp && <span className="text-[11px] font-medium text-accent bg-accent/15 px-2 py-0.5 rounded-full flex-shrink-0">Signed up</span>}
-                            </button>
-
-                            {/* Three-dot menu (outside click target) */}
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-7 w-7 flex-shrink-0 mr-1">
-                                  <HugeiconsIcon icon={MoreVerticalIcon} size={16} />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuItem
-                                  onClick={() => setAttendanceStatus(raid.id, member.character_id, member.user_id, 'attended')}
-                                  className={state === 'attended' ? 'bg-muted' : ''}
-                                >
-                                  Mark as attended
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  onClick={() => setAttendanceStatus(raid.id, member.character_id, member.user_id, 'late')}
-                                  className={state === 'late' ? 'bg-muted' : ''}
-                                >
-                                  Mark as late
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  onClick={() => setAttendanceStatus(raid.id, member.character_id, member.user_id, 'standby')}
-                                  className={state === 'standby' ? 'bg-muted' : ''}
-                                >
-                                  Mark as standby
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  onClick={() => setAttendanceStatus(raid.id, member.character_id, member.user_id, 'no-show')}
-                                  className={state === 'no-show' ? 'bg-muted' : ''}
-                                >
-                                  Mark as no show
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  onClick={() => setAttendanceStatus(raid.id, member.character_id, member.user_id, 'empty')}
-                                  className={state === 'empty' ? 'bg-muted' : ''}
-                                >
-                                  Clear status
-                                </DropdownMenuItem>
-                                {guildSettings?.use_signups && (
-                                  <>
-                                    <DropdownMenuSeparator />
-                                    <DropdownMenuItem onClick={() => toggleSignup(raid.id, member.character_id, member.user_id)}>
-                                      {isSignedUp ? 'Remove signup' : 'Mark as signed up'}
-                                    </DropdownMenuItem>
-                                  </>
-                                )}
-                                {memberLoot.length > 0 && (
-                                  <>
-                                    <DropdownMenuSeparator />
-                                    <DropdownMenuItem onClick={() => setReassignModal({ raidId: raid.id, lootEntries: memberLoot, currentMember: member })}>
-                                      Reassign loot
-                                    </DropdownMenuItem>
-                                  </>
-                                )}
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem
-                                  onClick={() => removeFromAttendance(raid.id, member.character_id)}
-                                  className="text-destructive"
-                                >
-                                  Remove from raid
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </div>
-
-                          {/* Mobile: Loot items on separate line */}
-                          {memberLoot.length > 0 && (
-                            <div className="flex items-center gap-2 text-[12px] sm:hidden px-3 pb-2 flex-wrap">
-                              <span className="text-muted-foreground">→</span>
-                              {memberLoot.map(loot => (
-                                <div key={loot.id} className="flex items-center gap-1">
-                                  <ItemLink name={loot.item_name} wowheadId={loot.item_wowhead_id} className="text-[12px]" />
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={(e) => { e.stopPropagation(); deleteLootEntry(loot.id, raid.id) }}
-                                    className="text-destructive hover:text-destructive/80 h-5 w-5 p-0"
-                                    title="Remove loot"
-                                  >
-                                    <HugeiconsIcon icon={Cancel01Icon} size={14} />
-                                  </Button>
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      )
-                    })}
-
-                    {/* Unlinked Attendees (No Account Yet) - filter out any that match linked members */}
-                    {unlinkedAttendees[raid.id]
-                      ?.filter(attendee =>
-                        !members.some(m => m.character_name.toLowerCase() === attendee.character_name.toLowerCase())
-                      )
-                      .map((attendee, idx) => {
-                      const state = getCellState(attendee.status)
-
-                      return (
-                        <div
-                          key={`unlinked-${idx}`}
-                          className={`flex items-center px-3 py-2 rounded-lg opacity-60 ${getCellStyle(state)}`}
-                        >
-                          <div className="flex items-center gap-2 min-w-0 flex-1">
-                            <span className="font-medium text-muted-foreground text-[13px] truncate" title={`${attendee.character_name} (account not linked)`}>
-                              {attendee.character_name}
-                            </span>
-                            <span className="flex-1" />
-                            {state === 'attended' && <span className="text-[11px] font-medium text-success bg-success/15 px-2 py-0.5 rounded-full flex-shrink-0">Attended</span>}
-                            {state === 'late' && <span className="text-[11px] font-medium text-warning bg-warning/15 px-2 py-0.5 rounded-full flex-shrink-0">Late</span>}
-                            {state === 'standby' && <span className="text-[11px] font-medium text-orange-500 bg-orange-500/15 px-2 py-0.5 rounded-full flex-shrink-0">Standby</span>}
-                            {state === 'no-show' && <span className="text-[11px] font-medium text-destructive bg-destructive/15 px-2 py-0.5 rounded-full flex-shrink-0">No Show</span>}
-                            {state === 'excused' && <span className="text-[11px] font-medium text-muted-foreground bg-muted px-2 py-0.5 rounded-full flex-shrink-0">Excused</span>}
-                          </div>
-                        </div>
-                      )
-                    })}
-                  </div>
-                  </>
-                  )}
-
-                </div>
+                <RaidMemberList
+                  raidId={raid.id}
+                  members={members}
+                  attendanceMap={attendance[raid.id]}
+                  loot={raidLoot[raid.id]}
+                  unlinkedAttendees={unlinkedAttendees[raid.id]}
+                  useSignups={!!guildSettings?.use_signups}
+                  onCycleStatus={cycleStatus}
+                  onSetAttendanceStatus={setAttendanceStatus}
+                  onToggleSignup={toggleSignup}
+                  onRemoveFromAttendance={removeFromAttendance}
+                  onMarkAllAttended={markAllAttended}
+                  onOpenReassign={setReassignModal}
+                  onDeleteLootEntry={deleteLootEntry}
+                />
               )}
             </div>
           )

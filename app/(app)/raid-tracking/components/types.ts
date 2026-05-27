@@ -1,3 +1,27 @@
+export interface RaidEvent {
+  id: string
+  raid_date: string
+  notes: string | null
+  is_skipped: boolean
+  skip_reason: string | null
+  wcl_report_code: string | null
+  is_bonus?: boolean
+}
+
+export interface AttendanceStatus {
+  signed_up: boolean
+  attended: boolean
+  no_call_no_show: boolean
+  was_late: boolean
+  was_benched: boolean
+  is_excused?: boolean
+}
+
+export interface UnlinkedAttendee {
+  character_name: string
+  status: AttendanceStatus
+}
+
 export interface Member {
   character_id: string
   user_id: string

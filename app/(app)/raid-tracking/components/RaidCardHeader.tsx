@@ -17,18 +17,10 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { parseDate } from '@/utils/date'
-
-interface RaidLike {
-  id: string
-  raid_date: string
-  is_skipped: boolean
-  skip_reason: string | null
-  is_bonus?: boolean
-  wcl_report_code: string | null
-}
+import type { RaidEvent } from './types'
 
 interface RaidCardHeaderProps {
-  raid: RaidLike
+  raid: RaidEvent
   isExpanded: boolean
   isPast: boolean
   today: string
@@ -41,7 +33,7 @@ interface RaidCardHeaderProps {
   isPostingDiscord: boolean
   isLinkingWcl: boolean
   onToggleExpanded: (raidId: string) => void
-  onImport: (raid: RaidLike, hasImportedData: boolean) => void
+  onImport: (raid: RaidEvent, hasImportedData: boolean) => void | Promise<void>
   onPostToDiscord: (raidId: string) => void
   onLinkWcl: (raidId: string) => void
   onSkipDay: (raidId: string, isSkipped: boolean) => void
