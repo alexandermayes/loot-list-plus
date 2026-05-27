@@ -3,6 +3,8 @@ import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { verifyOfficerPermissions } from '@/utils/server-roles'
 import { trackApiError } from '@/utils/analytics/server'
+import { getAttendanceWindowEnd } from '@/domain/scoring'
+import { toDateString } from '@/utils/date'
 
 /**
  * GET /api/addon/guild-data
@@ -73,7 +75,12 @@ export async function GET(request: NextRequest) {
         loot_submission_items (loot_item_id, rank, loot_items (wowhead_id))
       `).eq('guild_id', guildId).eq('status', 'approved'),
       supabase.from('bad_luck_protection').select('character_id, loot_item_id, times_passed').eq('guild_id', guildId),
+      // Drop events from the in-progress reset week so the addon's score
+      // preview matches the web. `computeAttendance` already enforces this
+      // on the web side; the addon consumes a pre-summarized payload, so the
+      // filter has to happen here before we count and emit records.
       supabase.from('raid_events').select('id, raid_date').eq('guild_id', guildId)
+        .lte('raid_date', getAttendanceWindowEnd(toDateString(new Date()), settingsResult.data?.week_reset_day))
         .order('raid_date', { ascending: false }).limit(settingsResult.data?.rolling_attendance_weeks ? settingsResult.data.rolling_attendance_weeks * 7 : 28),
     ])
 

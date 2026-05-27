@@ -4,6 +4,8 @@ import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { verifyOfficerPermissions } from '@/utils/server-roles'
 import { trackApiError } from '@/utils/analytics/server'
+import { getAttendanceWindowEnd } from '@/domain/scoring'
+import { toDateString } from '@/utils/date'
 import { deflateRawSync } from 'zlib'
 
 /**
@@ -201,11 +203,13 @@ export async function GET(request: NextRequest) {
       .select('character_id, loot_item_id, times_passed')
       .eq('guild_id', guildId)
 
-    // Fetch attendance records
+    // Fetch attendance records. Drop events from the in-progress reset week
+    // so the addon's score preview matches the web (see computeAttendance).
     const { data: raidEvents } = await supabase
       .from('raid_events')
       .select('id, raid_date')
       .eq('guild_id', guildId)
+      .lte('raid_date', getAttendanceWindowEnd(toDateString(new Date()), (settings as { week_reset_day?: number | null } | null)?.week_reset_day))
       .order('raid_date', { ascending: false })
       .limit(settings?.rolling_attendance_weeks ? settings.rolling_attendance_weeks * 7 : 28)
 

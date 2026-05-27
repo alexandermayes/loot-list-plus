@@ -39,6 +39,8 @@ const ALLOWED_SETTINGS_FIELDS = [
   // Minimum Raids
   'minimum_raid_days_enabled',
   'minimum_raid_days',
+  'weekly_attendance_minimum',
+  'week_reset_day',
 
   // New Member Policy
   'new_member_mode',
@@ -194,6 +196,8 @@ export async function GET(request: Request) {
             // Minimum Raids
             minimum_raid_days_enabled: true,
             minimum_raid_days: 2,
+            weekly_attendance_minimum: null,
+            week_reset_day: 2,
 
             // Late/Early Penalty
             late_early_penalty_enabled: true,

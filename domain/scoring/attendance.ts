@@ -41,6 +41,47 @@ function formatDate(d: Date): string {
   return `${y}-${m}-${day}`
 }
 
+const DEFAULT_WEEK_RESET_DAY = 2 // Tuesday (NA WoW reset)
+
+/**
+ * Last day of the most recently completed reset week, relative to `asOf`.
+ *
+ * A reset week runs [resetDay, resetDay + 6 days]. We return the day just
+ * before the most recent reset boundary on/before `asOf`, then step back one
+ * more day so that today itself (or any day in the in-progress reset week)
+ * never appears in the scoring window. This is the "only count finished
+ * weeks + 1-day delay" rule the engine enforces.
+ */
+function lastCompletedResetWeekEnd(asOf: Date, resetDay: number): Date {
+  const dow = asOf.getDay()
+  const daysSinceReset = (dow - resetDay + 7) % 7
+  const end = new Date(asOf)
+  end.setDate(asOf.getDate() - daysSinceReset - 1)
+  return end
+}
+
+/**
+ * Last day (YYYY-MM-DD) of the most recently completed reset week, relative
+ * to `asOfDate`. Use this to drop in-progress-week events from any attendance
+ * summary that consumers compute outside of `computeAttendance` — e.g. the
+ * addon export endpoint, which ships a pre-summarized `{records, totalRaids}`
+ * payload to the WoW client.
+ */
+export function getAttendanceWindowEnd(asOfDate: string | undefined, weekResetDay?: number | null): string {
+  const asOf = asOfDate ? parseDateLocal(asOfDate) : new Date()
+  const resetDay = weekResetDay ?? DEFAULT_WEEK_RESET_DAY
+  return formatDate(lastCompletedResetWeekEnd(asOf, resetDay))
+}
+
+function weekKey(dateStr: string, resetDay: number): string {
+  const d = parseDateLocal(dateStr)
+  const dow = d.getDay()
+  const daysSinceReset = (dow - resetDay + 7) % 7
+  const startOfWeek = new Date(d)
+  startOfWeek.setDate(d.getDate() - daysSinceReset)
+  return formatDate(startOfWeek)
+}
+
 // ─── resolveStatus ──────────────────────────────────────────
 
 /**
@@ -95,11 +136,17 @@ export function resolveStatus(record: {
 export function computeAttendance(input: AttendanceInput): AttendanceResult {
   const config = withDefaults(input.config)
   const newMemberMode = input.newMemberMode || 'raw'
+  const resetDay = input.weekResetDay ?? DEFAULT_WEEK_RESET_DAY
 
   // 1. Rolling window
+  // Right edge is the last day of the last completed reset week relative to
+  // today. The in-progress reset week (and "today") never count, so officers
+  // can finish entering attendance for a night's raid without it shifting
+  // priorities until the next reset.
   const asOf = input.asOfDate ? parseDateLocal(input.asOfDate) : new Date()
-  let windowStart = new Date(asOf)
-  windowStart.setDate(windowStart.getDate() - config.rolling_attendance_weeks * 7)
+  const windowEnd = lastCompletedResetWeekEnd(asOf, resetDay)
+  let windowStart = new Date(windowEnd)
+  windowStart.setDate(windowStart.getDate() - config.rolling_attendance_weeks * 7 + 1)
   // Clamp to expansion's raid start date so pre-expansion events (e.g., blanks
   // auto-created by /api/raid-events/ensure before the expansion launched)
   // don't inflate the denominator.
@@ -108,11 +155,11 @@ export function computeAttendance(input: AttendanceInput): AttendanceResult {
     if (startDate > windowStart) windowStart = startDate
   }
   const windowStartStr = formatDate(windowStart)
-  const asOfStr = formatDate(asOf)
+  const windowEndStr = formatDate(windowEnd)
 
   // Filter events to window
   let eventsInWindow = input.raidEvents.filter(e =>
-    e.raid_date >= windowStartStr && e.raid_date <= asOfStr
+    e.raid_date >= windowStartStr && e.raid_date <= windowEndStr
   )
 
   // 2. Raid-day filter (bonus events bypass it: officers explicitly
@@ -189,7 +236,7 @@ export function computeAttendance(input: AttendanceInput): AttendanceResult {
     )
     // Filter fill-in events to window (same window as team events)
     const fillInsInWindow = input.fillInEvents.filter(e =>
-      e.raid_date >= windowStartStr && e.raid_date <= asOfStr
+      e.raid_date >= windowStartStr && e.raid_date <= windowEndStr
     )
     // Only consider fill-in events on dates WITHOUT a team event (avoid double-counting)
     const teamDates = new Set(dedupedEvents.map(e => e.raid_date))
@@ -198,20 +245,10 @@ export function computeAttendance(input: AttendanceInput): AttendanceResult {
     )
 
     if (extraFillIns.length > 0) {
-      // Group team events + fill-ins by week to apply per-week cap
-      const getWeekKey = (dateStr: string): string => {
-        const d = parseDateLocal(dateStr)
-        // Week starts on the first configured raid day, or Sunday
-        const day = d.getDay()
-        const startOfWeek = new Date(d)
-        startOfWeek.setDate(d.getDate() - day)
-        return formatDate(startOfWeek)
-      }
-
       // Count attended team events per week
       const teamAttendedPerWeek = new Map<string, number>()
       for (const event of dedupedEvents) {
-        const week = getWeekKey(event.raid_date)
+        const week = weekKey(event.raid_date, resetDay)
         if (recordEventIds.has(event.id)) {
           // Check if actually attended (not just has a record)
           const rec = input.records.find(r => r.raid_event_id === event.id)
@@ -223,7 +260,7 @@ export function computeAttendance(input: AttendanceInput): AttendanceResult {
 
       // For each fill-in event, give credit if the week isn't already at cap
       for (const fillIn of extraFillIns) {
-        const week = getWeekKey(fillIn.raid_date)
+        const week = weekKey(fillIn.raid_date, resetDay)
         const attended = teamAttendedPerWeek.get(week) || 0
         if (attended < cap) {
           fillInCredits++
@@ -233,31 +270,48 @@ export function computeAttendance(input: AttendanceInput): AttendanceResult {
     }
   }
 
-  // 5b. Apply per-week cap to denominator if configured
+  // 5b. Apply per-week cap if configured. Caps BOTH the denominator (events
+  // counted toward total) AND the numerator (records that earn credit). Per
+  // week, prefers to credit attended/benched events over missed ones so a
+  // raider hitting the minimum threshold gets full weekly credit.
+  let creditedEventIds = dedupedIds
   if (input.weeklyAttendanceCap) {
     const cap = input.weeklyAttendanceCap
-    const getWeekKey = (dateStr: string): string => {
-      const d = parseDateLocal(dateStr)
-      const startOfWeek = new Date(d)
-      startOfWeek.setDate(d.getDate() - d.getDay())
-      return formatDate(startOfWeek)
-    }
-    const eventsPerWeek = new Map<string, number>()
+    const recordByEventId = new Map(input.records.map(r => [r.raid_event_id, r]))
+    const eventsByWeek = new Map<string, RaidEvent[]>()
     for (const event of dedupedEvents) {
-      const week = getWeekKey(event.raid_date)
-      eventsPerWeek.set(week, (eventsPerWeek.get(week) || 0) + 1)
+      const week = weekKey(event.raid_date, resetDay)
+      if (!eventsByWeek.has(week)) eventsByWeek.set(week, [])
+      eventsByWeek.get(week)!.push(event)
     }
-    // Cap each week's contribution to the denominator
+    // Sort within each week: attended/benched first (most credit), then signed-up,
+    // then missed. Within a tier, preserve date order for determinism.
+    const eventScore = (e: RaidEvent): number => {
+      const r = recordByEventId.get(e.id)
+      if (!r) return 0
+      if (r.no_call_no_show || r.is_excused) return 0
+      if (r.attended || r.was_benched) return 2
+      if (r.signed_up) return 1
+      return 0
+    }
     let cappedTotal = 0
-    for (const count of eventsPerWeek.values()) {
-      cappedTotal += Math.min(count, cap)
+    const kept = new Set<string>()
+    for (const events of eventsByWeek.values()) {
+      const sorted = [...events].sort((a, b) => {
+        const diff = eventScore(b) - eventScore(a)
+        return diff !== 0 ? diff : a.raid_date.localeCompare(b.raid_date)
+      })
+      const keep = sorted.slice(0, cap)
+      for (const e of keep) kept.add(e.id)
+      cappedTotal += keep.length
     }
     totalRaids = cappedTotal
+    creditedEventIds = kept
   }
 
-  // Filter records to only deduplicated events
+  // Filter records to only credited events (per-week capped subset of deduped)
   const relevantRecords: AttendanceRecord[] = input.records
-    .filter(r => dedupedIds.has(r.raid_event_id))
+    .filter(r => creditedEventIds.has(r.raid_event_id))
     .map(r => ({
       signed_up: r.signed_up,
       attended: r.attended,

@@ -431,7 +431,9 @@ describe('computeAttendance', () => {
         ]),
         records: makeRecords([{ eventIndex: 3, attended: true, signedUp: true }]),
         config: { rolling_attendance_weeks: 6, attendance_type: 'points-per-raid' },
-        asOfDate: '2026-05-17',
+        // asOfDate is the Tue reset after the raid week so May 17 falls in the
+        // last-completed reset week and is in the window.
+        asOfDate: '2026-05-19',
         raidStartDate: '2026-05-17',
       }))
       expect(result.raidsInWindow).toBe(1)
@@ -451,6 +453,87 @@ describe('computeAttendance', () => {
       }))
       expect(result.raidsInWindow).toBe(2)
       expect(result.raidsAttended).toBe(2)
+    })
+  })
+
+  // ─── In-progress reset week exclusion ──────────────────────
+
+  describe('in-progress reset week exclusion', () => {
+    it("today's raid does not count yet (default Tue reset)", () => {
+      // asOfDate = Tue (reset day). Last reset week ends Mon = yesterday.
+      // A raid on Tue is the start of the new in-progress week and is excluded.
+      const result = computeAttendance(makeInput({
+        raidEvents: [
+          { id: 'mon', raid_date: '2026-03-16' },
+          { id: 'tue', raid_date: '2026-03-17' },
+        ],
+        records: [
+          { raid_event_id: 'mon', signed_up: false, attended: true, no_call_no_show: false },
+          { raid_event_id: 'tue', signed_up: false, attended: true, no_call_no_show: false },
+        ],
+        asOfDate: '2026-03-17',
+      }))
+      expect(result.raidsInWindow).toBe(1)
+      expect(result.raidsAttended).toBe(1)
+    })
+
+    it('whole in-progress reset week is excluded until next reset', () => {
+      // asOfDate = Mon (last day of in-progress reset week Tue Mar 17 - Mon Mar 23).
+      // None of this week's raids should count yet; only the prior reset week does.
+      const result = computeAttendance(makeInput({
+        raidEvents: [
+          { id: 'tue-prev', raid_date: '2026-03-10' },
+          { id: 'tue-now', raid_date: '2026-03-17' },
+          { id: 'thu-now', raid_date: '2026-03-19' },
+          { id: 'mon-now', raid_date: '2026-03-23' },
+        ],
+        records: [
+          { raid_event_id: 'tue-prev', signed_up: false, attended: true, no_call_no_show: false },
+          { raid_event_id: 'tue-now', signed_up: false, attended: true, no_call_no_show: false },
+          { raid_event_id: 'thu-now', signed_up: false, attended: false, no_call_no_show: false },
+          { raid_event_id: 'mon-now', signed_up: false, attended: true, no_call_no_show: false },
+        ],
+        asOfDate: '2026-03-23',
+      }))
+      expect(result.raidsInWindow).toBe(1)
+      expect(result.raidsAttended).toBe(1)
+    })
+
+    it('just-completed reset week counts immediately at next reset', () => {
+      // asOfDate = Tue (reset day). The full prior Tue-Mon week is now completed.
+      const result = computeAttendance(makeInput({
+        raidEvents: [
+          { id: 'tue-prev', raid_date: '2026-03-10' },
+          { id: 'mon-prev', raid_date: '2026-03-16' },
+          { id: 'tue-now', raid_date: '2026-03-17' },
+        ],
+        records: [
+          { raid_event_id: 'tue-prev', signed_up: false, attended: true, no_call_no_show: false },
+          { raid_event_id: 'mon-prev', signed_up: false, attended: true, no_call_no_show: false },
+          { raid_event_id: 'tue-now', signed_up: false, attended: true, no_call_no_show: false },
+        ],
+        asOfDate: '2026-03-17',
+      }))
+      expect(result.raidsInWindow).toBe(2)
+      expect(result.raidsAttended).toBe(2)
+    })
+
+    it('respects configurable weekResetDay (Wed for EU)', () => {
+      // Wed-anchored reset: prior reset week runs Wed Mar 11 → Tue Mar 17.
+      const result = computeAttendance(makeInput({
+        raidEvents: [
+          { id: 'tue', raid_date: '2026-03-17' }, // last day of prior reset week
+          { id: 'wed', raid_date: '2026-03-18' }, // reset day, start of in-progress week
+        ],
+        records: [
+          { raid_event_id: 'tue', signed_up: false, attended: true, no_call_no_show: false },
+          { raid_event_id: 'wed', signed_up: false, attended: true, no_call_no_show: false },
+        ],
+        asOfDate: '2026-03-18',
+        weekResetDay: 3,
+      }))
+      expect(result.raidsInWindow).toBe(1)
+      expect(result.raidsAttended).toBe(1)
     })
   })
 
@@ -540,6 +623,57 @@ describe('computeAttendance', () => {
       }))
       // Cap=2 clamps the week's denominator. Attendee gets capped credit, not 3/3.
       expect(result.raidsInWindow).toBe(2)
+      expect(result.raidsAttended).toBe(2)
+    })
+
+    it('weekly cap < raid-days credits full weekly attendance once minimum is hit', () => {
+      // Guild raids 3 days/week (Tue/Thu/Sat). Cap=2 (minimum-raids-per-week feature).
+      // Attending 2 of 3 should yield full weekly credit, not 2/3.
+      const events: RaidEvent[] = [
+        { id: 'tue1', raid_date: '2026-03-10' },
+        { id: 'thu1', raid_date: '2026-03-12' },
+        { id: 'sat1', raid_date: '2026-03-14' },
+      ]
+      const result = computeAttendance(makeInput({
+        raidEvents: events,
+        records: [
+          { raid_event_id: 'tue1', signed_up: false, attended: true, no_call_no_show: false },
+          { raid_event_id: 'thu1', signed_up: false, attended: true, no_call_no_show: false },
+          // sat1: missed
+        ],
+        raidDays: [2, 4, 6],
+        weeklyAttendanceCap: 2,
+        asOfDate: '2026-03-18',
+      }))
+      expect(result.raidsInWindow).toBe(2)
+      expect(result.raidsAttended).toBe(2)
+    })
+
+    it('weekly cap < raid-days does not let over-attended week leak into other weeks', () => {
+      // Cap=2 with 3 raids/week across 2 reset weeks (Tue Mar 10 - Mon Mar 23).
+      // Week 1: attended all 3. Week 2: attended 0.
+      // Should be 2/4 (week 1 capped at 2, week 2 at 0), not 3/4.
+      const events: RaidEvent[] = [
+        { id: 'tue1', raid_date: '2026-03-10' },
+        { id: 'thu1', raid_date: '2026-03-12' },
+        { id: 'sat1', raid_date: '2026-03-14' },
+        { id: 'tue2', raid_date: '2026-03-17' },
+        { id: 'thu2', raid_date: '2026-03-19' },
+        { id: 'sat2', raid_date: '2026-03-21' },
+      ]
+      const result = computeAttendance(makeInput({
+        raidEvents: events,
+        records: [
+          { raid_event_id: 'tue1', signed_up: false, attended: true, no_call_no_show: false },
+          { raid_event_id: 'thu1', signed_up: false, attended: true, no_call_no_show: false },
+          { raid_event_id: 'sat1', signed_up: false, attended: true, no_call_no_show: false },
+        ],
+        raidDays: [2, 4, 6],
+        weeklyAttendanceCap: 2,
+        // asOfDate after both reset weeks complete (Tue Mar 24 = next reset).
+        asOfDate: '2026-03-24',
+      }))
+      expect(result.raidsInWindow).toBe(4)
       expect(result.raidsAttended).toBe(2)
     })
 

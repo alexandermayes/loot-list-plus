@@ -12,6 +12,31 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.1"
   }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
       addon_sync_tokens: {
@@ -500,6 +525,45 @@ export type Database = {
           },
         ]
       }
+      discord_feedback_map: {
+        Row: {
+          author_discord_id: string
+          author_display_name: string | null
+          created_at: string
+          discord_channel_id: string
+          discord_guild_id: string
+          discord_message_id: string
+          github_issue_number: number
+          github_repo: string
+          source: string
+          triggered_by_discord_id: string | null
+        }
+        Insert: {
+          author_discord_id: string
+          author_display_name?: string | null
+          created_at?: string
+          discord_channel_id: string
+          discord_guild_id: string
+          discord_message_id: string
+          github_issue_number: number
+          github_repo: string
+          source: string
+          triggered_by_discord_id?: string | null
+        }
+        Update: {
+          author_discord_id?: string
+          author_display_name?: string | null
+          created_at?: string
+          discord_channel_id?: string
+          discord_guild_id?: string
+          discord_message_id?: string
+          github_issue_number?: number
+          github_repo?: string
+          source?: string
+          triggered_by_discord_id?: string | null
+        }
+        Relationships: []
+      }
       donation_records: {
         Row: {
           amount_text: string | null
@@ -838,6 +902,8 @@ export type Database = {
           updated_at: string | null
           use_signups: boolean
           wcl_guild_url: string | null
+          week_reset_day: number
+          weekly_attendance_minimum: number | null
         }
         Insert: {
           attendance_type?: string
@@ -902,6 +968,8 @@ export type Database = {
           updated_at?: string | null
           use_signups?: boolean
           wcl_guild_url?: string | null
+          week_reset_day?: number
+          weekly_attendance_minimum?: number | null
         }
         Update: {
           attendance_type?: string
@@ -966,6 +1034,8 @@ export type Database = {
           updated_at?: string | null
           use_signups?: boolean
           wcl_guild_url?: string | null
+          week_reset_day?: number
+          weekly_attendance_minimum?: number | null
         }
         Relationships: [
           {
@@ -2362,6 +2432,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {},
   },

@@ -30,7 +30,7 @@
 // ─── Public API ──────────────────────────────────────────────
 export { computeScore } from './engine'
 export { explainScore } from './explain'
-export { computeAttendance, resolveStatus } from './attendance'
+export { computeAttendance, resolveStatus, getAttendanceWindowEnd } from './attendance'
 export { withDefaults, getDefaultSettings } from './defaults'
 
 // ─── Utility (display helpers, not scoring) ──────────────────

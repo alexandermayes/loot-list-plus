@@ -74,8 +74,9 @@ interface ParsedItem {
 }
 
 async function fetchFromWowhead(wowheadId: number): Promise<ParsedItem | null> {
-  // Try TBC (dataEnv=8) first, then Classic (dataEnv=4)
-  for (const env of [8, 4]) {
+  // Try across all live Classic envs (Classic, TBC, Wrath, Cata, MoP) and retail.
+  // Order doesn't affect correctness because we bail on the first successful parse.
+  for (const env of [1, 2, 4, 5, 8, 11]) {
     try {
       const res = await fetch(
         `https://nether.wowhead.com/tooltip/item/${wowheadId}?dataEnv=${env}&locale=0`,

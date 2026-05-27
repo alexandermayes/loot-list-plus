@@ -620,9 +620,10 @@ describe('computeAttendance stability contracts', () => {
         makeRecord(2, { attended: true }),
       ],
       config: { rolling_attendance_weeks: 4 },
-      asOfDate: '2026-03-18',
+      // asOfDate = Tue (next reset) so the Mar 11-17 reset week is completed.
+      asOfDate: '2026-03-24',
     }))
-    // Jan 1 is outside the 4-week window from Mar 18
+    // Jan 1 is outside the 4-week window; Mar 15 and Mar 17 are in completed weeks
     expect(result.raidsInWindow).toBe(2)
   })
 
@@ -636,7 +637,8 @@ describe('computeAttendance stability contracts', () => {
         makeRecord(3, { attended: true }),
       ],
       config: { rolling_attendance_weeks: 4, attendance_type: 'points-per-raid' },
-      asOfDate: '2026-03-18',
+      // asOfDate = Tue (next reset) so the Mar 11-17 reset week is completed.
+      asOfDate: '2026-03-24',
     }))
     // 3 attended out of 3 effective raids (1 excused)
     expect(result.raidsAttended).toBe(3)

@@ -964,6 +964,10 @@ export default function DashboardContent() {
           let fillInEvents: { id: string; raid_date: string }[] = []
           let fillInRecords: { raid_event_id: string; attended: boolean }[] = []
           const raidDaysPerWeek = raidDays.length || (raidDaySource as any)?.raid_days_per_week || 2
+          const weeklyMin = (guildSettings as { weekly_attendance_minimum?: number | null }).weekly_attendance_minimum
+          const weeklyCap = activeTeam
+            ? Math.min(weeklyMin ?? raidDaysPerWeek, raidDaysPerWeek)
+            : undefined
 
           if (activeTeam) {
             const fillInRecordCandidates = charRecords.filter((r: AttRecord) => !teamEventIds.has(r.raid_event_id) && r.attended)
@@ -994,7 +998,8 @@ export default function DashboardContent() {
             raidStartDate,
             fillInEvents: fillInEvents.length > 0 ? fillInEvents : undefined,
             fillInRecords: fillInRecords.length > 0 ? fillInRecords : undefined,
-            weeklyAttendanceCap: activeTeam ? raidDaysPerWeek : undefined,
+            weeklyAttendanceCap: weeklyCap,
+            weekResetDay: (guildSettings as { week_reset_day?: number | null }).week_reset_day ?? undefined,
           })
 
           attendanceScore = attendanceResult.score

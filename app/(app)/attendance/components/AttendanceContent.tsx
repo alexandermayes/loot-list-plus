@@ -612,6 +612,10 @@ export default function AttendanceContent() {
     try {
       const raidEventIds = raidEvents.map(r => r.id)
       const raidDaysPerWeek = raidDays.length || settings?.raid_days_per_week || 2
+      const weeklyMin = settings?.weekly_attendance_minimum as number | null | undefined
+      const weeklyCap = activeTeamId
+        ? Math.min(weeklyMin ?? raidDaysPerWeek, raidDaysPerWeek)
+        : undefined
 
       // Build raider list from guild memberships (all active members).
       const [membersResponse, attendanceResult, teamMembersResult, allGuildAttendanceResult] = await Promise.all([
@@ -763,7 +767,8 @@ export default function AttendanceContent() {
           raidStartDate: raidStartDate || undefined,
           fillInEvents: charFillInEvents.length > 0 ? charFillInEvents : undefined,
           fillInRecords: charFillInRecords.length > 0 ? charFillInRecords : undefined,
-          weeklyAttendanceCap: activeTeamId ? raidDaysPerWeek : undefined,
+          weeklyAttendanceCap: weeklyCap,
+          weekResetDay: (settings as { week_reset_day?: number | null } | null)?.week_reset_day ?? undefined,
         })
 
         return {
@@ -814,7 +819,8 @@ export default function AttendanceContent() {
               raidStartDate: raidStartDate || undefined,
               fillInEvents: myFillInEvents.length > 0 ? myFillInEvents : undefined,
               fillInRecords: myFillInRecords.length > 0 ? myFillInRecords : undefined,
-              weeklyAttendanceCap: activeTeamId ? raidDaysPerWeek : undefined,
+              weeklyAttendanceCap: weeklyCap,
+              weekResetDay: (settings as { week_reset_day?: number | null } | null)?.week_reset_day ?? undefined,
             })
             setAttendanceScore(result.score)
             setTrackedRaidCount(result.raidsInWindow)

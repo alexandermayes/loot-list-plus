@@ -302,6 +302,11 @@ export default function MasterSheetContent() {
     // Apply team raid day overrides if a team is selected
     const raidDays = resolveRaidDays(baseSettings, activeTeam?.raid_days_override)
     const raidDaysPerWeek = raidDays.length || baseSettings.raid_days_per_week
+    // Weekly attendance cap: clamp guild minimum to this team's effective raid days
+    const weeklyMin = (guildSettings as { weekly_attendance_minimum?: number | null }).weekly_attendance_minimum
+    const weeklyCap = activeTeamId
+      ? Math.min(weeklyMin ?? raidDaysPerWeek, raidDaysPerWeek)
+      : undefined
 
     // Query 3: Fetch raid events — team+unassigned for denominator
     const todayStr = toDateString(new Date())
@@ -409,7 +414,8 @@ export default function MasterSheetContent() {
         raidStartDate: raidStartDate || undefined,
         fillInEvents: charFillInEvents.length > 0 ? charFillInEvents : undefined,
         fillInRecords: charFillInRecords.length > 0 ? charFillInRecords : undefined,
-        weeklyAttendanceCap: activeTeamId ? raidDaysPerWeek : undefined,
+        weeklyAttendanceCap: weeklyCap,
+        weekResetDay: (guildSettings as { week_reset_day?: number | null }).week_reset_day ?? undefined,
       })
 
       results[character.id] = result

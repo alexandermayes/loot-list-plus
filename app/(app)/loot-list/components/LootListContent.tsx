@@ -31,6 +31,7 @@ import { InfoTooltip } from '@/components/ui/info-tooltip'
 import { BisImportModal } from '@/app/components/BisImportModal'
 import { HorizontalScroll } from '@/components/ui/horizontal-scroll'
 import ItemLink from '@/app/components/ItemLink'
+import { getCharacterPrimaryStat } from '@/utils/specPrimaryStat'
 
 // Helper function for rank colors - defined outside component for stability
 const getRankColor = (rank: number) => {
@@ -663,6 +664,10 @@ export default function LootListContent() {
   const [showBisImportModal, setShowBisImportModal] = useState(false)
   const [expandedErrors, setExpandedErrors] = useState<Set<string>>(new Set())
   const [showUnrankedPanel, setShowUnrankedPanel] = useState(false)
+  const [unrankedSlotFilter, setUnrankedSlotFilter] = useState<string>('all')
+  const [unrankedDifficulty, setUnrankedDifficulty] = useState<'all' | 'normal' | 'heroic'>('all')
+  const [unrankedView, setUnrankedView] = useState<'boss' | 'slot'>('boss')
+  const [unrankedSpecOnly, setUnrankedSpecOnly] = useState<boolean>(false)
   const [showMoreMenu, setShowMoreMenu] = useState(false)
   const [contentReady, setContentReady] = useState(false)
   const hasLoadedOnce = useRef(false)
@@ -954,10 +959,67 @@ export default function LootListContent() {
   }, [lootItems])
 
   // Compute unranked items (all spec items not yet on the list, excluding LC items)
-  const unrankedItems = useMemo(() => {
+  // unrankedItemsAll is the full unfiltered set, used to derive stable filter options.
+  const unrankedItemsAll = useMemo(() => {
     const rankedItemIds = new Set(Object.values(rankings))
     return lootItems.filter(item => !rankedItemIds.has(item.id) && !item.is_loot_council)
   }, [lootItems, rankings])
+
+  // Slot order matches gear-layout convention (head down to weapons).
+  const SLOT_ORDER = [
+    'Head', 'Neck', 'Shoulder', 'Shoulders', 'Back', 'Chest', 'Wrist', 'Hands',
+    'Waist', 'Legs', 'Feet', 'Finger', 'Trinket',
+    'One-Hand', 'Main Hand', 'Off Hand', 'Off-Hand', 'Held In Off-hand', 'Shield',
+    'Two-Hand', 'Ranged',
+  ]
+
+  const slotOptions = useMemo(() => {
+    const slots = new Set<string>()
+    unrankedItemsAll.forEach(item => {
+      if (item.item_slot) slots.add(item.item_slot)
+    })
+    const ordered = SLOT_ORDER.filter(s => slots.has(s))
+    const extras = [...slots].filter(s => !SLOT_ORDER.includes(s)).sort()
+    return [...ordered, ...extras]
+  }, [unrankedItemsAll])
+
+  const hasHeroicItems = useMemo(
+    () => unrankedItemsAll.some(item => /\(Heroic\)/i.test(item.name)),
+    [unrankedItemsAll]
+  )
+
+  const hasPrimaryStatData = useMemo(
+    () => unrankedItemsAll.some(item => item.primary_stat),
+    [unrankedItemsAll]
+  )
+
+  const characterPrimaryStat = useMemo(
+    () => getCharacterPrimaryStat(activeCharacter?.class?.name, activeCharacter?.spec?.name),
+    [activeCharacter?.class?.name, activeCharacter?.spec?.name]
+  )
+
+  // Apply user filters (slot + difficulty + spec) to derive the visible set.
+  const unrankedItems = useMemo(() => {
+    const otherPrimaries = characterPrimaryStat
+      ? (['Strength', 'Agility', 'Intellect'] as const).filter(s => s !== characterPrimaryStat)
+      : []
+
+    return unrankedItemsAll.filter(item => {
+      if (unrankedSlotFilter !== 'all' && item.item_slot !== unrankedSlotFilter) return false
+      if (unrankedDifficulty !== 'all') {
+        const isHeroic = /\(Heroic\)/i.test(item.name)
+        if (unrankedDifficulty === 'heroic' && !isHeroic) return false
+        if (unrankedDifficulty === 'normal' && isHeroic) return false
+      }
+      if (unrankedSpecOnly && characterPrimaryStat && item.primary_stat) {
+        if ((otherPrimaries as readonly string[]).includes(item.primary_stat)) return false
+      }
+      return true
+    })
+  }, [unrankedItemsAll, unrankedSlotFilter, unrankedDifficulty, unrankedSpecOnly, characterPrimaryStat])
+
+  const isUnrankedFiltered =
+    unrankedSlotFilter !== 'all' || unrankedDifficulty !== 'all' || unrankedSpecOnly
 
   // Group unranked items by boss for display
   const unrankedByBoss = useMemo(() => {
@@ -971,6 +1033,24 @@ export default function LootListContent() {
     })
     return byBoss
   }, [unrankedItems])
+
+  // Group unranked items by slot for the alternate view (Onnias's ask).
+  const unrankedBySlot = useMemo(() => {
+    const bySlot: Record<string, LootItem[]> = {}
+    unrankedItems.forEach(item => {
+      const slot = item.item_slot || 'Other'
+      if (!bySlot[slot]) bySlot[slot] = []
+      bySlot[slot].push(item)
+    })
+    return bySlot
+  }, [unrankedItems])
+
+  const slotGroupOrder = useMemo(() => {
+    const present = Object.keys(unrankedBySlot)
+    const ordered = SLOT_ORDER.filter(s => present.includes(s))
+    const extras = present.filter(s => !SLOT_ORDER.includes(s)).sort()
+    return [...ordered, ...extras]
+  }, [unrankedBySlot])
 
   // PERFORMANCE: Create Map for O(1) item lookups instead of O(n) .find() calls.
   // Uses bracket14Items (not all lootItems) so validation only counts items visible in brackets 1-4.
@@ -1777,7 +1857,7 @@ export default function LootListContent() {
 
         {/* Unranked Items Sidebar */}
         <div
-          className={`shrink-0 transition-all duration-300 ease-out ${
+          className={`shrink-0 self-stretch transition-all duration-300 ease-out ${
             showUnrankedPanel ? 'w-80 opacity-100' : 'w-0 opacity-0 overflow-hidden'
           }`}
         >
@@ -1786,7 +1866,11 @@ export default function LootListContent() {
             <div className="p-4 border-b border-border flex items-center justify-between shrink-0">
               <div>
                 <h3 className="font-semibold text-foreground">Unranked items</h3>
-                <p className="text-xs text-muted-foreground">{unrankedItems.length} items not on your list</p>
+                <p className="text-xs text-muted-foreground tabular-nums">
+                  {isUnrankedFiltered
+                    ? `${unrankedItems.length} of ${unrankedItemsAll.length} items`
+                    : `${unrankedItemsAll.length} items not on your list`}
+                </p>
               </div>
               <Button
                 variant="ghost"
@@ -1801,18 +1885,133 @@ export default function LootListContent() {
               </Button>
             </div>
 
+            {/* Filter Toolbar - pinned to top of scroll area */}
+            {unrankedItemsAll.length > 0 && (
+              <div className="px-4 py-3 border-b border-border space-y-2 shrink-0 bg-background-elevated">
+                <Select
+                  variant="rounded"
+                  size="sm"
+                  value={unrankedSlotFilter}
+                  onChange={(e) => setUnrankedSlotFilter(e.target.value)}
+                  aria-label="Filter by slot"
+                >
+                  <option value="all">All slots</option>
+                  {slotOptions.map(slot => (
+                    <option key={slot} value={slot}>{slot}</option>
+                  ))}
+                </Select>
+                <div className="flex gap-1 p-0.5 rounded-md bg-muted/40">
+                  {(['boss', 'slot'] as const).map(view => (
+                    <button
+                      key={view}
+                      type="button"
+                      onClick={() => setUnrankedView(view)}
+                      className={`flex-1 px-2 py-1 text-[11px] font-medium rounded transition-colors ${
+                        unrankedView === view
+                          ? 'bg-background-elevated text-foreground shadow-sm'
+                          : 'text-muted-foreground hover:text-foreground'
+                      }`}
+                    >
+                      By {view}
+                    </button>
+                  ))}
+                </div>
+                {hasHeroicItems && (
+                  <div className="flex gap-1 p-0.5 rounded-md bg-muted/40">
+                    {(['all', 'normal', 'heroic'] as const).map(diff => (
+                      <button
+                        key={diff}
+                        type="button"
+                        onClick={() => setUnrankedDifficulty(diff)}
+                        className={`flex-1 px-2 py-1 text-[11px] font-medium rounded transition-colors capitalize ${
+                          unrankedDifficulty === diff
+                            ? 'bg-background-elevated text-foreground shadow-sm'
+                            : 'text-muted-foreground hover:text-foreground'
+                        }`}
+                      >
+                        {diff}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {hasPrimaryStatData && characterPrimaryStat && (
+                  <button
+                    type="button"
+                    onClick={() => setUnrankedSpecOnly(v => !v)}
+                    className={`w-full px-3 py-1.5 text-[11px] font-medium rounded-md border transition-colors ${
+                      unrankedSpecOnly
+                        ? 'bg-accent/15 border-accent/40 text-accent'
+                        : 'bg-muted/40 border-transparent text-muted-foreground hover:text-foreground'
+                    }`}
+                    title={`Hide gear with the wrong primary stat (your spec: ${characterPrimaryStat})`}
+                  >
+                    {unrankedSpecOnly ? `Showing ${characterPrimaryStat} only` : `Match my spec (${characterPrimaryStat})`}
+                  </button>
+                )}
+              </div>
+            )}
+
             {/* Panel Content - Scrollable */}
             <div className="flex-1 overflow-y-auto">
-              {unrankedItems.length === 0 ? (
+              {unrankedItemsAll.length === 0 ? (
                 <div className="p-6 text-center">
                   <p className="text-muted-foreground text-sm">All items are ranked</p>
                 </div>
+              ) : unrankedItems.length === 0 ? (
+                <div className="p-6 text-center space-y-3">
+                  <p className="text-muted-foreground text-sm">No items match these filters</p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setUnrankedSlotFilter('all')
+                      setUnrankedDifficulty('all')
+                      setUnrankedSpecOnly(false)
+                    }}
+                  >
+                    Clear filters
+                  </Button>
+                </div>
+              ) : unrankedView === 'slot' ? (
+                slotGroupOrder.map(slot => (
+                  <div key={slot}>
+                    <div className="px-4 py-2 bg-muted border-b border-border sticky top-0 z-10">
+                      <p className="text-xs font-semibold text-foreground uppercase tracking-wide">
+                        {slot}
+                        <span className="ml-2 text-muted-foreground tabular-nums">{unrankedBySlot[slot].length}</span>
+                      </p>
+                    </div>
+                    <div>
+                      {unrankedBySlot[slot].map(item => (
+                        <div key={item.id} className="px-4 py-3 hover:bg-muted/50 transition-colors border-b border-border/30">
+                          <div className="flex items-center gap-2">
+                            <span className="flex-1 min-w-0">
+                              <ItemLink name={item.name} wowheadId={item.wowhead_id} clickable={true} />
+                            </span>
+                            {item.classification && item.classification !== 'Unlimited' && (
+                              <ClassificationBadge
+                                classification={item.classification as 'Reserved' | 'Limited' | 'Unlimited'}
+                                compact
+                              />
+                            )}
+                          </div>
+                          <p className="text-[11px] text-muted-foreground mt-1">
+                            {normalizeBossName(item.boss_name || 'Unknown')}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))
               ) : (
                 Object.keys(unrankedByBoss).sort().map(boss => (
                   <div key={boss}>
                     {/* Boss Header */}
                     <div className="px-4 py-2 bg-muted border-b border-border sticky top-0 z-10">
-                      <p className="text-xs font-semibold text-foreground uppercase tracking-wide">{boss}</p>
+                      <p className="text-xs font-semibold text-foreground uppercase tracking-wide">
+                        {boss}
+                        <span className="ml-2 text-muted-foreground tabular-nums">{unrankedByBoss[boss].length}</span>
+                      </p>
                     </div>
                     {/* Boss Items */}
                     <div>

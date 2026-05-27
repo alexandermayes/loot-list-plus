@@ -179,6 +179,7 @@ export async function GET(request: NextRequest) {
         newMemberMode,
         asOfDate: toDateString(today),
         raidStartDate: expansionRaidDays?.raid_start_date || undefined,
+        weekResetDay: (settings as { week_reset_day?: number | null } | null)?.week_reset_day ?? undefined,
       })
     }
 

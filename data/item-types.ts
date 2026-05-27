@@ -945,7 +945,11 @@ export function inferWeaponType(slot: string, name: string): WeaponType | undefi
     return isTwoHand ? 'Two-Handed Axe' : 'One-Handed Axe'
   }
 
-  if (nameLower.includes('sword') || nameLower.includes('blade') || nameLower.includes('slicer')) {
+  if (
+    nameLower.includes('sword') || nameLower.includes('blade') || nameLower.includes('slicer') ||
+    nameLower.includes('scimitar') || nameLower.includes('saber') || nameLower.includes('sabre') ||
+    nameLower.includes('cutlass') || nameLower.includes('falchion') || nameLower.includes('rapier')
+  ) {
     return isTwoHand ? 'Two-Handed Sword' : 'One-Handed Sword'
   }
 

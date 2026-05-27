@@ -35,6 +35,11 @@ end
 --   Benched: counts as attended (full credit)
 --   Late + penalty enabled: reduced attendance points
 --   points_override: replaces computed points for that record
+--
+-- NOTE: rolling-window / reset-week filtering is done server-side in
+-- app/api/addon/{guild-data,export-string}/route.ts before the payload
+-- ships. The records/totalRaids passed here already exclude the
+-- in-progress reset week. Do not add windowing logic in Lua.
 ----------------------------------------------------------------------
 function SE:CalculateAttendanceScore(records, totalRaids, settings)
     if not settings then settings = {} end

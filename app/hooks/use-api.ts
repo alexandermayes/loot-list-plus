@@ -159,6 +159,7 @@ export interface LootItem {
   item_type?: string
   armor_type?: string  // Cloth, Leather, Mail, Plate
   weapon_type?: string // Dagger, One-Handed Sword, Staff, etc.
+  primary_stat?: string | null // Strength, Agility, Intellect, Stamina, or null if unknown/N-A
   allocation_cost?: number
   dps_gain?: number    // Expected DPS/HPS gain from this item (from WoWSims simulations)
   roles?: string[]

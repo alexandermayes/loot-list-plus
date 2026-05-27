@@ -195,6 +195,10 @@ export default function LootSettingsContent() {
     // Minimum Raids
     minimum_raid_days_enabled: true,
     minimum_raid_days: 2,
+    weekly_attendance_minimum: null as number | null,
+
+    // Raid Reset Week
+    week_reset_day: 2, // Tuesday (NA WoW reset)
 
     // New Member Policy
     new_member_mode: 'raw' as 'raw' | 'fair' | 'minimum_gate',
@@ -287,6 +291,8 @@ export default function LootSettingsContent() {
           bottom_attendance_threshold: settings.bottom_attendance_threshold,
           minimum_raid_days_enabled: settings.minimum_raid_days_enabled,
           minimum_raid_days: settings.minimum_raid_days,
+          weekly_attendance_minimum: settings.weekly_attendance_minimum,
+          week_reset_day: settings.week_reset_day,
           new_member_mode: settings.new_member_mode || 'raw',
           late_early_penalty_enabled: settings.late_early_penalty_enabled,
           late_early_penalty_value: settings.late_early_penalty_value,
@@ -1924,6 +1930,53 @@ export default function LootSettingsContent() {
                         className="bg-background-elevated"
                       />
                       <p className="text-muted-foreground text-[12px] mt-1">How many weeks to track attendance</p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <Label className="block mb-2 inline-flex items-center gap-1">Minimum raids per week for full credit <InfoTooltip content="If a raider attends at least this many raids in a calendar week, the week counts as full attendance. Helps shift workers who can't make every raid. Leave blank to require all scheduled raids." iconSize={12} /></Label>
+                      <Input
+                        variant="pill"
+                        type="number"
+                        inputMode="numeric"
+                        min="1"
+                        max="7"
+                        placeholder="Off"
+                        value={settings.weekly_attendance_minimum ?? ''}
+                        onChange={(e) => {
+                          const raw = e.target.value
+                          setSettings({
+                            ...settings,
+                            weekly_attendance_minimum: raw === '' ? null : Number(raw),
+                          })
+                        }}
+                        className="bg-background-elevated"
+                      />
+                      <p className="text-muted-foreground text-[12px] mt-1">
+                        {settings.weekly_attendance_minimum
+                          ? `Attending ${settings.weekly_attendance_minimum}+ raids in a week = full weekly credit`
+                          : 'Off — every scheduled raid counts toward the week'}
+                      </p>
+                    </div>
+
+                    <div>
+                      <Label className="block mb-2 inline-flex items-center gap-1">Weekly raid reset day <InfoTooltip content="Anchors the attendance week to your region's raid lockout reset. Raids in the current reset week don't count toward scoring until the next reset, so officers can finish entering attendance without it shifting priorities mid-evening." iconSize={12} /></Label>
+                      <Select
+                        variant="pill"
+                        value={String(settings.week_reset_day ?? 2)}
+                        onChange={(e) => setSettings({ ...settings, week_reset_day: Number(e.target.value) })}
+                        className="bg-background-elevated"
+                      >
+                        <option value="2">Tuesday (NA)</option>
+                        <option value="3">Wednesday (EU)</option>
+                        <option value="4">Thursday (KR/TW/CN)</option>
+                        <option value="0">Sunday</option>
+                        <option value="1">Monday</option>
+                        <option value="5">Friday</option>
+                        <option value="6">Saturday</option>
+                      </Select>
+                      <p className="text-muted-foreground text-[12px] mt-1">In-progress reset weeks are excluded until the next reset</p>
                     </div>
                   </div>
 

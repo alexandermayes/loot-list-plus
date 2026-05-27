@@ -159,6 +159,13 @@ export interface AttendanceInput {
   fillInRecords?: { raid_event_id: string; attended: boolean }[]
   /** Max attendance credits per week (typically raids_per_week). Enables per-week capping. */
   weeklyAttendanceCap?: number
+  /**
+   * Day of week (0=Sun..6=Sat) that anchors the WoW reset week. Default 2 (Tue, NA).
+   * The current reset week is treated as in-progress and excluded from scoring;
+   * raids from that week start counting after the next reset. Also anchors the
+   * per-week capping windows.
+   */
+  weekResetDay?: number
 }
 
 /** Result from computeAttendance() */
