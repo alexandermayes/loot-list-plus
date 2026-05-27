@@ -4,7 +4,7 @@ import { createClient } from '@/utils/supabase/client'
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { HugeiconsIcon } from '@hugeicons/react'
-import { ArrowDown01Icon, ArrowUp01Icon, Upload01Icon, Cancel01Icon, MoreVerticalIcon, DiscordIcon, PlusSignIcon } from '@hugeicons/core-free-icons'
+import { ArrowDown01Icon, ArrowUp01Icon, Cancel01Icon, MoreVerticalIcon, PlusSignIcon } from '@hugeicons/core-free-icons'
 import nextDynamic from 'next/dynamic'
 
 const LootHistoryTab = nextDynamic(() => import('./components/LootHistoryTab'), {
@@ -58,6 +58,7 @@ import { ReassignLootModal } from './components/ReassignLootModal'
 import { LootItemSelectionModal } from './components/LootItemSelectionModal'
 import { AttendeeResolutionModal } from './components/AttendeeResolutionModal'
 import { ImportModal } from './components/ImportModal'
+import { RaidCardHeader } from './components/RaidCardHeader'
 
 interface UnlinkedAttendee {
   character_name: string
@@ -982,6 +983,26 @@ export default function RaidTrackingPage() {
       showNotification('error', 'Couldn\'t link WCL report. Check your connection.')
     } finally {
       setLinkingWcl(null)
+    }
+  }
+
+  const handleImportClick = async (raid: RaidEvent, hasImportedData: boolean) => {
+    await loadLootItems()
+
+    if (hasImportedData) {
+      if (!attendance[raid.id]) {
+        await loadRaidAttendance(raid.id)
+      }
+      setLootData('')
+      setShowImportModal({ raidId: raid.id, date: raid.raid_date, isEdit: true })
+    } else {
+      setAttendanceData('')
+      setLootData('')
+      setSignupsData('')
+      setInitialAttendanceData('')
+      setInitialLootData('')
+      setInitialSignupsData('')
+      setShowImportModal({ raidId: raid.id, date: raid.raid_date, isEdit: false })
     }
   }
 
@@ -2569,143 +2590,25 @@ export default function RaidTrackingPage() {
               key={raid.id}
               className="bg-background-elevated border border-border rounded-xl overflow-hidden"
             >
-              {/* Raid Header */}
-              <div className="px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
-                <div className="flex items-center gap-3 sm:gap-4">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => toggleRaidExpanded(raid.id)}
-                    className="text-foreground hover:text-accent transition-colors h-auto w-auto p-0"
-                  >
-                    {isExpanded ? <HugeiconsIcon icon={ArrowUp01Icon} size={20} /> : <HugeiconsIcon icon={ArrowDown01Icon} size={20} />}
-                  </Button>
-                  <div>
-                    <div className="flex items-center gap-3">
-                      <h3 className={`text-[18px] font-bold ${raid.is_skipped ? 'line-through opacity-50' : 'text-foreground'}`}>
-                        {parseDate(raid.raid_date).toLocaleDateString('en-US', {
-                          weekday: 'long',
-                          month: 'long',
-                          day: 'numeric',
-                          year: 'numeric'
-                        })}
-                      </h3>
-                      {raid.is_skipped && (
-                        <Badge variant="destructive-subtle">Skipped: {raid.skip_reason}</Badge>
-                      )}
-                      {raid.is_bonus && !raid.is_skipped && (
-                        <Badge variant="accent-subtle">Bonus</Badge>
-                      )}
-                      {!isPast && !raid.is_skipped && raid.raid_date === today && (
-                        <Badge variant="accent">Today</Badge>
-                      )}
-                      {hasImportedData && !raid.is_skipped && (
-                        <Badge variant="success-subtle">Imported</Badge>
-                      )}
-                    </div>
-                    {!raid.is_skipped && (
-                      <p className="text-foreground-muted text-[13px] mt-1">
-                        {attendedCount} attended • {signupCount} signed up
-                        {lootCount > 0 && <span className="text-[#a335ee]"> • {lootCount} loot</span>}
-                        {raid.wcl_report_code && (
-                          <span> • <a
-                            href={`https://classic.warcraftlogs.com/reports/${raid.wcl_report_code}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-[#e35e15] hover:underline"
-                            onClick={(e) => e.stopPropagation()}
-                          >WCL Report</a></span>
-                        )}
-                      </p>
-                    )}
-                  </div>
-                </div>
-                <div className="flex gap-2 flex-shrink-0">
-                  {!raid.is_skipped && (
-                    <Button
-                      variant={hasImportedData ? 'outline' : 'outline'}
-                      size="sm"
-                      onClick={async () => {
-                        await loadLootItems() // Load items for loot matching
-
-                        if (hasImportedData) {
-                          // Load attendance data first if not already loaded
-                          if (!attendance[raid.id]) {
-                            await loadRaidAttendance(raid.id)
-                          }
-
-                          // Need to get fresh data after loading
-                          // We'll use a setTimeout to let state update, or we read directly
-                          // For now, just open the modal and let useEffect handle it
-                          setLootData('')
-                          setShowImportModal({ raidId: raid.id, date: raid.raid_date, isEdit: true })
-                        } else {
-                          // Clear all form fields for new import
-                          setAttendanceData('')
-                          setLootData('')
-                          setSignupsData('')
-                          setInitialAttendanceData('')
-                          setInitialLootData('')
-                          setInitialSignupsData('')
-                          setShowImportModal({ raidId: raid.id, date: raid.raid_date, isEdit: false })
-                        }
-                      }}
-                      className={hasImportedData ? 'border-success/50 text-success hover:bg-success/20' : ''}
-                    >
-                      <HugeiconsIcon icon={Upload01Icon} size={16} />
-                      <span className="hidden sm:inline">{hasImportedData ? 'Edit import' : 'Import data'}</span>
-                      <span className="sm:hidden">{hasImportedData ? 'Edit' : 'Import'}</span>
-                    </Button>
-                  )}
-                  {!raid.is_skipped && hasImportedData && guildSettings?.raid_summary_channel_id && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handlePostToDiscord(raid.id)}
-                      loading={postingDiscord === raid.id}
-                      className="border-[#5865F2]/50 text-[#5865F2] hover:bg-[#5865F2]/10"
-                    >
-                      <HugeiconsIcon icon={DiscordIcon} size={16} />
-                      <span className="hidden sm:inline">Post to Discord</span>
-                      <span className="sm:hidden">Discord</span>
-                    </Button>
-                  )}
-                  {raid.is_skipped ? (
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => toggleSkipDay(raid.id, raid.is_skipped)}
-                      className="bg-destructive/30 hover:bg-destructive/40"
-                    >
-                      Unskip
-                    </Button>
-                  ) : (
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="outline" size="sm" aria-label="More raid actions" className="px-2">
-                          <HugeiconsIcon icon={MoreVerticalIcon} size={16} />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        {hasImportedData && guildSettings?.wcl_guild_url && !raid.wcl_report_code && (
-                          <DropdownMenuItem
-                            onClick={() => handleLinkWcl(raid.id)}
-                            disabled={linkingWcl === raid.id}
-                          >
-                            {linkingWcl === raid.id ? 'Linking WCL…' : 'Link WCL'}
-                          </DropdownMenuItem>
-                        )}
-                        <DropdownMenuItem
-                          onClick={() => toggleSkipDay(raid.id, false)}
-                          className="text-destructive focus:text-destructive"
-                        >
-                          Skip day
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  )}
-                </div>
-              </div>
+              <RaidCardHeader
+                raid={raid}
+                isExpanded={isExpanded}
+                isPast={isPast}
+                today={today}
+                hasImportedData={hasImportedData}
+                attendedCount={attendedCount}
+                signupCount={signupCount}
+                lootCount={lootCount}
+                canPostDiscord={!!guildSettings?.raid_summary_channel_id}
+                canLinkWcl={!!guildSettings?.wcl_guild_url && !raid.wcl_report_code}
+                isPostingDiscord={postingDiscord === raid.id}
+                isLinkingWcl={linkingWcl === raid.id}
+                onToggleExpanded={toggleRaidExpanded}
+                onImport={handleImportClick}
+                onPostToDiscord={handlePostToDiscord}
+                onLinkWcl={handleLinkWcl}
+                onSkipDay={toggleSkipDay}
+              />
 
               {/* Expanded Member List */}
               {isExpanded && !raid.is_skipped && (
