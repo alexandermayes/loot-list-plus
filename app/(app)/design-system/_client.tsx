@@ -16,6 +16,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { Heading, Text, LabelText } from "@/components/ui/typography";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { SegmentedControl } from "@/components/ui/segmented-control";
+import { InfoTooltip } from "@/components/ui/info-tooltip";
 import { DatePicker } from "@/components/ui/date-picker";
 import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -104,6 +105,7 @@ const navSections = [
       { id: "loading-states", label: "Loading States" },
       { id: "empty-states", label: "Empty States" },
       { id: "toasts", label: "Toast & Alerts" },
+      { id: "tooltips", label: "Tooltips" },
     ]
   },
   {
@@ -1637,6 +1639,72 @@ export default function DesignSystemPage() {
                   <div>
                     <p className="font-medium mb-1">Alert (persistent):</p>
                     <code className="text-accent text-xs">{'<Alert variant="success">Message</Alert>'}</code>
+                  </div>
+                </div>
+              </PreviewCard>
+            </div>
+          </Section>
+
+          {/* Tooltips */}
+          <Section id="tooltips">
+            <SectionHeader
+              title="Tooltips"
+              description="Hover hints for labels, metrics, and form fields"
+            />
+
+            <div className="space-y-8">
+              <div>
+                <SubsectionHeader title="InfoTooltip" description="Small info icon that reveals a short explanation on hover. Subtle opacity fade only, no slide or scale." />
+                <PreviewCard>
+                  <div className="flex flex-col gap-5">
+                    <p className="text-foreground-secondary inline-flex items-center gap-1">
+                      Attendance credit <InfoTooltip content="Points earned from attending raids within the rolling window. Contributes directly to your Loot Score." iconSize={12} />
+                    </p>
+                    <p className="text-foreground-secondary inline-flex items-center gap-1">
+                      Role modifier <InfoTooltip content="Guild-configured modifier based on your role. Most members have 0." iconSize={12} />
+                    </p>
+                    <div className="inline-flex items-center gap-1">
+                      <Label className="mb-0">Tracked raids</Label>
+                      <InfoTooltip content="Total raids logged within the rolling attendance window. Your attendance rate is based on how many of these you attended." iconSize={12} />
+                    </div>
+                  </div>
+                </PreviewCard>
+              </div>
+
+              <div>
+                <SubsectionHeader title="Sizing" description="iconSize controls the info circle. 11-12px next to dense table headers or labels, 14px (default) for standalone use." />
+                <PreviewCard>
+                  <div className="flex items-end gap-6">
+                    <div className="inline-flex items-center gap-1">
+                      <span className="text-[12px] text-foreground-muted">Table header</span>
+                      <InfoTooltip content="Used inline with 11-12px label text." iconSize={11} />
+                    </div>
+                    <div className="inline-flex items-center gap-1">
+                      <span className="text-sm text-foreground-secondary">Form label</span>
+                      <InfoTooltip content="Used next to 12-14px form labels." iconSize={12} />
+                    </div>
+                    <div className="inline-flex items-center gap-1">
+                      <span className="text-base text-foreground">Standalone</span>
+                      <InfoTooltip content="Default 14px when no iconSize is provided." />
+                    </div>
+                  </div>
+                </PreviewCard>
+              </div>
+
+              <PreviewCard className="bg-background">
+                <LabelText className="mb-4">Usage</LabelText>
+                <div className="space-y-3 text-sm">
+                  <div>
+                    <p className="font-medium mb-1">Inline with a label:</p>
+                    <code className="text-accent text-xs">{'<span className="inline-flex items-center gap-1">Label <InfoTooltip content="..." iconSize={12} /></span>'}</code>
+                  </div>
+                  <div>
+                    <p className="font-medium mb-1">Guidelines:</p>
+                    <ul className="list-disc list-inside text-foreground-secondary space-y-1">
+                      <li>One short sentence per tooltip. If it needs two, it probably belongs in the page.</li>
+                      <li>Wrap label + tooltip in <code className="text-accent text-xs">inline-flex items-center gap-1</code> so the icon stays on the same line.</li>
+                      <li>Don't use for primary content. Tooltips are for explanation, not navigation or actions.</li>
+                    </ul>
                   </div>
                 </div>
               </PreviewCard>

@@ -61,16 +61,20 @@ export function InfoTooltip({ content, className, iconSize = 14 }: InfoTooltipPr
       </span>
       {visible && position && createPortal(
         <span
-          role="tooltip"
-          className="fixed w-[240px] px-3 py-2.5 rounded-lg bg-background-elevated border border-border shadow-lg text-[12px] leading-relaxed text-foreground-secondary z-[9999] pointer-events-none animate-in fade-in duration-150"
+          className="fixed z-[9999] pointer-events-none"
           style={{
             top: position.top - 8,
             left: position.left,
             transform: 'translate(-50%, -100%)',
           }}
         >
-          {content}
-          <span className="absolute top-full left-1/2 -translate-x-1/2 border-[5px] border-transparent border-t-border" />
+          <span
+            role="tooltip"
+            className="block w-[240px] px-3 py-2.5 rounded-lg bg-background-elevated border border-border shadow-lg text-[12px] leading-relaxed text-foreground-secondary animate-tooltip-fade-in"
+          >
+            {content}
+            <span className="absolute top-full left-1/2 -translate-x-1/2 border-[5px] border-transparent border-t-border" />
+          </span>
         </span>,
         document.body
       )}
