@@ -58,8 +58,7 @@ import { ReassignLootModal } from './components/ReassignLootModal'
 import { LootItemSelectionModal } from './components/LootItemSelectionModal'
 import { AttendeeResolutionModal } from './components/AttendeeResolutionModal'
 import { ImportModal } from './components/ImportModal'
-import { RaidCardHeader } from './components/RaidCardHeader'
-import { RaidMemberList } from './components/RaidMemberList'
+import { RaidCard } from './components/RaidCard'
 
 export default function RaidTrackingPage() {
   const [members, setMembers] = useState<Member[]>([])
@@ -2529,60 +2528,48 @@ export default function RaidTrackingPage() {
                 <div className="flex-1 h-[1px] bg-foreground/10"></div>
               </Button>
 
-              {/* Raid Days for this week */}
               {isWeekExpanded && raids.map((raid) => {
-          const isExpanded = expandedRaids.has(raid.id)
-          const isPast = raid.raid_date < today
-          const attendedCount = getAttendanceCount(raid.id)
-          const signupCount = getSignupCount(raid.id)
-          const lootCount = getLootCount(raid.id)
-          const hasImportedData = attendedCount > 0 || lootCount > 0
+                const isExpanded = expandedRaids.has(raid.id)
+                const attendedCount = getAttendanceCount(raid.id)
+                const signupCount = getSignupCount(raid.id)
+                const lootCount = getLootCount(raid.id)
+                const hasImportedData = attendedCount > 0 || lootCount > 0
 
-          return (
-            <div
-              key={raid.id}
-              className="bg-background-elevated border border-border rounded-xl overflow-hidden"
-            >
-              <RaidCardHeader
-                raid={raid}
-                isExpanded={isExpanded}
-                isPast={isPast}
-                today={today}
-                hasImportedData={hasImportedData}
-                attendedCount={attendedCount}
-                signupCount={signupCount}
-                lootCount={lootCount}
-                canPostDiscord={!!guildSettings?.raid_summary_channel_id}
-                canLinkWcl={!!guildSettings?.wcl_guild_url && !raid.wcl_report_code}
-                isPostingDiscord={postingDiscord === raid.id}
-                isLinkingWcl={linkingWcl === raid.id}
-                onToggleExpanded={toggleRaidExpanded}
-                onImport={handleImportClick}
-                onPostToDiscord={handlePostToDiscord}
-                onLinkWcl={handleLinkWcl}
-                onSkipDay={toggleSkipDay}
-              />
-
-              {isExpanded && !raid.is_skipped && (
-                <RaidMemberList
-                  raidId={raid.id}
-                  members={members}
-                  attendanceMap={attendance[raid.id]}
-                  loot={raidLoot[raid.id]}
-                  unlinkedAttendees={unlinkedAttendees[raid.id]}
-                  useSignups={!!guildSettings?.use_signups}
-                  onCycleStatus={cycleStatus}
-                  onSetAttendanceStatus={setAttendanceStatus}
-                  onToggleSignup={toggleSignup}
-                  onRemoveFromAttendance={removeFromAttendance}
-                  onMarkAllAttended={markAllAttended}
-                  onOpenReassign={setReassignModal}
-                  onDeleteLootEntry={deleteLootEntry}
-                />
-              )}
-            </div>
-          )
-        })}
+                return (
+                  <RaidCard
+                    key={raid.id}
+                    raid={raid}
+                    isExpanded={isExpanded}
+                    isPast={raid.raid_date < today}
+                    today={today}
+                    hasImportedData={hasImportedData}
+                    attendedCount={attendedCount}
+                    signupCount={signupCount}
+                    lootCount={lootCount}
+                    members={members}
+                    attendanceMap={attendance[raid.id]}
+                    loot={raidLoot[raid.id]}
+                    unlinkedAttendees={unlinkedAttendees[raid.id]}
+                    useSignups={!!guildSettings?.use_signups}
+                    canPostDiscord={!!guildSettings?.raid_summary_channel_id}
+                    canLinkWcl={!!guildSettings?.wcl_guild_url && !raid.wcl_report_code}
+                    isPostingDiscord={postingDiscord === raid.id}
+                    isLinkingWcl={linkingWcl === raid.id}
+                    onToggleExpanded={toggleRaidExpanded}
+                    onImport={handleImportClick}
+                    onPostToDiscord={handlePostToDiscord}
+                    onLinkWcl={handleLinkWcl}
+                    onSkipDay={toggleSkipDay}
+                    onCycleStatus={cycleStatus}
+                    onSetAttendanceStatus={setAttendanceStatus}
+                    onToggleSignup={toggleSignup}
+                    onRemoveFromAttendance={removeFromAttendance}
+                    onMarkAllAttended={markAllAttended}
+                    onOpenReassign={setReassignModal}
+                    onDeleteLootEntry={deleteLootEntry}
+                  />
+                )
+              })}
             </div>
           )
         })}
