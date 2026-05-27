@@ -1,10 +1,10 @@
 'use client'
 
 import { createClient } from '@/utils/supabase/client'
-import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { HugeiconsIcon } from '@hugeicons/react'
-import { ArrowDown01Icon, ArrowUp01Icon, Upload01Icon, Cancel01Icon, MoreVerticalIcon, DiscordIcon, PlusSignIcon } from '@hugeicons/core-free-icons'
+import { PlusSignIcon } from '@hugeicons/core-free-icons'
 import nextDynamic from 'next/dynamic'
 
 const LootHistoryTab = nextDynamic(() => import('./components/LootHistoryTab'), {
@@ -32,83 +32,54 @@ import { Heading, Text } from '@/components/ui/typography'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { useGuildContext } from '@/app/contexts/GuildContext'
 import { useNotification } from '@/app/contexts/NotificationContext'
-import ItemLink from '@/app/components/ItemLink'
-import {
-  Modal,
-  ModalHeader,
-  ModalTitle,
-  ModalDescription,
-  ModalBody,
-  ModalFooter,
-} from '@/components/ui/modal'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
-import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
 import { useConfirm } from '@/components/ui/confirm-modal'
 import { SegmentedControl } from '@/components/ui/segmented-control'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import { Select } from '@/components/ui/select'
-import { EmptyState } from '@/components/ui/empty-state'
-import { Search01Icon } from '@hugeicons/core-free-icons'
 import { trackClientEvent } from '@/utils/analytics/client'
 import { parseDate, toDateString } from '@/utils/date'
 import { useRaidTeam } from '@/app/hooks/useRaidTeam'
 import { isDateScheduled } from '@/domain/raid-team/schedule-history'
 import { resolveRaidDays } from '@/domain/raid-team/settings'
 import { TeamSelector } from '@/app/components/TeamSelector'
-
-interface Member {
-  character_id: string
-  user_id: string
-  character_name: string
-  class_name: string
-  class_color: string
-  role: string
-}
-
-interface UnlinkedAttendee {
-  character_name: string
-  status: AttendanceStatus
-}
-
-interface RaidLootEntry {
-  id: string
-  character_name: string
-  character_class_color: string
-  item_name: string
-  item_wowhead_id: number
-  awarded_date: string
-}
-
-interface RaidEvent {
-  id: string
-  raid_date: string
-  notes: string | null
-  is_skipped: boolean
-  skip_reason: string | null
-  wcl_report_code: string | null
-  is_bonus?: boolean
-}
-
-interface AttendanceStatus {
-  signed_up: boolean
-  attended: boolean
-  no_call_no_show: boolean
-  was_late: boolean
-  was_benched: boolean
-  is_excused?: boolean
-}
-
-type CellState = 'attended' | 'late' | 'standby' | 'no-show' | 'excused' | 'empty'
+import { paginatedSelect } from '@/utils/supabase/paginate'
+import type {
+  Member,
+  RaidLootEntry,
+  LootItem,
+  RaidEvent,
+  AttendanceStatus,
+  UnlinkedAttendee,
+} from './components/types'
+import { getCellState, type CellState } from './components/cell-state'
+// Modals are lazy-loaded so their JS doesn't ship in the initial bundle.
+// Combined with conditional render below, each chunk fetches on first open.
+const SkipDayModal = nextDynamic(
+  () => import('./components/SkipDayModal').then((m) => m.SkipDayModal),
+  { ssr: false }
+)
+const BonusRaidModal = nextDynamic(
+  () => import('./components/BonusRaidModal').then((m) => m.BonusRaidModal),
+  { ssr: false }
+)
+const ReassignLootModal = nextDynamic(
+  () => import('./components/ReassignLootModal').then((m) => m.ReassignLootModal),
+  { ssr: false }
+)
+const LootItemSelectionModal = nextDynamic(
+  () => import('./components/LootItemSelectionModal').then((m) => m.LootItemSelectionModal),
+  { ssr: false }
+)
+const AttendeeResolutionModal = nextDynamic(
+  () => import('./components/AttendeeResolutionModal').then((m) => m.AttendeeResolutionModal),
+  { ssr: false }
+)
+const ImportModal = nextDynamic(
+  () => import('./components/ImportModal').then((m) => m.ImportModal),
+  { ssr: false }
+)
+import { RaidCard } from './components/RaidCard'
+import { WeekGroup } from './components/WeekGroup'
 
 export default function RaidTrackingPage() {
   const [members, setMembers] = useState<Member[]>([])
@@ -138,7 +109,7 @@ export default function RaidTrackingPage() {
   const [initialLootData, setInitialLootData] = useState('')
   const [initialSignupsData, setInitialSignupsData] = useState('')
 
-  const [lootItems, setLootItems] = useState<{ id: string, name: string, wowhead_id: number, boss_name: string, raid_tier_id: string }[]>([])
+  const [lootItems, setLootItems] = useState<LootItem[]>([])
   const [pendingLootImports, setPendingLootImports] = useState<{ date: string, itemId: number, characterName: string, matchedItem?: any, matchedCharacter?: any, needsItemSelection?: boolean }[]>([])
   const [showLootSelectionModal, setShowLootSelectionModal] = useState<{ index: number, itemId: number, characterName: string } | null>(null)
   const [lootSearchQuery, setLootSearchQuery] = useState('')
@@ -171,6 +142,37 @@ export default function RaidTrackingPage() {
   const { showNotification } = useNotification()
   const { confirm, ConfirmDialog } = useConfirm()
   const { activeTeamId, activeTeam, teams, hasTeams, setTeam } = useRaidTeam()
+
+  // Snapshot of state read inside stable action handlers. Keeping these out of
+  // useCallback deps lets the handlers stay reference-stable across renders,
+  // which is what makes React.memo on RaidCard actually skip work when only
+  // one raid's data changed.
+  const latestRef = useRef({
+    attendance,
+    members,
+    raidLoot,
+    unlinkedAttendees,
+    raidDates,
+    activeGuild,
+    currentExpansion,
+    reassignModal,
+    postingDiscord,
+    linkingWcl,
+  })
+  useEffect(() => {
+    latestRef.current = {
+      attendance,
+      members,
+      raidLoot,
+      unlinkedAttendees,
+      raidDates,
+      activeGuild,
+      currentExpansion,
+      reassignModal,
+      postingDiscord,
+      linkingWcl,
+    }
+  })
 
   useEffect(() => {
     document.title = activeTab === 'tracking' ? 'LootList+ • Raid Tracking' : 'LootList+ • Loot History'
@@ -258,23 +260,46 @@ export default function RaidTrackingPage() {
 
       setLoading(true)
       try {
-        // Load guild settings (with cache busting)
-        const response = await fetch(`/api/guild-settings?guild_id=${activeGuild.id}&t=${Date.now()}`, {
-          cache: 'no-store'
-        })
+        // Fire auto-link in the background so it overlaps with the cold-load
+        // reads. We still await it before generateRaidDates because that path
+        // reads attendance records that the auto-link API may rewrite.
+        const autoLinkPromise = fetch('/api/attendance/auto-link', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ guild_id: activeGuild.id })
+        }).catch(() => null)
+
+        // All four cold-load reads are independent — run in parallel.
+        const teamMembersQuery = activeTeamId
+          ? supabase
+              .from('raid_team_members')
+              .select('character_id')
+              .eq('raid_team_id', activeTeamId)
+          : Promise.resolve({ data: null as { character_id: string }[] | null })
+
+        const [settingsResponse, membersResponse, aliasResult, teamMembersResult] =
+          await Promise.all([
+            fetch(`/api/guild-settings?guild_id=${activeGuild.id}&t=${Date.now()}`, {
+              cache: 'no-store',
+            }),
+            fetch(`/api/guild-members?guild_id=${activeGuild.id}`),
+            supabase
+              .from('character_aliases')
+              .select('id, alias_name, character_id')
+              .eq('guild_id', activeGuild.id),
+            teamMembersQuery,
+          ])
+
+        // Settings
         let settings: any = null
-        if (response.ok) {
-          const data = await response.json()
+        if (settingsResponse.ok) {
+          const data = await settingsResponse.json()
           settings = data.settings
           setGuildSettings(settings)
         }
 
-        // Build raider list from guild memberships (all active members).
-        // Previously this used approved loot submissions, which meant characters
-        // without an approved list were invisible in raid tracking.
-        const membersResponse = await fetch(`/api/guild-members?guild_id=${activeGuild.id}`)
+        // Members (build raider list from guild memberships — all active members).
         const membersResult = membersResponse.ok ? await membersResponse.json() : null
-
         if (membersResult?.members && membersResult.members.length > 0) {
           const formattedMembers: Member[] = []
           for (const member of membersResult.members) {
@@ -285,45 +310,30 @@ export default function RaidTrackingPage() {
                 character_name: char.name || 'Unknown',
                 class_name: char.class?.name || 'Unknown',
                 class_color: char.class?.color_hex || '#888888',
-                role: member.role || 'Member'
+                role: member.role || 'Member',
               })
             }
           }
 
-          // Filter roster to team members when a team is selected
           let filteredMembers = formattedMembers
-          if (activeTeamId) {
-            const { data: teamMembers } = await supabase
-              .from('raid_team_members')
-              .select('character_id')
-              .eq('raid_team_id', activeTeamId)
-            if (teamMembers) {
-              const teamCharIds = new Set(teamMembers.map((m: { character_id: string }) => m.character_id))
-              filteredMembers = formattedMembers.filter(m => teamCharIds.has(m.character_id))
-            }
+          if (activeTeamId && teamMembersResult.data) {
+            const teamCharIds = new Set(
+              teamMembersResult.data.map((m: { character_id: string }) => m.character_id)
+            )
+            filteredMembers = formattedMembers.filter((m) => teamCharIds.has(m.character_id))
           }
 
           filteredMembers.sort((a: Member, b: Member) => a.character_name.localeCompare(b.character_name))
           setMembers(filteredMembers)
         }
 
-        // Load character aliases for this guild
-        const { data: aliasData } = await supabase
-          .from('character_aliases')
-          .select('id, alias_name, character_id')
-          .eq('guild_id', activeGuild.id)
-
-        if (aliasData) {
-          setCharacterAliases(aliasData)
+        // Character aliases
+        if (aliasResult.data) {
+          setCharacterAliases(aliasResult.data)
         }
 
-        // Auto-link any unlinked attendance records that now match guild members.
-        // Awaited so linking completes before loadRaidAttendance reads records.
-        await fetch('/api/attendance/auto-link', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ guild_id: activeGuild.id })
-        }).catch(() => {}) // Silently ignore — filtering fix in loadRaidAttendance handles display
+        // Wait for auto-link to complete before reading attendance.
+        await autoLinkPromise
 
         // Generate and load raid dates
         if (settings) {
@@ -418,11 +428,17 @@ export default function RaidTrackingPage() {
     const allEventIds = (allEvents || []).map((e: RaidEvent) => e.id)
     let eventsWithAttendance = new Set<string>()
     if (allEventIds.length > 0) {
-      const { data: attendanceCheck } = await supabase
-        .from('attendance_records')
-        .select('raid_event_id')
-        .in('raid_event_id', allEventIds)
-      eventsWithAttendance = new Set(attendanceCheck?.map((r: { raid_event_id: string }) => r.raid_event_id) || [])
+      // Paginate to bypass the 1000-row PostgREST cap; otherwise events with
+      // attendance silently disappear from the dedup/visibility check.
+      const attendanceCheck = await paginatedSelect<{ raid_event_id: string }>((from, to) =>
+        supabase
+          .from('attendance_records')
+          .select('raid_event_id')
+          .in('raid_event_id', allEventIds)
+          .order('id', { ascending: true })
+          .range(from, to)
+      )
+      eventsWithAttendance = new Set(attendanceCheck.map((r) => r.raid_event_id))
     }
 
     // Filter events: show scheduled raid days only.
@@ -461,46 +477,60 @@ export default function RaidTrackingPage() {
     if (deduplicatedEvents && deduplicatedEvents.length > 0) {
       setRaidDates(deduplicatedEvents)
 
-      // Batch-fetch summary counts for all raid headers (attended/signed-up/loot)
+      // Batch-fetch summary counts for all raid headers (attended/signed-up/loot).
+      // Paginate both reads — they easily exceed the 1000-row PostgREST cap on
+      // active guilds (~30 events with ~30 records each already breaks 1000).
       const dedupEventIds = deduplicatedEvents.map((e: RaidEvent) => e.id)
       try {
-        const [{ data: summaryRecords }, { data: lootCounts }] = await Promise.all([
-          supabase
-            .from('attendance_records')
-            .select('raid_event_id, attended, signed_up')
-            .in('raid_event_id', dedupEventIds),
-          supabase
-            .from('loot_history')
-            .select('raid_event_id')
-            .in('raid_event_id', dedupEventIds)
+        const [summaryRecords, lootCounts] = await Promise.all([
+          paginatedSelect<{ raid_event_id: string; attended: boolean; signed_up: boolean }>(
+            (from, to) =>
+              supabase
+                .from('attendance_records')
+                .select('raid_event_id, attended, signed_up')
+                .in('raid_event_id', dedupEventIds)
+                .order('id', { ascending: true })
+                .range(from, to)
+          ),
+          paginatedSelect<{ raid_event_id: string }>((from, to) =>
+            supabase
+              .from('loot_history')
+              .select('raid_event_id')
+              .in('raid_event_id', dedupEventIds)
+              .order('id', { ascending: true })
+              .range(from, to)
+          ),
         ])
 
         const counts: Record<string, { attended: number; signedUp: number; loot: number }> = {}
         for (const id of dedupEventIds) {
           counts[id] = { attended: 0, signedUp: 0, loot: 0 }
         }
-        if (summaryRecords) {
-          for (const r of summaryRecords) {
-            if (!counts[r.raid_event_id]) counts[r.raid_event_id] = { attended: 0, signedUp: 0, loot: 0 }
-            if (r.attended) counts[r.raid_event_id].attended++
-            if (r.signed_up) counts[r.raid_event_id].signedUp++
-          }
+        for (const r of summaryRecords) {
+          if (!counts[r.raid_event_id]) counts[r.raid_event_id] = { attended: 0, signedUp: 0, loot: 0 }
+          if (r.attended) counts[r.raid_event_id].attended++
+          if (r.signed_up) counts[r.raid_event_id].signedUp++
         }
-        if (lootCounts) {
-          for (const r of lootCounts) {
-            if (counts[r.raid_event_id]) counts[r.raid_event_id].loot++
-          }
+        for (const r of lootCounts) {
+          if (counts[r.raid_event_id]) counts[r.raid_event_id].loot++
         }
         setRaidSummaryCounts(counts)
       } catch {
         // Not critical - headers will show 0 until expanded
       }
 
-      // Auto-expand the most recent week
-      const mostRecentRaid = deduplicatedEvents[0]
+      // Auto-expand the two most recent weeks (covers "this week + last week")
       const effectiveFirstRaidDay = raidScheduleSource.first_raid_day ?? 0
-      const mostRecentWeekStart = getWeekStart(mostRecentRaid.raid_date, effectiveFirstRaidDay)
-      setExpandedWeeks(new Set([mostRecentWeekStart]))
+      const topWeekStarts: string[] = []
+      for (const event of deduplicatedEvents) {
+        const ws = getWeekStart(event.raid_date, effectiveFirstRaidDay)
+        if (!topWeekStarts.includes(ws)) {
+          topWeekStarts.push(ws)
+          if (topWeekStarts.length === 2) break
+        }
+      }
+      const mostRecentWeekStart = topWeekStarts[0]
+      setExpandedWeeks(new Set(topWeekStarts))
 
       // Auto-expand the first raid day in the most recent week (earliest date in that week)
       const raidsInMostRecentWeek = deduplicatedEvents.filter((r: RaidEvent) =>
@@ -527,7 +557,7 @@ export default function RaidTrackingPage() {
     return toDateString(weekStart)
   }
 
-  const loadRaidAttendance = async (raidId: string) => {
+  const loadRaidAttendance = useCallback(async (raidId: string) => {
     // Load attendance records
     const { data: records } = await supabase
       .from('attendance_records')
@@ -541,6 +571,8 @@ export default function RaidTrackingPage() {
     const linkedCharIdsInRaid = new Set(
       records?.filter((r: any) => r.character_id).map((r: any) => r.character_id)
     )
+
+    const currentMembers = latestRef.current.members
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     records?.forEach((r: any) => {
@@ -556,7 +588,7 @@ export default function RaidTrackingPage() {
       } else if (r.character_name) {
         // Unlinked attendee - only skip if a linked record for this member already exists
         // in this raid (prevents duplicates when both linked and unlinked records exist)
-        const matchedMember = members.find(
+        const matchedMember = currentMembers.find(
           m => m.character_name.toLowerCase() === r.character_name.toLowerCase()
         )
         if (!matchedMember || !linkedCharIdsInRaid.has(matchedMember.character_id)) {
@@ -640,7 +672,7 @@ export default function RaidTrackingPage() {
       showNotification('error', 'Couldn\'t load loot history for this raid. Try again.')
       setRaidLoot(prev => ({ ...prev, [raidId]: [] }))
     }
-  }
+  }, [supabase, showNotification])
 
   const toggleRaidExpanded = useCallback(async (raidId: string) => {
     setExpandedRaids(prev => {
@@ -653,36 +685,14 @@ export default function RaidTrackingPage() {
       return next
     })
 
-    // Load attendance if not already loaded
-    if (!attendance[raidId]) {
+    if (!latestRef.current.attendance[raidId]) {
       await loadRaidAttendance(raidId)
     }
-  }, [attendance, loadRaidAttendance])
+  }, [loadRaidAttendance])
 
-  const getCellState = (status: AttendanceStatus | undefined): CellState => {
-    if (!status) return 'empty'
-    if (status.no_call_no_show) return 'no-show'
-    if (status.is_excused) return 'excused'
-    if (status.attended && status.was_late) return 'late'
-    if (status.was_benched) return 'standby'
-    if (status.attended) return 'attended'
-    return 'empty'
-  }
-
-  const getCellStyle = (state: CellState) => {
-    switch (state) {
-      case 'attended': return 'bg-background-elevated border border-border border-l-2 border-l-success'
-      case 'late': return 'bg-background-elevated border border-border border-l-2 border-l-warning'
-      case 'standby': return 'bg-background-elevated border border-border border-l-2 border-l-orange-500'
-      case 'no-show': return 'bg-background-elevated border border-border border-l-2 border-l-destructive'
-      case 'excused': return 'bg-background-elevated border border-border border-l-2 border-l-muted-foreground'
-      default: return 'bg-background-elevated border border-border'
-    }
-  }
-
-
-  const setAttendanceStatus = async (raidId: string, characterId: string, userId: string, state: CellState) => {
-    const current = attendance[raidId]?.[characterId]
+  const setAttendanceStatus = useCallback(async (raidId: string, characterId: string, userId: string, state: CellState) => {
+    const { attendance: latestAttendance, activeGuild: latestGuild } = latestRef.current
+    const current = latestAttendance[raidId]?.[characterId]
     const preserveSignedUp = current?.signed_up || false
 
     let newStatus: AttendanceStatus
@@ -708,7 +718,6 @@ export default function RaidTrackingPage() {
         break
     }
 
-    // Optimistic update
     setAttendance(prev => ({
       ...prev,
       [raidId]: {
@@ -717,18 +726,12 @@ export default function RaidTrackingPage() {
       }
     }))
 
-    // Save to database via API (bypasses RLS)
-    const payload = {
-      raid_event_id: raidId,
-      character_id: characterId,
-      user_id: userId,
-      ...newStatus
-    }
+    const payload = { raid_event_id: raidId, character_id: characterId, user_id: userId, ...newStatus }
     const res = await fetch('/api/attendance/bulk', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        guild_id: activeGuild?.id,
+        guild_id: latestGuild?.id,
         action: 'upsert',
         records: [payload],
         onConflict: 'raid_event_id,character_id'
@@ -741,31 +744,31 @@ export default function RaidTrackingPage() {
       showNotification('error', errBody.error || 'Couldn\'t save attendance. Try again.')
       await loadRaidAttendance(raidId)
     }
-  }
+  }, [showNotification, loadRaidAttendance])
 
-  const cycleStatus = (raidId: string, characterId: string, userId: string) => {
-    const current = attendance[raidId]?.[characterId]
+  const cycleStatus = useCallback((raidId: string, characterId: string, userId: string) => {
+    const current = latestRef.current.attendance[raidId]?.[characterId]
     const currentState = getCellState(current)
     const cycle: CellState[] = ['empty', 'attended', 'late', 'standby', 'no-show', 'excused']
     const currentIdx = cycle.indexOf(currentState)
     const nextState = cycle[(currentIdx + 1) % cycle.length]
     setAttendanceStatus(raidId, characterId, userId, nextState)
-  }
+  }, [setAttendanceStatus])
 
-  const markAllAttended = async (raidId: string, raidMembers: Member[]) => {
+  const markAllAttended = useCallback(async (raidId: string, raidMembers: Member[]) => {
     for (const member of raidMembers) {
-      const state = getCellState(attendance[raidId]?.[member.character_id])
+      const state = getCellState(latestRef.current.attendance[raidId]?.[member.character_id])
       if (state === 'empty') {
         await setAttendanceStatus(raidId, member.character_id, member.user_id, 'attended')
       }
     }
-  }
+  }, [setAttendanceStatus])
 
-  const toggleSignup = async (raidId: string, characterId: string, userId: string) => {
-    const current = attendance[raidId]?.[characterId]
+  const toggleSignup = useCallback(async (raidId: string, characterId: string, userId: string) => {
+    const { attendance: latestAttendance, activeGuild: latestGuild } = latestRef.current
+    const current = latestAttendance[raidId]?.[characterId]
     const newSignedUp = !current?.signed_up
 
-    // Optimistic update
     setAttendance(prev => ({
       ...prev,
       [raidId]: {
@@ -780,12 +783,11 @@ export default function RaidTrackingPage() {
       }
     }))
 
-    // Save to database via API (bypasses RLS)
     const res = await fetch('/api/attendance/bulk', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        guild_id: activeGuild?.id,
+        guild_id: latestGuild?.id,
         action: 'upsert',
         records: [{
           raid_event_id: raidId,
@@ -806,9 +808,9 @@ export default function RaidTrackingPage() {
       showNotification('error', 'Couldn\'t save signup status. Try again.')
       await loadRaidAttendance(raidId)
     }
-  }
+  }, [showNotification, loadRaidAttendance])
 
-  const removeFromAttendance = (raidId: string, characterId: string) => {
+  const removeFromAttendance = useCallback((raidId: string, characterId: string) => {
     confirm({
       title: 'Remove from raid',
       description: 'Remove this character from attendance tracking for this raid?',
@@ -818,7 +820,7 @@ export default function RaidTrackingPage() {
         const res = await fetch('/api/attendance/bulk', {
           method: 'DELETE',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ guild_id: activeGuild?.id, raid_event_id: raidId, character_id: characterId })
+          body: JSON.stringify({ guild_id: latestRef.current.activeGuild?.id, raid_event_id: raidId, character_id: characterId })
         })
 
         if (!res.ok) {
@@ -827,7 +829,6 @@ export default function RaidTrackingPage() {
           return
         }
 
-        // Update local state
         setAttendance(prev => {
           const newState = { ...prev }
           if (newState[raidId]) {
@@ -841,21 +842,22 @@ export default function RaidTrackingPage() {
         showNotification('success', 'Removed from raid')
       }
     })
-  }
+  }, [confirm, showNotification])
 
-  const reassignLoot = async (lootId: string, newCharacterId: string, newCharacterName: string) => {
-    if (!reassignModal) return
+  const reassignLoot = useCallback(async (lootId: string, newCharacterId: string, newCharacterName: string) => {
+    const { reassignModal: target, activeGuild: latestGuild } = latestRef.current
+    if (!target) return
 
     const res = await fetch('/api/loot-history/bulk', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        guild_id: activeGuild?.id,
+        guild_id: latestGuild?.id,
         id: lootId,
         updates: {
           character_id: newCharacterId,
           character_name: null,
-          notes: `Reassigned from ${reassignModal.currentMember.character_name}`
+          notes: `Reassigned from ${target.currentMember.character_name}`
         }
       })
     })
@@ -867,15 +869,14 @@ export default function RaidTrackingPage() {
       return
     }
 
-    // Reload loot for this raid
-    await loadRaidAttendance(reassignModal.raidId)
+    await loadRaidAttendance(target.raidId)
     setReassignModal(null)
     showNotification('success', `Loot reassigned to ${newCharacterName}`)
-  }
+  }, [showNotification, loadRaidAttendance])
 
-  const toggleSkipDay = async (raidId: string, currentSkipped: boolean) => {
+  const toggleSkipDay = useCallback(async (raidId: string, currentSkipped: boolean) => {
     if (!currentSkipped) {
-      const raid = raidDates.find(r => r.id === raidId)
+      const raid = latestRef.current.raidDates.find(r => r.id === raidId)
       if (raid) {
         setShowSkipModal({ raidId, date: raid.raid_date })
       }
@@ -889,7 +890,7 @@ export default function RaidTrackingPage() {
         r.id === raidId ? { ...r, is_skipped: false, skip_reason: null } : r
       ))
     }
-  }
+  }, [supabase])
 
   const confirmSkipDay = async () => {
     if (!showSkipModal) return
@@ -951,14 +952,15 @@ export default function RaidTrackingPage() {
     }
   }
 
-  const handlePostToDiscord = async (raidId: string) => {
-    if (!activeGuild || postingDiscord) return
+  const handlePostToDiscord = useCallback(async (raidId: string) => {
+    const { activeGuild: latestGuild, postingDiscord: currentPosting } = latestRef.current
+    if (!latestGuild || currentPosting) return
     setPostingDiscord(raidId)
     try {
       const response = await fetch('/api/discord/post-raid-summary', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ guild_id: activeGuild.id, raid_event_id: raidId }),
+        body: JSON.stringify({ guild_id: latestGuild.id, raid_event_id: raidId }),
       })
       const data = await response.json()
       if (!response.ok) {
@@ -971,16 +973,17 @@ export default function RaidTrackingPage() {
     } finally {
       setPostingDiscord(null)
     }
-  }
+  }, [showNotification])
 
-  const handleLinkWcl = async (raidId: string) => {
-    if (!activeGuild || linkingWcl) return
+  const handleLinkWcl = useCallback(async (raidId: string) => {
+    const { activeGuild: latestGuild, linkingWcl: currentLinking } = latestRef.current
+    if (!latestGuild || currentLinking) return
     setLinkingWcl(raidId)
     try {
       const response = await fetch('/api/wcl/link-report', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ guild_id: activeGuild.id, raid_event_id: raidId }),
+        body: JSON.stringify({ guild_id: latestGuild.id, raid_event_id: raidId }),
       })
       const data = await response.json()
       if (!response.ok) {
@@ -991,7 +994,6 @@ export default function RaidTrackingPage() {
         showNotification('info', data.message || 'No matching report found for this date.')
         return
       }
-      // Update local state with the report code
       setRaidDates(prev => prev.map(r =>
         r.id === raidId ? { ...r, wcl_report_code: data.report_code } : r
       ))
@@ -1001,9 +1003,32 @@ export default function RaidTrackingPage() {
     } finally {
       setLinkingWcl(null)
     }
-  }
+  }, [showNotification])
 
-  const deleteLootEntry = (lootId: string, raidId: string) => {
+  const handleImportClick = useCallback(async (raid: RaidEvent, hasImportedData: boolean) => {
+    await loadLootItems()
+
+    if (hasImportedData) {
+      if (!latestRef.current.attendance[raid.id]) {
+        await loadRaidAttendance(raid.id)
+      }
+      setLootData('')
+      setShowImportModal({ raidId: raid.id, date: raid.raid_date, isEdit: true })
+    } else {
+      setAttendanceData('')
+      setLootData('')
+      setSignupsData('')
+      setInitialAttendanceData('')
+      setInitialLootData('')
+      setInitialSignupsData('')
+      setShowImportModal({ raidId: raid.id, date: raid.raid_date, isEdit: false })
+    }
+    // loadLootItems is intentionally not in deps — it's defined later in the file
+    // and is stable via useCallback below.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loadRaidAttendance])
+
+  const deleteLootEntry = useCallback((lootId: string, raidId: string) => {
     confirm({
       title: 'Remove loot entry',
       description: 'Are you sure you want to remove this loot entry? This will restore the item to the master sheet.',
@@ -1013,7 +1038,7 @@ export default function RaidTrackingPage() {
         const res = await fetch('/api/loot-history/bulk', {
           method: 'DELETE',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ guild_id: activeGuild?.id, ids: [lootId] })
+          body: JSON.stringify({ guild_id: latestRef.current.activeGuild?.id, ids: [lootId] })
         })
 
         if (!res.ok) {
@@ -1022,14 +1047,13 @@ export default function RaidTrackingPage() {
           return
         }
 
-        // Update local state
         setRaidLoot(prev => ({
           ...prev,
           [raidId]: prev[raidId]?.filter(l => l.id !== lootId) || []
         }))
       }
     })
-  }
+  }, [confirm, showNotification])
 
   const importSignups = async () => {
     if (!showImportModal || !activeGuild) return
@@ -1139,22 +1163,21 @@ export default function RaidTrackingPage() {
 
   // Load all loot items for the current expansion
   // Returns the items array so callers can use it immediately (since setState is async)
-  const loadLootItems = async (): Promise<typeof lootItems> => {
-    if (!activeGuild || !currentExpansion) {
+  const loadLootItems = useCallback(async (): Promise<typeof lootItems> => {
+    const { activeGuild: latestGuild, currentExpansion: latestExp } = latestRef.current
+    if (!latestGuild || !latestExp) {
       return []
     }
 
-    // Get all raid tiers for this expansion
     const { data: tiers } = await supabase
       .from('raid_tiers')
       .select('id')
-      .eq('expansion_id', currentExpansion.expansion_id)
+      .eq('expansion_id', latestExp.expansion_id)
 
     if (!tiers || tiers.length === 0) return []
 
     const tierIds = tiers.map((t: { id: string }) => t.id)
 
-    // Get all loot items for these tiers
     const { data: items } = await supabase
       .from('loot_items')
       .select('id, name, wowhead_id, boss_name, raid_tier_id')
@@ -1166,7 +1189,7 @@ export default function RaidTrackingPage() {
       return items
     }
     return []
-  }
+  }, [supabase])
 
   // Preview functions to show match counts
   // Parse MRT/attendance data - handles formats like:
@@ -2232,15 +2255,37 @@ export default function RaidTrackingPage() {
     })
   }, [])
 
+  const todayWeekStart = useMemo(
+    () => getWeekStart(toDateString(new Date()), firstRaidDay),
+    [firstRaidDay]
+  )
+
   const getWeekLabel = useCallback((weekStartDate: string) => {
-    const date = parseDate(weekStartDate)
-    return `Week of ${date.toLocaleDateString('en-US', {
-      weekday: 'long',
-      month: 'long',
-      day: 'numeric',
-      year: 'numeric'
-    })}`
+    const start = parseDate(weekStartDate)
+    const end = new Date(start)
+    end.setDate(end.getDate() + 6)
+    const sameMonth =
+      start.getMonth() === end.getMonth() && start.getFullYear() === end.getFullYear()
+    const startStr = start.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })
+    const endStr = sameMonth
+      ? String(end.getDate())
+      : end.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })
+    const currentYear = new Date().getFullYear()
+    const showYear =
+      start.getFullYear() !== currentYear || end.getFullYear() !== currentYear
+    return showYear ? `${startStr} – ${endStr}, ${end.getFullYear()}` : `${startStr} – ${endStr}`
   }, [])
+
+  const getWeekRelativeTag = useCallback(
+    (weekStartDate: string): 'this' | 'last' | null => {
+      if (weekStartDate === todayWeekStart) return 'this'
+      const prev = parseDate(todayWeekStart)
+      prev.setDate(prev.getDate() - 7)
+      if (toDateString(prev) === weekStartDate) return 'last'
+      return null
+    },
+    [todayWeekStart]
+  )
 
   // Memoize expensive raid grouping computation
   const { raidsByWeek, weekKeys } = useMemo(() => {
@@ -2510,376 +2555,71 @@ export default function RaidTrackingPage() {
         {weekKeys.map((weekStart) => {
           const raids = raidsByWeek[weekStart]
           const isWeekExpanded = expandedWeeks.has(weekStart)
-
-          return (
-            <div key={weekStart} className="space-y-3">
-              {/* Week Header */}
-              <Button
-                variant="ghost"
-                onClick={() => toggleWeekExpanded(weekStart)}
-                className="flex items-center gap-3 w-full group p-0 h-auto hover:bg-transparent"
-              >
-                {isWeekExpanded ? (
-                  <HugeiconsIcon icon={ArrowUp01Icon} size={24} className="text-foreground group-hover:text-accent transition-colors flex-shrink-0" />
-                ) : (
-                  <HugeiconsIcon icon={ArrowDown01Icon} size={24} className="text-foreground group-hover:text-accent transition-colors flex-shrink-0" />
-                )}
-                <h2 className="text-[24px] font-bold text-foreground group-hover:text-accent transition-colors">{getWeekLabel(weekStart)}</h2>
-                <div className="flex-1 h-[1px] bg-foreground/10"></div>
-              </Button>
-
-              {/* Raid Days for this week */}
-              {isWeekExpanded && raids.map((raid) => {
-          const isExpanded = expandedRaids.has(raid.id)
-          const isPast = raid.raid_date < today
-          const attendedCount = getAttendanceCount(raid.id)
-          const signupCount = getSignupCount(raid.id)
-          const lootCount = getLootCount(raid.id)
-          const hasImportedData = attendedCount > 0 || lootCount > 0
-
-          return (
-            <div
-              key={raid.id}
-              className="bg-background-elevated border border-border rounded-xl overflow-hidden"
-            >
-              {/* Raid Header */}
-              <div className="px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
-                <div className="flex items-center gap-3 sm:gap-4">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => toggleRaidExpanded(raid.id)}
-                    className="text-foreground hover:text-accent transition-colors h-auto w-auto p-0"
-                  >
-                    {isExpanded ? <HugeiconsIcon icon={ArrowUp01Icon} size={20} /> : <HugeiconsIcon icon={ArrowDown01Icon} size={20} />}
-                  </Button>
-                  <div>
-                    <div className="flex items-center gap-3">
-                      <h3 className={`text-[18px] font-bold ${raid.is_skipped ? 'line-through opacity-50' : 'text-foreground'}`}>
-                        {parseDate(raid.raid_date).toLocaleDateString('en-US', {
-                          weekday: 'long',
-                          month: 'long',
-                          day: 'numeric',
-                          year: 'numeric'
-                        })}
-                      </h3>
-                      {raid.is_skipped && (
-                        <Badge variant="destructive-subtle">Skipped: {raid.skip_reason}</Badge>
-                      )}
-                      {raid.is_bonus && !raid.is_skipped && (
-                        <Badge variant="accent-subtle">Bonus</Badge>
-                      )}
-                      {!isPast && !raid.is_skipped && raid.raid_date === today && (
-                        <Badge variant="accent">Today</Badge>
-                      )}
-                      {hasImportedData && !raid.is_skipped && (
-                        <Badge variant="success-subtle">Imported</Badge>
-                      )}
-                    </div>
-                    {!raid.is_skipped && (
-                      <p className="text-foreground-muted text-[13px] mt-1">
-                        {attendedCount} attended • {signupCount} signed up
-                        {lootCount > 0 && <span className="text-[#a335ee]"> • {lootCount} loot</span>}
-                        {raid.wcl_report_code && (
-                          <span> • <a
-                            href={`https://classic.warcraftlogs.com/reports/${raid.wcl_report_code}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-[#e35e15] hover:underline"
-                            onClick={(e) => e.stopPropagation()}
-                          >WCL Report</a></span>
-                        )}
-                      </p>
-                    )}
-                  </div>
-                </div>
-                <div className="flex gap-2 flex-shrink-0">
-                  {!raid.is_skipped && (
-                    <Button
-                      variant={hasImportedData ? 'outline' : 'outline'}
-                      size="sm"
-                      onClick={async () => {
-                        await loadLootItems() // Load items for loot matching
-
-                        if (hasImportedData) {
-                          // Load attendance data first if not already loaded
-                          if (!attendance[raid.id]) {
-                            await loadRaidAttendance(raid.id)
-                          }
-
-                          // Need to get fresh data after loading
-                          // We'll use a setTimeout to let state update, or we read directly
-                          // For now, just open the modal and let useEffect handle it
-                          setLootData('')
-                          setShowImportModal({ raidId: raid.id, date: raid.raid_date, isEdit: true })
-                        } else {
-                          // Clear all form fields for new import
-                          setAttendanceData('')
-                          setLootData('')
-                          setSignupsData('')
-                          setInitialAttendanceData('')
-                          setInitialLootData('')
-                          setInitialSignupsData('')
-                          setShowImportModal({ raidId: raid.id, date: raid.raid_date, isEdit: false })
-                        }
-                      }}
-                      className={hasImportedData ? 'border-success/50 text-success hover:bg-success/20' : ''}
-                    >
-                      <HugeiconsIcon icon={Upload01Icon} size={16} />
-                      <span className="hidden sm:inline">{hasImportedData ? 'Edit import' : 'Import data'}</span>
-                      <span className="sm:hidden">{hasImportedData ? 'Edit' : 'Import'}</span>
-                    </Button>
-                  )}
-                  {!raid.is_skipped && hasImportedData && guildSettings?.raid_summary_channel_id && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handlePostToDiscord(raid.id)}
-                      loading={postingDiscord === raid.id}
-                      className="border-[#5865F2]/50 text-[#5865F2] hover:bg-[#5865F2]/10"
-                    >
-                      <HugeiconsIcon icon={DiscordIcon} size={16} />
-                      <span className="hidden sm:inline">Post to Discord</span>
-                      <span className="sm:hidden">Discord</span>
-                    </Button>
-                  )}
-                  {!raid.is_skipped && hasImportedData && guildSettings?.wcl_guild_url && !raid.wcl_report_code && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleLinkWcl(raid.id)}
-                      loading={linkingWcl === raid.id}
-                      className="border-[#e35e15]/50 text-[#e35e15] hover:bg-[#e35e15]/10"
-                    >
-                      <span className="hidden sm:inline">Link WCL</span>
-                      <span className="sm:hidden">WCL</span>
-                    </Button>
-                  )}
-                  <Button
-                    variant={raid.is_skipped ? 'destructive' : 'outline'}
-                    size="sm"
-                    onClick={() => toggleSkipDay(raid.id, raid.is_skipped)}
-                    className={raid.is_skipped ? 'bg-destructive/30 hover:bg-destructive/40' : ''}
-                  >
-                    {raid.is_skipped ? 'Unskip' : 'Skip day'}
-                  </Button>
-                </div>
-              </div>
-
-              {/* Expanded Member List */}
-              {isExpanded && !raid.is_skipped && (
-                <div className="border-t border-border px-4 sm:px-6 py-4">
-                  {members.length === 0 && (!unlinkedAttendees[raid.id] || unlinkedAttendees[raid.id].length === 0) ? (
-                    /* Empty State */
-                    <div className="text-center py-12">
-                      <div className="w-16 h-16 mx-auto mb-4 bg-muted rounded-full flex items-center justify-center">
-                        <svg className="w-8 h-8 text-foreground-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                        </svg>
-                      </div>
-                      <h4 className="text-[16px] font-semibold text-foreground mb-2">No raiders with loot lists</h4>
-                      <p className="text-foreground-muted text-[13px] max-w-md mx-auto">
-                        Guild members with loot submissions will appear here. Use the "Import data" button to add attendance for this raid day.
-                      </p>
-                    </div>
-                  ) : (
-                  <>
-                  {/* Mark all attended button */}
-                  {members.some(m => getCellState(attendance[raid.id]?.[m.character_id]) === 'empty') && (
-                    <div className="flex justify-end mb-2">
-                      <Button variant="success-outline" size="sm" onClick={() => markAllAttended(raid.id, members)}>
-                        Mark all attended
-                      </Button>
-                    </div>
-                  )}
-
-                  {/* Click-row raider list */}
-                  <div className="space-y-1">
-                    {/* Linked Members */}
-                    {members.map(member => {
-                      const status = attendance[raid.id]?.[member.character_id]
-                      const state = getCellState(status)
-                      const isSignedUp = status?.signed_up || false
-                      const memberLoot = raidLoot[raid.id]?.filter(l =>
-                        l.character_name.toLowerCase() === member.character_name.toLowerCase()
-                      ) || []
-
-                      return (
-                        <div
-                          key={member.character_id}
-                          className={`flex flex-col rounded-lg transition-colors ${getCellStyle(state)}`}
-                        >
-                          <div className="flex items-center">
-                            {/* Clickable area - cycles status */}
-                            <button
-                              type="button"
-                              onClick={() => cycleStatus(raid.id, member.character_id, member.user_id)}
-                              className="flex items-center gap-2 min-w-0 flex-1 px-3 py-2 text-left cursor-pointer hover:bg-muted/50 rounded-l-lg transition-colors"
-                            >
-                              <span
-                                className="font-medium text-[13px] truncate"
-                                style={{ color: member.class_color }}
-                              >
-                                {member.character_name}
-                              </span>
-
-                              {/* Desktop: Inline Loot Items (names only, no interactive elements inside button) */}
-                              {memberLoot.length > 0 && (
-                                <span className="hidden sm:flex items-center gap-2 text-[12px] min-w-0 overflow-hidden">
-                                  <span className="text-muted-foreground flex-shrink-0">→</span>
-                                  {memberLoot.slice(0, 2).map(loot => (
-                                    <span key={loot.id} className="min-w-0 max-w-[180px] flex-shrink overflow-hidden">
-                                      <ItemLink name={loot.item_name} wowheadId={loot.item_wowhead_id} className="text-[12px]" />
-                                    </span>
-                                  ))}
-                                  {memberLoot.length > 2 && (
-                                    <span
-                                      className="text-[11px] font-medium text-muted-foreground bg-muted px-2 py-0.5 rounded-full flex-shrink-0"
-                                      title={memberLoot.slice(2).map(l => l.item_name).join(', ')}
-                                    >
-                                      +{memberLoot.length - 2} more
-                                    </span>
-                                  )}
-                                </span>
-                              )}
-
-                              <span className="flex-1" />
-
-                              {/* Status pill */}
-                              {state === 'attended' && <span className="text-[11px] font-medium text-success bg-success/15 px-2 py-0.5 rounded-full flex-shrink-0">Attended</span>}
-                              {state === 'late' && <span className="text-[11px] font-medium text-warning bg-warning/15 px-2 py-0.5 rounded-full flex-shrink-0">Late</span>}
-                              {state === 'standby' && <span className="text-[11px] font-medium text-orange-500 bg-orange-500/15 px-2 py-0.5 rounded-full flex-shrink-0">Standby</span>}
-                              {state === 'no-show' && <span className="text-[11px] font-medium text-destructive bg-destructive/15 px-2 py-0.5 rounded-full flex-shrink-0">No Show</span>}
-                              {state === 'excused' && <span className="text-[11px] font-medium text-muted-foreground bg-muted px-2 py-0.5 rounded-full flex-shrink-0">Excused</span>}
-                              {isSignedUp && <span className="text-[11px] font-medium text-accent bg-accent/15 px-2 py-0.5 rounded-full flex-shrink-0">Signed up</span>}
-                            </button>
-
-                            {/* Three-dot menu (outside click target) */}
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-7 w-7 flex-shrink-0 mr-1">
-                                  <HugeiconsIcon icon={MoreVerticalIcon} size={16} />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuItem
-                                  onClick={() => setAttendanceStatus(raid.id, member.character_id, member.user_id, 'attended')}
-                                  className={state === 'attended' ? 'bg-muted' : ''}
-                                >
-                                  Mark as attended
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  onClick={() => setAttendanceStatus(raid.id, member.character_id, member.user_id, 'late')}
-                                  className={state === 'late' ? 'bg-muted' : ''}
-                                >
-                                  Mark as late
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  onClick={() => setAttendanceStatus(raid.id, member.character_id, member.user_id, 'standby')}
-                                  className={state === 'standby' ? 'bg-muted' : ''}
-                                >
-                                  Mark as standby
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  onClick={() => setAttendanceStatus(raid.id, member.character_id, member.user_id, 'no-show')}
-                                  className={state === 'no-show' ? 'bg-muted' : ''}
-                                >
-                                  Mark as no show
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  onClick={() => setAttendanceStatus(raid.id, member.character_id, member.user_id, 'empty')}
-                                  className={state === 'empty' ? 'bg-muted' : ''}
-                                >
-                                  Clear status
-                                </DropdownMenuItem>
-                                {guildSettings?.use_signups && (
-                                  <>
-                                    <DropdownMenuSeparator />
-                                    <DropdownMenuItem onClick={() => toggleSignup(raid.id, member.character_id, member.user_id)}>
-                                      {isSignedUp ? 'Remove signup' : 'Mark as signed up'}
-                                    </DropdownMenuItem>
-                                  </>
-                                )}
-                                {memberLoot.length > 0 && (
-                                  <>
-                                    <DropdownMenuSeparator />
-                                    <DropdownMenuItem onClick={() => setReassignModal({ raidId: raid.id, lootEntries: memberLoot, currentMember: member })}>
-                                      Reassign loot
-                                    </DropdownMenuItem>
-                                  </>
-                                )}
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem
-                                  onClick={() => removeFromAttendance(raid.id, member.character_id)}
-                                  className="text-destructive"
-                                >
-                                  Remove from raid
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </div>
-
-                          {/* Mobile: Loot items on separate line */}
-                          {memberLoot.length > 0 && (
-                            <div className="flex items-center gap-2 text-[12px] sm:hidden px-3 pb-2 flex-wrap">
-                              <span className="text-muted-foreground">→</span>
-                              {memberLoot.map(loot => (
-                                <div key={loot.id} className="flex items-center gap-1">
-                                  <ItemLink name={loot.item_name} wowheadId={loot.item_wowhead_id} className="text-[12px]" />
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={(e) => { e.stopPropagation(); deleteLootEntry(loot.id, raid.id) }}
-                                    className="text-destructive hover:text-destructive/80 h-5 w-5 p-0"
-                                    title="Remove loot"
-                                  >
-                                    <HugeiconsIcon icon={Cancel01Icon} size={14} />
-                                  </Button>
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      )
-                    })}
-
-                    {/* Unlinked Attendees (No Account Yet) - filter out any that match linked members */}
-                    {unlinkedAttendees[raid.id]
-                      ?.filter(attendee =>
-                        !members.some(m => m.character_name.toLowerCase() === attendee.character_name.toLowerCase())
-                      )
-                      .map((attendee, idx) => {
-                      const state = getCellState(attendee.status)
-
-                      return (
-                        <div
-                          key={`unlinked-${idx}`}
-                          className={`flex items-center px-3 py-2 rounded-lg opacity-60 ${getCellStyle(state)}`}
-                        >
-                          <div className="flex items-center gap-2 min-w-0 flex-1">
-                            <span className="font-medium text-muted-foreground text-[13px] truncate" title={`${attendee.character_name} (account not linked)`}>
-                              {attendee.character_name}
-                            </span>
-                            <span className="flex-1" />
-                            {state === 'attended' && <span className="text-[11px] font-medium text-success bg-success/15 px-2 py-0.5 rounded-full flex-shrink-0">Attended</span>}
-                            {state === 'late' && <span className="text-[11px] font-medium text-warning bg-warning/15 px-2 py-0.5 rounded-full flex-shrink-0">Late</span>}
-                            {state === 'standby' && <span className="text-[11px] font-medium text-orange-500 bg-orange-500/15 px-2 py-0.5 rounded-full flex-shrink-0">Standby</span>}
-                            {state === 'no-show' && <span className="text-[11px] font-medium text-destructive bg-destructive/15 px-2 py-0.5 rounded-full flex-shrink-0">No Show</span>}
-                            {state === 'excused' && <span className="text-[11px] font-medium text-muted-foreground bg-muted px-2 py-0.5 rounded-full flex-shrink-0">Excused</span>}
-                          </div>
-                        </div>
-                      )
-                    })}
-                  </div>
-                  </>
-                  )}
-
-                </div>
-              )}
-            </div>
+          const nonSkippedRaids = raids.filter((r) => !r.is_skipped)
+          const weekAttended = nonSkippedRaids.reduce(
+            (sum, r) => sum + getAttendanceCount(r.id),
+            0
           )
-        })}
-            </div>
+          const weekLoot = nonSkippedRaids.reduce(
+            (sum, r) => sum + getLootCount(r.id),
+            0
+          )
+
+          return (
+            <WeekGroup
+              key={weekStart}
+              weekStart={weekStart}
+              label={getWeekLabel(weekStart)}
+              relativeTag={getWeekRelativeTag(weekStart)}
+              isExpanded={isWeekExpanded}
+              raidCount={nonSkippedRaids.length}
+              attendedCount={weekAttended}
+              lootCount={weekLoot}
+              onToggle={toggleWeekExpanded}
+            >
+              {raids.map((raid) => {
+                const isExpanded = expandedRaids.has(raid.id)
+                const attendedCount = getAttendanceCount(raid.id)
+                const signupCount = getSignupCount(raid.id)
+                const lootCount = getLootCount(raid.id)
+                const hasImportedData = attendedCount > 0 || lootCount > 0
+
+                return (
+                  <RaidCard
+                    key={raid.id}
+                    raid={raid}
+                    isExpanded={isExpanded}
+                    isPast={raid.raid_date < today}
+                    today={today}
+                    hasImportedData={hasImportedData}
+                    attendedCount={attendedCount}
+                    signupCount={signupCount}
+                    lootCount={lootCount}
+                    members={members}
+                    attendanceMap={attendance[raid.id]}
+                    loot={raidLoot[raid.id]}
+                    unlinkedAttendees={unlinkedAttendees[raid.id]}
+                    useSignups={!!guildSettings?.use_signups}
+                    canPostDiscord={!!guildSettings?.raid_summary_channel_id}
+                    canLinkWcl={!!guildSettings?.wcl_guild_url && !raid.wcl_report_code}
+                    isPostingDiscord={postingDiscord === raid.id}
+                    isLinkingWcl={linkingWcl === raid.id}
+                    onToggleExpanded={toggleRaidExpanded}
+                    onImport={handleImportClick}
+                    onPostToDiscord={handlePostToDiscord}
+                    onLinkWcl={handleLinkWcl}
+                    onSkipDay={toggleSkipDay}
+                    onCycleStatus={cycleStatus}
+                    onSetAttendanceStatus={setAttendanceStatus}
+                    onToggleSignup={toggleSignup}
+                    onRemoveFromAttendance={removeFromAttendance}
+                    onMarkAllAttended={markAllAttended}
+                    onOpenReassign={setReassignModal}
+                    onDeleteLootEntry={deleteLootEntry}
+                  />
+                )
+              })}
+            </WeekGroup>
           )
         })}
         </div>
@@ -2892,409 +2632,96 @@ export default function RaidTrackingPage() {
         <LootHistoryTab />
       )}
 
-      {/* Bonus Raid Day Modal */}
-      <Modal open={showBonusModal} onClose={() => !creatingBonus && setShowBonusModal(false)} size="sm">
-        <ModalHeader onClose={() => !creatingBonus && setShowBonusModal(false)}>
-          <ModalTitle>Add bonus raid day</ModalTitle>
-          <ModalDescription>
-            Track an off-schedule raid. Attendance and loot count like a regular raid day.
-            {activeTeamId
-              ? ' Tied to the selected team.'
-              : hasTeams
-                ? ' No team selected, so this event will be unassigned.'
-                : ''}
-          </ModalDescription>
-        </ModalHeader>
-        <ModalBody className="space-y-4">
-          <div>
-            <Label className="mb-2">Raid date</Label>
-            <Input
-              type="date"
-              variant="rounded"
-              size="sm"
-              value={bonusDate}
-              max={today}
-              onChange={e => setBonusDate(e.target.value)}
-            />
-          </div>
-          <div>
-            <Label className="mb-2">Notes (optional)</Label>
-            <Input
-              variant="rounded"
-              size="sm"
-              value={bonusNotes}
-              onChange={e => setBonusNotes(e.target.value)}
-              placeholder="e.g., Heroic split run, Saturday alt night..."
-            />
-          </div>
-        </ModalBody>
-        <ModalFooter>
-          <Button variant="outline" onClick={() => setShowBonusModal(false)} disabled={creatingBonus}>
-            Cancel
-          </Button>
-          <Button
-            variant="primary"
-            onClick={submitBonusRaidDay}
-            loading={creatingBonus}
-            disabled={!bonusDate || creatingBonus}
-          >
-            Add raid day
-          </Button>
-        </ModalFooter>
-      </Modal>
+      {showBonusModal && (
+        <BonusRaidModal
+          open={showBonusModal}
+          date={bonusDate}
+          notes={bonusNotes}
+          maxDate={today}
+          creating={creatingBonus}
+          activeTeamId={activeTeamId}
+          hasTeams={hasTeams}
+          onDateChange={setBonusDate}
+          onNotesChange={setBonusNotes}
+          onCancel={() => setShowBonusModal(false)}
+          onSubmit={submitBonusRaidDay}
+        />
+      )}
 
-      {/* Skip Day Modal */}
-      <Modal open={!!showSkipModal} onClose={() => setShowSkipModal(null)} size="sm">
-        <ModalHeader onClose={() => setShowSkipModal(null)}>
-          <ModalTitle>Skip raid day</ModalTitle>
-          {showSkipModal && (
-            <ModalDescription>
-              {parseDate(showSkipModal.date).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
-            </ModalDescription>
-          )}
-        </ModalHeader>
-        <ModalBody>
-          <Label className="mb-2">Reason for skipping</Label>
-          <Input
-            variant="rounded"
-            size="sm"
-            value={skipReason}
-            onChange={e => setSkipReason(e.target.value)}
-            placeholder="e.g., Holiday, Cancelled, Not enough signups..."
-          />
-        </ModalBody>
-        <ModalFooter>
-          <Button variant="outline" onClick={() => setShowSkipModal(null)}>
-            Cancel
-          </Button>
-          <Button variant="primary" onClick={confirmSkipDay}>
-            Skip day
-          </Button>
-        </ModalFooter>
-      </Modal>
+      {showSkipModal && (
+        <SkipDayModal
+          open={!!showSkipModal}
+          date={showSkipModal.date}
+          reason={skipReason}
+          onReasonChange={setSkipReason}
+          onCancel={() => setShowSkipModal(null)}
+          onConfirm={confirmSkipDay}
+        />
+      )}
 
-      {/* Import Modal - Unified Form */}
-      <Modal
-        open={!!showImportModal}
-        onClose={handleCloseImportModal}
-        size="xl"
-      >
-        <ModalHeader onClose={handleCloseImportModal}>
-          <ModalTitle>{showImportModal?.isEdit ? 'Edit raid data' : 'Import raid data'}</ModalTitle>
-          {showImportModal && (
-            <ModalDescription>
-              {parseDate(showImportModal.date).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
-            </ModalDescription>
-          )}
-        </ModalHeader>
-        <ModalBody className="space-y-6">
-          {/* Attendance & Loot Side by Side */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-            {/* Attendance Section */}
-            <div className="space-y-3">
-              <div>
-                <Label className="text-md font-semibold">
-                  Attendance <span className="text-accent">*</span>
-                </Label>
-                <p className="text-muted-foreground text-sm">Who attended this raid day</p>
-              </div>
-              <Textarea
-                variant="rounded"
-                value={attendanceData}
-                onChange={e => setAttendanceData(e.target.value)}
-                placeholder={"Paste character names (one per line, comma, or semicolon separated)\n\nZev\nDeny\nCheck"}
-                className="h-44 font-mono resize-none"
-              />
-              {attendancePreview && (
-                  <div className="flex items-center gap-2 text-sm">
-                    <span className="text-success">{attendancePreview.matched} matched</span>
-                    {attendancePreview.aliasMatched > 0 && (
-                      <span className="text-accent">{attendancePreview.aliasMatched} via alias</span>
-                    )}
-                    {attendancePreview.unmatched > 0 && (
-                      <span className="text-warning">{attendancePreview.unmatched} unmatched</span>
-                    )}
-                  </div>
-              )}
-            </div>
+      {showImportModal && (
+        <ImportModal
+          target={showImportModal}
+          attendanceData={attendanceData}
+          lootData={lootData}
+          signupsData={signupsData}
+          initialAttendanceData={initialAttendanceData}
+          initialLootData={initialLootData}
+          initialSignupsData={initialSignupsData}
+          attendancePreview={attendancePreview}
+          lootPreview={lootPreview}
+          signupsPreview={signupsPreview}
+          importing={importing}
+          useSignups={!!guildSettings?.use_signups}
+          onAttendanceChange={setAttendanceData}
+          onLootChange={setLootData}
+          onSignupsChange={setSignupsData}
+          onClose={handleCloseImportModal}
+          onClearFields={() => {
+            setAttendanceData('')
+            setLootData('')
+            setSignupsData('')
+          }}
+          onClearSavedData={clearRaidData}
+          onImport={importAllRaidData}
+        />
+      )}
 
-            {/* Loot Section */}
-            <div className="space-y-3">
-              <div>
-                <Label className="text-md font-semibold">
-                  Loot <span className="text-accent">*</span>
-                </Label>
-                <p className="text-muted-foreground text-sm">Gargul export format</p>
-              </div>
-              <Textarea
-                variant="rounded"
-                value={lootData}
-                onChange={e => setLootData(e.target.value)}
-                placeholder={"DATE;[ITEM_ID];CHARACTER\n\n12/15/2024;[16859];Zev\n12/15/2024;[18203];Deny\n12/15/2024;[17113];Check"}
-                className="h-44 font-mono resize-none"
-              />
-              {lootPreview && (
-                  <div className="flex items-center gap-2 text-sm">
-                    {lootPreview.linked > 0 && (
-                      <span className="text-success">{lootPreview.linked} linked</span>
-                    )}
-                    {lootPreview.unlinked > 0 && (
-                      <span className="text-warning">{lootPreview.unlinked} unlinked</span>
-                    )}
-                    {lootPreview.failed > 0 && (
-                      <span className="text-destructive">{lootPreview.failed} failed</span>
-                    )}
-                  </div>
-              )}
-            </div>
-          </div>
+      {showLootSelectionModal && (
+        <LootItemSelectionModal
+          target={showLootSelectionModal}
+          searchQuery={lootSearchQuery}
+          filteredItems={filteredLootItems}
+          onSearchQueryChange={setLootSearchQuery}
+          onSelect={handleLootItemSelection}
+          onSkip={skipLootItemSelection}
+        />
+      )}
 
-          {/* Signups Section - Only if enabled */}
-          {guildSettings?.use_signups && (
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label className="text-md font-semibold">
-                    Signups <span className="text-muted-foreground text-sm font-normal">(optional)</span>
-                  </Label>
-                  <p className="text-muted-foreground text-sm">Who signed up for this raid</p>
-                </div>
-              </div>
-              <Textarea
-                variant="rounded"
-                value={signupsData}
-                onChange={e => setSignupsData(e.target.value)}
-                placeholder={"Paste character names (one per line, comma, or semicolon separated)\n\nZev\nDeny\nCheck"}
-                className="h-24 font-mono resize-none"
-              />
-              {signupsPreview && (
-                  <div className="flex items-center gap-2 text-sm">
-                    <span className="text-success">{signupsPreview.matched} matched</span>
-                    {signupsPreview.aliasMatched > 0 && (
-                      <span className="text-accent">{signupsPreview.aliasMatched} via alias</span>
-                    )}
-                    {signupsPreview.unmatched > 0 && (
-                      <span className="text-warning">{signupsPreview.unmatched} unmatched</span>
-                    )}
-                  </div>
-              )}
-            </div>
-          )}
-        </ModalBody>
-        <ModalFooter className="flex justify-between">
-          <div className="flex gap-2">
-            <Button
-              variant="ghost"
-              onClick={() => {
-                setAttendanceData('')
-                setLootData('')
-                setSignupsData('')
-              }}
-              disabled={importing || (!attendanceData.trim() && !lootData.trim() && !signupsData.trim())}
-            >
-              Clear fields
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={clearRaidData}
-              disabled={importing}
-            >
-              Clear saved data
-            </Button>
-          </div>
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              onClick={handleCloseImportModal}
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="primary"
-              onClick={importAllRaidData}
-              disabled={importing || (!attendanceData.trim() && !lootData.trim()) || (showImportModal?.isEdit && attendanceData === initialAttendanceData && lootData === initialLootData && signupsData === initialSignupsData)}
-              loading={importing}
-            >
-              {showImportModal?.isEdit ? 'Save changes' : 'Import all'}
-            </Button>
-          </div>
-        </ModalFooter>
-      </Modal>
+      {showAttendeeResolutionModal && (
+        <AttendeeResolutionModal
+          target={showAttendeeResolutionModal}
+          totalUnmatched={unmatchedAttendeeNames.length}
+          searchQuery={attendeeSearchQuery}
+          filteredMembers={filteredResolutionMembers}
+          rememberAlias={rememberAlias}
+          onSearchQueryChange={setAttendeeSearchQuery}
+          onResolve={handleAttendeeResolution}
+          onSkip={skipAttendeeResolution}
+          onSkipAll={skipAllAttendeeResolution}
+          onCancel={cancelAttendeeResolution}
+          onRememberAliasChange={setRememberAlias}
+        />
+      )}
 
-      {/* Loot Item Selection Modal */}
-      <Modal open={!!showLootSelectionModal} onClose={skipLootItemSelection} size="default" zIndex={60}>
-        <ModalHeader>
-          <ModalTitle>Item not found</ModalTitle>
-          {showLootSelectionModal && (
-            <ModalDescription>
-              Could not find item ID <span className="text-accent font-mono">[{showLootSelectionModal.itemId}]</span> for{' '}
-              <span className="text-foreground font-medium">{showLootSelectionModal.characterName}</span>
-            </ModalDescription>
-          )}
-        </ModalHeader>
-        <ModalBody className="space-y-4">
-          <Input
-            variant="rounded"
-            size="sm"
-            value={lootSearchQuery}
-            onChange={e => setLootSearchQuery(e.target.value)}
-            placeholder="Search loot tables..."
-            autoFocus
-          />
-
-          <div className="max-h-64 overflow-y-auto space-y-1">
-            {filteredLootItems.slice(0, 20).map(item => (
-                <Button
-                  key={item.id}
-                  variant="ghost"
-                  onClick={() => handleLootItemSelection(item)}
-                  className="w-full px-4 py-3 h-auto bg-background-elevated hover:bg-muted border border-border rounded-xl text-left justify-start"
-                >
-                  <div>
-                    <p className="text-foreground text-sm font-medium">{item.name}</p>
-                    <p className="text-muted-foreground text-xs">{item.boss_name} • ID: {item.wowhead_id}</p>
-                  </div>
-                </Button>
-              ))}
-            {filteredLootItems.length === 0 && (
-              <EmptyState
-                icon={Search01Icon}
-                title="No items found"
-                description="Try a different search term."
-                size="compact"
-              />
-            )}
-          </div>
-        </ModalBody>
-        <ModalFooter>
-          <Button variant="outline" onClick={skipLootItemSelection}>
-            Skip this item
-          </Button>
-        </ModalFooter>
-      </Modal>
-
-      {/* Attendee Resolution Modal */}
-      <Modal open={!!showAttendeeResolutionModal} onClose={cancelAttendeeResolution} size="default" zIndex={60}>
-        <ModalHeader onClose={cancelAttendeeResolution}>
-          <ModalTitle>Unmatched attendee</ModalTitle>
-          {showAttendeeResolutionModal && (
-            <ModalDescription>
-              Assign <span className="text-accent font-medium">{showAttendeeResolutionModal.name}</span> to a guild member
-              <span className="text-muted-foreground"> ({showAttendeeResolutionModal.index + 1}/{unmatchedAttendeeNames.length})</span>
-            </ModalDescription>
-          )}
-        </ModalHeader>
-        <ModalBody className="space-y-4">
-          <Input
-            variant="rounded"
-            size="sm"
-            value={attendeeSearchQuery}
-            onChange={e => setAttendeeSearchQuery(e.target.value)}
-            placeholder="Search raiders..."
-            autoFocus
-          />
-
-          <div className={`overflow-y-auto space-y-1 transition-[max-height] duration-200 ${attendeeSearchQuery.length > 0 ? 'max-h-[400px]' : 'max-h-64'}`}>
-            {filteredResolutionMembers.length > 0 ? filteredResolutionMembers.map(m => (
-                <Button
-                  key={m.character_id}
-                  variant="ghost"
-                  onClick={() => handleAttendeeResolution(m)}
-                  className="w-full justify-between"
-                >
-                  <span className="text-sm font-medium" style={{ color: m.class_color }}>
-                    {m.character_name}
-                  </span>
-                  <span className="text-xs text-muted-foreground">{m.class_name}</span>
-                </Button>
-              )) : (
-                <EmptyState
-                  icon={Search01Icon}
-                  title="No members found"
-                  description="Try a different search term."
-                  size="compact"
-                />
-              )}
-          </div>
-
-          <div className="flex items-center gap-2 pt-1">
-            <Checkbox
-              id="remember-alias"
-              checked={rememberAlias}
-              onCheckedChange={(checked) => setRememberAlias(checked === true)}
-            />
-            <Label htmlFor="remember-alias" className="text-sm text-muted-foreground cursor-pointer">
-              Remember this alias for future imports
-            </Label>
-          </div>
-        </ModalBody>
-        <ModalFooter className="flex justify-between">
-          <Button variant="ghost" onClick={cancelAttendeeResolution}>
-            Cancel import
-          </Button>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={skipAttendeeResolution}>
-              Skip this name
-            </Button>
-            <Button variant="outline" onClick={skipAllAttendeeResolution}>
-              Skip all remaining
-            </Button>
-          </div>
-        </ModalFooter>
-      </Modal>
-
-      {/* Reassign Loot Modal */}
-      <Modal open={!!reassignModal} onClose={() => setReassignModal(null)} size="sm">
-        <ModalHeader onClose={() => setReassignModal(null)}>
-          <ModalTitle>Reassign loot</ModalTitle>
-          <ModalDescription>
-            {reassignModal?.lootEntries.length === 1 ? (
-              <ItemLink
-                name={reassignModal.lootEntries[0].item_name}
-                wowheadId={reassignModal.lootEntries[0].item_wowhead_id}
-              />
-            ) : (
-              <span>{reassignModal?.lootEntries.length} items from {reassignModal?.currentMember.character_name}</span>
-            )}
-          </ModalDescription>
-        </ModalHeader>
-        <ModalBody>
-          <div className="space-y-4">
-            {reassignModal?.lootEntries.map(loot => (
-              <div key={loot.id} className="space-y-2">
-                <div className="flex items-center gap-2 text-sm">
-                  <ItemLink name={loot.item_name} wowheadId={loot.item_wowhead_id} />
-                </div>
-                <Select
-                  variant="rounded"
-                  value=""
-                  onChange={(e) => {
-                    const member = members.find(m => m.character_id === e.target.value)
-                    if (member && reassignModal) {
-                      reassignLoot(loot.id, member.character_id, member.character_name)
-                    }
-                  }}
-                >
-                  <option value="" disabled>Select new owner...</option>
-                  {members
-                    .filter(m => m.character_id !== reassignModal?.currentMember.character_id)
-                    .map(m => (
-                      <option key={m.character_id} value={m.character_id}>
-                        {m.character_name} ({m.class_name})
-                      </option>
-                    ))
-                  }
-                </Select>
-              </div>
-            ))}
-          </div>
-        </ModalBody>
-        <ModalFooter>
-          <Button variant="outline" onClick={() => setReassignModal(null)}>
-            Cancel
-          </Button>
-        </ModalFooter>
-      </Modal>
+      {reassignModal && (
+        <ReassignLootModal
+          target={reassignModal}
+          members={members}
+          onClose={() => setReassignModal(null)}
+          onReassign={reassignLoot}
+        />
+      )}
 
       {ConfirmDialog}
     </div>
