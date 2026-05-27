@@ -128,15 +128,24 @@ export async function GET(request: NextRequest) {
     windowStart.setDate(windowStart.getDate() - daysToSubtract - (weeks * 7))
     windowStart.setHours(0, 0, 0, 0)
 
-    // Get raid events in window
+    // Get raid events in window (include raid_team_id for team-aware scoring)
     const { data: raidEvents } = await serviceSupabase
       .from('raid_events')
-      .select('id, raid_date, is_skipped')
+      .select('id, raid_date, is_skipped, raid_team_id, is_bonus')
       .eq('guild_id', guildId)
       .gte('raid_date', toDateString(windowStart))
       .lte('raid_date', toDateString(today))
       .eq('is_skipped', false)
       .order('raid_date', { ascending: true })
+
+    // Look up this character's raid team for team-aware scoring
+    const { data: charTeam } = await serviceSupabase
+      .from('raid_team_members')
+      .select('raid_team_id')
+      .eq('guild_id', guildId)
+      .eq('character_id', charId)
+      .maybeSingle()
+    const raiderTeamId = charTeam?.raid_team_id ?? null
 
     // Get attendance records for this character
     const eventIds = raidEvents?.map(e => e.id) || []
@@ -180,6 +189,7 @@ export async function GET(request: NextRequest) {
         asOfDate: toDateString(today),
         raidStartDate: expansionRaidDays?.raid_start_date || undefined,
         weekResetDay: (settings as { week_reset_day?: number | null } | null)?.week_reset_day ?? undefined,
+        raiderTeamId,
       })
     }
 

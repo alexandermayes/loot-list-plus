@@ -318,7 +318,7 @@ export default function MasterSheetContent() {
 
     let raidEventsQuery = supabase
       .from('raid_events')
-      .select('id, raid_date, is_bonus')
+      .select('id, raid_date, is_bonus, raid_team_id')
       .eq('guild_id', guildId)
       .eq('is_skipped', false)
       .gte('raid_date', periodStartStr)
@@ -344,6 +344,15 @@ export default function MasterSheetContent() {
       .select('character_id, user_id, raid_event_id, signed_up, attended, no_call_no_show, was_late, was_benched, is_excused, points_override')
       .in('character_id', characterIds)
       .in('raid_event_id', raidIds)
+
+    // Query 4b: Raid team membership per character — drives team-aware scoring
+    const { data: teamMembers } = await supabase
+      .from('raid_team_members')
+      .select('character_id, raid_team_id')
+      .eq('guild_id', guildId)
+      .in('character_id', characterIds)
+    const teamIdByCharacterId = new Map<string, string>()
+    for (const m of teamMembers ?? []) teamIdByCharacterId.set(m.character_id, m.raid_team_id)
 
     // Build lookup: character_id -> attendance records
     const attendanceByCharacter = new Map<string, Array<{
@@ -416,6 +425,7 @@ export default function MasterSheetContent() {
         fillInRecords: charFillInRecords.length > 0 ? charFillInRecords : undefined,
         weeklyAttendanceCap: weeklyCap,
         weekResetDay: (guildSettings as { week_reset_day?: number | null }).week_reset_day ?? undefined,
+        raiderTeamId: teamIdByCharacterId.get(character.id) ?? null,
       })
 
       results[character.id] = result

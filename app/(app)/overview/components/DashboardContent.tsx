@@ -1008,6 +1008,7 @@ export default function DashboardContent({ serverHeading }: DashboardContentProp
             fillInRecords: fillInRecords.length > 0 ? fillInRecords : undefined,
             weeklyAttendanceCap: weeklyCap,
             weekResetDay: (guildSettings as { week_reset_day?: number | null }).week_reset_day ?? undefined,
+            raiderTeamId: activeTeam?.id ?? null,
           })
 
           attendanceScore = attendanceResult.score

@@ -50,6 +50,8 @@ interface GuildRaider {
   attendanceScore: number
   raidsInWindow: number
   attendance: Map<string, AttendanceStatus>
+  /** null = no team membership (raider only owes null-team events) */
+  raidTeamId: string | null
 }
 
 interface AttendanceStatus {
@@ -157,11 +159,14 @@ export default function AttendanceContent() {
       if (!grouped[weekStart]) {
         grouped[weekStart] = []
       }
-      // Deduplicate: only add if this raid_date doesn't already exist in this week
-      const alreadyExists = grouped[weekStart].some(r => r.raid_date === raid.raid_date)
-      if (!alreadyExists) {
-        grouped[weekStart].push(raid)
-      }
+      grouped[weekStart].push(raid)
+    })
+    // Sort each week's events by (date, team_id) so columns are stable across renders
+    Object.values(grouped).forEach(events => {
+      events.sort((a, b) =>
+        a.raid_date.localeCompare(b.raid_date) ||
+        (a.raid_team_id ?? '').localeCompare(b.raid_team_id ?? '')
+      )
     })
 
     // Generate 1 upcoming week of placeholder raid dates
@@ -262,7 +267,10 @@ export default function AttendanceContent() {
         isMostRecent: weekStart === mostRecentTrackedWeek,
         isUpcoming: raids.every(r => r.raid_date > todayStr),
         isOutsideWindow: raids.every(r => r.raid_date < windowStartStr),
-        raids: raids.sort((a, b) => a.raid_date.localeCompare(b.raid_date))
+        raids: raids.sort((a, b) =>
+          a.raid_date.localeCompare(b.raid_date) ||
+          (a.raid_team_id ?? '').localeCompare(b.raid_team_id ?? '')
+        )
       }))
   }, [guildRaidEvents, expansionRaidSchedule, guildSettings, mostRecentTrackedWeek, configuredRaidDays])
 
@@ -517,8 +525,10 @@ export default function AttendanceContent() {
         // This handles: schedule changes leaving orphan events, while keeping off-schedule tracked raids.
         const allRaidEvents = raidEventsData || []
 
-        // IMPORTANT: Deduplicate by raid_date to handle duplicate entries in database
-        // First, find which raid IDs have attendance records, so we prefer those
+        // Deduplicate by (raid_date, raid_team_id) — collapses genuine duplicates
+        // (same date AND same team) while preserving legitimate cross-team raids
+        // on the same date. Within a (date, team) bucket, prefer events that
+        // hold attendance records.
         const allRaidIds = allRaidEvents.map((e: RaidEvent) => e.id)
         const { data: existingAttendance } = await supabase
           .from('attendance_records')
@@ -527,16 +537,14 @@ export default function AttendanceContent() {
 
         const raidIdsWithAttendance = new Set(existingAttendance?.map((r: { raid_event_id: string }) => r.raid_event_id) || [])
 
-        // Deduplicate: prefer events that have attendance records
         const deduplicatedRaidEvents: RaidEvent[] = Array.from(
           allRaidEvents.reduce((map: Map<string, RaidEvent>, event: RaidEvent) => {
-            const existing = map.get(event.raid_date)
+            const key = `${event.raid_date}|${event.raid_team_id ?? 'null'}`
+            const existing = map.get(key)
             if (!existing) {
-              // First event for this date - keep it
-              map.set(event.raid_date, event)
+              map.set(key, event)
             } else if (raidIdsWithAttendance.has(event.id) && !raidIdsWithAttendance.has(existing.id)) {
-              // This event has attendance but the existing one doesn't - prefer this one
-              map.set(event.raid_date, event)
+              map.set(key, event)
             }
             return map
           }, new Map<string, RaidEvent>()).values()
@@ -628,13 +636,14 @@ export default function AttendanceContent() {
           .select('raid_event_id, character_id, signed_up, attended, no_call_no_show, was_late, was_benched, is_excused, points_override')
           .in('raid_event_id', raidEventIds),
 
-        // Query 3: If team selected, get team member character IDs for roster filtering
-        activeTeamId
-          ? supabase
-              .from('raid_team_members')
-              .select('character_id')
-              .eq('raid_team_id', activeTeamId)
-          : Promise.resolve({ data: null }),
+        // Query 3: Fetch ALL team memberships for the guild. When a team is
+        // selected, this drives roster filtering. When no team is selected
+        // (guild view), it's still needed so each raider's score is computed
+        // against their own team's events (team-aware engine).
+        supabase
+          .from('raid_team_members')
+          .select('character_id, raid_team_id')
+          .eq('guild_id', guildId),
 
         // Query 4: If team selected, also get ALL guild attendance (for fill-in credit detection)
         activeTeamId
@@ -645,9 +654,18 @@ export default function AttendanceContent() {
           : Promise.resolve({ data: null }),
       ])
 
-      // Build team member filter set (null = show all)
-      const teamCharacterIds: Set<string> | null = teamMembersResult.data
-        ? new Set(teamMembersResult.data.map((m: { character_id: string }) => m.character_id))
+      // Map character → team membership. Drives both roster filtering (when a
+      // team is selected) and per-raider team-aware scoring (always).
+      const teamIdByCharacterId = new Map<string, string>()
+      for (const m of (teamMembersResult.data ?? []) as { character_id: string; raid_team_id: string }[]) {
+        teamIdByCharacterId.set(m.character_id, m.raid_team_id)
+      }
+      const teamCharacterIds: Set<string> | null = activeTeamId
+        ? new Set(
+            ((teamMembersResult.data ?? []) as { character_id: string; raid_team_id: string }[])
+              .filter(m => m.raid_team_id === activeTeamId)
+              .map(m => m.character_id)
+          )
         : null
 
       const allAttendance = attendanceResult.data
@@ -756,6 +774,7 @@ export default function AttendanceContent() {
           .filter(Boolean) as { id: string; raid_date: string }[]
 
         const joinedAt = joinDateByCharacterId[s.character_id]
+        const raiderTeamId = teamIdByCharacterId.get(s.character_id) ?? null
         const result = computeAttendance({
           records: charRecords,
           raidEvents,
@@ -769,6 +788,7 @@ export default function AttendanceContent() {
           fillInRecords: charFillInRecords.length > 0 ? charFillInRecords : undefined,
           weeklyAttendanceCap: weeklyCap,
           weekResetDay: (settings as { week_reset_day?: number | null } | null)?.week_reset_day ?? undefined,
+          raiderTeamId,
         })
 
         return {
@@ -779,7 +799,8 @@ export default function AttendanceContent() {
           classColor: char.class?.color_hex || '#ffffff',
           attendanceScore: result.score,
           raidsInWindow: result.raidsInWindow,
-          attendance: charAttendance
+          attendance: charAttendance,
+          raidTeamId: raiderTeamId,
         }
       })
 
@@ -821,6 +842,7 @@ export default function AttendanceContent() {
               fillInRecords: myFillInRecords.length > 0 ? myFillInRecords : undefined,
               weeklyAttendanceCap: weeklyCap,
               weekResetDay: (settings as { week_reset_day?: number | null } | null)?.week_reset_day ?? undefined,
+              raiderTeamId: teamIdByCharacterId.get(activeCharacterId) ?? null,
             })
             setAttendanceScore(result.score)
             setTrackedRaidCount(result.raidsInWindow)
@@ -1116,20 +1138,32 @@ export default function AttendanceContent() {
                         }
                         const status = raider.attendance.get(raid.id)
                         const state = getAttendanceState(status)
+                        // Raider doesn't owe this event when it belongs to a
+                        // different team. Null-team events count for everyone.
+                        const owesEvent =
+                          raid.raid_team_id == null ||
+                          raid.raid_team_id === raider.raidTeamId
+                        const notOwed = !owesEvent && state === 'empty'
                         return (
                           <td
                             key={raid.id}
                             className={`px-2 py-2.5 text-center border-l border-border ${
                               week.isOutsideWindow
                                 ? 'bg-muted/20'
+                                : notOwed ? 'bg-muted/10'
                                 : week.isMostRecent ? 'bg-success/5' : 'bg-accent/5'
                             }`}
                           >
                             <span
                               className={`inline-flex items-center justify-center w-6 h-6 rounded text-[11px] font-medium ${
-                                week.isOutsideWindow ? 'opacity-30 ' + getCellStyle(state) : getCellStyle(state)
+                                week.isOutsideWindow ? 'opacity-30 ' + getCellStyle(state)
+                                  : notOwed ? 'opacity-25 ' + getCellStyle(state)
+                                  : getCellStyle(state)
                               }`}
-                              title={week.isOutsideWindow ? 'Outside scoring window' : state === 'empty' ? 'No record' : state.replace('-', ' ')}
+                              title={week.isOutsideWindow ? 'Outside scoring window'
+                                : notOwed ? "Other team's raid"
+                                : state === 'empty' ? 'No record'
+                                : state.replace('-', ' ')}
                             >
                               {getCellLabel(state)}
                             </span>
