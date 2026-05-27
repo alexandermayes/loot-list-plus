@@ -4,7 +4,7 @@ import { createClient } from '@/utils/supabase/client'
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { HugeiconsIcon } from '@hugeicons/react'
-import { ArrowDown01Icon, ArrowUp01Icon, PlusSignIcon } from '@hugeicons/core-free-icons'
+import { PlusSignIcon } from '@hugeicons/core-free-icons'
 import nextDynamic from 'next/dynamic'
 
 const LootHistoryTab = nextDynamic(() => import('./components/LootHistoryTab'), {
@@ -33,7 +33,6 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { useGuildContext } from '@/app/contexts/GuildContext'
 import { useNotification } from '@/app/contexts/NotificationContext'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
 import { useConfirm } from '@/components/ui/confirm-modal'
 import { SegmentedControl } from '@/components/ui/segmented-control'
@@ -59,6 +58,7 @@ import { LootItemSelectionModal } from './components/LootItemSelectionModal'
 import { AttendeeResolutionModal } from './components/AttendeeResolutionModal'
 import { ImportModal } from './components/ImportModal'
 import { RaidCard } from './components/RaidCard'
+import { WeekGroup } from './components/WeekGroup'
 
 export default function RaidTrackingPage() {
   const [members, setMembers] = useState<Member[]>([])
@@ -2487,9 +2487,7 @@ export default function RaidTrackingPage() {
         {weekKeys.map((weekStart) => {
           const raids = raidsByWeek[weekStart]
           const isWeekExpanded = expandedWeeks.has(weekStart)
-          const relativeTag = getWeekRelativeTag(weekStart)
           const nonSkippedRaids = raids.filter((r) => !r.is_skipped)
-          const weekRaidCount = nonSkippedRaids.length
           const weekAttended = nonSkippedRaids.reduce(
             (sum, r) => sum + getAttendanceCount(r.id),
             0
@@ -2498,37 +2496,20 @@ export default function RaidTrackingPage() {
             (sum, r) => sum + getLootCount(r.id),
             0
           )
-          const hasSummary = weekRaidCount > 0
 
           return (
-            <div key={weekStart} className="space-y-3">
-              {/* Week Header */}
-              <Button
-                variant="ghost"
-                onClick={() => toggleWeekExpanded(weekStart)}
-                className="flex items-center gap-3 w-full group p-0 h-auto hover:bg-transparent"
-              >
-                {isWeekExpanded ? (
-                  <HugeiconsIcon icon={ArrowUp01Icon} size={24} className="text-foreground group-hover:text-accent transition-colors flex-shrink-0" />
-                ) : (
-                  <HugeiconsIcon icon={ArrowDown01Icon} size={24} className="text-foreground group-hover:text-accent transition-colors flex-shrink-0" />
-                )}
-                <h2 className="text-[24px] font-bold text-foreground group-hover:text-accent transition-colors">{getWeekLabel(weekStart)}</h2>
-                {relativeTag && (
-                  <Badge variant="accent-subtle" className="flex-shrink-0">
-                    {relativeTag === 'this' ? 'This week' : 'Last week'}
-                  </Badge>
-                )}
-                {!isWeekExpanded && hasSummary && (
-                  <span className="text-[13px] text-foreground-muted tabular-nums flex-shrink-0">
-                    {weekRaidCount} {weekRaidCount === 1 ? 'raid' : 'raids'} • {weekAttended} attended
-                    {weekLoot > 0 && <span className="text-[#a335ee]"> • {weekLoot} loot</span>}
-                  </span>
-                )}
-                <div className="flex-1 h-[1px] bg-foreground/10"></div>
-              </Button>
-
-              {isWeekExpanded && raids.map((raid) => {
+            <WeekGroup
+              key={weekStart}
+              weekStart={weekStart}
+              label={getWeekLabel(weekStart)}
+              relativeTag={getWeekRelativeTag(weekStart)}
+              isExpanded={isWeekExpanded}
+              raidCount={nonSkippedRaids.length}
+              attendedCount={weekAttended}
+              lootCount={weekLoot}
+              onToggle={toggleWeekExpanded}
+            >
+              {raids.map((raid) => {
                 const isExpanded = expandedRaids.has(raid.id)
                 const attendedCount = getAttendanceCount(raid.id)
                 const signupCount = getSignupCount(raid.id)
@@ -2570,7 +2551,7 @@ export default function RaidTrackingPage() {
                   />
                 )
               })}
-            </div>
+            </WeekGroup>
           )
         })}
         </div>
