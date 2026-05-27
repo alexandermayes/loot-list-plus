@@ -335,10 +335,14 @@ export function computeAttendance(input: AttendanceInput): AttendanceResult {
     ? calculateAttendanceScore(allRecords, totalRaids, config)
     : 0
 
-  // Count attended (excluding NCNS), capped at denominator
+  // Count attended (excluding NCNS), capped at denominator. Benched counts
+  // as attended for this ratio so the dashboard's "X/Y raids" reading lines
+  // up with how Loot Score treats benched raiders (full credit, see
+  // attendance-score.ts). Without this, benched weeks dragged the dashboard
+  // percentage below the underlying attendance sheet.
   let raidsAttended = 0
   for (const r of allRecords) {
-    if (!r.no_call_no_show && r.attended) raidsAttended++
+    if (!r.no_call_no_show && (r.attended || r.was_benched)) raidsAttended++
   }
   // Never exceed the denominator (handles edge cases with fill-ins or overlapping windows)
   if (totalRaids > 0) {

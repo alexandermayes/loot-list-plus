@@ -460,6 +460,24 @@ describe('attendance edge cases', () => {
     // Effective total: 3 events - 1 excused = 2
     // event-0: attended = 0.75, event-1: benched = 0.75
     expect(result.score).toBe(1.5)
+    // Dashboard ratio: benched is credited as attended, so 2/2 not 1/2 (issue #40)
+    expect(result.raidsAttended).toBe(2)
+  })
+
+  it('benched weeks count as attended for the dashboard ratio (issue #40)', () => {
+    // Dashboard pulls raidsAttended / raidsInWindow. Previously benched
+    // weeks pulled the ratio down even though Loot Score gives full credit;
+    // this locks the two views in agreement.
+    const result = computeAttendance(makeAttendanceInput({
+      raidEvents: makeEvents(['2026-03-10', '2026-03-12', '2026-03-15']),
+      records: [
+        { raid_event_id: 'event-0', signed_up: false, attended: true, no_call_no_show: false },
+        { raid_event_id: 'event-1', signed_up: false, attended: false, no_call_no_show: false, was_benched: true },
+        { raid_event_id: 'event-2', signed_up: false, attended: true, no_call_no_show: false },
+      ],
+    }))
+    expect(result.raidsInWindow).toBe(3)
+    expect(result.raidsAttended).toBe(3)
   })
 
   it('late penalty stacks with signup credit', () => {

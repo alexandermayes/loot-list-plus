@@ -5,7 +5,7 @@ import { useRouter, useParams } from 'next/navigation'
 import { useGuildContext, Character } from '@/app/contexts/GuildContext'
 import { createClient } from '@/utils/supabase/client'
 import { HugeiconsIcon } from '@hugeicons/react'
-import { ArrowLeft01Icon, Delete01Icon, Download04Icon, Link01Icon } from '@hugeicons/core-free-icons'
+import { ArrowLeft01Icon, Delete01Icon, Download04Icon, Link01Icon, Logout01Icon } from '@hugeicons/core-free-icons'
 import { useNotification } from '@/app/contexts/NotificationContext'
 import { Heading } from '@/components/ui/typography'
 import { Input } from '@/components/ui/input'
@@ -16,6 +16,7 @@ import { CharacterFormSkeleton } from '@/components/ui/skeletons'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { SegmentedControl } from '@/components/ui/segmented-control'
 import { BattlenetCharacterPickerModal } from '@/app/components/BattlenetCharacterPickerModal'
+import { Modal, ModalHeader, ModalTitle, ModalBody, ModalFooter } from '@/components/ui/modal'
 import Image from 'next/image'
 
 interface WowClass {
@@ -34,7 +35,7 @@ export default function EditCharacterPage() {
   const router = useRouter()
   const params = useParams()
   const characterId = params.id as string
-  const { userCharacters, characterMemberships, refreshCharacters } = useGuildContext()
+  const { user, userCharacters, characterMemberships, refreshCharacters } = useGuildContext()
   const { showNotification } = useNotification()
   const supabase = createClient()
 
@@ -70,6 +71,8 @@ export default function EditCharacterPage() {
   const [error, setError] = useState('')
   const [hasBattlenet, setHasBattlenet] = useState(false)
   const [showLinkPicker, setShowLinkPicker] = useState(false)
+  const [removeGuildId, setRemoveGuildId] = useState<string | null>(null)
+  const [removingGuildId, setRemovingGuildId] = useState<string | null>(null)
 
   useEffect(() => {
     document.title = 'LootList+ • Edit Character'
@@ -285,9 +288,44 @@ export default function EditCharacterPage() {
     }
   }
 
-  const guildCount = characterMemberships.filter(
+  const characterGuildMemberships = characterMemberships.filter(
     m => m.character_id === characterId
-  ).length
+  )
+
+  const isLastOwnCharacterInGuild = (guildId: string) =>
+    !characterMemberships.some(
+      m => m.guild_id === guildId && m.character_id !== characterId
+    )
+
+  const handleRemoveFromGuild = async (guildId: string) => {
+    setRemovingGuildId(guildId)
+    try {
+      const response = await fetch(`/api/characters/${characterId}/guilds`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ guild_id: guildId }),
+      })
+
+      const data = await response.json().catch(() => ({}))
+
+      if (!response.ok) {
+        showNotification('error', data.error || 'Couldn\'t remove character from guild. Try again.')
+        return
+      }
+
+      await refreshCharacters()
+      showNotification('success', 'Character removed from guild.')
+    } catch {
+      showNotification('error', 'Couldn\'t remove character from guild. Check your connection and try again.')
+    } finally {
+      setRemovingGuildId(null)
+      setRemoveGuildId(null)
+    }
+  }
+
+  const pendingRemovalMembership = removeGuildId
+    ? characterGuildMemberships.find(m => m.guild_id === removeGuildId)
+    : null
 
   const existingBattleNetIds = userCharacters
     .map((c: { battle_net_id?: number | null }) => c.battle_net_id)
@@ -419,11 +457,68 @@ export default function EditCharacterPage() {
               </p>
             </div>
 
-            {/* Guild Info */}
-            {guildCount > 0 && (
-              <div className="text-[13px] text-muted-foreground bg-background-subtle border border-border rounded-lg p-4">
-                <p className="font-medium text-foreground mb-1">Guild memberships</p>
-                <p>This character is a member of {guildCount} guild{guildCount !== 1 ? 's' : ''}</p>
+            {/* Guild memberships */}
+            {characterGuildMemberships.length > 0 && (
+              <div className="bg-background-subtle border border-border rounded-lg p-4">
+                <p className="font-medium text-foreground mb-1 text-[14px]">Guild memberships</p>
+                <p className="text-[13px] text-muted-foreground mb-3">
+                  This character is a member of {characterGuildMemberships.length} guild{characterGuildMemberships.length !== 1 ? 's' : ''}
+                </p>
+                <div className="space-y-2">
+                  {characterGuildMemberships.map((membership) => {
+                    const guild = membership.guild
+                    const isCreator = !!user && guild.created_by === user.id
+                    const blockRemove = isCreator && isLastOwnCharacterInGuild(guild.id)
+                    return (
+                      <div
+                        key={membership.id}
+                        className="flex items-center justify-between gap-3 p-3 bg-background-elevated border border-border rounded-lg"
+                      >
+                        <div className="flex items-center gap-3 min-w-0">
+                          {guild.icon_url ? (
+                            <Image
+                              src={guild.icon_url}
+                              alt={guild.name}
+                              width={32}
+                              height={32}
+                              className="w-8 h-8 rounded outline outline-1 -outline-offset-1 outline-black/10 dark:outline-white/10 shrink-0"
+                            />
+                          ) : (
+                            <div className="w-8 h-8 rounded bg-accent/20 border border-accent/30 flex items-center justify-center shrink-0">
+                              <span className="text-accent text-[12px] font-bold">{guild.name.charAt(0)}</span>
+                            </div>
+                          )}
+                          <div className="min-w-0">
+                            <p className="text-[13px] font-medium text-foreground truncate">{guild.name}</p>
+                            <p className="text-[11px] text-muted-foreground truncate">
+                              {membership.role}
+                            </p>
+                          </div>
+                        </div>
+                        {blockRemove ? (
+                          <span
+                            className="text-[12px] text-muted-foreground text-right shrink-0"
+                            title="You created this guild and this is your last character in it. Add another character first or delete the guild."
+                          >
+                            Last creator character
+                          </span>
+                        ) : (
+                          <Button
+                            type="button"
+                            variant="destructive-outline"
+                            size="sm"
+                            onClick={() => setRemoveGuildId(guild.id)}
+                            disabled={removingGuildId !== null}
+                            className="shrink-0"
+                          >
+                            <HugeiconsIcon icon={Logout01Icon} size={14} />
+                            Remove
+                          </Button>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
               </div>
             )}
           </div>
@@ -565,6 +660,43 @@ export default function EditCharacterPage() {
           router.refresh()
         }}
       />
+
+      <Modal
+        open={!!removeGuildId}
+        onClose={() => {
+          if (removingGuildId === null) setRemoveGuildId(null)
+        }}
+        size="sm"
+      >
+        <ModalHeader>
+          <ModalTitle>Remove from guild?</ModalTitle>
+        </ModalHeader>
+        <ModalBody>
+          <p className="text-muted-foreground text-[14px]">
+            {character?.name} will be removed from {pendingRemovalMembership?.guild.name ?? 'this guild'}. Their loot list and submissions in this guild will no longer be visible until you add them back.
+          </p>
+        </ModalBody>
+        <ModalFooter>
+          <Button
+            variant="outline"
+            onClick={() => setRemoveGuildId(null)}
+            disabled={removingGuildId !== null}
+          >
+            Keep in guild
+          </Button>
+          <Button
+            variant="destructive"
+            onClick={() => {
+              if (removeGuildId) handleRemoveFromGuild(removeGuildId)
+            }}
+            loading={removingGuildId !== null}
+            loadingText="Removing..."
+          >
+            <HugeiconsIcon icon={Logout01Icon} size={16} />
+            Remove from guild
+          </Button>
+        </ModalFooter>
+      </Modal>
     </div>
   )
 }

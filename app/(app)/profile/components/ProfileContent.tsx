@@ -835,6 +835,7 @@ export default function ProfileContent() {
                   {allGuilds.map((membership) => {
                     const isCreator = membership.guild.created_by === user?.id
                     const isGuildMaster = membership.role === 'Guild Master'
+                    const cannotLeave = isCreator || isGuildMaster
                     return (
                       <div
                         key={membership.guild.id}
@@ -869,10 +870,10 @@ export default function ProfileContent() {
                             </span>
                           </div>
                         </div>
-                        {isGuildMaster ? (
+                        {cannotLeave ? (
                           <div className="sm:text-right shrink-0">
                             <p className="text-[13px] text-muted-foreground mb-1">
-                              Guild Masters cannot leave
+                              {isCreator ? 'Guild creators cannot leave' : 'Guild Masters cannot leave'}
                             </p>
                             <Button
                               variant="link"

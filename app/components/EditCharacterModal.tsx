@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useGuildContext, Character } from '@/app/contexts/GuildContext'
 import { createClient } from '@/utils/supabase/client'
 import { HugeiconsIcon } from '@hugeicons/react'
-import { Delete01Icon, Link01Icon } from '@hugeicons/core-free-icons'
+import { Delete01Icon, Link01Icon, Logout01Icon } from '@hugeicons/core-free-icons'
 import {
   Modal,
   ModalHeader,
@@ -43,7 +43,7 @@ interface EditCharacterModalProps {
 }
 
 export function EditCharacterModal({ isOpen, onClose, character, onSuccess }: EditCharacterModalProps) {
-  const { refreshCharacters, characterMemberships, userCharacters } = useGuildContext()
+  const { user, refreshCharacters, characterMemberships, userCharacters } = useGuildContext()
   const { showNotification } = useNotification()
   const supabase = createClient()
 
@@ -76,6 +76,8 @@ export function EditCharacterModal({ isOpen, onClose, character, onSuccess }: Ed
   const [error, setError] = useState('')
   const [hasBattlenet, setHasBattlenet] = useState(false)
   const [showLinkPicker, setShowLinkPicker] = useState(false)
+  const [removeGuildId, setRemoveGuildId] = useState<string | null>(null)
+  const [removingGuildId, setRemovingGuildId] = useState<string | null>(null)
 
   useEffect(() => {
     if (isOpen && character) {
@@ -97,8 +99,37 @@ export function EditCharacterModal({ isOpen, onClose, character, onSuccess }: Ed
       setError('')
       setShowDeleteConfirm(false)
       setDeleteConfirmName('')
+      setRemoveGuildId(null)
+      setRemovingGuildId(null)
     }
   }, [isOpen, character])
+
+  const handleRemoveFromGuild = async (guildId: string) => {
+    if (!character) return
+    setRemovingGuildId(guildId)
+    try {
+      const response = await fetch(`/api/characters/${character.id}/guilds`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ guild_id: guildId }),
+      })
+
+      const data = await response.json().catch(() => ({}))
+
+      if (!response.ok) {
+        showNotification('error', data.error || 'Couldn\'t remove character from guild. Try again.')
+        return
+      }
+
+      await refreshCharacters()
+      showNotification('success', 'Character removed from guild.')
+    } catch {
+      showNotification('error', 'Couldn\'t remove character from guild. Check your connection and try again.')
+    } finally {
+      setRemovingGuildId(null)
+      setRemoveGuildId(null)
+    }
+  }
 
   const loadClasses = async () => {
     const { data, error } = await supabase
@@ -253,14 +284,23 @@ export function EditCharacterModal({ isOpen, onClose, character, onSuccess }: Ed
   if (!character) return null
 
   const selectedClass = classes.find(c => c.id === classId)
-  const guildCount = characterMemberships.filter(m => m.character_id === character.id).length
+  const characterGuildMemberships = characterMemberships.filter(
+    m => m.character_id === character.id
+  )
+  const isLastOwnCharacterInGuild = (guildId: string) =>
+    !characterMemberships.some(
+      m => m.guild_id === guildId && m.character_id !== character.id
+    )
+  const pendingRemovalMembership = removeGuildId
+    ? characterGuildMemberships.find(m => m.guild_id === removeGuildId)
+    : null
   const existingBattleNetIds = userCharacters
     .map((c: { battle_net_id?: number | null }) => c.battle_net_id)
     .filter((id): id is number => id != null)
 
   return (
     <>
-    <Modal open={isOpen && !showLinkPicker} onClose={onClose} size="default">
+    <Modal open={isOpen && !showLinkPicker && !removeGuildId} onClose={onClose} size="default">
       <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
         <ModalHeader onClose={onClose}>
           <ModalTitle>Edit character</ModalTitle>
@@ -346,11 +386,66 @@ export function EditCharacterModal({ isOpen, onClose, character, onSuccess }: Ed
             />
           </div>
 
-          {/* Guild Info */}
-          {guildCount > 0 && (
-            <div className="text-[13px] text-muted-foreground bg-background-elevated border border-border-strong rounded-xl p-4">
-              <p className="font-medium text-foreground mb-1">Guild memberships</p>
-              <p>This character is a member of {guildCount} guild{guildCount !== 1 ? 's' : ''}</p>
+          {/* Guild memberships */}
+          {characterGuildMemberships.length > 0 && (
+            <div className="bg-background-elevated border border-border-strong rounded-xl p-4">
+              <p className="font-medium text-foreground mb-1 text-[13px]">Guild memberships</p>
+              <p className="text-[12px] text-muted-foreground mb-3">
+                This character is a member of {characterGuildMemberships.length} guild{characterGuildMemberships.length !== 1 ? 's' : ''}
+              </p>
+              <div className="space-y-2">
+                {characterGuildMemberships.map((membership) => {
+                  const guild = membership.guild
+                  const isCreator = !!user && guild.created_by === user.id
+                  const blockRemove = isCreator && isLastOwnCharacterInGuild(guild.id)
+                  return (
+                    <div
+                      key={membership.id}
+                      className="flex items-center justify-between gap-3 p-3 bg-background-inset border border-border rounded-lg"
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        {guild.icon_url ? (
+                          <Image
+                            src={guild.icon_url}
+                            alt={guild.name}
+                            width={28}
+                            height={28}
+                            className="w-7 h-7 rounded outline outline-1 -outline-offset-1 outline-black/10 dark:outline-white/10 shrink-0"
+                          />
+                        ) : (
+                          <div className="w-7 h-7 rounded bg-accent/20 border border-accent/30 flex items-center justify-center shrink-0">
+                            <span className="text-accent text-[11px] font-bold">{guild.name.charAt(0)}</span>
+                          </div>
+                        )}
+                        <div className="min-w-0">
+                          <p className="text-[13px] font-medium text-foreground truncate">{guild.name}</p>
+                          <p className="text-[11px] text-muted-foreground truncate">{membership.role}</p>
+                        </div>
+                      </div>
+                      {blockRemove ? (
+                        <span
+                          className="text-[11px] text-muted-foreground text-right shrink-0"
+                          title="You created this guild and this is your last character in it. Add another character first, or delete the guild."
+                        >
+                          Last creator character
+                        </span>
+                      ) : (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setRemoveGuildId(guild.id)}
+                          disabled={removingGuildId !== null}
+                          className="shrink-0 border-destructive/50 text-destructive hover:bg-destructive/10"
+                        >
+                          <HugeiconsIcon icon={Logout01Icon} size={14} />
+                          Remove
+                        </Button>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
             </div>
           )}
 
@@ -472,6 +567,45 @@ export function EditCharacterModal({ isOpen, onClose, character, onSuccess }: Ed
         onSuccess?.()
       }}
     />
+
+    <Modal
+      open={!!removeGuildId}
+      onClose={() => {
+        if (removingGuildId === null) setRemoveGuildId(null)
+      }}
+      size="sm"
+    >
+      <ModalHeader>
+        <ModalTitle>Remove from guild?</ModalTitle>
+      </ModalHeader>
+      <ModalBody>
+        <p className="text-muted-foreground text-[14px]">
+          {character.name} will be removed from {pendingRemovalMembership?.guild.name ?? 'this guild'}. Their loot list and submissions in this guild will no longer be visible until you add them back.
+        </p>
+      </ModalBody>
+      <ModalFooter>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => setRemoveGuildId(null)}
+          disabled={removingGuildId !== null}
+        >
+          Keep in guild
+        </Button>
+        <Button
+          type="button"
+          variant="destructive"
+          onClick={() => {
+            if (removeGuildId) handleRemoveFromGuild(removeGuildId)
+          }}
+          loading={removingGuildId !== null}
+          loadingText="Removing..."
+        >
+          <HugeiconsIcon icon={Logout01Icon} size={16} />
+          Remove from guild
+        </Button>
+      </ModalFooter>
+    </Modal>
     </>
   )
 }

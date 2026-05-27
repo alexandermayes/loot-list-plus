@@ -270,6 +270,40 @@ export async function DELETE(
     // Character ownership verified above — use service role to bypass RLS
     // (non-officers cannot UPDATE character_guild_memberships otherwise).
     const serviceSupabase = createServiceRoleClient()
+
+    // Block removing the user's last character from a guild they created.
+    // Mirrors the "creators cannot leave" rule on /api/guilds/leave.
+    const { data: guildRow } = await serviceSupabase
+      .from('guilds')
+      .select('created_by')
+      .eq('id', guild_id)
+      .single()
+
+    if (guildRow?.created_by === user.id) {
+      const { data: userCharIds } = await serviceSupabase
+        .from('characters')
+        .select('id')
+        .eq('user_id', user.id)
+
+      const characterIds = (userCharIds || []).map(c => c.id)
+      if (characterIds.length > 0) {
+        const { count: activeCount } = await serviceSupabase
+          .from('character_guild_memberships')
+          .select('id', { count: 'exact', head: true })
+          .eq('guild_id', guild_id)
+          .eq('is_active', true)
+          .in('character_id', characterIds)
+          .neq('character_id', id)
+
+        if ((activeCount ?? 0) === 0) {
+          return NextResponse.json(
+            { error: 'Guild creators must keep at least one character in the guild. Delete the guild instead, or add another character first.' },
+            { status: 403 }
+          )
+        }
+      }
+    }
+
     const { error } = await serviceSupabase
       .from('character_guild_memberships')
       .update({ is_active: false })
