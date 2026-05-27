@@ -7,6 +7,7 @@ if (process.env.NODE_ENV !== 'production') {
 
 const { handleMessageCreate, handleReactionAdd, isFeedbackConfigured, warnMissingOnce } = require('./feedback');
 const { scheduleDigest } = require('./digest');
+const { scheduleClosureSweep } = require('./closures');
 
 const client = new Client({
   intents: [
@@ -41,6 +42,7 @@ client.once('clientReady', () => {
     warnMissingOnce();
   }
   scheduleDigest(client);
+  scheduleClosureSweep(client);
 });
 
 client.on(Events.MessageCreate, handleMessageCreate);
