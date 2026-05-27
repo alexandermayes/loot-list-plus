@@ -42,6 +42,7 @@ import { useRaidTeam } from '@/app/hooks/useRaidTeam'
 import { isDateScheduled } from '@/domain/raid-team/schedule-history'
 import { resolveRaidDays } from '@/domain/raid-team/settings'
 import { TeamSelector } from '@/app/components/TeamSelector'
+import { paginatedSelect } from '@/utils/supabase/paginate'
 import type {
   Member,
   RaidLootEntry,
@@ -368,11 +369,17 @@ export default function RaidTrackingPage() {
     const allEventIds = (allEvents || []).map((e: RaidEvent) => e.id)
     let eventsWithAttendance = new Set<string>()
     if (allEventIds.length > 0) {
-      const { data: attendanceCheck } = await supabase
-        .from('attendance_records')
-        .select('raid_event_id')
-        .in('raid_event_id', allEventIds)
-      eventsWithAttendance = new Set(attendanceCheck?.map((r: { raid_event_id: string }) => r.raid_event_id) || [])
+      // Paginate to bypass the 1000-row PostgREST cap; otherwise events with
+      // attendance silently disappear from the dedup/visibility check.
+      const attendanceCheck = await paginatedSelect<{ raid_event_id: string }>((from, to) =>
+        supabase
+          .from('attendance_records')
+          .select('raid_event_id')
+          .in('raid_event_id', allEventIds)
+          .order('id', { ascending: true })
+          .range(from, to)
+      )
+      eventsWithAttendance = new Set(attendanceCheck.map((r) => r.raid_event_id))
     }
 
     // Filter events: show scheduled raid days only.
@@ -411,35 +418,42 @@ export default function RaidTrackingPage() {
     if (deduplicatedEvents && deduplicatedEvents.length > 0) {
       setRaidDates(deduplicatedEvents)
 
-      // Batch-fetch summary counts for all raid headers (attended/signed-up/loot)
+      // Batch-fetch summary counts for all raid headers (attended/signed-up/loot).
+      // Paginate both reads — they easily exceed the 1000-row PostgREST cap on
+      // active guilds (~30 events with ~30 records each already breaks 1000).
       const dedupEventIds = deduplicatedEvents.map((e: RaidEvent) => e.id)
       try {
-        const [{ data: summaryRecords }, { data: lootCounts }] = await Promise.all([
-          supabase
-            .from('attendance_records')
-            .select('raid_event_id, attended, signed_up')
-            .in('raid_event_id', dedupEventIds),
-          supabase
-            .from('loot_history')
-            .select('raid_event_id')
-            .in('raid_event_id', dedupEventIds)
+        const [summaryRecords, lootCounts] = await Promise.all([
+          paginatedSelect<{ raid_event_id: string; attended: boolean; signed_up: boolean }>(
+            (from, to) =>
+              supabase
+                .from('attendance_records')
+                .select('raid_event_id, attended, signed_up')
+                .in('raid_event_id', dedupEventIds)
+                .order('id', { ascending: true })
+                .range(from, to)
+          ),
+          paginatedSelect<{ raid_event_id: string }>((from, to) =>
+            supabase
+              .from('loot_history')
+              .select('raid_event_id')
+              .in('raid_event_id', dedupEventIds)
+              .order('id', { ascending: true })
+              .range(from, to)
+          ),
         ])
 
         const counts: Record<string, { attended: number; signedUp: number; loot: number }> = {}
         for (const id of dedupEventIds) {
           counts[id] = { attended: 0, signedUp: 0, loot: 0 }
         }
-        if (summaryRecords) {
-          for (const r of summaryRecords) {
-            if (!counts[r.raid_event_id]) counts[r.raid_event_id] = { attended: 0, signedUp: 0, loot: 0 }
-            if (r.attended) counts[r.raid_event_id].attended++
-            if (r.signed_up) counts[r.raid_event_id].signedUp++
-          }
+        for (const r of summaryRecords) {
+          if (!counts[r.raid_event_id]) counts[r.raid_event_id] = { attended: 0, signedUp: 0, loot: 0 }
+          if (r.attended) counts[r.raid_event_id].attended++
+          if (r.signed_up) counts[r.raid_event_id].signedUp++
         }
-        if (lootCounts) {
-          for (const r of lootCounts) {
-            if (counts[r.raid_event_id]) counts[r.raid_event_id].loot++
-          }
+        for (const r of lootCounts) {
+          if (counts[r.raid_event_id]) counts[r.raid_event_id].loot++
         }
         setRaidSummaryCounts(counts)
       } catch {
