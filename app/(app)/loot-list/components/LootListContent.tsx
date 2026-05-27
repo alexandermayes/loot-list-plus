@@ -1,6 +1,19 @@
 'use client'
 
 import React, { useState, useRef, useMemo, useCallback, useEffect, memo } from 'react'
+import {
+  DndContext,
+  DragOverlay,
+  PointerSensor,
+  KeyboardSensor,
+  useSensor,
+  useSensors,
+  useDraggable,
+  useDroppable,
+  type DragStartEvent,
+  type DragEndEvent,
+  type DragCancelEvent,
+} from '@dnd-kit/core'
 import SearchableItemSelect from '@/app/components/SearchableItemSelect'
 import { useGuildContext } from '@/app/contexts/GuildContext'
 import { ExpansionGuard } from '@/app/components/ExpansionGuard'
@@ -51,6 +64,44 @@ const getRankBgColor = (rank: number) => {
   if (rank >= 39) return 'bg-amber-800'
   if (rank >= 25) return 'bg-green-800'
   return 'bg-blue-800'
+}
+
+// Wrap a filled slot so the user can drag it to another slot.
+// Uses dnd-kit's distance activation so single-click still opens the item picker.
+function DraggableSlot({ id, children }: { id: string; children: React.ReactNode }) {
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id })
+  return (
+    <div
+      ref={setNodeRef}
+      {...attributes}
+      {...listeners}
+      className={`cursor-grab active:cursor-grabbing transition-opacity ${isDragging ? 'opacity-30' : ''}`}
+    >
+      {children}
+    </div>
+  )
+}
+
+// Slot drop target. Disabled when the slot is locked by a Reserved companion
+// or the list is approved (no edits allowed).
+function DroppableSlot({
+  id,
+  disabled,
+  children,
+}: {
+  id: string
+  disabled?: boolean
+  children: React.ReactNode
+}) {
+  const { setNodeRef, isOver } = useDroppable({ id, disabled })
+  return (
+    <div
+      ref={setNodeRef}
+      className={`rounded-[52px] transition-shadow ${isOver && !disabled ? 'ring-2 ring-accent ring-offset-2 ring-offset-background' : ''}`}
+    >
+      {children}
+    </div>
+  )
 }
 
 // Type for tracking which items have errors
@@ -150,28 +201,50 @@ const RankRow = memo(function RankRow({
             </span>
           </div>
         ) : (
-          <div className="space-y-1">
-            <SearchableItemSelect
-              items={lootItems}
-              value={selectedItemId1 || ''}
-              onChange={(value) => onItemSelect(rank, 1, value)}
-              disabled={selectedItems}
-              currentValue={selectedItemId1}
-              isSlotDisabled={isSlot1DisabledByReserved}
-              hasError={hasSlot1Error}
-              ownedWowheadIds={ownedWowheadIds}
-              readOnly={isApproved}
-              onRemove={isApproved && onRemoveItem && selectedItemId1 ? () => {
-                const item = lootItems.find(i => i.id === selectedItemId1)
-                if (item) onRemoveItem(item.id, item.name)
-              } : undefined}
-            />
-            {hasSlot1Error && (
-              <p className="text-destructive text-[11px] pl-3">
-                {slot1ErrorMessages.join(' · ')}
-              </p>
-            )}
-          </div>
+          <DroppableSlot id={`${rank}-1`} disabled={isApproved || isSlot1DisabledByReserved}>
+            <div className="space-y-1">
+              {selectedItemId1 && !isApproved ? (
+                <DraggableSlot id={`${rank}-1`}>
+                  <SearchableItemSelect
+                    items={lootItems}
+                    value={selectedItemId1 || ''}
+                    onChange={(value) => onItemSelect(rank, 1, value)}
+                    disabled={selectedItems}
+                    currentValue={selectedItemId1}
+                    isSlotDisabled={isSlot1DisabledByReserved}
+                    hasError={hasSlot1Error}
+                    ownedWowheadIds={ownedWowheadIds}
+                    readOnly={isApproved}
+                    onRemove={isApproved && onRemoveItem && selectedItemId1 ? () => {
+                      const item = lootItems.find(i => i.id === selectedItemId1)
+                      if (item) onRemoveItem(item.id, item.name)
+                    } : undefined}
+                  />
+                </DraggableSlot>
+              ) : (
+                <SearchableItemSelect
+                  items={lootItems}
+                  value={selectedItemId1 || ''}
+                  onChange={(value) => onItemSelect(rank, 1, value)}
+                  disabled={selectedItems}
+                  currentValue={selectedItemId1}
+                  isSlotDisabled={isSlot1DisabledByReserved}
+                  hasError={hasSlot1Error}
+                  ownedWowheadIds={ownedWowheadIds}
+                  readOnly={isApproved}
+                  onRemove={isApproved && onRemoveItem && selectedItemId1 ? () => {
+                    const item = lootItems.find(i => i.id === selectedItemId1)
+                    if (item) onRemoveItem(item.id, item.name)
+                  } : undefined}
+                />
+              )}
+              {hasSlot1Error && (
+                <p className="text-destructive text-[11px] pl-3">
+                  {slot1ErrorMessages.join(' · ')}
+                </p>
+              )}
+            </div>
+          </DroppableSlot>
         )}
       </td>
       <td className="px-3 py-2.5">
@@ -205,28 +278,50 @@ const RankRow = memo(function RankRow({
             </span>
           </div>
         ) : (
-          <div className="space-y-1">
-            <SearchableItemSelect
-              items={lootItems}
-              value={selectedItemId2 || ''}
-              onChange={(value) => onItemSelect(rank, 2, value)}
-              disabled={selectedItems}
-              currentValue={selectedItemId2}
-              isSlotDisabled={isSlot2DisabledByReserved}
-              hasError={hasSlot2Error}
-              ownedWowheadIds={ownedWowheadIds}
-              readOnly={isApproved}
-              onRemove={isApproved && onRemoveItem && selectedItemId2 ? () => {
-                const item = lootItems.find(i => i.id === selectedItemId2)
-                if (item) onRemoveItem(item.id, item.name)
-              } : undefined}
-            />
-            {hasSlot2Error && (
-              <p className="text-destructive text-[11px] pl-3">
-                {slot2ErrorMessages.join(' · ')}
-              </p>
-            )}
-          </div>
+          <DroppableSlot id={`${rank}-2`} disabled={isApproved || isSlot2DisabledByReserved}>
+            <div className="space-y-1">
+              {selectedItemId2 && !isApproved ? (
+                <DraggableSlot id={`${rank}-2`}>
+                  <SearchableItemSelect
+                    items={lootItems}
+                    value={selectedItemId2 || ''}
+                    onChange={(value) => onItemSelect(rank, 2, value)}
+                    disabled={selectedItems}
+                    currentValue={selectedItemId2}
+                    isSlotDisabled={isSlot2DisabledByReserved}
+                    hasError={hasSlot2Error}
+                    ownedWowheadIds={ownedWowheadIds}
+                    readOnly={isApproved}
+                    onRemove={isApproved && onRemoveItem && selectedItemId2 ? () => {
+                      const item = lootItems.find(i => i.id === selectedItemId2)
+                      if (item) onRemoveItem(item.id, item.name)
+                    } : undefined}
+                  />
+                </DraggableSlot>
+              ) : (
+                <SearchableItemSelect
+                  items={lootItems}
+                  value={selectedItemId2 || ''}
+                  onChange={(value) => onItemSelect(rank, 2, value)}
+                  disabled={selectedItems}
+                  currentValue={selectedItemId2}
+                  isSlotDisabled={isSlot2DisabledByReserved}
+                  hasError={hasSlot2Error}
+                  ownedWowheadIds={ownedWowheadIds}
+                  readOnly={isApproved}
+                  onRemove={isApproved && onRemoveItem && selectedItemId2 ? () => {
+                    const item = lootItems.find(i => i.id === selectedItemId2)
+                    if (item) onRemoveItem(item.id, item.name)
+                  } : undefined}
+                />
+              )}
+              {hasSlot2Error && (
+                <p className="text-destructive text-[11px] pl-3">
+                  {slot2ErrorMessages.join(' · ')}
+                </p>
+              )}
+            </div>
+          </DroppableSlot>
         )}
       </td>
       <td className="px-3 py-2.5">
@@ -611,6 +706,7 @@ export default function LootListContent() {
     removedItems,
     setSelectedPhase,
     handleItemSelect,
+    moveRanking,
     clearAllRankings,
     saveSubmission,
     importBisItems,
@@ -1248,8 +1344,41 @@ export default function LootListContent() {
   const noBracket = Array.from({ length: 14 }, (_, i) => 38 - i) // 38-25
   const offSpec = Array.from({ length: 24 }, (_, i) => 24 - i) // 24-1
 
+  // Drag and drop: PointerSensor requires 8px of movement before drag activates
+  // so a normal click still opens the item picker. Keyboard sensor adds a11y.
+  const dndSensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(KeyboardSensor),
+  )
+  const [activeDragKey, setActiveDragKey] = useState<string | null>(null)
+  const activeDragItem = useMemo(() => {
+    if (!activeDragKey) return null
+    const itemId = rankings[activeDragKey]
+    return itemId ? lootItems.find(i => i.id === itemId) ?? null : null
+  }, [activeDragKey, rankings, lootItems])
+
+  const handleDragStart = useCallback((event: DragStartEvent) => {
+    setActiveDragKey(String(event.active.id))
+  }, [])
+  const handleDragCancel = useCallback((_event: DragCancelEvent) => {
+    setActiveDragKey(null)
+  }, [])
+  const handleDragEnd = useCallback((event: DragEndEvent) => {
+    setActiveDragKey(null)
+    const sourceKey = String(event.active.id)
+    const targetKey = event.over ? String(event.over.id) : null
+    if (!targetKey || sourceKey === targetKey) return
+    moveRanking(sourceKey, targetKey)
+  }, [moveRanking])
+
   return (
     <ExpansionGuard>
+      <DndContext
+        sensors={dndSensors}
+        onDragStart={handleDragStart}
+        onDragEnd={handleDragEnd}
+        onDragCancel={handleDragCancel}
+      >
       <div className="font-poppins">
         {/* Header - Always visible */}
         <div className="p-4 sm:p-6 lg:p-8 pb-1.5">
@@ -2040,6 +2169,16 @@ export default function LootListContent() {
         </div>
         </div>
       </div>
+      <DragOverlay dropAnimation={null}>
+        {activeDragItem ? (
+          <div className="px-3 py-2 bg-background-elevated border border-accent rounded-[52px] shadow-lg pointer-events-none">
+            <span className="text-[13px] font-medium text-foreground truncate">
+              {activeDragItem.name}
+            </span>
+          </div>
+        ) : null}
+      </DragOverlay>
+      </DndContext>
     </ExpansionGuard>
   )
 }
