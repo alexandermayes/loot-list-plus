@@ -118,6 +118,7 @@ interface LootListDataContextType {
 interface LootListActionsContextType {
   setSelectedPhase: (phase: number) => void
   handleItemSelect: (rank: number, slot: number, itemId: string) => void
+  moveRanking: (sourceKey: string, targetKey: string) => void
   clearAllRankings: () => void
   saveSubmission: (submit: boolean) => Promise<void>
   refreshData: () => void
@@ -545,6 +546,26 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
     } else {
       setRankings(prev => ({ ...prev, [key]: itemId }))
     }
+  }, [])
+
+  // Move or swap a ranked item between slots. Drop on empty = move; drop on filled = swap.
+  const moveRanking = useCallback((sourceKey: string, targetKey: string) => {
+    if (sourceKey === targetKey) return
+    localChangesRef.current = true
+    setRankings(prev => {
+      const src = prev[sourceKey]
+      if (!src) return prev
+      const tgt = prev[targetKey]
+      const next = { ...prev }
+      if (tgt) {
+        next[sourceKey] = tgt
+        next[targetKey] = src
+      } else {
+        delete next[sourceKey]
+        next[targetKey] = src
+      }
+      return next
+    })
   }, [])
 
   // Clear all rankings
@@ -1158,6 +1179,7 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
   const actionsValue = useMemo<LootListActionsContextType>(() => ({
     setSelectedPhase,
     handleItemSelect,
+    moveRanking,
     clearAllRankings,
     saveSubmission,
     refreshData,
@@ -1168,6 +1190,7 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
   }), [
     setSelectedPhase,
     handleItemSelect,
+    moveRanking,
     clearAllRankings,
     saveSubmission,
     refreshData,
