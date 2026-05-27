@@ -52,12 +52,32 @@ import type {
   UnlinkedAttendee,
 } from './components/types'
 import { getCellState, type CellState } from './components/cell-state'
-import { SkipDayModal } from './components/SkipDayModal'
-import { BonusRaidModal } from './components/BonusRaidModal'
-import { ReassignLootModal } from './components/ReassignLootModal'
-import { LootItemSelectionModal } from './components/LootItemSelectionModal'
-import { AttendeeResolutionModal } from './components/AttendeeResolutionModal'
-import { ImportModal } from './components/ImportModal'
+// Modals are lazy-loaded so their JS doesn't ship in the initial bundle.
+// Combined with conditional render below, each chunk fetches on first open.
+const SkipDayModal = nextDynamic(
+  () => import('./components/SkipDayModal').then((m) => m.SkipDayModal),
+  { ssr: false }
+)
+const BonusRaidModal = nextDynamic(
+  () => import('./components/BonusRaidModal').then((m) => m.BonusRaidModal),
+  { ssr: false }
+)
+const ReassignLootModal = nextDynamic(
+  () => import('./components/ReassignLootModal').then((m) => m.ReassignLootModal),
+  { ssr: false }
+)
+const LootItemSelectionModal = nextDynamic(
+  () => import('./components/LootItemSelectionModal').then((m) => m.LootItemSelectionModal),
+  { ssr: false }
+)
+const AttendeeResolutionModal = nextDynamic(
+  () => import('./components/AttendeeResolutionModal').then((m) => m.AttendeeResolutionModal),
+  { ssr: false }
+)
+const ImportModal = nextDynamic(
+  () => import('./components/ImportModal').then((m) => m.ImportModal),
+  { ssr: false }
+)
 import { RaidCard } from './components/RaidCard'
 import { WeekGroup } from './components/WeekGroup'
 
@@ -2612,84 +2632,96 @@ export default function RaidTrackingPage() {
         <LootHistoryTab />
       )}
 
-      <BonusRaidModal
-        open={showBonusModal}
-        date={bonusDate}
-        notes={bonusNotes}
-        maxDate={today}
-        creating={creatingBonus}
-        activeTeamId={activeTeamId}
-        hasTeams={hasTeams}
-        onDateChange={setBonusDate}
-        onNotesChange={setBonusNotes}
-        onCancel={() => setShowBonusModal(false)}
-        onSubmit={submitBonusRaidDay}
-      />
+      {showBonusModal && (
+        <BonusRaidModal
+          open={showBonusModal}
+          date={bonusDate}
+          notes={bonusNotes}
+          maxDate={today}
+          creating={creatingBonus}
+          activeTeamId={activeTeamId}
+          hasTeams={hasTeams}
+          onDateChange={setBonusDate}
+          onNotesChange={setBonusNotes}
+          onCancel={() => setShowBonusModal(false)}
+          onSubmit={submitBonusRaidDay}
+        />
+      )}
 
-      <SkipDayModal
-        open={!!showSkipModal}
-        date={showSkipModal?.date ?? null}
-        reason={skipReason}
-        onReasonChange={setSkipReason}
-        onCancel={() => setShowSkipModal(null)}
-        onConfirm={confirmSkipDay}
-      />
+      {showSkipModal && (
+        <SkipDayModal
+          open={!!showSkipModal}
+          date={showSkipModal.date}
+          reason={skipReason}
+          onReasonChange={setSkipReason}
+          onCancel={() => setShowSkipModal(null)}
+          onConfirm={confirmSkipDay}
+        />
+      )}
 
-      <ImportModal
-        target={showImportModal}
-        attendanceData={attendanceData}
-        lootData={lootData}
-        signupsData={signupsData}
-        initialAttendanceData={initialAttendanceData}
-        initialLootData={initialLootData}
-        initialSignupsData={initialSignupsData}
-        attendancePreview={attendancePreview}
-        lootPreview={lootPreview}
-        signupsPreview={signupsPreview}
-        importing={importing}
-        useSignups={!!guildSettings?.use_signups}
-        onAttendanceChange={setAttendanceData}
-        onLootChange={setLootData}
-        onSignupsChange={setSignupsData}
-        onClose={handleCloseImportModal}
-        onClearFields={() => {
-          setAttendanceData('')
-          setLootData('')
-          setSignupsData('')
-        }}
-        onClearSavedData={clearRaidData}
-        onImport={importAllRaidData}
-      />
+      {showImportModal && (
+        <ImportModal
+          target={showImportModal}
+          attendanceData={attendanceData}
+          lootData={lootData}
+          signupsData={signupsData}
+          initialAttendanceData={initialAttendanceData}
+          initialLootData={initialLootData}
+          initialSignupsData={initialSignupsData}
+          attendancePreview={attendancePreview}
+          lootPreview={lootPreview}
+          signupsPreview={signupsPreview}
+          importing={importing}
+          useSignups={!!guildSettings?.use_signups}
+          onAttendanceChange={setAttendanceData}
+          onLootChange={setLootData}
+          onSignupsChange={setSignupsData}
+          onClose={handleCloseImportModal}
+          onClearFields={() => {
+            setAttendanceData('')
+            setLootData('')
+            setSignupsData('')
+          }}
+          onClearSavedData={clearRaidData}
+          onImport={importAllRaidData}
+        />
+      )}
 
-      <LootItemSelectionModal
-        target={showLootSelectionModal}
-        searchQuery={lootSearchQuery}
-        filteredItems={filteredLootItems}
-        onSearchQueryChange={setLootSearchQuery}
-        onSelect={handleLootItemSelection}
-        onSkip={skipLootItemSelection}
-      />
+      {showLootSelectionModal && (
+        <LootItemSelectionModal
+          target={showLootSelectionModal}
+          searchQuery={lootSearchQuery}
+          filteredItems={filteredLootItems}
+          onSearchQueryChange={setLootSearchQuery}
+          onSelect={handleLootItemSelection}
+          onSkip={skipLootItemSelection}
+        />
+      )}
 
-      <AttendeeResolutionModal
-        target={showAttendeeResolutionModal}
-        totalUnmatched={unmatchedAttendeeNames.length}
-        searchQuery={attendeeSearchQuery}
-        filteredMembers={filteredResolutionMembers}
-        rememberAlias={rememberAlias}
-        onSearchQueryChange={setAttendeeSearchQuery}
-        onResolve={handleAttendeeResolution}
-        onSkip={skipAttendeeResolution}
-        onSkipAll={skipAllAttendeeResolution}
-        onCancel={cancelAttendeeResolution}
-        onRememberAliasChange={setRememberAlias}
-      />
+      {showAttendeeResolutionModal && (
+        <AttendeeResolutionModal
+          target={showAttendeeResolutionModal}
+          totalUnmatched={unmatchedAttendeeNames.length}
+          searchQuery={attendeeSearchQuery}
+          filteredMembers={filteredResolutionMembers}
+          rememberAlias={rememberAlias}
+          onSearchQueryChange={setAttendeeSearchQuery}
+          onResolve={handleAttendeeResolution}
+          onSkip={skipAttendeeResolution}
+          onSkipAll={skipAllAttendeeResolution}
+          onCancel={cancelAttendeeResolution}
+          onRememberAliasChange={setRememberAlias}
+        />
+      )}
 
-      <ReassignLootModal
-        target={reassignModal}
-        members={members}
-        onClose={() => setReassignModal(null)}
-        onReassign={reassignLoot}
-      />
+      {reassignModal && (
+        <ReassignLootModal
+          target={reassignModal}
+          members={members}
+          onClose={() => setReassignModal(null)}
+          onReassign={reassignLoot}
+        />
+      )}
 
       {ConfirmDialog}
     </div>
