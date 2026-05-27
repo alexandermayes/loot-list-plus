@@ -338,12 +338,31 @@ export default function MasterSheetContent() {
 
     const raidIds = recentRaids.map((r: { id: string }) => r.id)
 
-    // Query 4: Fetch ALL attendance records for ALL characters in ONE query
-    const { data: allAttendanceRecords } = await supabase
-      .from('attendance_records')
-      .select('character_id, user_id, raid_event_id, signed_up, attended, no_call_no_show, was_late, was_benched, is_excused, points_override')
-      .in('character_id', characterIds)
-      .in('raid_event_id', raidIds)
+    // Query 4: Fetch ALL attendance records for ALL characters in ONE query.
+    // Paginated because characterIds × raidIds easily exceeds the 1000-row
+    // PostgREST cap (e.g. 40 raiders × 28 raids in a 4-week window = 1,120).
+    // Silent truncation here corrupts the scores shown on the master sheet.
+    type RawAttendanceRecord = {
+      character_id: string | null
+      user_id: string | null
+      raid_event_id: string
+      signed_up: boolean
+      attended: boolean
+      no_call_no_show: boolean
+      was_late: boolean
+      was_benched: boolean
+      is_excused: boolean
+      points_override: number | null
+    }
+    const allAttendanceRecords = await paginatedSelect<RawAttendanceRecord>((start, end) =>
+      supabase
+        .from('attendance_records')
+        .select('character_id, user_id, raid_event_id, signed_up, attended, no_call_no_show, was_late, was_benched, is_excused, points_override')
+        .in('character_id', characterIds)
+        .in('raid_event_id', raidIds)
+        .order('id', { ascending: true })
+        .range(start, end)
+    )
 
     // Query 4b: Raid team membership per character — drives team-aware scoring
     const { data: teamMembers } = await supabase
@@ -374,11 +393,21 @@ export default function MasterSheetContent() {
     let fillInEventMap = new Map<string, { id: string; raid_date: string }>()
     let fillInRecordsByChar: Record<string, { raid_event_id: string; attended: boolean }[]> = {}
     if (activeTeamId) {
-      const { data: allGuildAtt } = await supabase
-        .from('attendance_records')
-        .select('raid_event_id, character_id, attended')
-        .in('character_id', characterIds)
-        .eq('attended', true)
+      // Paginated — same truncation risk as Query 4 above (and on a guild with
+      // long history, this set is even bigger because there's no event-id filter).
+      const allGuildAtt = await paginatedSelect<{
+        raid_event_id: string
+        character_id: string | null
+        attended: boolean
+      }>((start, end) =>
+        supabase
+          .from('attendance_records')
+          .select('raid_event_id, character_id, attended')
+          .in('character_id', characterIds)
+          .eq('attended', true)
+          .order('id', { ascending: true })
+          .range(start, end)
+      )
       const teamEventIdSet = new Set(raidIds)
       const otherEventIds = new Set<string>()
       for (const rec of (allGuildAtt || [])) {
