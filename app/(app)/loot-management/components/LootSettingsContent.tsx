@@ -3,6 +3,7 @@
 import { createClient } from '@/utils/supabase/client'
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
+import dynamic from 'next/dynamic'
 import Link from 'next/link'
 import ItemLink from '@/app/components/ItemLink'
 import { useGuildContext } from '@/app/contexts/GuildContext'
@@ -26,13 +27,30 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { ErrorState } from '@/components/ui/error-state'
 import { Textarea } from '@/components/ui/textarea'
 import { refreshWowheadTooltips } from '@/lib/wowhead'
-import PriorityListTab from './PriorityListTab'
-import DonationsTab from './DonationsTab'
+import { Skeleton } from '@/components/ui/skeletons'
 import { SegmentedControl } from '@/components/ui/segmented-control'
 import { Checkbox } from '@/components/ui/checkbox'
 import { useConfirm } from '@/components/ui/confirm-modal'
 import { trackClientEvent } from '@/utils/analytics/client'
 import { InfoTooltip } from '@/components/ui/info-tooltip'
+
+// Lazy-load the two off-default tabs so the Items tab (default) doesn't pay
+// for their JS on first paint. PriorityListTab (~933 lines) and DonationsTab
+// (~521 lines) only load when the user clicks their tab.
+function TabLoadingSkeleton() {
+  return (
+    <div className="space-y-4">
+      <Skeleton className="h-8 w-48" />
+      <Skeleton className="h-64 w-full rounded-xl" />
+    </div>
+  )
+}
+const PriorityListTab = dynamic(() => import('./PriorityListTab'), {
+  loading: () => <TabLoadingSkeleton />,
+})
+const DonationsTab = dynamic(() => import('./DonationsTab'), {
+  loading: () => <TabLoadingSkeleton />,
+})
 
 interface LootItem {
   id: string
