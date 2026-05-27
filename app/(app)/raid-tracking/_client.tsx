@@ -209,23 +209,46 @@ export default function RaidTrackingPage() {
 
       setLoading(true)
       try {
-        // Load guild settings (with cache busting)
-        const response = await fetch(`/api/guild-settings?guild_id=${activeGuild.id}&t=${Date.now()}`, {
-          cache: 'no-store'
-        })
+        // Fire auto-link in the background so it overlaps with the cold-load
+        // reads. We still await it before generateRaidDates because that path
+        // reads attendance records that the auto-link API may rewrite.
+        const autoLinkPromise = fetch('/api/attendance/auto-link', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ guild_id: activeGuild.id })
+        }).catch(() => null)
+
+        // All four cold-load reads are independent — run in parallel.
+        const teamMembersQuery = activeTeamId
+          ? supabase
+              .from('raid_team_members')
+              .select('character_id')
+              .eq('raid_team_id', activeTeamId)
+          : Promise.resolve({ data: null as { character_id: string }[] | null })
+
+        const [settingsResponse, membersResponse, aliasResult, teamMembersResult] =
+          await Promise.all([
+            fetch(`/api/guild-settings?guild_id=${activeGuild.id}&t=${Date.now()}`, {
+              cache: 'no-store',
+            }),
+            fetch(`/api/guild-members?guild_id=${activeGuild.id}`),
+            supabase
+              .from('character_aliases')
+              .select('id, alias_name, character_id')
+              .eq('guild_id', activeGuild.id),
+            teamMembersQuery,
+          ])
+
+        // Settings
         let settings: any = null
-        if (response.ok) {
-          const data = await response.json()
+        if (settingsResponse.ok) {
+          const data = await settingsResponse.json()
           settings = data.settings
           setGuildSettings(settings)
         }
 
-        // Build raider list from guild memberships (all active members).
-        // Previously this used approved loot submissions, which meant characters
-        // without an approved list were invisible in raid tracking.
-        const membersResponse = await fetch(`/api/guild-members?guild_id=${activeGuild.id}`)
+        // Members (build raider list from guild memberships — all active members).
         const membersResult = membersResponse.ok ? await membersResponse.json() : null
-
         if (membersResult?.members && membersResult.members.length > 0) {
           const formattedMembers: Member[] = []
           for (const member of membersResult.members) {
@@ -236,45 +259,30 @@ export default function RaidTrackingPage() {
                 character_name: char.name || 'Unknown',
                 class_name: char.class?.name || 'Unknown',
                 class_color: char.class?.color_hex || '#888888',
-                role: member.role || 'Member'
+                role: member.role || 'Member',
               })
             }
           }
 
-          // Filter roster to team members when a team is selected
           let filteredMembers = formattedMembers
-          if (activeTeamId) {
-            const { data: teamMembers } = await supabase
-              .from('raid_team_members')
-              .select('character_id')
-              .eq('raid_team_id', activeTeamId)
-            if (teamMembers) {
-              const teamCharIds = new Set(teamMembers.map((m: { character_id: string }) => m.character_id))
-              filteredMembers = formattedMembers.filter(m => teamCharIds.has(m.character_id))
-            }
+          if (activeTeamId && teamMembersResult.data) {
+            const teamCharIds = new Set(
+              teamMembersResult.data.map((m: { character_id: string }) => m.character_id)
+            )
+            filteredMembers = formattedMembers.filter((m) => teamCharIds.has(m.character_id))
           }
 
           filteredMembers.sort((a: Member, b: Member) => a.character_name.localeCompare(b.character_name))
           setMembers(filteredMembers)
         }
 
-        // Load character aliases for this guild
-        const { data: aliasData } = await supabase
-          .from('character_aliases')
-          .select('id, alias_name, character_id')
-          .eq('guild_id', activeGuild.id)
-
-        if (aliasData) {
-          setCharacterAliases(aliasData)
+        // Character aliases
+        if (aliasResult.data) {
+          setCharacterAliases(aliasResult.data)
         }
 
-        // Auto-link any unlinked attendance records that now match guild members.
-        // Awaited so linking completes before loadRaidAttendance reads records.
-        await fetch('/api/attendance/auto-link', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ guild_id: activeGuild.id })
-        }).catch(() => {}) // Silently ignore — filtering fix in loadRaidAttendance handles display
+        // Wait for auto-link to complete before reading attendance.
+        await autoLinkPromise
 
         // Generate and load raid dates
         if (settings) {
