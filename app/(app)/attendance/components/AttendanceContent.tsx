@@ -483,7 +483,7 @@ export default function AttendanceContent() {
           }
         }
 
-        // Get raid events in the rolling window (current week + previous X weeks)
+        // Get raid events in the rolling window (last X completed reset weeks)
         // For team view: fetch team events + unassigned (for denominator)
         // Display grid still filters by team, but scoring uses team+unassigned
         let raidEventsQuery = supabase
@@ -954,7 +954,7 @@ export default function AttendanceContent() {
               <p className="text-[28px] sm:text-[42px] font-bold text-foreground leading-none">
                 {trackedRaidCount ?? guildRaidEvents.length}
               </p>
-              <p className="text-muted-foreground text-xs sm:text-sm mt-2"><span className="hidden sm:inline">Current + previous {guildSettings?.rolling_attendance_weeks || 4} weeks</span><span className="sm:hidden">{guildSettings?.rolling_attendance_weeks || 4}wk window</span></p>
+              <p className="text-muted-foreground text-xs sm:text-sm mt-2"><span className="hidden sm:inline">Last {guildSettings?.rolling_attendance_weeks || 4} reset weeks</span><span className="sm:hidden">{guildSettings?.rolling_attendance_weeks || 4}wk window</span></p>
             </div>
           </div>
         </>
@@ -966,7 +966,7 @@ export default function AttendanceContent() {
           <div>
             <h2 className="text-foreground font-semibold">Guild attendance</h2>
             <p className="text-foreground-muted text-[12px] mt-0.5">
-              Current week + previous {guildSettings?.rolling_attendance_weeks || 4} weeks
+              Last {guildSettings?.rolling_attendance_weeks || 4} reset weeks
             </p>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
