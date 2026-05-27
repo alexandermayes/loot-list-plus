@@ -15,10 +15,19 @@ function notLinkedEmbed() {
 
 function scoreEmbed(payload) {
   const a = payload.attendance;
+  // Lead with the score-credit ratio so the bot reads the same as the app's
+  // attendance page. Raw raid count is secondary context — partial raid
+  // attendance can still earn full score via per-week capping, so showing
+  // only "4/8 = 50%" was misleading raiders into thinking they're at half.
+  const fmt = (n) => Number.isInteger(n) ? n.toString() : n.toFixed(2);
+  const lines = [
+    `**Attendance credit:** ${fmt(a.score)} / ${fmt(a.max_score)} (${a.score_percent}%)`,
+    `**Raids attended:** ${a.raids_attended} of ${a.raids_in_window} tracked (last ${payload.rolling_weeks} weeks)`,
+  ];
   return {
     color: EMBED_COLOR_ORANGE,
     title: `${payload.character_name} — Loot Score`,
-    description: `**Attendance:** ${a.ratio} (${a.percent}%) over the last ${payload.rolling_weeks} weeks\n**Attendance bonus:** +${a.score}`,
+    description: lines.join('\n'),
     footer: { text: `${payload.guild_name} · LootList+` },
   };
 }

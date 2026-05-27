@@ -115,17 +115,29 @@ export async function GET(request: Request) {
       weekResetDay: settings.week_reset_day,
     })
 
+    // Two metrics matter and we report both so the bot reads the same as
+    // the attendance page in the app:
+    //   - score / max_attendance_bonus: the "Attendance credit" the app
+    //     leads with. Per-week capping means partial attendance can still
+    //     produce a full score, so this is what actually feeds Loot Score.
+    //   - raidsAttended / raidsInWindow: raw "you showed up to N of M
+    //     tracked raids" stat. Useful for context but not what drives
+    //     priority.
+    const maxAttendanceBonus = settings.max_attendance_bonus ?? 4
+    const score = Math.round(attendance.score * 100) / 100
+    const scorePercent = maxAttendanceBonus > 0
+      ? Math.round((score / maxAttendanceBonus) * 100)
+      : 0
+
     return NextResponse.json({
       character_name: resolvedName,
       guild_name: guild.name,
       attendance: {
-        ratio: `${attendance.raidsAttended}/${attendance.raidsInWindow}`,
+        score,
+        max_score: maxAttendanceBonus,
+        score_percent: scorePercent,
         raids_attended: attendance.raidsAttended,
         raids_in_window: attendance.raidsInWindow,
-        percent: attendance.raidsInWindow > 0
-          ? Math.round((attendance.raidsAttended / attendance.raidsInWindow) * 100)
-          : 0,
-        score: Math.round(attendance.score * 100) / 100,
       },
       rolling_weeks: settings.rolling_attendance_weeks,
     })
