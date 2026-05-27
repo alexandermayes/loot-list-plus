@@ -550,13 +550,30 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
         return
       }
 
-      // If characterId provided, verify character is in that guild
-      if (characterId) {
+      // Resolve which character should be active in the target guild.
+      // If no characterId was passed and the current active character isn't in
+      // the target guild, fall back to the first character that is.
+      let targetCharacterId = characterId
+      if (!targetCharacterId) {
+        const activeCharInTargetGuild = activeCharacter
+          ? characterMemberships.some(
+              m => m.character_id === activeCharacter.id && m.guild_id === guildId
+            )
+          : false
+        if (!activeCharInTargetGuild) {
+          const fallback = characterMemberships.find(m => m.guild_id === guildId)
+          if (fallback) {
+            targetCharacterId = fallback.character_id
+          }
+        }
+      }
+
+      if (targetCharacterId) {
         const charMembership = characterMemberships.find(
-          m => m.character_id === characterId && m.guild_id === guildId
+          m => m.character_id === targetCharacterId && m.guild_id === guildId
         )
         if (!charMembership) {
-          console.error('Character is not in this guild:', characterId, guildId)
+          console.error('Character is not in this guild:', targetCharacterId, guildId)
           return
         }
 
@@ -566,7 +583,7 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
           headers: {
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify({ character_id: characterId, guild_id: guildId })
+          body: JSON.stringify({ character_id: targetCharacterId, guild_id: guildId })
         })
 
         if (!charResponse.ok) {
@@ -576,7 +593,7 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
         }
 
         // Update local character state
-        const activeChar = userCharacters.find(c => c.id === characterId)
+        const activeChar = userCharacters.find(c => c.id === targetCharacterId)
         if (activeChar) {
           setActiveCharacter(activeChar)
         }
@@ -607,7 +624,7 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
       console.error('Error in switchGuild:', error)
       showNotification('error', 'Couldn\'t switch guilds. Check your connection and try again.')
     }
-  }, [user, userGuilds, userCharacters, characterMemberships, supabase, router, showNotification])
+  }, [user, userGuilds, userCharacters, characterMemberships, activeCharacter, supabase, router, showNotification])
 
   // Switch to a different character
   const switchCharacter = useCallback(async (characterId: string) => {
