@@ -2,7 +2,16 @@ const { PermissionFlagsBits } = require('discord.js');
 const { createClient } = require('@supabase/supabase-js');
 
 const TRIGGER_EMOJI = '🐛';
-const ISSUE_LABELS = ['bug', 'user-feedback', 'discord-source'];
+const BUG_LABELS = ['bug', 'user-feedback', 'discord-source'];
+const FEATURE_LABELS = ['enhancement', 'user-feedback', 'discord-source'];
+
+// Channels the bot watches in realtime. Each entry maps an env var holding
+// a Discord channel ID to the labels applied to the resulting GitHub issue.
+// To add a third intake channel later, add another entry here.
+const WATCHED_CHANNELS = [
+  { envVar: 'FEEDBACK_CHANNEL_ID', labels: BUG_LABELS, kind: 'bug report' },
+  { envVar: 'FEATURE_REQUEST_CHANNEL_ID', labels: FEATURE_LABELS, kind: 'feature request' },
+];
 
 // Feedback handling is gated on these being present. If any are missing, the
 // bot logs a one-time warning and falls back to presence-only behavior so a
@@ -101,7 +110,7 @@ async function generateTitle(description) {
   }
 }
 
-async function createGithubIssue({ title, body }) {
+async function createGithubIssue({ title, body, labels }) {
   const token = process.env.GITHUB_TOKEN;
   const repo = process.env.GITHUB_REPO; // format: owner/repo
   const res = await fetch(`https://api.github.com/repos/${repo}/issues`, {
@@ -112,7 +121,7 @@ async function createGithubIssue({ title, body }) {
       'X-GitHub-Api-Version': '2022-11-28',
       'Content-Type': 'application/json'
     },
-    body: JSON.stringify({ title, body, labels: ISSUE_LABELS })
+    body: JSON.stringify({ title, body, labels })
   });
   if (!res.ok) {
     const text = await res.text();
@@ -161,7 +170,7 @@ function buildIssueBody({ message, source, triggeredBy }) {
   return lines.join('\n');
 }
 
-async function fileFeedback({ message, source, triggeredBy }) {
+async function fileFeedback({ message, source, triggeredBy, labels = BUG_LABELS }) {
   if (!message.guild) return; // DMs ignored
   if (message.author?.bot) return;
 
@@ -185,8 +194,20 @@ async function fileFeedback({ message, source, triggeredBy }) {
     : await generateTitle(text || '(image only)');
   const body = buildIssueBody({ message, source, triggeredBy });
 
-  const issue = await createGithubIssue({ title, body });
+  const issue = await createGithubIssue({ title, body, labels });
   console.log(`[feedback] filed message ${message.id} as issue #${issue.number}: ${title}`);
+
+  // Visible confirmation in-thread so the reporter can see the issue link
+  // without having to spot the small ✅ reaction.
+  try {
+    const kind = labels.includes('enhancement') ? 'feature request' : 'bug report';
+    await message.reply({
+      content: `Thanks — this ${kind} is tracked as **#${issue.number}** on GitHub.\n<${issue.html_url}>`,
+      allowedMentions: { repliedUser: false },
+    });
+  } catch (err) {
+    console.warn('[feedback] could not post thread reply:', err.message);
+  }
 
   await recordMapping({
     discord_message_id: message.id,
@@ -237,29 +258,33 @@ function isAllowedReactor(member) {
 
 async function handleMessageCreate(message) {
   if (!isFeedbackConfigured()) { warnMissingOnce(); return; }
-  const channelId = envOrNull('FEEDBACK_CHANNEL_ID');
-  if (!channelId) return;
   if (message.author?.bot) return;
 
-  // Diagnostic: log any message that touches the watched channel so we can
-  // verify the bot is receiving events at all when capture isn't happening.
-  if (message.channel.id === channelId || message.channel.parentId === channelId) {
-    console.log(`[feedback] msg event: id=${message.id} chan=${message.channel.id} parent=${message.channel.parentId ?? 'none'} threadStarter=${message.id === message.channel.id} author=${message.author?.tag}`);
-  }
-
-  // Two valid shapes for the watched channel:
+  // Match the message against each configured intake channel. Two valid
+  // shapes per channel:
   //   1. Plain text channel — message lands directly in it
   //   2. Forum channel — each post is a thread whose parent is the forum.
   //      We only file the starter message (skip replies) so each post = 1 issue.
-  const isDirectMatch = message.channel.id === channelId;
-  const isForumPostStarter =
-    message.channel.parentId === channelId &&
-    message.channel.isThread?.() &&
-    message.id === message.channel.id;
-  if (!isDirectMatch && !isForumPostStarter) return;
+  let matched = null;
+  for (const config of WATCHED_CHANNELS) {
+    const channelId = envOrNull(config.envVar);
+    if (!channelId) continue;
+    const isDirectMatch = message.channel.id === channelId;
+    const isForumPostStarter =
+      message.channel.parentId === channelId &&
+      message.channel.isThread?.() &&
+      message.id === message.channel.id;
+    if (isDirectMatch || isForumPostStarter) {
+      matched = config;
+      break;
+    }
+  }
+  if (!matched) return;
+
+  console.log(`[feedback] ${matched.kind} candidate: msgId=${message.id} channel=${message.channel.id} author=${message.author?.tag}`);
 
   try {
-    await fileFeedback({ message, source: 'channel' });
+    await fileFeedback({ message, source: 'channel', labels: matched.labels });
   } catch (err) {
     console.error('[feedback] channel listener error:', err);
   }
@@ -268,12 +293,11 @@ async function handleMessageCreate(message) {
 async function handleReactionAdd(reaction, user) {
   if (!isFeedbackConfigured()) { warnMissingOnce(); return; }
   if (user.bot) return;
-
-  // Diagnostic: log every non-bot reaction so we can see whether the gateway
-  // is delivering reaction events at all (regardless of emoji match).
-  console.log(`[feedback] reaction event: emoji=${reaction.emoji.name} (codepoints=${[...(reaction.emoji.name||'')].map((c) => c.codePointAt(0).toString(16)).join(',')}) by=${user.tag} msgId=${reaction.message?.id} channelId=${reaction.message?.channel?.id} channelType=${reaction.message?.channel?.type}`);
-
   if (reaction.emoji.name !== TRIGGER_EMOJI) return;
+
+  // Logged only for trigger-emoji reactions — across 49 servers, logging
+  // every reaction is too noisy.
+  console.log(`[feedback] ${TRIGGER_EMOJI} reaction by=${user.tag} msgId=${reaction.message?.id} channelId=${reaction.message?.channel?.id}`);
 
   // Reaction may be partial (uncached message) — fetch full
   if (reaction.partial) {
