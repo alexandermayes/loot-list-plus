@@ -121,7 +121,13 @@ interface RawSubmission {
   character: RawSubmissionCharacter | RawSubmissionCharacter[]
 }
 
-export default function LootSubmissionsContent() {
+interface LootSubmissionsContentProps {
+  // Server-rendered heading from page.tsx — LCP target until the client
+  // takes over with the same markup.
+  serverHeading?: React.ReactNode
+}
+
+export default function LootSubmissionsContent({ serverHeading }: LootSubmissionsContentProps = {}) {
   const [submissions, setSubmissions] = useState<Submission[]>([])
   const [phases, setPhases] = useState<Phase[]>([])
   const [activePhase, setActivePhase] = useState<Phase | 'all' | null>(null)
@@ -856,10 +862,12 @@ export default function LootSubmissionsContent() {
     <div className="font-poppins">
       {/* Header - Always visible */}
       <div className="p-4 sm:p-6 lg:p-8 pb-1.5 flex items-start justify-between gap-4">
-        <div>
-          <Heading level={1}>Loot Submissions</Heading>
-          <p className="text-muted-foreground mt-1 text-base">Review and manage character loot submissions</p>
-        </div>
+        {serverHeading ?? (
+          <div>
+            <Heading level={1}>Loot Submissions</Heading>
+            <p className="text-muted-foreground mt-1 text-base">Review and manage character loot submissions</p>
+          </div>
+        )}
         {hasTeams && (
           <TeamSelector
             teams={teams}
