@@ -30,6 +30,7 @@ interface RaidCardProps {
   canLinkWcl: boolean
   isPostingDiscord: boolean
   isLinkingWcl: boolean
+  isOpeningImport: boolean
   onToggleExpanded: (raidId: string) => void
   onImport: (raid: RaidEvent, hasImportedData: boolean) => void | Promise<void>
   onPostToDiscord: (raidId: string) => void
@@ -72,6 +73,7 @@ function RaidCardInner(props: RaidCardProps) {
     canLinkWcl,
     isPostingDiscord,
     isLinkingWcl,
+    isOpeningImport,
     onToggleExpanded,
     onImport,
     onPostToDiscord,
@@ -101,6 +103,7 @@ function RaidCardInner(props: RaidCardProps) {
         canLinkWcl={canLinkWcl}
         isPostingDiscord={isPostingDiscord}
         isLinkingWcl={isLinkingWcl}
+        isOpeningImport={isOpeningImport}
         onToggleExpanded={onToggleExpanded}
         onImport={onImport}
         onPostToDiscord={onPostToDiscord}

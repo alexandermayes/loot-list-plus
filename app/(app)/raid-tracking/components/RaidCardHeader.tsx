@@ -32,6 +32,7 @@ interface RaidCardHeaderProps {
   canLinkWcl: boolean
   isPostingDiscord: boolean
   isLinkingWcl: boolean
+  isOpeningImport: boolean
   onToggleExpanded: (raidId: string) => void
   onImport: (raid: RaidEvent, hasImportedData: boolean) => void | Promise<void>
   onPostToDiscord: (raidId: string) => void
@@ -52,6 +53,7 @@ export function RaidCardHeader({
   canLinkWcl,
   isPostingDiscord,
   isLinkingWcl,
+  isOpeningImport,
   onToggleExpanded,
   onImport,
   onPostToDiscord,
@@ -131,11 +133,12 @@ export function RaidCardHeader({
             variant="outline"
             size="sm"
             onClick={() => onImport(raid, hasImportedData)}
+            loading={isOpeningImport}
             className={
               hasImportedData ? 'border-success/50 text-success hover:bg-success/20' : ''
             }
           >
-            <HugeiconsIcon icon={Upload01Icon} size={16} />
+            {!isOpeningImport && <HugeiconsIcon icon={Upload01Icon} size={16} />}
             <span className="hidden sm:inline">
               {hasImportedData ? 'Edit import' : 'Import data'}
             </span>

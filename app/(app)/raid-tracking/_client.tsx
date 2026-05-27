@@ -123,6 +123,8 @@ export default function RaidTrackingPage() {
   const [importing, setImporting] = useState(false)
   const [postingDiscord, setPostingDiscord] = useState<string | null>(null)
   const [linkingWcl, setLinkingWcl] = useState<string | null>(null)
+  // raidId currently being prepared for import (loadLootItems + optional loadRaidAttendance)
+  const [openingImport, setOpeningImport] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<'tracking' | 'history'>('tracking')
 
   // Reassign loot modal state
@@ -1006,22 +1008,27 @@ export default function RaidTrackingPage() {
   }, [showNotification])
 
   const handleImportClick = useCallback(async (raid: RaidEvent, hasImportedData: boolean) => {
-    await loadLootItems()
+    setOpeningImport(raid.id)
+    try {
+      await loadLootItems()
 
-    if (hasImportedData) {
-      if (!latestRef.current.attendance[raid.id]) {
-        await loadRaidAttendance(raid.id)
+      if (hasImportedData) {
+        if (!latestRef.current.attendance[raid.id]) {
+          await loadRaidAttendance(raid.id)
+        }
+        setLootData('')
+        setShowImportModal({ raidId: raid.id, date: raid.raid_date, isEdit: true })
+      } else {
+        setAttendanceData('')
+        setLootData('')
+        setSignupsData('')
+        setInitialAttendanceData('')
+        setInitialLootData('')
+        setInitialSignupsData('')
+        setShowImportModal({ raidId: raid.id, date: raid.raid_date, isEdit: false })
       }
-      setLootData('')
-      setShowImportModal({ raidId: raid.id, date: raid.raid_date, isEdit: true })
-    } else {
-      setAttendanceData('')
-      setLootData('')
-      setSignupsData('')
-      setInitialAttendanceData('')
-      setInitialLootData('')
-      setInitialSignupsData('')
-      setShowImportModal({ raidId: raid.id, date: raid.raid_date, isEdit: false })
+    } finally {
+      setOpeningImport(null)
     }
     // loadLootItems is intentionally not in deps — it's defined later in the file
     // and is stable via useCallback below.
@@ -2604,6 +2611,7 @@ export default function RaidTrackingPage() {
                     canLinkWcl={!!guildSettings?.wcl_guild_url && !raid.wcl_report_code}
                     isPostingDiscord={postingDiscord === raid.id}
                     isLinkingWcl={linkingWcl === raid.id}
+                    isOpeningImport={openingImport === raid.id}
                     onToggleExpanded={toggleRaidExpanded}
                     onImport={handleImportClick}
                     onPostToDiscord={handlePostToDiscord}
