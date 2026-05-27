@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
+import { paginatedSelect } from '@/utils/supabase/paginate'
 
 // ─── PostHog HogQL query helper ─────────────────────────────
 
@@ -140,67 +141,88 @@ export async function GET(request: NextRequest) {
     // Default: guilds section (existing code)
     const supabase = createServiceRoleClient()
 
-    // Run all queries in parallel
+    // Row shapes for the paginated reads
+    type GuildRow = { id: string; name: string; created_at: string; is_active: boolean; active_expansion_id: string | null; expansions: { name: string } | { name: string }[] | null }
+    type MembershipRow = { guild_id: string; character_id: string; role: string; is_active: boolean; joined_at: string | null }
+    type SubmissionRow = { id: string; guild_id: string; status: string; created_at: string; submitted_at: string | null; reviewed_at: string | null }
+    type RaidEventRow = { id: string; guild_id: string; raid_date: string; is_skipped: boolean }
+    type AttendanceRow = { raid_event_id: string; character_id: string | null; attended: boolean; status: string | null }
+    type LootHistoryRow = { id: string; guild_id: string; awarded_date: string }
+    type AuditLogRow = { guild_id: string | null; table_name: string; action: string; created_at: string }
+    type GuildSettingsRow = { guild_id: string; rolling_attendance_weeks: number | null; max_attendance_bonus: number | null; attendance_type: string | null; raid_days_per_week: number | null; new_member_mode: string | null }
+
+    // Run all queries in parallel. Every read is paginated because this
+    // endpoint is global (no per-guild filter) and the 1000-row PostgREST
+    // cap silently scales every total on the admin dashboard down to a
+    // misleading floor on big tables like attendance_records and audit_logs.
     const [
-      guildsResult,
-      membershipsResult,
-      submissionsResult,
-      raidEventsResult,
-      attendanceResult,
-      lootHistoryResult,
-      auditLogsResult,
-      settingsResult,
+      guilds,
+      memberships,
+      submissions,
+      raidEvents,
+      attendance,
+      lootHistory,
+      auditLogs,
+      settings,
     ] = await Promise.all([
-      // All guilds with creation date and expansion name
-      supabase
-        .from('guilds')
-        .select('id, name, created_at, is_active, active_expansion_id, expansions!active_expansion_id(name)'),
-
-      // All active memberships grouped by guild
-      supabase
-        .from('character_guild_memberships')
-        .select('guild_id, character_id, role, is_active, joined_at')
-        .eq('is_active', true),
-
-      // All submissions with status
-      supabase
-        .from('loot_submissions')
-        .select('id, guild_id, status, created_at, submitted_at, reviewed_at'),
-
-      // All raid events
-      supabase
-        .from('raid_events')
-        .select('id, guild_id, raid_date, is_skipped'),
-
-      // Attendance record counts per guild
-      supabase
-        .from('attendance_records')
-        .select('raid_event_id, character_id, attended, status'),
-
-      // Loot history
-      supabase
-        .from('loot_history')
-        .select('id, guild_id, awarded_date'),
-
-      // Audit log counts (feature engagement proxy)
-      supabase
-        .from('audit_logs')
-        .select('guild_id, table_name, action, created_at'),
-
-      // Guild settings (which features are configured)
-      supabase
-        .from('guild_settings')
-        .select('guild_id, rolling_attendance_weeks, max_attendance_bonus, attendance_type, raid_days_per_week, new_member_mode'),
+      paginatedSelect<GuildRow>((start, end) =>
+        supabase
+          .from('guilds')
+          .select('id, name, created_at, is_active, active_expansion_id, expansions!active_expansion_id(name)')
+          .order('id', { ascending: true })
+          .range(start, end)
+      ),
+      paginatedSelect<MembershipRow>((start, end) =>
+        supabase
+          .from('character_guild_memberships')
+          .select('guild_id, character_id, role, is_active, joined_at')
+          .eq('is_active', true)
+          .order('character_id', { ascending: true })
+          .range(start, end)
+      ),
+      paginatedSelect<SubmissionRow>((start, end) =>
+        supabase
+          .from('loot_submissions')
+          .select('id, guild_id, status, created_at, submitted_at, reviewed_at')
+          .order('id', { ascending: true })
+          .range(start, end)
+      ),
+      paginatedSelect<RaidEventRow>((start, end) =>
+        supabase
+          .from('raid_events')
+          .select('id, guild_id, raid_date, is_skipped')
+          .order('id', { ascending: true })
+          .range(start, end)
+      ),
+      paginatedSelect<AttendanceRow>((start, end) =>
+        supabase
+          .from('attendance_records')
+          .select('raid_event_id, character_id, attended, status')
+          .order('id', { ascending: true })
+          .range(start, end)
+      ),
+      paginatedSelect<LootHistoryRow>((start, end) =>
+        supabase
+          .from('loot_history')
+          .select('id, guild_id, awarded_date')
+          .order('id', { ascending: true })
+          .range(start, end)
+      ),
+      paginatedSelect<AuditLogRow>((start, end) =>
+        supabase
+          .from('audit_logs')
+          .select('guild_id, table_name, action, created_at')
+          .order('id', { ascending: true })
+          .range(start, end)
+      ),
+      paginatedSelect<GuildSettingsRow>((start, end) =>
+        supabase
+          .from('guild_settings')
+          .select('guild_id, rolling_attendance_weeks, max_attendance_bonus, attendance_type, raid_days_per_week, new_member_mode')
+          .order('guild_id', { ascending: true })
+          .range(start, end)
+      ),
     ])
-
-    const guilds = guildsResult.data || []
-    const memberships = membershipsResult.data || []
-    const submissions = submissionsResult.data || []
-    const raidEvents = raidEventsResult.data || []
-    const attendance = attendanceResult.data || []
-    const lootHistory = lootHistoryResult.data || []
-    const auditLogs = auditLogsResult.data || []
-    const settings = settingsResult.data || []
 
     // Build per-guild metrics
     const guildMetrics = guilds.map(guild => {

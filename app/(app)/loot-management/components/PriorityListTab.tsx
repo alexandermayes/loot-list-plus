@@ -23,6 +23,7 @@ import { getBossImage } from '@/utils/bossImages'
 import { StarFilledIcon } from '@/components/ui/icons'
 import { HorizontalScroll } from '@/components/ui/horizontal-scroll'
 import { refreshWowheadTooltips } from '@/lib/wowhead'
+import { paginatedSelect } from '@/utils/supabase/paginate'
 
 interface RaidTier {
   id: string
@@ -248,16 +249,26 @@ export default function PriorityListTab() {
         // Get tier IDs for this phase
         const tierIds = phaseTiers.map(t => t.id)
 
-        // Load loot items for all tiers in this phase
-        const { data: itemsData } = await supabase
-          .from('loot_items')
-          .select('id, name, boss_name, item_slot, wowhead_id, classification, is_available, raid_tier_id')
-          .in('raid_tier_id', tierIds)
-          .eq('is_available', true)
-          .order('boss_name')
-          .order('name')
+        // Load loot items for all tiers in this phase.
+        // Paginated — MoP has 1,705 items, so a single phase's tier set
+        // easily exceeds the 1000-row PostgREST cap and items silently
+        // disappear from the priority list.
+        const itemsData = await paginatedSelect<LootItem>((start, end) =>
+          supabase
+            .from('loot_items')
+            .select('id, name, boss_name, item_slot, wowhead_id, classification, is_available, raid_tier_id')
+            .in('raid_tier_id', tierIds)
+            .eq('is_available', true)
+            .order('id', { ascending: true })
+            .range(start, end)
+        )
 
-        if (itemsData) {
+        if (itemsData.length > 0) {
+          // Sort by boss/name on the client now that we have everything.
+          itemsData.sort((a, b) =>
+            (a.boss_name ?? '').localeCompare(b.boss_name ?? '') ||
+            (a.name ?? '').localeCompare(b.name ?? '')
+          )
           // Add raid tier name to each item for grouping
           const itemsWithTierName = itemsData.map((item: LootItem) => ({
             ...item,

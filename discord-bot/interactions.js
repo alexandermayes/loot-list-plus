@@ -15,10 +15,18 @@ function notLinkedEmbed() {
 
 function scoreEmbed(payload) {
   const a = payload.attendance;
+  const fmt = (n) => Number.isInteger(n) ? n.toString() : n.toFixed(2);
+  const title = payload.team_name
+    ? `${payload.character_name} — Loot Score (${payload.team_name})`
+    : `${payload.character_name} — Loot Score`;
+  const lines = [
+    `**Attendance credit:** ${fmt(a.score)} / ${fmt(a.max_score)} (${a.score_percent}%)`,
+    `**Raids attended:** ${a.raids_attended} of ${a.raids_in_window} tracked (last ${payload.rolling_weeks} weeks)`,
+  ];
   return {
     color: EMBED_COLOR_ORANGE,
-    title: `${payload.character_name} — Loot Score`,
-    description: `**Attendance:** ${a.ratio} (${a.percent}%) over the last ${payload.rolling_weeks} weeks\n**Attendance bonus:** +${a.score}`,
+    title,
+    description: lines.join('\n'),
     footer: { text: `${payload.guild_name} · LootList+` },
   };
 }

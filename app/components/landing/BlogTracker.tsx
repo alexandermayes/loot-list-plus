@@ -76,7 +76,14 @@ export default function BlogTracker({ slug, title }: BlogTrackerProps) {
       const target = (e.target as HTMLElement).closest('a')
       if (!target) return
       const href = target.getAttribute('href')
-      if (href && href.includes('lootlistplus.com')) {
+      if (!href) return
+      let hostname: string
+      try {
+        hostname = new URL(href, window.location.href).hostname
+      } catch {
+        return
+      }
+      if (hostname === 'lootlistplus.com' || hostname.endsWith('.lootlistplus.com')) {
         trackClientEvent('blog_cta_clicked', { slug, cta_url: href })
       }
     }

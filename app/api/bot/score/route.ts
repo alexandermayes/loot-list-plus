@@ -12,6 +12,8 @@
 import { NextResponse } from 'next/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { computeAttendance } from '@/domain/scoring'
+import { resolveRaidDays, resolveRollingWeeks } from '@/domain/raid-team/settings'
+import type { RaidDaysOverride } from '@/domain/raid-team/types'
 import { trackApiError } from '@/utils/analytics/server'
 import { checkBotAuth, resolveGuildFromDiscord } from '../_helpers'
 
@@ -58,11 +60,30 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'character_not_found', character_name: characterName }, { status: 404 })
     }
 
+    // Look up the character's raid team so the score reads the same as the
+    // master sheet — team overrides change raid_days/rolling_weeks, and
+    // team filtering drops events that belong to other teams. Without this
+    // a Sunday-team raider sees "4/8" (their Sundays + the Monday team's
+    // Mondays in the denominator) instead of the correct "4/4".
+    const { data: teamMember } = await supabase
+      .from('raid_team_members')
+      .select('raid_team_id, raid_teams(id, name, raid_days_override, rolling_weeks_override)')
+      .eq('character_id', characterId)
+      .eq('guild_id', guild.id)
+      .limit(1)
+      .maybeSingle()
+
+    const team = teamMember
+      ? (Array.isArray(teamMember.raid_teams) ? teamMember.raid_teams[0] : teamMember.raid_teams)
+      : null
+    const raiderTeamId = (team as { id?: string } | null)?.id ?? null
+    const teamName = (team as { name?: string } | null)?.name ?? null
+
     // Load minimum data for computeAttendance
     const [settingsResult, raidEventsResult, recordsResult] = await Promise.all([
       supabase
         .from('guild_settings')
-        .select('rolling_attendance_weeks, attendance_type, signup_weight, max_attendance_bonus, raid_days, week_reset_day, late_early_penalty_enabled, late_early_penalty_value, minimum_raid_days, minimum_raid_days_enabled, middle_attendance_threshold, middle_attendance_bonus, max_attendance_threshold')
+        .select('rolling_attendance_weeks, attendance_type, signup_weight, max_attendance_bonus, raid_days_per_week, first_raid_day, second_raid_day, third_raid_day, fourth_raid_day, fifth_raid_day, week_reset_day, late_early_penalty_enabled, late_early_penalty_value, minimum_raid_days, minimum_raid_days_enabled, middle_attendance_threshold, middle_attendance_bonus, max_attendance_threshold')
         .eq('guild_id', guild.id)
         .single(),
       supabase
@@ -88,29 +109,65 @@ export async function GET(request: Request) {
       raid_team_id: e.raid_team_id ?? null,
     }))
 
-    const raidDays: number[] = Array.isArray(settings.raid_days) ? settings.raid_days as number[] : []
+    // raid_days_per_week + first..fifth_raid_day are the canonical day-of-week
+    // integers (0=Sun) the scoring engine wants. The legacy `raid_days` string
+    // array (["Sunday","Monday"]) is not what we want — passing names where
+    // numbers are expected made the day-of-week filter drop every event → 0/0.
+    const teamRaidDaysOverride = (team as { raid_days_override?: RaidDaysOverride | null } | null)?.raid_days_override ?? null
+    const teamRollingWeeksOverride = (team as { rolling_weeks_override?: number | null } | null)?.rolling_weeks_override ?? null
+
+    const raidDays = resolveRaidDays(
+      {
+        raid_days_per_week: settings.raid_days_per_week ?? 2,
+        first_raid_day: settings.first_raid_day,
+        second_raid_day: settings.second_raid_day,
+        third_raid_day: settings.third_raid_day,
+        fourth_raid_day: settings.fourth_raid_day,
+        fifth_raid_day: settings.fifth_raid_day,
+      },
+      teamRaidDaysOverride
+    )
+
+    const rollingWeeks = resolveRollingWeeks(
+      settings.rolling_attendance_weeks ?? 4,
+      teamRollingWeeksOverride
+    )
 
     const attendance = computeAttendance({
       records: recordsResult.data || [],
       raidEvents,
-      config: settings,
+      config: { ...settings, rolling_attendance_weeks: rollingWeeks },
       raidDays,
+      raiderTeamId,
       weekResetDay: settings.week_reset_day,
     })
+
+    // Two metrics matter and we report both so the bot reads the same as
+    // the attendance page in the app:
+    //   - score / max_attendance_bonus: the "Attendance credit" the app
+    //     leads with. Per-week capping means partial attendance can still
+    //     produce a full score, so this is what actually feeds Loot Score.
+    //   - raidsAttended / raidsInWindow: raw "you showed up to N of M
+    //     tracked raids" stat. Useful for context but not what drives
+    //     priority.
+    const maxAttendanceBonus = settings.max_attendance_bonus ?? 4
+    const score = Math.round(attendance.score * 100) / 100
+    const scorePercent = maxAttendanceBonus > 0
+      ? Math.round((score / maxAttendanceBonus) * 100)
+      : 0
 
     return NextResponse.json({
       character_name: resolvedName,
       guild_name: guild.name,
+      team_name: teamName,
       attendance: {
-        ratio: `${attendance.raidsAttended}/${attendance.raidsInWindow}`,
+        score,
+        max_score: maxAttendanceBonus,
+        score_percent: scorePercent,
         raids_attended: attendance.raidsAttended,
         raids_in_window: attendance.raidsInWindow,
-        percent: attendance.raidsInWindow > 0
-          ? Math.round((attendance.raidsAttended / attendance.raidsInWindow) * 100)
-          : 0,
-        score: Math.round(attendance.score * 100) / 100,
       },
-      rolling_weeks: settings.rolling_attendance_weeks,
+      rolling_weeks: rollingWeeks,
     })
   } catch (error) {
     console.error('Error in GET /api/bot/score:', error)
