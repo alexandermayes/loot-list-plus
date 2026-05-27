@@ -9,7 +9,6 @@ import { useGuildContext } from '@/app/contexts/GuildContext'
 import { useNotification } from '@/app/contexts/NotificationContext'
 import { ExpansionGuard } from '@/app/components/ExpansionGuard'
 import { LootSettingsPageSkeleton } from '@/components/ui/skeletons'
-import { Modal, ModalHeader, ModalTitle, ModalDescription, ModalBody, ModalFooter } from '@/components/ui/modal'
 import { Button } from '@/components/ui/button'
 import { Heading } from '@/components/ui/typography'
 import { Select } from '@/components/ui/select'
@@ -23,11 +22,11 @@ import { HugeiconsIcon } from '@hugeicons/react'
 import { StickyNote01Icon, Search01Icon } from '@hugeicons/core-free-icons'
 import { EmptyState } from '@/components/ui/empty-state'
 import { ErrorState } from '@/components/ui/error-state'
-import { Textarea } from '@/components/ui/textarea'
 import { refreshWowheadTooltips } from '@/lib/wowhead'
 import PriorityListTab from './PriorityListTab'
 import DonationsTab from './DonationsTab'
 import { SettingsModal } from './SettingsModal'
+import { NotesModal } from './NotesModal'
 import { SegmentedControl } from '@/components/ui/segmented-control'
 import { Checkbox } from '@/components/ui/checkbox'
 import { useConfirm } from '@/components/ui/confirm-modal'
@@ -1872,52 +1871,19 @@ export default function LootSettingsContent({
         guildRoles={guildRoles}
       />
 
-      {/* Notes Modal */}
-      <Modal
-        open={!!notesModalItem}
+      <NotesModal
+        item={notesModalItem}
+        value={notesModalValue}
+        saving={savingNotes}
+        onValueChange={setNotesModalValue}
         onClose={() => setNotesModalItem(null)}
-        size="sm"
-      >
-        <ModalHeader onClose={() => setNotesModalItem(null)}>
-          <ModalTitle>Officer notes</ModalTitle>
-          {notesModalItem && (
-            <ModalDescription>
-              <ItemLink wowheadId={notesModalItem.wowhead_id} name={notesModalItem.name} />
-            </ModalDescription>
-          )}
-        </ModalHeader>
-        <ModalBody>
-          <Textarea
-            value={notesModalValue}
-            onChange={(e) => setNotesModalValue(e.target.value)}
-            placeholder="Add notes for officers..."
-            rows={4}
-            variant="rounded"
-            autoFocus
-          />
-        </ModalBody>
-        <ModalFooter>
-          <Button variant="outline" onClick={() => setNotesModalItem(null)} disabled={savingNotes}>
-            Cancel
-          </Button>
-          <Button
-            variant="primary"
-            loading={savingNotes}
-            onClick={async () => {
-              if (notesModalItem) {
-                setSavingNotes(true)
-                const success = await updateNotes(notesModalItem.id, notesModalValue)
-                setSavingNotes(false)
-                if (success) {
-                  setNotesModalItem(null)
-                }
-              }
-            }}
-          >
-            Save note
-          </Button>
-        </ModalFooter>
-      </Modal>
+        onSave={async (itemId, value) => {
+          setSavingNotes(true)
+          const success = await updateNotes(itemId, value)
+          setSavingNotes(false)
+          return success
+        }}
+      />
 
       {ConfirmDialog}
     </ExpansionGuard>
