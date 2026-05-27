@@ -48,7 +48,7 @@ async function announceClosure(client, supabase, issue) {
     return;
   }
   if (!row) return; // issue not filed by us — skip
-  if (row.closure_announced_at) return; // already announced
+  const alreadyAnnounced = !!row.closure_announced_at;
 
   const channel = await client.channels.fetch(row.discord_channel_id).catch(() => null);
   if (!channel?.isTextBased?.()) {
@@ -56,16 +56,19 @@ async function announceClosure(client, supabase, issue) {
     return;
   }
 
-  try {
-    await channel.send(buildCloseMessage(issue));
-  } catch (err) {
-    console.warn(`[closures] could not post in ${row.discord_channel_id} for #${issue.number}:`, err.message);
-    return;
+  // Close message only on first announcement — re-sweeps shouldn't double-post.
+  if (!alreadyAnnounced) {
+    try {
+      await channel.send(buildCloseMessage(issue));
+    } catch (err) {
+      console.warn(`[closures] could not post in ${row.discord_channel_id} for #${issue.number}:`, err.message);
+      return;
+    }
   }
 
-  // Flag the thread title so the resolution is visible from the forum
-  // index, not just by opening the post. Bot needs Manage Threads in the
-  // forum channel — failures here are non-fatal.
+  // Title prefix is idempotent (alreadyMarked check), so it's safe to run on
+  // every sweep. That lets us retroactively flag threads whose closure was
+  // announced before this rename feature shipped.
   if (channel.isThread?.()) {
     const prefix = issue.state_reason === 'not_planned' ? '(CLOSED) ' : '(FIXED) ';
     const currentName = channel.name || '';
@@ -74,22 +77,24 @@ async function announceClosure(client, supabase, issue) {
       const newName = (prefix + currentName).slice(0, 100); // Discord caps thread names at 100 chars
       try {
         await channel.setName(newName);
+        console.log(`[closures] renamed thread for #${issue.number} → "${newName}"`);
       } catch (err) {
         console.warn(`[closures] could not rename thread ${row.discord_channel_id}:`, err.message);
       }
     }
   }
 
-  const { error: updateError } = await supabase
-    .from('discord_feedback_map')
-    .update({ closure_announced_at: new Date().toISOString() })
-    .eq('discord_message_id', row.discord_message_id);
-  if (updateError) {
-    console.error(`[closures] failed to stamp closure for #${issue.number}:`, updateError.message);
-    return;
+  if (!alreadyAnnounced) {
+    const { error: updateError } = await supabase
+      .from('discord_feedback_map')
+      .update({ closure_announced_at: new Date().toISOString() })
+      .eq('discord_message_id', row.discord_message_id);
+    if (updateError) {
+      console.error(`[closures] failed to stamp closure for #${issue.number}:`, updateError.message);
+      return;
+    }
+    console.log(`[closures] announced closure of #${issue.number} in channel ${row.discord_channel_id}`);
   }
-
-  console.log(`[closures] announced closure of #${issue.number} in channel ${row.discord_channel_id}`);
 }
 
 async function runClosureSweep(client) {
