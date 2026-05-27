@@ -117,7 +117,9 @@ const getRaidTierOrder = (tierName: string): number => {
   return order[tierName] || 999
 }
 
-export default function LootSettingsContent() {
+export default function LootSettingsContent({
+  serverHeading,
+}: { serverHeading?: React.ReactNode } = {}) {
   const [lootItems, setLootItems] = useState<LootItem[]>([])
   const [classes, setClasses] = useState<WowClass[]>([])
   const [classSpecs, setClassSpecs] = useState<ClassSpec[]>([])
@@ -1311,17 +1313,37 @@ export default function LootSettingsContent() {
     return filteredItems.slice(startIndex, endIndex)
   }, [filteredItems, startIndex, endIndex])
 
+  // Use the server-rendered heading on initial paint; switch to the dynamic
+  // version once the user navigates tabs so the subtitle stays in sync. Initial
+  // render produces the same HTML as the server (viewMode defaults to 'items')
+  // so hydration matches.
+  const dynamicHeadingBlock = (
+    <div>
+      <Heading level={1}>Loot Management</Heading>
+      <p className="text-muted-foreground mt-1 text-base">
+        {viewMode === 'items'
+          ? 'Manage loot items and configure classifications'
+          : viewMode === 'donations'
+            ? 'Log bank donations and credit raiders'
+            : 'Set role, class and individual raider priorities'}
+      </p>
+    </div>
+  )
+  const headingBlock = viewMode === 'items' ? (serverHeading ?? dynamicHeadingBlock) : dynamicHeadingBlock
+
   if (loading) {
-    return <LootSettingsPageSkeleton />
+    return (
+      <div className="p-4 sm:p-6 lg:p-8 space-y-6 font-poppins">
+        {headingBlock}
+        <LootSettingsPageSkeleton />
+      </div>
+    )
   }
 
   if (error) {
     return (
       <div className="p-4 sm:p-6 lg:p-8 space-y-6 font-poppins">
-        <div>
-          <Heading level={1}>Loot Management</Heading>
-          <p className="text-muted-foreground mt-1 text-base">Manage loot items and configure classifications</p>
-        </div>
+        {headingBlock}
         <ErrorState
           message={error}
           onRetry={() => window.location.reload()}
@@ -1337,16 +1359,7 @@ export default function LootSettingsContent() {
       <div className="p-4 sm:p-6 lg:p-8 space-y-6 font-poppins">
         {/* Header with Tabs and Settings Button */}
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-          <div>
-            <Heading level={1}>Loot Management</Heading>
-            <p className="text-muted-foreground mt-1 text-base">
-              {viewMode === 'items'
-                ? 'Manage loot items and configure classifications'
-                : viewMode === 'donations'
-                  ? 'Log bank donations and credit raiders'
-                  : 'Set role, class and individual raider priorities'}
-            </p>
-          </div>
+          {headingBlock}
 
           <div className="flex items-center gap-3">
             {/* Tabs */}
