@@ -1,5 +1,6 @@
 'use client'
 
+import { memo } from 'react'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { StickyNote01Icon } from '@hugeicons/core-free-icons'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -34,7 +35,7 @@ const ROLE_GROUP_OPTIONS = [
   { id: 'role:caster', label: 'All caster DPS', isRoleGroup: true },
 ]
 
-export function ItemRow({
+function ItemRowInner({
   item,
   specs,
   note,
@@ -185,3 +186,5 @@ export function ItemRow({
     </tr>
   )
 }
+
+export const ItemRow = memo(ItemRowInner)

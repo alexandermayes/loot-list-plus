@@ -2,6 +2,7 @@
 
 import { createClient } from '@/utils/supabase/client'
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
+import nextDynamic from 'next/dynamic'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useGuildContext } from '@/app/contexts/GuildContext'
@@ -22,9 +23,18 @@ import { ErrorState } from '@/components/ui/error-state'
 import { refreshWowheadTooltips } from '@/lib/wowhead'
 import PriorityListTab from './PriorityListTab'
 import DonationsTab from './DonationsTab'
-import { SettingsModal } from './SettingsModal'
-import { NotesModal } from './NotesModal'
 import { ItemRow } from './ItemRow'
+
+// Modals are lazy-loaded so their JS doesn't ship in the initial bundle.
+// Combined with conditional render below, each chunk fetches on first open.
+const SettingsModal = nextDynamic(
+  () => import('./SettingsModal').then((m) => m.SettingsModal),
+  { ssr: false }
+)
+const NotesModal = nextDynamic(
+  () => import('./NotesModal').then((m) => m.NotesModal),
+  { ssr: false }
+)
 import { SegmentedControl } from '@/components/ui/segmented-control'
 import { useConfirm } from '@/components/ui/confirm-modal'
 import { trackClientEvent } from '@/utils/analytics/client'
@@ -254,6 +264,14 @@ export default function LootSettingsContent({
   const { activeGuild, activeMember, loading: guildLoading, hasPermission } = useGuildContext()
   const { showNotification } = useNotification()
   const { confirm, ConfirmDialog } = useConfirm()
+
+  // Latest-state snapshot read by stable action handlers below. Keeps itemSpecs
+  // out of useCallback deps so a single spec edit doesn't recreate every handler
+  // and defeat React.memo on ItemRow.
+  const latestRef = useRef({ itemSpecs })
+  useEffect(() => {
+    latestRef.current = { itemSpecs }
+  })
 
   // Check if settings have unsaved changes
   const hasSettingsChanges = initialSettings !== null && (
@@ -690,7 +708,7 @@ export default function LootSettingsContent({
   }
 
   /** Server-side loot item update — bypasses RLS via service role after officer permission check */
-  const updateLootItem = async (itemId: string, updates: Record<string, unknown>): Promise<boolean> => {
+  const updateLootItem = useCallback(async (itemId: string, updates: Record<string, unknown>): Promise<boolean> => {
     if (!activeGuild?.id) return false
 
     const res = await fetch('/api/loot-items', {
@@ -706,9 +724,9 @@ export default function LootSettingsContent({
     }
 
     return true
-  }
+  }, [activeGuild?.id, showNotification])
 
-  const toggleLootCouncil = async (itemId: string, currentStatus: boolean) => {
+  const toggleLootCouncil = useCallback(async (itemId: string, currentStatus: boolean) => {
     const success = await updateLootItem(itemId, { is_loot_council: !currentStatus })
     if (!success) return
 
@@ -716,18 +734,18 @@ export default function LootSettingsContent({
       item.id === itemId ? { ...item, is_loot_council: !currentStatus } : item
     ))
     showNotification('success', `Item ${!currentStatus ? 'marked as' : 'removed from'} Loot Council`)
-  }
+  }, [updateLootItem, showNotification])
 
-  const toggleAvailability = async (itemId: string, currentStatus: boolean) => {
+  const toggleAvailability = useCallback(async (itemId: string, currentStatus: boolean) => {
     const success = await updateLootItem(itemId, { is_available: !currentStatus })
     if (!success) return
 
     setLootItems(items => items.map(item =>
       item.id === itemId ? { ...item, is_available: !currentStatus } : item
     ))
-  }
+  }, [updateLootItem])
 
-  const updateClassification = async (itemId: string, classification: string) => {
+  const updateClassification = useCallback(async (itemId: string, classification: string) => {
     const allocationCost = (classification === 'Reserved' || classification === 'Limited') ? 1 : 0
     const success = await updateLootItem(itemId, { classification, allocation_cost: allocationCost })
     if (!success) return
@@ -735,9 +753,9 @@ export default function LootSettingsContent({
     setLootItems(items => items.map(item =>
       item.id === itemId ? { ...item, classification, allocation_cost: allocationCost } : item
     ))
-  }
+  }, [updateLootItem])
 
-  const updateNotes = async (itemId: string, notes: string): Promise<boolean> => {
+  const updateNotes = useCallback(async (itemId: string, notes: string): Promise<boolean> => {
     const success = await updateLootItem(itemId, { officer_notes: notes || null })
     if (!success) return false
 
@@ -747,10 +765,10 @@ export default function LootSettingsContent({
     ))
     showNotification('success', 'Note saved')
     return true
-  }
+  }, [updateLootItem, showNotification])
 
   // Add a spec to an item (immediately saves to database)
-  const addSpec = async (itemId: string, specIdOrRole: string, specType: 'primary' | 'secondary') => {
+  const addSpec = useCallback(async (itemId: string, specIdOrRole: string, specType: 'primary' | 'secondary') => {
     // Check if this is "all" selection
     if (specIdOrRole === 'all') {
       await addAllSpecs(itemId, specType)
@@ -767,8 +785,9 @@ export default function LootSettingsContent({
     const spec = classSpecs.find(s => s.id === specIdOrRole)
     if (!spec) return
 
-    // Check if spec already exists in local state
-    const currentSpecs = itemSpecs[itemId] || { primary: new Set(), secondary: new Set() }
+    // Check if spec already exists in local state (read latest via ref so the
+    // useCallback can stay out of itemSpecs deps and ItemRow.memo holds up)
+    const currentSpecs = latestRef.current.itemSpecs[itemId] || { primary: new Set<string>(), secondary: new Set<string>() }
     if (currentSpecs[specType].has(specIdOrRole)) {
       return
     }
@@ -842,10 +861,12 @@ export default function LootSettingsContent({
         }
       }
     })
-  }
+    // addAllSpecs / addRoleSpecs are stable via useCallback below (forward refs).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [classSpecs, supabase, showNotification])
 
   // Add all specs of a role to an item
-  const addRoleSpecs = async (itemId: string, role: 'tank' | 'healer' | 'physical' | 'caster', specType: 'primary' | 'secondary') => {
+  const addRoleSpecs = useCallback(async (itemId: string, role: 'tank' | 'healer' | 'physical' | 'caster', specType: 'primary' | 'secondary') => {
     const { getSpecsForRole } = await import('@/domain/loot/spec-role-mapping')
     const roleSpecNames = getSpecsForRole(role)
 
@@ -854,12 +875,13 @@ export default function LootSettingsContent({
       roleSpecNames.includes(spec.combined_name || spec.name)
     )
 
-    // Get current specs to avoid duplicates
-    const currentSpecs = itemSpecs[itemId]?.[specType] || new Set()
+    // Get current specs to avoid duplicates (latest snapshot via ref)
+    const liveItemSpecs = latestRef.current.itemSpecs
+    const currentSpecs = liveItemSpecs[itemId]?.[specType] || new Set<string>()
 
     // Check opposite type - skip specs that are already in opposite type
     const oppositeType = specType === 'primary' ? 'secondary' : 'primary'
-    const oppositeSpecs = itemSpecs[itemId]?.[oppositeType] || new Set()
+    const oppositeSpecs = liveItemSpecs[itemId]?.[oppositeType] || new Set<string>()
 
     // Filter out specs that are in the opposite type (preserve existing selections)
     const specsNotInOpposite = specsToAdd.filter(spec => !oppositeSpecs.has(spec.id))
@@ -909,14 +931,15 @@ export default function LootSettingsContent({
         }
       }
     })
-  }
+  }, [classSpecs, supabase])
 
   // Add all specs to an item
-  const addAllSpecs = async (itemId: string, specType: 'primary' | 'secondary') => {
-    // Get current specs
-    const currentSpecs = itemSpecs[itemId]?.[specType] || new Set()
+  const addAllSpecs = useCallback(async (itemId: string, specType: 'primary' | 'secondary') => {
+    // Get current specs (latest snapshot via ref)
+    const liveItemSpecs = latestRef.current.itemSpecs
+    const currentSpecs = liveItemSpecs[itemId]?.[specType] || new Set<string>()
     const oppositeType = specType === 'primary' ? 'secondary' : 'primary'
-    const oppositeSpecs = itemSpecs[itemId]?.[oppositeType] || new Set()
+    const oppositeSpecs = liveItemSpecs[itemId]?.[oppositeType] || new Set<string>()
 
     // When adding "all" to a type, we add all specs EXCEPT those in the opposite type
     // This preserves the user's opposite type selections
@@ -967,10 +990,10 @@ export default function LootSettingsContent({
         }
       }
     })
-  }
+  }, [classSpecs, supabase])
 
   // Remove a spec from an item (immediately deletes from database)
-  const removeSpec = async (itemId: string, specIdOrRole: string, specType: 'primary' | 'secondary') => {
+  const removeSpec = useCallback(async (itemId: string, specIdOrRole: string, specType: 'primary' | 'secondary') => {
     // Check if this is "all" selection
     if (specIdOrRole === 'all') {
       await removeAllSpecs(itemId, specType)
@@ -1015,10 +1038,10 @@ export default function LootSettingsContent({
         }
       }
     })
-  }
+  }, [supabase])
 
   // Remove all specs of a role from an item
-  const removeRoleSpecs = async (itemId: string, role: 'tank' | 'healer' | 'physical' | 'caster', specType: 'primary' | 'secondary') => {
+  const removeRoleSpecs = useCallback(async (itemId: string, role: 'tank' | 'healer' | 'physical' | 'caster', specType: 'primary' | 'secondary') => {
     const { getSpecsForRole } = await import('@/domain/loot/spec-role-mapping')
     const roleSpecNames = getSpecsForRole(role)
 
@@ -1027,8 +1050,8 @@ export default function LootSettingsContent({
       roleSpecNames.includes(spec.combined_name || spec.name)
     )
 
-    // Get current specs for this item/type
-    const currentSpecs = itemSpecs[itemId]?.[specType] || new Set()
+    // Get current specs for this item/type (latest snapshot via ref)
+    const currentSpecs = latestRef.current.itemSpecs[itemId]?.[specType] || new Set<string>()
 
     // Only remove specs that are currently selected
     const specIdsToRemove = specsToRemove
@@ -1068,10 +1091,10 @@ export default function LootSettingsContent({
         }
       }
     })
-  }
+  }, [classSpecs, supabase])
 
   // Remove all specs of a type from an item (batch delete)
-  const removeAllSpecs = async (itemId: string, specType: 'primary' | 'secondary') => {
+  const removeAllSpecs = useCallback(async (itemId: string, specType: 'primary' | 'secondary') => {
     // Batch delete from database
     const { error } = await supabase
       .from('loot_item_classes')
@@ -1098,7 +1121,14 @@ export default function LootSettingsContent({
         code: error.code
       })
     }
-  }
+  }, [supabase])
+
+  // Stable callback so ItemRow.memo holds (the previous inline arrow rebuilt
+  // on every render and re-rendered every row on any state change).
+  const openNotesModal = useCallback((item: LootItem, currentNote: string) => {
+    setNotesModalItem(item)
+    setNotesModalValue(currentNote)
+  }, [])
 
   // Toggle a role for an item (immediately updates database)
   const toggleRole = async (itemId: string, role: string) => {
@@ -1578,10 +1608,7 @@ export default function LootSettingsContent({
                     onAddSpec={addSpec}
                     onRemoveSpec={removeSpec}
                     onRemoveAllSpecs={removeAllSpecs}
-                    onOpenNotes={(item, currentNote) => {
-                      setNotesModalItem(item)
-                      setNotesModalValue(currentNote)
-                    }}
+                    onOpenNotes={openNotesModal}
                     getSpecName={getSpecName}
                     getSpecColor={getSpecColor}
                     getConsolidatedSpecNames={getConsolidatedSpecNames}
@@ -1739,30 +1766,34 @@ export default function LootSettingsContent({
         )}
       </div>
 
-      <SettingsModal
-        open={showSettingsModal}
-        onClose={() => setShowSettingsModal(false)}
-        settings={settings}
-        setSettings={setSettings}
-        saveStatus={settingsSaveStatus}
-        advancedExpanded={advancedExpanded}
-        setAdvancedExpanded={setAdvancedExpanded}
-        guildRoles={guildRoles}
-      />
+      {showSettingsModal && (
+        <SettingsModal
+          open={showSettingsModal}
+          onClose={() => setShowSettingsModal(false)}
+          settings={settings}
+          setSettings={setSettings}
+          saveStatus={settingsSaveStatus}
+          advancedExpanded={advancedExpanded}
+          setAdvancedExpanded={setAdvancedExpanded}
+          guildRoles={guildRoles}
+        />
+      )}
 
-      <NotesModal
-        item={notesModalItem}
-        value={notesModalValue}
-        saving={savingNotes}
-        onValueChange={setNotesModalValue}
-        onClose={() => setNotesModalItem(null)}
-        onSave={async (itemId, value) => {
-          setSavingNotes(true)
-          const success = await updateNotes(itemId, value)
-          setSavingNotes(false)
-          return success
-        }}
-      />
+      {notesModalItem && (
+        <NotesModal
+          item={notesModalItem}
+          value={notesModalValue}
+          saving={savingNotes}
+          onValueChange={setNotesModalValue}
+          onClose={() => setNotesModalItem(null)}
+          onSave={async (itemId, value) => {
+            setSavingNotes(true)
+            const success = await updateNotes(itemId, value)
+            setSavingNotes(false)
+            return success
+          }}
+        />
+      )}
 
       {ConfirmDialog}
     </ExpansionGuard>
