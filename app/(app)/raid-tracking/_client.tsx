@@ -33,19 +33,8 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { useGuildContext } from '@/app/contexts/GuildContext'
 import { useNotification } from '@/app/contexts/NotificationContext'
 import ItemLink from '@/app/components/ItemLink'
-import {
-  Modal,
-  ModalHeader,
-  ModalTitle,
-  ModalDescription,
-  ModalBody,
-  ModalFooter,
-} from '@/components/ui/modal'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
-import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
 import { useConfirm } from '@/components/ui/confirm-modal'
 import { SegmentedControl } from '@/components/ui/segmented-control'
@@ -56,37 +45,23 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Select } from '@/components/ui/select'
-import { EmptyState } from '@/components/ui/empty-state'
-import { Search01Icon } from '@hugeicons/core-free-icons'
 import { trackClientEvent } from '@/utils/analytics/client'
 import { parseDate, toDateString } from '@/utils/date'
 import { useRaidTeam } from '@/app/hooks/useRaidTeam'
 import { isDateScheduled } from '@/domain/raid-team/schedule-history'
 import { resolveRaidDays } from '@/domain/raid-team/settings'
 import { TeamSelector } from '@/app/components/TeamSelector'
-
-interface Member {
-  character_id: string
-  user_id: string
-  character_name: string
-  class_name: string
-  class_color: string
-  role: string
-}
+import type { Member, RaidLootEntry, LootItem } from './components/types'
+import { SkipDayModal } from './components/SkipDayModal'
+import { BonusRaidModal } from './components/BonusRaidModal'
+import { ReassignLootModal } from './components/ReassignLootModal'
+import { LootItemSelectionModal } from './components/LootItemSelectionModal'
+import { AttendeeResolutionModal } from './components/AttendeeResolutionModal'
+import { ImportModal } from './components/ImportModal'
 
 interface UnlinkedAttendee {
   character_name: string
   status: AttendanceStatus
-}
-
-interface RaidLootEntry {
-  id: string
-  character_name: string
-  character_class_color: string
-  item_name: string
-  item_wowhead_id: number
-  awarded_date: string
 }
 
 interface RaidEvent {
@@ -138,7 +113,7 @@ export default function RaidTrackingPage() {
   const [initialLootData, setInitialLootData] = useState('')
   const [initialSignupsData, setInitialSignupsData] = useState('')
 
-  const [lootItems, setLootItems] = useState<{ id: string, name: string, wowhead_id: number, boss_name: string, raid_tier_id: string }[]>([])
+  const [lootItems, setLootItems] = useState<LootItem[]>([])
   const [pendingLootImports, setPendingLootImports] = useState<{ date: string, itemId: number, characterName: string, matchedItem?: any, matchedCharacter?: any, needsItemSelection?: boolean }[]>([])
   const [showLootSelectionModal, setShowLootSelectionModal] = useState<{ index: number, itemId: number, characterName: string } | null>(null)
   const [lootSearchQuery, setLootSearchQuery] = useState('')
@@ -2958,409 +2933,84 @@ export default function RaidTrackingPage() {
         <LootHistoryTab />
       )}
 
-      {/* Bonus Raid Day Modal */}
-      <Modal open={showBonusModal} onClose={() => !creatingBonus && setShowBonusModal(false)} size="sm">
-        <ModalHeader onClose={() => !creatingBonus && setShowBonusModal(false)}>
-          <ModalTitle>Add bonus raid day</ModalTitle>
-          <ModalDescription>
-            Track an off-schedule raid. Attendance and loot count like a regular raid day.
-            {activeTeamId
-              ? ' Tied to the selected team.'
-              : hasTeams
-                ? ' No team selected, so this event will be unassigned.'
-                : ''}
-          </ModalDescription>
-        </ModalHeader>
-        <ModalBody className="space-y-4">
-          <div>
-            <Label className="mb-2">Raid date</Label>
-            <Input
-              type="date"
-              variant="rounded"
-              size="sm"
-              value={bonusDate}
-              max={today}
-              onChange={e => setBonusDate(e.target.value)}
-            />
-          </div>
-          <div>
-            <Label className="mb-2">Notes (optional)</Label>
-            <Input
-              variant="rounded"
-              size="sm"
-              value={bonusNotes}
-              onChange={e => setBonusNotes(e.target.value)}
-              placeholder="e.g., Heroic split run, Saturday alt night..."
-            />
-          </div>
-        </ModalBody>
-        <ModalFooter>
-          <Button variant="outline" onClick={() => setShowBonusModal(false)} disabled={creatingBonus}>
-            Cancel
-          </Button>
-          <Button
-            variant="primary"
-            onClick={submitBonusRaidDay}
-            loading={creatingBonus}
-            disabled={!bonusDate || creatingBonus}
-          >
-            Add raid day
-          </Button>
-        </ModalFooter>
-      </Modal>
+      <BonusRaidModal
+        open={showBonusModal}
+        date={bonusDate}
+        notes={bonusNotes}
+        maxDate={today}
+        creating={creatingBonus}
+        activeTeamId={activeTeamId}
+        hasTeams={hasTeams}
+        onDateChange={setBonusDate}
+        onNotesChange={setBonusNotes}
+        onCancel={() => setShowBonusModal(false)}
+        onSubmit={submitBonusRaidDay}
+      />
 
-      {/* Skip Day Modal */}
-      <Modal open={!!showSkipModal} onClose={() => setShowSkipModal(null)} size="sm">
-        <ModalHeader onClose={() => setShowSkipModal(null)}>
-          <ModalTitle>Skip raid day</ModalTitle>
-          {showSkipModal && (
-            <ModalDescription>
-              {parseDate(showSkipModal.date).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
-            </ModalDescription>
-          )}
-        </ModalHeader>
-        <ModalBody>
-          <Label className="mb-2">Reason for skipping</Label>
-          <Input
-            variant="rounded"
-            size="sm"
-            value={skipReason}
-            onChange={e => setSkipReason(e.target.value)}
-            placeholder="e.g., Holiday, Cancelled, Not enough signups..."
-          />
-        </ModalBody>
-        <ModalFooter>
-          <Button variant="outline" onClick={() => setShowSkipModal(null)}>
-            Cancel
-          </Button>
-          <Button variant="primary" onClick={confirmSkipDay}>
-            Skip day
-          </Button>
-        </ModalFooter>
-      </Modal>
+      <SkipDayModal
+        open={!!showSkipModal}
+        date={showSkipModal?.date ?? null}
+        reason={skipReason}
+        onReasonChange={setSkipReason}
+        onCancel={() => setShowSkipModal(null)}
+        onConfirm={confirmSkipDay}
+      />
 
-      {/* Import Modal - Unified Form */}
-      <Modal
-        open={!!showImportModal}
+      <ImportModal
+        target={showImportModal}
+        attendanceData={attendanceData}
+        lootData={lootData}
+        signupsData={signupsData}
+        initialAttendanceData={initialAttendanceData}
+        initialLootData={initialLootData}
+        initialSignupsData={initialSignupsData}
+        attendancePreview={attendancePreview}
+        lootPreview={lootPreview}
+        signupsPreview={signupsPreview}
+        importing={importing}
+        useSignups={!!guildSettings?.use_signups}
+        onAttendanceChange={setAttendanceData}
+        onLootChange={setLootData}
+        onSignupsChange={setSignupsData}
         onClose={handleCloseImportModal}
-        size="xl"
-      >
-        <ModalHeader onClose={handleCloseImportModal}>
-          <ModalTitle>{showImportModal?.isEdit ? 'Edit raid data' : 'Import raid data'}</ModalTitle>
-          {showImportModal && (
-            <ModalDescription>
-              {parseDate(showImportModal.date).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
-            </ModalDescription>
-          )}
-        </ModalHeader>
-        <ModalBody className="space-y-6">
-          {/* Attendance & Loot Side by Side */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-            {/* Attendance Section */}
-            <div className="space-y-3">
-              <div>
-                <Label className="text-md font-semibold">
-                  Attendance <span className="text-accent">*</span>
-                </Label>
-                <p className="text-muted-foreground text-sm">Who attended this raid day</p>
-              </div>
-              <Textarea
-                variant="rounded"
-                value={attendanceData}
-                onChange={e => setAttendanceData(e.target.value)}
-                placeholder={"Paste character names (one per line, comma, or semicolon separated)\n\nZev\nDeny\nCheck"}
-                className="h-44 font-mono resize-none"
-              />
-              {attendancePreview && (
-                  <div className="flex items-center gap-2 text-sm">
-                    <span className="text-success">{attendancePreview.matched} matched</span>
-                    {attendancePreview.aliasMatched > 0 && (
-                      <span className="text-accent">{attendancePreview.aliasMatched} via alias</span>
-                    )}
-                    {attendancePreview.unmatched > 0 && (
-                      <span className="text-warning">{attendancePreview.unmatched} unmatched</span>
-                    )}
-                  </div>
-              )}
-            </div>
+        onClearFields={() => {
+          setAttendanceData('')
+          setLootData('')
+          setSignupsData('')
+        }}
+        onClearSavedData={clearRaidData}
+        onImport={importAllRaidData}
+      />
 
-            {/* Loot Section */}
-            <div className="space-y-3">
-              <div>
-                <Label className="text-md font-semibold">
-                  Loot <span className="text-accent">*</span>
-                </Label>
-                <p className="text-muted-foreground text-sm">Gargul export format</p>
-              </div>
-              <Textarea
-                variant="rounded"
-                value={lootData}
-                onChange={e => setLootData(e.target.value)}
-                placeholder={"DATE;[ITEM_ID];CHARACTER\n\n12/15/2024;[16859];Zev\n12/15/2024;[18203];Deny\n12/15/2024;[17113];Check"}
-                className="h-44 font-mono resize-none"
-              />
-              {lootPreview && (
-                  <div className="flex items-center gap-2 text-sm">
-                    {lootPreview.linked > 0 && (
-                      <span className="text-success">{lootPreview.linked} linked</span>
-                    )}
-                    {lootPreview.unlinked > 0 && (
-                      <span className="text-warning">{lootPreview.unlinked} unlinked</span>
-                    )}
-                    {lootPreview.failed > 0 && (
-                      <span className="text-destructive">{lootPreview.failed} failed</span>
-                    )}
-                  </div>
-              )}
-            </div>
-          </div>
+      <LootItemSelectionModal
+        target={showLootSelectionModal}
+        searchQuery={lootSearchQuery}
+        filteredItems={filteredLootItems}
+        onSearchQueryChange={setLootSearchQuery}
+        onSelect={handleLootItemSelection}
+        onSkip={skipLootItemSelection}
+      />
 
-          {/* Signups Section - Only if enabled */}
-          {guildSettings?.use_signups && (
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label className="text-md font-semibold">
-                    Signups <span className="text-muted-foreground text-sm font-normal">(optional)</span>
-                  </Label>
-                  <p className="text-muted-foreground text-sm">Who signed up for this raid</p>
-                </div>
-              </div>
-              <Textarea
-                variant="rounded"
-                value={signupsData}
-                onChange={e => setSignupsData(e.target.value)}
-                placeholder={"Paste character names (one per line, comma, or semicolon separated)\n\nZev\nDeny\nCheck"}
-                className="h-24 font-mono resize-none"
-              />
-              {signupsPreview && (
-                  <div className="flex items-center gap-2 text-sm">
-                    <span className="text-success">{signupsPreview.matched} matched</span>
-                    {signupsPreview.aliasMatched > 0 && (
-                      <span className="text-accent">{signupsPreview.aliasMatched} via alias</span>
-                    )}
-                    {signupsPreview.unmatched > 0 && (
-                      <span className="text-warning">{signupsPreview.unmatched} unmatched</span>
-                    )}
-                  </div>
-              )}
-            </div>
-          )}
-        </ModalBody>
-        <ModalFooter className="flex justify-between">
-          <div className="flex gap-2">
-            <Button
-              variant="ghost"
-              onClick={() => {
-                setAttendanceData('')
-                setLootData('')
-                setSignupsData('')
-              }}
-              disabled={importing || (!attendanceData.trim() && !lootData.trim() && !signupsData.trim())}
-            >
-              Clear fields
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={clearRaidData}
-              disabled={importing}
-            >
-              Clear saved data
-            </Button>
-          </div>
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              onClick={handleCloseImportModal}
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="primary"
-              onClick={importAllRaidData}
-              disabled={importing || (!attendanceData.trim() && !lootData.trim()) || (showImportModal?.isEdit && attendanceData === initialAttendanceData && lootData === initialLootData && signupsData === initialSignupsData)}
-              loading={importing}
-            >
-              {showImportModal?.isEdit ? 'Save changes' : 'Import all'}
-            </Button>
-          </div>
-        </ModalFooter>
-      </Modal>
+      <AttendeeResolutionModal
+        target={showAttendeeResolutionModal}
+        totalUnmatched={unmatchedAttendeeNames.length}
+        searchQuery={attendeeSearchQuery}
+        filteredMembers={filteredResolutionMembers}
+        rememberAlias={rememberAlias}
+        onSearchQueryChange={setAttendeeSearchQuery}
+        onResolve={handleAttendeeResolution}
+        onSkip={skipAttendeeResolution}
+        onSkipAll={skipAllAttendeeResolution}
+        onCancel={cancelAttendeeResolution}
+        onRememberAliasChange={setRememberAlias}
+      />
 
-      {/* Loot Item Selection Modal */}
-      <Modal open={!!showLootSelectionModal} onClose={skipLootItemSelection} size="default" zIndex={60}>
-        <ModalHeader>
-          <ModalTitle>Item not found</ModalTitle>
-          {showLootSelectionModal && (
-            <ModalDescription>
-              Could not find item ID <span className="text-accent font-mono">[{showLootSelectionModal.itemId}]</span> for{' '}
-              <span className="text-foreground font-medium">{showLootSelectionModal.characterName}</span>
-            </ModalDescription>
-          )}
-        </ModalHeader>
-        <ModalBody className="space-y-4">
-          <Input
-            variant="rounded"
-            size="sm"
-            value={lootSearchQuery}
-            onChange={e => setLootSearchQuery(e.target.value)}
-            placeholder="Search loot tables..."
-            autoFocus
-          />
-
-          <div className="max-h-64 overflow-y-auto space-y-1">
-            {filteredLootItems.slice(0, 20).map(item => (
-                <Button
-                  key={item.id}
-                  variant="ghost"
-                  onClick={() => handleLootItemSelection(item)}
-                  className="w-full px-4 py-3 h-auto bg-background-elevated hover:bg-muted border border-border rounded-xl text-left justify-start"
-                >
-                  <div>
-                    <p className="text-foreground text-sm font-medium">{item.name}</p>
-                    <p className="text-muted-foreground text-xs">{item.boss_name} • ID: {item.wowhead_id}</p>
-                  </div>
-                </Button>
-              ))}
-            {filteredLootItems.length === 0 && (
-              <EmptyState
-                icon={Search01Icon}
-                title="No items found"
-                description="Try a different search term."
-                size="compact"
-              />
-            )}
-          </div>
-        </ModalBody>
-        <ModalFooter>
-          <Button variant="outline" onClick={skipLootItemSelection}>
-            Skip this item
-          </Button>
-        </ModalFooter>
-      </Modal>
-
-      {/* Attendee Resolution Modal */}
-      <Modal open={!!showAttendeeResolutionModal} onClose={cancelAttendeeResolution} size="default" zIndex={60}>
-        <ModalHeader onClose={cancelAttendeeResolution}>
-          <ModalTitle>Unmatched attendee</ModalTitle>
-          {showAttendeeResolutionModal && (
-            <ModalDescription>
-              Assign <span className="text-accent font-medium">{showAttendeeResolutionModal.name}</span> to a guild member
-              <span className="text-muted-foreground"> ({showAttendeeResolutionModal.index + 1}/{unmatchedAttendeeNames.length})</span>
-            </ModalDescription>
-          )}
-        </ModalHeader>
-        <ModalBody className="space-y-4">
-          <Input
-            variant="rounded"
-            size="sm"
-            value={attendeeSearchQuery}
-            onChange={e => setAttendeeSearchQuery(e.target.value)}
-            placeholder="Search raiders..."
-            autoFocus
-          />
-
-          <div className={`overflow-y-auto space-y-1 transition-[max-height] duration-200 ${attendeeSearchQuery.length > 0 ? 'max-h-[400px]' : 'max-h-64'}`}>
-            {filteredResolutionMembers.length > 0 ? filteredResolutionMembers.map(m => (
-                <Button
-                  key={m.character_id}
-                  variant="ghost"
-                  onClick={() => handleAttendeeResolution(m)}
-                  className="w-full justify-between"
-                >
-                  <span className="text-sm font-medium" style={{ color: m.class_color }}>
-                    {m.character_name}
-                  </span>
-                  <span className="text-xs text-muted-foreground">{m.class_name}</span>
-                </Button>
-              )) : (
-                <EmptyState
-                  icon={Search01Icon}
-                  title="No members found"
-                  description="Try a different search term."
-                  size="compact"
-                />
-              )}
-          </div>
-
-          <div className="flex items-center gap-2 pt-1">
-            <Checkbox
-              id="remember-alias"
-              checked={rememberAlias}
-              onCheckedChange={(checked) => setRememberAlias(checked === true)}
-            />
-            <Label htmlFor="remember-alias" className="text-sm text-muted-foreground cursor-pointer">
-              Remember this alias for future imports
-            </Label>
-          </div>
-        </ModalBody>
-        <ModalFooter className="flex justify-between">
-          <Button variant="ghost" onClick={cancelAttendeeResolution}>
-            Cancel import
-          </Button>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={skipAttendeeResolution}>
-              Skip this name
-            </Button>
-            <Button variant="outline" onClick={skipAllAttendeeResolution}>
-              Skip all remaining
-            </Button>
-          </div>
-        </ModalFooter>
-      </Modal>
-
-      {/* Reassign Loot Modal */}
-      <Modal open={!!reassignModal} onClose={() => setReassignModal(null)} size="sm">
-        <ModalHeader onClose={() => setReassignModal(null)}>
-          <ModalTitle>Reassign loot</ModalTitle>
-          <ModalDescription>
-            {reassignModal?.lootEntries.length === 1 ? (
-              <ItemLink
-                name={reassignModal.lootEntries[0].item_name}
-                wowheadId={reassignModal.lootEntries[0].item_wowhead_id}
-              />
-            ) : (
-              <span>{reassignModal?.lootEntries.length} items from {reassignModal?.currentMember.character_name}</span>
-            )}
-          </ModalDescription>
-        </ModalHeader>
-        <ModalBody>
-          <div className="space-y-4">
-            {reassignModal?.lootEntries.map(loot => (
-              <div key={loot.id} className="space-y-2">
-                <div className="flex items-center gap-2 text-sm">
-                  <ItemLink name={loot.item_name} wowheadId={loot.item_wowhead_id} />
-                </div>
-                <Select
-                  variant="rounded"
-                  value=""
-                  onChange={(e) => {
-                    const member = members.find(m => m.character_id === e.target.value)
-                    if (member && reassignModal) {
-                      reassignLoot(loot.id, member.character_id, member.character_name)
-                    }
-                  }}
-                >
-                  <option value="" disabled>Select new owner...</option>
-                  {members
-                    .filter(m => m.character_id !== reassignModal?.currentMember.character_id)
-                    .map(m => (
-                      <option key={m.character_id} value={m.character_id}>
-                        {m.character_name} ({m.class_name})
-                      </option>
-                    ))
-                  }
-                </Select>
-              </div>
-            ))}
-          </div>
-        </ModalBody>
-        <ModalFooter>
-          <Button variant="outline" onClick={() => setReassignModal(null)}>
-            Cancel
-          </Button>
-        </ModalFooter>
-      </Modal>
+      <ReassignLootModal
+        target={reassignModal}
+        members={members}
+        onClose={() => setReassignModal(null)}
+        onReassign={reassignLoot}
+      />
 
       {ConfirmDialog}
     </div>
