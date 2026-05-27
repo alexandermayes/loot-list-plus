@@ -4,7 +4,7 @@ import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { verifyOfficerPermissions } from '@/utils/server-roles'
 import { trackApiError } from '@/utils/analytics/server'
-import { getAttendanceWindowEnd } from '@/domain/scoring'
+import { getAttendanceWindowEnd, resolveOwnedEvents } from '@/domain/scoring'
 import { toDateString } from '@/utils/date'
 import { deflateRawSync } from 'zlib'
 
@@ -207,17 +207,62 @@ export async function GET(request: NextRequest) {
     // so the addon's score preview matches the web (see computeAttendance).
     const { data: raidEvents } = await supabase
       .from('raid_events')
-      .select('id, raid_date')
+      .select('id, raid_date, raid_team_id, is_bonus')
       .eq('guild_id', guildId)
       .lte('raid_date', getAttendanceWindowEnd(toDateString(new Date()), (settings as { week_reset_day?: number | null } | null)?.week_reset_day))
       .order('raid_date', { ascending: false })
       .limit(settings?.rolling_attendance_weeks ? settings.rolling_attendance_weeks * 7 : 28)
 
-    const raidEventIds = raidEvents?.map(e => e.id) || []
+    const raidEventIds = (raidEvents || []).map(e => e.id)
     const { data: attendanceRecords } = await supabase
       .from('attendance_records')
       .select('character_id, raid_event_id, attended, signed_up, status')
       .in('raid_event_id', raidEventIds)
+
+    // Look up raid team membership per character for team-aware denominator.
+    const { data: teamMembers } = await supabase
+      .from('raid_team_members')
+      .select('character_id, raid_team_id')
+      .eq('guild_id', guildId)
+    const teamIdByCharacterId = new Map<string, string>()
+    for (const m of teamMembers ?? []) teamIdByCharacterId.set(m.character_id, m.raid_team_id)
+
+    // Pre-build per-character attendance summary using resolveOwnedEvents so
+    // the addon's in-game score preview matches the website. Each raider gets
+    // their own `totalRaids` (denominator restricted to their team + null
+    // events) and a filtered record set.
+    const recordsByCharacter = new Map<string, NonNullable<typeof attendanceRecords>>()
+    for (const rec of attendanceRecords || []) {
+      if (!rec.character_id) continue
+      const arr = recordsByCharacter.get(rec.character_id) ?? []
+      arr.push(rec)
+      recordsByCharacter.set(rec.character_id, arr)
+    }
+    const characterIds = new Set<string>([
+      ...(memberships ?? []).map(m => m.character_id),
+      ...recordsByCharacter.keys(),
+    ])
+    const allEvents = (raidEvents || []) as Array<{ id: string; raid_date: string; raid_team_id: string | null; is_bonus: boolean }>
+    const attendanceByCharacter: Record<string, {
+      records: Array<{ signed_up: boolean; attended: boolean; no_call_no_show: boolean }>
+      totalRaids: number
+    }> = {}
+    for (const cid of characterIds) {
+      const charRecords = recordsByCharacter.get(cid) ?? []
+      const recordEventIds = new Set(charRecords.map(r => r.raid_event_id))
+      const owned = resolveOwnedEvents(allEvents, recordEventIds, teamIdByCharacterId.get(cid) ?? null)
+      const ownedIds = new Set(owned.map(e => e.id))
+      attendanceByCharacter[cid] = {
+        totalRaids: owned.length,
+        records: charRecords
+          .filter(r => ownedIds.has(r.raid_event_id))
+          .map(r => ({
+            signed_up: r.signed_up || false,
+            attended: r.attended || false,
+            no_call_no_show: r.status === 'no_show',
+          })),
+      }
+    }
 
     // Debug: log data counts (v3)
     console.log('[addon/export-string] v3 Guild:', guild.name, 'Expansion:', expansion?.name, 'ExpID:', expansionId)
@@ -243,8 +288,7 @@ export async function GET(request: NextRequest) {
       submissions: submissions || [],
       priorities: priorities || [],
       blpData: blpData || [],
-      attendanceRecords: attendanceRecords || [],
-      totalRaids: raidEventIds.length,
+      attendanceByCharacter,
     })
 
     // Compress and encode
@@ -299,16 +343,20 @@ interface BuildPayloadArgs {
     priority_bonuses: { role: number; class: number; character: number }
   }>
   blpData: Array<{ character_id: string; loot_item_id: string; times_passed: number }>
-  attendanceRecords: Array<{
-    character_id: string; raid_event_id: string; attended: boolean;
-    signed_up: boolean; status: string
+  /**
+   * Pre-computed per-character attendance. The route handler resolves which
+   * events each raider owes (team-aware) and emits per-character `totalRaids`
+   * plus the filtered record set. The Lua score engine consumes this directly.
+   */
+  attendanceByCharacter: Record<string, {
+    records: Array<{ signed_up: boolean; attended: boolean; no_call_no_show: boolean }>
+    totalRaids: number
   }>
-  totalRaids: number
 }
 
 function buildExportPayload(args: BuildPayloadArgs) {
   const { guild, settings, expansion, lootItems, raidNameMap, memberships,
-          submissions, priorities, blpData, attendanceRecords, totalRaids } = args
+          submissions, priorities, blpData, attendanceByCharacter } = args
 
   // Build items array
   const items = lootItems.map(item => ({
@@ -389,23 +437,6 @@ function buildExportPayload(args: BuildPayloadArgs) {
     blpMap[b.character_id][b.loot_item_id] = b.times_passed
   }
 
-  // Build attendance summary per character
-  const attendanceByChar: Record<string, {
-    records: Array<{ signed_up: boolean; attended: boolean; no_call_no_show: boolean }>;
-    totalRaids: number;
-  }> = {}
-
-  for (const rec of attendanceRecords) {
-    if (!attendanceByChar[rec.character_id]) {
-      attendanceByChar[rec.character_id] = { records: [], totalRaids }
-    }
-    attendanceByChar[rec.character_id].records.push({
-      signed_up: rec.signed_up || false,
-      attended: rec.attended || false,
-      no_call_no_show: rec.status === 'no_show',
-    })
-  }
-
   return {
     guildId: guild.id,
     guildName: guild.name,
@@ -416,7 +447,7 @@ function buildExportPayload(args: BuildPayloadArgs) {
     members,
     priorities: prioritiesMap,
     blp: blpMap,
-    attendance: attendanceByChar,
+    attendance: attendanceByCharacter,
   }
 }
 // cache bust 1772786289

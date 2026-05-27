@@ -3,7 +3,7 @@ import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { verifyOfficerPermissions } from '@/utils/server-roles'
 import { trackApiError } from '@/utils/analytics/server'
-import { getAttendanceWindowEnd } from '@/domain/scoring'
+import { getAttendanceWindowEnd, resolveOwnedEvents } from '@/domain/scoring'
 import { toDateString } from '@/utils/date'
 
 /**
@@ -79,7 +79,7 @@ export async function GET(request: NextRequest) {
       // preview matches the web. `computeAttendance` already enforces this
       // on the web side; the addon consumes a pre-summarized payload, so the
       // filter has to happen here before we count and emit records.
-      supabase.from('raid_events').select('id, raid_date').eq('guild_id', guildId)
+      supabase.from('raid_events').select('id, raid_date, raid_team_id, is_bonus').eq('guild_id', guildId)
         .lte('raid_date', getAttendanceWindowEnd(toDateString(new Date()), settingsResult.data?.week_reset_day))
         .order('raid_date', { ascending: false }).limit(settingsResult.data?.rolling_attendance_weeks ? settingsResult.data.rolling_attendance_weeks * 7 : 28),
     ])
@@ -96,6 +96,14 @@ export async function GET(request: NextRequest) {
       .from('attendance_records')
       .select('character_id, raid_event_id, attended, signed_up, status')
       .in('raid_event_id', raidEventIds)
+
+    // Team membership per character — drives team-aware totalRaids
+    const { data: teamMembers } = await supabase
+      .from('raid_team_members')
+      .select('character_id, raid_team_id')
+      .eq('guild_id', guildId)
+    const teamIdByCharacterId = new Map<string, string>()
+    for (const m of teamMembers ?? []) teamIdByCharacterId.set(m.character_id, m.raid_team_id)
 
     // Build raid name lookup
     const raidNameMap: Record<string, string> = {}
@@ -168,17 +176,37 @@ export async function GET(request: NextRequest) {
       blp[b.character_id][b.loot_item_id] = b.times_passed
     }
 
-    // Build attendance
-    const attendance: Record<string, { records: Array<{ signed_up: boolean; attended: boolean; no_call_no_show: boolean }>; totalRaids: number }> = {}
+    // Build attendance: per-character totalRaids resolved via the same
+    // team-aware dedup as the web engine, so the addon's in-game score
+    // preview matches the website.
+    const recordsByCharacter = new Map<string, NonNullable<typeof attendanceRecords>>()
     for (const rec of attendanceRecords || []) {
-      if (!attendance[rec.character_id]) {
-        attendance[rec.character_id] = { records: [], totalRaids: raidEventIds.length }
+      if (!rec.character_id) continue
+      const arr = recordsByCharacter.get(rec.character_id) ?? []
+      arr.push(rec)
+      recordsByCharacter.set(rec.character_id, arr)
+    }
+    const characterIds = new Set<string>([
+      ...(membershipsResult.data ?? []).map(m => m.character_id),
+      ...recordsByCharacter.keys(),
+    ])
+    const allEvents = (raidEventsResult.data || []) as Array<{ id: string; raid_date: string; raid_team_id: string | null; is_bonus: boolean }>
+    const attendance: Record<string, { records: Array<{ signed_up: boolean; attended: boolean; no_call_no_show: boolean }>; totalRaids: number }> = {}
+    for (const cid of characterIds) {
+      const charRecords = recordsByCharacter.get(cid) ?? []
+      const recordEventIds = new Set(charRecords.map(r => r.raid_event_id))
+      const owned = resolveOwnedEvents(allEvents, recordEventIds, teamIdByCharacterId.get(cid) ?? null)
+      const ownedIds = new Set(owned.map(e => e.id))
+      attendance[cid] = {
+        totalRaids: owned.length,
+        records: charRecords
+          .filter(r => ownedIds.has(r.raid_event_id))
+          .map(r => ({
+            signed_up: r.signed_up || false,
+            attended: r.attended || false,
+            no_call_no_show: r.status === 'no_show',
+          })),
       }
-      attendance[rec.character_id].records.push({
-        signed_up: rec.signed_up || false,
-        attended: rec.attended || false,
-        no_call_no_show: rec.status === 'no_show',
-      })
     }
 
     return NextResponse.json({
