@@ -1,8 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest, NextResponse, after } from 'next/server'
 import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { verifyOfficerPermissions } from '@/utils/server-roles'
 import { trackApiError, trackEvent } from '@/utils/analytics/server'
+import { notifyLootAward, type LootAward } from '@/lib/discord-loot-announcements'
 import { inflateRawSync } from 'zlib'
 
 interface AddonAward {
@@ -98,12 +99,14 @@ export async function POST(request: NextRequest) {
       awards: { processed: 0, errors: 0 },
       attendance: { processed: 0, errors: 0 },
     }
+    const announceQueue: LootAward[] = []
 
     // Process awards
     for (const award of payload.awards || []) {
       try {
-        await processAward(supabase, payload.guildId, user.id, award)
+        const announceEntry = await processAward(supabase, payload.guildId, user.id, award)
         results.awards.processed++
+        if (announceEntry) announceQueue.push(announceEntry)
       } catch (err) {
         console.error('Failed to process award:', err)
         results.awards.errors++
@@ -130,6 +133,10 @@ export async function POST(request: NextRequest) {
       })
     }
 
+    if (announceQueue.length > 0) {
+      after(() => notifyLootAward(supabase, payload.guildId, announceQueue))
+    }
+
     return NextResponse.json({ data: results })
   } catch (error) {
     console.error('Error in POST /api/addon/import-string:', error)
@@ -143,7 +150,7 @@ async function processAward(
   guildId: string,
   userId: string,
   award: AddonAward
-) {
+): Promise<LootAward | null> {
   // Resolve wowhead_id to loot_item_id
   let lootItemId = award.lootItemId
   if (!lootItemId && award.wowheadId) {
@@ -193,6 +200,8 @@ async function processAward(
   })
 
   if (error) throw error
+  if (!lootItemId) return null // TS narrowing — should be unreachable since insert succeeded
+  return { itemId: lootItemId, characterName: award.characterName }
 }
 
 async function processAttendance(

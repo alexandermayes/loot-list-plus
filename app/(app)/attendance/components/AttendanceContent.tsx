@@ -18,6 +18,7 @@ import { parseDate, toDateString } from '@/utils/date'
 import { isDateScheduled } from '@/domain/raid-team/schedule-history'
 import { useRaidTeam } from '@/app/hooks/useRaidTeam'
 import { TeamSelector } from '@/app/components/TeamSelector'
+import { paginatedSelect } from '@/utils/supabase/paginate'
 
 interface RaidEvent {
   id: string
@@ -73,7 +74,13 @@ interface WeekGroup {
   raids: RaidEvent[]
 }
 
-export default function AttendanceContent() {
+interface AttendanceContentProps {
+  // Server-rendered heading from page.tsx — LCP target until the client
+  // takes over with the same markup.
+  serverHeading?: React.ReactNode
+}
+
+export default function AttendanceContent({ serverHeading }: AttendanceContentProps = {}) {
   // Personal attendance state
   const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>([])
   const [loading, setLoading] = useState(true)
@@ -530,12 +537,19 @@ export default function AttendanceContent() {
         // on the same date. Within a (date, team) bucket, prefer events that
         // hold attendance records.
         const allRaidIds = allRaidEvents.map((e: RaidEvent) => e.id)
-        const { data: existingAttendance } = await supabase
-          .from('attendance_records')
-          .select('raid_event_id')
-          .in('raid_event_id', allRaidIds)
+        // Paginated — historical events × ~30 records each easily exceeds the
+        // 1000-row PostgREST cap, which silently drops raids from the visible
+        // grid because their existing-attendance flag goes missing.
+        const existingAttendance = await paginatedSelect<{ raid_event_id: string }>((start, end) =>
+          supabase
+            .from('attendance_records')
+            .select('raid_event_id')
+            .in('raid_event_id', allRaidIds)
+            .order('id', { ascending: true })
+            .range(start, end)
+        )
 
-        const raidIdsWithAttendance = new Set(existingAttendance?.map((r: { raid_event_id: string }) => r.raid_event_id) || [])
+        const raidIdsWithAttendance = new Set(existingAttendance.map((r) => r.raid_event_id))
 
         const deduplicatedRaidEvents: RaidEvent[] = Array.from(
           allRaidEvents.reduce((map: Map<string, RaidEvent>, event: RaidEvent) => {
@@ -625,16 +639,41 @@ export default function AttendanceContent() {
         ? Math.min(weeklyMin ?? raidDaysPerWeek, raidDaysPerWeek)
         : undefined
 
+      // Types for the two paginated attendance reads
+      type AttendanceRow = {
+        raid_event_id: string
+        character_id: string | null
+        signed_up: boolean
+        attended: boolean
+        no_call_no_show: boolean
+        was_late: boolean | null
+        was_benched: boolean | null
+        is_excused: boolean | null
+        points_override: number | null
+      }
+      type FillInRow = {
+        raid_event_id: string
+        character_id: string | null
+        attended: boolean
+      }
+
       // Build raider list from guild memberships (all active members).
-      const [membersResponse, attendanceResult, teamMembersResult, allGuildAttendanceResult] = await Promise.all([
+      const [membersResponse, attendanceRecords, teamMembersResult, allGuildAttendance] = await Promise.all([
         // Query 1: Fetch guild members via API (uses service role to see all members)
         fetch(`/api/guild-members?guild_id=${guildId}`).then(r => r.ok ? r.json() : null),
 
-        // Query 2: Get attendance records for team events
-        supabase
-          .from('attendance_records')
-          .select('raid_event_id, character_id, signed_up, attended, no_call_no_show, was_late, was_benched, is_excused, points_override')
-          .in('raid_event_id', raidEventIds),
+        // Query 2: Attendance records for team events. Paginated — N raiders ×
+        // M raid events easily breaks the 1000-row PostgREST cap (40×28 = 1,120
+        // for a 4-week window). Truncation silently corrupts every score on
+        // the page.
+        paginatedSelect<AttendanceRow>((start, end) =>
+          supabase
+            .from('attendance_records')
+            .select('raid_event_id, character_id, signed_up, attended, no_call_no_show, was_late, was_benched, is_excused, points_override')
+            .in('raid_event_id', raidEventIds)
+            .order('id', { ascending: true })
+            .range(start, end)
+        ),
 
         // Query 3: Fetch ALL team memberships for the guild. When a team is
         // selected, this drives roster filtering. When no team is selected
@@ -645,13 +684,20 @@ export default function AttendanceContent() {
           .select('character_id, raid_team_id')
           .eq('guild_id', guildId),
 
-        // Query 4: If team selected, also get ALL guild attendance (for fill-in credit detection)
+        // Query 4: If team selected, also get ALL guild attendance (for
+        // fill-in credit detection). Paginated — this read has no character
+        // or event filter and on an active guild crosses 1000 rows within
+        // weeks, silently breaking fill-in credit at scale.
         activeTeamId
-          ? supabase
-              .from('attendance_records')
-              .select('raid_event_id, character_id, attended')
-              .eq('attended', true)
-          : Promise.resolve({ data: null }),
+          ? paginatedSelect<FillInRow>((start, end) =>
+              supabase
+                .from('attendance_records')
+                .select('raid_event_id, character_id, attended')
+                .eq('attended', true)
+                .order('id', { ascending: true })
+                .range(start, end)
+            )
+          : Promise.resolve(null as FillInRow[] | null),
       ])
 
       // Map character → team membership. Drives both roster filtering (when a
@@ -668,7 +714,7 @@ export default function AttendanceContent() {
           )
         : null
 
-      const allAttendance = attendanceResult.data
+      const allAttendance = attendanceRecords
 
       if (!membersResponse?.members || membersResponse.members.length === 0 || raidEvents.length === 0) {
         setGuildRaiders([])
@@ -703,7 +749,7 @@ export default function AttendanceContent() {
 
       // Build attendance map: characterId -> raidEventId -> status
       const attendanceByCharacter: Record<string, Map<string, AttendanceStatus>> = {}
-      allAttendance?.forEach((record: { raid_event_id: string; character_id: string | null; signed_up: boolean; attended: boolean; no_call_no_show: boolean; was_late?: boolean; was_benched?: boolean; is_excused?: boolean; points_override?: number | null }) => {
+      allAttendance.forEach((record) => {
         if (!record.character_id) return
         if (!attendanceByCharacter[record.character_id]) {
           attendanceByCharacter[record.character_id] = new Map()
@@ -712,9 +758,9 @@ export default function AttendanceContent() {
           signed_up: record.signed_up,
           attended: record.attended,
           no_call_no_show: record.no_call_no_show,
-          was_late: record.was_late,
-          was_benched: record.was_benched,
-          is_excused: record.is_excused,
+          was_late: record.was_late ?? undefined,
+          was_benched: record.was_benched ?? undefined,
+          is_excused: record.is_excused ?? undefined,
           points_override: record.points_override,
         })
       })
@@ -723,11 +769,11 @@ export default function AttendanceContent() {
       // This enables cross-team fill-in credit
       let fillInEventMap = new Map<string, { id: string; raid_date: string }>()
       let fillInRecordsByCharacter: Record<string, { raid_event_id: string; attended: boolean }[]> = {}
-      if (activeTeamId && allGuildAttendanceResult.data) {
+      if (activeTeamId && allGuildAttendance) {
         // Find all raid_event_ids that are NOT in the team events
         const teamEventIdSet = new Set(raidEventIds)
         const otherEventIds = new Set<string>()
-        for (const rec of allGuildAttendanceResult.data) {
+        for (const rec of allGuildAttendance) {
           if (rec.attended && rec.character_id && !teamEventIdSet.has(rec.raid_event_id)) {
             otherEventIds.add(rec.raid_event_id)
             if (!fillInRecordsByCharacter[rec.character_id]) fillInRecordsByCharacter[rec.character_id] = []
@@ -909,10 +955,12 @@ export default function AttendanceContent() {
     <div className="p-4 sm:p-6 lg:p-8 space-y-6 font-poppins">
       {/* Header - Always visible */}
       <div className="flex items-start justify-between gap-4">
-        <div>
-          <Heading level={1}>Attendance</Heading>
-          <p className="text-muted-foreground mt-1 text-base">Track raid attendance and view attendance scores</p>
-        </div>
+        {serverHeading ?? (
+          <div>
+            <Heading level={1}>Attendance</Heading>
+            <p className="text-muted-foreground mt-1 text-base">Track raid attendance and view attendance scores</p>
+          </div>
+        )}
         {hasTeams && (
           <TeamSelector
             teams={teams}

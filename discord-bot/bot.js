@@ -8,6 +8,8 @@ if (process.env.NODE_ENV !== 'production') {
 const { handleMessageCreate, handleReactionAdd, isFeedbackConfigured, warnMissingOnce } = require('./feedback');
 const { scheduleDigest } = require('./digest');
 const { scheduleClosureSweep } = require('./closures');
+const { registerCommands } = require('./commands');
+const { handleInteractionCreate } = require('./interactions');
 
 const client = new Client({
   intents: [
@@ -43,10 +45,19 @@ client.once('clientReady', () => {
   }
   scheduleDigest(client);
   scheduleClosureSweep(client);
+
+  // Slash commands are independent of the feedback flow — register them as
+  // long as BOT_API_KEY is set so /score and /priority work in any linked guild.
+  if (process.env.BOT_API_KEY) {
+    registerCommands(client);
+  } else {
+    console.warn('[commands] BOT_API_KEY not set — slash commands disabled');
+  }
 });
 
 client.on(Events.MessageCreate, handleMessageCreate);
 client.on(Events.MessageReactionAdd, handleReactionAdd);
+client.on(Events.InteractionCreate, handleInteractionCreate);
 
 client.on('error', error => {
   console.error('❌ Discord client error:', error);

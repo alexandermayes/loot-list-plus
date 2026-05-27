@@ -27,6 +27,7 @@ import { useGuildMembers } from '@/app/hooks/use-api'
 import { Select } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Switch } from '@/components/ui/switch'
 import { SecurityLockIcon, RotateClockwiseIcon } from '@hugeicons/core-free-icons'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { trackClientEvent } from '@/utils/analytics/client'
@@ -51,6 +52,8 @@ export default function GuildSettingsContent() {
   const [discordChannelsLoading, setDiscordChannelsLoading] = useState(false)
   const [discordChannelsError, setDiscordChannelsError] = useState<string | null>(null)
   const [raidSummaryChannelId, setRaidSummaryChannelId] = useState<string | null>(null)
+  const [lootAnnouncementsEnabled, setLootAnnouncementsEnabled] = useState<boolean>(true)
+  const [savingLootAnnouncements, setSavingLootAnnouncements] = useState(false)
   const [savingChannel, setSavingChannel] = useState(false)
 
   // Warcraft Logs integration state
@@ -327,6 +330,7 @@ export default function GuildSettingsContent() {
         if (res.ok) {
           const data = await res.json()
           setRaidSummaryChannelId(data.settings?.raid_summary_channel_id || null)
+          setLootAnnouncementsEnabled(data.settings?.loot_announcements_enabled ?? true)
           setWclGuildUrl(data.settings?.wcl_guild_url || '')
         }
       } catch {
@@ -342,6 +346,34 @@ export default function GuildSettingsContent() {
     if (!hasPermission('manage_settings')) return
     loadDiscordChannels()
   }, [activeGuild?.discord_server_id, guildLoading, loading, hasPermission])
+
+  const handleToggleLootAnnouncements = async (enabled: boolean) => {
+    if (!activeGuild) return
+    setSavingLootAnnouncements(true)
+    const previous = lootAnnouncementsEnabled
+    setLootAnnouncementsEnabled(enabled) // optimistic
+    try {
+      const res = await fetch('/api/guild-settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          guild_id: activeGuild.id,
+          settings: { loot_announcements_enabled: enabled },
+        }),
+      })
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data.error || "Couldn't save. Try again.")
+      }
+      showNotification('success', enabled ? 'Loot announcements on' : 'Loot announcements off')
+    } catch (error: unknown) {
+      setLootAnnouncementsEnabled(previous) // rollback
+      const message = error instanceof Error ? error.message : "Couldn't save. Try again."
+      showNotification('error', message)
+    } finally {
+      setSavingLootAnnouncements(false)
+    }
+  }
 
   const handleSaveRaidSummaryChannel = async (channelId: string | null) => {
     if (!activeGuild) return
@@ -622,6 +654,21 @@ export default function GuildSettingsContent() {
                     <p className="text-muted-foreground text-[11px]">
                       The LootList+ Bot will post raid attendance and loot to this channel. Make sure the bot has permission to send messages there.
                     </p>
+                  </div>
+
+                  <div className="flex items-center justify-between gap-3 pt-2 border-t border-border">
+                    <div className="space-y-1">
+                      <Label htmlFor="lootAnnouncements">Announce loot awards</Label>
+                      <p className="text-muted-foreground text-[11px]">
+                        Post an embed in the channel above each time loot is awarded. Bulk imports collapse into one post.
+                      </p>
+                    </div>
+                    <Switch
+                      id="lootAnnouncements"
+                      checked={lootAnnouncementsEnabled}
+                      onCheckedChange={handleToggleLootAnnouncements}
+                      disabled={savingLootAnnouncements || !raidSummaryChannelId}
+                    />
                   </div>
                 </div>
               )}

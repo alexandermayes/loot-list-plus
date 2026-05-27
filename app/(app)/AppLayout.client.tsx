@@ -121,68 +121,17 @@ function AppLayoutContent({
           </header>
         )}
 
-        {/* Content area skeleton */}
+        {/* Main area — render children alongside the chrome skeleton so the
+            page's server-rendered headings land in the SSR HTML and LCP
+            fires on real content instead of waiting for GuildContext
+            hydration. Each page owns its own loading state for the
+            data-dependent sections below the heading. */}
         <main
           className="min-h-screen bg-background"
           style={{ marginLeft: isMobile ? 0 : sidebarWidth }}
         >
           <div className={`w-full ${isMobile ? 'pt-14' : ''}`}>
-            <div className="p-4 sm:p-6 lg:p-8 space-y-6">
-              {/* Page header */}
-              <div>
-                <Skeleton className="h-[52px] w-[55%] max-w-2xl rounded-md" />
-                <Skeleton className="h-5 w-[42%] max-w-md mt-2 rounded-md" />
-                <div className="flex items-center gap-2 flex-wrap mt-4">
-                  <Skeleton className="h-7 w-28 rounded-full" />
-                  <Skeleton className="h-7 w-64 rounded-full" />
-                  <Skeleton className="h-7 w-64 rounded-full" />
-                  <Skeleton className="h-7 w-20 rounded-full" />
-                </div>
-              </div>
-              {/* Insights row */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {[0, 1, 2].map(i => (
-                  <div key={i} className="bg-background-elevated border border-border rounded-xl p-5">
-                    <div className="flex items-center gap-2 mb-4">
-                      <Skeleton className="w-5 h-5 rounded" />
-                      <Skeleton className="h-4 w-28" />
-                    </div>
-                    <div className="space-y-2.5">
-                      <Skeleton className="h-8 w-16" />
-                      <Skeleton className="h-3 w-24" />
-                      <Skeleton className="h-2 w-full rounded-full" />
-                    </div>
-                  </div>
-                ))}
-              </div>
-              {/* Loot priority and received items */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {[0, 1].map(i => (
-                  <div key={i} className="bg-background-elevated border border-border rounded-xl p-6">
-                    <div className="flex items-center gap-4 mb-6">
-                      <Skeleton className="w-8 h-8 rounded" />
-                      <div className="space-y-2">
-                        <Skeleton className="h-6 w-32" />
-                        <Skeleton className="h-4 w-48" />
-                      </div>
-                    </div>
-                    <div className="space-y-3">
-                      {[0, 1, 2].map(j => (
-                        <div key={j} className="bg-background-inset border border-border rounded-xl p-4">
-                          <div className="flex items-center gap-4">
-                            <Skeleton className="w-10 h-10 rounded-full flex-shrink-0" />
-                            <div className="flex-1 space-y-2">
-                              <Skeleton className="h-4 w-40" />
-                              <Skeleton className="h-3 w-24" />
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
+            {children}
           </div>
         </main>
       </div>

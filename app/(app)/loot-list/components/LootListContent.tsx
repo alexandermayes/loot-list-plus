@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useRef, useMemo, useCallback, useEffect, memo } from 'react'
+import dynamic from 'next/dynamic'
 import {
   DndContext,
   DragOverlay,
@@ -41,7 +42,11 @@ import { useNotification } from '@/app/contexts/NotificationContext'
 import { trackClientEvent, usePagePerf } from '@/utils/analytics/client'
 import { ClassificationBadge } from '@/components/ui/classification-badge'
 import { InfoTooltip } from '@/components/ui/info-tooltip'
-import { BisImportModal } from '@/app/components/BisImportModal'
+// BisImportModal is lazy-loaded — its ~326-line chunk only downloads when
+// the user actually clicks "Import BiS" rather than on every page load.
+const BisImportModal = dynamic(
+  () => import('@/app/components/BisImportModal').then(m => m.BisImportModal),
+)
 import { HorizontalScroll } from '@/components/ui/horizontal-scroll'
 import ItemLink from '@/app/components/ItemLink'
 import { getCharacterPrimaryStat } from '@/utils/specPrimaryStat'
@@ -673,7 +678,9 @@ function BracketSection({
   )
 }
 
-export default function LootListContent() {
+export default function LootListContent({
+  serverHeading,
+}: { serverHeading?: React.ReactNode } = {}) {
   const {
     activeGuild,
     activeCharacter,
@@ -1380,15 +1387,17 @@ export default function LootListContent() {
         onDragCancel={handleDragCancel}
       >
       <div className="font-poppins">
-        {/* Header - Always visible */}
+        {/* Header - heading may be server-rendered for LCP; subtitle stays client-driven */}
         <div className="p-4 sm:p-6 lg:p-8 pb-1.5">
           <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
             <div>
-              <Heading level={1}>
-                Loot Lists{activeCharacter && (
-                  <> for <span style={{ color: activeCharacter.class?.color_hex }}>{activeCharacter.name}</span></>
-                )}
-              </Heading>
+              {activeCharacter ? (
+                <Heading level={1}>
+                  Loot Lists for <span style={{ color: activeCharacter.class?.color_hex }}>{activeCharacter.name}</span>
+                </Heading>
+              ) : (
+                serverHeading ?? <Heading level={1}>Loot Lists</Heading>
+              )}
               <p className="text-muted-foreground mt-1 text-base">
                 {isLoading ? 'Loading phases...' : (() => {
                   const group = resolvedGroups.find(g => g.canonicalPhase === selectedPhase)
@@ -1965,10 +1974,11 @@ export default function LootListContent() {
         {/* Confirm Modal */}
         {ConfirmDialog}
 
-        {/* BIS Import Modal */}
-        {activeCharacter && (
+        {/* BIS Import Modal — only mount once the user opens it, so the
+            lazy-loaded chunk doesn't download on initial page load. */}
+        {showBisImportModal && activeCharacter && (
           <BisImportModal
-            isOpen={showBisImportModal}
+            isOpen={true}
             onClose={() => setShowBisImportModal(false)}
             characterId={activeCharacter.id}
             characterName={activeCharacter.name}
