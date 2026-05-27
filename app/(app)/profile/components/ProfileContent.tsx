@@ -47,7 +47,13 @@ import { useAccentColor, ACCENT_COLORS, DEFAULT_ACCENT_COLOR } from '@/app/conte
 
 type TabId = 'account' | 'preferences' | 'guilds'
 
-export default function ProfileContent() {
+interface ProfileContentProps {
+  // Server-rendered profile header card from page.tsx. LCP target until
+  // the client takes over with the full Discord-link state, etc.
+  serverHeading?: React.ReactNode
+}
+
+export default function ProfileContent({ serverHeading }: ProfileContentProps = {}) {
   const [allGuilds, setAllGuilds] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<TabId>('account')
@@ -406,7 +412,10 @@ export default function ProfileContent() {
       )}
 
       <div className="p-4 sm:p-6 lg:p-8 space-y-6 font-poppins">
-      {/* Header */}
+      {/* Header — render the SSR'd card while loading so the LCP element
+          (avatar + name) paints with TTFB. Once preferences load, swap to
+          the full card with Discord-link state and the Log Out button. */}
+      {loading && serverHeading ? serverHeading : (
       <div className="bg-background-elevated border border-border rounded-xl p-4 sm:p-6">
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6">
           <Image
@@ -465,6 +474,7 @@ export default function ProfileContent() {
           </Button>
         </div>
       </div>
+      )}
 
       {/* Tab Navigation */}
       <div className="flex items-center gap-2 overflow-x-auto pb-1">
