@@ -7,6 +7,9 @@
     "start": "node bot.js",
     "dev": "node bot.js"
   },
+  "engines": {
+    "node": ">=20.0.0"
+  },
   "keywords": ["discord", "bot", "lootlist"],
   "author": "",
   "license": "ISC",
