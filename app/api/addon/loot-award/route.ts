@@ -1,8 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest, NextResponse, after } from 'next/server'
 import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { verifyOfficerPermissions } from '@/utils/server-roles'
 import { trackApiError, trackEvent } from '@/utils/analytics/server'
+import { notifyLootAward } from '@/lib/discord-loot-announcements'
 
 interface LootAwardRequest {
   guild_id: string
@@ -111,6 +112,12 @@ export async function POST(request: NextRequest) {
       guildId: guild_id,
       properties: { source: 'addon', count: 1 },
     })
+
+    after(() =>
+      notifyLootAward(supabase, guild_id, [
+        { itemId: lootItem.id, characterName: character_name },
+      ])
+    )
 
     return NextResponse.json({
       data: {

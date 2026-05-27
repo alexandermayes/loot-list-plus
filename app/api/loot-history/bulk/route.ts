@@ -1,9 +1,10 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest, NextResponse, after } from 'next/server'
 import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { verifyPermission } from '@/utils/server-roles'
 import { logAudit } from '@/utils/audit/log'
 import { trackEvent, setUserMilestone } from '@/utils/analytics/server'
+import { notifyLootAward, type LootAward } from '@/lib/discord-loot-announcements'
 import type { AwardReason, AwardOutcomeType } from '@/domain/types'
 
 const AWARD_REASON_VALUES = new Set<AwardReason>(['', 'score', 'loot_council', 'override', 'offspec', 'roll'])
@@ -249,6 +250,21 @@ export async function POST(request: NextRequest) {
         properties: { guild_id, success_count: successCount, failed_count: failedCount },
       })
       setUserMilestone(user.id, 'first_loot_awarded_at')
+
+      // Discord announcement (fire-and-forget) — collapse to one embed for
+      // bulk imports, one item per embed for single-item bulk requests.
+      const announceQueue: LootAward[] = results
+        .filter((r) => r.success)
+        .map((r) => items[r.index])
+        .filter((item) => item.loot_item_id && item.character_name)
+        .map((item) => ({
+          itemId: item.loot_item_id as string,
+          characterName: item.character_name as string,
+          raidEventId: (item.raid_event_id as string | null) ?? null,
+        }))
+      if (announceQueue.length > 0) {
+        after(() => notifyLootAward(serviceSupabase, guild_id, announceQueue))
+      }
     }
 
     return NextResponse.json({ results, successCount, failedCount })

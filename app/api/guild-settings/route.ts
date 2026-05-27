@@ -88,6 +88,7 @@ const ALLOWED_SETTINGS_FIELDS = [
 
   // Discord Integration
   'raid_summary_channel_id',
+  'loot_announcements_enabled',
 
   // Warcraft Logs Integration
   'wcl_guild_url',
