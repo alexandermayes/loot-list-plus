@@ -157,7 +157,13 @@ interface AggregateCharacterRow {
 }
 
 
-export default function MasterSheetContent() {
+interface MasterSheetContentProps {
+  // Server-rendered heading from page.tsx. Acts as the LCP target until the
+  // tier data loads and the dynamic phase/tier-shorthand heading takes over.
+  serverHeading?: React.ReactNode
+}
+
+export default function MasterSheetContent({ serverHeading }: MasterSheetContentProps = {}) {
   const { activeGuild, activeCharacter, loading: guildLoading, hasPermission } = useGuildContext()
   const canManageLoot = hasPermission('manage_loot')
   const { showNotification } = useNotification()
@@ -1634,16 +1640,20 @@ export default function MasterSheetContent() {
         {/* Header - Always visible */}
         <div className="p-4 sm:p-6 lg:p-8 pb-1.5">
           <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-            <div>
-              <Heading level={1}>
-                Loot Rankings{!initialLoading && selectedPhase !== null && <span className="text-muted-foreground"> · P{selectedPhase}{activePhaseTiers.length > 0 ? ` ${activePhaseTiers.map(t => getRaidShorthand(t.name)).join(', ')}` : ''}</span>}
-              </Heading>
-              <p className="text-muted-foreground mt-1 text-base">
-                {viewMode === 'aggregate' && canManageLoot
-                  ? 'Most wanted items across the guild'
-                  : 'All ranked players for each item'}
-              </p>
-            </div>
+            {initialLoading && serverHeading ? (
+              serverHeading
+            ) : (
+              <div>
+                <Heading level={1}>
+                  Loot Rankings{!initialLoading && selectedPhase !== null && <span className="text-muted-foreground"> · P{selectedPhase}{activePhaseTiers.length > 0 ? ` ${activePhaseTiers.map(t => getRaidShorthand(t.name)).join(', ')}` : ''}</span>}
+                </Heading>
+                <p className="text-muted-foreground mt-1 text-base">
+                  {viewMode === 'aggregate' && canManageLoot
+                    ? 'Most wanted items across the guild'
+                    : 'All ranked players for each item'}
+                </p>
+              </div>
+            )}
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
               {hasTeams && (
                 <TeamSelector
