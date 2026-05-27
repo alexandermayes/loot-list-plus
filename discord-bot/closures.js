@@ -63,6 +63,23 @@ async function announceClosure(client, supabase, issue) {
     return;
   }
 
+  // Flag the thread title so the resolution is visible from the forum
+  // index, not just by opening the post. Bot needs Manage Threads in the
+  // forum channel — failures here are non-fatal.
+  if (channel.isThread?.()) {
+    const prefix = issue.state_reason === 'not_planned' ? '(CLOSED) ' : '(FIXED) ';
+    const currentName = channel.name || '';
+    const alreadyMarked = currentName.startsWith('(FIXED) ') || currentName.startsWith('(CLOSED) ');
+    if (!alreadyMarked) {
+      const newName = (prefix + currentName).slice(0, 100); // Discord caps thread names at 100 chars
+      try {
+        await channel.setName(newName);
+      } catch (err) {
+        console.warn(`[closures] could not rename thread ${row.discord_channel_id}:`, err.message);
+      }
+    }
+  }
+
   const { error: updateError } = await supabase
     .from('discord_feedback_map')
     .update({ closure_announced_at: new Date().toISOString() })

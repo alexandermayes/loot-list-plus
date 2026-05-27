@@ -110,6 +110,109 @@ async function generateTitle(description) {
   }
 }
 
+// Fetches up to 50 open issues in this repo that share the kind-label
+// (bug or enhancement) so we can ask Haiku whether the new report is a
+// duplicate. Limited to discord-source so we're not comparing against
+// completely unrelated tracker work.
+async function fetchOpenIssuesForDupeCheck(kindLabel) {
+  const token = process.env.GITHUB_TOKEN;
+  const repo = process.env.GITHUB_REPO;
+  if (!token || !repo) return [];
+  const url = `https://api.github.com/repos/${repo}/issues?state=open&labels=${encodeURIComponent(kindLabel + ',discord-source')}&per_page=50`;
+  const res = await fetch(url, {
+    headers: {
+      'Accept': 'application/vnd.github+json',
+      'Authorization': `Bearer ${token}`,
+      'X-GitHub-Api-Version': '2022-11-28',
+    },
+  });
+  if (!res.ok) {
+    console.warn(`[feedback] dupe-check fetch failed: ${res.status}`);
+    return [];
+  }
+  const issues = await res.json();
+  return issues.filter((i) => !i.pull_request);
+}
+
+// Returns the matched issue object, or null if no duplicate. Soft-fails on
+// any error (network, parse, missing key) — duplicate detection is a polish
+// feature; not blocking the actual filing.
+async function findDuplicate({ title, body, labels }) {
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) return null;
+
+  const kindLabel = labels.includes('enhancement') ? 'enhancement' : 'bug';
+  const issues = await fetchOpenIssuesForDupeCheck(kindLabel);
+  if (issues.length === 0) return null;
+
+  // Body snippet: just the Description section (skip our auto-appended Details/footer)
+  const stripMeta = (s) => (s || '').split('\n## Details')[0].replace(/^## Description\n/, '').trim();
+
+  const candidates = issues
+    .map((i) => `#${i.number} — ${i.title}\n   ${stripMeta(i.body).slice(0, 200).replace(/\n/g, ' ')}`)
+    .join('\n');
+  const newSnippet = stripMeta(body).slice(0, 500);
+
+  const prompt = `You are checking whether a new ${kindLabel === 'enhancement' ? 'feature request' : 'bug report'} duplicates an existing open issue.
+
+NEW REPORT:
+Title: ${title}
+${newSnippet}
+
+EXISTING OPEN ISSUES (number — title and snippet):
+${candidates}
+
+Return ONLY the issue number (e.g. "42") if the new report is clearly a duplicate of one of them. Return ONLY the word "none" if no existing issue is a clear duplicate. Be conservative — when in doubt, return "none".`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model: 'claude-3-5-haiku-20241022',
+        max_tokens: 20,
+        messages: [{ role: 'user', content: prompt }],
+      }),
+    });
+    if (!res.ok) {
+      console.warn(`[feedback] dupe-check claude call failed: ${res.status}`);
+      return null;
+    }
+    const json = await res.json();
+    const text = (json.content?.[0]?.text || '').trim().toLowerCase();
+    if (!text || text.startsWith('none')) return null;
+    const num = parseInt(text.match(/\d+/)?.[0] || '', 10);
+    if (!num) return null;
+    return issues.find((i) => i.number === num) || null;
+  } catch (err) {
+    console.warn('[feedback] dupe-check error:', err.message);
+    return null;
+  }
+}
+
+async function addGithubComment(issueNumber, body) {
+  const token = process.env.GITHUB_TOKEN;
+  const repo = process.env.GITHUB_REPO;
+  const res = await fetch(`https://api.github.com/repos/${repo}/issues/${issueNumber}/comments`, {
+    method: 'POST',
+    headers: {
+      'Accept': 'application/vnd.github+json',
+      'Authorization': `Bearer ${token}`,
+      'X-GitHub-Api-Version': '2022-11-28',
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ body }),
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`GitHub comment failed (${res.status}): ${text}`);
+  }
+}
+
 async function createGithubIssue({ title, body, labels }) {
   const token = process.env.GITHUB_TOKEN;
   const repo = process.env.GITHUB_REPO; // format: owner/repo
@@ -194,6 +297,14 @@ async function fileFeedback({ message, source, triggeredBy, labels = BUG_LABELS 
     : await generateTitle(text || '(image only)');
   const body = buildIssueBody({ message, source, triggeredBy });
 
+  // Soft duplicate check before filing — we still file the new issue (so
+  // nothing's lost if Haiku is wrong) but flag the suspected duplicate in
+  // both the Discord reply and as a GitHub comment for officer review.
+  const duplicate = await findDuplicate({ title, body, labels });
+  if (duplicate) {
+    console.log(`[feedback] possible duplicate of #${duplicate.number} for message ${message.id}`);
+  }
+
   const issue = await createGithubIssue({ title, body, labels });
   console.log(`[feedback] filed message ${message.id} as issue #${issue.number}: ${title}`);
 
@@ -201,12 +312,25 @@ async function fileFeedback({ message, source, triggeredBy, labels = BUG_LABELS 
   // without having to spot the small ✅ reaction.
   try {
     const kind = labels.includes('enhancement') ? 'feature request' : 'bug report';
+    const dupeNote = duplicate
+      ? `\n\n👀 Possible duplicate of **#${duplicate.number}: ${duplicate.title}** — <${duplicate.html_url}>`
+      : '';
     await message.reply({
-      content: `Thanks — this ${kind} is tracked as **#${issue.number}** on GitHub.\n<${issue.html_url}>`,
+      content: `Thanks — this ${kind} is tracked as **#${issue.number}** on GitHub.\n<${issue.html_url}>${dupeNote}`,
       allowedMentions: { repliedUser: false },
     });
   } catch (err) {
     console.warn('[feedback] could not post thread reply:', err.message);
+  }
+
+  // Cross-link on GitHub so the dupe candidate shows up in the new issue's
+  // timeline and vice-versa (GH auto-creates a back-reference on #duplicate).
+  if (duplicate) {
+    try {
+      await addGithubComment(issue.number, `Possible duplicate of #${duplicate.number} — flagged automatically by the feedback bot. Close as duplicate if confirmed.`);
+    } catch (err) {
+      console.warn('[feedback] could not post dupe-link comment:', err.message);
+    }
   }
 
   await recordMapping({
