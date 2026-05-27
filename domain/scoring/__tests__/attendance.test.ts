@@ -698,4 +698,151 @@ describe('computeAttendance', () => {
       expect(result.raidsAttended).toBe(1)
     })
   })
+
+  // ─── Team-aware filtering ──────────────────────────────────
+  describe('team-aware filtering', () => {
+    it('omitting raiderTeamId keeps legacy behavior', () => {
+      const events: RaidEvent[] = [
+        { id: 'team-a', raid_date: '2026-03-10', raid_team_id: 'A' },
+        { id: 'team-b', raid_date: '2026-03-10', raid_team_id: 'B' },
+      ]
+      const result = computeAttendance(makeInput({
+        raidEvents: events,
+        records: [{ raid_event_id: 'team-b', signed_up: false, attended: true, no_call_no_show: false }],
+        asOfDate: '2026-03-18',
+      }))
+      expect(result.raidsInWindow).toBe(1)
+      expect(result.raidsAttended).toBe(1)
+    })
+
+    it('excludes events belonging to other teams when raiderTeamId is set', () => {
+      const events: RaidEvent[] = [
+        { id: 'team-a', raid_date: '2026-03-10', raid_team_id: 'A' },
+        { id: 'team-b', raid_date: '2026-03-10', raid_team_id: 'B' },
+      ]
+      const result = computeAttendance(makeInput({
+        raidEvents: events,
+        records: [{ raid_event_id: 'team-b', signed_up: false, attended: true, no_call_no_show: false }],
+        raiderTeamId: 'A',
+        asOfDate: '2026-03-18',
+      }))
+      expect(result.raidsInWindow).toBe(1)
+      expect(result.raidsAttended).toBe(0)
+    })
+
+    it('counts null-team (legacy) events alongside the raider team', () => {
+      const events: RaidEvent[] = [
+        { id: 'team-a-1', raid_date: '2026-03-10', raid_team_id: 'A' },
+        { id: 'null-1', raid_date: '2026-03-13', raid_team_id: null },
+      ]
+      const result = computeAttendance(makeInput({
+        raidEvents: events,
+        records: [
+          { raid_event_id: 'team-a-1', signed_up: false, attended: true, no_call_no_show: false },
+          { raid_event_id: 'null-1', signed_up: false, attended: true, no_call_no_show: false },
+        ],
+        raiderTeamId: 'A',
+        asOfDate: '2026-03-18',
+      }))
+      expect(result.raidsInWindow).toBe(2)
+      expect(result.raidsAttended).toBe(2)
+    })
+
+    it('same-date team+null: keeps the event holding the raider record (legacy data shape)', () => {
+      const events: RaidEvent[] = [
+        { id: 'team-empty', raid_date: '2026-03-10', raid_team_id: 'A' },
+        { id: 'null-with-rec', raid_date: '2026-03-10', raid_team_id: null },
+      ]
+      const result = computeAttendance(makeInput({
+        raidEvents: events,
+        records: [{ raid_event_id: 'null-with-rec', signed_up: false, attended: true, no_call_no_show: false }],
+        raiderTeamId: 'A',
+        asOfDate: '2026-03-18',
+      }))
+      expect(result.raidsInWindow).toBe(1)
+      expect(result.raidsAttended).toBe(1)
+    })
+
+    it('same-date team+null: prefers team event when both hold records', () => {
+      const events: RaidEvent[] = [
+        { id: 'team-with-rec', raid_date: '2026-03-10', raid_team_id: 'A' },
+        { id: 'null-with-rec', raid_date: '2026-03-10', raid_team_id: null },
+      ]
+      const result = computeAttendance(makeInput({
+        raidEvents: events,
+        records: [
+          { raid_event_id: 'team-with-rec', signed_up: false, attended: true, no_call_no_show: false },
+          { raid_event_id: 'null-with-rec', signed_up: false, attended: true, no_call_no_show: false },
+        ],
+        raiderTeamId: 'A',
+        asOfDate: '2026-03-18',
+      }))
+      expect(result.raidsInWindow).toBe(1)
+      expect(result.raidsAttended).toBe(1)
+    })
+
+    it('same-date team+null: prefers team event when neither holds a record', () => {
+      const events: RaidEvent[] = [
+        { id: 'team-empty', raid_date: '2026-03-10', raid_team_id: 'A' },
+        { id: 'null-empty', raid_date: '2026-03-10', raid_team_id: null },
+      ]
+      const result = computeAttendance(makeInput({
+        raidEvents: events,
+        records: [],
+        raiderTeamId: 'A',
+        asOfDate: '2026-03-18',
+      }))
+      expect(result.raidsInWindow).toBe(1)
+      expect(result.raidsAttended).toBe(0)
+    })
+
+    it('raiderTeamId=null: only null-team events count', () => {
+      const events: RaidEvent[] = [
+        { id: 'team-a', raid_date: '2026-03-10', raid_team_id: 'A' },
+        { id: 'null-1', raid_date: '2026-03-13', raid_team_id: null },
+      ]
+      const result = computeAttendance(makeInput({
+        raidEvents: events,
+        records: [
+          { raid_event_id: 'team-a', signed_up: false, attended: true, no_call_no_show: false },
+          { raid_event_id: 'null-1', signed_up: false, attended: true, no_call_no_show: false },
+        ],
+        raiderTeamId: null,
+        asOfDate: '2026-03-18',
+      }))
+      expect(result.raidsInWindow).toBe(1)
+      expect(result.raidsAttended).toBe(1)
+    })
+
+    it('legacy events with no raid_team_id field act as null-team', () => {
+      const events: RaidEvent[] = [
+        { id: 'legacy', raid_date: '2026-03-10' },
+      ]
+      const result = computeAttendance(makeInput({
+        raidEvents: events,
+        records: [{ raid_event_id: 'legacy', signed_up: false, attended: true, no_call_no_show: false }],
+        raiderTeamId: 'A',
+        asOfDate: '2026-03-18',
+      }))
+      expect(result.raidsInWindow).toBe(1)
+      expect(result.raidsAttended).toBe(1)
+    })
+
+    it('Zevpaw regression: legacy null-team record + empty team event + other-team event on same date', () => {
+      const events: RaidEvent[] = [
+        { id: 'team-a-empty', raid_date: '2026-05-17', raid_team_id: 'A' },
+        { id: 'team-b-with-rec', raid_date: '2026-05-17', raid_team_id: 'B' },
+        { id: 'null-with-rec', raid_date: '2026-05-17', raid_team_id: null },
+      ]
+      const result = computeAttendance(makeInput({
+        raidEvents: events,
+        records: [{ raid_event_id: 'null-with-rec', signed_up: true, attended: true, no_call_no_show: false }],
+        raiderTeamId: 'A',
+        asOfDate: '2026-05-26',
+        raidDays: [0],
+      }))
+      expect(result.raidsInWindow).toBe(1)
+      expect(result.raidsAttended).toBe(1)
+    })
+  })
 })

@@ -82,6 +82,50 @@ function weekKey(dateStr: string, resetDay: number): string {
   return formatDate(startOfWeek)
 }
 
+// ─── resolveOwnedEvents ─────────────────────────────────────
+
+/**
+ * Resolve which raid events a raider "owes" — one per raid_date.
+ *
+ * Two modes, controlled by `raiderTeamId`:
+ *  - `undefined` (legacy): dedup events by date, preferring events with the
+ *    raider's record. Multi-team guilds silently lose cross-team events here.
+ *  - provided (team-aware): exclude events belonging to other teams; among
+ *    eligible same-date events, prefer the one holding the raider's record
+ *    (so legacy null-team records still count after teams are adopted).
+ *    Tiebreak: team > null.
+ *
+ * Exported so non-engine consumers (e.g. the addon export route) can compute
+ * per-raider denominators without duplicating dedup logic.
+ */
+export function resolveOwnedEvents<E extends RaidEvent>(
+  events: E[],
+  recordEventIds: Set<string>,
+  raiderTeamId: string | null | undefined
+): E[] {
+  const teamAware = raiderTeamId !== undefined
+  const byDate = new Map<string, E>()
+  for (const event of events) {
+    if (teamAware) {
+      const onTeam = raiderTeamId !== null && event.raid_team_id === raiderTeamId
+      const isNull = event.raid_team_id === null || event.raid_team_id === undefined
+      if (!onTeam && !isNull) continue
+    }
+    const existing = byDate.get(event.raid_date)
+    if (!existing) { byDate.set(event.raid_date, event); continue }
+    const incHasRec = recordEventIds.has(event.id)
+    const exHasRec = recordEventIds.has(existing.id)
+    if (incHasRec && !exHasRec) { byDate.set(event.raid_date, event); continue }
+    if (exHasRec && !incHasRec) continue
+    if (teamAware) {
+      const incOnTeam = raiderTeamId !== null && event.raid_team_id === raiderTeamId
+      const exOnTeam = raiderTeamId !== null && existing.raid_team_id === raiderTeamId
+      if (incOnTeam && !exOnTeam) byDate.set(event.raid_date, event)
+    }
+  }
+  return Array.from(byDate.values())
+}
+
 // ─── resolveStatus ──────────────────────────────────────────
 
 /**
@@ -129,7 +173,8 @@ export function resolveStatus(record: {
  * 3. Apply new member effective start date (fair/minimum_gate)
  *    - Includes retroactive attendance check (earliest attended raid
  *      can push start date earlier than join date, matching master sheet)
- * 4. Deduplicate by date (prefer events with attendance records)
+ * 4. Resolve one event per raid_date for the raider via resolveOwnedEvents
+ *    (legacy date-dedup when `raiderTeamId` is omitted, team-aware otherwise)
  * 5. Score using calculateAttendanceScore (3 modes)
  * 6. Check eligibility (minimum_gate mode)
  */
@@ -212,17 +257,8 @@ export function computeAttendance(input: AttendanceInput): AttendanceResult {
   // Build set of event IDs that have attendance records (for dedup preference)
   const recordEventIds = new Set(input.records.map(r => r.raid_event_id))
 
-  // 4. Deduplicate by date (prefer events with attendance records)
-  const byDate = new Map<string, RaidEvent>()
-  for (const event of effectiveEvents) {
-    const existing = byDate.get(event.raid_date)
-    if (!existing) {
-      byDate.set(event.raid_date, event)
-    } else if (recordEventIds.has(event.id) && !recordEventIds.has(existing.id)) {
-      byDate.set(event.raid_date, event)
-    }
-  }
-  const dedupedEvents = Array.from(byDate.values())
+  // 4. Resolve one event per raid_date for this raider.
+  const dedupedEvents = resolveOwnedEvents(effectiveEvents, recordEventIds, input.raiderTeamId)
   const dedupedIds = new Set(dedupedEvents.map(e => e.id))
 
   let totalRaids = dedupedEvents.length

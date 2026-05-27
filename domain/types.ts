@@ -115,6 +115,11 @@ export interface RaidEvent {
    * that isn't part of the configured schedule.
    */
   is_bonus?: boolean
+  /**
+   * Owning raid team. null = guild-wide (legacy or untagged) event.
+   * Optional for backward compatibility with callers that don't model teams.
+   */
+  raid_team_id?: string | null
 }
 
 /** Input for computeAttendance() */
@@ -166,6 +171,15 @@ export interface AttendanceInput {
    * per-week capping windows.
    */
   weekResetDay?: number
+  /**
+   * Raider's raid team. Enables team-aware event filtering:
+   *  - `undefined` (omitted): legacy behavior. Dedup by date, no team filter.
+   *  - `string`: raider is on this team. Events on other teams are excluded;
+   *    same-date team + null-team events are deduped, preferring the event
+   *    that holds the raider's record (tiebreak: team > null).
+   *  - `null`: raider has no team membership. Only null-team events count.
+   */
+  raiderTeamId?: string | null
 }
 
 /** Result from computeAttendance() */
