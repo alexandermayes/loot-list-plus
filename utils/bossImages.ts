@@ -187,7 +187,7 @@ const bossIconNames: Record<string, string> = {
   'Magtheridon': 'achievement_boss_magtheridon',
 
   // Serpentshrine Cavern
-  'Morogrim Tidewalker': 'creatureportrait-bubble',
+  'Morogrim Tidewalker': 'creatureportrait_bubble',
   'Hydross the Unstable': 'spell_nature_acid_01',
   'The Lurker Below': 'inv_misc_fish_35',
   'Leotheras the Blind': 'spell_shadow_metamorphosis',
