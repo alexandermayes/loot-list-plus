@@ -14,6 +14,126 @@ export interface UpdateEntry {
 
 export const updates: UpdateEntry[] = [
   {
+    date: 'May 28, 2026',
+    items: [
+      {
+        category: 'feature',
+        title: 'Drag-and-drop loot list reordering',
+        description: 'Rearrange ranked items by dragging them. No more deleting and re-adding to fix a slot.',
+      },
+      {
+        category: 'feature',
+        title: 'Donations bonus on Loot Score',
+        description: 'Officers can credit bank donations as a configurable Loot Score bonus. Set the rules in the Donations tab under loot management.',
+      },
+      {
+        category: 'feature',
+        title: 'Discord slash commands',
+        description: 'Use /score and /priority in your guild\'s Discord to check your Loot Score, attendance ratio, and next-in-line items without opening the app.',
+      },
+      {
+        category: 'feature',
+        title: 'Loot awards posted to Discord',
+        description: 'Awarded items now announce to a configurable channel in your guild\'s Discord with the item link, winner, and source.',
+      },
+      {
+        category: 'feature',
+        title: 'Bonus raid days',
+        description: 'Add one-off raid sessions outside your regular schedule. They appear on raid tracking and feed into attendance.',
+      },
+      {
+        category: 'feature',
+        title: 'Per-character role and team',
+        description: 'Assign role and raid team per character, not per account. Alt-tanks and split rosters now score correctly, and individual characters can be removed from the guild without touching the rest.',
+      },
+      {
+        category: 'feature',
+        title: 'Team-aware attendance scoring',
+        description: 'Master sheet, overview, attendance grid, addon export, and Discord /score now compute attendance per raid team instead of pooling all raid days.',
+      },
+      {
+        category: 'improvement',
+        title: 'Big performance pass',
+        description: 'Server-rendered page headers, code-split modals and tabs, cached layout prefetch, and PostHog deferred so it no longer blocks LCP. Noticeably faster overview, loot list, master sheet, loot management, attendance, profile, and submissions pages.',
+      },
+      {
+        category: 'improvement',
+        title: 'Reset week excluded from attendance',
+        description: 'The in-progress reset week no longer counts toward your attendance score, so prio doesn\'t shuffle mid-raid on reset day.',
+      },
+      {
+        category: 'improvement',
+        title: 'Late penalty applies in all attendance modes',
+        description: 'Late raids now reduce attendance credit under linear and breakpoint modes, not just the legacy mode.',
+      },
+      {
+        category: 'improvement',
+        title: 'Raid tracking polish',
+        description: 'Week headers show a date range plus a "This week"/"Last week" tag and an inline raid/attended/loot summary, top 2 weeks auto-expand, and per-raid actions tuck into an overflow menu. Plus a spinner on the Import button while it prepares.',
+      },
+      {
+        category: 'improvement',
+        title: 'Number-key shortcuts in attendance grid',
+        description: 'Hover any cell and press 1-5 to cycle status. Two-handed officer workflow.',
+      },
+      {
+        category: 'improvement',
+        title: 'Alts always visible in member manager',
+        description: 'Alts now render as their own rows instead of being tucked under a main. Toolbar pins to the top and alts collapse by default.',
+      },
+      {
+        category: 'improvement',
+        title: 'Pagination past 1000 rows everywhere',
+        description: 'Attendance, master sheet, overview, dashboard, loot management, and admin analytics now paginate past the Supabase 1000-row default. Large guilds finally see complete data.',
+      },
+      {
+        category: 'improvement',
+        title: 'Bosses ordered by pull progression',
+        description: 'WotLK, Cataclysm, and MoP raids now list bosses in the order most guilds clear them, not alphabetically.',
+      },
+      {
+        category: 'improvement',
+        title: 'Item dropdown stays on screen',
+        description: 'Item search dropdowns near the bottom of the page now flip upward and clamp to the viewport instead of getting cut off.',
+      },
+      {
+        category: 'improvement',
+        title: 'Report bugs from Discord',
+        description: 'React with 🐛 or 💡 to any message in the LootList+ Discord and the bot files a GitHub issue with a thread link. It also stamps (FIXED) or (CLOSED) on the thread title when the issue ships.',
+      },
+      {
+        category: 'fix',
+        title: 'Best-rank wins on Overview',
+        description: 'When the same item appears at two ranks on your loot list, the Overview now picks the higher rank for "next in line" instead of the lower one.',
+      },
+      {
+        category: 'fix',
+        title: 'Item classifications under custom role names',
+        description: 'Editing item classifications no longer fails for officers whose role name was customized away from the default.',
+      },
+      {
+        category: 'fix',
+        title: 'Tier 16 Heroic tokens cost an allocation point',
+        description: 'Heroic Siege of Orgrimmar tier tokens are now Limited, matching the rest of the tier 16 ruleset.',
+      },
+      {
+        category: 'fix',
+        title: 'Tier token class coverage',
+        description: 'Backfilled missing class assignments on Wrath T8 Wayward, T9 Regalia, Death Knight Vanquisher, Monk Protector, and several MoP Int/Agi specs. If a token wasn\'t showing up for your class, it should now.',
+      },
+      {
+        category: 'fix',
+        title: 'Wildfury Greatstaff source',
+        description: 'No longer appears in both SSC and TK, just where it actually drops.',
+      },
+      {
+        category: 'fix',
+        title: 'Discord connection status',
+        description: 'The guild Discord link now reflects connection state accurately and offers a reconnect path when the OAuth round-trip drops.',
+      },
+    ],
+  },
+  {
     date: 'May 18, 2026',
     items: [
       {
