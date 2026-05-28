@@ -78,6 +78,7 @@ export const PERMISSIONS = {
   manage_roster: { label: 'Manage roster', description: 'Create raid teams, assign members to teams' },
   manage_reserves: { label: 'Manage reserves', description: 'Create and manage reserve runs' },
   view_audit_log: { label: 'View audit log', description: 'Access the audit log' },
+  view_master_sheet: { label: 'View hidden master sheet', description: 'See the master sheet even when it is hidden from raiders' },
 } as const
 
 export type PermissionCode = keyof typeof PERMISSIONS
