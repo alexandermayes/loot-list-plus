@@ -39,3 +39,34 @@ export function canClassReserveItem(
   if (!allowed) return true
   return allowed.some(c => c.toLowerCase() === characterClass.toLowerCase())
 }
+
+/**
+ * Reverse lookup: armor type a given class wears.
+ *
+ * Returns the title-cased armor name ('Cloth', 'Leather', 'Mail', 'Plate'),
+ * or null if the class is unknown. Hunter is mapped to Mail here, which
+ * matches every expansion currently in LootList+ (Classic-era Hunters wearing
+ * leather pre-40 isn't relevant to raid-loot context).
+ */
+const CLASS_ARMOR_TYPE: Record<string, 'Cloth' | 'Leather' | 'Mail' | 'Plate'> = {
+  mage: 'Cloth',
+  priest: 'Cloth',
+  warlock: 'Cloth',
+  druid: 'Leather',
+  rogue: 'Leather',
+  monk: 'Leather',
+  'demon hunter': 'Leather',
+  hunter: 'Mail',
+  shaman: 'Mail',
+  evoker: 'Mail',
+  warrior: 'Plate',
+  paladin: 'Plate',
+  'death knight': 'Plate',
+}
+
+export function getClassArmorType(
+  className: string | null | undefined
+): 'Cloth' | 'Leather' | 'Mail' | 'Plate' | null {
+  if (!className) return null
+  return CLASS_ARMOR_TYPE[className.toLowerCase()] ?? null
+}
