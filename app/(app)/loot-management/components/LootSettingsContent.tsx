@@ -777,6 +777,30 @@ export default function LootSettingsContent({
     return true
   }, [updateLootItem, showNotification])
 
+  // Server-side spec write — routes through /api/loot-items/specs so officers
+  // with custom role names don't hit the hardcoded-role RLS check on
+  // loot_item_classes (see GH #60). Returns true on 2xx, false otherwise.
+  const writeSpecs = useCallback(async (payload: {
+    item_id: string
+    add?: Array<{ class_id: string; spec_id: string; spec_type: 'primary' | 'secondary' }>
+    remove?: Array<{ spec_id: string; spec_type: 'primary' | 'secondary' }>
+    remove_all?: { spec_type: 'primary' | 'secondary' }
+  }): Promise<boolean> => {
+    if (!activeGuild?.id) return false
+    const res = await fetch('/api/loot-items/specs', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ guild_id: activeGuild.id, ...payload }),
+    })
+    if (!res.ok) {
+      const errBody = await res.json().catch(() => ({}))
+      console.error('writeSpecs failed:', errBody)
+      showNotification('error', errBody.error || "Couldn't save spec change. Try again.")
+      return false
+    }
+    return true
+  }, [activeGuild?.id, showNotification])
+
   // Add a spec to an item (immediately saves to database)
   const addSpec = useCallback(async (itemId: string, specIdOrRole: string, specType: 'primary' | 'secondary') => {
     // Check if this is "all" selection
@@ -836,26 +860,11 @@ export default function LootSettingsContent({
       return
     }
 
-    // Insert into database
-    const { error } = await supabase
-      .from('loot_item_classes')
-      .insert({
-        loot_item_id: itemId,
-        class_id: spec.class_id,
-        spec_id: specIdOrRole,
-        spec_type: specType
-      })
-
-    if (error) {
-      console.error('Error adding spec:', {
-        message: error.message,
-        details: error.details,
-        hint: error.hint,
-        code: error.code
-      })
-      showNotification('error', error.message || 'Couldn\'t add spec. Try again.')
-      return
-    }
+    const ok = await writeSpecs({
+      item_id: itemId,
+      add: [{ class_id: spec.class_id, spec_id: specIdOrRole, spec_type: specType }],
+    })
+    if (!ok) return
 
     // Update local state
     setItemSpecs(prev => {
@@ -873,7 +882,7 @@ export default function LootSettingsContent({
     })
     // addAllSpecs / addRoleSpecs are stable via useCallback below (forward refs).
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [classSpecs, supabase, showNotification])
+  }, [classSpecs, supabase, writeSpecs])
 
   // Add all specs of a role to an item
   const addRoleSpecs = useCallback(async (itemId: string, role: 'tank' | 'healer' | 'physical' | 'caster', specType: 'primary' | 'secondary') => {
@@ -900,29 +909,14 @@ export default function LootSettingsContent({
     const specsToInsert = specsNotInOpposite
       .filter(spec => !currentSpecs.has(spec.id))
       .map(spec => ({
-        loot_item_id: itemId,
         class_id: spec.class_id,
         spec_id: spec.id,
-        spec_type: specType
+        spec_type: specType,
       }))
 
-    // Batch insert new specs (with ignoreDuplicates to handle race conditions)
     if (specsToInsert.length > 0) {
-      const { error } = await supabase
-        .from('loot_item_classes')
-        .insert(specsToInsert)
-
-      if (error) {
-        // Check if it's a duplicate key error (code 23505)
-        if (error.code !== '23505') {
-          console.error(`Error adding role ${role} specs:`, {
-            message: error.message,
-            details: error.details,
-            code: error.code
-          })
-        }
-        // If it's a duplicate, we'll just update the state below
-      }
+      const ok = await writeSpecs({ item_id: itemId, add: specsToInsert })
+      if (!ok) return
     }
 
     // Update local state - add role specs that aren't in opposite type
@@ -941,7 +935,7 @@ export default function LootSettingsContent({
         }
       }
     })
-  }, [classSpecs, supabase])
+  }, [classSpecs, writeSpecs])
 
   // Add all specs to an item
   const addAllSpecs = useCallback(async (itemId: string, specType: 'primary' | 'secondary') => {
@@ -965,28 +959,14 @@ export default function LootSettingsContent({
     const specsToInsert = classSpecs
       .filter(spec => specsToAddIds.has(spec.id) && !currentSpecs.has(spec.id))
       .map(spec => ({
-        loot_item_id: itemId,
         class_id: spec.class_id,
         spec_id: spec.id,
-        spec_type: specType
+        spec_type: specType,
       }))
 
-    // Batch insert all new specs
     if (specsToInsert.length > 0) {
-      const { error } = await supabase
-        .from('loot_item_classes')
-        .insert(specsToInsert)
-
-      if (error) {
-        // Ignore duplicate key errors
-        if (error.code !== '23505') {
-          console.error('Error adding all specs:', {
-            message: error.message,
-            details: error.details,
-            code: error.code
-          })
-        }
-      }
+      const ok = await writeSpecs({ item_id: itemId, add: specsToInsert })
+      if (!ok) return
     }
 
     // Update local state - add all specs to this type except those in opposite type
@@ -1000,7 +980,7 @@ export default function LootSettingsContent({
         }
       }
     })
-  }, [classSpecs, supabase])
+  }, [classSpecs, writeSpecs])
 
   // Remove a spec from an item (immediately deletes from database)
   const removeSpec = useCallback(async (itemId: string, specIdOrRole: string, specType: 'primary' | 'secondary') => {
@@ -1017,23 +997,11 @@ export default function LootSettingsContent({
       return
     }
 
-    // Delete from database
-    const { error } = await supabase
-      .from('loot_item_classes')
-      .delete()
-      .eq('loot_item_id', itemId)
-      .eq('spec_id', specIdOrRole)
-      .eq('spec_type', specType)
-
-    if (error) {
-      console.error('Error removing spec:', {
-        message: error.message,
-        details: error.details,
-        code: error.code
-      })
-      showNotification('error', error.message || 'Couldn\'t remove spec. Try again.')
-      return
-    }
+    const ok = await writeSpecs({
+      item_id: itemId,
+      remove: [{ spec_id: specIdOrRole, spec_type: specType }],
+    })
+    if (!ok) return
 
     // Update local state
     setItemSpecs(prev => {
@@ -1048,7 +1016,7 @@ export default function LootSettingsContent({
         }
       }
     })
-  }, [supabase])
+  }, [writeSpecs])
 
   // Remove all specs of a role from an item
   const removeRoleSpecs = useCallback(async (itemId: string, role: 'tank' | 'healer' | 'physical' | 'caster', specType: 'primary' | 'secondary') => {
@@ -1070,22 +1038,11 @@ export default function LootSettingsContent({
 
     if (specIdsToRemove.length === 0) return
 
-    // Batch delete from database
-    const { error } = await supabase
-      .from('loot_item_classes')
-      .delete()
-      .eq('loot_item_id', itemId)
-      .eq('spec_type', specType)
-      .in('spec_id', specIdsToRemove)
-
-    if (error) {
-      console.error(`Error removing role ${role} specs:`, {
-        message: error.message,
-        details: error.details,
-        code: error.code
-      })
-      return
-    }
+    const ok = await writeSpecs({
+      item_id: itemId,
+      remove: specIdsToRemove.map((spec_id) => ({ spec_id, spec_type: specType })),
+    })
+    if (!ok) return
 
     // Update local state - remove the specs
     setItemSpecs(prev => {
@@ -1101,37 +1058,26 @@ export default function LootSettingsContent({
         }
       }
     })
-  }, [classSpecs, supabase])
+  }, [classSpecs, writeSpecs])
 
   // Remove all specs of a type from an item (batch delete)
   const removeAllSpecs = useCallback(async (itemId: string, specType: 'primary' | 'secondary') => {
-    // Batch delete from database
-    const { error } = await supabase
-      .from('loot_item_classes')
-      .delete()
-      .eq('loot_item_id', itemId)
-      .eq('spec_type', specType)
+    const ok = await writeSpecs({ item_id: itemId, remove_all: { spec_type: specType } })
 
-    if (!error) {
-      // Update local state - clear all specs of this type
-      setItemSpecs(prev => {
-        const prevItemSpecs = prev[itemId] || { primary: new Set(), secondary: new Set() }
-        return {
-          ...prev,
-          [itemId]: {
-            ...prevItemSpecs,
-            [specType]: new Set()
-          }
+    if (!ok) return
+
+    // Update local state - clear all specs of this type
+    setItemSpecs(prev => {
+      const prevItemSpecs = prev[itemId] || { primary: new Set(), secondary: new Set() }
+      return {
+        ...prev,
+        [itemId]: {
+          ...prevItemSpecs,
+          [specType]: new Set()
         }
-      })
-    } else {
-      console.error('Error removing all specs:', {
-        message: error.message,
-        details: error.details,
-        code: error.code
-      })
-    }
-  }, [supabase])
+      }
+    })
+  }, [writeSpecs])
 
   // Stable callback so ItemRow.memo holds (the previous inline arrow rebuilt
   // on every render and re-rendered every row on any state change).
