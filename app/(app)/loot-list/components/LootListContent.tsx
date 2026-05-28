@@ -50,6 +50,7 @@ const BisImportModal = dynamic(
 import { HorizontalScroll } from '@/components/ui/horizontal-scroll'
 import ItemLink from '@/app/components/ItemLink'
 import { getCharacterPrimaryStat } from '@/utils/specPrimaryStat'
+import { getClassArmorType } from '@/utils/wowClassRestrictions'
 
 // Helper function for rank colors - defined outside component for stability
 const getRankColor = (rank: number) => {
@@ -771,6 +772,7 @@ export default function LootListContent({
   const [unrankedDifficulty, setUnrankedDifficulty] = useState<'all' | 'normal' | 'heroic'>('all')
   const [unrankedView, setUnrankedView] = useState<'boss' | 'slot'>('boss')
   const [unrankedSpecOnly, setUnrankedSpecOnly] = useState<boolean>(false)
+  const [unrankedArmorOnly, setUnrankedArmorOnly] = useState<boolean>(false)
   const [showMoreMenu, setShowMoreMenu] = useState(false)
   const [contentReady, setContentReady] = useState(false)
   const hasLoadedOnce = useRef(false)
@@ -1096,9 +1098,19 @@ export default function LootListContent({
     [unrankedItemsAll]
   )
 
+  const hasArmorTypeData = useMemo(
+    () => unrankedItemsAll.some(item => item.armor_type),
+    [unrankedItemsAll]
+  )
+
   const characterPrimaryStat = useMemo(
     () => getCharacterPrimaryStat(activeCharacter?.class?.name, activeCharacter?.spec?.name),
     [activeCharacter?.class?.name, activeCharacter?.spec?.name]
+  )
+
+  const characterArmorType = useMemo(
+    () => getClassArmorType(activeCharacter?.class?.name),
+    [activeCharacter?.class?.name]
   )
 
   // Apply user filters (slot + difficulty + spec) to derive the visible set.
@@ -1117,12 +1129,19 @@ export default function LootListContent({
       if (unrankedSpecOnly && characterPrimaryStat && item.primary_stat) {
         if ((otherPrimaries as readonly string[]).includes(item.primary_stat)) return false
       }
+      // Armor-type filter: only hide items that HAVE an armor_type and don't
+      // match. Items with no armor_type (weapons, trinkets, rings, necks,
+      // cloaks in some expansions) pass through — otherwise we'd hide
+      // legitimate non-armor drops the raider could still use (GH #59).
+      if (unrankedArmorOnly && characterArmorType && item.armor_type) {
+        if (item.armor_type !== characterArmorType) return false
+      }
       return true
     })
-  }, [unrankedItemsAll, unrankedSlotFilter, unrankedDifficulty, unrankedSpecOnly, characterPrimaryStat])
+  }, [unrankedItemsAll, unrankedSlotFilter, unrankedDifficulty, unrankedSpecOnly, unrankedArmorOnly, characterPrimaryStat, characterArmorType])
 
   const isUnrankedFiltered =
-    unrankedSlotFilter !== 'all' || unrankedDifficulty !== 'all' || unrankedSpecOnly
+    unrankedSlotFilter !== 'all' || unrankedDifficulty !== 'all' || unrankedSpecOnly || unrankedArmorOnly
 
   // Group unranked items by boss for display
   const unrankedByBoss = useMemo(() => {
@@ -2085,6 +2104,20 @@ export default function LootListContent({
                     title={`Hide gear with the wrong primary stat (your spec: ${characterPrimaryStat})`}
                   >
                     {unrankedSpecOnly ? `Showing ${characterPrimaryStat} only` : `Match my spec (${characterPrimaryStat})`}
+                  </button>
+                )}
+                {hasArmorTypeData && characterArmorType && (
+                  <button
+                    type="button"
+                    onClick={() => setUnrankedArmorOnly(v => !v)}
+                    className={`w-full px-3 py-1.5 text-[11px] font-medium rounded-md border transition-colors ${
+                      unrankedArmorOnly
+                        ? 'bg-accent/15 border-accent/40 text-accent'
+                        : 'bg-muted/40 border-transparent text-muted-foreground hover:text-foreground'
+                    }`}
+                    title={`Hide armor of the wrong type (your class wears ${characterArmorType}). Weapons, trinkets and jewelry still show.`}
+                  >
+                    {unrankedArmorOnly ? `Showing ${characterArmorType} only` : `Match my armor (${characterArmorType})`}
                   </button>
                 )}
               </div>
