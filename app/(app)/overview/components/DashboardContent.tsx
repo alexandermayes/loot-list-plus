@@ -1293,10 +1293,18 @@ export default function DashboardContent({ serverHeading }: DashboardContentProp
                 const uniqueCharacters = new Set(entries.map(e => e.character_id))
                 const othersCount = uniqueCharacters.size - (uniqueCharacters.has(characterId) ? 1 : 0)
 
-                // Find user's rank for this item
-                const userEntry = entries.find(e => e.character_id === characterId)
-                const userRank = userEntry ? entries
-                  .filter(e => e.rank > userEntry.rank)
+                // A user can have the same item ranked twice (mainspec + offspec).
+                // Use their highest rank — the scoring engine awards loot off the
+                // best entry, so the "you're #N" against the guild should match.
+                // Picking arbitrary-first via .find() previously yielded the offspec
+                // rank and counted the user's own mainspec entry as a competitor
+                // above them (GH #58).
+                const userBestRank = entries.reduce<number | null>(
+                  (best, e) => (e.character_id === characterId && (best === null || e.rank > best) ? e.rank : best),
+                  null,
+                )
+                const userRank = userBestRank !== null ? entries
+                  .filter(e => e.rank > userBestRank)
                   .reduce((acc, e) => {
                     acc.add(e.character_id)
                     return acc
@@ -1350,12 +1358,26 @@ export default function DashboardContent({ serverHeading }: DashboardContentProp
       // Build priority items with character's rank and competition info
       const priorityItems: LootPriorityItem[] = []
 
+      // Dedupe submission items to the user's BEST rank per item. A character
+      // can have the same item ranked twice (mainspec + offspec), and the
+      // scoring engine awards loot off the higher-ranked entry — so the
+      // priority list, tied-rank lookup, and score calc must all use the same
+      // (highest) rank. Picking arbitrary-first via .find() previously could
+      // produce a lower score for the user than what they actually compete at.
+      const bestRankByItemId = new Map<string, number>()
+      for (const si of submissionItems as SubmissionItemData[]) {
+        const prev = bestRankByItemId.get(si.loot_item_id)
+        if (prev === undefined || si.rank > prev) {
+          bestRankByItemId.set(si.loot_item_id, si.rank)
+        }
+      }
+
       // Collect all item/rank pairs we need to check for ties (BATCHED - avoids N+1)
       type LootItemData = { id: string; name: string; wowhead_id: number; boss_name: string; classification: string | null; raid_tier_id: string }
       const itemRankPairs = filteredItems
         .map((item: LootItemData) => {
-          const charRanking = submissionItems.find((si: SubmissionItemData) => si.loot_item_id === item.id)
-          return charRanking ? { itemId: item.id, rank: charRanking.rank } : null
+          const rank = bestRankByItemId.get(item.id)
+          return rank !== undefined ? { itemId: item.id, rank } : null
         })
         .filter((pair: { itemId: string; rank: number } | null): pair is { itemId: string; rank: number } => pair !== null)
 
@@ -1440,10 +1462,11 @@ export default function DashboardContent({ serverHeading }: DashboardContentProp
         // Skip items already received (matched by wowhead_id for cross-tier awards)
         if (receivedWowheadIds.has(item.wowhead_id)) continue
 
-        // Find this character's ranking for this item
-        const charRanking = submissionItems.find((si: SubmissionItemData) => si.loot_item_id === item.id)
+        // Use the character's best (highest) rank for this item — see comment
+        // above bestRankByItemId.
+        const charRank = bestRankByItemId.get(item.id)
 
-        if (charRanking) {
+        if (charRank !== undefined) {
           // Get same-rank submissions from our batched results
           const sameRankSubmissions = submissionsByItem.get(item.id) || []
 
@@ -1478,7 +1501,7 @@ export default function DashboardContent({ serverHeading }: DashboardContentProp
             itemSpecRoles = getSpecRoles(fullSpecName)
           }
           const itemScoreResult = computeScore({
-            itemRank: charRanking.rank,
+            itemRank: charRank,
             character: {
               characterId,
               specId: activeCharacter?.spec?.id || null,
@@ -1500,7 +1523,7 @@ export default function DashboardContent({ serverHeading }: DashboardContentProp
             wowhead_id: item.wowhead_id,
             character_name: activeCharacter?.name || '',
             character_id: characterId,
-            rank: charRanking.rank,
+            rank: charRank,
             loot_score: lootScore,
             tied_characters: tiedCharacters,
             classification: item.classification || 'Unlimited',
