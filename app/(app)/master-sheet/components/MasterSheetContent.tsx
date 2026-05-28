@@ -166,6 +166,10 @@ interface MasterSheetContentProps {
 export default function MasterSheetContent({ serverHeading }: MasterSheetContentProps = {}) {
   const { activeGuild, activeCharacter, loading: guildLoading, hasPermission } = useGuildContext()
   const canManageLoot = hasPermission('manage_loot')
+  // Granular permission for trusted non-officers to bypass the per-tier
+  // master_sheet_visible = false gate (GH #45). Doesn't grant officer
+  // actions — only viewing.
+  const canViewMasterSheet = hasPermission('view_master_sheet')
   const { showNotification } = useNotification()
   const router = useRouter()
   const [allItemRankings, setAllItemRankings] = useState<ItemRankings[]>([])
@@ -659,9 +663,12 @@ export default function MasterSheetContent({ serverHeading }: MasterSheetContent
         return
       }
 
-      // Only load rankings if master sheet is visible OR user is an officer
-      // Also require an approved submission for non-officers (prevents gaming)
-      if ((!masterSheetVisible || !hasApprovedSubmission) && !canManageLoot) {
+      // Only load rankings if master sheet is visible OR the user is an
+      // officer OR the user has the view-hidden permission. Non-officers
+      // without the permission still need an approved submission, to prevent
+      // raiders from gaming the list by scoping out competitors before
+      // submitting their own.
+      if ((!masterSheetVisible || !hasApprovedSubmission) && !canManageLoot && !canViewMasterSheet) {
         setAllItemRankings([])
         setContentLoading(false)
         return
@@ -952,7 +959,7 @@ export default function MasterSheetContent({ serverHeading }: MasterSheetContent
     }
 
     loadAllRankings()
-  }, [selectedPhase, phaseTiers, guildId, guildSettings, masterSheetVisible, hasApprovedSubmission, canManageLoot, activeTeamId])
+  }, [selectedPhase, phaseTiers, guildId, guildSettings, masterSheetVisible, hasApprovedSubmission, canManageLoot, canViewMasterSheet, activeTeamId])
 
   // Refresh Wowhead tooltips after items are loaded
   // Uses centralized debounced refresh to prevent excessive API calls
@@ -1914,7 +1921,7 @@ export default function MasterSheetContent({ serverHeading }: MasterSheetContent
         ) : (
         <div className="animate-fade-in">
         {/* Master Sheet Access Gates */}
-        {!canManageLoot && !hasApprovedSubmission ? (
+        {!canManageLoot && !canViewMasterSheet && !hasApprovedSubmission ? (
           <div className="bg-background-elevated border border-border rounded-xl p-12 text-center">
             <div className="max-w-md mx-auto">
               <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
@@ -1926,7 +1933,7 @@ export default function MasterSheetContent({ serverHeading }: MasterSheetContent
               </p>
             </div>
           </div>
-        ) : !masterSheetVisible && !canManageLoot ? (
+        ) : !masterSheetVisible && !canManageLoot && !canViewMasterSheet ? (
           <div className="bg-background-elevated border border-border rounded-xl p-12 text-center">
             <div className="max-w-md mx-auto">
               <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
@@ -1940,15 +1947,16 @@ export default function MasterSheetContent({ serverHeading }: MasterSheetContent
           </div>
         ) : (
           <>
-            {/* Officer Viewing Hidden Sheet Badge */}
-            {!masterSheetVisible && canManageLoot && (
+            {/* Hidden-sheet preview banner — shown to anyone bypassing the
+                visibility gate (officers + roles granted view_master_sheet). */}
+            {!masterSheetVisible && (canManageLoot || canViewMasterSheet) && (
               <div className="bg-blue-950/50 border border-blue-600/50 rounded-xl p-4">
                 <div className="flex items-center gap-3">
                   <span className="text-xl">👁️</span>
                   <div>
-                    <p className="text-blue-200 font-semibold">Officer preview</p>
+                    <p className="text-blue-200 font-semibold">Hidden sheet preview</p>
                     <p className="text-blue-300 text-sm">
-                      The master sheet is currently hidden from members. Only officers can see these rankings.
+                      The master sheet is currently hidden from raiders. You can see these rankings because of your role.
                     </p>
                   </div>
                 </div>

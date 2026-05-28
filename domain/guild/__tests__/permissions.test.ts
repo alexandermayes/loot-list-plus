@@ -12,8 +12,8 @@ import {
 // ─── PERMISSIONS constant integrity ─────────────────────────
 
 describe('PERMISSIONS constant', () => {
-  it('defines exactly 8 permissions', () => {
-    expect(ALL_PERMISSION_CODES).toHaveLength(8)
+  it('defines exactly 9 permissions', () => {
+    expect(ALL_PERMISSION_CODES).toHaveLength(9)
   })
 
   it('every permission has a label and description', () => {
@@ -40,6 +40,7 @@ describe('PERMISSIONS constant', () => {
       'manage_roster',
       'manage_reserves',
       'view_audit_log',
+      'view_master_sheet',
     ]
     expect(ALL_PERMISSION_CODES).toEqual(expect.arrayContaining(expected))
     expect(expected).toEqual(expect.arrayContaining([...ALL_PERMISSION_CODES]))
