@@ -267,8 +267,11 @@ export default function SearchableItemSelect({
           )}
         </span>
         <div className="flex items-center gap-1 flex-shrink-0">
-          {/* Clear button (X) - only show when item is selected */}
-          {selectedItem && !isSlotDisabled && (
+          {/* Clear button (X) — always show when an item is selected. The
+              dropdown can be disabled by a Reserved companion in the sibling
+              slot, but the user must still be able to remove an item that's
+              already there. Otherwise they get "locked" (GH #44). */}
+          {selectedItem && (
             <Button
               type="button"
               variant="ghost"
@@ -283,7 +286,7 @@ export default function SearchableItemSelect({
               }}
               className="w-6 h-6 min-h-0 rounded-full"
               aria-label={readOnly ? 'Remove from list' : 'Clear selection'}
-              title={readOnly ? 'Remove from list' : undefined}
+              title={isSlotDisabled ? 'Remove this item to unlock the slot' : (readOnly ? 'Remove from list' : undefined)}
             >
               <svg className={`w-3.5 h-3.5 ${readOnly ? 'text-muted-foreground hover:text-destructive' : 'text-muted-foreground hover:text-foreground'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
