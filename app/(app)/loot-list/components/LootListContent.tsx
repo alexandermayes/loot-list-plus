@@ -144,6 +144,15 @@ interface RankRowProps {
   removedRankings?: Record<string, string>
   /** Called when user restores a removed item */
   onRestoreItem?: (lootItemId: string, itemName: string) => void
+  /**
+   * When true (default), a Reserved item in one slot disables its sibling.
+   * Brackets 1-4 enforce this — Reserved costs 1 allocation point and the
+   * cap is 3 per bracket, so the rule keeps Reserved-heavy rows tidy.
+   * No Bracket and Off-spec zones have no allocation cap (and the engine
+   * skips bracket rules for them, see bracket-validation.ts:252), so the
+   * disable rule shouldn't apply there. GH #69.
+   */
+  enforceReservedAlone?: boolean
 }
 
 const RankRow = memo(function RankRow({
@@ -161,7 +170,8 @@ const RankRow = memo(function RankRow({
   onRemoveItem,
   removingItemId,
   removedRankings = {},
-  onRestoreItem
+  onRestoreItem,
+  enforceReservedAlone = true,
 }: RankRowProps) {
   const selectedItem1 = selectedItemId1 ? lootItems.find(i => i.id === selectedItemId1) : null
   const selectedItem2 = selectedItemId2 ? lootItems.find(i => i.id === selectedItemId2) : null
@@ -172,9 +182,10 @@ const RankRow = memo(function RankRow({
   const isDuplicate1 = selectedItemId1 && duplicateItems.includes(selectedItemId1)
   const isDuplicate2 = selectedItemId2 && duplicateItems.includes(selectedItemId2)
 
-  // Disable sibling slot if a Reserved item is selected
-  const isSlot1DisabledByReserved = selectedItem2?.classification === 'Reserved'
-  const isSlot2DisabledByReserved = selectedItem1?.classification === 'Reserved'
+  // Disable sibling slot if a Reserved item is selected — only in zones that
+  // enforce bracket rules.
+  const isSlot1DisabledByReserved = enforceReservedAlone && selectedItem2?.classification === 'Reserved'
+  const isSlot2DisabledByReserved = enforceReservedAlone && selectedItem1?.classification === 'Reserved'
 
   // Check if this row has errors
   const hasSlot1Error = slot1Errors.length > 0
@@ -364,7 +375,8 @@ const MobileRankCard = memo(function MobileRankCard({
   onRemoveItem,
   removingItemId,
   removedRankings = {},
-  onRestoreItem
+  onRestoreItem,
+  enforceReservedAlone = true,
 }: RankRowProps) {
   const selectedItem1 = selectedItemId1 ? lootItems.find(i => i.id === selectedItemId1) : null
   const selectedItem2 = selectedItemId2 ? lootItems.find(i => i.id === selectedItemId2) : null
@@ -375,8 +387,8 @@ const MobileRankCard = memo(function MobileRankCard({
   const isDuplicate1 = selectedItemId1 && duplicateItems.includes(selectedItemId1)
   const isDuplicate2 = selectedItemId2 && duplicateItems.includes(selectedItemId2)
 
-  const isSlot1DisabledByReserved = selectedItem2?.classification === 'Reserved'
-  const isSlot2DisabledByReserved = selectedItem1?.classification === 'Reserved'
+  const isSlot1DisabledByReserved = enforceReservedAlone && selectedItem2?.classification === 'Reserved'
+  const isSlot2DisabledByReserved = enforceReservedAlone && selectedItem1?.classification === 'Reserved'
 
   const hasSlot1Error = slot1Errors.length > 0
   const hasSlot2Error = slot2Errors.length > 0
@@ -476,6 +488,8 @@ interface BracketSectionProps {
   tooltipContent: string
   subtitle?: string
   showAllocationPoints?: boolean
+  /** Passed through to RankRow / MobileRankCard. See enforceReservedAlone on RankRowProps. */
+  enforceReservedAlone?: boolean
   ranks: number[]
   lootItems: LootItem[]
   disabledItems: Set<string>
@@ -505,6 +519,7 @@ function BracketSection({
   tooltipContent,
   subtitle,
   showAllocationPoints = false,
+  enforceReservedAlone = true,
   ranks,
   lootItems,
   disabledItems,
@@ -645,6 +660,7 @@ function BracketSection({
                   removingItemId={removingItemId}
                   removedRankings={removedRankings}
                   onRestoreItem={onRestoreItem}
+                  enforceReservedAlone={enforceReservedAlone}
                 />
               ))}
             </tbody>
@@ -660,6 +676,7 @@ function BracketSection({
               lootItems={lootItems}
               selectedItemId1={rankings[`${rank}-1`]}
               selectedItemId2={rankings[`${rank}-2`]}
+              enforceReservedAlone={enforceReservedAlone}
               selectedItems={disabledItems}
               duplicateItems={duplicateItems}
               onItemSelect={onItemSelect}
@@ -1865,6 +1882,10 @@ export default function LootListContent({
             tooltipContent={bracket.tooltipContent}
             subtitle={'subtitle' in bracket ? bracket.subtitle : undefined}
             showAllocationPoints={'showAllocationPoints' in bracket ? bracket.showAllocationPoints : false}
+            // Bracket rules (Reserved-alone, allocation cap, etc.) only apply to
+            // Brackets 1-4 — the engine skips them for No Bracket / Off-spec.
+            // showAllocationPoints already identifies those zones cleanly.
+            enforceReservedAlone={'showAllocationPoints' in bracket ? bracket.showAllocationPoints : false}
             ranks={bracket.ranks}
             lootItems={bracket.lootItems}
             disabledItems={bracket.disabledItems}
