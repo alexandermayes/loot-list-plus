@@ -145,17 +145,22 @@ export default function LandingValueProps() {
           <StatCard value="1" label="system for loot, attendance, and priorities" className="h-[250px] md:h-[300px] flex-shrink-0 md:w-auto md:flex-1" />
         </motion.div>
 
-        {/* Row 3: quote */}
+        {/* Row 3: two quotes side-by-side */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={isInView ? { opacity: 1, y: 0 } : {}}
           transition={{ delay: 0.4 }}
-          className="flex"
+          className="flex flex-col md:flex-row gap-4"
         >
           <QuoteCard
             quote="LootList+ is a game changer. As someone who has always dreaded being a loot master, I no longer despise handling loot. Cannot recommend it enough."
             author={{ name: 'Para/Kidney', guild: 'Indecisive' }}
-            className="h-[220px] md:h-[260px] w-full"
+            className="h-[250px] md:h-[300px] md:flex-1"
+          />
+          <QuoteCard
+            quote="I chose LootList+ for the intuitive design and was pleasantly surprised by the depth of features. If you've used other loot tools and want something cleaner and easier for your raiders, this is the answer."
+            author={{ name: '2laxs', guild: 'Bad Guys · Nightslayer' }}
+            className="h-[250px] md:h-[300px] md:flex-1"
           />
         </motion.div>
       </div>
