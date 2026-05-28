@@ -30,10 +30,30 @@ async function fetchRecentlyClosedIssues() {
   return issues.filter((i) => !i.pull_request); // /issues endpoint also returns PRs
 }
 
+function isFeatureRequest(issue) {
+  return Array.isArray(issue.labels) && issue.labels.some((l) => l?.name === 'enhancement');
+}
+
+// Title prefix shown on the Discord forum post once the issue closes. Bugs
+// stay "(FIXED)"/"(CLOSED)"; feature requests use words that read sensibly
+// for a feature lifecycle ("(COMPLETED)"/"(NOT DOING)").
+function resolveTitlePrefix(issue) {
+  const notPlanned = issue.state_reason === 'not_planned';
+  if (isFeatureRequest(issue)) {
+    return notPlanned ? '(NOT DOING) ' : '(COMPLETED) ';
+  }
+  return notPlanned ? '(CLOSED) ' : '(FIXED) ';
+}
+
 function buildCloseMessage(issue) {
-  const tag = issue.state_reason === 'not_planned'
-    ? '🚫 Closed (not planned)'
-    : '✅ Closed (completed)';
+  const notPlanned = issue.state_reason === 'not_planned';
+  const feature = isFeatureRequest(issue);
+  let tag;
+  if (feature) {
+    tag = notPlanned ? '🚫 Not doing this one' : '✅ Shipped';
+  } else {
+    tag = notPlanned ? '🚫 Closed (not planned)' : '✅ Closed (completed)';
+  }
   return `${tag}. See: <${issue.html_url}>`;
 }
 
@@ -70,9 +90,12 @@ async function announceClosure(client, supabase, issue) {
   // every sweep. That lets us retroactively flag threads whose closure was
   // announced before this rename feature shipped.
   if (channel.isThread?.()) {
-    const prefix = issue.state_reason === 'not_planned' ? '(CLOSED) ' : '(FIXED) ';
+    const prefix = resolveTitlePrefix(issue);
     const currentName = channel.name || '';
-    const alreadyMarked = currentName.startsWith('(FIXED) ') || currentName.startsWith('(CLOSED) ');
+    // Match any "(WORD) " prefix so we don't double-tag a thread that was
+    // already renamed (works for FIXED/CLOSED/COMPLETED/NOT DOING and any
+    // future labels we add).
+    const alreadyMarked = /^\([A-Z][A-Z ]*\)\s/.test(currentName);
     if (!alreadyMarked) {
       const newName = (prefix + currentName).slice(0, 100); // Discord caps thread names at 100 chars
       try {
