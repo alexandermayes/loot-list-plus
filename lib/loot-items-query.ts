@@ -23,6 +23,7 @@ import {
 } from '@/data/class-proficiencies'
 import { getItemTypeInfo, inferArmorType, inferWeaponType } from '@/data/item-types'
 import { isTokenSlot, canClassUseToken } from '@/data/token-class-mapping'
+import { paginatedSelect } from '@/utils/supabase/paginate'
 
 export interface LootItemClassRestriction {
   class_id: string
@@ -105,20 +106,49 @@ export async function fetchFilteredLootItems(
 ): Promise<unknown[]> {
   if (tierIds.length === 0) return []
 
-  const { data: items, error: itemsError } = await supabase
-    .from('loot_items')
-    .select(`
-      id, name, boss_name, item_slot, wowhead_id,
-      classification, item_type, allocation_cost, is_available, is_loot_council, roles,
-      armor_type, weapon_type, primary_stat, raid_tier_id,
-      loot_item_classes(class_id, spec_id, spec_type),
-      raid_tiers(name)
-    `)
-    .in('raid_tier_id', tierIds)
-    .eq('is_available', true)
-    .order('id')
+  // Paginate past the PostgREST 1000-row cap. Multi-tier phase queries on
+  // populated expansions (MoP has 1700+ items per guild) overflow silently
+  // otherwise — items beyond row 1000 by id ascend drop from the picker.
+  // GH #65: the May 25 backfill that added MoP trash items had higher ids
+  // than the original seed, so trash + Garrosh essences disappeared exactly
+  // for the long-tail of populated guilds the backfill targeted.
+  type LootItemRow = {
+    id: string
+    name: string
+    boss_name: string
+    item_slot: string
+    wowhead_id: number
+    classification: string | null
+    item_type: string | null
+    allocation_cost: number
+    is_available: boolean
+    is_loot_council: boolean
+    roles: string[] | null
+    armor_type: string | null
+    weapon_type: string | null
+    primary_stat: string | null
+    raid_tier_id: string
+    loot_item_classes: LootItemClassRestriction[] | null
+    raid_tiers: { name: string } | { name: string }[] | null
+  }
+  const items = await paginatedSelect<LootItemRow>(
+    (start, end) =>
+      supabase
+        .from('loot_items')
+        .select(`
+          id, name, boss_name, item_slot, wowhead_id,
+          classification, item_type, allocation_cost, is_available, is_loot_council, roles,
+          armor_type, weapon_type, primary_stat, raid_tier_id,
+          loot_item_classes(class_id, spec_id, spec_type),
+          raid_tiers(name)
+        `)
+        .in('raid_tier_id', tierIds)
+        .eq('is_available', true)
+        .order('id', { ascending: true })
+        .range(start, end),
+  )
 
-  if (itemsError || !items) return []
+  if (items.length === 0) return []
 
   // Fetch class/spec reference data once per request for enrichment.
   const [{ data: allClasses }, { data: allSpecs }] = await Promise.all([
