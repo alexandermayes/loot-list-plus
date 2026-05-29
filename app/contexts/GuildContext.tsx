@@ -11,6 +11,7 @@ import type { User, AuthChangeEvent, Session } from '@supabase/supabase-js'
 // once PostHogProvider has loaded it.
 const loadPosthog = () => import('posthog-js').then((m) => m.default)
 import { usePrefetchedGuildData } from '@/app/(app)/PrefetchProvider'
+import { deriveStateFromPrefetch } from './derive-prefetched-state'
 
 // Re-export expansion types for backward compatibility
 export type { GuildExpansion } from './ExpansionContext'
@@ -143,22 +144,41 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
     // Not inside PrefetchProvider (e.g., guild-select, landing pages) — that's fine
   }
   const prefetchConsumed = useRef(false)
+
+  // Synchronously derive initial state from the server-prefetched bundle so
+  // the first render already has user/guild/character populated and
+  // loading=false. Eliminates the loading→loaded transition that previously
+  // forced every authed page through a one-tick placeholder branch.
+  // Returns null when no prefetch is present (guild-select, landing) — in
+  // that case we fall back to the async loadUserData flow.
+  const initial = useState(() => deriveStateFromPrefetch(prefetchedData))[0]
+  if (initial) prefetchConsumed.current = true
+
   // Existing State
-  const [activeGuild, setActiveGuild] = useState<Guild | null>(null)
-  const [activeMember, setActiveMember] = useState<GuildMember | null>(null)
-  const [userGuilds, setUserGuilds] = useState<GuildMembership[]>([])
+  const [activeGuild, setActiveGuild] = useState<Guild | null>(initial?.activeGuild ?? null)
+  const [activeMember, setActiveMember] = useState<GuildMember | null>(initial?.activeMember ?? null)
+  const [userGuilds, setUserGuilds] = useState<GuildMembership[]>(initial?.userGuilds ?? [])
 
   // New Character State
-  const [activeCharacter, setActiveCharacter] = useState<Character | null>(null)
-  const [userCharacters, setUserCharacters] = useState<Character[]>([])
-  const [characterMemberships, setCharacterMemberships] = useState<CharacterGuildMembership[]>([])
+  const [activeCharacter, setActiveCharacter] = useState<Character | null>(initial?.activeCharacter ?? null)
+  const [userCharacters, setUserCharacters] = useState<Character[]>(initial?.userCharacters ?? [])
+  const [characterMemberships, setCharacterMemberships] = useState<CharacterGuildMembership[]>(
+    initial?.characterMemberships ?? [],
+  )
 
   // Cached role positions and permissions — avoids re-querying guild_roles on every check
-  const [rolePositionCache, setRolePositionCache] = useState<Map<string, Map<string, number>>>(new Map())
-  const [rolePermissionsCache, setRolePermissionsCache] = useState<Map<string, Map<string, string[]>>>(new Map())
+  const [rolePositionCache, setRolePositionCache] = useState<Map<string, Map<string, number>>>(
+    initial?.rolePositionCache ?? new Map(),
+  )
+  const [rolePermissionsCache, setRolePermissionsCache] = useState<Map<string, Map<string, string[]>>>(
+    initial?.rolePermissionsCache ?? new Map(),
+  )
 
-  const [loading, setLoading] = useState(true)
-  const [user, setUser] = useState<User | null>(null)
+  // loading=false when prefetched state is available; the async loadUserData
+  // still runs once to backfill edge cases (stale active_guild_id, pending
+  // character creation) but won't flash the UI through a loading state.
+  const [loading, setLoading] = useState(!initial)
+  const [user, setUser] = useState<User | null>(initial?.user ?? null)
 
   const supabase = createClient()
   const router = useRouter()
@@ -175,7 +195,15 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
   // (the SIGNED_OUT event handler redirects if truly signed out).
   const loadUserData = async () => {
     try {
-      setLoading(true)
+      // When we already hydrated state synchronously from the prefetched
+      // bundle, skip the loading flash. The initial state is the same as what
+      // this function would produce, so we run it for the backfill side
+      // effects (e.g., stale active_guild_id cleanup, auth state sync) but
+      // never put the UI back into the loading branch.
+      const skipLoadingFlash = prefetchConsumed.current && !hasInitiallyLoaded.current
+      if (!skipLoadingFlash) {
+        setLoading(true)
+      }
 
       // Use server-prefetched data if available (eliminates 400-800ms of network calls)
       const usePrefetch = prefetchedData?.user && !prefetchConsumed.current
