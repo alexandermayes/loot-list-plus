@@ -835,6 +835,10 @@ export default function LootListContent({
   const [unrankedView, setUnrankedView] = useState<'boss' | 'slot'>('boss')
   const [unrankedSpecOnly, setUnrankedSpecOnly] = useState<boolean>(false)
   const [unrankedArmorOnly, setUnrankedArmorOnly] = useState<boolean>(false)
+  // Toggle: only show items where the character's spec_type is 'primary' or
+  // 'secondary' (i.e. officers have explicitly prio'd this item for the
+  // raider's spec). GH #91.
+  const [unrankedPrioOnly, setUnrankedPrioOnly] = useState<boolean>(false)
   const [showMoreMenu, setShowMoreMenu] = useState(false)
   const [contentReady, setContentReady] = useState(false)
   const hasLoadedOnce = useRef(false)
@@ -1165,6 +1169,13 @@ export default function LootListContent({
     [unrankedItemsAll]
   )
 
+  // Only surface the prio toggle when at least one unranked item is prio'd
+  // for the active character — otherwise it'd hide everything and confuse.
+  const hasPrioData = useMemo(
+    () => unrankedItemsAll.some(item => item.character_spec_type === 'primary' || item.character_spec_type === 'secondary'),
+    [unrankedItemsAll]
+  )
+
   const characterPrimaryStat = useMemo(
     () => getCharacterPrimaryStat(activeCharacter?.class?.name, activeCharacter?.spec?.name),
     [activeCharacter?.class?.name, activeCharacter?.spec?.name]
@@ -1206,12 +1217,19 @@ export default function LootListContent({
       if (unrankedArmorOnly && characterArmorType && item.armor_type) {
         if (item.armor_type !== characterArmorType) return false
       }
+      // Prio'd-only filter: hide items where the active character isn't the
+      // primary or secondary recipient. GH #91 — companion toggle to the
+      // P / S badges so officers can quickly narrow to "what I'm actually
+      // on the hook for."
+      if (unrankedPrioOnly) {
+        if (item.character_spec_type !== 'primary' && item.character_spec_type !== 'secondary') return false
+      }
       return true
     })
-  }, [unrankedItemsAll, unrankedSlotFilter, unrankedDifficulty, unrankedSpecOnly, unrankedArmorOnly, characterPrimaryStat, characterArmorType])
+  }, [unrankedItemsAll, unrankedSlotFilter, unrankedDifficulty, unrankedSpecOnly, unrankedArmorOnly, unrankedPrioOnly, characterPrimaryStat, characterArmorType])
 
   const isUnrankedFiltered =
-    unrankedSlotFilter !== 'all' || unrankedDifficulty !== 'all' || unrankedSpecOnly || unrankedArmorOnly
+    unrankedSlotFilter !== 'all' || unrankedDifficulty !== 'all' || unrankedSpecOnly || unrankedArmorOnly || unrankedPrioOnly
 
   // Group unranked items by boss for display
   const unrankedByBoss = useMemo(() => {
@@ -2266,6 +2284,20 @@ export default function LootListContent({
                     {unrankedArmorOnly ? `Showing ${characterArmorType} only` : `Match my armor (${characterArmorType})`}
                   </button>
                 )}
+                {hasPrioData && (
+                  <button
+                    type="button"
+                    onClick={() => setUnrankedPrioOnly(v => !v)}
+                    className={`w-full px-3 py-1.5 text-[11px] font-medium rounded-md border transition-colors ${
+                      unrankedPrioOnly
+                        ? 'bg-accent/15 border-accent/40 text-accent'
+                        : 'bg-muted/40 border-transparent text-muted-foreground hover:text-foreground'
+                    }`}
+                    title="Show only items where your spec is the primary or secondary recipient (matches the P / S badges)"
+                  >
+                    {unrankedPrioOnly ? 'Showing my prio only' : 'Match my prio'}
+                  </button>
+                )}
               </div>
             )}
 
@@ -2287,6 +2319,8 @@ export default function LootListContent({
                       setUnrankedSlotFilter('all')
                       setUnrankedDifficulty('all')
                       setUnrankedSpecOnly(false)
+                      setUnrankedArmorOnly(false)
+                      setUnrankedPrioOnly(false)
                     }}
                   >
                     Clear filters
