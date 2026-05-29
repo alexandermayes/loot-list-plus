@@ -1,7 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { getAuthenticatedUser } from '@/utils/supabase/server'
-import { createServiceRoleClient } from '@/utils/supabase/service-role'
-import { verifyPermission } from '@/utils/server-roles'
+import { NextResponse } from 'next/server'
+import { withPermission } from '@/utils/api/handler'
 import { logAudit } from '@/utils/audit/log'
 import { resolveStatus } from '@/domain/scoring'
 import { trackEvent } from '@/utils/analytics/server'
@@ -20,6 +18,14 @@ interface AttendanceRecord {
   is_excused?: boolean
 }
 
+interface AttendanceFilters {
+  raid_event_id?: string
+  expected_updated_at?: string
+  character_ids?: string[]
+  ids?: string[]
+  id?: string
+}
+
 /**
  * POST /api/attendance/bulk
  *
@@ -33,25 +39,19 @@ interface AttendanceRecord {
  *   onConflict?: string  // e.g. 'raid_event_id,character_id'
  * }
  */
-export async function POST(request: NextRequest) {
-  try {
-    const { user, error: authError } = await getAuthenticatedUser()
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+export const POST = withPermission<{
+  guild_id?: string
+  action?: string
+  records?: AttendanceRecord[]
+  onConflict?: string
+}>(
+  'manage_attendance',
+  ({ body }) => body.guild_id,
+  async ({ user, service: serviceSupabase, body, guildId: guild_id }) => {
+    const { action, records, onConflict } = body
 
-    const body = await request.json()
-    const { guild_id, action, records, onConflict } = body
-
-    if (!guild_id || !records || !Array.isArray(records) || records.length === 0) {
+    if (!records || !Array.isArray(records) || records.length === 0) {
       return NextResponse.json({ error: 'guild_id and records array are required' }, { status: 400 })
-    }
-
-    const serviceSupabase = createServiceRoleClient()
-
-    const { hasPermission, error: permError } = await verifyPermission(serviceSupabase, user.id, guild_id, 'manage_attendance')
-    if (!hasPermission) {
-      return NextResponse.json({ error: permError || 'Insufficient permissions' }, { status: 403 })
     }
 
     // Stamp modified_by and computed status on all records (dual-write)
@@ -137,11 +137,9 @@ export async function POST(request: NextRequest) {
 
       return NextResponse.json({ success: true, count })
     }
-  } catch (error) {
-    console.error('Error in POST /api/attendance/bulk:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
-  }
-}
+  },
+  'POST /api/attendance/bulk',
+)
 
 /**
  * PATCH /api/attendance/bulk
@@ -154,25 +152,18 @@ export async function POST(request: NextRequest) {
  *   filters: { raid_event_id?: string, character_ids?: string[], ids?: string[], character_id_is_null?: boolean, character_name?: string }
  * }
  */
-export async function PATCH(request: NextRequest) {
-  try {
-    const { user, error: authError } = await getAuthenticatedUser()
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+export const PATCH = withPermission<{
+  guild_id?: string
+  updates?: Partial<AttendanceRecord>
+  filters?: AttendanceFilters
+}>(
+  'manage_attendance',
+  ({ body }) => body.guild_id,
+  async ({ user, service: serviceSupabase, body, guildId: guild_id }) => {
+    const { updates, filters } = body
 
-    const body = await request.json()
-    const { guild_id, updates, filters } = body
-
-    if (!guild_id || !updates || !filters) {
+    if (!updates || !filters) {
       return NextResponse.json({ error: 'guild_id, updates, and filters are required' }, { status: 400 })
-    }
-
-    const serviceSupabase = createServiceRoleClient()
-
-    const { hasPermission, error: permError } = await verifyPermission(serviceSupabase, user.id, guild_id, 'manage_attendance')
-    if (!hasPermission) {
-      return NextResponse.json({ error: permError || 'Insufficient permissions' }, { status: 403 })
     }
 
     // Optimistic locking: if client sends expected_updated_at for the raid event,
@@ -251,11 +242,9 @@ export async function PATCH(request: NextRequest) {
     })
 
     return NextResponse.json({ success: true })
-  } catch (error) {
-    console.error('Error in PATCH /api/attendance/bulk:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
-  }
-}
+  },
+  'PATCH /api/attendance/bulk',
+)
 
 /**
  * DELETE /api/attendance/bulk
@@ -271,26 +260,18 @@ export async function PATCH(request: NextRequest) {
  *   character_names?: string[]
  * }
  */
-export async function DELETE(request: NextRequest) {
-  try {
-    const { user, error: authError } = await getAuthenticatedUser()
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const body = await request.json()
-    const { guild_id, raid_event_id, ids, character_id, character_id_is_null, character_names } = body
-
-    if (!guild_id) {
-      return NextResponse.json({ error: 'guild_id is required' }, { status: 400 })
-    }
-
-    const serviceSupabase = createServiceRoleClient()
-
-    const { hasPermission, error: permError } = await verifyPermission(serviceSupabase, user.id, guild_id, 'manage_attendance')
-    if (!hasPermission) {
-      return NextResponse.json({ error: permError || 'Insufficient permissions' }, { status: 403 })
-    }
+export const DELETE = withPermission<{
+  guild_id?: string
+  raid_event_id?: string
+  ids?: string[]
+  character_id?: string
+  character_id_is_null?: boolean
+  character_names?: string[]
+}>(
+  'manage_attendance',
+  ({ body }) => body.guild_id,
+  async ({ user, service: serviceSupabase, body, guildId: guild_id }) => {
+    const { raid_event_id, ids, character_id, character_id_is_null, character_names } = body
 
     let query = serviceSupabase
       .from('attendance_records')
@@ -337,8 +318,6 @@ export async function DELETE(request: NextRequest) {
     })
 
     return NextResponse.json({ success: true })
-  } catch (error) {
-    console.error('Error in DELETE /api/attendance/bulk:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
-  }
-}
+  },
+  'DELETE /api/attendance/bulk',
+)
