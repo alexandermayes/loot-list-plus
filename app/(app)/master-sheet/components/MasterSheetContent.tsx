@@ -1642,7 +1642,7 @@ export default function MasterSheetContent({ serverHeading }: MasterSheetContent
   }
 
   return (
-    <ExpansionGuard>
+    <ExpansionGuard serverHeading={serverHeading}>
       <div className="font-poppins">
         {/* Header - Always visible */}
         <div className="p-4 sm:p-6 lg:p-8 pb-1.5">

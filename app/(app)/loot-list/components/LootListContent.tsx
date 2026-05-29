@@ -1415,7 +1415,7 @@ export default function LootListContent({
   }, [moveRanking])
 
   return (
-    <ExpansionGuard>
+    <ExpansionGuard serverHeading={serverHeading}>
       <DndContext
         sensors={dndSensors}
         onDragStart={handleDragStart}

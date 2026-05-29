@@ -19,50 +19,73 @@ import { useRouter } from 'next/navigation'
  * Wrap loot-related pages (Loot List, Master Sheet, Loot Items Admin) with this component:
  *
  * return (
- *   <ExpansionGuard>
+ *   <ExpansionGuard serverHeading={serverHeading}>
  *     <YourPageContent />
  *   </ExpansionGuard>
  * )
+ *
+ * The optional `serverHeading` prop is rendered above the skeleton / no-expansion
+ * message during loading states so the page's LCP element lands in the SSR HTML
+ * instead of being swallowed by the guard's loading branch.
  */
-export function ExpansionGuard({ children }: { children: React.ReactNode }) {
+export function ExpansionGuard({
+  children,
+  serverHeading,
+}: {
+  children: React.ReactNode
+  serverHeading?: React.ReactNode
+}) {
   const { activeGuild, isOfficer, loading } = useGuildContext()
   const router = useRouter()
 
-  // Show loading state while guild data is being fetched
+  // Show loading state while guild data is being fetched. We still render
+  // the heading so the LCP element exists in the SSR HTML.
   if (loading) {
-    return <DashboardContentSkeleton />
+    return (
+      <div className="p-4 sm:p-6 lg:p-8 pb-1.5">
+        {serverHeading}
+        <div className="mt-6">
+          <DashboardContentSkeleton />
+        </div>
+      </div>
+    )
   }
 
   // If no active expansion is set, show the guard message
   if (!activeGuild?.active_expansion_id) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        <Card className="max-w-md">
-          <CardContent className="pt-6">
-            <div className="text-center space-y-4">
-              <HugeiconsIcon icon={AlertCircleIcon} size={48} className="text-warning mx-auto" />
-              <h2 className="text-xl font-semibold text-foreground">
-                No expansion set
-              </h2>
-              <p className="text-muted-foreground">
-                {isOfficer
-                  ? 'Your guild needs to select an expansion before you can use loot features.'
-                  : 'Ask an officer to select an expansion in Manage Expansions.'}
-              </p>
-              <div className="flex flex-col gap-2">
-                {isOfficer && (
-                  <Button onClick={() => router.push('/expansions')}>
-                    Go to manage expansions
+      <>
+        {serverHeading && (
+          <div className="p-4 sm:p-6 lg:p-8 pb-1.5">{serverHeading}</div>
+        )}
+        <div className="min-h-[60vh] bg-background flex items-center justify-center p-4">
+          <Card className="max-w-md">
+            <CardContent className="pt-6">
+              <div className="text-center space-y-4">
+                <HugeiconsIcon icon={AlertCircleIcon} size={48} className="text-warning mx-auto" />
+                <h2 className="text-xl font-semibold text-foreground">
+                  No expansion set
+                </h2>
+                <p className="text-muted-foreground">
+                  {isOfficer
+                    ? 'Your guild needs to select an expansion before you can use loot features.'
+                    : 'Ask an officer to select an expansion in Manage Expansions.'}
+                </p>
+                <div className="flex flex-col gap-2">
+                  {isOfficer && (
+                    <Button onClick={() => router.push('/expansions')}>
+                      Go to manage expansions
+                    </Button>
+                  )}
+                  <Button variant="outline" onClick={() => router.push('/overview')}>
+                    Back to dashboard
                   </Button>
-                )}
-                <Button variant="outline" onClick={() => router.push('/overview')}>
-                  Back to dashboard
-                </Button>
+                </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+            </CardContent>
+          </Card>
+        </div>
+      </>
     )
   }
 
