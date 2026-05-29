@@ -99,7 +99,7 @@ function UnrankedDraggable({ itemId, children }: { itemId: string; children: Rea
       ref={setNodeRef}
       {...attributes}
       {...listeners}
-      className={`cursor-grab active:cursor-grabbing transition-opacity ${isDragging ? 'opacity-30' : ''}`}
+      className={`cursor-grab active:cursor-grabbing transition-opacity min-w-0 ${isDragging ? 'opacity-30' : ''}`}
     >
       {children}
     </div>
@@ -2158,7 +2158,14 @@ export default function LootListContent({
             showUnrankedPanel ? 'w-80 opacity-100' : 'w-0 opacity-0 overflow-hidden'
           }`}
         >
-          <div className="w-80 bg-background-elevated border border-border rounded-xl flex flex-col sticky top-14 sm:top-0 max-h-[calc(100vh-4.5rem)]">
+          {/* Sticky offset clears the page's tabs+banner header above us (line
+              1593, sticky top-14 sm:top-0 z-20). The earlier top-14/top-0
+              landed the panel at the exact same anchor as the page header, so
+              the panel's own h3 sat behind the page header (z-0 vs z-20) and
+              "looked unpinned" — GH issue from 2026-05-29 thread. The new
+              offset puts the panel header just below where the page header
+              settles (approximate, but stable). */}
+          <div className="w-80 bg-background-elevated border border-border rounded-xl flex flex-col sticky top-[160px] sm:top-[120px] max-h-[calc(100vh-180px)] overflow-hidden">
             {/* Panel Header */}
             <div className="p-4 border-b border-border flex items-center justify-between shrink-0">
               <div>
@@ -2262,8 +2269,10 @@ export default function LootListContent({
               </div>
             )}
 
-            {/* Panel Content - Scrollable */}
-            <div className="flex-1 overflow-y-auto">
+            {/* Panel Content - Scrollable. overflow-x-hidden ensures wide
+                item names truncate inside the panel rather than bleeding
+                past the right edge. */}
+            <div className="flex-1 overflow-y-auto overflow-x-hidden min-w-0">
               {unrankedItemsAll.length === 0 ? (
                 <div className="p-6 text-center">
                   <p className="text-muted-foreground text-sm">All items are ranked</p>
@@ -2295,15 +2304,16 @@ export default function LootListContent({
                     <div>
                       {unrankedBySlot[slot].map(item => (
                         <UnrankedDraggable key={item.id} itemId={item.id}>
-                          <div className="px-4 py-3 hover:bg-muted/50 transition-colors border-b border-border/30">
-                            <div className="flex items-center gap-2">
-                              <span className="flex-1 min-w-0">
+                          <div className="px-4 py-3 hover:bg-muted/50 transition-colors border-b border-border/30 overflow-hidden">
+                            <div className="flex items-center gap-2 min-w-0">
+                              <span className="flex-1 min-w-0 overflow-hidden">
                                 <ItemLink name={item.name} wowheadId={item.wowhead_id} clickable={true} />
                               </span>
                               {item.classification && item.classification !== 'Unlimited' && (
                                 <ClassificationBadge
                                   classification={item.classification as 'Reserved' | 'Limited' | 'Unlimited'}
                                   compact
+                                  className="flex-shrink-0"
                                 />
                               )}
                             </div>
@@ -2330,15 +2340,16 @@ export default function LootListContent({
                     <div>
                       {unrankedByBoss[boss].map(item => (
                         <UnrankedDraggable key={item.id} itemId={item.id}>
-                          <div className="px-4 py-3 hover:bg-muted/50 transition-colors border-b border-border/30">
-                            <div className="flex items-center gap-2">
-                              <span className="flex-1 min-w-0">
+                          <div className="px-4 py-3 hover:bg-muted/50 transition-colors border-b border-border/30 overflow-hidden">
+                            <div className="flex items-center gap-2 min-w-0">
+                              <span className="flex-1 min-w-0 overflow-hidden">
                                 <ItemLink name={item.name} wowheadId={item.wowhead_id} clickable={true} />
                               </span>
                               {item.classification && item.classification !== 'Unlimited' && (
                                 <ClassificationBadge
                                   classification={item.classification as 'Reserved' | 'Limited' | 'Unlimited'}
                                   compact
+                                  className="flex-shrink-0"
                                 />
                               )}
                             </div>
