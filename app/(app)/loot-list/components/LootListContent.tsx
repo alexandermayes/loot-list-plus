@@ -2309,6 +2309,26 @@ export default function LootListContent({
                               <span className="flex-1 min-w-0 overflow-hidden">
                                 <ItemLink name={item.name} wowheadId={item.wowhead_id} clickable={true} />
                               </span>
+                              {/* "What I'm prio'd on" indicator (GH #91). Sits next
+                                  to the classification badge so officers' spec
+                                  assignment is visible at a glance without
+                                  opening the item. */}
+                              {item.character_spec_type === 'primary' && (
+                                <span
+                                  className="flex-shrink-0 inline-flex items-center px-1.5 text-[10px] font-semibold rounded-full border bg-accent/15 text-accent border-accent/30"
+                                  title="Your spec is the primary recipient for this item"
+                                >
+                                  P
+                                </span>
+                              )}
+                              {item.character_spec_type === 'secondary' && (
+                                <span
+                                  className="flex-shrink-0 inline-flex items-center px-1.5 text-[10px] font-medium rounded-full border bg-info/15 text-info border-info/30"
+                                  title="Your spec is a secondary recipient for this item"
+                                >
+                                  S
+                                </span>
+                              )}
                               {item.classification && item.classification !== 'Unlimited' && (
                                 <ClassificationBadge
                                   classification={item.classification as 'Reserved' | 'Limited' | 'Unlimited'}
@@ -2345,6 +2365,26 @@ export default function LootListContent({
                               <span className="flex-1 min-w-0 overflow-hidden">
                                 <ItemLink name={item.name} wowheadId={item.wowhead_id} clickable={true} />
                               </span>
+                              {/* "What I'm prio'd on" indicator (GH #91). Sits next
+                                  to the classification badge so officers' spec
+                                  assignment is visible at a glance without
+                                  opening the item. */}
+                              {item.character_spec_type === 'primary' && (
+                                <span
+                                  className="flex-shrink-0 inline-flex items-center px-1.5 text-[10px] font-semibold rounded-full border bg-accent/15 text-accent border-accent/30"
+                                  title="Your spec is the primary recipient for this item"
+                                >
+                                  P
+                                </span>
+                              )}
+                              {item.character_spec_type === 'secondary' && (
+                                <span
+                                  className="flex-shrink-0 inline-flex items-center px-1.5 text-[10px] font-medium rounded-full border bg-info/15 text-info border-info/30"
+                                  title="Your spec is a secondary recipient for this item"
+                                >
+                                  S
+                                </span>
+                              )}
                               {item.classification && item.classification !== 'Unlimited' && (
                                 <ClassificationBadge
                                   classification={item.classification as 'Reserved' | 'Limited' | 'Unlimited'}
