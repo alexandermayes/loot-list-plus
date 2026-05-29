@@ -1429,6 +1429,11 @@ export default function LootListContent({
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
         onDragCancel={handleDragCancel}
+        // dnd-kit's default auto-scroll trigger zone is 20% of the viewport,
+        // which on tall screens kicks in several rows above the bottom and
+        // feels grabby (GH #77). Tighten the vertical zone to 8% and disable
+        // horizontal auto-scroll — the loot list doesn't scroll sideways.
+        autoScroll={{ threshold: { x: 0, y: 0.08 } }}
       >
       <div className="font-poppins">
         {/* Header - heading may be server-rendered for LCP; subtitle stays client-driven */}
