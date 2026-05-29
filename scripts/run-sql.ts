@@ -3,15 +3,16 @@
  * Script to run SQL against the remote Supabase database
  *
  * Usage:
- *   npx tsx scripts/run-sql.ts <sql-file>
- *   npx tsx scripts/run-sql.ts --query "SELECT * FROM users LIMIT 5"
+ *   npx tsx scripts/run-sql.ts --query "SELECT * FROM users LIMIT 5"          (reads, no confirm)
+ *   npx tsx scripts/run-sql.ts supabase/migrations/<file>.sql --confirm       (DDL/DML push to PROD)
+ *   npx tsx scripts/run-sql.ts --query "ALTER TABLE users ADD COLUMN foo TEXT" --confirm
  *
- * This script creates a temporary migration and pushes it to the remote database.
- * For SELECT queries, it uses the Supabase JS client.
- *
- * Examples:
- *   npx tsx scripts/run-sql.ts migrations/add_column.sql
- *   npx tsx scripts/run-sql.ts --query "ALTER TABLE users ADD COLUMN foo TEXT"
+ * For SELECT queries it uses the Supabase JS client.
+ * For DDL/DML it copies the SQL into supabase/migrations/ as a timestamped file and runs
+ * `supabase db push`, which pushes to the PRODUCTION database. Two guards apply:
+ *   1. SQL that disables Row Level Security is refused outright (project invariant: RLS always on).
+ *   2. Any DDL/DML push requires an explicit --confirm (or -y) flag, so a file can never be
+ *      replayed into prod by accident.
  */
 
 import { createClient } from '@supabase/supabase-js'
@@ -126,16 +127,19 @@ async function runMigrationSQL(sql: string, description: string): Promise<void> 
   }
 }
 
-// Main execution
-const args = process.argv.slice(2)
+// Main execution. --confirm/-y is a global flag; strip it before positional parsing.
+const rawArgs = process.argv.slice(2)
+const confirmed = rawArgs.some(a => a === '--confirm' || a === '-y')
+const args = rawArgs.filter(a => a !== '--confirm' && a !== '-y')
 
 if (args.length === 0) {
   console.error('Usage:')
-  console.error('  npx tsx scripts/run-sql.ts <sql-file>')
-  console.error('  npx tsx scripts/run-sql.ts --query "ALTER TABLE users ADD COLUMN foo TEXT"')
+  console.error('  npx tsx scripts/run-sql.ts --query "SELECT ..."                 (reads, no confirm)')
+  console.error('  npx tsx scripts/run-sql.ts supabase/migrations/<file>.sql --confirm   (DDL/DML to PROD)')
+  console.error('  npx tsx scripts/run-sql.ts --query "ALTER TABLE ..." --confirm')
   console.error('')
-  console.error('Note: SELECT queries are run via Supabase client (limited functionality)')
-  console.error('      DDL/DML queries are run via Supabase migration push')
+  console.error('Note: SELECT queries are run via Supabase client (limited functionality).')
+  console.error('      DDL/DML queries are pushed to the PRODUCTION database and require --confirm.')
   process.exit(1)
 }
 
@@ -160,6 +164,26 @@ if (args[0] === '--query' || args[0] === '-q') {
 
 // Determine if this is a SELECT query or DDL/DML
 const isSelect = sql.trim().toUpperCase().startsWith('SELECT')
+
+if (!isSelect) {
+  // Guard 1: never let this tool disable Row Level Security in production.
+  // (Project invariant: every public table keeps RLS enabled.)
+  if (/disable\s+row\s+level\s+security/i.test(sql)) {
+    console.error('❌ Refusing to run: this SQL disables Row Level Security.')
+    console.error('   RLS must stay enabled on all tables. If this is truly intended, run it')
+    console.error('   manually via a reviewed migration in supabase/migrations/, not this tool.')
+    process.exit(1)
+  }
+
+  // Guard 2: DDL/DML pushes to the PRODUCTION database — require explicit opt-in so a
+  // stray file path can never be replayed into prod by accident.
+  if (!confirmed) {
+    console.error('⚠️  This will push DDL/DML to the PRODUCTION database via `supabase db push`.')
+    console.error('   Re-run with --confirm (or -y) once you are sure:')
+    console.error(`     npx tsx scripts/run-sql.ts ${args.join(' ')} --confirm`)
+    process.exit(1)
+  }
+}
 
 if (isSelect) {
   runSelectQuery(sql)

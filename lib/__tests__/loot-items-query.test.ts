@@ -36,6 +36,11 @@ function makeMockSupabase(tables: Record<string, Row[]>) {
       order(_column: string, _opts?: unknown) {
         return builder
       },
+      range(start: number, end: number) {
+        // Mirror PostgREST .range() (inclusive bounds) so paginatedSelect works.
+        rows = rows.slice(start, end + 1)
+        return builder
+      },
       // Thenable — allows `await supabase.from(...).select(...).eq(...)`
       then(onFulfilled: (result: { data: Row[]; error: null }) => unknown) {
         return Promise.resolve({ data: rows, error: null }).then(onFulfilled)

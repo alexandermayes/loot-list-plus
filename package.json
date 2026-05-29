@@ -14,7 +14,6 @@
     "seed:classic": "tsx scripts/seed-classic-raids.ts",
     "seed:test": "tsx scripts/seed-test-data.ts",
     "seed:test:clean": "tsx scripts/seed-test-data.ts --clean",
-    "migrate:profile": "tsx scripts/run-profile-migrations.ts",
     "setup:loot": "tsx scripts/setup-loot-database.ts",
     "fix:items": "tsx scripts/ensure-items-available.ts",
     "reseed:bwl": "tsx scripts/reseed-bwl.ts",
