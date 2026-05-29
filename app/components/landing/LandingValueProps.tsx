@@ -159,7 +159,7 @@ export default function LandingValueProps() {
           />
           <QuoteCard
             quote="I chose LootList+ for the intuitive design and was pleasantly surprised by the depth of features. If you've used other loot tools and want something cleaner and easier for your raiders, this is the answer."
-            author={{ name: '2laxs', guild: 'Bad Guys · Nightslayer' }}
+            author={{ name: '2laxs', guild: 'Bad Guys' }}
             className="h-[250px] md:h-[300px] md:flex-1"
           />
         </motion.div>
