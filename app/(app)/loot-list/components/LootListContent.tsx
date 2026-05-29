@@ -1144,7 +1144,15 @@ export default function LootListContent({
         if (unrankedDifficulty === 'normal' && isHeroic) return false
       }
       if (unrankedSpecOnly && characterPrimaryStat && item.primary_stat) {
-        if ((otherPrimaries as readonly string[]).includes(item.primary_stat)) return false
+        // primary_stat can be multi-valued for MoP-era flex items
+        // (e.g. 'Agility,Intellect' for Druid/Monk leather). Hide only if no
+        // listed stat matches the user's spec AND every listed stat is a
+        // mismatch. Stamina or unknown stays visible — matches the prior
+        // "don't filter what we can't classify" behavior.
+        const stats = item.primary_stat.split(',').map(s => s.trim())
+        const matchesUserSpec = stats.includes(characterPrimaryStat)
+        const allOtherSpec = stats.every(s => (otherPrimaries as readonly string[]).includes(s))
+        if (!matchesUserSpec && allOtherSpec) return false
       }
       // Armor-type filter: only hide items that HAVE an armor_type and don't
       // match. Items with no armor_type (weapons, trinkets, rings, necks,

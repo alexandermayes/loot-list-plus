@@ -34,7 +34,15 @@ const DRY_RUN = process.argv.includes('--dry-run')
 const limitArgIdx = process.argv.indexOf('--limit')
 const LIMIT = limitArgIdx > -1 ? parseInt(process.argv[limitArgIdx + 1], 10) : null
 
-type PrimaryStat = 'Strength' | 'Agility' | 'Intellect' | 'Stamina' | 'None'
+// Re-process MoP Leather/Mail items currently marked 'Stamina' to catch
+// flex-stat items (GH #76). Overwrites the existing primary_stat value
+// instead of the usual `is null` guard.
+const RESCAN_MOP_FLEX = process.argv.includes('--rescan-mop-flex')
+
+// String values include single stats ('Agility', 'Stamina', …) and
+// MoP-era flex pairs in alphabetical-comma form, e.g. 'Agility,Intellect'.
+// 'None' = parsed cleanly but no primary stat present (e.g. cosmetic items).
+type PrimaryStat = string | 'None'
 
 // Wowhead serves the same tooltip HTML across dataEnvs but the item must exist
 // in that env. Try the broadest envs first — this covers Classic→MoP Classic.
@@ -56,6 +64,22 @@ async function fetchPrimaryStat(wowheadId: number): Promise<PrimaryStat | null> 
       // Wowhead tooltips list each stat as a separate line. Strip tags so we
       // can search the plain text.
       const text = tooltip.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ')
+
+      // Flex stats (MoP-era and later): `+N [Agility or Intellect]` etc.
+      // These morph to whatever the wearer's spec uses. Emit a multi-stat
+      // value (comma-separated, alphabetical) so the filter can recognize
+      // that the item is valid for either spec.
+      const flexMatch = text.match(/\+\s*\d[\d,]*\s+\[\s*([^\]]+?)\s*\]/i)
+      if (flexMatch) {
+        const inner = flexMatch[1]
+        const stats: string[] = []
+        for (const stat of ['Strength', 'Agility', 'Intellect']) {
+          if (new RegExp(`\\b${stat}\\b`, 'i').test(inner)) stats.push(stat)
+        }
+        if (stats.length >= 2) {
+          return stats.sort().join(',')
+        }
+      }
 
       const hasStat = (stat: string) =>
         new RegExp(`\\+\\s*\\d[\\d,]*\\s+${stat}\\b`, 'i').test(text)
@@ -84,7 +108,28 @@ async function main() {
   console.log('Populate primary_stat from Wowhead')
   if (DRY_RUN) console.log('(DRY RUN - no database writes)')
   if (LIMIT) console.log(`(limit: ${LIMIT} items)`)
+  if (RESCAN_MOP_FLEX) console.log('(RESCAN MoP flex — overwriting Stamina-marked Leather/Mail in MoP raids)')
   console.log()
+
+  // Resolve MoP raid tier ids when in rescan mode so the scope stays small.
+  let mopRaidTierIds: string[] | null = null
+  if (RESCAN_MOP_FLEX) {
+    const { data: mopExp } = await supabase
+      .from('expansions')
+      .select('id, name')
+      .or('name.ilike.%Pandaria%,name.ilike.%MoP%')
+    const mopExpansionIds = (mopExp ?? []).map((e: { id: string }) => e.id)
+    if (mopExpansionIds.length === 0) {
+      console.error('Could not find any MoP expansions.')
+      process.exit(1)
+    }
+    const { data: mopTiers } = await supabase
+      .from('raid_tiers')
+      .select('id')
+      .in('expansion_id', mopExpansionIds)
+    mopRaidTierIds = (mopTiers ?? []).map((t: { id: string }) => t.id)
+    console.log(`MoP raid tiers in scope: ${mopRaidTierIds.length}`)
+  }
 
   // Page through loot_items needing backfill.
   const items: Array<{ id: string; name: string; wowhead_id: number }> = []
@@ -92,11 +137,22 @@ async function main() {
   let offset = 0
 
   while (true) {
-    const { data: page, error } = await supabase
+    let query = supabase
       .from('loot_items')
       .select('id, name, wowhead_id')
-      .is('primary_stat', null)
+      .order('id', { ascending: true })
       .range(offset, offset + PAGE_SIZE - 1)
+
+    if (RESCAN_MOP_FLEX) {
+      query = query
+        .eq('primary_stat', 'Stamina')
+        .in('armor_type', ['Leather', 'Mail'])
+        .in('raid_tier_id', mopRaidTierIds!)
+    } else {
+      query = query.is('primary_stat', null)
+    }
+
+    const { data: page, error } = await query
 
     if (error) {
       console.error('Error fetching items:', error.message)
@@ -140,11 +196,22 @@ async function main() {
       console.log(`${label} → ${stat}`)
 
       if (!DRY_RUN) {
-        const { error: updateError } = await supabase
+        let update = supabase
           .from('loot_items')
           .update({ primary_stat: stat })
           .eq('wowhead_id', wowheadId)
-          .is('primary_stat', null)
+
+        if (RESCAN_MOP_FLEX) {
+          // Overwrite Stamina-marked rows for this wowhead_id in MoP tiers.
+          update = update
+            .eq('primary_stat', 'Stamina')
+            .in('armor_type', ['Leather', 'Mail'])
+            .in('raid_tier_id', mopRaidTierIds!)
+        } else {
+          update = update.is('primary_stat', null)
+        }
+
+        const { error: updateError } = await update
 
         if (updateError) {
           console.error(`  update failed: ${updateError.message}`)
