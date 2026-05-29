@@ -506,17 +506,18 @@ async function updateBLP(
   const { data: attendanceRecords } = await query
 
   const eligible = attendanceRecords?.map(r => r.character_id) || []
+  const nonWinners = eligible.filter(characterId => characterId !== winnerCharacterId)
 
-  // Increment BLP for non-winners. The raid_event_id pins each credit so
-  // re-imports / duplicate loot_history rows for the same (character, item,
-  // raid) are idempotent at the journal layer (GH #98).
-  for (const characterId of eligible) {
-    if (characterId === winnerCharacterId) continue
-    await supabase.rpc('increment_blp', {
+  // Increment BLP for non-winners in one set-based round-trip. The
+  // raid_event_id pins each credit so re-imports / duplicate loot_history
+  // rows for the same (character, item, raid) are idempotent at the
+  // journal layer (GH #98).
+  if (nonWinners.length > 0) {
+    await supabase.rpc('increment_blp_bulk', {
       p_guild_id: guildId,
-      p_character_id: characterId,
       p_loot_item_id: lootItemId,
       p_raid_event_id: raidEventId,
+      p_character_ids: nonWinners,
     })
   }
 
