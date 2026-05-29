@@ -1871,6 +1871,11 @@ export default function LootListContent({
             ranks: offSpec,
             lootItems: offSpecItems,
             disabledItems: offSpecDisabledItems,
+            // Off-spec has no allocation cap (engine skips bracket rules) but
+            // users still expect Reserved items to be dedicated to their row —
+            // mirrors UX in Brackets 1-4. Reverts overgeneralization in #69
+            // (GH #75). No Bracket above keeps the rule lifted per #69.
+            enforceReservedAlone: true,
           },
         ] as const).map((bracket) => (
           <BracketSection
@@ -1882,10 +1887,15 @@ export default function LootListContent({
             tooltipContent={bracket.tooltipContent}
             subtitle={'subtitle' in bracket ? bracket.subtitle : undefined}
             showAllocationPoints={'showAllocationPoints' in bracket ? bracket.showAllocationPoints : false}
-            // Bracket rules (Reserved-alone, allocation cap, etc.) only apply to
-            // Brackets 1-4 — the engine skips them for No Bracket / Off-spec.
-            // showAllocationPoints already identifies those zones cleanly.
-            enforceReservedAlone={'showAllocationPoints' in bracket ? bracket.showAllocationPoints : false}
+            // Bracket rules apply to: Brackets 1-4 (allocation cap), and Off-spec
+            // (user expectation that Reserved means dedicated, GH #75). No
+            // Bracket explicitly opts out — no allocation cap and broxigar
+            // asked for it in #69.
+            enforceReservedAlone={
+              ('showAllocationPoints' in bracket && bracket.showAllocationPoints) ||
+              ('enforceReservedAlone' in bracket && bracket.enforceReservedAlone) ||
+              false
+            }
             ranks={bracket.ranks}
             lootItems={bracket.lootItems}
             disabledItems={bracket.disabledItems}
