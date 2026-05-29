@@ -40,6 +40,7 @@ describe('computeScore', () => {
     expect(result.components.priorityBonus).toBe(0)
     expect(result.components.trialPenalty).toBe(0)
     expect(result.components.donationBonus).toBe(0)
+    expect(result.components.raiderBonus).toBe(0)
   })
 
   it('includes attendance score', () => {
@@ -64,6 +65,42 @@ describe('computeScore', () => {
     }))
     expect(result.components.roleBonus).toBe(2)
     expect(result.total).toBe(52)
+  })
+
+  it('applies a permanent per-raider bonus when enabled', () => {
+    const result = computeScore(makeInput({
+      character: { characterId: 'char-1', specId: null, specRoles: [], guildRank: 'Member', membershipStatus: 'full' },
+      config: { single_raider_overall_bonus: true, single_raider_modifiers: { 'char-1': 20 } },
+    }))
+    expect(result.components.raiderBonus).toBe(20)
+    expect(result.total).toBe(70) // 50 + 20
+  })
+
+  it('ignores the per-raider bonus when the toggle is off', () => {
+    const result = computeScore(makeInput({
+      character: { characterId: 'char-1', specId: null, specRoles: [], guildRank: 'Member', membershipStatus: 'full' },
+      config: { single_raider_overall_bonus: false, single_raider_modifiers: { 'char-1': 20 } },
+    }))
+    expect(result.components.raiderBonus).toBe(0)
+    expect(result.total).toBe(50)
+  })
+
+  it('only applies the per-raider bonus to the matching character', () => {
+    const result = computeScore(makeInput({
+      character: { characterId: 'char-2', specId: null, specRoles: [], guildRank: 'Member', membershipStatus: 'full' },
+      config: { single_raider_overall_bonus: true, single_raider_modifiers: { 'char-1': 20 } },
+    }))
+    expect(result.components.raiderBonus).toBe(0)
+    expect(result.total).toBe(50)
+  })
+
+  it('supports a negative per-raider modifier', () => {
+    const result = computeScore(makeInput({
+      character: { characterId: 'char-1', specId: null, specRoles: [], guildRank: 'Member', membershipStatus: 'full' },
+      config: { single_raider_overall_bonus: true, single_raider_modifiers: { 'char-1': -5 } },
+    }))
+    expect(result.components.raiderBonus).toBe(-5)
+    expect(result.total).toBe(45)
   })
 
   it('computes BLP bonus', () => {
@@ -203,6 +240,7 @@ describe('computeScore', () => {
       + result.components.priorityBonus
       + result.components.trialPenalty
       + result.components.donationBonus
+      + result.components.raiderBonus
     expect(result.total).toBe(manualTotal)
   })
 })
@@ -255,6 +293,18 @@ describe('explainScore', () => {
     expect(labels).not.toContain('Trial penalty')
     expect(labels).not.toContain('Bad luck protection')
     expect(labels).not.toContain('Donation bonus')
+    expect(labels).not.toContain('Raider bonus')
+  })
+
+  it('includes a raider bonus line when a per-raider modifier applies', () => {
+    const config = { single_raider_overall_bonus: true, single_raider_modifiers: { 'char-1': 20 } }
+    const result = computeScore(makeInput({
+      character: { characterId: 'char-1', specId: null, specRoles: [], guildRank: 'Member', membershipStatus: 'full' },
+      config,
+    }))
+    const line = explainScore(result, config).lines.find(l => l.label === 'Raider bonus')
+    expect(line?.value).toBe(20)
+    expect(line?.key).toBe('raiderBonus')
   })
 
   it('includes donation line when donationBonus is non-zero', () => {

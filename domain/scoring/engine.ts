@@ -10,7 +10,7 @@
 
 import type { ScoreInput, ScoreResult, ScoreComponents } from '../types'
 import { withDefaults } from './defaults'
-import { getRankModifier, getRoleModifier, getTrialPenalty, calculateBadLuckBonus } from './modifiers'
+import { getRankModifier, getRoleModifier, getRaiderModifier, getTrialPenalty, calculateBadLuckBonus } from './modifiers'
 import { calculatePriorityBonus } from './priority'
 
 /**
@@ -19,6 +19,7 @@ import { calculatePriorityBonus } from './priority'
  * Formula:
  *   total = itemRank + attendanceScore + rankModifier + roleBonus
  *         + badLuckBonus + priorityBonus + trialPenalty + donationBonus
+ *         + raiderBonus
  *
  * `donationBonus` is pre-computed per character via `calculateDonationBonus()`
  * and passed in on the ScoreInput. Same pattern as `attendance.score`.
@@ -40,6 +41,7 @@ export function computeScore(input: ScoreInput): ScoreResult {
     ),
     trialPenalty: getTrialPenalty(input.character.membershipStatus, config),
     donationBonus: input.donationBonus,
+    raiderBonus: getRaiderModifier(input.character.characterId, config),
   }
 
   const total = components.itemRank
@@ -50,6 +52,7 @@ export function computeScore(input: ScoreInput): ScoreResult {
     + components.priorityBonus
     + components.trialPenalty
     + components.donationBonus
+    + components.raiderBonus
 
   return { total, components }
 }

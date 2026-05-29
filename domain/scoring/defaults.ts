@@ -13,6 +13,8 @@ export const DEFAULT_SETTINGS: Partial<ScoringConfig> = {
   bottom_attendance_threshold: 0.25,
   raid_roles_overall_bonus_priority: false,
   role_modifiers: {},
+  single_raider_overall_bonus: false,
+  single_raider_modifiers: {},
   guild_rank_bonuses_enabled: true,
   rank_modifiers: {
     'Pro Yiker': 0,

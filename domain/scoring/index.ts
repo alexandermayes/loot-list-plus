@@ -34,7 +34,7 @@ export { computeAttendance, resolveStatus, getAttendanceWindowEnd, getAttendance
 export { withDefaults, getDefaultSettings } from './defaults'
 
 // ─── Utility (display helpers, not scoring) ──────────────────
-export { calculateBadLuckBonus, getRoleModifierWithLabel, getRankModifier } from './modifiers'
+export { calculateBadLuckBonus, getRoleModifierWithLabel, getRankModifier, getRaiderModifier } from './modifiers'
 
 // ─── Donations (pure; not yet wired into computeScore — see PR3) ────────
 export { calculateDonationBonus } from './donations'

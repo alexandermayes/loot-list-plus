@@ -65,6 +65,22 @@ export function getRoleModifierWithLabel(roles: string | string[] | null, settin
 }
 
 /**
+ * Get the permanent per-character score modifier.
+ * Returns the bonus/penalty an officer has assigned to a specific raider
+ * (e.g. +20), applied to every score for that character. 0 when the
+ * single_raider_overall_bonus toggle is off or no modifier is set.
+ */
+export function getRaiderModifier(characterId: string | null, settings: Partial<ScoringConfig> = {}): number {
+  const config = { ...DEFAULT_SETTINGS, ...settings } as ScoringConfig
+
+  if (!config.single_raider_overall_bonus || !characterId) {
+    return 0
+  }
+
+  return config.single_raider_modifiers[characterId] || 0
+}
+
+/**
  * Get trial penalty based on membership status and guild settings.
  * Returns a negative number (penalty) or 0 if not applicable.
  */

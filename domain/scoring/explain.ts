@@ -84,6 +84,15 @@ export function explainScore(
     })
   }
 
+  if (s.raiderBonus !== 0) {
+    lines.push({
+      label: 'Raider bonus',
+      value: s.raiderBonus,
+      detail: 'Officer-assigned modifier for this raider',
+      key: 'raiderBonus',
+    })
+  }
+
   if (s.trialPenalty !== 0) {
     lines.push({
       label: 'Trial penalty',

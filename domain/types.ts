@@ -30,6 +30,10 @@ export interface ScoringConfig {
   rank_modifiers: Record<string, number>
   raid_roles_overall_bonus_priority: boolean
   role_modifiers: Record<string, number>
+  /** Toggle for permanent per-character score modifiers. */
+  single_raider_overall_bonus: boolean
+  /** Permanent per-character score modifiers, keyed by character id. Applied to every score. */
+  single_raider_modifiers: Record<string, number>
   minimum_raid_days_enabled: boolean
   minimum_raid_days: number
   late_early_penalty_enabled: boolean
@@ -234,6 +238,7 @@ export interface ScoreComponents {
   priorityBonus: number
   trialPenalty: number
   donationBonus: number
+  raiderBonus: number
 }
 
 /** Result from computeScore() */
@@ -248,7 +253,7 @@ export interface ScoreLine {
   value: number
   detail: string
   /** Optional key identifying the component (for UI styling/icons) */
-  key?: 'itemRank' | 'attendance' | 'rankModifier' | 'roleBonus' | 'priorityBonus' | 'trialPenalty' | 'badLuckBonus' | 'donationBonus'
+  key?: 'itemRank' | 'attendance' | 'rankModifier' | 'roleBonus' | 'priorityBonus' | 'trialPenalty' | 'badLuckBonus' | 'donationBonus' | 'raiderBonus'
   /** Optional context for richer UI rendering (e.g., rank name, role label) */
   context?: Record<string, string | number | boolean>
 }

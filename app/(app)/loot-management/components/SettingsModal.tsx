@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect, useMemo, useState } from 'react'
 import { HugeiconsIcon } from '@hugeicons/react'
 import {
   ArrowDown01Icon,
@@ -12,6 +13,7 @@ import {
   Settings01Icon,
   Settings02Icon,
   UserAdd01Icon,
+  Cancel01Icon,
 } from '@hugeicons/core-free-icons'
 import {
   Modal,
@@ -29,6 +31,8 @@ import { useConfirm } from '@/components/ui/confirm-modal'
 import { useNotification } from '@/app/contexts/NotificationContext'
 import { allRoles, getRoleDisplayName } from '@/domain/loot/spec-role-mapping'
 import { toDateString } from '@/utils/date'
+import { createClient } from '@/utils/supabase/client'
+import { useGuildContext } from '@/app/contexts/GuildContext'
 
 interface GuildRole {
   name: string
@@ -60,6 +64,59 @@ export function SettingsModal({
 }: SettingsModalProps) {
   const { showNotification } = useNotification()
   const { confirm, ConfirmDialog } = useConfirm()
+  const { activeGuild } = useGuildContext()
+
+  // Roster for the per-raider bonus picker. Only fetched when the feature is on.
+  const [roster, setRoster] = useState<{ id: string; name: string; colorHex: string }[]>([])
+  useEffect(() => {
+    if (!open || !settings.single_raider_overall_bonus || !activeGuild?.id) return
+    let cancelled = false
+    const supabase = createClient()
+    ;(async () => {
+      const { data } = await supabase
+        .from('character_guild_memberships')
+        .select('characters (id, name, wow_classes (color_hex))')
+        .eq('guild_id', activeGuild.id)
+        .eq('is_active', true)
+      if (cancelled || !data) return
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const list = (data as any[])
+        .map((m) => {
+          const c = Array.isArray(m.characters) ? m.characters[0] : m.characters
+          const cls = c && (Array.isArray(c.wow_classes) ? c.wow_classes[0] : c.wow_classes)
+          return c?.id && c?.name
+            ? { id: c.id as string, name: c.name as string, colorHex: (cls?.color_hex as string) || '#888888' }
+            : null
+        })
+        .filter(Boolean) as { id: string; name: string; colorHex: string }[]
+      list.sort((a, b) => a.name.localeCompare(b.name))
+      setRoster(list)
+    })()
+    return () => { cancelled = true }
+  }, [open, settings.single_raider_overall_bonus, activeGuild?.id])
+
+  const raiderMods: Record<string, number> = settings.single_raider_modifiers || {}
+  const rosterById = useMemo(() => new Map(roster.map((r) => [r.id, r])), [roster])
+  const configuredRaiderIds = Object.keys(raiderMods)
+  const availableRaiders = roster.filter((r) => !(r.id in raiderMods))
+
+  const setRaiderMods = (next: Record<string, number>) =>
+    setSettings({ ...settings, single_raider_modifiers: next })
+
+  const addRaiderMod = (characterId: string) => {
+    if (!characterId || characterId in raiderMods) return
+    setRaiderMods({ ...raiderMods, [characterId]: 0 })
+  }
+
+  const updateRaiderMod = (characterId: string, value: number) => {
+    setRaiderMods({ ...raiderMods, [characterId]: value })
+  }
+
+  const removeRaiderMod = (characterId: string) => {
+    const next = { ...raiderMods }
+    delete next[characterId]
+    setRaiderMods(next)
+  }
 
   return (
     <>
@@ -883,6 +940,74 @@ export function SettingsModal({
                           </div>
                           <p className="text-[11px] text-accent mt-2">
                             Roles are determined by each raider's spec. Make sure specs are set correctly.
+                          </p>
+                        </div>
+                      )}
+
+                      {settings.single_raider_overall_bonus && (
+                        <div className="bg-background-elevated border border-border-strong p-4 rounded-xl space-y-3">
+                          <div className="flex items-center justify-between mb-2">
+                            <p className="text-[13px] font-medium text-foreground">Raider bonuses</p>
+                            <p className="text-[11px] text-muted-foreground">Permanent modifier added to every score. Use - before number for a penalty (e.g., -5)</p>
+                          </div>
+
+                          <div className="sm:max-w-xs">
+                            <Select
+                              variant="pill"
+                              size="sm"
+                              value=""
+                              onChange={(e) => { addRaiderMod(e.target.value); e.target.value = '' }}
+                              className="bg-background-elevated"
+                              disabled={availableRaiders.length === 0}
+                            >
+                              <option value="">{availableRaiders.length === 0 ? 'No more raiders to add' : 'Add a raider...'}</option>
+                              {availableRaiders.map((r) => (
+                                <option key={r.id} value={r.id}>{r.name}</option>
+                              ))}
+                            </Select>
+                          </div>
+
+                          {configuredRaiderIds.length === 0 ? (
+                            <p className="text-[12px] text-muted-foreground">No raiders have a bonus yet. Add one above to give them a permanent boost.</p>
+                          ) : (
+                            <div className="space-y-2">
+                              {configuredRaiderIds.map((id) => {
+                                const r = rosterById.get(id)
+                                return (
+                                  <div key={id} className="flex items-center gap-3">
+                                    <span
+                                      className="flex-1 text-[13px] font-medium truncate"
+                                      style={{ color: r?.colorHex || '#888888' }}
+                                    >
+                                      {r?.name || 'Unknown raider'}
+                                    </span>
+                                    <Input
+                                      variant="pill"
+                                      size="sm"
+                                      type="number"
+                                      inputMode="numeric"
+                                      step="0.1"
+                                      value={raiderMods[id] === 0 ? '' : raiderMods[id]}
+                                      onChange={(e) => updateRaiderMod(id, e.target.value === '' ? 0 : Number(e.target.value))}
+                                      placeholder="0"
+                                      className="bg-background-elevated w-24"
+                                    />
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => removeRaiderMod(id)}
+                                      aria-label={`Remove bonus for ${r?.name || 'raider'}`}
+                                    >
+                                      <HugeiconsIcon icon={Cancel01Icon} size={16} />
+                                    </Button>
+                                  </div>
+                                )
+                              })}
+                            </div>
+                          )}
+
+                          <p className="text-[11px] text-accent mt-2">
+                            Applies to this raider&apos;s Loot Score on every item, every week, until you remove it.
                           </p>
                         </div>
                       )}

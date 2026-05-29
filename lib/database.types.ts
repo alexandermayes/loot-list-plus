@@ -872,6 +872,7 @@ export type Database = {
           see_item_bonus_value: number
           signup_weight: number
           single_raider_bonus_single_item: boolean | null
+          single_raider_modifiers: Json | null
           single_raider_overall_bonus: boolean | null
           third_raid_day: number | null
           trial_auto_promote_enabled: boolean | null
@@ -939,6 +940,7 @@ export type Database = {
           see_item_bonus_value?: number
           signup_weight?: number
           single_raider_bonus_single_item?: boolean | null
+          single_raider_modifiers?: Json | null
           single_raider_overall_bonus?: boolean | null
           third_raid_day?: number | null
           trial_auto_promote_enabled?: boolean | null
@@ -1006,6 +1008,7 @@ export type Database = {
           see_item_bonus_value?: number
           signup_weight?: number
           single_raider_bonus_single_item?: boolean | null
+          single_raider_modifiers?: Json | null
           single_raider_overall_bonus?: boolean | null
           third_raid_day?: number | null
           trial_auto_promote_enabled?: boolean | null
