@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { toDateString } from '@/utils/date'
+import { revalidateGuildRaidEvents } from '@/lib/cache/dashboard-attendance'
 
 /**
  * POST /api/raid-events/ensure
@@ -146,6 +147,8 @@ export async function POST(request: NextRequest) {
 
         if (insertError) {
           console.error('Failed to create raid events:', insertError)
+        } else {
+          revalidateGuildRaidEvents(guild_id)
         }
       } else {
         console.error(`No raid tier found for expansion ${expansion_id}, phase ${currentPhase}`)

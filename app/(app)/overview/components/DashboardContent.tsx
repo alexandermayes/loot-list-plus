@@ -352,9 +352,15 @@ interface DashboardContentProps {
   // greeting kicks in. Both SSR and first client render produce the same
   // markup (this prop), so no hydration mismatch.
   serverHeading?: React.ReactNode
+  // Server-computed attendance summary for the hero card. When present, the
+  // SSR HTML contains the percentage + raid counts immediately so LCP fires
+  // with TTFB instead of waiting for client hydration + 3 queries +
+  // computeAttendance. Client overrides with the full tier/missed-raids
+  // version once loadDashboardData completes.
+  initialAttendance?: { percentage: number; attended: number; total: number } | null
 }
 
-export default function DashboardContent({ serverHeading }: DashboardContentProps = {}) {
+export default function DashboardContent({ serverHeading, initialAttendance }: DashboardContentProps = {}) {
   const { activeGuild, activeMember, activeCharacter, userGuilds, loading: guildLoading, isOfficer, hasPermission, currentExpansion, characterMemberships, user, refreshCharacters } = useGuildContext()
   const { showNotification } = useNotification()
   const [raidTiers, setRaidTiers] = useState<RaidTier[]>([])
@@ -399,7 +405,7 @@ export default function DashboardContent({ serverHeading }: DashboardContentProp
     total: number
     tierInfo?: { current: string; nextTier: string; raidsNeeded: number; nextBonus: number }
     missedRaids?: { date: string; status: string }[]
-  } | null>(null)
+  } | null>(initialAttendance ?? null)
 
   const [trialData, setTrialData] = useState<{
     isTrial: boolean
