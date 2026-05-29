@@ -3,6 +3,7 @@ import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { verifyPermission } from '@/utils/server-roles'
 import { logStatusChange } from '@/utils/audit/log'
+import { revalidatePendingSubmissions } from '@/lib/cache/submission-tag'
 
 // POST - Revert a resubmitted list to its previously approved snapshot
 export async function POST(request: NextRequest) {
@@ -79,6 +80,7 @@ export async function POST(request: NextRequest) {
         additionalData: { action: 'reject_no_snapshot', character_id: submission.character_id ?? undefined },
       })
 
+      revalidatePendingSubmissions(submission.guild_id)
       return NextResponse.json({ success: true, fallback: 'rejected' })
     }
 
@@ -144,6 +146,8 @@ export async function POST(request: NextRequest) {
       newStatus: 'approved',
       additionalData: { action: 'revert', character_id: submission.character_id ?? undefined },
     })
+
+    revalidatePendingSubmissions(submission.guild_id)
 
     return NextResponse.json({ success: true })
   } catch (error) {

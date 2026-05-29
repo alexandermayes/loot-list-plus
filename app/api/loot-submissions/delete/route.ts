@@ -4,6 +4,7 @@ import { NextResponse } from 'next/server'
 import { verifyPermission } from '@/utils/server-roles'
 import { logAudit } from '@/utils/audit/log'
 import { trackEvent, trackApiError } from '@/utils/analytics/server'
+import { revalidatePendingSubmissions } from '@/lib/cache/submission-tag'
 
 export async function DELETE(request: Request) {
   try {
@@ -82,6 +83,8 @@ export async function DELETE(request: Request) {
           was_bulk: false,
         },
       })
+
+      revalidatePendingSubmissions(guild_id)
 
       return NextResponse.json({
         success: true,
@@ -166,6 +169,8 @@ export async function DELETE(request: Request) {
         },
       })
     }
+
+    revalidatePendingSubmissions(guild_id)
 
     return NextResponse.json({
       success: true,

@@ -4,6 +4,7 @@ import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { validateBracketRules, type BracketItem, type BracketLimits } from '@/domain/loot/bracket-validation'
 import { logStatusChange } from '@/utils/audit/log'
 import { trackEvent, setUserMilestone } from '@/utils/analytics/server'
+import { revalidatePendingSubmissions } from '@/lib/cache/submission-tag'
 
 /**
  * POST /api/loot-submissions/submit
@@ -161,6 +162,9 @@ export async function POST(request: NextRequest) {
       },
     })
     setUserMilestone(user.id, 'first_list_submitted_at')
+
+    // Invalidate the per-guild pending count so officers see fresh badge
+    revalidatePendingSubmissions(submission.guild_id)
 
     return NextResponse.json({ success: true })
   } catch (error) {

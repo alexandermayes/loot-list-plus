@@ -4,6 +4,7 @@ import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { verifyPermission } from '@/utils/server-roles'
 import { logStatusChange } from '@/utils/audit/log'
 import { trackEvent } from '@/utils/analytics/server'
+import { revalidatePendingSubmissions } from '@/lib/cache/submission-tag'
 
 /**
  * POST /api/loot-submissions/review
@@ -130,6 +131,9 @@ export async function POST(request: NextRequest) {
         new_status: status,
       },
     })
+
+    // Invalidate the per-guild pending count for the sidebar badge
+    revalidatePendingSubmissions(submission.guild_id)
 
     return NextResponse.json({ success: true, submission: data[0] })
   } catch (error) {
