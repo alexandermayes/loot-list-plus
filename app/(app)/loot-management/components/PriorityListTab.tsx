@@ -277,18 +277,20 @@ export default function PriorityListTab() {
           setLootItems(itemsWithTierName)
         }
 
-        // Load existing priorities for all tiers in this phase
+        // Load existing priorities for all tiers in this phase in parallel.
+        // Previously this serial loop fired one round trip per tier, so a phase
+        // with 5 tiers ate 5× the latency before the page settled.
         const allPriorities: Record<string, ItemPriority> = {}
-        for (const tier of phaseTiers) {
-          const response = await fetch(
-            `/api/prio-list?guild_id=${activeGuild.id}&raid_tier_id=${tier.id}`
+        const tierResponses = await Promise.all(
+          phaseTiers.map((tier: RaidTier) =>
+            fetch(`/api/prio-list?guild_id=${activeGuild.id}&raid_tier_id=${tier.id}`)
+              .then((res) => (res.ok ? res.json() : { priorities: [] }))
+              .catch(() => ({ priorities: [] }))
           )
-
-          if (response.ok) {
-            const data = await response.json()
-            for (const prio of data.priorities || []) {
-              allPriorities[prio.item_id] = prio
-            }
+        )
+        for (const data of tierResponses) {
+          for (const prio of data.priorities || []) {
+            allPriorities[prio.item_id] = prio
           }
         }
         setPriorities(allPriorities)
