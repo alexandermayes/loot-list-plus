@@ -88,6 +88,24 @@ function DraggableSlot({ id, children }: { id: string; children: React.ReactNode
   )
 }
 
+// Drag handle for items in the Unranked panel — drop onto a rank slot to
+// rank the item directly without opening a picker (GH #74). The drag id is
+// namespaced `unranked:<itemId>` so handleDragEnd can distinguish it from
+// the inter-slot moves DraggableSlot produces.
+function UnrankedDraggable({ itemId, children }: { itemId: string; children: React.ReactNode }) {
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: `unranked:${itemId}` })
+  return (
+    <div
+      ref={setNodeRef}
+      {...attributes}
+      {...listeners}
+      className={`cursor-grab active:cursor-grabbing transition-opacity ${isDragging ? 'opacity-30' : ''}`}
+    >
+      {children}
+    </div>
+  )
+}
+
 // Slot drop target. Disabled when the slot is locked by a Reserved companion
 // or the list is approved (no edits allowed).
 function DroppableSlot({
@@ -1431,6 +1449,12 @@ export default function LootListContent({
   const [activeDragKey, setActiveDragKey] = useState<string | null>(null)
   const activeDragItem = useMemo(() => {
     if (!activeDragKey) return null
+    // Unranked panel drag: id is `unranked:<itemId>`, look up directly.
+    if (activeDragKey.startsWith('unranked:')) {
+      const itemId = activeDragKey.slice('unranked:'.length)
+      return lootItems.find(i => i.id === itemId) ?? null
+    }
+    // Inter-slot drag: id is `<rank>-<slot>`, look up via rankings.
     const itemId = rankings[activeDragKey]
     return itemId ? lootItems.find(i => i.id === itemId) ?? null : null
   }, [activeDragKey, rankings, lootItems])
@@ -1447,15 +1471,37 @@ export default function LootListContent({
     const targetKey = event.over ? String(event.over.id) : null
     if (!targetKey || sourceKey === targetKey) return
 
+    const poolForRank = (rank: number) =>
+      rank >= 39 ? bracket14Items : rank >= 25 ? noBracketItems : offSpecItems
+
+    // Unranked → rank: dropping an item from the Unranked panel onto a rank
+    // slot ranks it directly (GH #74). Validate against the target bracket
+    // pool the same way the inter-slot drag does (GH #79), then route through
+    // handleItemSelect so the rank/replace path stays a single call.
+    if (sourceKey.startsWith('unranked:')) {
+      const itemId = sourceKey.slice('unranked:'.length)
+      const [rankStr, slotStr] = targetKey.split('-')
+      const targetRank = parseInt(rankStr, 10)
+      const targetSlot = parseInt(slotStr, 10)
+      if (!Number.isFinite(targetRank) || !Number.isFinite(targetSlot)) return
+
+      if (!poolForRank(targetRank).some(i => i.id === itemId)) {
+        const item = offSpecItems.find(i => i.id === itemId)
+        showNotification('error', item
+          ? `${item.name} can't go there — it's prio'd to other classes for that bracket.`
+          : `That item isn't allowed in that bracket.`)
+        return
+      }
+      handleItemSelect(targetRank, targetSlot, itemId)
+      return
+    }
+
     // Block cross-bracket drags into a section whose pool doesn't include
     // the item — e.g. Off-spec → No Bracket on an item allocated to other
     // classes' prio. Without this check, moveRanking happily updates the
     // rankings state but the bracket's SearchableItemSelect can't resolve
     // the id and renders an empty slot (GH #79). The data-recovery fallback
     // covers items that already got stuck; this prevention covers new drags.
-    const poolForRank = (rank: number) =>
-      rank >= 39 ? bracket14Items : rank >= 25 ? noBracketItems : offSpecItems
-
     const sourceRank = parseInt(sourceKey.split('-')[0], 10)
     const targetRank = parseInt(targetKey.split('-')[0], 10)
     const sourceItemId = rankings[sourceKey]
@@ -1475,7 +1521,7 @@ export default function LootListContent({
     }
 
     moveRanking(sourceKey, targetKey)
-  }, [moveRanking, rankings, bracket14Items, noBracketItems, offSpecItems, showNotification])
+  }, [moveRanking, handleItemSelect, rankings, bracket14Items, noBracketItems, offSpecItems, showNotification])
 
   return (
     <ExpansionGuard serverHeading={serverHeading}>
@@ -2248,22 +2294,24 @@ export default function LootListContent({
                     </div>
                     <div>
                       {unrankedBySlot[slot].map(item => (
-                        <div key={item.id} className="px-4 py-3 hover:bg-muted/50 transition-colors border-b border-border/30">
-                          <div className="flex items-center gap-2">
-                            <span className="flex-1 min-w-0">
-                              <ItemLink name={item.name} wowheadId={item.wowhead_id} clickable={true} />
-                            </span>
-                            {item.classification && item.classification !== 'Unlimited' && (
-                              <ClassificationBadge
-                                classification={item.classification as 'Reserved' | 'Limited' | 'Unlimited'}
-                                compact
-                              />
-                            )}
+                        <UnrankedDraggable key={item.id} itemId={item.id}>
+                          <div className="px-4 py-3 hover:bg-muted/50 transition-colors border-b border-border/30">
+                            <div className="flex items-center gap-2">
+                              <span className="flex-1 min-w-0">
+                                <ItemLink name={item.name} wowheadId={item.wowhead_id} clickable={true} />
+                              </span>
+                              {item.classification && item.classification !== 'Unlimited' && (
+                                <ClassificationBadge
+                                  classification={item.classification as 'Reserved' | 'Limited' | 'Unlimited'}
+                                  compact
+                                />
+                              )}
+                            </div>
+                            <p className="text-[11px] text-muted-foreground mt-1">
+                              {normalizeBossName(item.boss_name || 'Unknown')}
+                            </p>
                           </div>
-                          <p className="text-[11px] text-muted-foreground mt-1">
-                            {normalizeBossName(item.boss_name || 'Unknown')}
-                          </p>
-                        </div>
+                        </UnrankedDraggable>
                       ))}
                     </div>
                   </div>
@@ -2281,20 +2329,22 @@ export default function LootListContent({
                     {/* Boss Items */}
                     <div>
                       {unrankedByBoss[boss].map(item => (
-                        <div key={item.id} className="px-4 py-3 hover:bg-muted/50 transition-colors border-b border-border/30">
-                          <div className="flex items-center gap-2">
-                            <span className="flex-1 min-w-0">
-                              <ItemLink name={item.name} wowheadId={item.wowhead_id} clickable={true} />
-                            </span>
-                            {item.classification && item.classification !== 'Unlimited' && (
-                              <ClassificationBadge
-                                classification={item.classification as 'Reserved' | 'Limited' | 'Unlimited'}
-                                compact
-                              />
-                            )}
+                        <UnrankedDraggable key={item.id} itemId={item.id}>
+                          <div className="px-4 py-3 hover:bg-muted/50 transition-colors border-b border-border/30">
+                            <div className="flex items-center gap-2">
+                              <span className="flex-1 min-w-0">
+                                <ItemLink name={item.name} wowheadId={item.wowhead_id} clickable={true} />
+                              </span>
+                              {item.classification && item.classification !== 'Unlimited' && (
+                                <ClassificationBadge
+                                  classification={item.classification as 'Reserved' | 'Limited' | 'Unlimited'}
+                                  compact
+                                />
+                              )}
+                            </div>
+                            <p className="text-[11px] text-muted-foreground mt-1">{item.item_slot}</p>
                           </div>
-                          <p className="text-[11px] text-muted-foreground mt-1">{item.item_slot}</p>
-                        </div>
+                        </UnrankedDraggable>
                       ))}
                     </div>
                   </div>
