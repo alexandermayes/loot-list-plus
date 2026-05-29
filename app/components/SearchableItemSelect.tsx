@@ -22,6 +22,12 @@ interface Item {
   wowhead_id: number
   boss_name: string
   classification?: string
+  // Tooltip-search fields (GH #73). All optional — searches still work when
+  // the caller doesn't populate them.
+  item_slot?: string
+  armor_type?: string | null
+  weapon_type?: string | null
+  primary_stat?: string | null
 
   dps_gain?: number  // Expected DPS/HPS gain from this item
   is_loot_council?: boolean  // Item decided by loot council, not rankable
@@ -110,13 +116,25 @@ export default function SearchableItemSelect({
     [items, valueFallbackItems, value]
   )
 
-  // Filter items by search — matches item name or boss name
+  // Filter items by search — matches name, boss name, slot, armor/weapon
+  // type, primary stat, and classification ("tooltip search", GH #73).
+  // primary_stat can be comma-separated for flex items (e.g.
+  // 'Agility,Intellect') — the substring check handles that without splitting.
   const filteredItems = useMemo(() => {
     const q = search.toLowerCase()
-    return items.filter(item =>
-      item.name.toLowerCase().includes(q) ||
-      item.boss_name?.toLowerCase().includes(q)
-    )
+    if (!q) return items
+    return items.filter(item => {
+      const haystacks = [
+        item.name,
+        item.boss_name,
+        item.item_slot,
+        item.armor_type,
+        item.weapon_type,
+        item.primary_stat,
+        item.classification,
+      ]
+      return haystacks.some(h => h?.toLowerCase().includes(q))
+    })
   }, [items, search])
 
   // Group items by boss and sort by Classic WoW encounter order (memoized)
@@ -338,7 +356,7 @@ export default function SearchableItemSelect({
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search items..."
+              placeholder="Search by name, stat, slot, type..."
               variant="rounded"
               size="sm"
             />
@@ -450,7 +468,7 @@ export default function SearchableItemSelect({
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search items..."
+                placeholder="Search by name, stat, slot, type..."
                 variant="rounded"
                 className="flex-1"
               />
