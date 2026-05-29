@@ -53,6 +53,13 @@ interface SearchableItemSelectProps {
   onRemove?: () => void
   /** When true, renders a full-screen modal instead of positioned dropdown (for mobile) */
   mobile?: boolean
+  /**
+   * Optional broader pool used to resolve the selected `value` for display if
+   * it isn't in `items`. Lets the slot render and the X button stay clickable
+   * when an item was placed via a path the bracket filter doesn't allow
+   * (e.g. dragged into a bracket from Off-spec, GH #79).
+   */
+  valueFallbackItems?: Item[]
 }
 
 export default function SearchableItemSelect({
@@ -67,7 +74,8 @@ export default function SearchableItemSelect({
   ownedWowheadIds = new Set(),
   readOnly = false,
   onRemove,
-  mobile = false
+  mobile = false,
+  valueFallbackItems,
 }: SearchableItemSelectProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [search, setSearch] = useState('')
@@ -97,7 +105,10 @@ export default function SearchableItemSelect({
     }
   }, [])
 
-  const selectedItem = useMemo(() => items.find(i => i.id === value), [items, value])
+  const selectedItem = useMemo(
+    () => items.find(i => i.id === value) ?? valueFallbackItems?.find(i => i.id === value),
+    [items, valueFallbackItems, value]
+  )
 
   // Filter items by search — matches item name or boss name
   const filteredItems = useMemo(() => {

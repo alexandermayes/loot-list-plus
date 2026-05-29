@@ -153,6 +153,13 @@ interface RankRowProps {
    * disable rule shouldn't apply there. GH #69.
    */
   enforceReservedAlone?: boolean
+  /**
+   * Broad pool of items the character can equip — used to resolve the
+   * selected item id when it isn't in `lootItems` (the bracket-filtered
+   * pool). Lets stuck items render and be removable even if they shouldn't
+   * have been placed in this bracket (GH #79).
+   */
+  allLootItems?: LootItem[]
 }
 
 const RankRow = memo(function RankRow({
@@ -172,13 +179,19 @@ const RankRow = memo(function RankRow({
   removedRankings = {},
   onRestoreItem,
   enforceReservedAlone = true,
+  allLootItems,
 }: RankRowProps) {
-  const selectedItem1 = selectedItemId1 ? lootItems.find(i => i.id === selectedItemId1) : null
-  const selectedItem2 = selectedItemId2 ? lootItems.find(i => i.id === selectedItemId2) : null
+  // Lookup uses the bracket-filtered pool first, then falls back to the broad
+  // pool so an item placed via a path the bracket filter doesn't allow still
+  // renders (GH #79).
+  const resolveItem = (id: string) =>
+    lootItems.find(i => i.id === id) ?? allLootItems?.find(i => i.id === id) ?? null
+  const selectedItem1 = selectedItemId1 ? resolveItem(selectedItemId1) : null
+  const selectedItem2 = selectedItemId2 ? resolveItem(selectedItemId2) : null
   const removedItemId1 = removedRankings[`${rank}-1`]
   const removedItemId2 = removedRankings[`${rank}-2`]
-  const removedItem1 = removedItemId1 ? lootItems.find(i => i.id === removedItemId1) : null
-  const removedItem2 = removedItemId2 ? lootItems.find(i => i.id === removedItemId2) : null
+  const removedItem1 = removedItemId1 ? resolveItem(removedItemId1) : null
+  const removedItem2 = removedItemId2 ? resolveItem(removedItemId2) : null
   const isDuplicate1 = selectedItemId1 && duplicateItems.includes(selectedItemId1)
   const isDuplicate2 = selectedItemId2 && duplicateItems.includes(selectedItemId2)
 
@@ -224,6 +237,7 @@ const RankRow = memo(function RankRow({
                 <DraggableSlot id={`${rank}-1`}>
                   <SearchableItemSelect
                     items={lootItems}
+                    valueFallbackItems={allLootItems}
                     value={selectedItemId1 || ''}
                     onChange={(value) => onItemSelect(rank, 1, value)}
                     disabled={selectedItems}
@@ -233,7 +247,7 @@ const RankRow = memo(function RankRow({
                     ownedWowheadIds={ownedWowheadIds}
                     readOnly={isApproved}
                     onRemove={isApproved && onRemoveItem && selectedItemId1 ? () => {
-                      const item = lootItems.find(i => i.id === selectedItemId1)
+                      const item = resolveItem(selectedItemId1)
                       if (item) onRemoveItem(item.id, item.name)
                     } : undefined}
                   />
@@ -241,6 +255,7 @@ const RankRow = memo(function RankRow({
               ) : (
                 <SearchableItemSelect
                   items={lootItems}
+                  valueFallbackItems={allLootItems}
                   value={selectedItemId1 || ''}
                   onChange={(value) => onItemSelect(rank, 1, value)}
                   disabled={selectedItems}
@@ -250,7 +265,7 @@ const RankRow = memo(function RankRow({
                   ownedWowheadIds={ownedWowheadIds}
                   readOnly={isApproved}
                   onRemove={isApproved && onRemoveItem && selectedItemId1 ? () => {
-                    const item = lootItems.find(i => i.id === selectedItemId1)
+                    const item = resolveItem(selectedItemId1)
                     if (item) onRemoveItem(item.id, item.name)
                   } : undefined}
                 />
@@ -301,6 +316,7 @@ const RankRow = memo(function RankRow({
                 <DraggableSlot id={`${rank}-2`}>
                   <SearchableItemSelect
                     items={lootItems}
+                    valueFallbackItems={allLootItems}
                     value={selectedItemId2 || ''}
                     onChange={(value) => onItemSelect(rank, 2, value)}
                     disabled={selectedItems}
@@ -310,7 +326,7 @@ const RankRow = memo(function RankRow({
                     ownedWowheadIds={ownedWowheadIds}
                     readOnly={isApproved}
                     onRemove={isApproved && onRemoveItem && selectedItemId2 ? () => {
-                      const item = lootItems.find(i => i.id === selectedItemId2)
+                      const item = resolveItem(selectedItemId2)
                       if (item) onRemoveItem(item.id, item.name)
                     } : undefined}
                   />
@@ -318,6 +334,7 @@ const RankRow = memo(function RankRow({
               ) : (
                 <SearchableItemSelect
                   items={lootItems}
+                  valueFallbackItems={allLootItems}
                   value={selectedItemId2 || ''}
                   onChange={(value) => onItemSelect(rank, 2, value)}
                   disabled={selectedItems}
@@ -327,7 +344,7 @@ const RankRow = memo(function RankRow({
                   ownedWowheadIds={ownedWowheadIds}
                   readOnly={isApproved}
                   onRemove={isApproved && onRemoveItem && selectedItemId2 ? () => {
-                    const item = lootItems.find(i => i.id === selectedItemId2)
+                    const item = resolveItem(selectedItemId2)
                     if (item) onRemoveItem(item.id, item.name)
                   } : undefined}
                 />
@@ -377,13 +394,17 @@ const MobileRankCard = memo(function MobileRankCard({
   removedRankings = {},
   onRestoreItem,
   enforceReservedAlone = true,
+  allLootItems,
 }: RankRowProps) {
-  const selectedItem1 = selectedItemId1 ? lootItems.find(i => i.id === selectedItemId1) : null
-  const selectedItem2 = selectedItemId2 ? lootItems.find(i => i.id === selectedItemId2) : null
+  // Same fallback resolver as RankRow — see GH #79.
+  const resolveItem = (id: string) =>
+    lootItems.find(i => i.id === id) ?? allLootItems?.find(i => i.id === id) ?? null
+  const selectedItem1 = selectedItemId1 ? resolveItem(selectedItemId1) : null
+  const selectedItem2 = selectedItemId2 ? resolveItem(selectedItemId2) : null
   const removedItemId1 = removedRankings[`${rank}-1`]
   const removedItemId2 = removedRankings[`${rank}-2`]
-  const removedItem1 = removedItemId1 ? lootItems.find(i => i.id === removedItemId1) : null
-  const removedItem2 = removedItemId2 ? lootItems.find(i => i.id === removedItemId2) : null
+  const removedItem1 = removedItemId1 ? resolveItem(removedItemId1) : null
+  const removedItem2 = removedItemId2 ? resolveItem(removedItemId2) : null
   const isDuplicate1 = selectedItemId1 && duplicateItems.includes(selectedItemId1)
   const isDuplicate2 = selectedItemId2 && duplicateItems.includes(selectedItemId2)
 
@@ -429,6 +450,7 @@ const MobileRankCard = memo(function MobileRankCard({
         <div className="space-y-1.5">
           <SearchableItemSelect
             items={lootItems}
+            valueFallbackItems={allLootItems}
             value={selectedItemId || ''}
             onChange={(value) => onItemSelect(rank, slotNum, value)}
             disabled={selectedItems}
@@ -438,7 +460,7 @@ const MobileRankCard = memo(function MobileRankCard({
             ownedWowheadIds={ownedWowheadIds}
             readOnly={isApproved}
             onRemove={isApproved && onRemoveItem && selectedItemId ? () => {
-              const item = lootItems.find(i => i.id === selectedItemId)
+              const item = resolveItem(selectedItemId)
               if (item) onRemoveItem(item.id, item.name)
             } : undefined}
             mobile
@@ -492,6 +514,8 @@ interface BracketSectionProps {
   enforceReservedAlone?: boolean
   ranks: number[]
   lootItems: LootItem[]
+  /** Broad pool of equippable items — see allLootItems on RankRowProps (GH #79). */
+  allLootItems?: LootItem[]
   disabledItems: Set<string>
   rankings: Record<string, string>
   duplicateItems: string[]
@@ -522,6 +546,7 @@ function BracketSection({
   enforceReservedAlone = true,
   ranks,
   lootItems,
+  allLootItems,
   disabledItems,
   rankings,
   duplicateItems,
@@ -647,6 +672,7 @@ function BracketSection({
                   key={rank}
                   rank={rank}
                   lootItems={lootItems}
+                  allLootItems={allLootItems}
                   selectedItemId1={rankings[`${rank}-1`]}
                   selectedItemId2={rankings[`${rank}-2`]}
                   selectedItems={disabledItems}
@@ -674,6 +700,7 @@ function BracketSection({
               key={rank}
               rank={rank}
               lootItems={lootItems}
+              allLootItems={allLootItems}
               selectedItemId1={rankings[`${rank}-1`]}
               selectedItemId2={rankings[`${rank}-2`]}
               enforceReservedAlone={enforceReservedAlone}
@@ -1419,8 +1446,36 @@ export default function LootListContent({
     const sourceKey = String(event.active.id)
     const targetKey = event.over ? String(event.over.id) : null
     if (!targetKey || sourceKey === targetKey) return
+
+    // Block cross-bracket drags into a section whose pool doesn't include
+    // the item — e.g. Off-spec → No Bracket on an item allocated to other
+    // classes' prio. Without this check, moveRanking happily updates the
+    // rankings state but the bracket's SearchableItemSelect can't resolve
+    // the id and renders an empty slot (GH #79). The data-recovery fallback
+    // covers items that already got stuck; this prevention covers new drags.
+    const poolForRank = (rank: number) =>
+      rank >= 39 ? bracket14Items : rank >= 25 ? noBracketItems : offSpecItems
+
+    const sourceRank = parseInt(sourceKey.split('-')[0], 10)
+    const targetRank = parseInt(targetKey.split('-')[0], 10)
+    const sourceItemId = rankings[sourceKey]
+    const targetItemId = rankings[targetKey]
+
+    const invalidId =
+      (sourceItemId && !poolForRank(targetRank).some(i => i.id === sourceItemId) && sourceItemId) ||
+      // Swap case: target item moves to source position; validate that direction too.
+      (targetItemId && !poolForRank(sourceRank).some(i => i.id === targetItemId) && targetItemId) ||
+      null
+    if (invalidId) {
+      const item = offSpecItems.find(i => i.id === invalidId)
+      showNotification('error', item
+        ? `${item.name} can't go there — it's prio'd to other classes for that bracket.`
+        : `That item isn't allowed in that bracket.`)
+      return
+    }
+
     moveRanking(sourceKey, targetKey)
-  }, [moveRanking])
+  }, [moveRanking, rankings, bracket14Items, noBracketItems, offSpecItems, showNotification])
 
   return (
     <ExpansionGuard serverHeading={serverHeading}>
@@ -1901,6 +1956,10 @@ export default function LootListContent({
             enforceReservedAlone={'showAllocationPoints' in bracket ? bracket.showAllocationPoints : false}
             ranks={bracket.ranks}
             lootItems={bracket.lootItems}
+            // Broadest pool of items the character can equip — used to resolve
+            // the selected item id when it isn't in the bracket-filtered pool
+            // (e.g. a cross-bracket drag stuck an item here). GH #79.
+            allLootItems={offSpecItems}
             disabledItems={bracket.disabledItems}
             rankings={rankings}
             duplicateItems={duplicateItems}
