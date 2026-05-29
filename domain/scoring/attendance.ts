@@ -73,6 +73,26 @@ export function getAttendanceWindowEnd(asOfDate: string | undefined, weekResetDa
   return formatDate(lastCompletedResetWeekEnd(asOf, resetDay))
 }
 
+/**
+ * First day (YYYY-MM-DD) of the rolling attendance window, relative to
+ * `asOfDate`. Mirrors the engine's `windowStart` computation so callers that
+ * render attendance grids visually match what `computeAttendance` actually
+ * scores. The in-progress reset week is excluded (window ends at the last
+ * completed reset week).
+ */
+export function getAttendanceWindowStart(
+  asOfDate: string | undefined,
+  rollingWeeks: number,
+  weekResetDay?: number | null,
+): string {
+  const asOf = asOfDate ? parseDateLocal(asOfDate) : new Date()
+  const resetDay = weekResetDay ?? DEFAULT_WEEK_RESET_DAY
+  const windowEnd = lastCompletedResetWeekEnd(asOf, resetDay)
+  const start = new Date(windowEnd)
+  start.setDate(start.getDate() - rollingWeeks * 7 + 1)
+  return formatDate(start)
+}
+
 function weekKey(dateStr: string, resetDay: number): string {
   const d = parseDateLocal(dateStr)
   const dow = d.getDay()
