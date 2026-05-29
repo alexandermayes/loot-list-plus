@@ -45,7 +45,7 @@ function resolveTitlePrefix(issue) {
   return notPlanned ? '(CLOSED) ' : '(FIXED) ';
 }
 
-function buildCloseMessage(issue) {
+function buildCloseMessage(issue, resolutionNote) {
   const notPlanned = issue.state_reason === 'not_planned';
   const feature = isFeatureRequest(issue);
   let tag;
@@ -54,7 +54,55 @@ function buildCloseMessage(issue) {
   } else {
     tag = notPlanned ? '🚫 Closed (not planned)' : '✅ Closed (completed)';
   }
-  return `${tag}. See: <${issue.html_url}>`;
+  let msg = `${tag}. See: <${issue.html_url}>`;
+  if (resolutionNote) {
+    // Quote the resolution comment so it visually separates from our tag line.
+    const quoted = resolutionNote.split('\n').map((l) => `> ${l}`).join('\n');
+    msg += `\n${quoted}`;
+  }
+  return msg;
+}
+
+// Fetch the most recent human comment on a closed issue so we can surface
+// the resolution rationale in the Discord thread alongside the tag line.
+// Skips the bot's own auto-comments (dupe-link notices, etc.) and respects
+// a soft length cap to keep Discord posts readable.
+const RESOLUTION_MAX_CHARS = 600;
+
+async function fetchResolutionNote(issue) {
+  if (!issue.comments || issue.comments < 1) return null;
+  const token = process.env.GITHUB_TOKEN;
+  const repo = process.env.GITHUB_REPO;
+  if (!token || !repo) return null;
+  // Pull the last page so the newest comment is in the response without
+  // having to walk pagination.
+  const url = `https://api.github.com/repos/${repo}/issues/${issue.number}/comments?per_page=100`;
+  const res = await fetch(url, {
+    headers: {
+      'Accept': 'application/vnd.github+json',
+      'Authorization': `Bearer ${token}`,
+      'X-GitHub-Api-Version': '2022-11-28',
+    },
+  });
+  if (!res.ok) {
+    console.warn(`[closures] fetch comments failed for #${issue.number}: ${res.status}`);
+    return null;
+  }
+  const comments = await res.json();
+  if (!Array.isArray(comments) || comments.length === 0) return null;
+  // Walk newest-first; pick the first non-bot comment whose body has content.
+  // Comments are returned oldest-first by default.
+  for (let i = comments.length - 1; i >= 0; i--) {
+    const c = comments[i];
+    const isBotAuthor = c.user?.type === 'Bot';
+    const isDupeNotice = typeof c.body === 'string' && c.body.startsWith('Possible duplicate of #');
+    if (isBotAuthor || isDupeNotice) continue;
+    const body = (c.body || '').trim();
+    if (!body) continue;
+    if (body.length <= RESOLUTION_MAX_CHARS) return body;
+    return body.slice(0, RESOLUTION_MAX_CHARS - 1) + '…';
+  }
+  return null;
 }
 
 async function announceClosure(client, supabase, issue) {
@@ -78,8 +126,9 @@ async function announceClosure(client, supabase, issue) {
 
   // Close message only on first announcement — re-sweeps shouldn't double-post.
   if (!alreadyAnnounced) {
+    const resolutionNote = await fetchResolutionNote(issue);
     try {
-      await channel.send(buildCloseMessage(issue));
+      await channel.send(buildCloseMessage(issue, resolutionNote));
     } catch (err) {
       console.warn(`[closures] could not post in ${row.discord_channel_id} for #${issue.number}:`, err.message);
       return;
