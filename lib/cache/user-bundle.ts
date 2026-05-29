@@ -122,7 +122,8 @@ async function fetchUserBundle(userId: string): Promise<FetchedBundle> {
           subscription_tier,
           guild_roles (
             name,
-            position
+            position,
+            permissions
           )
         )
       `)

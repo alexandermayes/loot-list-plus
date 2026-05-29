@@ -157,7 +157,11 @@ const nextConfig: NextConfig = {
   },
   experimental: {
     staleTimes: {
-      dynamic: 30,
+      // Back-nav within 60s serves cached RSC instead of refetching. Writes
+      // already invalidate via tag on the layout prefetch, so the upper bound
+      // is bounded by actual freshness needs (60s of staleness for
+      // navigations the user isn't actively driving content changes through).
+      dynamic: 60,
       static: 180,
     },
     // Tree-shake large icon and animation libraries for smaller bundles

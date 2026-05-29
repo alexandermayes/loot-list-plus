@@ -3,7 +3,7 @@
 import { useRouter, usePathname } from 'next/navigation'
 import { useGuildContext } from '../contexts/GuildContext'
 import Image from 'next/image'
-import { useState, useRef, useEffect, useCallback } from 'react'
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import dynamic from 'next/dynamic'
 import { CharacterSelector } from './CharacterSelector'
 import { useSidebar } from '../contexts/SidebarContext'
@@ -33,6 +33,30 @@ interface SidebarProps {
 }
 
 const MOBILE_SIDEBAR_WIDTH = 280
+
+// Hoisted to module scope so the array identity is stable across renders;
+// memoization downstream only fires when the structure actually changes.
+const STATIC_NAV_ITEMS: ReadonlyArray<{ name: string; view: string; icon: string }> = [
+  { name: 'Overview', view: 'overview', icon: '/icons/dashboard.svg' },
+  { name: 'Master Sheet', view: 'master-sheet', icon: '/icons/master-sheet.svg' },
+  { name: 'Loot Lists', view: 'loot-list', icon: '/icons/loot-lists.svg' },
+  { name: 'Attendance', view: 'attendance', icon: '/icons/attendance.svg' },
+  { name: 'Reserve', view: 'reserve', icon: '/icons/reserve.svg' },
+]
+
+const NAV_ROUTE_MAP: Record<string, string> = {
+  'overview': '/overview',
+  'master-sheet': '/master-sheet',
+  'loot-list': '/loot-list',
+  'attendance': '/attendance',
+  'guild-settings': '/guild-settings',
+  'loot-submissions': '/loot-submissions',
+  'loot-settings': '/loot-management',
+  'raid-tracking': '/raid-tracking',
+  'raid-teams': '/raid-teams',
+  'audit-log': '/audit-log',
+  'reserve': '/reserve',
+}
 
 export default function Sidebar({ currentView = 'overview', onViewChange, isMobileOverlay = false, onNavigate }: SidebarProps) {
   const router = useRouter()
@@ -142,14 +166,16 @@ export default function Sidebar({ currentView = 'overview', onViewChange, isMobi
     setShowJoinModal(true)
   }, [user])
 
-  const handleSwitchGuild = async (guildId: string) => {
+  const handleSwitchGuild = useCallback(async (guildId: string) => {
     setGuildDropdownOpen(false)
     trackClientEvent('guild_switched', { guild_id: guildId })
     await switchGuild(guildId)
     router.refresh()
-  }
+  }, [switchGuild, router])
 
-  const handleNavClick = (view: string) => {
+  // Route map is a const — define once at module scope below the component,
+  // referenced inside the callback to keep it stable across renders.
+  const handleNavClick = useCallback((view: string) => {
     // If no active guild, clicking logo should go to dashboard (shows WelcomeScreen)
     if (!activeGuild) {
       if (view === 'overview') {
@@ -164,41 +190,26 @@ export default function Sidebar({ currentView = 'overview', onViewChange, isMobi
       onViewChange(view)
     } else {
       // Standalone page mode - use router
-      const routeMap: Record<string, string> = {
-        'overview': '/overview',
-        'master-sheet': '/master-sheet',
-        'loot-list': '/loot-list',
-        'attendance': '/attendance',
-        'guild-settings': '/guild-settings',
-        'loot-submissions': '/loot-submissions',
-        'loot-settings': '/loot-management',
-        'raid-tracking': '/raid-tracking',
-        'raid-teams': '/raid-teams',
-        'audit-log': '/audit-log',
-        'reserve': '/reserve',
-      }
-      router.push(routeMap[view] || '/overview')
+      router.push(NAV_ROUTE_MAP[view] || '/overview')
     }
 
     // Close mobile menu after navigation
     onNavigate?.()
-  }
+  }, [activeGuild, onViewChange, onNavigate, router])
 
-  const navItems = [
-    { name: 'Overview', view: 'overview', icon: '/icons/dashboard.svg' },
-    { name: 'Master Sheet', view: 'master-sheet', icon: '/icons/master-sheet.svg' },
-    { name: 'Loot Lists', view: 'loot-list', icon: '/icons/loot-lists.svg' },
-    { name: 'Attendance', view: 'attendance', icon: '/icons/attendance.svg' },
-    { name: 'Reserve', view: 'reserve', icon: '/icons/reserve.svg' },
-  ]
+  // Static nav items — referenced from module-scope constant so the array
+  // identity stays stable across renders (cheap React.memo wins downstream).
+  const navItems = STATIC_NAV_ITEMS
 
-  const adminItems = [
+  // Admin items depend on permissions + guild feature flags. Memoize so the
+  // array identity only changes when one of those actually changes.
+  const adminItems = useMemo(() => [
     ...(hasPermission('manage_attendance') ? [{ name: 'Raid Tracking', view: 'raid-tracking', icon: '/icons/raid-tracking.svg' }] : []),
     ...(hasPermission('manage_submissions') ? [{ name: 'Loot Submissions', view: 'loot-submissions', icon: '/icons/master-loot.svg' }] : []),
     ...(hasPermission('manage_settings') ? [{ name: 'Loot Management', view: 'loot-settings', icon: '/icons/guild-settings.svg' }] : []),
     ...(hasPermission('manage_roster') && hasFeature(activeGuild, 'raid_teams') ? [{ name: 'Raid Teams', view: 'raid-teams', icon: '/icons/user-multiple.svg' }] : []),
     ...(hasPermission('view_audit_log') && hasFeature(activeGuild, 'audit_log') ? [{ name: 'Audit Log', view: 'audit-log', icon: '/icons/monitor.svg' }] : []),
-  ]
+  ], [hasPermission, activeGuild])
 
   const isActive = (view: string) => {
     // Check currentView prop first (for dashboard mode)
