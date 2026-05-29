@@ -3,7 +3,7 @@ import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { verifyOfficerPermissions } from '@/utils/server-roles'
 import { trackApiError } from '@/utils/analytics/server'
-import { getAttendanceWindowEnd, resolveOwnedEvents } from '@/domain/scoring'
+import { getAttendanceWindowEnd, resolveOwnedEvents, resolveActiveRaiderModifiers } from '@/domain/scoring'
 import { toDateString } from '@/utils/date'
 
 /**
@@ -209,12 +209,24 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // Collapse per-raider modifier entries into a flat active map so the Lua
+    // engine reads a simple { characterId: amount } map and stays date-free.
+    const settingsForExport = settingsResult.data
+      ? {
+          ...settingsResult.data,
+          single_raider_modifiers: resolveActiveRaiderModifiers(
+            settingsResult.data.single_raider_modifiers as Parameters<typeof resolveActiveRaiderModifiers>[0],
+            toDateString(new Date()),
+          ),
+        }
+      : {}
+
     return NextResponse.json({
       guildId: guild.id,
       guildName: guild.name,
       expansionId: expansionResult.data?.id,
       phase: expansionResult.data?.current_phase,
-      settings: settingsResult.data || {},
+      settings: settingsForExport,
       items,
       members,
       priorities,

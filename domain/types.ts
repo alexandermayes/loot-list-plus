@@ -30,10 +30,14 @@ export interface ScoringConfig {
   rank_modifiers: Record<string, number>
   raid_roles_overall_bonus_priority: boolean
   role_modifiers: Record<string, number>
-  /** Toggle for permanent per-character score modifiers. */
+  /** Toggle for per-character score modifiers (permanent and per-week). */
   single_raider_overall_bonus: boolean
-  /** Permanent per-character score modifiers, keyed by character id. Applied to every score. */
-  single_raider_modifiers: Record<string, number>
+  /**
+   * Per-character score modifiers, keyed by character id. Each raider can stack
+   * multiple entries; the engine sums all currently-active ones. Applied to
+   * every item's score. See {@link RaiderBonusEntry}.
+   */
+  single_raider_modifiers: Record<string, RaiderBonusEntry[]>
   minimum_raid_days_enabled: boolean
   minimum_raid_days: number
   late_early_penalty_enabled: boolean
@@ -61,6 +65,18 @@ export interface ScoringConfig {
 
 /** Backward-compatible alias */
 export type GuildSettings = ScoringConfig
+
+/**
+ * One per-raider score modifier. Positive = bonus, negative = penalty.
+ * `expires_at` null means permanent; a YYYY-MM-DD date means the entry only
+ * applies while the evaluation date is on or before it (used for "this week"
+ * boosts/penalties that fall off at the next reset).
+ */
+export interface RaiderBonusEntry {
+  amount: number
+  /** YYYY-MM-DD, or null for a permanent entry. */
+  expires_at: string | null
+}
 
 // ─── Attendance ──────────────────────────────────────────────
 
@@ -226,6 +242,12 @@ export interface ScoreInput {
    * Pass 0 when donations are disabled or the character has no records.
    */
   donationBonus: number
+  /**
+   * Evaluation date (YYYY-MM-DD) for time-sensitive modifiers like per-week
+   * raider bonuses. When omitted, only permanent raider entries are applied
+   * (temporary ones are treated as expired — fails toward not granting).
+   */
+  asOfDate?: string
 }
 
 /** Breakdown of all score components */

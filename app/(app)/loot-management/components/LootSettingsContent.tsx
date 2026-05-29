@@ -242,7 +242,6 @@ export default function LootSettingsContent({
     raid_roles_overall_bonus_priority: false,
     role_modifiers: {} as Record<string, number>,
     single_raider_overall_bonus: false,
-    single_raider_modifiers: {} as Record<string, number>,
     single_raider_bonus_single_item: false,
 
     // Donation Settings
@@ -338,7 +337,6 @@ export default function LootSettingsContent({
           raid_roles_overall_bonus_priority: settings.raid_roles_overall_bonus_priority,
           role_modifiers: settings.role_modifiers,
           single_raider_overall_bonus: settings.single_raider_overall_bonus,
-          single_raider_modifiers: settings.single_raider_modifiers,
           single_raider_bonus_single_item: settings.single_raider_bonus_single_item,
           donation_bonuses_enabled: settings.donation_bonuses_enabled,
           donation_cap_enabled: settings.donation_cap_enabled,

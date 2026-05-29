@@ -4,7 +4,7 @@ import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { verifyOfficerPermissions } from '@/utils/server-roles'
 import { trackApiError } from '@/utils/analytics/server'
-import { getAttendanceWindowEnd, resolveOwnedEvents } from '@/domain/scoring'
+import { getAttendanceWindowEnd, resolveOwnedEvents, resolveActiveRaiderModifiers } from '@/domain/scoring'
 import { toDateString } from '@/utils/date'
 import { deflateRawSync } from 'zlib'
 
@@ -54,6 +54,15 @@ export async function GET(request: NextRequest) {
       .select('*')
       .eq('guild_id', guildId)
       .single()
+
+    // Collapse per-raider modifier entries into a flat active map so the Lua
+    // engine reads a simple { characterId: amount } map and stays date-free.
+    if (settings) {
+      settings.single_raider_modifiers = resolveActiveRaiderModifiers(
+        settings.single_raider_modifiers as Parameters<typeof resolveActiveRaiderModifiers>[0],
+        toDateString(new Date()),
+      )
+    }
 
     // Get active expansion - fall back by tracing from guild's loot items
     let expansion: { id: string; name: string; current_phase: number } | null = null

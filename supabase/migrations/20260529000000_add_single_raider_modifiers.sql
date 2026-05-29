@@ -1,7 +1,10 @@
 -- Add single_raider_modifiers column to guild_settings
--- Stores per-character permanent score modifiers keyed by character id:
---   {"<character_uuid>": 20, "<character_uuid>": -5}
--- Applied to every loot score for that raider, every week (permanent, not per-item).
+-- Stores per-character score modifiers keyed by character id. Each raider can
+-- stack multiple entries; the engine sums all currently-active ones and applies
+-- the total to every loot score for that raider. expires_at null = permanent,
+-- a YYYY-MM-DD date = falls off after that day (used for "this week" boosts/penalties):
+--   {"<character_uuid>": [{"amount": 20, "expires_at": null},
+--                         {"amount": -2, "expires_at": "2026-06-05"}]}
 -- The existing single_raider_overall_bonus boolean acts as the enable/disable toggle.
 
 ALTER TABLE guild_settings

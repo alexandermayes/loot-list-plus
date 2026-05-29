@@ -918,6 +918,7 @@ export default function MasterSheetContent({ serverHeading }: MasterSheetContent
               itemPriority: prioritiesMap[item.id] || null,
               timesPassed: blpDataMap[blpKey] || 0,
               donationBonus: donationCache[character.id] ?? 0,
+              asOfDate: toDateString(new Date()),
             })
 
             rankings.push({
@@ -1544,6 +1545,7 @@ export default function MasterSheetContent({ serverHeading }: MasterSheetContent
           itemPriority: prioritiesMap[item.id] || null,
           timesPassed: tierBlpDataMap[tierBlpKey] || 0,
           donationBonus: donationCache[character.id] ?? 0,
+          asOfDate: toDateString(new Date()),
         })
 
         rankings.push({
