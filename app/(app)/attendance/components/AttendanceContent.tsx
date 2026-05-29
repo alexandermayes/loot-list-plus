@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button'
 import { AttendanceStatsSkeleton, TableSkeleton } from '@/components/ui/skeletons'
 import { ErrorState } from '@/components/ui/error-state'
 import { Heading } from '@/components/ui/typography'
-import { computeAttendance, getRankModifier, resolveStatus } from '@/domain/scoring'
+import { computeAttendance, getRankModifier, resolveStatus, getAttendanceWindowEnd, getAttendanceWindowStart } from '@/domain/scoring'
 import { useNotification } from '@/app/contexts/NotificationContext'
 import { useGuildContext } from '@/app/contexts/GuildContext'
 import { getWclReportUrl } from '@/lib/warcraftlogs'
@@ -260,11 +260,16 @@ export default function AttendanceContent({ serverHeading }: AttendanceContentPr
 
     // Sort weeks descending (most recent first) and raids within each week ascending
     const todayStr = toDateString(new Date())
-    // Compute the scoring window start for visual distinction
+    // Match the engine's window so the dashboard counts and dim/bright shading
+    // line up with what computeAttendance actually scores (GH #80). Previously
+    // the UI used a naive `today - rollingWeeks*7` start that shifted the
+    // window vs. engine, so events in the in-progress reset week rendered as
+    // "current" while the engine excluded them — making a raider's visual
+    // attendance count look higher than the scored one.
     const rollingWeeks = guildSettings?.rolling_attendance_weeks || 4
-    const windowStart = new Date()
-    windowStart.setDate(windowStart.getDate() - (rollingWeeks * 7))
-    const windowStartStr = toDateString(windowStart)
+    const resetDay = guildSettings?.week_reset_day ?? null
+    const windowStartStr = getAttendanceWindowStart(todayStr, rollingWeeks, resetDay)
+    const windowEndStr = getAttendanceWindowEnd(todayStr, resetDay)
 
     return Object.entries(grouped)
       .sort(([a], [b]) => b.localeCompare(a))
@@ -273,7 +278,10 @@ export default function AttendanceContent({ serverHeading }: AttendanceContentPr
         label: parseDate(weekStart).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
         isMostRecent: weekStart === mostRecentTrackedWeek,
         isUpcoming: raids.every(r => r.raid_date > todayStr),
-        isOutsideWindow: raids.every(r => r.raid_date < windowStartStr),
+        // Out-of-window covers BOTH ends — anything before windowStart OR
+        // after windowEnd (i.e. the in-progress reset week) is excluded by
+        // the scoring engine.
+        isOutsideWindow: raids.every(r => r.raid_date < windowStartStr || r.raid_date > windowEndStr),
         raids: raids.sort((a, b) =>
           a.raid_date.localeCompare(b.raid_date) ||
           (a.raid_team_id ?? '').localeCompare(b.raid_team_id ?? '')
