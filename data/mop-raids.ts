@@ -2053,6 +2053,42 @@ export const siegeOfOrgrimmar: Raid = {
       ],
     },
     {
+      name: 'Shared Boss Loot',
+      items: [
+        // The SoO shared loot pool drops from multiple bosses, so the
+        // boss-NPC-indexed scraper never captured it (GH #65). Cloaks (Back)
+        // and one glove per armor type. Normal + Heroic variants.
+        { name: 'Aeth\'s Swiftcinder Cloak', slot: 'Back', wowhead_id: 103846 },
+        { name: 'Aeth\'s Swiftcinder Cloak (Heroic)', slot: 'Back', wowhead_id: 105852 },
+        { name: 'Brave Niunai\'s Cloak', slot: 'Back', wowhead_id: 103960 },
+        { name: 'Brave Niunai\'s Cloak (Heroic)', slot: 'Back', wowhead_id: 105844 },
+        { name: 'Cape of the Alpha', slot: 'Back', wowhead_id: 103935 },
+        { name: 'Cape of the Alpha (Heroic)', slot: 'Back', wowhead_id: 105840 },
+        { name: 'Drape of the Omega', slot: 'Back', wowhead_id: 103770 },
+        { name: 'Drape of the Omega (Heroic)', slot: 'Back', wowhead_id: 105843 },
+        { name: 'Turtleshell Greatcloak', slot: 'Back', wowhead_id: 103800 },
+        { name: 'Turtleshell Greatcloak (Heroic)', slot: 'Back', wowhead_id: 105853 },
+        { name: 'Kalaena\'s Arcane Handwraps', slot: 'Hands', wowhead_id: 103854 },
+        { name: 'Kalaena\'s Arcane Handwraps (Heroic)', slot: 'Hands', wowhead_id: 105841 },
+        { name: 'Seebo\'s Sainted Touch', slot: 'Hands', wowhead_id: 103753 },
+        { name: 'Seebo\'s Sainted Touch (Heroic)', slot: 'Hands', wowhead_id: 105842 },
+        { name: 'Crimson Gauntlets of Death', slot: 'Hands', wowhead_id: 103859 },
+        { name: 'Crimson Gauntlets of Death (Heroic)', slot: 'Hands', wowhead_id: 105846 },
+        { name: 'Siid\'s Silent Stranglers', slot: 'Hands', wowhead_id: 103832 },
+        { name: 'Siid\'s Silent Stranglers (Heroic)', slot: 'Hands', wowhead_id: 105845 },
+        { name: 'Keengrip Arrowpullers', slot: 'Hands', wowhead_id: 103781 },
+        { name: 'Keengrip Arrowpullers (Heroic)', slot: 'Hands', wowhead_id: 105847 },
+        { name: 'Marco\'s Crackling Gloves', slot: 'Hands', wowhead_id: 103764 },
+        { name: 'Marco\'s Crackling Gloves (Heroic)', slot: 'Hands', wowhead_id: 105848 },
+        { name: 'Gauntlets of Discarded Time', slot: 'Hands', wowhead_id: 103791 },
+        { name: 'Gauntlets of Discarded Time (Heroic)', slot: 'Hands', wowhead_id: 105851 },
+        { name: 'Romy\'s Reliable Grips', slot: 'Hands', wowhead_id: 103818 },
+        { name: 'Romy\'s Reliable Grips (Heroic)', slot: 'Hands', wowhead_id: 105849 },
+        { name: 'Zoid\'s Molten Gauntlets', slot: 'Hands', wowhead_id: 103734 },
+        { name: 'Zoid\'s Molten Gauntlets (Heroic)', slot: 'Hands', wowhead_id: 105850 },
+      ],
+    },
+    {
       name: 'Crafting Materials',
       items: [
         { name: 'Spirit of War', slot: 'Crafting', wowhead_id: 102218 },
