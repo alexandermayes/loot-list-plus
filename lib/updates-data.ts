@@ -17,6 +17,11 @@ export const updates: UpdateEntry[] = [
     date: 'June 1, 2026',
     items: [
       {
+        category: 'feature',
+        title: 'Per-raider bonuses and penalties',
+        description: 'Give a specific raider a bonus or penalty on every item\'s Loot Score. Make it permanent or set it to fall off at the next weekly reset, like a -2 for the week when someone shows up without consumes. Raiders can stack more than one. Set amounts on the Priorities tab, then turn it on under priority systems in loot settings.',
+      },
+      {
         category: 'improvement',
         title: 'Bad luck protection can cover benched raiders',
         description: 'New per-guild setting counts benched raiders toward bad luck protection. They got sat by the officers, so they keep banking protection on items they ranked even though they couldn\'t roll. Off by default. Turn it on under bad luck prevention in loot settings.',
