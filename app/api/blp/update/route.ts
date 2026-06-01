@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
     // Check if BLP is enabled for this guild
     const { data: settings } = await supabase
       .from('guild_settings')
-      .select('blp_enabled')
+      .select('blp_enabled, blp_includes_benched')
       .eq('guild_id', guild_id)
       .single()
 
@@ -55,12 +55,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ data: { updated: 0, message: 'BLP not enabled for this guild' } })
     }
 
+    const includesBenched = settings.blp_includes_benched ?? false
+
     // Note: BLP double-increment is prevented by the loot_history unique constraint
     // (issue 7). The client only calls BLP update after a successful loot_history insert.
     // If the insert fails as duplicate (network retry), the BLP call never fires.
 
     // Find eligible characters: those who had the item ranked AND attended the raid
-    const eligibleCharacters = await getEligibleCharacters(supabase, guild_id, loot_item_id, raid_event_id)
+    // (or were benched, when the guild opts to include benched raiders).
+    const eligibleCharacters = await getEligibleCharacters(supabase, guild_id, loot_item_id, raid_event_id, includesBenched)
 
     // Filter out the winner
     const nonWinners = eligibleCharacters.filter(charId => charId !== winner_character_id)
@@ -127,13 +130,16 @@ export async function POST(request: NextRequest) {
  * Get characters who are "in running" for an item at a specific raid
  * Criteria:
  * 1. Has item in an APPROVED loot submission
- * 2. Attended the raid (attendance_records.attended = true)
+ * 2. Attended the raid (attendance_records.attended = true), or was benched
+ *    when `includesBenched` is set. Benched raiders showed up and were in the
+ *    pool but were sat by officers, so they're treated as in running.
  */
 async function getEligibleCharacters(
   supabase: ReturnType<typeof createServiceRoleClient>,
   guildId: string,
   lootItemId: string,
-  raidEventId: string
+  raidEventId: string,
+  includesBenched: boolean
 ): Promise<string[]> {
   // Step 1: Get all characters who have this item in an approved submission
   const { data: submissionItems } = await supabase
@@ -173,13 +179,19 @@ async function getEligibleCharacters(
     return []
   }
 
-  // Step 2: Filter to characters who attended this specific raid
-  const { data: attendanceRecords } = await supabase
+  // Step 2: Filter to characters who attended this specific raid. When the guild
+  // includes benched raiders, also count anyone marked benched for the raid.
+  let query = supabase
     .from('attendance_records')
     .select('character_id')
     .eq('raid_event_id', raidEventId)
-    .eq('attended', true)
     .in('character_id', Array.from(charactersWithItem))
+
+  query = includesBenched
+    ? query.or('attended.eq.true,was_benched.eq.true')
+    : query.eq('attended', true)
+
+  const { data: attendanceRecords } = await query
 
   if (!attendanceRecords) {
     return []

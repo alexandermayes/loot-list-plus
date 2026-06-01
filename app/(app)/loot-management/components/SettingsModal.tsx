@@ -639,6 +639,20 @@ export function SettingsModal({
                               className="bg-background-elevated"
                             />
                           </div>
+
+                          <div>
+                            <Label className="block mb-2 inline-flex items-center gap-1">Include benched raiders <InfoTooltip content="Count benched raiders as in running. They showed up and were in the pool but got sat by officers, so they accrue BLP even though they couldn't roll." iconSize={12} /></Label>
+                            <Select
+                              variant="pill"
+                              value={settings.blp_includes_benched ? 'yes' : 'no'}
+                              onChange={(e) => setSettings({ ...settings, blp_includes_benched: e.target.value === 'yes' })}
+                              disabled={!settings.blp_enabled}
+                              className="bg-background-elevated"
+                            >
+                              <option value="no">No</option>
+                              <option value="yes">Yes</option>
+                            </Select>
+                          </div>
                         </div>
                       </CardContent>
                     </Card>
