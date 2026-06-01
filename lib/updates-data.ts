@@ -14,6 +14,16 @@ export interface UpdateEntry {
 
 export const updates: UpdateEntry[] = [
   {
+    date: 'June 1, 2026',
+    items: [
+      {
+        category: 'improvement',
+        title: 'Bad luck protection can cover benched raiders',
+        description: 'New per-guild setting counts benched raiders toward bad luck protection. They got sat by the officers, so they keep banking protection on items they ranked even though they couldn\'t roll. Off by default. Turn it on under bad luck prevention in loot settings.',
+      },
+    ],
+  },
+  {
     date: 'May 28, 2026',
     items: [
       {
