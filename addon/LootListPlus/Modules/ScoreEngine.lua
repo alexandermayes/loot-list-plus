@@ -12,7 +12,7 @@ local DB = LLP.DB
 ----------------------------------------------------------------------
 -- calculateLootScore: master formula combining all components
 ----------------------------------------------------------------------
-function SE:CalculateLootScore(itemRank, attendanceScore, rankModifier, badLuckBonus, priorityBonus, trialPenalty, roleBonus)
+function SE:CalculateLootScore(itemRank, attendanceScore, rankModifier, badLuckBonus, priorityBonus, trialPenalty, roleBonus, raiderBonus)
     return (itemRank or 0)
          + (attendanceScore or 0)
          + (rankModifier or 0)
@@ -20,6 +20,7 @@ function SE:CalculateLootScore(itemRank, attendanceScore, rankModifier, badLuckB
          + (priorityBonus or 0)
          + (trialPenalty or 0)
          + (roleBonus or 0)
+         + (raiderBonus or 0)
 end
 
 ----------------------------------------------------------------------
@@ -187,6 +188,23 @@ function SE:GetRaidRoleModifier(roles, settings)
 end
 
 ----------------------------------------------------------------------
+-- getRaiderModifier
+----------------------------------------------------------------------
+-- Permanent per-character score modifier (e.g. +20), applied to every
+-- score for that raider. Gated by single_raider_overall_bonus.
+function SE:GetRaiderModifier(characterId, settings)
+    if not settings then settings = {} end
+    local config = self:MergeDefaults(settings)
+
+    if not config.single_raider_overall_bonus then
+        return 0
+    end
+
+    if not characterId or not config.single_raider_modifiers then return 0 end
+    return config.single_raider_modifiers[characterId] or 0
+end
+
+----------------------------------------------------------------------
 -- getTrialPenalty
 ----------------------------------------------------------------------
 function SE:GetTrialPenalty(membershipStatus, settings)
@@ -290,8 +308,10 @@ function SE:CalculateCharacterItemScore(characterId, wowheadId, lootItemId)
 
     local roleBonus = self:GetRaidRoleModifier(member.role, settings)
 
+    local raiderBonus = self:GetRaiderModifier(characterId, settings)
+
     local totalScore = self:CalculateLootScore(
-        rank, attendanceScore, rankModifier, badLuckBonus, priorityBonus, trialPenalty, roleBonus
+        rank, attendanceScore, rankModifier, badLuckBonus, priorityBonus, trialPenalty, roleBonus, raiderBonus
     )
 
     return {
@@ -300,6 +320,7 @@ function SE:CalculateCharacterItemScore(characterId, wowheadId, lootItemId)
         attendanceScore = attendanceScore,
         rankModifier = rankModifier,
         roleBonus = roleBonus,
+        raiderBonus = raiderBonus,
         badLuckBonus = badLuckBonus,
         priorityBonus = priorityBonus,
         trialPenalty = trialPenalty,
@@ -357,6 +378,8 @@ local DEFAULTS = {
     rank_modifiers = {},
     raid_roles_overall_bonus_priority = false,
     role_modifiers = {},
+    single_raider_overall_bonus = false,
+    single_raider_modifiers = {},
     minimum_raid_days_enabled = true,
     minimum_raid_days = 2,
     late_early_penalty_enabled = true,

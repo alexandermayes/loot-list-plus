@@ -1,4 +1,4 @@
-import type { ScoringConfig } from '../types'
+import type { ScoringConfig, RaiderBonusEntry } from '../types'
 import { DEFAULT_SETTINGS } from './defaults'
 
 /**
@@ -62,6 +62,65 @@ export function getRoleModifierWithLabel(roles: string | string[] | null, settin
     }
   }
   return { bonus: best, matchedRole }
+}
+
+/**
+ * Sum the active per-character score modifiers for one raider.
+ * Officers can stack entries (e.g. a permanent +20 plus a -2 penalty for the
+ * week). Permanent entries (expires_at null) always count; dated entries count
+ * only while `asOfDate` is on or before their expiry. Returns 0 when the
+ * single_raider_overall_bonus toggle is off or the raider has no active entries.
+ *
+ * When `asOfDate` is omitted, dated entries are treated as expired so a caller
+ * that forgets to pass the date fails toward not granting a temporary boost.
+ */
+export function getRaiderBonus(
+  characterId: string | null,
+  settings: Partial<ScoringConfig> = {},
+  asOfDate?: string,
+): number {
+  const config = { ...DEFAULT_SETTINGS, ...settings } as ScoringConfig
+
+  if (!config.single_raider_overall_bonus || !characterId) {
+    return 0
+  }
+
+  const entries = config.single_raider_modifiers?.[characterId]
+  if (!entries || entries.length === 0) {
+    return 0
+  }
+
+  let sum = 0
+  for (const entry of entries) {
+    if (!entry) continue
+    const active = entry.expires_at == null || (asOfDate != null && asOfDate <= entry.expires_at)
+    if (active) sum += entry.amount || 0
+  }
+  return sum
+}
+
+/**
+ * Collapse the per-raider entry map into a flat { characterId: activeSum } map,
+ * dropping entries that have expired as of `asOfDate` and raiders whose net is 0.
+ * Used by the addon export so the Lua engine can read a simple number map and
+ * stay free of date logic.
+ */
+export function resolveActiveRaiderModifiers(
+  modifiers: Record<string, RaiderBonusEntry[]> | null | undefined,
+  asOfDate: string,
+): Record<string, number> {
+  const out: Record<string, number> = {}
+  if (!modifiers) return out
+  for (const [characterId, entries] of Object.entries(modifiers)) {
+    if (!Array.isArray(entries)) continue
+    let sum = 0
+    for (const entry of entries) {
+      if (!entry) continue
+      if (entry.expires_at == null || asOfDate <= entry.expires_at) sum += entry.amount || 0
+    }
+    if (sum !== 0) out[characterId] = sum
+  }
+  return out
 }
 
 /**

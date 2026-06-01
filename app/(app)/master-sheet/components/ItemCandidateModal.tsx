@@ -64,7 +64,8 @@ function rankingToComponents(r: PlayerRanking): ScoreComponents {
       r.priority_bonus -
       r.bad_luck_bonus -
       r.trial_penalty -
-      r.donation_bonus,
+      r.donation_bonus -
+      r.raider_bonus,
     attendanceScore: r.attendance_score,
     rankModifier: r.role_modifier,
     roleBonus: r.role_bonus,
@@ -72,6 +73,7 @@ function rankingToComponents(r: PlayerRanking): ScoreComponents {
     trialPenalty: r.trial_penalty,
     badLuckBonus: r.bad_luck_bonus,
     donationBonus: r.donation_bonus,
+    raiderBonus: r.raider_bonus,
   }
 }
 

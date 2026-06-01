@@ -74,6 +74,30 @@ export function getAttendanceWindowEnd(asOfDate: string | undefined, weekResetDa
 }
 
 /**
+ * Last day of the CURRENT (in-progress) reset week, relative to `asOf`.
+ * A reset week runs [resetDay, resetDay + 6 days]; this returns that 7th day.
+ * Used to date a "this week" raider bonus so it falls off at the next reset.
+ */
+function currentResetWeekEnd(asOf: Date, resetDay: number): Date {
+  const dow = asOf.getDay()
+  const daysSinceReset = (dow - resetDay + 7) % 7
+  const end = new Date(asOf)
+  end.setDate(asOf.getDate() - daysSinceReset + 6)
+  return end
+}
+
+/**
+ * Last day (YYYY-MM-DD) of the current reset week, relative to `asOfDate`.
+ * A per-week raider bonus added today should stay active through this date and
+ * expire at the next weekly reset.
+ */
+export function getCurrentResetWeekEnd(asOfDate: string | undefined, weekResetDay?: number | null): string {
+  const asOf = asOfDate ? parseDateLocal(asOfDate) : new Date()
+  const resetDay = weekResetDay ?? DEFAULT_WEEK_RESET_DAY
+  return formatDate(currentResetWeekEnd(asOf, resetDay))
+}
+
+/**
  * First day (YYYY-MM-DD) of the rolling attendance window, relative to
  * `asOfDate`. Mirrors the engine's `windowStart` computation so callers that
  * render attendance grids visually match what `computeAttendance` actually

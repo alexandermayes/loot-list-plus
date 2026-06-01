@@ -6,7 +6,7 @@ import { createClient } from '@/utils/supabase/client'
 import { paginatedSelect } from '@/utils/supabase/paginate'
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
-import { computeScore, computeAttendance, type ItemPriority, type AttendanceResult } from '@/domain/scoring'
+import { computeScore, computeAttendance, getAttendanceWindowStart, type ItemPriority, type AttendanceResult } from '@/domain/scoring'
 import { calculateDonationsBatch } from '@/lib/donations/batch'
 import { getSpecRoles } from '@/domain/loot/spec-role-mapping'
 import { formatRankingsForGargul } from '@/domain/loot/gargul-dft'
@@ -318,13 +318,19 @@ export default function MasterSheetContent({ serverHeading }: MasterSheetContent
       ? Math.min(weeklyMin ?? raidDaysPerWeek, raidDaysPerWeek)
       : undefined
 
-    // Query 3: Fetch raid events — team+unassigned for denominator
+    // Query 3: Fetch raid events — team+unassigned for denominator.
+    //
+    // Use the engine's window start (last completed reset week minus N weeks)
+    // instead of the naive `today - N*7`. The naive version drops events
+    // between the engine's actual windowStart and `today - N*7` — events
+    // that the engine considers in-window but never received as input. The
+    // result was attendance scores in the master sheet computing on a
+    // subset of the raids the engine should have seen, producing bonuses
+    // that didn't match the dashboard. GH #96.
     const todayStr = toDateString(new Date())
     const weeks = resolveRollingWeeks(guildSettings.rolling_attendance_weeks || 4, activeTeam?.rolling_weeks_override)
-    const daysAgo = weeks * 7
-    const periodStart = new Date()
-    periodStart.setDate(periodStart.getDate() - daysAgo)
-    const periodStartStr = toDateString(periodStart)
+    const resetDay = (guildSettings as { week_reset_day?: number | null }).week_reset_day ?? null
+    const periodStartStr = getAttendanceWindowStart(todayStr, weeks, resetDay)
 
     let raidEventsQuery = supabase
       .from('raid_events')
@@ -918,6 +924,7 @@ export default function MasterSheetContent({ serverHeading }: MasterSheetContent
               itemPriority: prioritiesMap[item.id] || null,
               timesPassed: blpDataMap[blpKey] || 0,
               donationBonus: donationCache[character.id] ?? 0,
+              asOfDate: toDateString(new Date()),
             })
 
             rankings.push({
@@ -933,6 +940,7 @@ export default function MasterSheetContent({ serverHeading }: MasterSheetContent
               bad_luck_bonus: scoreResult.components.badLuckBonus,
               trial_penalty: scoreResult.components.trialPenalty,
               donation_bonus: scoreResult.components.donationBonus,
+              raider_bonus: scoreResult.components.raiderBonus,
               is_trial: membershipStatus === 'trial',
               character_id: character.id,
               raids_attended: attendanceData.raidsAttended,
@@ -1543,6 +1551,7 @@ export default function MasterSheetContent({ serverHeading }: MasterSheetContent
           itemPriority: prioritiesMap[item.id] || null,
           timesPassed: tierBlpDataMap[tierBlpKey] || 0,
           donationBonus: donationCache[character.id] ?? 0,
+          asOfDate: toDateString(new Date()),
         })
 
         rankings.push({
@@ -1558,6 +1567,7 @@ export default function MasterSheetContent({ serverHeading }: MasterSheetContent
           bad_luck_bonus: scoreResult.components.badLuckBonus,
           trial_penalty: scoreResult.components.trialPenalty,
           donation_bonus: scoreResult.components.donationBonus,
+          raider_bonus: scoreResult.components.raiderBonus,
           is_trial: membershipStatus === 'trial',
           character_id: character.id,
           raids_attended: attendanceData.raidsAttended,

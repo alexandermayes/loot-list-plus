@@ -1111,6 +1111,7 @@ export default function DashboardContent({ serverHeading, initialAttendance }: D
             itemPriority: null,
             timesPassed: 0,
             donationBonus: donationBonusForChar,
+            asOfDate: todayStr,
           }
           const dummyScore = computeScore(baseInput)
           roleModifier = dummyScore.components.rankModifier
@@ -1520,6 +1521,7 @@ export default function DashboardContent({ serverHeading, initialAttendance }: D
             itemPriority: prioritiesMap[item.id] || null,
             timesPassed: blpData[item.id] || 0,
             donationBonus: donationBonusForChar,
+            asOfDate: todayStr,
           })
           const lootScore = itemScoreResult.total
 

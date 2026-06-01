@@ -30,11 +30,11 @@
 // ─── Public API ──────────────────────────────────────────────
 export { computeScore } from './engine'
 export { explainScore } from './explain'
-export { computeAttendance, resolveStatus, getAttendanceWindowEnd, getAttendanceWindowStart, resolveOwnedEvents } from './attendance'
+export { computeAttendance, resolveStatus, getAttendanceWindowEnd, getAttendanceWindowStart, getCurrentResetWeekEnd, resolveOwnedEvents } from './attendance'
 export { withDefaults, getDefaultSettings } from './defaults'
 
 // ─── Utility (display helpers, not scoring) ──────────────────
-export { calculateBadLuckBonus, getRoleModifierWithLabel, getRankModifier } from './modifiers'
+export { calculateBadLuckBonus, getRoleModifierWithLabel, getRankModifier, getRaiderBonus, resolveActiveRaiderModifiers } from './modifiers'
 
 // ─── Donations (pure; not yet wired into computeScore — see PR3) ────────
 export { calculateDonationBonus } from './donations'
@@ -54,7 +54,7 @@ export { DEFAULT_SETTINGS } from './defaults'
 // ─── Types ───────────────────────────────────────────────────
 export type { ItemPriority } from './priority'
 export type {
-  ScoringConfig, GuildSettings, AttendanceRecord,
+  ScoringConfig, GuildSettings, RaiderBonusEntry, AttendanceRecord,
   CharacterContext, ScoreInput, ScoreResult, ScoreComponents,
   ScoreExplanation, ScoreLine,
   AttendanceStatus, RaidEvent, AttendanceInput, AttendanceResult,

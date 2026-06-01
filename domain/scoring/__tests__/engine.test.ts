@@ -40,6 +40,7 @@ describe('computeScore', () => {
     expect(result.components.priorityBonus).toBe(0)
     expect(result.components.trialPenalty).toBe(0)
     expect(result.components.donationBonus).toBe(0)
+    expect(result.components.raiderBonus).toBe(0)
   })
 
   it('includes attendance score', () => {
@@ -64,6 +65,100 @@ describe('computeScore', () => {
     }))
     expect(result.components.roleBonus).toBe(2)
     expect(result.total).toBe(52)
+  })
+
+  it('applies a permanent per-raider bonus when enabled', () => {
+    const result = computeScore(makeInput({
+      character: { characterId: 'char-1', specId: null, specRoles: [], guildRank: 'Member', membershipStatus: 'full' },
+      config: { single_raider_overall_bonus: true, single_raider_modifiers: { 'char-1': [{ amount: 20, expires_at: null }] } },
+    }))
+    expect(result.components.raiderBonus).toBe(20)
+    expect(result.total).toBe(70) // 50 + 20
+  })
+
+  it('ignores the per-raider bonus when the toggle is off', () => {
+    const result = computeScore(makeInput({
+      character: { characterId: 'char-1', specId: null, specRoles: [], guildRank: 'Member', membershipStatus: 'full' },
+      config: { single_raider_overall_bonus: false, single_raider_modifiers: { 'char-1': [{ amount: 20, expires_at: null }] } },
+    }))
+    expect(result.components.raiderBonus).toBe(0)
+    expect(result.total).toBe(50)
+  })
+
+  it('only applies the per-raider bonus to the matching character', () => {
+    const result = computeScore(makeInput({
+      character: { characterId: 'char-2', specId: null, specRoles: [], guildRank: 'Member', membershipStatus: 'full' },
+      config: { single_raider_overall_bonus: true, single_raider_modifiers: { 'char-1': [{ amount: 20, expires_at: null }] } },
+    }))
+    expect(result.components.raiderBonus).toBe(0)
+    expect(result.total).toBe(50)
+  })
+
+  it('supports a negative per-raider modifier (penalty)', () => {
+    const result = computeScore(makeInput({
+      character: { characterId: 'char-1', specId: null, specRoles: [], guildRank: 'Member', membershipStatus: 'full' },
+      config: { single_raider_overall_bonus: true, single_raider_modifiers: { 'char-1': [{ amount: -2, expires_at: null }] } },
+    }))
+    expect(result.components.raiderBonus).toBe(-2)
+    expect(result.total).toBe(48)
+  })
+
+  it('stacks a permanent bonus and an active temporary entry', () => {
+    const result = computeScore(makeInput({
+      character: { characterId: 'char-1', specId: null, specRoles: [], guildRank: 'Member', membershipStatus: 'full' },
+      asOfDate: '2026-06-01',
+      config: {
+        single_raider_overall_bonus: true,
+        single_raider_modifiers: { 'char-1': [
+          { amount: 20, expires_at: null },
+          { amount: 5, expires_at: '2026-06-05' },
+        ] },
+      },
+    }))
+    expect(result.components.raiderBonus).toBe(25)
+    expect(result.total).toBe(75)
+  })
+
+  it('drops a temporary entry once asOfDate is past its expiry', () => {
+    const result = computeScore(makeInput({
+      character: { characterId: 'char-1', specId: null, specRoles: [], guildRank: 'Member', membershipStatus: 'full' },
+      asOfDate: '2026-06-06',
+      config: {
+        single_raider_overall_bonus: true,
+        single_raider_modifiers: { 'char-1': [
+          { amount: 20, expires_at: null },
+          { amount: 5, expires_at: '2026-06-05' },
+        ] },
+      },
+    }))
+    expect(result.components.raiderBonus).toBe(20)
+    expect(result.total).toBe(70)
+  })
+
+  it('treats temporary entries as expired when no asOfDate is supplied', () => {
+    const result = computeScore(makeInput({
+      character: { characterId: 'char-1', specId: null, specRoles: [], guildRank: 'Member', membershipStatus: 'full' },
+      config: {
+        single_raider_overall_bonus: true,
+        single_raider_modifiers: { 'char-1': [
+          { amount: 20, expires_at: null },
+          { amount: 5, expires_at: '2026-06-05' },
+        ] },
+      },
+    }))
+    expect(result.components.raiderBonus).toBe(20)
+  })
+
+  it('counts a temporary entry as active on its exact expiry date', () => {
+    const result = computeScore(makeInput({
+      character: { characterId: 'char-1', specId: null, specRoles: [], guildRank: 'Member', membershipStatus: 'full' },
+      asOfDate: '2026-06-05',
+      config: {
+        single_raider_overall_bonus: true,
+        single_raider_modifiers: { 'char-1': [{ amount: 5, expires_at: '2026-06-05' }] },
+      },
+    }))
+    expect(result.components.raiderBonus).toBe(5)
   })
 
   it('computes BLP bonus', () => {
@@ -203,6 +298,7 @@ describe('computeScore', () => {
       + result.components.priorityBonus
       + result.components.trialPenalty
       + result.components.donationBonus
+      + result.components.raiderBonus
     expect(result.total).toBe(manualTotal)
   })
 })
@@ -255,6 +351,18 @@ describe('explainScore', () => {
     expect(labels).not.toContain('Trial penalty')
     expect(labels).not.toContain('Bad luck protection')
     expect(labels).not.toContain('Donation bonus')
+    expect(labels).not.toContain('Raider bonus')
+  })
+
+  it('includes a raider bonus line when a per-raider modifier applies', () => {
+    const config = { single_raider_overall_bonus: true, single_raider_modifiers: { 'char-1': [{ amount: 20, expires_at: null }] } }
+    const result = computeScore(makeInput({
+      character: { characterId: 'char-1', specId: null, specRoles: [], guildRank: 'Member', membershipStatus: 'full' },
+      config,
+    }))
+    const line = explainScore(result, config).lines.find(l => l.label === 'Raider bonus')
+    expect(line?.value).toBe(20)
+    expect(line?.key).toBe('raiderBonus')
   })
 
   it('includes donation line when donationBonus is non-zero', () => {

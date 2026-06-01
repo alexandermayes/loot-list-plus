@@ -842,7 +842,7 @@ export function SettingsModal({
                             <option value="no">No</option>
                             <option value="yes">Yes</option>
                           </Select>
-                          <p className="text-muted-foreground text-[11px] mt-1">Allow individual raiders to have custom score modifiers</p>
+                          <p className="text-muted-foreground text-[11px] mt-1">Give individual raiders a custom bonus or penalty, permanent or just for the week. Set amounts on the Priorities tab.</p>
                         </div>
                       </div>
 
@@ -883,6 +883,14 @@ export function SettingsModal({
                           </div>
                           <p className="text-[11px] text-accent mt-2">
                             Roles are determined by each raider's spec. Make sure specs are set correctly.
+                          </p>
+                        </div>
+                      )}
+
+                      {settings.single_raider_overall_bonus && (
+                        <div className="bg-background-elevated border border-border-strong p-4 rounded-xl">
+                          <p className="text-[12px] text-muted-foreground">
+                            Set each raider&apos;s bonus or penalty on the <span className="text-accent font-medium">Priorities</span> tab, under &quot;Raider bonuses.&quot; You can give a permanent modifier or one that falls off at the next weekly reset.
                           </p>
                         </div>
                       )}
