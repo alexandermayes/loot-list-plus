@@ -58,6 +58,7 @@ on:
 permissions:
   contents: read
   issues: write
+  pull-requests: write
 
 env:
   # Default target - override with secrets or inputs
@@ -175,12 +176,18 @@ jobs:
               summary += '| Status | Smoke test completed |\n';
             }
 
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: summary
-            });
+            // Don't fail the check if commenting is blocked (e.g. forked-PR
+            // tokens are read-only regardless of the permissions block).
+            try {
+              await github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: summary
+              });
+            } catch (e) {
+              core.warning(`Could not post load test results comment: ${e.message}`);
+            }
 
   # Optional: Run with seeded test data
   load-test-with-data:
