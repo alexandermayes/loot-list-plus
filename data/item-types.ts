@@ -840,6 +840,32 @@ export const ITEM_TYPES: Record<number, ItemTypeInfo> = {
   19965: { weapon_type: 'Dagger' },           // Wushoolay's Poker
   19968: { weapon_type: 'One-Handed Sword' },  // Fiery Retributer
   20038: { weapon_type: 'Bow' },              // Mandokir's Sting
+
+  // ============================================================================
+  // MISTS OF PANDARIA — Siege of Orgrimmar "Shared Boss Loot"
+  // ============================================================================
+  // The shared loot pool drops one glove per armor type. Their names are
+  // generic ("Crimson Gauntlets of Death") so name inference can't classify
+  // them. Explicit entries here drive the runtime proficiency filter for both
+  // new guilds (DB armor_type unset) and existing guilds. Normal + Heroic ids.
+  103854: { armor_type: 'Cloth' },    // Kalaena's Arcane Handwraps
+  105841: { armor_type: 'Cloth' },    // Kalaena's Arcane Handwraps (Heroic)
+  103753: { armor_type: 'Cloth' },    // Seebo's Sainted Touch
+  105842: { armor_type: 'Cloth' },    // Seebo's Sainted Touch (Heroic)
+  103859: { armor_type: 'Leather' },  // Crimson Gauntlets of Death
+  105846: { armor_type: 'Leather' },  // Crimson Gauntlets of Death (Heroic)
+  103832: { armor_type: 'Leather' },  // Siid's Silent Stranglers
+  105845: { armor_type: 'Leather' },  // Siid's Silent Stranglers (Heroic)
+  103781: { armor_type: 'Mail' },     // Keengrip Arrowpullers
+  105847: { armor_type: 'Mail' },     // Keengrip Arrowpullers (Heroic)
+  103764: { armor_type: 'Mail' },     // Marco's Crackling Gloves
+  105848: { armor_type: 'Mail' },     // Marco's Crackling Gloves (Heroic)
+  103791: { armor_type: 'Plate' },    // Gauntlets of Discarded Time
+  105851: { armor_type: 'Plate' },    // Gauntlets of Discarded Time (Heroic)
+  103818: { armor_type: 'Plate' },    // Romy's Reliable Grips
+  105849: { armor_type: 'Plate' },    // Romy's Reliable Grips (Heroic)
+  103734: { armor_type: 'Plate' },    // Zoid's Molten Gauntlets
+  105850: { armor_type: 'Plate' },    // Zoid's Molten Gauntlets (Heroic)
 }
 
 /**
