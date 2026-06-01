@@ -80,6 +80,7 @@ const ALLOWED_SETTINGS_FIELDS = [
   'blp_enabled',
   'blp_increment',
   'blp_maximum',
+  'blp_includes_benched',
 
   // Loot List Rules
   'enforce_slot_restrictions',

@@ -52,6 +52,8 @@ export interface ScoringConfig {
   blp_enabled: boolean
   blp_increment: number
   blp_maximum: number
+  /** When true, benched raiders accrue BLP alongside attendees. Off = attendees only. */
+  blp_includes_benched: boolean
   // Donations
   donation_bonuses_enabled: boolean
   donation_cap_enabled: boolean

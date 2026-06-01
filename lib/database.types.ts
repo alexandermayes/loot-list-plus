@@ -820,6 +820,7 @@ export type Database = {
         Row: {
           attendance_type: string
           blp_enabled: boolean | null
+          blp_includes_benched: boolean | null
           blp_increment: number | null
           blp_maximum: number | null
           bottom_attendance_bonus: number
@@ -888,6 +889,7 @@ export type Database = {
         Insert: {
           attendance_type?: string
           blp_enabled?: boolean | null
+          blp_includes_benched?: boolean | null
           blp_increment?: number | null
           blp_maximum?: number | null
           bottom_attendance_bonus?: number
@@ -956,6 +958,7 @@ export type Database = {
         Update: {
           attendance_type?: string
           blp_enabled?: boolean | null
+          blp_includes_benched?: boolean | null
           blp_increment?: number | null
           blp_maximum?: number | null
           bottom_attendance_bonus?: number

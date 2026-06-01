@@ -263,6 +263,7 @@ export default function LootSettingsContent({
     blp_enabled: false,
     blp_increment: 1.0,
     blp_maximum: 5.0,
+    blp_includes_benched: false,
 
     // Loot List Rules
     enforce_slot_restrictions: false,

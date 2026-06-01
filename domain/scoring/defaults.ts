@@ -35,6 +35,7 @@ export const DEFAULT_SETTINGS: Partial<ScoringConfig> = {
   blp_enabled: false,
   blp_increment: 1,
   blp_maximum: 5,
+  blp_includes_benched: false,
   donation_bonuses_enabled: false,
   donation_cap_enabled: false,
   donation_cap_points: 0,
