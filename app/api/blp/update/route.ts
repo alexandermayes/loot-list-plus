@@ -57,9 +57,11 @@ export async function POST(request: NextRequest) {
 
     const includesBenched = settings.blp_includes_benched ?? false
 
-    // Note: BLP double-increment is prevented by the loot_history unique constraint
-    // (issue 7). The client only calls BLP update after a successful loot_history insert.
-    // If the insert fails as duplicate (network retry), the BLP call never fires.
+    // BLP double-increment is prevented by the blp_credits journal — one row
+    // per (character, loot_item, raid_event), with ON CONFLICT DO NOTHING in
+    // increment_blp. The loot_history unique constraint catches the same-row
+    // dup case; the journal catches the harder case where loot_history was
+    // cleared and re-inserted (GH #98).
 
     // Find eligible characters: those who had the item ranked AND attended the raid
     // (or were benched, when the guild opts to include benched raiders).
@@ -70,12 +72,16 @@ export async function POST(request: NextRequest) {
 
     let incrementedCount = 0
 
-    // Increment BLP for non-winners
+    // Increment BLP for non-winners. The raid_event_id pins each credit to
+    // a specific (character, item, raid) so re-firing for the same combo —
+    // e.g. an officer adding a second loot_history row, or a re-import — is
+    // a no-op. GH #98.
     for (const characterId of nonWinners) {
       const { error } = await supabase.rpc('increment_blp', {
         p_guild_id: guild_id,
         p_character_id: characterId,
-        p_loot_item_id: loot_item_id
+        p_loot_item_id: loot_item_id,
+        p_raid_event_id: raid_event_id
       })
 
       if (error) {

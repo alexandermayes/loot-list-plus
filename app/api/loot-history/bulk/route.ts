@@ -135,13 +135,16 @@ export async function POST(request: NextRequest) {
       expansionId = tier?.expansion_id || null
     }
 
-    // Check BLP settings once (used after inserts)
+    // Check BLP settings once (used after inserts). blp_includes_benched
+    // mirrors the master sheet award flow (#101) so benched raiders get BLP
+    // here too when the guild has the setting on.
     const { data: guildSettings } = await serviceSupabase
       .from('guild_settings')
-      .select('blp_enabled')
+      .select('blp_enabled, blp_includes_benched')
       .eq('guild_id', guild_id)
       .single()
     const blpEnabled = guildSettings?.blp_enabled === true
+    const blpIncludesBenched = guildSettings?.blp_includes_benched === true
 
     for (let i = 0; i < items.length; i++) {
       const item = items[i]
@@ -229,7 +232,7 @@ export async function POST(request: NextRequest) {
 
         // BLP: increment for non-winners, reset for winner (server-side)
         if (blpEnabled && item.character_id && item.loot_item_id && item.raid_event_id) {
-          updateBLP(serviceSupabase, guild_id, item.loot_item_id, item.character_id, item.raid_event_id)
+          updateBLP(serviceSupabase, guild_id, item.loot_item_id, item.character_id, item.raid_event_id, blpIncludesBenched)
             .catch(err => console.error('BLP update failed:', err))
         }
       }
@@ -459,6 +462,7 @@ async function updateBLP(
   lootItemId: string,
   winnerCharacterId: string,
   raidEventId: string,
+  includesBenched: boolean,
 ) {
   // Find characters with this item in an approved submission
   const { data: submissionItems } = await supabase
@@ -486,23 +490,33 @@ async function updateBLP(
 
   if (charactersWithItem.size === 0) return
 
-  // Filter to characters who attended this raid
-  const { data: attendanceRecords } = await supabase
+  // Filter to characters who attended this raid. When the guild opts to
+  // include benched raiders, also count anyone marked benched for the raid
+  // (matches /api/blp/update's behavior since #101).
+  let query = supabase
     .from('attendance_records')
     .select('character_id')
     .eq('raid_event_id', raidEventId)
-    .eq('attended', true)
     .in('character_id', Array.from(charactersWithItem))
+
+  query = includesBenched
+    ? query.or('attended.eq.true,was_benched.eq.true')
+    : query.eq('attended', true)
+
+  const { data: attendanceRecords } = await query
 
   const eligible = attendanceRecords?.map(r => r.character_id) || []
 
-  // Increment for non-winners
+  // Increment BLP for non-winners. The raid_event_id pins each credit so
+  // re-imports / duplicate loot_history rows for the same (character, item,
+  // raid) are idempotent at the journal layer (GH #98).
   for (const characterId of eligible) {
     if (characterId === winnerCharacterId) continue
     await supabase.rpc('increment_blp', {
       p_guild_id: guildId,
       p_character_id: characterId,
       p_loot_item_id: lootItemId,
+      p_raid_event_id: raidEventId,
     })
   }
 
