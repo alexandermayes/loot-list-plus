@@ -48,6 +48,7 @@ on:
     paths:
       - 'app/api/**'
       - 'loadtest/**'
+      - '.github/workflows/**'
 
   # Run after deployment to main (if you have a deploy workflow)
   # workflow_run:
