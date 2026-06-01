@@ -7,14 +7,14 @@ const { getSupabase, isFeedbackConfigured } = require('./feedback');
 const SWEEP_INTERVAL_MS = 10 * 60 * 1000;
 const LOOKBACK_HOURS = 24;
 
-async function fetchRecentlyClosedIssues() {
+async function fetchRecentIssues(state) {
   const token = process.env.GITHUB_TOKEN;
   const repo = process.env.GITHUB_REPO;
   if (!token || !repo) return [];
 
   const since = new Date(Date.now() - LOOKBACK_HOURS * 60 * 60 * 1000).toISOString();
   // labels= is an AND filter — only `discord-source` issues are eligible
-  const url = `https://api.github.com/repos/${repo}/issues?state=closed&labels=discord-source&since=${since}&per_page=100`;
+  const url = `https://api.github.com/repos/${repo}/issues?state=${state}&labels=discord-source&since=${since}&per_page=100`;
   const res = await fetch(url, {
     headers: {
       'Accept': 'application/vnd.github+json',
@@ -23,11 +23,19 @@ async function fetchRecentlyClosedIssues() {
     },
   });
   if (!res.ok) {
-    console.error(`[closures] github issues fetch failed: ${res.status}`);
+    console.error(`[closures] github issues fetch failed (${state}): ${res.status}`);
     return [];
   }
   const issues = await res.json();
   return issues.filter((i) => !i.pull_request); // /issues endpoint also returns PRs
+}
+
+async function fetchRecentlyClosedIssues() {
+  return fetchRecentIssues('closed');
+}
+
+async function fetchRecentlyOpenIssues() {
+  return fetchRecentIssues('open');
 }
 
 function isFeatureRequest(issue) {
@@ -169,19 +177,90 @@ async function announceClosure(client, supabase, issue) {
   }
 }
 
+function buildReopenMessage(issue, note) {
+  let msg = `🔄 Reopened. See: <${issue.html_url}>`;
+  if (note) {
+    msg += `\n${note.split('\n').map((l) => `> ${l}`).join('\n')}`;
+  }
+  return msg;
+}
+
+async function announceReopen(client, supabase, issue) {
+  const { data: row, error } = await supabase
+    .from('discord_feedback_map')
+    .select('discord_channel_id, discord_message_id, closure_announced_at')
+    .eq('github_issue_number', issue.number)
+    .maybeSingle();
+  if (error) {
+    console.error(`[closures] reopen lookup failed for #${issue.number}:`, error.message);
+    return;
+  }
+  if (!row) return; // not filed by us
+  if (!row.closure_announced_at) return; // never announced as closed → not a reopen
+
+  const channel = await client.channels.fetch(row.discord_channel_id).catch(() => null);
+  if (!channel?.isTextBased?.()) {
+    console.warn(`[closures] reopen channel ${row.discord_channel_id} not found for #${issue.number}`);
+    return;
+  }
+
+  const note = await fetchResolutionNote(issue);
+  try {
+    await channel.send(buildReopenMessage(issue, note));
+  } catch (err) {
+    console.warn(`[closures] could not post reopen for #${issue.number}:`, err.message);
+    return;
+  }
+
+  // Strip the resolution prefix from the thread title — the issue is open again.
+  if (channel.isThread?.()) {
+    const currentName = channel.name || '';
+    const stripped = currentName.replace(/^\([A-Z][A-Z ]*\)\s*/, '');
+    if (stripped !== currentName) {
+      try {
+        await channel.setName(stripped.slice(0, 100));
+        console.log(`[closures] cleared prefix on reopen for #${issue.number}`);
+      } catch (err) {
+        console.warn(`[closures] could not rename on reopen ${row.discord_channel_id}:`, err.message);
+      }
+    }
+  }
+
+  // Clear closure stamp so the next close fires its own announcement.
+  const { error: updateError } = await supabase
+    .from('discord_feedback_map')
+    .update({ closure_announced_at: null })
+    .eq('discord_message_id', row.discord_message_id);
+  if (updateError) {
+    console.error(`[closures] failed to clear closure stamp for #${issue.number}:`, updateError.message);
+    return;
+  }
+  console.log(`[closures] announced reopen of #${issue.number}`);
+}
+
 async function runClosureSweep(client) {
   if (!isFeedbackConfigured()) return;
   const supabase = getSupabase();
   if (!supabase) return;
 
-  const issues = await fetchRecentlyClosedIssues();
-  if (issues.length === 0) return;
-
-  for (const issue of issues) {
+  // Closed transitions: announce new closures.
+  const closed = await fetchRecentlyClosedIssues();
+  for (const issue of closed) {
     try {
       await announceClosure(client, supabase, issue);
     } catch (err) {
-      console.error(`[closures] error processing #${issue.number}:`, err);
+      console.error(`[closures] error processing closed #${issue.number}:`, err);
+    }
+  }
+
+  // Open transitions: anything we previously announced as closed and now
+  // see as open is a reopen — surface that in the thread too.
+  const open = await fetchRecentlyOpenIssues();
+  for (const issue of open) {
+    try {
+      await announceReopen(client, supabase, issue);
+    } catch (err) {
+      console.error(`[closures] error processing open #${issue.number}:`, err);
     }
   }
 }
