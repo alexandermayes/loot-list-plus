@@ -1,3 +1,10 @@
+/**
+ * @vitest-environment node
+ *
+ * Uses Node's native Blob.stream(), which jsdom's Blob doesn't implement.
+ * The default jsdom environment (vitest.config.ts) breaks the round-trip
+ * tests here; this directive opts this file into Node.
+ */
 import { describe, it, expect } from 'vitest'
 import {
   encodeGargulExport,
