@@ -72,22 +72,22 @@ export async function POST(request: NextRequest) {
 
     let incrementedCount = 0
 
-    // Increment BLP for non-winners. The raid_event_id pins each credit to
-    // a specific (character, item, raid) so re-firing for the same combo —
-    // e.g. an officer adding a second loot_history row, or a re-import — is
-    // a no-op. GH #98.
-    for (const characterId of nonWinners) {
-      const { error } = await supabase.rpc('increment_blp', {
+    // Increment BLP for non-winners in one set-based round-trip. The
+    // raid_event_id pins each credit to a specific (character, item, raid)
+    // so re-firing for the same combo — an officer adding a second
+    // loot_history row, or a re-import — is a no-op (GH #98).
+    if (nonWinners.length > 0) {
+      const { data: bulkCount, error } = await supabase.rpc('increment_blp_bulk', {
         p_guild_id: guild_id,
-        p_character_id: characterId,
         p_loot_item_id: loot_item_id,
-        p_raid_event_id: raid_event_id
+        p_raid_event_id: raid_event_id,
+        p_character_ids: nonWinners,
       })
 
       if (error) {
-        console.error(`Failed to increment BLP for character ${characterId}:`, error)
+        console.error('Failed to increment BLP for non-winners:', error)
       } else {
-        incrementedCount++
+        incrementedCount = typeof bulkCount === 'number' ? bulkCount : nonWinners.length
       }
     }
 
