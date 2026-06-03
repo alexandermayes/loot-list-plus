@@ -32,7 +32,12 @@ try {
           (value.startsWith("'") && value.endsWith("'"))) {
         value = value.slice(1, -1)
       }
-      process.env[key.trim()] = value
+      // Don't clobber vars already set in the environment, so a wrapper can
+      // point these scripts at a local Supabase by pre-exporting credentials.
+      const envKey = key.trim()
+      if (!(envKey in process.env)) {
+        process.env[envKey] = value
+      }
     }
   })
 } catch (error) {
@@ -169,6 +174,7 @@ async function seedTestData(): Promise<void> {
     memberships: 0,
     submissions: 0,
     lootItems: 0,
+    lootHistory: 0,
   }
 
   // Track which users are in which guilds for realistic distribution
@@ -293,7 +299,7 @@ async function seedTestData(): Promise<void> {
 
     // Distribute members across test users
     // Each user gets 1-3 characters in this guild
-    const characters: { id: string; user_id: string }[] = []
+    const characters: { id: string; user_id: string; name: string }[] = []
     let memberCount = 0
 
     // Shuffle users for random distribution
@@ -326,7 +332,7 @@ async function seedTestData(): Promise<void> {
       const { data: newChars, error: charError } = await supabase
         .from('characters')
         .insert(userChars)
-        .select('id, user_id')
+        .select('id, user_id, name')
 
       if (charError) {
         console.warn('Error creating characters:', charError.message)
@@ -426,7 +432,63 @@ async function seedTestData(): Promise<void> {
       }
     }
 
-    console.log(`  Memberships: ${memberships.length}, Submissions: ${stats.submissions}`)
+    // Create loot history (awarded items) across BOTH expansions so loot
+    // views and the per-phase filter have real data to exercise.
+    const { data: tbcTier } = tbcExpansionId
+      ? await supabase
+          .from('raid_tiers')
+          .select('id')
+          .eq('expansion_id', tbcExpansionId)
+          .limit(1)
+          .single()
+      : { data: null }
+
+    const { data: tbcItems } = tbcTier
+      ? await supabase.from('loot_items').select('id').eq('raid_tier_id', tbcTier.id).limit(20)
+      : { data: [] as { id: string }[] }
+
+    const awardPools = [
+      { items: items || [], expansionId, raidTierId: raidTier.id },
+      { items: tbcItems || [], expansionId: tbcExpansionId, raidTierId: tbcTier?.id },
+    ]
+
+    const toDateString = (d: Date) =>
+      `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+
+    const awardRows: Record<string, unknown>[] = []
+    for (const character of characters.slice(0, Math.min(12, characters.length))) {
+      for (const pool of awardPools) {
+        if (!pool.items.length || !pool.expansionId || !pool.raidTierId) continue
+        const n = Math.floor(Math.random() * 2) + 1 // 1-2 awards per expansion
+        const picks = [...pool.items].sort(() => Math.random() - 0.5).slice(0, n)
+        for (const item of picks) {
+          const d = new Date()
+          d.setDate(d.getDate() - Math.floor(Math.random() * 30))
+          awardRows.push({
+            guild_id: guild.id,
+            character_id: character.id,
+            character_name: character.name,
+            loot_item_id: item.id,
+            raid_tier_id: pool.raidTierId,
+            awarded_date: toDateString(d),
+            awarded_by: guildMaster.id,
+            expansion_id: pool.expansionId,
+            notes: 'Seeded test award',
+          })
+        }
+      }
+    }
+
+    if (awardRows.length > 0) {
+      const { error: lhError } = await supabase.from('loot_history').insert(awardRows)
+      if (!lhError) {
+        stats.lootHistory += awardRows.length
+      } else {
+        console.warn('Error inserting loot_history:', lhError.message)
+      }
+    }
+
+    console.log(`  Memberships: ${memberships.length}, Submissions: ${stats.submissions}, Awards: ${stats.lootHistory}`)
   }
 
   // Save user-guild mapping for k6
@@ -452,6 +514,7 @@ async function seedTestData(): Promise<void> {
   console.log(`Characters created:  ${stats.characters}`)
   console.log(`Memberships created: ${stats.memberships}`)
   console.log(`Submissions created: ${stats.submissions}`)
+  console.log(`Loot awards created: ${stats.lootHistory}`)
   console.log(`User-guild mapping:  loadtest/user-guild-map.json`)
 }
 
