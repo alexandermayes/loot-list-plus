@@ -29,7 +29,12 @@ try {
           (value.startsWith("'") && value.endsWith("'"))) {
         value = value.slice(1, -1)
       }
-      process.env[key.trim()] = value
+      // Don't clobber vars already set in the environment, so a wrapper can
+      // point these scripts at a local Supabase by pre-exporting credentials.
+      const envKey = key.trim()
+      if (!(envKey in process.env)) {
+        process.env[envKey] = value
+      }
     }
   })
 } catch (error) {
