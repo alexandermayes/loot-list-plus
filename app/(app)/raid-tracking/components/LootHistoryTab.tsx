@@ -4,6 +4,7 @@ import { createClient } from '@/utils/supabase/client'
 import { useState, useEffect, useCallback, useRef } from 'react'
 import ItemLink from '@/app/components/ItemLink'
 import { useGuildContext } from '@/app/contexts/GuildContext'
+import { useExpansionData } from '@/app/contexts/ExpansionContext'
 import { useNotification } from '@/app/contexts/NotificationContext'
 import { Skeleton } from '@/components/ui/skeletons'
 import { Text } from '@/components/ui/typography'
@@ -17,10 +18,12 @@ import { FileSearchIcon } from '@hugeicons/core-free-icons'
 import { refreshWowheadTooltips } from '@/lib/wowhead'
 import type { LootHistoryEntry } from '@/app/api/loot-history/route'
 import { useRaidTeam } from '@/app/hooks/useRaidTeam'
+import PlayerLootModal from './PlayerLootModal'
 
 interface RaidTier {
   id: string
   name: string
+  expansion_id: string
 }
 
 const ITEMS_PER_PAGE = 50
@@ -34,6 +37,7 @@ export default function LootHistoryTab() {
   const [raidTiers, setRaidTiers] = useState<RaidTier[]>([])
 
   // Filters
+  const [filterExpansion, setFilterExpansion] = useState<string>('all')
   const [filterTier, setFilterTier] = useState<string>('all')
   const [characterSearch, setCharacterSearch] = useState('')
   const [itemSearch, setItemSearch] = useState('')
@@ -44,8 +48,12 @@ export default function LootHistoryTab() {
   const knownIdsRef = useRef<Set<string>>(new Set())
   const [newEntryIds, setNewEntryIds] = useState<Set<string>>(new Set())
 
+  // Per-player loot drill-down
+  const [selectedPlayer, setSelectedPlayer] = useState<LootHistoryEntry | null>(null)
+
   const supabase = createClient()
   const { activeGuild, hasPermission } = useGuildContext()
+  const { guildExpansions } = useExpansionData()
   const canManageLoot = hasPermission('manage_loot')
   const { showNotification } = useNotification()
   const { activeTeamId } = useRaidTeam()
@@ -66,6 +74,9 @@ export default function LootHistoryTab() {
         offset: offset.toString()
       })
 
+      if (filterExpansion && filterExpansion !== 'all') {
+        params.append('expansion_id', filterExpansion)
+      }
       if (filterTier && filterTier !== 'all') {
         params.append('raid_tier_id', filterTier)
       }
@@ -130,23 +141,34 @@ export default function LootHistoryTab() {
       setLoading(false)
       setLoadingMore(false)
     }
-  }, [activeGuild, filterTier, characterSearch, itemSearch, fromDate, toDate, activeTeamId, showNotification])
+  }, [activeGuild, filterExpansion, filterTier, characterSearch, itemSearch, fromDate, toDate, activeTeamId, showNotification])
 
   const loadRaidTiers = useCallback(async () => {
-    if (!activeGuild?.active_expansion_id) return
+    if (!activeGuild) return
+
+    // Scope the raid dropdown to the selected phase, or to every guild phase
+    // when viewing "All phases" so past expansions' raids are selectable too.
+    const expansionIds = filterExpansion !== 'all'
+      ? [filterExpansion]
+      : guildExpansions.map(e => e.expansion_id)
+
+    if (expansionIds.length === 0) {
+      setRaidTiers([])
+      return
+    }
 
     const { data } = await supabase
       .from('raid_tiers')
-      .select('id, name')
-      .eq('expansion_id', activeGuild.active_expansion_id)
+      .select('id, name, expansion_id')
+      .in('expansion_id', expansionIds)
       .order('name')
 
     if (data) {
       setRaidTiers(data)
     }
-  }, [activeGuild, supabase])
+  }, [activeGuild, filterExpansion, guildExpansions, supabase])
 
-  // Load raid tiers when guild is ready
+  // Load raid tiers when guild, phase filter, or expansion list changes
   useEffect(() => {
     if (activeGuild) {
       loadRaidTiers()
@@ -159,7 +181,7 @@ export default function LootHistoryTab() {
       fetchHistory(0, false)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeGuild, canManageLoot, filterTier, fromDate, toDate, activeTeamId])
+  }, [activeGuild, canManageLoot, filterExpansion, filterTier, fromDate, toDate, activeTeamId])
 
   // Debounce search filters
   useEffect(() => {
@@ -184,13 +206,24 @@ export default function LootHistoryTab() {
     fetchHistory(entries.length, true)
   }
 
+  const handleExpansionChange = (expansionId: string) => {
+    setFilterExpansion(expansionId)
+    // Raid options are phase-specific, so a tier from another phase no longer applies
+    setFilterTier('all')
+  }
+
   const handleClearFilters = () => {
+    setFilterExpansion('all')
     setFilterTier('all')
     setCharacterSearch('')
     setItemSearch('')
     setFromDate('')
     setToDate('')
   }
+
+  const hasActiveFilters = filterExpansion !== 'all' || filterTier !== 'all' || !!characterSearch || !!itemSearch || !!fromDate || !!toDate
+
+  const expansionNames = new Map(guildExpansions.map(e => [e.expansion_id, e.expansion_name]))
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
@@ -306,6 +339,24 @@ export default function LootHistoryTab() {
             />
           </div>
 
+          {/* Phase Filter */}
+          <div>
+            <Label className="mb-2">Phase</Label>
+            <Select
+              variant="rounded"
+              size="sm"
+              value={filterExpansion}
+              onChange={(e) => handleExpansionChange(e.target.value)}
+            >
+              <option value="all">All phases</option>
+              {guildExpansions.map(exp => (
+                <option key={exp.expansion_id} value={exp.expansion_id}>
+                  {exp.expansion_name}{exp.is_current ? ' (current)' : ''}
+                </option>
+              ))}
+            </Select>
+          </div>
+
           {/* Raid Tier Filter */}
           <div>
             <Label className="mb-2">Raid</Label>
@@ -315,15 +366,19 @@ export default function LootHistoryTab() {
               value={filterTier}
               onChange={(e) => setFilterTier(e.target.value)}
             >
-              <option value="all">All Raids</option>
+              <option value="all">All raids</option>
               {raidTiers.map(tier => (
-                <option key={tier.id} value={tier.id}>{tier.name}</option>
+                <option key={tier.id} value={tier.id}>
+                  {filterExpansion === 'all' && expansionNames.get(tier.expansion_id)
+                    ? `${tier.name} · ${expansionNames.get(tier.expansion_id)}`
+                    : tier.name}
+                </option>
               ))}
             </Select>
           </div>
 
           {/* Date Range */}
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-2 gap-2 lg:col-span-2">
             <div>
               <Label className="mb-2">From</Label>
               <DatePicker
@@ -346,7 +401,7 @@ export default function LootHistoryTab() {
         </div>
 
         {/* Clear Filters */}
-        {(filterTier !== 'all' || characterSearch || itemSearch || fromDate || toDate) && (
+        {hasActiveFilters && (
           <div className="mt-3 pt-3 border-t border-border">
             <Button variant="ghost" size="sm" onClick={handleClearFilters}>
               Clear Filters
@@ -361,7 +416,7 @@ export default function LootHistoryTab() {
           icon={FileSearchIcon}
           title="No loot awards found"
           description={
-            filterTier !== 'all' || characterSearch || itemSearch || fromDate || toDate
+            hasActiveFilters
               ? "Try adjusting your filters."
               : "Loot awards show up here after items are distributed in raid."
           }
@@ -379,9 +434,14 @@ export default function LootHistoryTab() {
                   <span className="text-[11px] text-muted-foreground whitespace-nowrap">{formatDate(entry.awarded_date)}</span>
                 </div>
                 <div className="flex items-center gap-2 text-[12px]">
-                  <span className="font-medium" style={{ color: entry.character_class_color || undefined }}>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedPlayer(entry)}
+                    className="font-medium hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm"
+                    style={{ color: entry.character_class_color || undefined }}
+                  >
                     {entry.character_name}
-                  </span>
+                  </button>
                   <span className="text-muted-foreground">from {entry.boss_name}</span>
                 </div>
                 {entry.notes && (
@@ -429,12 +489,14 @@ export default function LootHistoryTab() {
                       <ItemLink name={entry.item_name} wowheadId={entry.wowhead_id} />
                     </td>
                     <td className="px-4 py-3 text-sm">
-                      <span
-                        className="font-medium"
+                      <button
+                        type="button"
+                        onClick={() => setSelectedPlayer(entry)}
+                        className="font-medium hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm"
                         style={{ color: entry.character_class_color || undefined }}
                       >
                         {entry.character_name}
-                      </span>
+                      </button>
                     </td>
                     <td className="px-4 py-3 text-muted-foreground text-sm">
                       {entry.boss_name}
@@ -467,6 +529,19 @@ export default function LootHistoryTab() {
             </div>
           )}
         </div>
+      )}
+
+      {selectedPlayer && (
+        <PlayerLootModal
+          open={!!selectedPlayer}
+          onClose={() => setSelectedPlayer(null)}
+          guildId={activeGuild!.id}
+          characterId={selectedPlayer.character_id}
+          characterName={selectedPlayer.character_name}
+          classColor={selectedPlayer.character_class_color}
+          guildExpansions={guildExpansions}
+          initialExpansionId={filterExpansion}
+        />
       )}
     </div>
   )

@@ -7,6 +7,7 @@ import { batchGetDisplayNames } from '@/utils/batch-display-names'
 export interface LootHistoryEntry {
   id: string
   awarded_date: string
+  character_id: string | null
   character_name: string
   character_class_color: string | null
   item_name: string
@@ -45,9 +46,11 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '50')
     const offset = parseInt(searchParams.get('offset') || '0')
     const characterFilter = searchParams.get('character')
+    const characterIdFilter = searchParams.get('character_id')
     const itemFilter = searchParams.get('item')
     const lootItemId = searchParams.get('loot_item_id')
     const raidTierFilter = searchParams.get('raid_tier_id')
+    const expansionFilter = searchParams.get('expansion_id')
     const fromDate = searchParams.get('from')
     const toDate = searchParams.get('to')
     const raidTeamId = searchParams.get('raid_team_id')
@@ -132,6 +135,11 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // Filter by expansion (backfilled column, see migration 20260319000005)
+    if (expansionFilter && expansionFilter !== 'all') {
+      query = query.eq('expansion_id', expansionFilter)
+    }
+
     if (fromDate) {
       query = query.gte('awarded_date', fromDate)
     }
@@ -140,8 +148,10 @@ export async function GET(request: NextRequest) {
       query = query.lte('awarded_date', toDate)
     }
 
-    // SQL-level name filtering (replaces previous client-side filtering)
-    if (characterFilter) {
+    // Exact character match (preferred for per-player views); name match as fallback
+    if (characterIdFilter) {
+      query = query.eq('character_id', characterIdFilter)
+    } else if (characterFilter) {
       query = query.ilike('character_name', `%${characterFilter}%`)
     }
 
@@ -211,9 +221,11 @@ export async function GET(request: NextRequest) {
         .order('created_at', { ascending: false })
 
       if (lootItemId) fallbackQuery = fallbackQuery.eq('loot_item_id', lootItemId)
+      if (expansionFilter && expansionFilter !== 'all') fallbackQuery = fallbackQuery.eq('expansion_id', expansionFilter)
       if (fromDate) fallbackQuery = fallbackQuery.gte('awarded_date', fromDate)
       if (toDate) fallbackQuery = fallbackQuery.lte('awarded_date', toDate)
-      if (characterFilter) fallbackQuery = fallbackQuery.ilike('character_name', `%${characterFilter}%`)
+      if (characterIdFilter) fallbackQuery = fallbackQuery.eq('character_id', characterIdFilter)
+      else if (characterFilter) fallbackQuery = fallbackQuery.ilike('character_name', `%${characterFilter}%`)
 
       fallbackQuery = fallbackQuery.range(offset, offset + limit - 1)
 
@@ -303,6 +315,7 @@ export async function GET(request: NextRequest) {
       return {
         id: typedEntry.id,
         awarded_date: typedEntry.awarded_date,
+        character_id: typedEntry.character_id || null,
         character_name: charName,
         character_class_color: classColor || null,
         item_name: lootItem?.name || 'Unknown Item',
