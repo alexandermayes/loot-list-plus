@@ -7,6 +7,19 @@ as a timestamped `.sql` file here and is applied with:
 supabase db push   # applies every pending migration in this directory
 ```
 
+## Schema baseline
+
+`20260101000000_baseline_schema.sql` is a **baseline**: a single dump of the full `public`
+schema as it stood after the original 159 migrations. Those 159 historical migrations were
+not self-contained (the earliest assumed `expansions` and other base tables already existed),
+so `supabase db reset` could not rebuild the database from scratch. The baseline replaces them
+so a clean DB (local dev, CI) rebuilds from this one file. The originals remain in git history
+prior to the `chore/migration-baseline` branch.
+
+Production's `schema_migrations` table was reconciled to match (the 159 marked reverted, the
+baseline marked applied) via `scripts/baseline-repair-prod.sh` — metadata only, no DDL.
+New schema changes still go in normal timestamped files _after_ the baseline.
+
 ## Rules
 
 - **One file per change**, named `<UTC timestamp>_<description>.sql`
