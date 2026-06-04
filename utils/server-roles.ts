@@ -154,7 +154,13 @@ export async function verifyPermission(
 
   for (const membership of memberships) {
     const roleInfo = roles.find(r => r.name === membership.role)
-    const position = roleInfo?.position ?? 0
+    // Fall back to the canonical default-role position when a guild's
+    // guild_roles rows don't include this role name (e.g. an "Officer" whose
+    // guild_roles row was never seeded). Without this, the role resolves to
+    // position 0 and every verifyPermission-gated route 403s, even though the
+    // sibling checks (verifyOfficerPermissions, /api/prio-list) treat the same
+    // user as an officer. See issue #111.
+    const position = getRolePositionFromRoles(membership.role, roles)
     const perms = roleInfo?.permissions ?? []
 
     if (position > highestPosition) {
