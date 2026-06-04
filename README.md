@@ -45,12 +45,23 @@ LootList+ helps guilds distribute raid loot fairly. Raiders submit ranked lists 
 
 ## Local development
 
+Against the production project (needs `.env.local`):
+
 ```bash
 npm install
 npm run dev
 ```
 
 Requires a `.env.local` with Supabase, Discord OAuth, and Battle.net OAuth credentials. See `.env.example` for the full list.
+
+Or run fully local with a seeded test guild (no prod access needed):
+
+```bash
+npm run db:local:seed   # local Supabase + schema + a seeded test guild
+npm run dev:local       # next dev wired to the local stack
+```
+
+See [LOCAL_DEVELOPMENT.md](LOCAL_DEVELOPMENT.md) for details.
 
 ## Project structure
 
