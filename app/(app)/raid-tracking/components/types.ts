@@ -33,6 +33,7 @@ export interface Member {
 
 export interface RaidLootEntry {
   id: string
+  character_id: string | null
   character_name: string
   character_class_color: string
   item_name: string

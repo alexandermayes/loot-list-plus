@@ -31,6 +31,7 @@ const carol: Member = {
 
 const sulfuras: RaidLootEntry = {
   id: 'loot-1',
+  character_id: 'char-alice',
   character_name: 'Alice',
   character_class_color: '#f48cba',
   item_name: 'Sulfuras',
@@ -39,6 +40,7 @@ const sulfuras: RaidLootEntry = {
 }
 const thunderfury: RaidLootEntry = {
   id: 'loot-2',
+  character_id: 'char-alice',
   character_name: 'Alice',
   character_class_color: '#f48cba',
   item_name: 'Thunderfury',

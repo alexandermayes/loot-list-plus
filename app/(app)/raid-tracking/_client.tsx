@@ -657,6 +657,7 @@ export default function RaidTrackingPage() {
           const charInfo = r.character_id ? characterMap[r.character_id] : null
           return {
             id: r.id,
+            character_id: r.character_id,
             // Use linked character name, or fall back to unlinked character_name
             character_name: charInfo?.name || r.character_name || 'Unknown',
             character_class_color: charInfo?.color_hex || '#888888',
@@ -858,7 +859,7 @@ export default function RaidTrackingPage() {
         id: lootId,
         updates: {
           character_id: newCharacterId,
-          character_name: null,
+          character_name: newCharacterName,
           notes: `Reassigned from ${target.currentMember.character_name}`
         }
       })
