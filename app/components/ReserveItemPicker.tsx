@@ -29,6 +29,7 @@ interface ReserveItemPickerProps {
   maxSelections: number
   disabledIds?: Set<string>
   placeholder?: string
+  allowDuplicates?: boolean
 }
 
 export default function ReserveItemPicker({
@@ -38,9 +39,16 @@ export default function ReserveItemPicker({
   maxSelections,
   disabledIds = new Set(),
   placeholder = 'Search items...',
+  allowDuplicates = false,
 }: ReserveItemPickerProps) {
   const [search, setSearch] = useState('')
-  const selectedSet = useMemo(() => new Set(selectedIds), [selectedIds])
+  // Track how many times each item is reserved so the same id can appear more
+  // than once when duplicates are allowed (a plain Set would collapse them).
+  const selectedCounts = useMemo(() => {
+    const counts = new Map<string, number>()
+    for (const id of selectedIds) counts.set(id, (counts.get(id) ?? 0) + 1)
+    return counts
+  }, [selectedIds])
   const atMax = selectedIds.length >= maxSelections
 
   const filteredItems = useMemo(() => {
@@ -69,10 +77,18 @@ export default function ReserveItemPicker({
     return { itemsByBoss: byBoss, bossNames: sortedBossNames }
   }, [filteredItems])
 
-  const selectedItems = useMemo(
-    () => items.filter((item) => selectedSet.has(item.id)),
-    [items, selectedSet]
-  )
+  // Unique selected items in first-seen order, each with its reserved quantity.
+  const selectedItems = useMemo(() => {
+    const seen = new Set<string>()
+    const result: { item: ReserveItem; count: number }[] = []
+    for (const id of selectedIds) {
+      if (seen.has(id)) continue
+      seen.add(id)
+      const item = items.find((i) => i.id === id)
+      if (item) result.push({ item, count: selectedCounts.get(id) ?? 1 })
+    }
+    return result
+  }, [selectedIds, items, selectedCounts])
 
   // Re-scan wowhead tooltips whenever the rendered item set changes.
   // `items` is the main trigger — on initial mount the parent's fetch
@@ -84,27 +100,41 @@ export default function ReserveItemPicker({
 
   const handleToggle = useCallback(
     (itemId: string) => {
-      if (selectedSet.has(itemId)) {
+      // When duplicates are allowed, a click always adds another copy (up to the
+      // cap). Copies are removed from the selected-item badges instead, so a
+      // second click never silently drops the item.
+      if (allowDuplicates) {
+        if (!atMax) onChange([...selectedIds, itemId])
+        return
+      }
+      if (selectedCounts.has(itemId)) {
         onChange(selectedIds.filter((id) => id !== itemId))
       } else if (!atMax) {
         onChange([...selectedIds, itemId])
       }
     },
-    [selectedIds, selectedSet, atMax, onChange]
+    [allowDuplicates, selectedIds, selectedCounts, atMax, onChange]
   )
 
   const handleRemove = useCallback(
     (itemId: string) => {
-      onChange(selectedIds.filter((id) => id !== itemId))
+      if (allowDuplicates) {
+        // Drop a single copy (the last occurrence), leaving any others intact.
+        const idx = selectedIds.lastIndexOf(itemId)
+        if (idx === -1) return
+        onChange([...selectedIds.slice(0, idx), ...selectedIds.slice(idx + 1)])
+      } else {
+        onChange(selectedIds.filter((id) => id !== itemId))
+      }
     },
-    [selectedIds, onChange]
+    [allowDuplicates, selectedIds, onChange]
   )
 
   return (
     <div className="bg-background-subtle border border-border rounded-xl overflow-hidden">
       {selectedItems.length > 0 && (
         <div className="px-3 pt-3 pb-1 flex flex-wrap gap-x-3 gap-y-1.5">
-          {selectedItems.map((item) => (
+          {selectedItems.map(({ item, count }) => (
             <span
               key={item.id}
               className="inline-flex items-center gap-1.5 text-[12px]"
@@ -114,11 +144,16 @@ export default function ReserveItemPicker({
                 wowheadId={item.wowhead_id}
                 clickable={false}
               />
+              {count > 1 && (
+                <span className="text-muted-foreground tabular-nums">
+                  ×{count}
+                </span>
+              )}
               <button
                 type="button"
                 onClick={() => handleRemove(item.id)}
                 className="text-muted-foreground hover:text-foreground transition-colors"
-                aria-label={`Remove ${item.name}`}
+                aria-label={count > 1 ? `Remove one ${item.name}` : `Remove ${item.name}`}
               >
                 <svg
                   className="w-3 h-3"
@@ -170,8 +205,12 @@ export default function ReserveItemPicker({
               </div>
               {itemsByBoss[boss].map((item) => {
                 const isHardReserved = disabledIds.has(item.id)
-                const isSelected = selectedSet.has(item.id)
-                const isDisabled = isHardReserved || (atMax && !isSelected)
+                const count = selectedCounts.get(item.id) ?? 0
+                const isSelected = count > 0
+                // At the cap, block every add. Without duplicates, already-selected
+                // rows stay clickable so they can be toggled off.
+                const isDisabled =
+                  isHardReserved || (atMax && (allowDuplicates || !isSelected))
 
                 return (
                   <div
@@ -219,13 +258,20 @@ export default function ReserveItemPicker({
                       )}
                     </span>
                     {isSelected && (
-                      <img
-                        src="/icons/tick.svg"
-                        alt="Selected"
-                        width={14}
-                        height={14}
-                        className="icon-adaptive w-3.5 h-3.5 shrink-0"
-                      />
+                      <span className="flex items-center gap-1 shrink-0">
+                        {allowDuplicates && count > 1 && (
+                          <span className="text-[11px] text-muted-foreground tabular-nums">
+                            ×{count}
+                          </span>
+                        )}
+                        <img
+                          src="/icons/tick.svg"
+                          alt="Selected"
+                          width={14}
+                          height={14}
+                          className="icon-adaptive w-3.5 h-3.5"
+                        />
+                      </span>
                     )}
                   </div>
                 )

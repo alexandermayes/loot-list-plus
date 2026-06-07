@@ -1395,6 +1395,7 @@ export default function ReserveJoinPage() {
                   onChange={setSelectedItemIds}
                   maxSelections={run.max_reserves}
                   disabledIds={disabledItemIds}
+                  allowDuplicates={run.allow_duplicates}
                   placeholder="Search for items..."
                 />
               </div>
