@@ -414,6 +414,7 @@ describe('RaidMemberList', () => {
     const user = userEvent.setup()
     const lootForAlice: RaidLootEntry = {
       id: 'loot-1',
+      character_id: 'char-alice',
       character_name: 'Alice',
       character_class_color: '#f48cba',
       item_name: 'Sulfuras',

@@ -195,9 +195,12 @@ export function RaidMemberList({
           const status = attendanceMap?.[member.character_id]
           const state = getCellState(status)
           const isSignedUp = status?.signed_up || false
-          const memberLoot = (loot ?? []).filter(
-            (l) =>
-              l.character_name.toLowerCase() === member.character_name.toLowerCase()
+          const memberLoot = (loot ?? []).filter((l) =>
+            // Prefer matching on character_id (survives reassignment), fall back to
+            // name for unlinked attendees that have no character_id
+            l.character_id
+              ? l.character_id === member.character_id
+              : l.character_name.toLowerCase() === member.character_name.toLowerCase()
           )
 
           return (
