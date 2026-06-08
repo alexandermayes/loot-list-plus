@@ -349,15 +349,19 @@ export async function POST(
       return NextResponse.json({ error: 'Duplicate reserves are not allowed' }, { status: 400 })
     }
 
-    // Validate items exist in the raid tier
+    // Validate items exist in the raid tier. Compare against the distinct set of
+    // submitted ids: with allow_duplicates an item can appear more than once in
+    // `items`, but the DB returns one row per id, so a raw length check would
+    // wrongly reject any duplicate.
+    const uniqueItemIds = [...new Set(items)]
     const { data: validItems } = await serviceSupabase
       .from('loot_items')
       .select('id, name, armor_type')
       .eq('raid_tier_id', run.raid_tier_id)
       .eq('is_available', true)
-      .in('id', items)
+      .in('id', uniqueItemIds)
 
-    if (!validItems || validItems.length !== items.length) {
+    if (!validItems || validItems.length !== uniqueItemIds.length) {
       return NextResponse.json({ error: 'One or more items are not valid for this raid' }, { status: 400 })
     }
 
