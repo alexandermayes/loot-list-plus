@@ -14,10 +14,17 @@ export async function POST(request: NextRequest) {
     }
 
     const serviceSupabase = createServiceRoleClient()
-    const { submission_id } = await request.json()
+    const { submission_id, review_notes } = await request.json()
 
     if (!submission_id) {
       return NextResponse.json({ error: 'Submission ID is required' }, { status: 400 })
+    }
+
+    // Rejecting a post-acceptance change is still a rejection — the raider
+    // needs to know why their change didn't take (GH #123).
+    const reason = typeof review_notes === 'string' ? review_notes.trim() : ''
+    if (!reason) {
+      return NextResponse.json({ error: 'A rejection reason is required.' }, { status: 400 })
     }
 
     // Get the submission to verify guild and check state
@@ -61,7 +68,7 @@ export async function POST(request: NextRequest) {
         .from('loot_submissions')
         .update({
           status: 'rejected',
-          review_notes: 'Rejected by officer.',
+          review_notes: reason,
         })
         .eq('id', submission_id)
 
@@ -126,7 +133,7 @@ export async function POST(request: NextRequest) {
       .from('loot_submissions')
       .update({
         status: 'approved',
-        review_notes: 'Changes rejected by officer. Reverted to previously approved list.',
+        review_notes: reason,
       })
       .eq('id', submission_id)
 

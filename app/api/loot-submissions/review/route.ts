@@ -30,6 +30,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'status must be approved, rejected, or pending' }, { status: 400 })
     }
 
+    // A rejection must tell the raider why. Without a reason the raider only
+    // sees a red badge and is left guessing (GH #123).
+    if (status === 'rejected' && !review_notes?.trim()) {
+      return NextResponse.json({ error: 'A rejection reason is required.' }, { status: 400 })
+    }
+
     const serviceSupabase = createServiceRoleClient()
 
     // Get the submission to find its guild
