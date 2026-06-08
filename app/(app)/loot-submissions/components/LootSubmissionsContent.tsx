@@ -475,6 +475,11 @@ export default function LootSubmissionsContent({ serverHeading }: LootSubmission
   }, [activePhase, guildId, activeGuild?.active_expansion_id, loadSubmissions])
 
   const handleReview = async (submissionId: string, status: 'approved' | 'rejected') => {
+    const trimmedNotes = reviewNotes.trim()
+    if (status === 'rejected' && !trimmedNotes) {
+      showNotification('error', 'Add a rejection reason so the raider knows what to fix.')
+      return
+    }
     setReviewing(submissionId)
 
     try {
@@ -484,7 +489,7 @@ export default function LootSubmissionsContent({ serverHeading }: LootSubmission
         body: JSON.stringify({
           submission_id: submissionId,
           status,
-          review_notes: reviewNotes || null
+          review_notes: trimmedNotes || null
         })
       })
 
@@ -502,7 +507,7 @@ export default function LootSubmissionsContent({ serverHeading }: LootSubmission
         body: JSON.stringify({
           submission_id: submissionId,
           status,
-          review_notes: reviewNotes || undefined,
+          review_notes: trimmedNotes || undefined,
           guild_name: activeGuild?.name,
           character_name: submission?.member?.character_name,
           phase: phaseNumber
@@ -569,12 +574,17 @@ export default function LootSubmissionsContent({ serverHeading }: LootSubmission
   }
 
   const handleRevertChanges = async (submissionId: string) => {
+    const trimmedNotes = reviewNotes.trim()
+    if (!trimmedNotes) {
+      showNotification('error', 'Add a reason so the raider knows why their change was rejected.')
+      return
+    }
     setRevertingChanges(true)
     try {
       const response = await fetch('/api/loot-submissions/revert', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ submission_id: submissionId })
+        body: JSON.stringify({ submission_id: submissionId, review_notes: trimmedNotes })
       })
 
       const data = await response.json()
@@ -1084,14 +1094,12 @@ export default function LootSubmissionsContent({ serverHeading }: LootSubmission
                           size="sm"
                           onClick={(e) => {
                             e.stopPropagation()
-                            if (submission.resubmission_count > 0) {
-                              handleRevertChanges(submission.id)
-                            } else {
-                              handleReview(submission.id, 'rejected')
-                            }
+                            // Rejecting requires a reason (GH #123), so open the
+                            // review modal where the officer enters it rather
+                            // than rejecting inline with no explanation.
+                            viewSubmissionDetails(submission.id)
                           }}
                           disabled={reviewing === submission.id || revertingChanges}
-                          loading={revertingChanges}
                         >
                           {submission.resubmission_count > 0 ? 'Reject changes' : 'Reject'}
                         </Button>
@@ -1382,7 +1390,7 @@ export default function LootSubmissionsContent({ serverHeading }: LootSubmission
           <div className="space-y-4">
             <div className="w-full">
               <Label htmlFor="review-notes" className="text-sm font-medium mb-2 block">
-                Review notes (optional)
+                Review notes <span className="text-muted-foreground font-normal">(required to reject)</span>
               </Label>
               <div className="flex flex-wrap gap-1.5 mb-2">
                 {[
@@ -1424,8 +1432,9 @@ export default function LootSubmissionsContent({ serverHeading }: LootSubmission
                     setReviewNotes('')
                   }
                 }}
-                disabled={reviewing === viewingSubmission || revertingChanges}
+                disabled={reviewing === viewingSubmission || revertingChanges || !reviewNotes.trim()}
                 loading={revertingChanges}
+                title={!reviewNotes.trim() ? 'Add a reason before rejecting' : undefined}
               >
                 {viewedSubmission?.resubmission_count > 0 ? 'Reject changes' : 'Reject'}
               </Button>
