@@ -1432,6 +1432,30 @@ export default function LootListContent({
   }, [rankings, bracket14ItemsById, enforceSlotRestrictions, bracketLimits])
   const hasValidationErrors = bracketValidations.some(b => b.violations.length > 0)
 
+  // A list can be submitted once it has items and clears the duplicate/bracket checks.
+  const canSubmit = rankedCount > 0 && duplicateItems.length === 0 && !hasValidationErrors
+
+  // Shared submit handler so the header button and the "not submitted" nudge below
+  // run the exact same validation and confirm flow.
+  const handleSubmitForReview = () => {
+    if (emptyColumn && rankedCount > 0) {
+      confirm({
+        title: `Missing ${emptyColumn} selections`,
+        description: `Your ${emptyColumn} column is completely empty. Filling both columns gives you a backup option if your first choice is taken.`,
+        confirmLabel: 'Submit anyway',
+        cancelLabel: 'Keep editing',
+        variant: 'default',
+        onConfirm: () => saveSubmission(true),
+      })
+      return
+    }
+    saveSubmission(true)
+  }
+
+  // True when this list was submitted before but now sits as an unsubmitted draft,
+  // usually because the raider edited an already-approved list (auto-save reverts it).
+  const hasUnsubmittedChanges = originalStatus === 'draft' && !!submission?.submitted_at && rankedCount > 0
+
   // Get validation for a specific bracket by name
   const getBracketValidation = (bracketName: string) => {
     return bracketValidations.find(b => b.bracketName === bracketName)
@@ -1820,7 +1844,19 @@ export default function LootListContent({
                   </div>
                   {/* Approved + not editing: show Edit list button */}
                   {originalStatus === 'approved' && !hasChanges && !isEditing ? (
-                    <Button variant="outline" onClick={() => setIsEditing(true)}>
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        confirm({
+                          title: 'Editing drops this list back to a draft',
+                          description: "This list is approved. As soon as you change it, it returns to a draft and officers stop seeing it until you resubmit.",
+                          confirmLabel: 'Edit list',
+                          cancelLabel: 'Leave it approved',
+                          variant: 'default',
+                          onConfirm: () => setIsEditing(true),
+                        })
+                      }}
+                    >
                       Edit list
                     </Button>
                   ) : (
@@ -1841,29 +1877,14 @@ export default function LootListContent({
                         </Button>
                       ) : (
                         <Button
-                          onClick={() => {
-                            if (emptyColumn && rankedCount > 0) {
-                              confirm({
-                                title: `Missing ${emptyColumn} selections`,
-                                description: `Your ${emptyColumn} column is completely empty. Filling both columns gives you a backup option if your first choice is taken.`,
-                                confirmLabel: 'Submit anyway',
-                                cancelLabel: 'Keep editing',
-                                variant: 'default',
-                                onConfirm: () => saveSubmission(true),
-                              })
-                              return
-                            }
-                            saveSubmission(true)
-                          }}
+                          onClick={handleSubmitForReview}
                           disabled={
-                            rankedCount === 0 ||
-                            duplicateItems.length > 0 ||
-                            hasValidationErrors ||
+                            !canSubmit ||
                             (!hasChanges && (originalStatus === 'approved' || originalStatus === 'pending'))
                           }
                           loading={isSaving}
                         >
-                          {hasChanges && (originalStatus === 'approved' || originalStatus === 'pending') ? 'Resubmit for review' : 'Submit for review'}
+                          {(hasChanges && (originalStatus === 'approved' || originalStatus === 'pending')) || hasUnsubmittedChanges ? 'Resubmit for review' : 'Submit for review'}
                         </Button>
                       )}
                     </>
@@ -1875,6 +1896,32 @@ export default function LootListContent({
                   <p className="text-sm"><strong>Officer Notes:</strong> {submission.review_notes}</p>
                 </div>
               )}
+            </div>
+          </div>
+        )}
+        {/* Not-submitted nudge: the list was submitted before but an edit reverted it to a draft */}
+        {!isLoading && !isContentLoading && hasUnsubmittedChanges && (
+          <div className="px-4 sm:px-6 lg:px-8 pb-2">
+            <div className="bg-yellow-900/20 border border-yellow-500/30 rounded-xl px-4 py-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-start gap-2.5 text-yellow-200/90">
+                  <span className="text-sm mt-0.5">⚠️</span>
+                  <div>
+                    <p className="text-sm font-semibold">Not submitted</p>
+                    <p className="text-sm text-yellow-200/70 text-pretty">
+                      You've changed this list since you last submitted it. Officers can't see these changes until you resubmit.
+                    </p>
+                  </div>
+                </div>
+                <Button
+                  onClick={handleSubmitForReview}
+                  disabled={!canSubmit}
+                  loading={isSaving}
+                  className="shrink-0"
+                >
+                  Resubmit for review
+                </Button>
+              </div>
             </div>
           </div>
         )}

@@ -736,9 +736,14 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
     // Get current submission data from ref
     const currentSubmissionData = submissionDataRef.current
 
-    // Determine target status
-    let targetStatus = currentSubmissionData?.submission?.status || 'draft'
-    if (['approved', 'pending'].includes(targetStatus)) {
+    // Determine target status. Editing an approved or pending list silently drops
+    // it back to a draft. When that happens, also clear the stale officer review
+    // fields below so the row stops advertising an approval/rejection that no
+    // longer applies (the raider will need to resubmit).
+    const priorStatus = currentSubmissionData?.submission?.status || 'draft'
+    let targetStatus = priorStatus
+    const revertedFromReview = ['approved', 'pending'].includes(priorStatus)
+    if (revertedFromReview) {
       targetStatus = 'draft'
     }
 
@@ -768,6 +773,8 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
           expansion_id: targetExpansionId,
           phase: selectedPhase,
           status: targetStatus,
+          // Drop the stale review trail when an edit reverts a reviewed list to draft.
+          ...(revertedFromReview ? { review_notes: null, reviewed_at: null, reviewed_by: null } : {}),
           updated_at: new Date().toISOString()
         }, {
           onConflict: 'character_id,guild_id,expansion_id,phase'
