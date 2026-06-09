@@ -69,6 +69,9 @@ export async function POST(request: NextRequest) {
         .update({
           status: 'rejected',
           review_notes: reason,
+          // Fresh rejection = new needs-resubmit episode; reset the reminder throttle.
+          resubmit_reminded_at: null,
+          resubmit_reminder_count: 0,
         })
         .eq('id', submission_id)
 
@@ -139,6 +142,10 @@ export async function POST(request: NextRequest) {
         // banner instead of a silent green badge (GH #123 pass 2). Cleared on
         // the next approval.
         change_rejected_at: new Date().toISOString(),
+        // Back to 'approved' (out of the needs-resubmit set); reset the reminder
+        // throttle so a later edit-to-draft starts a fresh run.
+        resubmit_reminded_at: null,
+        resubmit_reminder_count: 0,
       })
       .eq('id', submission_id)
 

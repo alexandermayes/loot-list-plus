@@ -18,11 +18,16 @@ import { NEEDS_RESUBMISSION_OR_FILTER } from '@/domain/loot/resubmit'
 
 // Re-remind at most once per this window while a list stays in the needs-resubmit state.
 const REMINDER_COOLDOWN_HOURS = 72
+// Stop reminding a list after this many DMs in one needs-resubmit episode.
+// The count resets when the list is resubmitted or reviewed, so a fresh
+// rejection starts a new run.
+const MAX_REMINDERS_PER_LIST = 3
 
 interface CandidateSub {
   id: string
   guild_id: string
   character_id: string
+  resubmit_reminder_count: number
 }
 
 export async function GET(request: NextRequest) {
@@ -44,9 +49,10 @@ export async function GET(request: NextRequest) {
   const candidates = await paginatedSelect<CandidateSub>((start, end) =>
     supabase
       .from('loot_submissions')
-      .select('id, guild_id, character_id')
+      .select('id, guild_id, character_id, resubmit_reminder_count')
       .or(NEEDS_RESUBMISSION_OR_FILTER)
       .or(`resubmit_reminded_at.is.null,resubmit_reminded_at.lt.${cutoffIso}`)
+      .lt('resubmit_reminder_count', MAX_REMINDERS_PER_LIST)
       .order('id', { ascending: true })
       .range(start, end),
   )
@@ -85,7 +91,7 @@ export async function GET(request: NextRequest) {
   // 3) Aggregate candidates per user, keeping only opted-in raiders with a linked Discord.
   interface Bucket {
     discordId: string
-    submissionIds: string[]
+    submissions: Array<{ id: string; count: number }>
     guildNames: Set<string>
   }
   const byUser = new Map<string, Bucket>()
@@ -98,10 +104,10 @@ export async function GET(request: NextRequest) {
 
     let bucket = byUser.get(char.user_id)
     if (!bucket) {
-      bucket = { discordId: pref.discord_id, submissionIds: [], guildNames: new Set() }
+      bucket = { discordId: pref.discord_id, submissions: [], guildNames: new Set() }
       byUser.set(char.user_id, bucket)
     }
-    bucket.submissionIds.push(sub.id)
+    bucket.submissions.push({ id: sub.id, count: sub.resubmit_reminder_count })
     const gName = guildNameById.get(sub.guild_id)
     if (gName) bucket.guildNames.add(gName)
   }
@@ -109,10 +115,11 @@ export async function GET(request: NextRequest) {
   // 4) Send one DM per raider, then stamp the reminded submissions.
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://lootlistplus.com'
   let remindedUsers = 0
-  const stampedIds: string[] = []
+  // Successfully-reminded submissions, carrying the count they had before this run.
+  const stamped: Array<{ id: string; count: number }> = []
 
   for (const bucket of byUser.values()) {
-    const count = bucket.submissionIds.length
+    const count = bucket.submissions.length
     const guildList = [...bucket.guildNames].join(', ')
     const embed = {
       title: '📋 Resubmit your loot list',
@@ -142,21 +149,33 @@ export async function GET(request: NextRequest) {
       if (!messageResponse.ok) continue
 
       remindedUsers++
-      stampedIds.push(...bucket.submissionIds)
+      stamped.push(...bucket.submissions)
     } catch (err) {
       console.error('[resubmit-reminders] DM failed:', err)
     }
   }
 
-  // 5) Stamp the cooldown marker on everything we successfully reminded.
-  if (stampedIds.length > 0) {
+  // 5) Stamp the cooldown marker + bump the per-list count on everything we
+  //    successfully reminded. Group by prior count so each row lands at count+1
+  //    in a single bulk update per distinct value (0/1/2).
+  if (stamped.length > 0) {
     const now = new Date().toISOString()
-    // Chunk the update to keep the .in() list bounded.
-    for (let i = 0; i < stampedIds.length; i += 500) {
-      const chunk = stampedIds.slice(i, i + 500)
-      await supabase.from('loot_submissions').update({ resubmit_reminded_at: now }).in('id', chunk)
+    const idsByCount = new Map<number, string[]>()
+    for (const s of stamped) {
+      const ids = idsByCount.get(s.count) ?? []
+      ids.push(s.id)
+      idsByCount.set(s.count, ids)
+    }
+    for (const [prevCount, ids] of idsByCount) {
+      for (let i = 0; i < ids.length; i += 500) {
+        const chunk = ids.slice(i, i + 500)
+        await supabase
+          .from('loot_submissions')
+          .update({ resubmit_reminded_at: now, resubmit_reminder_count: prevCount + 1 })
+          .in('id', chunk)
+      }
     }
   }
 
-  return NextResponse.json({ reminded: remindedUsers, submissions: stampedIds.length })
+  return NextResponse.json({ reminded: remindedUsers, submissions: stamped.length })
 }

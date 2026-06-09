@@ -132,6 +132,10 @@ export async function POST(request: NextRequest) {
         submitted_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
         change_rejected_at: null,
+        // Resubmitting ends the needs-resubmit episode; reset the reminder
+        // throttle so a future rejection gets a fresh run of reminders.
+        resubmit_reminded_at: null,
+        resubmit_reminder_count: 0,
       })
       .eq('id', submission_id)
 

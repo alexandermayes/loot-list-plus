@@ -103,6 +103,10 @@ export async function POST(request: NextRequest) {
         // A genuine review outcome (approve or reject) supersedes any prior
         // reverted-change marker, so clear it (GH #123 pass 2).
         change_rejected_at: null,
+        // A fresh review outcome starts a new episode — reset the resubmit
+        // reminder throttle (a re-rejection should get its own run of reminders).
+        resubmit_reminded_at: null,
+        resubmit_reminder_count: 0,
       })
       .eq('id', submission_id)
       .select()
