@@ -1,9 +1,10 @@
-import { NextResponse } from 'next/server'
+import { NextResponse, after } from 'next/server'
 import { withPermission } from '@/utils/api/handler'
 import { logAudit } from '@/utils/audit/log'
 import { resolveStatus } from '@/domain/scoring'
 import { trackEvent } from '@/utils/analytics/server'
 import { revalidateCharacterAttendance } from '@/lib/cache/dashboard-attendance'
+import { recomputeBlpForEvents } from '@/utils/blp/recompute'
 
 interface AttendanceRecord {
   raid_event_id: string
@@ -98,6 +99,14 @@ export const POST = withPermission<{
       }
       for (const id of affectedCharIds) revalidateCharacterAttendance(id)
 
+      // Attendance changed — recompute BLP for the items awarded at each
+      // affected raid event so award-before-attendance credits get filled in
+      // and benched/absent edits are reflected (GH #98 race).
+      const blpEventIds = [...new Set((records as AttendanceRecord[]).map(r => r.raid_event_id).filter(Boolean))]
+      if (blpEventIds.length > 0) {
+        after(() => recomputeBlpForEvents(serviceSupabase, guild_id, blpEventIds))
+      }
+
       return NextResponse.json({ success: true, count })
     } else {
       const { data, error } = await serviceSupabase
@@ -134,6 +143,14 @@ export const POST = withPermission<{
         if (r.character_id) affectedCharIds.add(r.character_id)
       }
       for (const id of affectedCharIds) revalidateCharacterAttendance(id)
+
+      // Attendance changed — recompute BLP for the items awarded at each
+      // affected raid event so award-before-attendance credits get filled in
+      // and benched/absent edits are reflected (GH #98 race).
+      const blpEventIds = [...new Set((records as AttendanceRecord[]).map(r => r.raid_event_id).filter(Boolean))]
+      if (blpEventIds.length > 0) {
+        after(() => recomputeBlpForEvents(serviceSupabase, guild_id, blpEventIds))
+      }
 
       return NextResponse.json({ success: true, count })
     }
@@ -241,6 +258,25 @@ export const PATCH = withPermission<{
       properties: { raid_event_id: filters.raid_event_id, action: 'update' },
     })
 
+    // Recompute BLP for the affected raid events (attendance edits change who
+    // was eligible for that night's awards). Resolve event ids from the filter.
+    const patchEventIds = new Set<string>()
+    if (filters.raid_event_id) {
+      patchEventIds.add(filters.raid_event_id)
+    } else if (filters.ids || filters.character_ids || filters.id) {
+      let evq = serviceSupabase.from('attendance_records').select('raid_event_id')
+      if (filters.ids) evq = evq.in('id', filters.ids)
+      if (filters.id) evq = evq.eq('id', filters.id)
+      if (filters.character_ids) evq = evq.in('character_id', filters.character_ids)
+      const { data: evRows } = await evq
+      for (const row of evRows || []) {
+        if (row.raid_event_id) patchEventIds.add(row.raid_event_id)
+      }
+    }
+    if (patchEventIds.size > 0) {
+      after(() => recomputeBlpForEvents(serviceSupabase, guild_id, [...patchEventIds]))
+    }
+
     return NextResponse.json({ success: true })
   },
   'PATCH /api/attendance/bulk',
@@ -272,6 +308,21 @@ export const DELETE = withPermission<{
   ({ body }) => body.guild_id,
   async ({ user, service: serviceSupabase, body, guildId: guild_id }) => {
     const { raid_event_id, ids, character_id, character_id_is_null, character_names } = body
+
+    // Capture affected raid events before deleting so BLP can be recomputed
+    // afterward (deleting attendance changes who was eligible that night).
+    const deleteEventIds = new Set<string>()
+    if (raid_event_id) {
+      deleteEventIds.add(raid_event_id)
+    } else if (ids && ids.length > 0) {
+      const { data: evRows } = await serviceSupabase
+        .from('attendance_records')
+        .select('raid_event_id')
+        .in('id', ids)
+      for (const row of evRows || []) {
+        if (row.raid_event_id) deleteEventIds.add(row.raid_event_id)
+      }
+    }
 
     let query = serviceSupabase
       .from('attendance_records')
@@ -316,6 +367,10 @@ export const DELETE = withPermission<{
         character_names,
       },
     })
+
+    if (deleteEventIds.size > 0) {
+      after(() => recomputeBlpForEvents(serviceSupabase, guild_id, [...deleteEventIds]))
+    }
 
     return NextResponse.json({ success: true })
   },

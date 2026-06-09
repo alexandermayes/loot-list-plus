@@ -5,6 +5,7 @@ import { verifyPermission } from '@/utils/server-roles'
 import { logAudit } from '@/utils/audit/log'
 import { trackEvent, setUserMilestone } from '@/utils/analytics/server'
 import { notifyLootAward, type LootAward } from '@/lib/discord-loot-announcements'
+import { recomputeBlpForItems } from '@/utils/blp/recompute'
 import type { AwardReason, AwardOutcomeType } from '@/domain/types'
 
 const AWARD_REASON_VALUES = new Set<AwardReason>(['', 'score', 'loot_council', 'override', 'offspec', 'roll'])
@@ -135,16 +136,13 @@ export async function POST(request: NextRequest) {
       expansionId = tier?.expansion_id || null
     }
 
-    // Check BLP settings once (used after inserts). blp_includes_benched
-    // mirrors the master sheet award flow (#101) so benched raiders get BLP
-    // here too when the guild has the setting on.
+    // Check BLP settings once (used after inserts).
     const { data: guildSettings } = await serviceSupabase
       .from('guild_settings')
-      .select('blp_enabled, blp_includes_benched')
+      .select('blp_enabled')
       .eq('guild_id', guild_id)
       .single()
     const blpEnabled = guildSettings?.blp_enabled === true
-    const blpIncludesBenched = guildSettings?.blp_includes_benched === true
 
     for (let i = 0; i < items.length; i++) {
       const item = items[i]
@@ -201,7 +199,8 @@ export async function POST(request: NextRequest) {
     const successCount = results.filter(r => r.success).length
     const failedCount = results.filter(r => !r.success).length
 
-    // Audit log and BLP updates for successful awards
+    // Audit log for successful awards; collect items needing a BLP recompute.
+    const blpItemIds = new Set<string>()
     for (const result of results) {
       if (result.success && result.id) {
         const item = items[result.index]
@@ -230,12 +229,17 @@ export async function POST(request: NextRequest) {
           },
         })
 
-        // BLP: increment for non-winners, reset for winner (server-side)
-        if (blpEnabled && item.character_id && item.loot_item_id && item.raid_event_id) {
-          updateBLP(serviceSupabase, guild_id, item.loot_item_id, item.character_id, item.raid_event_id, blpIncludesBenched)
-            .catch(err => console.error('BLP update failed:', err))
+        if (blpEnabled && item.loot_item_id && item.raid_event_id) {
+          blpItemIds.add(item.loot_item_id)
         }
       }
+    }
+
+    // BLP: recompute the affected items from history. Order-independent and
+    // idempotent, so it works whether attendance was synced before or after the
+    // award — the attendance-write paths trigger the same recompute (GH #98 race).
+    if (blpItemIds.size > 0) {
+      after(() => recomputeBlpForItems(serviceSupabase, guild_id, [...blpItemIds]))
     }
 
     if (successCount > 0) {
@@ -451,80 +455,3 @@ export async function PATCH(request: NextRequest) {
   }
 }
 
-/**
- * Server-side BLP update after loot award.
- * Finds eligible characters (item ranked + attended raid),
- * increments BLP for non-winners, resets for the winner.
- */
-async function updateBLP(
-  supabase: ReturnType<typeof createServiceRoleClient>,
-  guildId: string,
-  lootItemId: string,
-  winnerCharacterId: string,
-  raidEventId: string,
-  includesBenched: boolean,
-) {
-  // Find characters with this item in an approved submission
-  const { data: submissionItems } = await supabase
-    .from('loot_submission_items')
-    .select(`
-      loot_submissions!inner (
-        character_id,
-        status,
-        guild_id
-      )
-    `)
-    .eq('loot_item_id', lootItemId)
-    .eq('loot_submissions.guild_id', guildId)
-    .eq('loot_submissions.status', 'approved')
-    .is('removed_at', null)
-
-  if (!submissionItems?.length) return
-
-  const charactersWithItem = new Set<string>()
-  for (const item of submissionItems as unknown as { loot_submissions: { character_id: string } }[]) {
-    if (item.loot_submissions?.character_id) {
-      charactersWithItem.add(item.loot_submissions.character_id)
-    }
-  }
-
-  if (charactersWithItem.size === 0) return
-
-  // Filter to characters who attended this raid. When the guild opts to
-  // include benched raiders, also count anyone marked benched for the raid
-  // (matches /api/blp/update's behavior since #101).
-  let query = supabase
-    .from('attendance_records')
-    .select('character_id')
-    .eq('raid_event_id', raidEventId)
-    .in('character_id', Array.from(charactersWithItem))
-
-  query = includesBenched
-    ? query.or('attended.eq.true,was_benched.eq.true')
-    : query.eq('attended', true)
-
-  const { data: attendanceRecords } = await query
-
-  const eligible = attendanceRecords?.map(r => r.character_id) || []
-  const nonWinners = eligible.filter(characterId => characterId !== winnerCharacterId)
-
-  // Increment BLP for non-winners in one set-based round-trip. The
-  // raid_event_id pins each credit so re-imports / duplicate loot_history
-  // rows for the same (character, item, raid) are idempotent at the
-  // journal layer (GH #98).
-  if (nonWinners.length > 0) {
-    await supabase.rpc('increment_blp_bulk', {
-      p_guild_id: guildId,
-      p_loot_item_id: lootItemId,
-      p_raid_event_id: raidEventId,
-      p_character_ids: nonWinners,
-    })
-  }
-
-  // Reset winner's BLP
-  await supabase.rpc('reset_blp', {
-    p_guild_id: guildId,
-    p_character_id: winnerCharacterId,
-    p_loot_item_id: lootItemId,
-  })
-}

@@ -1,8 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest, NextResponse, after } from 'next/server'
 import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { verifyOfficerPermissions } from '@/utils/server-roles'
 import { trackApiError } from '@/utils/analytics/server'
+import { recomputeBlpForEvents } from '@/utils/blp/recompute'
 
 interface AttendanceRequest {
   guild_id: string
@@ -132,6 +133,11 @@ export async function POST(request: NextRequest) {
         unmatched++
       }
     }
+
+    // Attendance just changed for this raid — recompute BLP for the items
+    // awarded that night so any awards made before this sync get credited (and
+    // any benched/absent edits are reflected). GH #98 award-before-attendance race.
+    after(() => recomputeBlpForEvents(supabase, guild_id, [raidEventId]))
 
     return NextResponse.json({
       data: {

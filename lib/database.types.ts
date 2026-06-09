@@ -209,6 +209,72 @@ export type Database = {
         }
         Relationships: []
       }
+      blp_credits: {
+        Row: {
+          character_id: string
+          created_at: string
+          expansion_id: string | null
+          guild_id: string
+          id: string
+          loot_item_id: string
+          raid_event_id: string
+        }
+        Insert: {
+          character_id: string
+          created_at?: string
+          expansion_id?: string | null
+          guild_id: string
+          id?: string
+          loot_item_id: string
+          raid_event_id: string
+        }
+        Update: {
+          character_id?: string
+          created_at?: string
+          expansion_id?: string | null
+          guild_id?: string
+          id?: string
+          loot_item_id?: string
+          raid_event_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "blp_credits_character_id_fkey"
+            columns: ["character_id"]
+            isOneToOne: false
+            referencedRelation: "characters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "blp_credits_expansion_id_fkey"
+            columns: ["expansion_id"]
+            isOneToOne: false
+            referencedRelation: "expansions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "blp_credits_guild_id_fkey"
+            columns: ["guild_id"]
+            isOneToOne: false
+            referencedRelation: "guilds"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "blp_credits_loot_item_id_fkey"
+            columns: ["loot_item_id"]
+            isOneToOne: false
+            referencedRelation: "loot_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "blp_credits_raid_event_id_fkey"
+            columns: ["raid_event_id"]
+            isOneToOne: false
+            referencedRelation: "raid_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       blp_tracking: {
         Row: {
           character_id: string
@@ -2221,9 +2287,21 @@ export type Database = {
           p_character_id: string
           p_guild_id: string
           p_loot_item_id: string
+          p_raid_event_id: string
         }
         Returns: number
       }
+      increment_blp_bulk: {
+        Args: {
+          p_character_ids: string[]
+          p_guild_id: string
+          p_loot_item_id: string
+          p_raid_event_id: string
+        }
+        Returns: number
+      }
+      is_guild_master: { Args: { target_guild_id: string }; Returns: boolean }
+      is_guild_officer: { Args: { target_guild_id: string }; Returns: boolean }
       is_invite_code_valid: { Args: { code_input: string }; Returns: boolean }
       is_officer_of_guild: {
         Args: { guild_id_to_check: string; user_id_to_check: string }
@@ -2238,6 +2316,14 @@ export type Database = {
           p_phase_groups: Json
         }
         Returns: Json
+      }
+      recompute_blp_for_event: {
+        Args: { p_guild_id: string; p_raid_event_id: string }
+        Returns: number
+      }
+      recompute_blp_for_item: {
+        Args: { p_guild_id: string; p_loot_item_id: string }
+        Returns: number
       }
       redeem_invite_code: {
         Args: { code_input: string }
