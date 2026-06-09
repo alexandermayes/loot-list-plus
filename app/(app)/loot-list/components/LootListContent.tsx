@@ -1456,6 +1456,13 @@ export default function LootListContent({
   // usually because the raider edited an already-approved list (auto-save reverts it).
   const hasUnsubmittedChanges = originalStatus === 'draft' && !!submission?.submitted_at && rankedCount > 0
 
+  // True when officers rejected the list and it's sitting there needing a revise +
+  // resubmit. Pairs with hasUnsubmittedChanges to drive the resubmit nudge.
+  const isRejectedAwaitingResubmit = submission?.status === 'rejected' && rankedCount > 0
+
+  // Any state where the raider still needs to (re)submit so officers can act.
+  const needsResubmitNudge = hasUnsubmittedChanges || isRejectedAwaitingResubmit
+
   // Get validation for a specific bracket by name
   const getBracketValidation = (bracketName: string) => {
     return bracketValidations.find(b => b.bracketName === bracketName)
@@ -1909,17 +1916,23 @@ export default function LootListContent({
             </div>
           </div>
         )}
-        {/* Not-submitted nudge: the list was submitted before but an edit reverted it to a draft */}
-        {!isLoading && !isContentLoading && hasUnsubmittedChanges && (
+        {/* Resubmit nudge: the list was submitted before but an edit reverted it
+            to a draft, or officers rejected it. Either way officers can't act
+            until the raider resubmits. */}
+        {!isLoading && !isContentLoading && needsResubmitNudge && (
           <div className="px-4 sm:px-6 lg:px-8 pb-2">
             <div className="bg-yellow-900/20 border border-yellow-500/30 rounded-xl px-4 py-3">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div className="flex items-start gap-2.5 text-yellow-200/90">
                   <span className="text-sm mt-0.5">⚠️</span>
                   <div>
-                    <p className="text-sm font-semibold">Not submitted</p>
+                    <p className="text-sm font-semibold">
+                      {isRejectedAwaitingResubmit ? 'Sent back for changes' : 'Not submitted'}
+                    </p>
                     <p className="text-sm text-yellow-200/70 text-pretty">
-                      You've changed this list since you last submitted it. Officers can't see these changes until you resubmit.
+                      {isRejectedAwaitingResubmit
+                        ? 'Officers sent this list back. Make the changes they asked for, then resubmit so they can review it again.'
+                        : "You've changed this list since you last submitted it. Officers can't see these changes until you resubmit."}
                     </p>
                   </div>
                 </div>
