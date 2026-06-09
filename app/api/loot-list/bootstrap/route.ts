@@ -168,7 +168,7 @@ export async function GET(request: NextRequest) {
       fetchFilteredLootItems(supabase, character, selectedTierIds),
       supabase
         .from('loot_submissions')
-        .select('id, status, submitted_at, review_notes, expansion_id, phase')
+        .select('id, status, submitted_at, review_notes, expansion_id, phase, change_rejected_at')
         .eq('character_id', characterId)
         .eq('guild_id', guildId)
         .eq('expansion_id', expansionId)

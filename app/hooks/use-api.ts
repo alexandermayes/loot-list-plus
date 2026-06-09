@@ -188,6 +188,9 @@ export interface LootSubmission {
   expansion_id?: string
   phase?: number
   resubmission_count?: number
+  // Set when an officer rejected a post-acceptance change; status stays
+  // 'approved' (previous list restored). Drives the raider banner (GH #123).
+  change_rejected_at?: string | null
 }
 
 export interface RaidTier {

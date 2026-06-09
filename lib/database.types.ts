@@ -1421,6 +1421,7 @@ export type Database = {
       }
       loot_submissions: {
         Row: {
+          change_rejected_at: string | null
           character_id: string | null
           created_at: string | null
           expansion_id: string | null
@@ -1440,6 +1441,7 @@ export type Database = {
           version: number | null
         }
         Insert: {
+          change_rejected_at?: string | null
           character_id?: string | null
           created_at?: string | null
           expansion_id?: string | null
@@ -1459,6 +1461,7 @@ export type Database = {
           version?: number | null
         }
         Update: {
+          change_rejected_at?: string | null
           character_id?: string | null
           created_at?: string | null
           expansion_id?: string | null

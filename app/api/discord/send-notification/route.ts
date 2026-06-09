@@ -7,7 +7,7 @@ import { discordFetch } from '@/lib/discord'
 
 interface NotificationPayload {
   submission_id: string
-  status: 'approved' | 'rejected' | 'needs_revision'
+  status: 'approved' | 'rejected' | 'needs_revision' | 'changes_reverted'
   review_notes?: string
   guild_name?: string
   character_name?: string
@@ -142,6 +142,11 @@ export async function POST(request: NextRequest) {
         title: '📝 Revisions requested',
         tail: 'Please review the feedback and make the requested changes.',
         fallbackColor: 0xf59e0b, // amber
+      },
+      changes_reverted: {
+        title: '↩️ Recent changes rejected',
+        tail: 'Your previously approved list is still active. Edit your list and resubmit to try again.',
+        fallbackColor: 0xef4444, // red
       },
     } as const
 
