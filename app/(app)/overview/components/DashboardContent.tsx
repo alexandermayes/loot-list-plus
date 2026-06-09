@@ -32,6 +32,7 @@ import { Heading } from '@/components/ui/typography'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { InfoTooltip } from '@/components/ui/info-tooltip'
 import { useGuildContext } from '@/app/contexts/GuildContext'
+import { useResubmitCount } from '@/app/hooks/useResubmitCount'
 import ItemLink from '@/app/components/ItemLink'
 import { computeScore, computeAttendance, explainScore, getRoleModifierWithLabel, calculateBadLuckBonus, type ItemPriority, type AttendanceResult, type ScoreExplanation } from '@/domain/scoring'
 import { calculateDonationsBatch } from '@/lib/donations/batch'
@@ -440,6 +441,7 @@ export default function DashboardContent({ serverHeading, initialAttendance }: D
 
   const supabase = createClient()
   const router = useRouter()
+  const { count: resubmitCount } = useResubmitCount(activeGuild?.id ?? null)
   const searchParams = useSearchParams()
 
   // Set page title
@@ -1904,6 +1906,27 @@ export default function DashboardContent({ serverHeading, initialAttendance }: D
           </div>
         )}
       </div>
+
+      {/* Resubmit nudge: lists the raider edited-after-submit or that officers
+          sent back. Officers can't act until they're resubmitted (GH #123). */}
+      {resubmitCount > 0 && (
+        <Alert variant="warning" className="flex items-center gap-3">
+          <HugeiconsIcon icon={AlertCircleIcon} size={18} className="shrink-0" />
+          <AlertDescription className="flex-1">
+            You have {resubmitCount} loot {resubmitCount === 1 ? 'list' : 'lists'} that{' '}
+            {resubmitCount === 1 ? "isn't submitted" : "aren't submitted"}. Officers can't see{' '}
+            {resubmitCount === 1 ? 'it' : 'them'} until you resubmit.
+          </AlertDescription>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => router.push('/loot-list')}
+            className="shrink-0"
+          >
+            Review lists
+          </Button>
+        </Alert>
+      )}
 
       {/* Officer banner: unconverted Feral Druids in guild */}
       {heroReady && hasPermission('manage_loot') && activeGuild && (
