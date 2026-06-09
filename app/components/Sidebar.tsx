@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { Cancel01Icon, Settings01Icon, Notification03Icon, BubbleChatEditIcon } from '@hugeicons/core-free-icons'
 import { usePendingSubmissionCount } from '../hooks/usePendingSubmissionCount'
+import { useResubmitCount } from '../hooks/useResubmitCount'
 import { trackClientEvent } from '@/utils/analytics/client'
 import { hasFeature } from '@/domain/guild/feature-flags'
 
@@ -64,6 +65,7 @@ export default function Sidebar({ currentView = 'overview', onViewChange, isMobi
   const { user, activeGuild, userGuilds, switchGuild, isOfficer, hasPermission, activeMember, loading } = useGuildContext()
   const { sidebarWidth, setSidebarWidth, isResizing, setIsResizing } = useSidebar()
   const { count: pendingSubmissionCount } = usePendingSubmissionCount(activeGuild?.id ?? null, hasPermission('manage_submissions'))
+  const { count: resubmitCount } = useResubmitCount(activeGuild?.id ?? null)
   const [guildDropdownOpen, setGuildDropdownOpen] = useState(false)
   const [showJoinModal, setShowJoinModal] = useState(false)
   const [joinModalInitialView, setJoinModalInitialView] = useState<'main' | 'discord'>('main')
@@ -584,6 +586,11 @@ export default function Sidebar({ currentView = 'overview', onViewChange, isMobi
                 />
               )}
               <span className="whitespace-nowrap">{item.name}</span>
+              {item.view === 'loot-list' && resubmitCount > 0 && (
+                <span className="ml-auto bg-warning text-warning-foreground text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
+                  {resubmitCount > 99 ? '99+' : resubmitCount}
+                </span>
+              )}
             </Button>
           ))}
         </div>
