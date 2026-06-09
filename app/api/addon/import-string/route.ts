@@ -4,6 +4,7 @@ import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { verifyOfficerPermissions } from '@/utils/server-roles'
 import { trackApiError, trackEvent } from '@/utils/analytics/server'
 import { notifyLootAward, type LootAward } from '@/lib/discord-loot-announcements'
+import { recomputeBlpForEvents } from '@/utils/blp/recompute'
 import { inflateRawSync } from 'zlib'
 
 interface AddonAward {
@@ -114,14 +115,22 @@ export async function POST(request: NextRequest) {
     }
 
     // Process attendance
+    const attendanceEventIds = new Set<string>()
     for (const record of payload.attendance || []) {
       try {
-        await processAttendance(supabase, payload.guildId, record)
+        const raidEventId = await processAttendance(supabase, payload.guildId, record)
+        if (raidEventId) attendanceEventIds.add(raidEventId)
         results.attendance.processed++
       } catch (err) {
         console.error('Failed to process attendance:', err)
         results.attendance.errors++
       }
+    }
+
+    // Awards above are processed before attendance, so credit BLP now that
+    // attendance exists. Recompute is idempotent (GH #98 race).
+    if (attendanceEventIds.size > 0) {
+      after(() => recomputeBlpForEvents(supabase, payload.guildId, [...attendanceEventIds]))
     }
 
     if (results.awards.processed > 0) {
@@ -208,7 +217,7 @@ async function processAttendance(
   supabase: ReturnType<typeof createServiceRoleClient>,
   guildId: string,
   record: AddonAttendanceRecord
-) {
+): Promise<string> {
   // Create or find the raid event
   const { data: existingEvent } = await supabase
     .from('raid_events')
@@ -277,4 +286,6 @@ async function processAttendance(
       console.error(`Failed to upsert attendance for ${name}:`, error)
     }
   }
+
+  return raidEventId
 }
